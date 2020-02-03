@@ -1,0 +1,26 @@
+name: C++ Test
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.x'
+    - name: Install Meson
+      run: pip install meson
+    - name: Install Ninja
+      run: sudo apt install -yq --no-install-recommends ninja-build libxt-dev libxpm-dev libxaw7-dev
+    - name: Run Meson
+      env:
+        CXX: clang++
+      run: meson build
+    - name: Run Ninja
+      run: ninja -C build
+    - name: Run Tests
+      run: ninja -C build test

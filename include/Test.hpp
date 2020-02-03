@@ -13,8 +13,8 @@ namespace CppUtils
 	class TestException : public std::runtime_error
 	{
 	public:
-		explicit TestException(std::string_view message, std::string_view filename, int line):
-			std::runtime_error(message.data()), m_filename(filename), m_line(line)
+		explicit TestException(std::string_view message, std::string_view filename, int line) noexcept
+			: std::runtime_error(message.data()), m_filename(filename), m_line(line)
 		{}
 		virtual ~TestException() noexcept {}
 
@@ -33,8 +33,8 @@ namespace CppUtils
 	class Test
 	{
 	public:
-		explicit Test(std::string_view name, std::function<void()> function):
-			m_name(name), m_function(std::move(function))
+		explicit Test(std::string_view name, std::function<void()> function)
+			: m_name(name), m_function(std::move(function))
 		{}
 
 		bool pass() const
@@ -54,6 +54,21 @@ namespace CppUtils
 				return false;
 			}
 			return true;
+		}
+
+		static int executeTests(const std::vector<CppUtils::Test>& tests)
+		{
+			for (const auto& test : tests)
+			{
+				if (!test.pass())
+				{
+					std::cout << "The tests failed" << std::endl;
+					return EXIT_FAILURE;
+				}
+			}
+			
+			std::cout << "The tests passed" << std::endl;
+			return EXIT_SUCCESS;
 		}
 
 	protected:
