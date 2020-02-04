@@ -32,6 +32,11 @@ cppUtils_lib = static_library('CppUtils',
 	include_directories: includeDir
 )
 
+cppUtils_dep = declare_dependency(
+	include_directories: includeDir,
+	link_with: cppUtils_lib
+)
+
 unitTests_exe = executable('UnitTests',
 	sources: ['src/main.cpp'] + headers,
 	include_directories: includeDir,

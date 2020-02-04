@@ -3,10 +3,12 @@ name: C++ Test
 on: [push, pull_request]
 
 jobs:
-  build:
-
+  linux:
     runs-on: ubuntu-latest
-    
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++, clang++]
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v1
@@ -16,10 +18,33 @@ jobs:
       run: pip install meson
     - name: Install Ninja
       run: sudo apt install -yq --no-install-recommends ninja-build libxt-dev libxpm-dev libxaw7-dev
-    - name: Run Meson
+    - name: Run Meson with ${{ matrix.compiler }}
       env:
-        CXX: clang++
-        LDFLAGS: -static-libstdc++
+        CXX: ${{ matrix.compiler }}
+      run: meson build
+    - name: Run Ninja
+      run: ninja -C build
+    - name: Run Tests
+      run: ninja -C build test
+
+  windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++, clang++]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.x'
+    - name: Install Meson
+      run: pip install meson
+    - name: Install Ninja
+      run: cinst -y ninja
+    - name: Run Meson with ${{ matrix.compiler }}
+      env:
+        CXX: ${{ matrix.compiler }}
       run: meson build
     - name: Run Ninja
       run: ninja -C build
