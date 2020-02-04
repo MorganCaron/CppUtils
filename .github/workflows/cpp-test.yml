@@ -19,6 +19,7 @@ jobs:
     - name: Run Meson
       env:
         CXX: clang++
+        LDFLAGS: -static-libstdc++
       run: meson build
     - name: Run Ninja
       run: ninja -C build
