@@ -8,3 +8,4 @@
 #include "Class/NonMovable.hpp"
 #include "WebNode.hpp"
 #include "DynamicLibrary.hpp"
+#include "LoopThread.hpp"

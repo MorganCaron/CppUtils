@@ -24,7 +24,8 @@ headers = [
 	'include/Class/NonInstanciable.hpp',
 	'include/Class/NonMovable.hpp',
 	'include/WebNode.hpp',
-	'include/DynamicLibrary.hpp'
+	'include/DynamicLibrary.hpp',
+	'include/LoopThread.hpp'
 ]
 
 cppUtils_lib = static_library('CppUtils',
