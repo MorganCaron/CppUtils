@@ -11,11 +11,11 @@ int main()
 			ASSERT(true);
 		}),
 
-		CppUtils::Test("WebNode", [] {
-			using StringWebNode = CppUtils::WebNode<std::string, std::string>;
-			auto fruit = std::make_shared<StringWebNode>("Fruit");
-			auto orange = std::make_shared<StringWebNode>("");
-			auto color = std::make_shared<StringWebNode>("Orange");
+		CppUtils::Test("MeshNode", [] {
+			using StringMeshNode = CppUtils::MeshNode<std::string, std::string>;
+			auto fruit = std::make_shared<StringMeshNode>("Fruit");
+			auto orange = std::make_shared<StringMeshNode>("");
+			auto color = std::make_shared<StringMeshNode>("Orange");
 			orange->attach("Class", fruit);
 			orange->attach("Color", color);
 			ASSERT(orange->get("Class")[0]->value == "Fruit");

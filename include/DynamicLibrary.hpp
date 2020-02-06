@@ -25,22 +25,22 @@ namespace CppUtils
 		DynamicLibrary() = default;
 		DynamicLibrary(const DynamicLibrary&) = delete;
 		DynamicLibrary(DynamicLibrary&& src) noexcept : m_library(std::exchange(src.m_library, nullptr))
-		{};
+		{}
 		DynamicLibrary& operator=(const DynamicLibrary&) = delete;
 		DynamicLibrary& operator=(DynamicLibrary&& rhs) noexcept
 		{
 			m_library = std::exchange(rhs.m_library, nullptr);
 			return *this;
-		};
+		}
 
-		DynamicLibrary(std::string_view path)
+		explicit DynamicLibrary(std::string_view path)
 		{
 			open(path);
-		};
+		}
 		virtual ~DynamicLibrary() noexcept
 		{
 			close();
-		};
+		}
 
 	#ifdef _WIN32
 

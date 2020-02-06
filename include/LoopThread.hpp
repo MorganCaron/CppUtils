@@ -37,6 +37,8 @@ namespace CppUtils
 		}
 
 	public:
+		LoopThread() = delete;
+
 		explicit LoopThread(const std::function<void()>& function)
 			: m_threadData(std::make_unique<ThreadData>(function))
 		{}
@@ -48,7 +50,7 @@ namespace CppUtils
 		{
 			start(interval);
 		}
-
+		
 		LoopThread(const LoopThread&) = delete;
 		LoopThread(LoopThread&&) noexcept = default;
 		LoopThread& operator=(const LoopThread&) = delete;
