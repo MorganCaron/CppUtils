@@ -7,12 +7,12 @@
 namespace CppUtils
 {
 	template<typename Key, typename Value>
-	class WebNode
+	class MeshNode
 	{
 	public:
-		using Link = std::shared_ptr<WebNode<Key, Value>>;
+		using Link = std::shared_ptr<MeshNode<Key, Value>>;
 
-		explicit WebNode(const Value& m_value)
+		explicit MeshNode(const Value& m_value)
 			: value(m_value)
 		{}
 
@@ -21,10 +21,10 @@ namespace CppUtils
 			return m_branchs.find(branchName.data()) != m_branchs.end();
 		}
 
-		std::vector<Link> get(const Key& branchName) const
+		const std::vector<Link>& get(const Key& branchName) const
 		{
 			if (!exists(branchName))
-				throw std::out_of_range("La branche n'existe pas dans le WebNode.");
+				throw std::out_of_range("La branche n'existe pas dans le MeshNode.");
 			return m_branchs.at(branchName.data());
 		}
 

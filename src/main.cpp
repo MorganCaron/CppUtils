@@ -11,15 +11,22 @@ int main()
 			ASSERT(true);
 		}),
 
-		CppUtils::Test("WebNode", [] {
-			using StringWebNode = CppUtils::WebNode<std::string, std::string>;
-			auto fruit = std::make_shared<StringWebNode>("Fruit");
-			auto orange = std::make_shared<StringWebNode>("");
-			auto color = std::make_shared<StringWebNode>("Orange");
-			orange->attach("Class", fruit);
-			orange->attach("Color", color);
-			ASSERT(orange->get("Class")[0]->value == "Fruit");
-			ASSERT(orange->get("Color")[0]->value == "Orange");
+		CppUtils::Test("MeshNode", [] {
+			using StringMeshNode = CppUtils::MeshNode<std::string, std::string>;
+			auto fruit = std::make_shared<StringMeshNode>("fruit");
+			auto banana = std::make_shared<StringMeshNode>("banana");
+			auto yellow = std::make_shared<StringMeshNode>("yellow");
+
+			banana->attach("Class", fruit);
+			banana->attach("Color", yellow);
+			fruit->attach("ObjectsWithThisAttribute", banana);
+			yellow->attach("ObjectsWithThisAttribute", banana);
+
+			ASSERT(fruit->value == "fruit");
+			const auto fruitType = fruit->get("ObjectsWithThisAttribute")[0];
+			ASSERT(fruitType->value == "banana");
+			const auto bananaColor = fruitType->get("Color")[0];
+			ASSERT(bananaColor->value == "yellow");
 		})
 
 	};

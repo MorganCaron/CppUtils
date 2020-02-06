@@ -2,7 +2,7 @@
 
 #include <typeindex>
 
-namespace CppUtils::Type
+namespace CppUtils
 {
 	using TypeIndex = std::size_t;
 
