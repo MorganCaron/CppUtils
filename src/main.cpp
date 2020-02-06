@@ -12,7 +12,7 @@ int main()
 		}),
 
 		CppUtils::Test("WebNode", [] {
-			using StringWebNode = CppUtils::WebNode<std::string>;
+			using StringWebNode = CppUtils::WebNode<std::string, std::string>;
 			auto fruit = std::make_shared<StringWebNode>("Fruit");
 			auto orange = std::make_shared<StringWebNode>("");
 			auto color = std::make_shared<StringWebNode>("Orange");
