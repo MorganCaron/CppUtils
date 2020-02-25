@@ -11,7 +11,7 @@ project('CppUtils',
 
 includeDir = include_directories('include')
 
-srcs = [
+sources = [
 	'src/DynamicLibrary.cpp'
 ]
 
@@ -19,6 +19,7 @@ headers = [
 	'include/CppUtils.hpp',
 	'include/Test.hpp',
 	'include/Type.hpp',
+	'include/Class/Named.hpp',
 	'include/Class/Cloneable.hpp',
 	'include/Class/NonCopyable.hpp',
 	'include/Class/NonInstanciable.hpp',
@@ -29,7 +30,7 @@ headers = [
 ]
 
 cppUtils_lib = static_library('CppUtils',
-	sources: srcs + headers,
+	sources: sources + headers,
 	include_directories: includeDir
 )
 
@@ -39,7 +40,7 @@ cppUtils_dep = declare_dependency(
 )
 
 unitTests_exe = executable('UnitTests',
-	sources: ['src/main.cpp'] + headers,
+	sources: ['src/main.cpp'] + sources + headers,
 	include_directories: includeDir,
 	link_with: cppUtils_lib
 )

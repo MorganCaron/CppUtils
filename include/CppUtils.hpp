@@ -2,6 +2,7 @@
 
 #include "Test.hpp"
 #include "Type.hpp"
+#include "Class/Named.hpp"
 #include "Class/Cloneable.hpp"
 #include "Class/NonCopyable.hpp"
 #include "Class/NonInstanciable.hpp"
