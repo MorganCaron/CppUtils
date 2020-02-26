@@ -1,6 +1,6 @@
 #pragma once
 
-namespace CppUtils::Class
+namespace CppUtils::Type
 {
 	template<class T>
 	class NonCopyable

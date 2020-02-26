@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 
-#include "CppUtils.hpp"
+#include <CppUtils.hpp>
 
 int main()
 {

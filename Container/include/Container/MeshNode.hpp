@@ -4,7 +4,7 @@
 #include <vector>
 #include <unordered_map>
 
-namespace CppUtils
+namespace CppUtils::Container
 {
 	template<typename Key, typename Value>
 	class MeshNode

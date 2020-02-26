@@ -11,9 +11,11 @@
 # include <dlfcn.h>
 #endif
 
-namespace CppUtils
+#include "DllExport.hpp"
+
+namespace CppUtils::External
 {
-	class DynamicLibrary
+	class DLL_PUBLIC DynamicLibrary
 	{
 	public:
 	#ifdef _WIN32

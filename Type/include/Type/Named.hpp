@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string_view>
 
-namespace CppUtils::Class
+namespace CppUtils::Type
 {
 	class Named
 	{
@@ -27,7 +27,7 @@ namespace CppUtils::Class
 	};
 }
 
-std::ostream& operator<<(std::ostream& os, const CppUtils::Class::Named& named)
+std::ostream& operator<<(std::ostream& os, const CppUtils::Type::Named& named)
 {
 	os << named.getName();
 	return os;

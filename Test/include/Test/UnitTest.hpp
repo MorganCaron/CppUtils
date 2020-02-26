@@ -1,20 +1,21 @@
 #pragma once
 
 #include <string>
+#include <iostream>
 #include <sstream>
 #include <functional>
 
 using namespace std::string_literals;
 
-#define ASSERT(condition) void((condition) ? 0 : throw CppUtils::TestException("ASSERT(" #condition ")", __FILE__, __LINE__))
+#define ASSERT(condition) void((condition) ? 0 : throw CppUtils::UnitTest::TestException("ASSERT(" #condition ")", __FILE__, __LINE__))
 
-namespace CppUtils
+namespace CppUtils::UnitTest
 {
 	class TestException : public std::runtime_error
 	{
 	public:
-		explicit TestException(std::string_view message, std::string_view filename, int line) noexcept
-			: std::runtime_error(message.data()), m_filename(filename), m_line(line)
+		explicit TestException(std::string message, std::string filename, int line) noexcept
+			: std::runtime_error(std::move(message)), m_filename(std::move(filename)), m_line(line)
 		{}
 		virtual ~TestException() noexcept {}
 
@@ -33,8 +34,8 @@ namespace CppUtils
 	class Test
 	{
 	public:
-		explicit Test(std::string_view name, std::function<void()> function)
-			: m_name(name), m_function(std::move(function))
+		explicit Test(std::string name, std::function<void()> function)
+			: m_name(std::move(name)), m_function(std::move(function))
 		{}
 
 		bool pass() const
@@ -56,7 +57,7 @@ namespace CppUtils
 			return true;
 		}
 
-		static int executeTests(const std::vector<CppUtils::Test>& tests)
+		static int executeTests(const std::vector<Test>& tests)
 		{
 			for (const auto& test : tests)
 			{

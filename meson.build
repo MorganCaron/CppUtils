@@ -2,47 +2,55 @@ project('CppUtils',
 	'cpp',
 	license: 'LGPL3',
 	default_options: [
-		'cpp_std=c++2a',
+		'cpp_std=c++17',
 		'warning_level=3',
 		'optimization=3',
 		'werror=true'
 	]
 )
 
-includeDir = include_directories('include')
+subdir('Container')
+subdir('External')
+subdir('Test')
+subdir('Thread')
+subdir('Type')
 
-sources = [
-	'src/DynamicLibrary.cpp'
+public_dependencies = [
+	container_dep,
+	external_dep,
+	test_dep,
+	thread_dep,
+	type_dep
 ]
+private_dependencies = []
 
-headers = [
-	'include/CppUtils.hpp',
-	'include/Test.hpp',
-	'include/Type.hpp',
-	'include/Class/Named.hpp',
-	'include/Class/Cloneable.hpp',
-	'include/Class/NonCopyable.hpp',
-	'include/Class/NonInstanciable.hpp',
-	'include/Class/NonMovable.hpp',
-	'include/MeshNode.hpp',
-	'include/DynamicLibrary.hpp',
-	'include/LoopThread.hpp'
-]
+includeDir = include_directories(['include', '.'])
 
-cppUtils_lib = static_library('CppUtils',
-	sources: sources + headers,
-	include_directories: includeDir
+sources = files([
+
+])
+
+headers = files([
+	'include/CppUtils.hpp'
+])
+
+cppUtils_lib = library(
+	'CppUtils',
+	sources + headers,
+	include_directories: includeDir,
+	dependencies: public_dependencies + private_dependencies,
+	cpp_args : '-DBUILDING_DLL'
 )
 
 cppUtils_dep = declare_dependency(
+	link_with: cppUtils_lib,
 	include_directories: includeDir,
-	link_with: cppUtils_lib
+	dependencies: public_dependencies
 )
 
 unitTests_exe = executable('UnitTests',
-	sources: ['src/main.cpp'] + sources + headers,
-	include_directories: includeDir,
-	link_with: cppUtils_lib
+	sources: files(['src/main.cpp']) + headers,
+	dependencies: [cppUtils_dep]
 )
 
 test('Unit tests', unitTests_exe)

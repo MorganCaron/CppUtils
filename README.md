@@ -9,7 +9,7 @@
 
 Build command
 ```console
-meson build
+meson build -Ddefault_library=static
 ninja -C build
 ```
 

@@ -1,6 +1,6 @@
 #include "DynamicLibrary.hpp"
 
-namespace CppUtils
+namespace CppUtils::External
 {
 	#ifdef _WIN32
 

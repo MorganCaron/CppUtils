@@ -9,7 +9,7 @@
 
 using namespace std::chrono_literals;
 
-namespace CppUtils
+namespace CppUtils::Thread
 {
 	class LoopThread
 	{

@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace CppUtils::Class
+namespace CppUtils::Type
 {
 	class ICloneable
 	{
