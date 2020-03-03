@@ -5,9 +5,9 @@
 #include <utility>
 #include <iostream>
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64)
 # include <windows.h>
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__APPLE__)
 # include <dlfcn.h>
 #endif
 
@@ -18,11 +18,13 @@ namespace CppUtils::External
 	class DLL_PUBLIC DynamicLibrary
 	{
 	public:
-	#ifdef _WIN32
+		#if defined(_WIN32) || defined(_WIN64)
 		static constexpr const char* ext = ".dll";
-	#elif defined(__linux__)
+		#elif defined(__linux__)
 		static constexpr const char* ext = ".so";
-	#endif
+		#elif defined(__APPLE__)
+		static constexpr const char* ext = ".dylib";
+		#endif
 
 		DynamicLibrary() = default;
 		DynamicLibrary(const DynamicLibrary&) = delete;
@@ -44,7 +46,7 @@ namespace CppUtils::External
 			close();
 		}
 
-	#ifdef _WIN32
+		#if defined(_WIN32) || defined(_WIN64)
 
 		template<typename Signature>
 		Signature getSymbol(std::string_view name)
@@ -64,7 +66,7 @@ namespace CppUtils::External
 			return symbol;
 		}
 
-	#elif defined(__linux__)
+	#else
 
 		template<typename Signature>
 		Signature getSymbol(std::string_view name)
@@ -88,9 +90,9 @@ namespace CppUtils::External
 		void open(std::string_view path);
 		void close() noexcept;
 
-	#ifdef _WIN32
+	#if defined(_WIN32) || defined(_WIN64)
 		HMODULE m_library = nullptr;
-	#elif defined(__linux__)
+	#else
 		void* m_library = nullptr;
 	#endif
 	};

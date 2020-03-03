@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64)
 # ifdef STATIC_LIB
 #  define DLL_PUBLIC
 # else
