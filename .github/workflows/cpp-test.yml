@@ -13,7 +13,7 @@ jobs:
         - {
           name: "Windows",
           value: windows-latest,
-          install-ninja: cinst -y ninja
+          install-ninja: choco install ninja
         }
         - {
           name: "Ubuntu",
@@ -35,7 +35,7 @@ jobs:
         python-version: '3.x'
     - name: Install LLVM
       if: matrix.os.value == 'windows-latest' && matrix.compiler == 'clang++'
-      run: cinst -y llvm
+      run: choco install llvm
     - name: Install Meson
       run: pip install meson
     - name: Install Ninja
