@@ -1,4 +1,4 @@
-includeDir = include_directories('include/')
+includeDir = include_directories(['include/', '.'])
 
 sources = files([
 	
