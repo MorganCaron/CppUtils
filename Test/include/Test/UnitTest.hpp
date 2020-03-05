@@ -1,15 +1,16 @@
 #pragma once
 
 #include <string>
-#include <iostream>
+#include <vector>
 #include <sstream>
+#include <iostream>
 #include <functional>
 
 using namespace std::string_literals;
 
-#define ASSERT(condition) void((condition) ? 0 : throw CppUtils::UnitTest::TestException("ASSERT(" #condition ")", __FILE__, __LINE__))
+#define ASSERT(condition) void((condition) ? 0 : throw CppUtils::Test::TestException("ASSERT(" #condition ")", __FILE__, __LINE__))
 
-namespace CppUtils::UnitTest
+namespace CppUtils::Test
 {
 	class TestException : public std::runtime_error
 	{
@@ -31,10 +32,10 @@ namespace CppUtils::UnitTest
 		int m_line;
 	};
 
-	class Test
+	class UnitTest
 	{
 	public:
-		explicit Test(std::string name, std::function<void()> function)
+		explicit UnitTest(std::string name, std::function<void()> function)
 			: m_name(std::move(name)), m_function(std::move(function))
 		{}
 
@@ -57,7 +58,7 @@ namespace CppUtils::UnitTest
 			return true;
 		}
 
-		static int executeTests(const std::vector<Test>& tests)
+		static int executeTests(const std::vector<UnitTest>& tests)
 		{
 			for (const auto& test : tests)
 			{

@@ -1,11 +1,10 @@
-includeDir = include_directories('include/External/')
+includeDir = include_directories('include/')
 
 sources = files([
 	'src/DynamicLibrary.cpp'
 ])
 
 headers = files([
-	'include/External/External.hpp',
 	'include/External/DllExport.hpp',
 	'include/External/DynamicLibrary.hpp'
 ])

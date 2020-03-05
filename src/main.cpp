@@ -5,14 +5,14 @@
 
 int main()
 {
-	const auto tests = std::vector<CppUtils::Test>{
+	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
-		CppUtils::Test("Unit tests", [] {
+		CppUtils::Test::UnitTest("Unit tests", [] {
 			ASSERT(true);
 		}),
 
-		CppUtils::Test("MeshNode", [] {
-			using StringMeshNode = CppUtils::MeshNode<std::string, std::string>;
+		CppUtils::Test::UnitTest("MeshNode", [] {
+			using StringMeshNode = CppUtils::Container::MeshNode<std::string, std::string>;
 			auto fruit = std::make_shared<StringMeshNode>("fruit");
 			auto banana = std::make_shared<StringMeshNode>("banana");
 			auto yellow = std::make_shared<StringMeshNode>("yellow");
@@ -31,5 +31,5 @@ int main()
 
 	};
 
-	return CppUtils::Test::executeTests(tests);
+	return CppUtils::Test::UnitTest::executeTests(tests);
 }

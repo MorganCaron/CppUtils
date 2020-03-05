@@ -1,11 +1,10 @@
-includeDir = include_directories('include/Test/')
+includeDir = include_directories('include/')
 
 sources = files([
 	
 ])
 
 headers = files([
-	'include/Test/Test.hpp',
 	'include/Test/UnitTest.hpp'
 ])
 

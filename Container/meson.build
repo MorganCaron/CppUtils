@@ -1,11 +1,10 @@
-includeDir = include_directories('include/Container/')
+includeDir = include_directories('include/')
 
 sources = files([
 
 ])
 
 headers = files([
-	'include/Container/Container.hpp',
 	'include/Container/MeshNode.hpp'
 ])
 

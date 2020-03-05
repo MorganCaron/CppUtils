@@ -1,11 +1,10 @@
-includeDir = include_directories('include/Type/')
+includeDir = include_directories('include/')
 
 sources = files([
 	
 ])
 
 headers = files([
-	'include/Type/Type.hpp',
 	'include/Type/Named.hpp',
 	'include/Type/Cloneable.hpp',
 	'include/Type/NonCopyable.hpp',

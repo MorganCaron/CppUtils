@@ -1,11 +1,10 @@
-includeDir = include_directories('include/Thread/')
+includeDir = include_directories('include/')
 
 sources = files([
 	
 ])
 
 headers = files([
-	'include/Thread/Thread.hpp',
 	'include/Thread/LoopThread.hpp'
 ])
 
