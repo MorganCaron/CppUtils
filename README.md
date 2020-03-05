@@ -17,8 +17,6 @@
 [![Install](https://img.shields.io/badge/-Install-blue?style=for-the-badge)](INSTALL.md)
 [![Contribute](https://img.shields.io/badge/-Contribute-blue?style=for-the-badge)](CONTRIBUTE.md)
 
----
-
 Build command
 ```console
 meson build -Ddefault_library=static
@@ -35,5 +33,3 @@ ninja -C build test
 ## Additional Informations
 ![Top Language](https://img.shields.io/github/languages/top/MorganCaron/CppUtils?style=for-the-badge)
 [![License](https://img.shields.io/github/license/MorganCaron/CppUtils?style=for-the-badge)](https://github.com/MorganCaron/CppUtils/blob/master/LICENSE)
-
----

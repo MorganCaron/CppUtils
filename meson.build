@@ -1,5 +1,6 @@
 project('CppUtils',
 	'cpp',
+	version: '0.0.0',
 	license: 'LGPL3',
 	default_options: [
 		'cpp_std=c++17',
@@ -39,7 +40,7 @@ cppUtils_lib = library(
 	sources + headers,
 	include_directories: includeDir,
 	dependencies: public_dependencies + private_dependencies,
-	cpp_args : '-DBUILDING_DLL'
+	cpp_args: '-DBUILDING_DLL'
 )
 
 cppUtils_dep = declare_dependency(
@@ -48,7 +49,8 @@ cppUtils_dep = declare_dependency(
 	dependencies: public_dependencies
 )
 
-unitTests_exe = executable('UnitTests',
+unitTests_exe = executable(
+	'UnitTests',
 	sources: files(['src/main.cpp']) + headers,
 	dependencies: [cppUtils_dep]
 )
