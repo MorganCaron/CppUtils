@@ -14,7 +14,7 @@
 
 ## Getting Started
 [![Install](https://img.shields.io/badge/-Install-blue?style=for-the-badge)](INSTALL.md)
-[![Contribute](https://img.shields.io/badge/-Contribute-blue?style=for-the-badge)](CONTRIBUTE.md)
+[![Contribute](https://img.shields.io/badge/-Contribute-blue?style=for-the-badge)](CONTRIBUTING.md)
 
 ### Build command
 ```console
