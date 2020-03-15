@@ -13,17 +13,16 @@
 ---
 
 ## Getting Started
-[![Downloads](https://img.shields.io/github/downloads/MorganCaron/CppUtils/total?style=for-the-badge)](https://github.com/MorganCaron/CppUtils/releases)
 [![Install](https://img.shields.io/badge/-Install-blue?style=for-the-badge)](INSTALL.md)
 [![Contribute](https://img.shields.io/badge/-Contribute-blue?style=for-the-badge)](CONTRIBUTE.md)
 
-Build command
+### Build command
 ```console
 meson build -Ddefault_library=static
 ninja -C build
 ```
 
-Test command
+### Test command
 ```console
 ninja -C build test
 ```
