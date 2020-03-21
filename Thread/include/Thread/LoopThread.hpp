@@ -16,9 +16,10 @@ namespace CppUtils::Thread
 	private:
 		struct ThreadData
 		{
-			explicit ThreadData(const std::function<void()>& m_function)
-				: function(m_function), running(false)
-			{};
+			explicit ThreadData(const std::function<void()>& m_function):
+				function(m_function),
+				running(false)
+			{}
 
 			std::function<void()> function;
 			std::atomic<bool> running;
@@ -39,14 +40,14 @@ namespace CppUtils::Thread
 	public:
 		LoopThread() = delete;
 
-		explicit LoopThread(const std::function<void()>& function)
-			: m_threadData(std::make_unique<ThreadData>(function))
+		explicit LoopThread(const std::function<void()>& function):
+			m_threadData(std::make_unique<ThreadData>(function))
 		{}
 
 		template<class Rep, class Period>
 		explicit LoopThread(const std::function<void()>& function,
-			const std::chrono::duration<Rep, Period>& interval)
-			: m_threadData(std::make_unique<ThreadData>(function))
+			const std::chrono::duration<Rep, Period>& interval):
+			m_threadData(std::make_unique<ThreadData>(function))
 		{
 			start(interval);
 		}

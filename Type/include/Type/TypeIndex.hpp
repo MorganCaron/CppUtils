@@ -7,7 +7,8 @@ namespace CppUtils::Type
 	using TypeIndex = std::size_t;
 
 	template<typename T>
-	struct Type {
+	struct Type
+	{
 		using Wrapped = T;
 		static const TypeIndex index;
 	};

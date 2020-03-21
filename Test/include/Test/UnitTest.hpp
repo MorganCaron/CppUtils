@@ -12,17 +12,20 @@ using namespace std::string_literals;
 
 namespace CppUtils::Test
 {
-	class TestException : public std::runtime_error
+	class TestException: public std::runtime_error
 	{
 	public:
-		explicit TestException(std::string message, std::string filename, int line) noexcept
-			: std::runtime_error(std::move(message)), m_filename(std::move(filename)), m_line(line)
+		explicit TestException(std::string message, std::string filename, int line) noexcept:
+			std::runtime_error{std::move(message)},
+			m_filename{std::move(filename)},
+			m_line{line}
 		{}
-		virtual ~TestException() noexcept {}
+		virtual ~TestException() noexcept
+		{}
 
 		virtual const char* what() const noexcept override
 		{
-			auto message = std::stringstream();
+			auto message = std::stringstream{};
 			message << std::runtime_error::what() << "\nat line " << std::to_string(m_line) << " in " << m_filename;
 			return message.str().c_str();
 		}
@@ -35,8 +38,9 @@ namespace CppUtils::Test
 	class UnitTest
 	{
 	public:
-		explicit UnitTest(std::string name, std::function<void()> function)
-			: m_name(std::move(name)), m_function(std::move(function))
+		explicit UnitTest(std::string name, std::function<void()> function):
+			m_name{std::move(name)},
+			m_function{std::move(function)}
 		{}
 
 		bool pass() const

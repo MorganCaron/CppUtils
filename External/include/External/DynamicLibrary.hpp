@@ -28,7 +28,8 @@ namespace CppUtils::External
 
 		DynamicLibrary() = default;
 		DynamicLibrary(const DynamicLibrary&) = delete;
-		DynamicLibrary(DynamicLibrary&& src) noexcept : m_library(std::exchange(src.m_library, nullptr))
+		DynamicLibrary(DynamicLibrary&& src) noexcept:
+			m_library(std::exchange(src.m_library, nullptr))
 		{}
 		DynamicLibrary& operator=(const DynamicLibrary&) = delete;
 		DynamicLibrary& operator=(DynamicLibrary&& rhs) noexcept

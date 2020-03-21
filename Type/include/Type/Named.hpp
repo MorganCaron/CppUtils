@@ -9,8 +9,8 @@ namespace CppUtils::Type
 	class Named
 	{
 	public:
-		explicit Named(std::string name) : m_name{std::move(name)}
-		{};
+		explicit Named(std::string name): m_name{std::move(name)}
+		{}
 
 		inline void setName(std::string name)
 		{

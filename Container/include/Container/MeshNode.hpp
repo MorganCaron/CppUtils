@@ -12,8 +12,8 @@ namespace CppUtils::Container
 	public:
 		using Link = std::shared_ptr<MeshNode<Key, Value>>;
 
-		explicit MeshNode(const Value& m_value)
-			: value(m_value)
+		explicit MeshNode(const Value& m_value):
+			value(m_value)
 		{}
 
 		inline bool exists(const Key& branchName) const

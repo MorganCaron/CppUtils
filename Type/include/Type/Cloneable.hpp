@@ -12,7 +12,7 @@ namespace CppUtils::Type
 	};
 
 	template<class Derived>
-	class Cloneable : public virtual ICloneable
+	class Cloneable: public virtual ICloneable
 	{
 	public:
 		virtual ~Cloneable() = default;
