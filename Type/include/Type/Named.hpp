@@ -27,7 +27,7 @@ namespace CppUtils::Type
 	};
 }
 
-std::ostream& operator<<(std::ostream& os, const CppUtils::Type::Named& named)
+inline std::ostream& operator<<(std::ostream& os, const CppUtils::Type::Named& named)
 {
 	os << named.getName();
 	return os;
