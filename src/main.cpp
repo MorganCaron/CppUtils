@@ -11,6 +11,11 @@ int main()
 			ASSERT(true);
 		}),
 
+		CppUtils::Test::UnitTest("Logger", [] {
+			CppUtils::Logger::log(CppUtils::Logger::OutputType::Cout, CppUtils::Logger::MessageType::Debug, "Message de debug");
+			ASSERT(true);
+		}),
+
 		CppUtils::Test::UnitTest("MeshNode", [] {
 			using StringMeshNode = CppUtils::Container::MeshNode<std::string, std::string>;
 			auto fruit = std::make_shared<StringMeshNode>("fruit");

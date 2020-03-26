@@ -3,7 +3,7 @@ project('CppUtils',
 	version: '0.0.0',
 	license: 'LGPL3',
 	default_options: [
-		'cpp_std=c++17',
+		'cpp_std=c++2a',
 		'warning_level=3',
 		'optimization=3',
 		'werror=true'
@@ -12,6 +12,8 @@ project('CppUtils',
 
 subdir('Container')
 subdir('External')
+subdir('Terminal')
+subdir('Log')
 subdir('Test')
 subdir('Thread')
 subdir('Type')
@@ -19,6 +21,8 @@ subdir('Type')
 public_dependencies = [
 	container_dep,
 	external_dep,
+	terminal_dep,
+	log_dep,
 	test_dep,
 	thread_dep,
 	type_dep

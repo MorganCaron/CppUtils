@@ -5,6 +5,10 @@
 #include <External/DllExport.hpp>
 #include <External/DynamicLibrary.hpp>
 
+#include <Terminal/TextModifier.hpp>
+
+#include <Log/Logger.hpp>
+
 #include <Test/UnitTest.hpp>
 
 #include <Thread/LoopThread.hpp>

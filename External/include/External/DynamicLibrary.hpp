@@ -15,7 +15,7 @@
 
 namespace CppUtils::External
 {
-	class DLL_PUBLIC DynamicLibrary
+	class DLL_PUBLIC DynamicLibrary final
 	{
 	public:
 		#if defined(_WIN32) || defined(_WIN64)
@@ -42,7 +42,7 @@ namespace CppUtils::External
 		{
 			open(path);
 		}
-		virtual ~DynamicLibrary() noexcept
+		~DynamicLibrary() noexcept
 		{
 			close();
 		}
