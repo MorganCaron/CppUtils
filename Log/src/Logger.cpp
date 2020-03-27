@@ -2,33 +2,30 @@
 
 namespace CppUtils
 {
-	std::unordered_map<Logger::OutputType, std::reference_wrapper<std::ostream>> Logger::m_outputs{
-		{ Logger::OutputType::Cerr, std::cerr },
-		{ Logger::OutputType::Cout, std::cout }
+	std::unordered_map<Logger::OutputType, std::experimental::observer_ptr<std::ostream>> Logger::m_outputs{
+		{ Logger::OutputType::Cout, std::experimental::make_observer(&std::cout) },
+		{ Logger::OutputType::Cerr, std::experimental::make_observer(&std::cerr) }
 	};
 
 	void Logger::log(OutputType loggerOutput, MessageType logType, std::string_view message)
 	{
-		auto textColor = Terminal::TextModifier::SGRCode::TextColor_Default;
+		auto textColor = Terminal::TextModifier::TextColor::Default;
 
 		switch (logType)
 		{
 			case MessageType::Information: 
-				textColor = Terminal::TextModifier::SGRCode::TextColor_Cyan;
+				textColor = Terminal::TextModifier::TextColor::Cyan;
 				break;
 			case MessageType::Debug: 
-				textColor = Terminal::TextModifier::SGRCode::TextColor_Magenta;
+				textColor = Terminal::TextModifier::TextColor::Magenta;
 				break;
 			case MessageType::Warning: 
-				textColor = Terminal::TextModifier::SGRCode::TextColor_Yellow;
+				textColor = Terminal::TextModifier::TextColor::Yellow;
 				break;
 			case MessageType::Error: 
-				textColor = Terminal::TextModifier::SGRCode::TextColor_Red;
+				textColor = Terminal::TextModifier::TextColor::Red;
 				break;
 		}
-		m_outputs[loggerOutput]
-			<< Terminal::TextModifier({ textColor })
-			<< message
-			<< Terminal::TextModifier::Reset;
+		*(m_outputs[loggerOutput].get()) << textColor << message << Terminal::TextModifier::Reset << std::endl;
 	}
 }
