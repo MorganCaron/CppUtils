@@ -9,7 +9,7 @@ namespace CppUtils
 
 	void Logger::log(OutputType loggerOutput, MessageType logType, std::string_view message)
 	{
-		auto textColor = Terminal::TextModifier::TextColor::Default;
+		std::string_view textColor;
 
 		switch (logType)
 		{
@@ -24,6 +24,9 @@ namespace CppUtils
 				break;
 			case MessageType::Error: 
 				textColor = Terminal::TextModifier::TextColor::Red;
+				break;
+			default:
+				textColor = Terminal::TextModifier::TextColor::Default;
 				break;
 		}
 		*(m_outputs[loggerOutput].get()) << textColor << message << Terminal::TextModifier::Reset << std::endl;

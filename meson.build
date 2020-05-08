@@ -43,8 +43,7 @@ cppUtils_lib = library(
 	'CppUtils',
 	sources + headers,
 	include_directories: includeDir,
-	dependencies: public_dependencies + private_dependencies,
-	cpp_args: '-DBUILDING_DLL'
+	dependencies: public_dependencies + private_dependencies
 )
 
 cppUtils_dep = declare_dependency(
