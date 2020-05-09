@@ -5,6 +5,8 @@
 
 int main()
 {
+	SetConsoleOutputCP(CP_UTF8);
+	
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
 		CppUtils::Test::UnitTest("Unit tests", [] {
