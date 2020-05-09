@@ -12,6 +12,17 @@ namespace CppUtils::Container
 	public:
 		using Link = std::shared_ptr<MeshNode<Key, Value>>;
 
+		static inline void assignTo(const Key& branchName0, const Link& node0, const Key& branchName1, const Link& node1)
+		{
+			node1->attach(branchName0, node0);
+			node0->attach(branchName1, node1);
+		}
+
+		static inline void assignCategoryToElement(const Link& category, const Link& element)
+		{
+			assignTo("Categories", category, "Elements", element);
+		}
+		
 		explicit MeshNode(const Value& m_value):
 			value(m_value)
 		{}
