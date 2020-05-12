@@ -19,6 +19,9 @@ namespace CppUtils
 			case MessageType::Information:
 				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Cyan);
 				break;
+			case MessageType::Success:
+				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Green);
+				break;
 			case MessageType::Debug:
 				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Magenta);
 				break;

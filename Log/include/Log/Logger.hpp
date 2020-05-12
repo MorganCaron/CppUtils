@@ -21,6 +21,7 @@ namespace CppUtils
 		enum class MessageType
 		{
 			Information = 0,
+			Success,
 			Debug,
 			Warning,
 			Error,
