@@ -7,7 +7,7 @@ namespace CppUtils
 		{ Logger::OutputType::Cerr, std::experimental::make_observer(&std::cerr) }
 	};
 
-	void Logger::log(OutputType loggerOutput, MessageType logType, std::string_view message)
+	void Logger::logWithoutNewLine(OutputType loggerOutput, MessageType logType, std::string message)
 	{
 		std::ostream& stream = *(m_outputs[loggerOutput].get());
 #if defined(OS_WINDOWS)
@@ -35,11 +35,16 @@ namespace CppUtils
 				CppUtils::Terminal::TextModifier::reset(stream);
 				break;
 		}
-		stream << message << std::endl;
+		stream << message << std::flush;
 #if defined(OS_WINDOWS)
 		SetConsoleTextAttribute(Terminal::getTerminalHandle(stream), attributes);
 #elif defined(OS_LINUX) || defined(OS_MACOS)
 		CppUtils::Terminal::TextModifier::reset(stream);
 #endif
+	}
+
+	void Logger::log(OutputType loggerOutput, MessageType logType, std::string message)
+	{
+		logWithoutNewLine(loggerOutput, logType, message + '\n');
 	}
 }

@@ -32,7 +32,8 @@ namespace CppUtils
 			m_outputs[loggerOutput] = os;
 		}
 
-		static void log(OutputType loggerOutput, MessageType logType, std::string_view message);
+		static void logWithoutNewLine(OutputType loggerOutput, MessageType logType, std::string message);
+		static void log(OutputType loggerOutput, MessageType logType, std::string message);
 
 	private:
 		static std::unordered_map<OutputType, std::experimental::observer_ptr<std::ostream>> m_outputs;
