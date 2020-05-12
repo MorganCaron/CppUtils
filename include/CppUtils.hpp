@@ -5,6 +5,8 @@
 #include <External/DllExport.hpp>
 #include <External/DynamicLibrary.hpp>
 
+#include <FileSystem/FileSystem.hpp>
+
 #include <Terminal/TextModifier.hpp>
 
 #include <Log/Logger.hpp>
