@@ -20,29 +20,23 @@ namespace CppUtils::Terminal::TextModifier
 	}
 #endif
 
-	void reset(std::ostream& stream)
-	{
 #if defined(OS_WINDOWS)
-		SetConsoleTextAttribute(getTerminalHandle(stream), 0);
-#elif defined(OS_LINUX) || defined(OS_MACOS)
-		stream << ANSIEscapeCode::Reset;
-#endif
-	}
-
-	void eraseCurrentLine([[maybe_unused]]std::ostream& stream)
+	inline WORD getTextColor(std::ostream& stream)
 	{
-#if defined(OS_LINUX) || defined(OS_MACOS)
-		stream << ANSIEscapeCode::EraseCurrentLine;
-#endif
+		CONSOLE_SCREEN_BUFFER_INFO info;
+		if (!GetConsoleScreenBufferInfo(getTerminalHandle(stream), &info))
+			return 0;
+		return info.wAttributes;
 	}
+#endif
 
-	void colorize(
+	inline void colorize(
 		std::ostream& stream,
 		TextColor::TextColorEnum textColor = TextColor::TextColorEnum::Default,
 		BackgroundColor::BackgroundColorEnum backgroundColor = BackgroundColor::BackgroundColorEnum::Default)
 	{
-		const auto text = TextColor::getTextColorCode(textColor);
-		const auto background = BackgroundColor::getBackgroundColorCode(backgroundColor);
+		[[maybe_unused]] const auto text = TextColor::getTextColorCode(textColor);
+		[[maybe_unused]] const auto background = BackgroundColor::getBackgroundColorCode(backgroundColor);
 #if defined(OS_WINDOWS)
 		SetConsoleTextAttribute(getTerminalHandle(stream), (background << 4) + text);
 #elif defined(OS_LINUX) || defined(OS_MACOS)
@@ -50,13 +44,29 @@ namespace CppUtils::Terminal::TextModifier
 #endif
 	}
 
-	void applyStyle(
+	inline void stylize(
 		[[maybe_unused]] std::ostream& stream,
 		[[maybe_unused]] TextStyle::TextStyleEnum textStyle)
 	{
 #if defined(OS_LINUX) || defined(OS_MACOS)
 		const auto style = TextStyle::getTextStyleCode(textStyle);
 		stream << style;
+#endif
+	}
+
+	inline void reset(std::ostream& stream)
+	{
+#if defined(OS_WINDOWS)
+		colorize(stream, TextColor::TextColorEnum::Default, BackgroundColor::BackgroundColorEnum::Default);
+#elif defined(OS_LINUX) || defined(OS_MACOS)
+		stream << ANSIEscapeCode::Reset;
+#endif
+	}
+
+	inline void eraseCurrentLine([[maybe_unused]]std::ostream& stream)
+	{
+#if defined(OS_LINUX) || defined(OS_MACOS)
+		stream << ANSIEscapeCode::EraseCurrentLine;
 #endif
 	}
 

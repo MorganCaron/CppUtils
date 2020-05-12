@@ -25,21 +25,22 @@ namespace CppUtils::Terminal::TextModifier::BackgroundColor
 	namespace Attribute
 	{
 		[[maybe_unused]] static constexpr const uint8_t Black = 0;
-		[[maybe_unused]] static constexpr const uint8_t Red = 12;
-		[[maybe_unused]] static constexpr const uint8_t Green = 2;
-		[[maybe_unused]] static constexpr const uint8_t Yellow = 14;
-		[[maybe_unused]] static constexpr const uint8_t Blue = 9;
+		[[maybe_unused]] static constexpr const uint8_t Red = BACKGROUND_RED;
+		[[maybe_unused]] static constexpr const uint8_t Green = BACKGROUND_GREEN;
+		[[maybe_unused]] static constexpr const uint8_t Yellow = BACKGROUND_RED | BACKGROUND_GREEN | BACKGROUND_INTENSITY;
+		[[maybe_unused]] static constexpr const uint8_t Blue = BACKGROUND_BLUE;
 		[[maybe_unused]] static constexpr const uint8_t Magenta = 13;
 		[[maybe_unused]] static constexpr const uint8_t Cyan = 11;
 		[[maybe_unused]] static constexpr const uint8_t White = 15;
+		[[maybe_unused]] static constexpr const uint8_t Default = 0;
 	}
 
-	uint8_t getBackgroundColorCode(BackgroundColorEnum backgroundColor)
+	inline uint8_t getBackgroundColorCode(BackgroundColorEnum backgroundColor)
 	{
 		switch (backgroundColor)
 		{
 			case BackgroundColorEnum::Default:
-				return Attribute::Black;
+				return Attribute::Default;
 				break;
 			case BackgroundColorEnum::Black:
 				return Attribute::Black;
@@ -66,7 +67,7 @@ namespace CppUtils::Terminal::TextModifier::BackgroundColor
 				return Attribute::White;
 				break;
 			default:
-				return Attribute::Black;
+				return Attribute::Default;
 				break;
 		}
 	}
@@ -84,12 +85,12 @@ namespace CppUtils::Terminal::TextModifier::BackgroundColor
 		[[maybe_unused]] static constexpr const auto Default = "\x1B[49m"sv;
 	}
 
-	std::string_view getBackgroundColorCode(BackgroundColorEnum backgroundColor)
+	inline std::string_view getBackgroundColorCode(BackgroundColorEnum backgroundColor)
 	{
 		switch (backgroundColor)
 		{
 			case BackgroundColorEnum::Default:
-				return ANSIEscapeCode::Black;
+				return ANSIEscapeCode::Default;
 				break;
 			case BackgroundColorEnum::Black:
 				return ANSIEscapeCode::Black;
@@ -116,7 +117,7 @@ namespace CppUtils::Terminal::TextModifier::BackgroundColor
 				return ANSIEscapeCode::White;
 				break;
 			default:
-				return "";
+				return ANSIEscapeCode::Default;
 				break;
 		}
 	}

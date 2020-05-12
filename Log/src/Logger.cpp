@@ -10,6 +10,9 @@ namespace CppUtils
 	void Logger::log(OutputType loggerOutput, MessageType logType, std::string_view message)
 	{
 		std::ostream& stream = *(m_outputs[loggerOutput].get());
+#if defined(OS_WINDOWS)
+		const auto attributes = Terminal::TextModifier::getTextColor(stream);
+#endif
 
 		switch (logType)
 		{
@@ -30,6 +33,10 @@ namespace CppUtils
 				break;
 		}
 		stream << message << std::endl;
+#if defined(OS_WINDOWS)
+		SetConsoleTextAttribute(Terminal::getTerminalHandle(stream), attributes);
+#elif defined(OS_LINUX) || defined(OS_MACOS)
 		CppUtils::Terminal::TextModifier::reset(stream);
+#endif
 	}
 }
