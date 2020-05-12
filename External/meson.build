@@ -13,7 +13,7 @@ external_lib = library(
 	'CppUtils-External',
 	sources + headers,
 	include_directories: includeDir,
-	cpp_args : (get_option('default_library') != 'static') ? '-DBUILDING_DLL' : '-DSTATIC_LIB'
+	cpp_args : (get_option('default_library') == 'static') ? '-DSTATIC_LIB' : '-DBUILDING_DLL'
 )
 
 external_dep = declare_dependency(
