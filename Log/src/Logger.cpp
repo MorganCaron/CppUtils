@@ -9,26 +9,27 @@ namespace CppUtils
 
 	void Logger::log(OutputType loggerOutput, MessageType logType, std::string_view message)
 	{
-		std::string_view textColor;
+		std::ostream& stream = *(m_outputs[loggerOutput].get());
 
 		switch (logType)
 		{
-			case MessageType::Information: 
-				textColor = Terminal::TextModifier::TextColor::Cyan;
+			case MessageType::Information:
+				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Cyan);
 				break;
-			case MessageType::Debug: 
-				textColor = Terminal::TextModifier::TextColor::Magenta;
+			case MessageType::Debug:
+				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Magenta);
 				break;
-			case MessageType::Warning: 
-				textColor = Terminal::TextModifier::TextColor::Yellow;
+			case MessageType::Warning:
+				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Yellow);
 				break;
-			case MessageType::Error: 
-				textColor = Terminal::TextModifier::TextColor::Red;
+			case MessageType::Error:
+				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Red);
 				break;
 			default:
-				textColor = Terminal::TextModifier::TextColor::Default;
+				CppUtils::Terminal::TextModifier::reset(stream);
 				break;
 		}
-		*(m_outputs[loggerOutput].get()) << textColor << message << Terminal::TextModifier::Reset << std::endl;
+		stream << message << std::endl;
+		CppUtils::Terminal::TextModifier::reset(stream);
 	}
 }

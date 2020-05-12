@@ -1,3 +1,8 @@
+public_dependencies = [
+	platform_dep
+]
+private_dependencies = []
+
 includeDir = include_directories(['include/', '.'])
 
 sources = files([
@@ -5,9 +10,22 @@ sources = files([
 ])
 
 headers = files([
+	'include/Terminal/Terminal.hpp',
+	'include/Terminal/TextModifier/TextStyle.hpp',
+	'include/Terminal/TextModifier/TextColor.hpp',
+	'include/Terminal/TextModifier/BackgroundColor.hpp',
 	'include/Terminal/TextModifier.hpp'
 ])
 
+terminal_lib = library(
+	'CppUtils-Terminal',
+	sources + headers,
+	include_directories: includeDir,
+	dependencies: public_dependencies + private_dependencies
+)
+
 terminal_dep = declare_dependency(
-	include_directories: includeDir
+	link_with: terminal_lib,
+	include_directories: includeDir,
+	dependencies: public_dependencies
 )

@@ -10,6 +10,7 @@ project('CppUtils',
 	]
 )
 
+subdir('Platform')
 subdir('Container')
 subdir('External')
 subdir('Terminal')
@@ -19,6 +20,7 @@ subdir('Thread')
 subdir('Type')
 
 public_dependencies = [
+	platform_dep,
 	container_dep,
 	external_dep,
 	terminal_dep,
