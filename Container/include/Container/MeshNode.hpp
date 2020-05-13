@@ -58,6 +58,11 @@ namespace CppUtils::Container
 			m_branchs.erase(branchName);
 		}
 
+		inline std::size_t count(const Key& branchName) const
+		{
+			return exists(branchName) ? static_cast<std::size_t>(get(branchName).size()) : 0;
+		}
+
 		Value value;
 
 	protected:
