@@ -12,7 +12,7 @@ int main()
 		}),
 
 		CppUtils::Test::UnitTest("Logger", [] {
-			CppUtils::Logger::log(CppUtils::Logger::OutputType::Cout, CppUtils::Logger::MessageType::Debug, "Message de debug");
+			CppUtils::Logger::logDebug("Message de debug");
 			ASSERT(true);
 		}),
 
@@ -42,7 +42,7 @@ int main()
 			ASSERT(fruitColor->value == "yellow");
 			
 			for (const auto& aFruit : fruit->get("Elements"))
-				CppUtils::Logger::log(CppUtils::Logger::OutputType::Cout, CppUtils::Logger::MessageType::Information, aFruit->value + " is a " + aFruit->get("Colors")[0]->value + " " + aFruit->get("Categories")[0]->value);
+				CppUtils::Logger::logInformation(aFruit->value + " is a " + aFruit->get("Colors")[0]->value + " " + aFruit->get("Categories")[0]->value);
 		})
 
 	};

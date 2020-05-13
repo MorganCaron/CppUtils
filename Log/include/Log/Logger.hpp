@@ -15,7 +15,8 @@ namespace CppUtils
 		enum OutputType
 		{
 			Cerr = 0,
-			Cout
+			Cout,
+			Clog
 		};
 
 		enum class MessageType
@@ -32,8 +33,32 @@ namespace CppUtils
 			m_outputs[loggerOutput] = os;
 		}
 
-		static void logWithoutNewLine(OutputType loggerOutput, MessageType logType, std::string message);
-		static void log(OutputType loggerOutput, MessageType logType, std::string message);
+		static void log(OutputType loggerOutput, MessageType logType, std::string_view message, bool newLine = true);
+
+		static inline void logInformation(std::string_view message, bool newLine = true)
+		{
+			log(OutputType::Cout, MessageType::Information, message, newLine);
+		}
+
+		static inline void logSuccess(std::string_view message, bool newLine = true)
+		{
+			log(OutputType::Cout, MessageType::Success, message, newLine);
+		}
+
+		static inline void logDebug(std::string_view message, bool newLine = true)
+		{
+			log(OutputType::Cout, MessageType::Debug, message, newLine);
+		}
+
+		static inline void logWarning(std::string_view message, bool newLine = true)
+		{
+			log(OutputType::Cout, MessageType::Warning, message, newLine);
+		}
+
+		static inline void logError(std::string_view message, bool newLine = true)
+		{
+			log(OutputType::Cerr, MessageType::Error, message, newLine);
+		}
 
 	private:
 		static std::unordered_map<OutputType, std::experimental::observer_ptr<std::ostream>> m_outputs;

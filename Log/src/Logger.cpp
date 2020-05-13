@@ -4,10 +4,11 @@ namespace CppUtils
 {
 	std::unordered_map<Logger::OutputType, std::experimental::observer_ptr<std::ostream>> Logger::m_outputs{
 		{ Logger::OutputType::Cout, std::experimental::make_observer(&std::cout) },
-		{ Logger::OutputType::Cerr, std::experimental::make_observer(&std::cerr) }
+		{ Logger::OutputType::Cerr, std::experimental::make_observer(&std::cerr) },
+		{ Logger::OutputType::Clog, std::experimental::make_observer(&std::clog) }
 	};
 
-	void Logger::logWithoutNewLine(OutputType loggerOutput, MessageType logType, std::string message)
+	void Logger::log(OutputType loggerOutput, MessageType logType, std::string_view message, bool newLine)
 	{
 		std::ostream& stream = *(m_outputs[loggerOutput].get());
 #if defined(OS_WINDOWS)
@@ -35,16 +36,11 @@ namespace CppUtils
 				CppUtils::Terminal::TextModifier::reset(stream);
 				break;
 		}
-		stream << message << std::flush;
+		stream << ((newLine) ? (message.data() + "\n"s) : message) << std::flush;
 #if defined(OS_WINDOWS)
 		SetConsoleTextAttribute(Terminal::getTerminalHandle(stream), attributes);
 #elif defined(OS_LINUX) || defined(OS_MACOS)
 		CppUtils::Terminal::TextModifier::reset(stream);
 #endif
-	}
-
-	void Logger::log(OutputType loggerOutput, MessageType logType, std::string message)
-	{
-		logWithoutNewLine(loggerOutput, logType, message + '\n');
 	}
 }
