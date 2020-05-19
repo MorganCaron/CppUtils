@@ -13,6 +13,7 @@
 
 #include <Test/UnitTest.hpp>
 
+#include <Thread/AsyncIStreamListener.hpp>
 #include <Thread/LoopThread.hpp>
 
 #include <Type/Cloneable.hpp>
