@@ -11,60 +11,44 @@ using namespace std::chrono_literals;
 
 namespace CppUtils::Thread
 {
-	class LoopThread
+	class LoopThread final
 	{
-	private:
-		struct ThreadData
-		{
-			explicit ThreadData(const std::function<void()>& m_function):
-				function(m_function),
-				running(false)
-			{}
-
-			std::function<void()> function;
-			std::atomic<bool> running;
-			std::thread thread;
-		};
-
-		template<class Rep, class Period>
-		void run(const std::chrono::duration<Rep, Period>& interval)
-		{
-			m_threadData->running = true;
-			while (isRunning())
-			{
-				m_threadData->function();
-				std::this_thread::sleep_for(interval);
-			}
-		}
-
 	public:
 		LoopThread() = delete;
 
-		explicit LoopThread(const std::function<void()>& function):
-			m_threadData(std::make_unique<ThreadData>(function))
+		explicit LoopThread(const std::function<void()>& function): m_function(function), m_running(false)
 		{}
 
 		template<class Rep, class Period>
 		explicit LoopThread(const std::function<void()>& function,
-			const std::chrono::duration<Rep, Period>& interval):
-			m_threadData(std::make_unique<ThreadData>(function))
+			const std::chrono::duration<Rep, Period>& interval): m_function(function), m_running(false)
 		{
 			start(interval);
 		}
 		
 		LoopThread(const LoopThread&) = delete;
-		LoopThread(LoopThread&&) noexcept = default;
+		LoopThread(LoopThread&& src) noexcept:
+			m_function(std::move(src.m_function)),
+			m_running(src.isRunning()),
+			m_thread(std::move(src.m_thread))
+		{}
 		LoopThread& operator=(const LoopThread&) = delete;
-		LoopThread& operator=(LoopThread&&) noexcept = default;
+		LoopThread& operator=(LoopThread&& rhs) noexcept
+		{
+			m_function = std::move(rhs.m_function);
+			m_running = rhs.isRunning();
+			m_thread = std::move(rhs.m_thread);
+			return *this;
+		}
 
-		virtual ~LoopThread()
+		~LoopThread()
 		{
 			stop();
 		}
 
 		inline bool isRunning() const noexcept
 		{
-			return m_threadData->running.load();
+			return m_running.load();
 		}
 
 		template<class Rep, class Period>
@@ -72,18 +56,31 @@ namespace CppUtils::Thread
 		{
 			if (isRunning())
 				stop();
-			m_threadData->thread = std::thread(&LoopThread::run<Rep, Period>, this, interval);
+			m_thread = std::thread(&LoopThread::run<Rep, Period>, this, interval);
 		}
 
 		void stop()
 		{
 			if (!isRunning())
 				return;
-			m_threadData->running = false;
-			m_threadData->thread.join();
+			m_running = false;
+			m_thread.join();
 		}
 
 	private:
-		std::unique_ptr<ThreadData> m_threadData;
+		template<class Rep, class Period>
+		void run(const std::chrono::duration<Rep, Period>& interval)
+		{
+			m_running = true;
+			while (isRunning())
+			{
+				m_function();
+				std::this_thread::sleep_for(interval);
+			}
+		}
+
+		std::function<void()> m_function;
+		std::atomic<bool> m_running;
+		std::thread m_thread;
 	};
 }
