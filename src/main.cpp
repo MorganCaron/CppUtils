@@ -26,14 +26,14 @@ int main()
 			auto orangeFruit = std::make_shared<StringMeshNode>("orange");
 			auto orangeColor = std::make_shared<StringMeshNode>("orange");
 
-			StringMeshNode::assignTo("Colors", yellow, "Elements", banana);
-			StringMeshNode::assignTo("Colors", yellow, "Elements", lemon);
-			StringMeshNode::assignTo("Colors", orangeColor, "Elements", orangeFruit);
-			StringMeshNode::assignCategoryToElement(color, yellow);
-			StringMeshNode::assignCategoryToElement(fruit, banana);
-			StringMeshNode::assignCategoryToElement(fruit, lemon);
-			StringMeshNode::assignCategoryToElement(color, orangeColor);
-			StringMeshNode::assignCategoryToElement(fruit, orangeFruit);
+			StringMeshNode::attach("Colors", yellow, "Elements", banana);
+			StringMeshNode::attach("Colors", yellow, "Elements", lemon);
+			StringMeshNode::attach("Colors", orangeColor, "Elements", orangeFruit);
+			StringMeshNode::attach("Categories", color, "Elements", yellow);
+			StringMeshNode::attach("Categories", fruit, "Elements", banana);
+			StringMeshNode::attach("Categories", fruit, "Elements", lemon);
+			StringMeshNode::attach("Categories", color, "Elements", orangeColor);
+			StringMeshNode::attach("Categories", fruit, "Elements", orangeFruit);
 
 			ASSERT(fruit->value == "fruit");
 			const auto fruitName = fruit->get("Elements")[0];
