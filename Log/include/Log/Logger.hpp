@@ -22,6 +22,7 @@ namespace CppUtils
 		enum class MessageType
 		{
 			Information = 0,
+			Important,
 			Success,
 			Debug,
 			Warning,
@@ -38,6 +39,11 @@ namespace CppUtils
 		static inline void logInformation(std::string_view message, bool newLine = true)
 		{
 			log(OutputType::Cout, MessageType::Information, message, newLine);
+		}
+
+		static inline void logImportant(std::string_view message, bool newLine = true)
+		{
+			log(OutputType::Cout, MessageType::Important, message, newLine);
 		}
 
 		static inline void logSuccess(std::string_view message, bool newLine = true)

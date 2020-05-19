@@ -11,13 +11,18 @@ namespace CppUtils
 	void Logger::log(OutputType loggerOutput, MessageType logType, std::string_view message, bool newLine)
 	{
 		std::ostream& stream = *(m_outputs[loggerOutput].get());
+		if (logType == MessageType::Information)
+		{
+			stream << ((newLine) ? (message.data() + "\n"s) : message) << std::flush;
+			return;
+		}
+
 #if defined(OS_WINDOWS)
 		const auto attributes = Terminal::TextModifier::getTextColor(stream);
 #endif
-
 		switch (logType)
 		{
-			case MessageType::Information:
+			case MessageType::Important:
 				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Cyan);
 				break;
 			case MessageType::Success:
