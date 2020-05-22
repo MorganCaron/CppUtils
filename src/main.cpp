@@ -7,16 +7,7 @@ int main()
 {
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
-		CppUtils::Test::UnitTest("Unit tests", [] {
-			ASSERT(true);
-		}),
-
-		CppUtils::Test::UnitTest("Logger", [] {
-			CppUtils::Logger::logDebug("Message de debug");
-			ASSERT(true);
-		}),
-
-		CppUtils::Test::UnitTest("MeshNode", [] {
+		CppUtils::Test::UnitTest("Container/MeshNode", [] {
 			using StringMeshNode = CppUtils::Container::MeshNode<std::string, std::string>;
 			auto fruit = std::make_shared<StringMeshNode>("fruit");
 			auto banana = std::make_shared<StringMeshNode>("banana");
@@ -43,6 +34,20 @@ int main()
 			
 			for (const auto& aFruit : fruit->get("Elements"))
 				CppUtils::Logger::logInformation(aFruit->value + " is a " + aFruit->get("Colors")[0]->value + " " + aFruit->get("Categories")[0]->value);
+		}),
+
+		CppUtils::Test::UnitTest("Log/Logger", [] {
+			CppUtils::Logger::logInformation("Information message");
+			CppUtils::Logger::logImportant("Important message");
+			CppUtils::Logger::logSuccess("Success message");
+			CppUtils::Logger::logDebug("Debug message");
+			CppUtils::Logger::logWarning("Warning message");
+			CppUtils::Logger::logError("Error message");
+			ASSERT(true);
+		}),
+
+		CppUtils::Test::UnitTest("Tests/UnitTest", [] {
+			ASSERT(true);
 		})
 
 	};
