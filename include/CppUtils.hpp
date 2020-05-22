@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Chrono/Chronometer.hpp>
+
 #include <Container/MeshNode.hpp>
 
 #include <External/DllExport.hpp>
