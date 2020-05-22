@@ -11,6 +11,7 @@ project('CppUtils',
 )
 
 subdir('Platform')
+subdir('Chrono')
 subdir('Container')
 subdir('External')
 subdir('Filesystem')
@@ -22,6 +23,7 @@ subdir('Type')
 
 public_dependencies = [
 	platform_dep,
+	chrono_dep,
 	container_dep,
 	external_dep,
 	filesystem_dep,
