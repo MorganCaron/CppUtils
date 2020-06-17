@@ -15,6 +15,7 @@ subdir('Chrono')
 subdir('Container')
 subdir('External')
 subdir('Filesystem')
+subdir('Hash')
 subdir('Terminal')
 subdir('Log')
 subdir('Test')
@@ -27,6 +28,7 @@ public_dependencies = [
 	container_dep,
 	external_dep,
 	filesystem_dep,
+	hash_dep,
 	terminal_dep,
 	log_dep,
 	test_dep,

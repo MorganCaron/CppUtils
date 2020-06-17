@@ -9,6 +9,8 @@
 
 #include <FileSystem/FileSystem.hpp>
 
+#include <Hash/Hash.hpp>
+
 #include <Terminal/TextModifier.hpp>
 
 #include <Log/Logger.hpp>
