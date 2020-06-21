@@ -46,8 +46,16 @@ int main()
 			ASSERT(true);
 		}),
 
-		CppUtils::Test::UnitTest("Tests/UnitTest", [] {
+		CppUtils::Test::UnitTest("Test/UnitTest", [] {
 			ASSERT(true);
+		}),
+
+		CppUtils::Test::UnitTest("Type/Index", [] {
+			const auto numberType0 = CppUtils::Type::TypeId{"Number"};
+			const auto numberType1 = CppUtils::Type::TypeId{"Number"};
+			const auto stringType = CppUtils::Type::TypeId{"String"};
+			ASSERT(numberType0 == numberType1);
+			ASSERT(numberType0 != stringType);
 		})
 
 	};
