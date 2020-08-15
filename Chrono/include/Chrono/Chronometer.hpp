@@ -8,8 +8,10 @@ namespace CppUtils::Chrono
 	class Chronometer
 	{
 	public:
-		Chronometer(): m_start(std::chrono::high_resolution_clock::now())
-		{}
+		Chronometer()
+		{
+			start();
+		}
 
 		inline void start()
 		{
@@ -21,25 +23,25 @@ namespace CppUtils::Chrono
 			m_end = std::chrono::high_resolution_clock::now();
 		}
 
-		inline auto getDuration()
+		[[nodiscard]] inline auto getDuration()
 		{
 			return m_end - m_start;
 		}
 
-		inline std::string getText()
+		[[nodiscard]] inline std::string getText()
 		{
 			auto duration = getDuration();
-			const auto hour = duration_cast<std::chrono::hours>(duration);
+			const auto hour = std::chrono::duration_cast<std::chrono::hours>(duration);
 			duration -= hour;
-			const auto min = duration_cast<std::chrono::minutes>(duration);
+			const auto min = std::chrono::duration_cast<std::chrono::minutes>(duration);
 			duration -= min;
-			const auto sec = duration_cast<std::chrono::seconds>(duration);
+			const auto sec = std::chrono::duration_cast<std::chrono::seconds>(duration);
 			duration -= sec;
-			const auto millisec = duration_cast<std::chrono::milliseconds>(duration);
+			const auto millisec = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
 			duration -= millisec;
-			const auto microsec = duration_cast<std::chrono::microseconds>(duration);
+			const auto microsec = std::chrono::duration_cast<std::chrono::microseconds>(duration);
 			duration -= microsec;
-			const auto ns = duration_cast<std::chrono::nanoseconds>(duration);
+			const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(duration);
 
 			auto str = std::string{};
 			if (hour.count() > 0)

@@ -23,19 +23,19 @@ namespace CppUtils::Container
 		explicit MeshNode(Value&& m_value): value(std::move(m_value))
 		{}
 
-		inline bool exists(const Key& branchName) const
+		[[nodiscard]] inline bool exists(const Key& branchName) const
 		{
 			return m_branchs.find(branchName.data()) != m_branchs.end();
 		}
 
-		const std::vector<Link>& get(const Key& branchName) const
+		[[nodiscard]] const std::vector<Link>& get(const Key& branchName) const
 		{
 			if (!exists(branchName))
 				throw std::out_of_range("La branche n'existe pas dans le MeshNode.");
 			return m_branchs.at(branchName.data());
 		}
 
-		std::vector<Link>& operator[](const Key& branchName)
+		[[nodiscard]] std::vector<Link>& operator[](const Key& branchName)
 		{
 			if (!exists(branchName))
 				m_branchs[branchName.data()] = std::vector<Link>();
@@ -54,7 +54,7 @@ namespace CppUtils::Container
 			m_branchs.erase(branchName);
 		}
 
-		inline std::size_t count(const Key& branchName) const
+		[[nodiscard]] inline std::size_t count(const Key& branchName) const
 		{
 			return exists(branchName) ? static_cast<std::size_t>(get(branchName).size()) : 0;
 		}
