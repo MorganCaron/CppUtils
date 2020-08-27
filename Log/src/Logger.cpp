@@ -2,6 +2,15 @@
 
 namespace CppUtils
 {
+	std::vector<Logger::MessageType> Logger::m_enabledTypes{
+		Logger::MessageType::Information,
+		Logger::MessageType::Important,
+		Logger::MessageType::Success,
+		Logger::MessageType::Debug,
+		Logger::MessageType::Warning,
+		Logger::MessageType::Error
+	};
+
 	std::unordered_map<Logger::OutputType, std::experimental::observer_ptr<std::ostream>> Logger::m_outputs{
 		{ Logger::OutputType::Cout, std::experimental::make_observer(&std::cout) },
 		{ Logger::OutputType::Cerr, std::experimental::make_observer(&std::cerr) },
@@ -10,6 +19,9 @@ namespace CppUtils
 
 	void Logger::log(OutputType loggerOutput, MessageType logType, std::string_view message, bool newLine)
 	{
+		if (std::find(m_enabledTypes.begin(), m_enabledTypes.end(), logType) == m_enabledTypes.end())
+			return;
+		
 		std::ostream& stream = *(m_outputs[loggerOutput].get());
 		if (logType == MessageType::Information)
 		{

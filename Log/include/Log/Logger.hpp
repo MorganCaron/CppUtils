@@ -1,7 +1,9 @@
 #pragma once
 
+#include <vector>
 #include <ostream>
 #include <iostream>
+#include <algorithm>
 #include <unordered_map>
 #include <experimental/memory>
 
@@ -26,7 +28,7 @@ namespace CppUtils
 			Success,
 			Debug,
 			Warning,
-			Error,
+			Error
 		};
 
 		static inline void addLogger(OutputType loggerOutput, std::experimental::observer_ptr<std::ostream> os)
@@ -66,7 +68,46 @@ namespace CppUtils
 			log(OutputType::Cerr, MessageType::Error, message, newLine);
 		}
 
+		static inline void enableType(const MessageType logType)
+		{
+			if (std::find(m_enabledTypes.begin(), m_enabledTypes.end(), logType) == m_enabledTypes.end())
+				m_enabledTypes.push_back(logType);
+		}
+
+		static inline void disableType(const MessageType logType)
+		{
+			const auto it = std::find(m_enabledTypes.begin(), m_enabledTypes.end(), logType);
+			if (it != m_enabledTypes.end())
+				m_enabledTypes.erase(it);
+		}
+
+		template<typename... Types>
+		static inline void enableType(const MessageType logType, Types... types)
+		{
+			enableType(logType);
+			enableType(types...);
+		}
+		template<typename... Types>
+		static inline void disableType(const MessageType logType, Types... types)
+		{
+			disableType(logType);
+			disableType(types...);
+		}
+
+		static inline void resetEnabledTypes()
+		{
+			m_enabledTypes = {
+				Logger::MessageType::Information,
+				Logger::MessageType::Important,
+				Logger::MessageType::Success,
+				Logger::MessageType::Debug,
+				Logger::MessageType::Warning,
+				Logger::MessageType::Error
+			};
+		}
+
 	private:
+		static std::vector<MessageType> m_enabledTypes;
 		static std::unordered_map<OutputType, std::experimental::observer_ptr<std::ostream>> m_outputs;
 	};
 }

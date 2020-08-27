@@ -41,14 +41,17 @@ namespace CppUtils::Test
 			try
 			{
 				m_function();
+				CppUtils::Logger::resetEnabledTypes();
 			}
 			catch (const TestException& exception)
 			{
+				CppUtils::Logger::resetEnabledTypes();
 				CppUtils::Logger::logError("The following test didn't pass:\n"s + m_name + "\n" + exception.what());
 				return false;
 			}
 			catch (const std::exception& exception)
 			{
+				CppUtils::Logger::resetEnabledTypes();
 				CppUtils::Logger::logError("An exception occurred during tests:\n"s + m_name + "\n" + exception.what());
 				return false;
 			}
