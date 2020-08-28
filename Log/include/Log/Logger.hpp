@@ -5,7 +5,6 @@
 #include <iostream>
 #include <algorithm>
 #include <unordered_map>
-#include <experimental/memory>
 
 #include "Terminal/TextModifier.hpp"
 
@@ -31,7 +30,7 @@ namespace CppUtils
 			Error
 		};
 
-		static inline void addLogger(OutputType loggerOutput, std::experimental::observer_ptr<std::ostream> os)
+		static inline void addLogger(OutputType loggerOutput, std::ostream* os)
 		{
 			m_outputs[loggerOutput] = os;
 		}
@@ -108,6 +107,6 @@ namespace CppUtils
 
 	private:
 		static std::vector<MessageType> m_enabledTypes;
-		static std::unordered_map<OutputType, std::experimental::observer_ptr<std::ostream>> m_outputs;
+		static std::unordered_map<OutputType, std::ostream*> m_outputs;
 	};
 }

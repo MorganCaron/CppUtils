@@ -11,10 +11,10 @@ namespace CppUtils
 		Logger::MessageType::Error
 	};
 
-	std::unordered_map<Logger::OutputType, std::experimental::observer_ptr<std::ostream>> Logger::m_outputs{
-		{ Logger::OutputType::Cout, std::experimental::make_observer(&std::cout) },
-		{ Logger::OutputType::Cerr, std::experimental::make_observer(&std::cerr) },
-		{ Logger::OutputType::Clog, std::experimental::make_observer(&std::clog) }
+	std::unordered_map<Logger::OutputType, std::ostream*> Logger::m_outputs{
+		{ Logger::OutputType::Cout, &std::cout },
+		{ Logger::OutputType::Cerr, &std::cerr },
+		{ Logger::OutputType::Clog, &std::clog }
 	};
 
 	void Logger::log(OutputType loggerOutput, MessageType logType, std::string_view message, bool newLine)
@@ -22,7 +22,7 @@ namespace CppUtils
 		if (std::find(m_enabledTypes.begin(), m_enabledTypes.end(), logType) == m_enabledTypes.end())
 			return;
 		
-		std::ostream& stream = *(m_outputs[loggerOutput].get());
+		std::ostream& stream = *(m_outputs[loggerOutput]);
 		if (logType == MessageType::Information)
 		{
 			stream << ((newLine) ? (message.data() + "\n"s) : message) << std::flush;
