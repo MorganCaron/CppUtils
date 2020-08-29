@@ -38,6 +38,7 @@ namespace CppUtils::Test
 
 		bool pass() const
 		{
+			CppUtils::Logger::logDebug(std::string(50, '_') + '\n' + m_name + ':');
 			try
 			{
 				m_function();
@@ -55,6 +56,7 @@ namespace CppUtils::Test
 				CppUtils::Logger::logError("An exception occurred during tests:\n"s + m_name + "\n" + exception.what());
 				return false;
 			}
+			CppUtils::Logger::logSuccess(m_name + " passed");
 			return true;
 		}
 
@@ -69,7 +71,7 @@ namespace CppUtils::Test
 				}
 			}
 			
-			CppUtils::Logger::logSuccess("The tests passed");
+			CppUtils::Logger::logSuccess("All tests passed successfully");
 			return EXIT_SUCCESS;
 		}
 
