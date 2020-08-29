@@ -7,7 +7,7 @@
 #include <External/DllExport.hpp>
 #include <External/DynamicLibrary.hpp>
 
-#include <FileSystem/FileSystem.hpp>
+#include <FileSystem/File.hpp>
 
 #include <Hash/Hash.hpp>
 

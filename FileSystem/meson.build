@@ -5,7 +5,7 @@ sources = files([
 ])
 
 headers = files([
-	'include/FileSystem/FileSystem.hpp'
+	'include/FileSystem/File.hpp'
 ])
 
 filesystem_dep = declare_dependency(

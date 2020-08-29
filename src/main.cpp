@@ -57,14 +57,26 @@ int main()
 				CppUtils::Logger::logInformation(aFruit->value + " is a " + aFruit->get("Colors")[0]->value + " " + aFruit->get("Categories")[0]->value);
 		}),
 
-		CppUtils::Test::UnitTest("FileSystem/File", [] {
-			const auto filePath = std::filesystem::path{"temp.txt"};
+		CppUtils::Test::UnitTest("FileSystem/File/WriteRead", [] {
+			const auto filePath = std::filesystem::path{"test.tmp"};
 			const auto originalString = "Hello world!";
-			CppUtils::FileSystem::writeString(filePath, originalString);
-			const auto fileContent = CppUtils::FileSystem::readString(filePath);
+			CppUtils::FileSystem::File::writeString(filePath, originalString);
+			const auto fileContent = CppUtils::FileSystem::File::readString(filePath);
 			CppUtils::Logger::logInformation(fileContent);
-			CppUtils::FileSystem::deleteFile(filePath);
+			CppUtils::FileSystem::File::deleteFile(filePath);
 			ASSERT(fileContent == originalString);
+		}),
+
+		CppUtils::Test::UnitTest("FileSystem/File/Append", [] {
+			const auto filePath = std::filesystem::path{"test.tmp"};
+			const auto firstString = "Hello ";
+			const auto secondString = "world!";
+			CppUtils::FileSystem::File::appendString(filePath, firstString);
+			CppUtils::FileSystem::File::appendString(filePath, secondString);
+			const auto fileContent = CppUtils::FileSystem::File::readString(filePath);
+			CppUtils::Logger::logInformation(fileContent);
+			CppUtils::FileSystem::File::deleteFile(filePath);
+			ASSERT(fileContent == std::string{firstString} + secondString);
 		}),
 
 		CppUtils::Test::UnitTest("Log/Logger", [] {
