@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdio>
 #include <fstream>
 #include <filesystem>
 #include <string_view>
@@ -16,7 +17,7 @@ namespace CppUtils::FileSystem
 				function(file.path().string());
 	}
 	
-	inline std::string readString(const std::filesystem::path& filePath)
+	[[nodiscard]] inline std::string readString(const std::filesystem::path& filePath)
 	{
 		auto ifstream = std::ifstream(filePath);
 		return std::string{(std::istreambuf_iterator<char>{ifstream}), std::istreambuf_iterator<char>{}};
@@ -36,5 +37,10 @@ namespace CppUtils::FileSystem
 		if (!file.is_open())
 			throw std::runtime_error("Echec d'ouverture du fichier. Existe t'il?");
 		file << content;
+	}
+
+	inline void deleteFile(const std::filesystem::path& filePath)
+	{
+		std::remove(filePath.string().c_str());
 	}
 }
