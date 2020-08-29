@@ -21,7 +21,7 @@ namespace CppUtils::Terminal::TextModifier
 #endif
 
 #if defined(OS_WINDOWS)
-	inline WORD getTextColor(std::ostream& stream)
+	[[nodiscard]] inline WORD getTextColor(std::ostream& stream)
 	{
 		CONSOLE_SCREEN_BUFFER_INFO info;
 		if (!GetConsoleScreenBufferInfo(getTerminalHandle(stream), &info))

@@ -35,7 +35,7 @@ namespace CppUtils::Terminal::TextModifier::TextColor
 		[[maybe_unused]] static constexpr const uint8_t Default = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
 	}
 
-	inline uint8_t getTextColorCode(TextColorEnum textColor)
+	[[nodiscard]] inline uint8_t getTextColorCode(TextColorEnum textColor)
 	{
 		switch (textColor)
 		{
@@ -85,7 +85,7 @@ namespace CppUtils::Terminal::TextModifier::TextColor
 		[[maybe_unused]] static constexpr const auto Default = "\x1B[39m"sv;
 	}
 
-	inline std::string_view getTextColorCode(TextColorEnum textColor)
+	[[nodiscard]] inline std::string_view getTextColorCode(TextColorEnum textColor)
 	{
 		switch (textColor)
 		{

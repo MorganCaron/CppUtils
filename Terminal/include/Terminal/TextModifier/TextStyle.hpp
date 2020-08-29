@@ -24,7 +24,7 @@ namespace CppUtils::Terminal::TextModifier::TextStyle
 		[[maybe_unused]] static constexpr const auto Underline = "\x1B[4m"sv;
 	}
 
-	inline std::string_view getTextStyleCode(TextStyleEnum textStyle)
+	[[nodiscard]] inline std::string_view getTextStyleCode(TextStyleEnum textStyle)
 	{
 		switch (textStyle)
 		{

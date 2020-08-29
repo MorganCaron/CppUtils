@@ -11,7 +11,7 @@
 namespace CppUtils::Terminal
 {
 #if defined(OS_WINDOWS)
-	inline HANDLE getTerminalHandle(std::ostream& stream)
+	[[nodiscard]] inline HANDLE getTerminalHandle(std::ostream& stream)
 	{
 		HANDLE terminalHandle = INVALID_HANDLE_VALUE;
 		if (&stream == &std::cout)

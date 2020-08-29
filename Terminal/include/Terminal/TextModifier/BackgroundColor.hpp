@@ -35,7 +35,7 @@ namespace CppUtils::Terminal::TextModifier::BackgroundColor
 		[[maybe_unused]] static constexpr const uint8_t Default = 0;
 	}
 
-	inline uint8_t getBackgroundColorCode(BackgroundColorEnum backgroundColor)
+	[[nodiscard]] inline uint8_t getBackgroundColorCode(BackgroundColorEnum backgroundColor)
 	{
 		switch (backgroundColor)
 		{
@@ -85,7 +85,7 @@ namespace CppUtils::Terminal::TextModifier::BackgroundColor
 		[[maybe_unused]] static constexpr const auto Default = "\x1B[49m"sv;
 	}
 
-	inline std::string_view getBackgroundColorCode(BackgroundColorEnum backgroundColor)
+	[[nodiscard]] inline std::string_view getBackgroundColorCode(BackgroundColorEnum backgroundColor)
 	{
 		switch (backgroundColor)
 		{
