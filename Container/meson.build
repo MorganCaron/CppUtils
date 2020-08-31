@@ -5,7 +5,8 @@ sources = files([
 ])
 
 headers = files([
-	'include/Container/MeshNode.hpp'
+	'include/Container/MeshNode.hpp',
+	'include/Container/Vector.hpp'
 ])
 
 container_dep = declare_dependency(

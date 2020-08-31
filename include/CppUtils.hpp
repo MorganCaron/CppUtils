@@ -3,6 +3,7 @@
 #include <Chrono/Chronometer.hpp>
 
 #include <Container/MeshNode.hpp>
+#include <Container/Vector.hpp>
 
 #include <External/DllExport.hpp>
 #include <External/DynamicLibrary.hpp>
