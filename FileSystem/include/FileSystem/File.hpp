@@ -22,6 +22,29 @@ namespace CppUtils::FileSystem::File
 		std::remove(filePath.string().c_str());
 	}
 	
+	namespace Binary
+	{
+		template<typename Type>
+		void write(const std::filesystem::path& filePath, const Type& buffer)
+		{
+			auto file = std::ofstream{filePath, std::ios::binary};
+			if (!file.is_open())
+				throw std::runtime_error("Failed to open " + filePath.string() + " file");
+			file.write(reinterpret_cast<const char*>(&buffer), sizeof(buffer));
+		}
+
+		template<typename Type>
+		[[nodiscard]] Type read(const std::filesystem::path& filePath)
+		{
+			auto file = std::ifstream{filePath, std::ios::binary};
+			if (!file.is_open())
+				throw std::runtime_error("Failed to open " + filePath.string() + " file");
+			auto buffer = Type{};
+			file.read(reinterpret_cast<char*>(&buffer), sizeof(buffer));
+			return buffer;
+		}
+	}
+	
 	namespace String
 	{
 		void write(const std::filesystem::path& filePath, std::string_view content)
@@ -46,29 +69,6 @@ namespace CppUtils::FileSystem::File
 			if (!file.is_open())
 				throw std::runtime_error("Failed to open " + filePath.string() + " file");
 			return std::string{(std::istreambuf_iterator<char>{file}), std::istreambuf_iterator<char>{}};
-		}
-	}
-	
-	namespace Binary
-	{
-		template<typename Type>
-		void write(const std::filesystem::path& filePath, const Type& buffer)
-		{
-			auto file = std::ofstream{filePath, std::ios::binary};
-			if (!file.is_open())
-				throw std::runtime_error("Failed to open " + filePath.string() + " file");
-			file.write(reinterpret_cast<const char*>(&buffer), sizeof(buffer));
-		}
-
-		template<typename Type>
-		[[nodiscard]] Type read(const std::filesystem::path& filePath)
-		{
-			auto file = std::ifstream{filePath, std::ios::binary};
-			if (!file.is_open())
-				throw std::runtime_error("Failed to open " + filePath.string() + " file");
-			auto buffer = Type{};
-			file.read(reinterpret_cast<char*>(&buffer), sizeof(buffer));
-			return buffer;
 		}
 	}
 }

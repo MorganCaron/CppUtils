@@ -62,6 +62,7 @@ namespace CppUtils::Test
 
 		static int executeTests(const std::vector<UnitTest>& tests)
 		{
+			CppUtils::Logger::logImportant(std::to_string(tests.size()) + " unit tests found. Execution:");
 			for (const auto& test : tests)
 			{
 				if (!test.pass())
