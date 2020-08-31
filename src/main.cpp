@@ -57,26 +57,36 @@ int main()
 				CppUtils::Logger::logInformation(aFruit->value + " is a " + aFruit->get("Colors")[0]->value + " " + aFruit->get("Categories")[0]->value);
 		}),
 
-		CppUtils::Test::UnitTest("FileSystem/File/WriteRead", [] {
+		CppUtils::Test::UnitTest("FileSystem/File/String/WriteRead", [] {
 			const auto filePath = std::filesystem::path{"test.tmp"};
 			const auto originalString = "Hello world!";
-			CppUtils::FileSystem::File::writeString(filePath, originalString);
-			const auto fileContent = CppUtils::FileSystem::File::readString(filePath);
+			CppUtils::FileSystem::File::String::write(filePath, originalString);
+			const auto fileContent = CppUtils::FileSystem::File::String::read(filePath);
 			CppUtils::Logger::logInformation(fileContent);
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			ASSERT(fileContent == originalString);
 		}),
 
-		CppUtils::Test::UnitTest("FileSystem/File/Append", [] {
+		CppUtils::Test::UnitTest("FileSystem/File/String/Append", [] {
 			const auto filePath = std::filesystem::path{"test.tmp"};
 			const auto firstString = "Hello ";
 			const auto secondString = "world!";
-			CppUtils::FileSystem::File::appendString(filePath, firstString);
-			CppUtils::FileSystem::File::appendString(filePath, secondString);
-			const auto fileContent = CppUtils::FileSystem::File::readString(filePath);
+			CppUtils::FileSystem::File::String::append(filePath, firstString);
+			CppUtils::FileSystem::File::String::append(filePath, secondString);
+			const auto fileContent = CppUtils::FileSystem::File::String::read(filePath);
 			CppUtils::Logger::logInformation(fileContent);
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			ASSERT(fileContent == std::string{firstString} + secondString);
+		}),
+
+		CppUtils::Test::UnitTest("FileSystem/File/Binary/WriteRead", [] {
+			const auto filePath = std::filesystem::path{"test.tmp"};
+			const auto originalString = 12345;
+			CppUtils::FileSystem::File::Binary::write(filePath, originalString);
+			const auto fileContent = CppUtils::FileSystem::File::Binary::read<decltype(originalString)>(filePath);
+			CppUtils::Logger::logInformation(std::to_string(fileContent));
+			CppUtils::FileSystem::File::deleteFile(filePath);
+			ASSERT(fileContent == originalString);
 		}),
 
 		CppUtils::Test::UnitTest("Log/Logger", [] {
