@@ -10,7 +10,7 @@ using namespace std::string_literals;
 namespace CppUtils::FileSystem::File
 {
 	template <typename FuncType>
-	void forFilesWithExtension(const std::string& path, const std::string& ext, FuncType&& function)
+	inline void forFilesWithExtension(const std::string& path, const std::string& ext, FuncType&& function)
 	{
 		for (const auto& file : std::filesystem::directory_iterator(path))
 			if (file.path().extension() == ext)
@@ -25,7 +25,7 @@ namespace CppUtils::FileSystem::File
 	namespace Binary
 	{
 		template<typename T>
-		void write(const std::filesystem::path& filePath, const T& buffer)
+		inline void write(const std::filesystem::path& filePath, const T& buffer)
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
 			if (!file.is_open())
@@ -34,7 +34,7 @@ namespace CppUtils::FileSystem::File
 		}
 
 		template<typename T>
-		[[nodiscard]] T read(const std::filesystem::path& filePath)
+		[[nodiscard]] inline T read(const std::filesystem::path& filePath)
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
 			if (!file.is_open())
@@ -45,7 +45,7 @@ namespace CppUtils::FileSystem::File
 		}
 
 		template<typename T>
-		void writeVector(const std::filesystem::path& filePath, const std::vector<T>& vector)
+		inline void writeVector(const std::filesystem::path& filePath, const std::vector<T>& vector)
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
 			if (!file.is_open())
@@ -54,7 +54,7 @@ namespace CppUtils::FileSystem::File
 		}
 
 		template<typename T>
-		[[nodiscard]] std::vector<T> readVector(const std::filesystem::path& filePath)
+		[[nodiscard]] inline std::vector<T> readVector(const std::filesystem::path& filePath)
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
 			if (!file.is_open())
@@ -65,7 +65,7 @@ namespace CppUtils::FileSystem::File
 	
 	namespace String
 	{
-		void write(const std::filesystem::path& filePath, std::string_view content)
+		inline void write(const std::filesystem::path& filePath, std::string_view content)
 		{
 			auto file = std::ofstream{filePath};
 			if (!file.is_open())
@@ -73,7 +73,7 @@ namespace CppUtils::FileSystem::File
 			file << content;
 		}
 
-		void append(const std::filesystem::path& filePath, std::string_view content)
+		inline void append(const std::filesystem::path& filePath, std::string_view content)
 		{
 			auto file = std::ofstream{filePath, std::ios::app};
 			if (!file.is_open())
@@ -81,7 +81,7 @@ namespace CppUtils::FileSystem::File
 			file << content;
 		}
 		
-		[[nodiscard]] std::string read(const std::filesystem::path& filePath)
+		[[nodiscard]] inline std::string read(const std::filesystem::path& filePath)
 		{
 			auto file = std::ifstream{filePath};
 			if (!file.is_open())
