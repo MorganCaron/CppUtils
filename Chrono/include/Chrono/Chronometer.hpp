@@ -23,12 +23,12 @@ namespace CppUtils::Chrono
 			m_end = std::chrono::high_resolution_clock::now();
 		}
 
-		[[nodiscard]] inline auto getDuration()
+		[[nodiscard]] inline auto getDuration() const
 		{
 			return m_end - m_start;
 		}
 
-		[[nodiscard]] inline std::string getText()
+		[[nodiscard]] inline std::string getText() const
 		{
 			auto duration = getDuration();
 			const auto hour = std::chrono::duration_cast<std::chrono::hours>(duration);
