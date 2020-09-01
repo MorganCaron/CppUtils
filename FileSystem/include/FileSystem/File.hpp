@@ -24,8 +24,8 @@ namespace CppUtils::FileSystem::File
 	
 	namespace Binary
 	{
-		template<typename Type>
-		void write(const std::filesystem::path& filePath, const Type& buffer)
+		template<typename T>
+		void write(const std::filesystem::path& filePath, const T& buffer)
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
 			if (!file.is_open())
@@ -33,15 +33,33 @@ namespace CppUtils::FileSystem::File
 			file.write(reinterpret_cast<const char*>(&buffer), sizeof(buffer));
 		}
 
-		template<typename Type>
-		[[nodiscard]] Type read(const std::filesystem::path& filePath)
+		template<typename T>
+		[[nodiscard]] T read(const std::filesystem::path& filePath)
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
 			if (!file.is_open())
 				throw std::runtime_error("Failed to open " + filePath.string() + " file");
-			auto buffer = Type{};
+			auto buffer = T{};
 			file.read(reinterpret_cast<char*>(&buffer), sizeof(buffer));
 			return buffer;
+		}
+
+		template<typename T>
+		void writeVector(const std::filesystem::path& filePath, const std::vector<T>& vector)
+		{
+			auto file = std::ofstream{filePath, std::ios::binary};
+			if (!file.is_open())
+				throw std::runtime_error("Failed to open " + filePath.string() + " file");
+			std::copy(vector.begin(), vector.end(), std::ostreambuf_iterator<char>(file));
+		}
+
+		template<typename T>
+		[[nodiscard]] std::vector<T> readVector(const std::filesystem::path& filePath)
+		{
+			auto file = std::ifstream{filePath, std::ios::binary};
+			if (!file.is_open())
+				throw std::runtime_error("Failed to open " + filePath.string() + " file");
+			return std::vector<T>{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
 		}
 	}
 	
@@ -68,7 +86,7 @@ namespace CppUtils::FileSystem::File
 			auto file = std::ifstream{filePath};
 			if (!file.is_open())
 				throw std::runtime_error("Failed to open " + filePath.string() + " file");
-			return std::string{(std::istreambuf_iterator<char>{file}), std::istreambuf_iterator<char>{}};
+			return std::string{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
 		}
 	}
 }
