@@ -11,6 +11,7 @@ namespace UnitTests::Log::Logger
 			CppUtils::Logger::logImportant("Important message");
 			CppUtils::Logger::logSuccess("Success message");
 			CppUtils::Logger::logDebug("Debug message");
+			CppUtils::Logger::logDetail("Detail message");
 			CppUtils::Logger::logWarning("Warning message");
 			CppUtils::Logger::logError("Error message");
 			ASSERT(true);

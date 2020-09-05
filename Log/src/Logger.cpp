@@ -7,6 +7,7 @@ namespace CppUtils
 		Logger::MessageType::Important,
 		Logger::MessageType::Success,
 		Logger::MessageType::Debug,
+		Logger::MessageType::Detail,
 		Logger::MessageType::Warning,
 		Logger::MessageType::Error
 	};
@@ -42,6 +43,9 @@ namespace CppUtils
 				break;
 			case MessageType::Debug:
 				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Magenta);
+				break;
+			case MessageType::Detail:
+				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Blue);
 				break;
 			case MessageType::Warning:
 				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Yellow);

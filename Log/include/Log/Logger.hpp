@@ -26,6 +26,7 @@ namespace CppUtils
 			Important,
 			Success,
 			Debug,
+			Detail,
 			Warning,
 			Error
 		};
@@ -55,6 +56,11 @@ namespace CppUtils
 		static inline void logDebug(std::string_view message, bool newLine = true)
 		{
 			log(OutputType::Cout, MessageType::Debug, message, newLine);
+		}
+
+		static inline void logDetail(std::string_view message, bool newLine = true)
+		{
+			log(OutputType::Cout, MessageType::Detail, message, newLine);
 		}
 
 		static inline void logWarning(std::string_view message, bool newLine = true)
@@ -100,6 +106,7 @@ namespace CppUtils
 				Logger::MessageType::Important,
 				Logger::MessageType::Success,
 				Logger::MessageType::Debug,
+				Logger::MessageType::Detail,
 				Logger::MessageType::Warning,
 				Logger::MessageType::Error
 			};
