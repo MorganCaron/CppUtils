@@ -24,6 +24,14 @@ namespace CppUtils
 			return;
 		
 		std::ostream& stream = *(m_outputs[loggerOutput]);
+
+		if (message.empty())
+		{
+			if (newLine)
+				stream << std::endl;
+			return;
+		}
+
 		if (logType == MessageType::Information)
 		{
 			stream << ((newLine) ? (message.data() + "\n"s) : message) << std::flush;
