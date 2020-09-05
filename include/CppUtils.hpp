@@ -12,6 +12,8 @@
 
 #include <Hash/Hash.hpp>
 
+#include <String/String.hpp>
+
 #include <Terminal/TextModifier.hpp>
 
 #include <Log/Logger.hpp>

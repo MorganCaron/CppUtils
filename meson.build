@@ -18,6 +18,7 @@ subdir('FileSystem')
 subdir('Hash')
 subdir('Terminal')
 subdir('Log')
+subdir('String')
 subdir('Test')
 subdir('Thread')
 subdir('Type')
@@ -31,6 +32,7 @@ public_dependencies = [
 	hash_dep,
 	terminal_dep,
 	log_dep,
+	string_dep,
 	test_dep,
 	thread_dep,
 	type_dep
