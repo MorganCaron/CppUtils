@@ -46,16 +46,7 @@ sources = files([
 ])
 
 headers = files([
-	'include/CppUtils.hpp',
-	'include/UnitTests/Container/MeshNode.hpp',
-	'include/UnitTests/Container/Vector.hpp',
-	'include/UnitTests/FileSystem/File/Binary.hpp',
-	'include/UnitTests/FileSystem/File/String.hpp',
-	'include/UnitTests/Log/Logger.hpp',
-	'include/UnitTests/String/Parameters.hpp',
-	'include/UnitTests/String/String.hpp',
-	'include/UnitTests/Test/UnitTest.hpp',
-	'include/UnitTests/Type/Index.hpp'
+	'include/CppUtils.hpp'
 ])
 
 cppUtils_lib = library(
@@ -71,10 +62,4 @@ cppUtils_dep = declare_dependency(
 	dependencies: public_dependencies
 )
 
-unitTests_exe = executable(
-	'UnitTests',
-	sources: files(['src/main.cpp']) + headers,
-	dependencies: [cppUtils_dep]
-)
-
-test('Unit tests', unitTests_exe)
+subdir('UnitTests')
