@@ -12,6 +12,7 @@
 
 #include <Hash/Hash.hpp>
 
+#include <String/Parameters.hpp>
 #include <String/String.hpp>
 
 #include <Terminal/TextModifier.hpp>
