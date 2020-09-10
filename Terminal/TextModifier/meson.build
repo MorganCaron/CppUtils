@@ -1,7 +1,5 @@
-subdir('TextModifier')
-
 public_dependencies = [
-	terminal_textModifier_dep
+	platform_dep
 ]
 private_dependencies = []
 
@@ -12,20 +10,20 @@ sources = files([
 ])
 
 headers = files([
-	'include/Terminal/Terminal.hpp',
-	'include/Terminal/Parameters.hpp',
-	'include/Terminal/TextModifier.hpp'
+	'include/Terminal/TextModifier/TextStyle.hpp',
+	'include/Terminal/TextModifier/TextColor.hpp',
+	'include/Terminal/TextModifier/BackgroundColor.hpp'
 ])
 
-terminal_lib = library(
-	'CppUtils-Terminal',
+terminal_textModifier_lib = library(
+	'CppUtils-Terminal-TextModifier',
 	sources + headers,
 	include_directories: includeDir,
 	dependencies: public_dependencies + private_dependencies
 )
 
-terminal_dep = declare_dependency(
-	link_with: terminal_lib,
+terminal_textModifier_dep = declare_dependency(
+	link_with: terminal_textModifier_lib,
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )
