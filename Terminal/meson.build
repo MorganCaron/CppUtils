@@ -17,15 +17,7 @@ headers = files([
 	'include/Terminal/TextModifier.hpp'
 ])
 
-terminal_lib = library(
-	'CppUtils-Terminal',
-	sources + headers,
-	include_directories: includeDir,
-	dependencies: public_dependencies + private_dependencies
-)
-
 terminal_dep = declare_dependency(
-	link_with: terminal_lib,
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

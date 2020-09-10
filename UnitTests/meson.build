@@ -1,3 +1,8 @@
+public_dependencies = []
+private_dependencies = [
+	cppUtils_dep
+]
+
 includeDir = include_directories(['include/', '.'])
 
 sources = files([
@@ -20,7 +25,7 @@ unitTests_exe = executable(
 	'UnitTests',
 	sources: sources + headers,
 	include_directories: includeDir,
-	dependencies: [cppUtils_dep]
+	dependencies: private_dependencies
 )
 
 test('Unit tests', unitTests_exe)
