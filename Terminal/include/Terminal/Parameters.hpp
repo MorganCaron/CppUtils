@@ -72,7 +72,7 @@ namespace CppUtils::Terminal::Parameters
 		std::function<bool(std::string_view)> function;
 	};
 	
-	[[nodiscard]] bool executeCommands(const std::size_t argc, const char *argv[], const std::vector<Command>& commands)
+	[[nodiscard]] inline bool executeCommands(const std::size_t argc, const char *argv[], const std::vector<Command>& commands)
 	{
 		const auto parameters = parseParameters(argc, argv);
 		for (auto const& command : commands)
