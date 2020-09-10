@@ -4,14 +4,14 @@
 
 #include <String/String.hpp>
 
-namespace CppUtils::String::Parameters
+namespace CppUtils::Terminal::Parameters
 {
 	static constexpr const auto Delimiters = std::pair<char, char>{'[', ']'};
 
 	[[nodiscard]] inline std::unordered_map<std::string, std::string> parseParameters(const std::size_t argc, const char *argv[])
 	{
-		const auto parameters = cstringArrayToVectorOfStrings(argv + 1, argc - 1);
-		const auto command = concatenateStringsWithDelimiter(parameters, " ");
+		const auto parameters = String::cstringArrayToVectorOfStrings(argv + 1, argc - 1);
+		const auto command = String::concatenateStringsWithDelimiter(parameters, " ");
 
 		const auto skipSpaces = [](std::string_view src, std::size_t& pos) -> void {
 			while (pos < src.size() && std::isspace(src.at(pos)))
@@ -65,5 +65,21 @@ namespace CppUtils::String::Parameters
 
 		return map;
 	}
+
+	template<typename Settings>
+	struct Command
+	{
+		std::string_view name;
+		std::function<bool(Settings&, std::string_view)> function;
+	};
 	
+	template<typename Settings>
+	[[nodiscard]] bool executeCommands(const std::size_t argc, const char *argv[], Settings& settings, const std::vector<Command<Settings>>& commands)
+	{
+		const auto parameters = parseParameters(argc, argv);
+		for (auto const& command : commands)
+			if (parameters.find(command.name.data()) != parameters.end() && command.function(settings, parameters.at(command.name.data())))
+				return true;
+		return false;
+	}
 }

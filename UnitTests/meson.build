@@ -10,8 +10,8 @@ headers = files([
 	'include/UnitTests/FileSystem/File/Binary.hpp',
 	'include/UnitTests/FileSystem/File/String.hpp',
 	'include/UnitTests/Log/Logger.hpp',
-	'include/UnitTests/String/Parameters.hpp',
 	'include/UnitTests/String/String.hpp',
+	'include/UnitTests/Terminal/Parameters.hpp',
 	'include/UnitTests/Test/UnitTest.hpp',
 	'include/UnitTests/Type/Index.hpp'
 ])

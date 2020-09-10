@@ -14,6 +14,7 @@ headers = files([
 	'include/Terminal/TextModifier/TextStyle.hpp',
 	'include/Terminal/TextModifier/TextColor.hpp',
 	'include/Terminal/TextModifier/BackgroundColor.hpp',
+	'include/Terminal/Parameters.hpp',
 	'include/Terminal/TextModifier.hpp'
 ])
 
