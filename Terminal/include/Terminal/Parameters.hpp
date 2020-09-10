@@ -66,19 +66,17 @@ namespace CppUtils::Terminal::Parameters
 		return map;
 	}
 
-	template<typename Settings>
 	struct Command
 	{
 		std::string_view name;
-		std::function<bool(Settings&, std::string_view)> function;
+		std::function<bool(std::string_view)> function;
 	};
 	
-	template<typename Settings>
-	[[nodiscard]] bool executeCommands(const std::size_t argc, const char *argv[], Settings& settings, const std::vector<Command<Settings>>& commands)
+	[[nodiscard]] bool executeCommands(const std::size_t argc, const char *argv[], const std::vector<Command>& commands)
 	{
 		const auto parameters = parseParameters(argc, argv);
 		for (auto const& command : commands)
-			if (parameters.find(command.name.data()) != parameters.end() && command.function(settings, parameters.at(command.name.data())))
+			if (parameters.find(command.name.data()) != parameters.end() && command.function(parameters.at(command.name.data())))
 				return true;
 		return false;
 	}

@@ -32,24 +32,24 @@ namespace UnitTests::Terminal::Parameters
 			const auto argc = 4;
 			const char* argv[] = {"executable", "info", "verbose", "parameter[value]"};
 			auto settings = ProgramSettings{};
-			const auto abort = CppUtils::Terminal::Parameters::executeCommands(argc, argv, settings, {
+			const auto abort = CppUtils::Terminal::Parameters::executeCommands(argc, argv, {
 				{
 					"info",
-					[]([[maybe_unused]] auto& settings, [[maybe_unused]] auto value) -> bool {
+					[]([[maybe_unused]] auto value) -> bool {
 						CppUtils::Logger::logInformation("info");
 						return false;
 					}
 				},
 				{
 					"verbose",
-					[]([[maybe_unused]] auto& settings, [[maybe_unused]] auto value) -> bool {
+					[&settings]([[maybe_unused]] auto value) -> bool {
 						settings.verbose = true;
 						return false;
 					}
 				},
 				{
 					"parameter",
-					[]([[maybe_unused]] auto& settings, [[maybe_unused]] auto value) -> bool {
+					[&settings]([[maybe_unused]] auto value) -> bool {
 						settings.parameter = value;
 						return false;
 					}
