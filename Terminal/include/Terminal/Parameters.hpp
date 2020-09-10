@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cctype>
+#include <functional>
 
 #include <String/String.hpp>
 
