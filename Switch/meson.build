@@ -1,28 +1,25 @@
-public_dependencies = [
-	terminal_dep,
-	switch_dep
-]
+public_dependencies = []
 private_dependencies = []
 
 includeDir = include_directories(['include/', '.'])
 
 sources = files([
-	'src/Logger.cpp'
+	'src/Switch.cpp'
 ])
 
 headers = files([
-	'include/Log/Logger.hpp'
+	'include/Switch/Switch.hpp'
 ])
 
-log_lib = library(
-	'CppUtils-Log',
+switch_lib = library(
+	'CppUtils-Switch',
 	sources + headers,
 	include_directories: includeDir,
 	dependencies: public_dependencies + private_dependencies,
 )
 
-log_dep = declare_dependency(
-	link_with: log_lib,
+switch_dep = declare_dependency(
+	link_with: switch_lib,
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

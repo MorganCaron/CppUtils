@@ -4,6 +4,7 @@
 #include <UnitTests/FileSystem/File/String.hpp>
 #include <UnitTests/Log/Logger.hpp>
 #include <UnitTests/String/String.hpp>
+#include <UnitTests/Switch/Switch.hpp>
 #include <UnitTests/Terminal/Parameters.hpp>
 #include <UnitTests/Test/UnitTest.hpp>
 #include <UnitTests/Type/Index.hpp>
@@ -17,6 +18,7 @@ int main()
 		std::cref(UnitTests::FileSystem::File::String::tests),
 		std::cref(UnitTests::Log::Logger::tests),
 		std::cref(UnitTests::String::tests),
+		std::cref(UnitTests::Switch::tests),
 		std::cref(UnitTests::Terminal::Parameters::tests),
 		std::cref(UnitTests::Test::UnitTest::tests),
 		std::cref(UnitTests::Type::Index::tests)

@@ -14,6 +14,8 @@
 
 #include <String/String.hpp>
 
+#include <Switch/Switch.hpp>
+
 #include <Terminal/Parameters.hpp>
 #include <Terminal/TextModifier.hpp>
 

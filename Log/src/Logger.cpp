@@ -1,29 +1,38 @@
-#include "Log/Logger.hpp"
+#include <Log/Logger.hpp>
 
 namespace CppUtils
 {
-	std::vector<Logger::MessageType> Logger::m_enabledTypes{
-		Logger::MessageType::Information,
-		Logger::MessageType::Important,
-		Logger::MessageType::Success,
-		Logger::MessageType::Debug,
-		Logger::MessageType::Detail,
-		Logger::MessageType::Warning,
-		Logger::MessageType::Error
-	};
-
+	const Logger::MessageType Logger::InformationType = Switch::newId(true);
+	const Logger::MessageType Logger::ImportantType = Switch::newId(true);
+	const Logger::MessageType Logger::SuccessType = Switch::newId(true);
+	const Logger::MessageType Logger::DebugType = Switch::newId(true);
+	const Logger::MessageType Logger::DetailType = Switch::newId(true);
+	const Logger::MessageType Logger::WarningType = Switch::newId(true);
+	const Logger::MessageType Logger::ErrorType = Switch::newId(true);
+	
 	std::unordered_map<Logger::OutputType, std::ostream*> Logger::m_outputs{
 		{ Logger::OutputType::Cout, &std::cout },
 		{ Logger::OutputType::Cerr, &std::cerr },
 		{ Logger::OutputType::Clog, &std::clog }
 	};
 
+	std::unordered_map<Logger::MessageType, Terminal::TextModifier::TextColor::TextColorEnum> Logger::m_colors{
+		{ Logger::ImportantType, Terminal::TextModifier::TextColor::TextColorEnum::Cyan },
+		{ Logger::SuccessType, Terminal::TextModifier::TextColor::TextColorEnum::Green },
+		{ Logger::DebugType, Terminal::TextModifier::TextColor::TextColorEnum::Magenta },
+		{ Logger::DetailType, Terminal::TextModifier::TextColor::TextColorEnum::Blue },
+		{ Logger::WarningType, Terminal::TextModifier::TextColor::TextColorEnum::Yellow },
+		{ Logger::ErrorType, Terminal::TextModifier::TextColor::TextColorEnum::Red }
+	};
+
 	void Logger::log(OutputType loggerOutput, MessageType logType, std::string_view message, bool newLine)
 	{
-		if (std::find(m_enabledTypes.begin(), m_enabledTypes.end(), logType) == m_enabledTypes.end())
+		if (!Switch::isEnabled(logType))
 			return;
 		
-		std::ostream& stream = *(m_outputs[loggerOutput]);
+		if (m_outputs.find(loggerOutput) == m_outputs.end())
+			throw std::out_of_range{"An unknown output stream has been passed to the logger"};
+		auto& stream = *(m_outputs[loggerOutput]);
 
 		if (message.empty())
 		{
@@ -32,7 +41,7 @@ namespace CppUtils
 			return;
 		}
 
-		if (logType == MessageType::Information)
+		if (logType == InformationType)
 		{
 			stream << ((newLine) ? (message.data() + "\n"s) : message) << std::flush;
 			return;
@@ -41,30 +50,10 @@ namespace CppUtils
 #if defined(OS_WINDOWS)
 		const auto attributes = Terminal::TextModifier::getTextColor(stream);
 #endif
-		switch (logType)
-		{
-			case MessageType::Important:
-				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Cyan);
-				break;
-			case MessageType::Success:
-				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Green);
-				break;
-			case MessageType::Debug:
-				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Magenta);
-				break;
-			case MessageType::Detail:
-				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Blue);
-				break;
-			case MessageType::Warning:
-				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Yellow);
-				break;
-			case MessageType::Error:
-				CppUtils::Terminal::TextModifier::colorize(stream, Terminal::TextModifier::TextColor::TextColorEnum::Red);
-				break;
-			default:
-				CppUtils::Terminal::TextModifier::reset(stream);
-				break;
-		}
+		if (m_colors.find(logType) != m_colors.end())
+			CppUtils::Terminal::TextModifier::colorize(stream, m_colors.at(logType));
+		else
+			CppUtils::Terminal::TextModifier::reset(stream);
 		stream << ((newLine) ? (message.data() + "\n"s) : message) << std::flush;
 #if defined(OS_WINDOWS)
 		SetConsoleTextAttribute(Terminal::getTerminalHandle(stream), attributes);

@@ -39,20 +39,21 @@ namespace CppUtils::Test
 		bool pass() const
 		{
 			CppUtils::Logger::logDebug(std::string(50, '_') + '\n' + m_name + ':');
+			auto switchIds = CppUtils::Switch::getEnabledIds();
 			try
 			{
 				m_function();
-				CppUtils::Logger::resetEnabledTypes();
+				CppUtils::Switch::setEnabledIds(std::move(switchIds));
 			}
 			catch (const TestException& exception)
 			{
-				CppUtils::Logger::resetEnabledTypes();
+				CppUtils::Switch::setEnabledIds(std::move(switchIds));
 				CppUtils::Logger::logError("The following test didn't pass:\n"s + m_name + "\n" + exception.what());
 				return false;
 			}
 			catch (const std::exception& exception)
 			{
-				CppUtils::Logger::resetEnabledTypes();
+				CppUtils::Switch::setEnabledIds(std::move(switchIds));
 				CppUtils::Logger::logError("An exception occurred during tests:\n"s + m_name + "\n" + exception.what());
 				return false;
 			}
