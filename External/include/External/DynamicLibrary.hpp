@@ -11,7 +11,7 @@
 # include <dlfcn.h>
 #endif
 
-#include "DllExport.hpp"
+#include <External/DllExport.hpp>
 
 namespace CppUtils::External
 {

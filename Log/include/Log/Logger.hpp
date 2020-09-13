@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <unordered_map>
 
-#include "Terminal/TextModifier.hpp"
+#include <Terminal/TextModifier/TextModifier.hpp>
 #include <Switch/Switch.hpp>
 
 namespace CppUtils

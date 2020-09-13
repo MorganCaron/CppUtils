@@ -1,4 +1,4 @@
-#include "External/DynamicLibrary.hpp"
+#include <External/DynamicLibrary.hpp>
 
 namespace CppUtils::External
 {

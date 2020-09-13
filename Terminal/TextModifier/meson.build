@@ -12,7 +12,8 @@ sources = files([
 headers = files([
 	'include/Terminal/TextModifier/TextStyle.hpp',
 	'include/Terminal/TextModifier/TextColor.hpp',
-	'include/Terminal/TextModifier/BackgroundColor.hpp'
+	'include/Terminal/TextModifier/BackgroundColor.hpp',
+	'include/Terminal/TextModifier/TextModifier.hpp'
 ])
 
 terminal_textModifier_dep = declare_dependency(

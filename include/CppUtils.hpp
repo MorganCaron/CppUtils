@@ -17,7 +17,7 @@
 #include <Switch/Switch.hpp>
 
 #include <Terminal/Parameters.hpp>
-#include <Terminal/TextModifier.hpp>
+#include <Terminal/TextModifier/TextModifier.hpp>
 
 #include <Log/Logger.hpp>
 

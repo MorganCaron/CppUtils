@@ -13,8 +13,7 @@ sources = files([
 
 headers = files([
 	'include/Terminal/Terminal.hpp',
-	'include/Terminal/Parameters.hpp',
-	'include/Terminal/TextModifier.hpp'
+	'include/Terminal/Parameters.hpp'
 ])
 
 terminal_dep = declare_dependency(

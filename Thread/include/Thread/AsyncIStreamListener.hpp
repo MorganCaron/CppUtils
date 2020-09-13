@@ -5,7 +5,7 @@
 #include <iostream>
 #include <functional>
 
-#include "LoopThread.hpp"
+#include <Thread/LoopThread.hpp>
 
 namespace CppUtils::Thread
 {
