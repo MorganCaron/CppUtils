@@ -11,7 +11,7 @@ namespace UnitTests::FileSystem::File::Binary
 			const auto originalString = 12345;
 			CppUtils::FileSystem::File::Binary::write(filePath, originalString);
 			const auto fileContent = CppUtils::FileSystem::File::Binary::read<decltype(originalString)>(filePath);
-			CppUtils::Logger::logInformation(std::to_string(fileContent));
+			CppUtils::Log::Logger::logInformation(std::to_string(fileContent));
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			ASSERT(fileContent == originalString);
 		}),
@@ -22,8 +22,8 @@ namespace UnitTests::FileSystem::File::Binary
 			CppUtils::FileSystem::File::Binary::writeVector(filePath, originalVector);
 			const auto vector = CppUtils::FileSystem::File::Binary::readVector<int>(filePath);
 			for (const auto& nb : vector)
-				CppUtils::Logger::logInformation(std::to_string(nb), false);
-			CppUtils::Logger::logInformation("");
+				CppUtils::Log::Logger::logInformation(std::to_string(nb), false);
+			CppUtils::Log::Logger::logInformation("");
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			ASSERT(vector == originalVector);
 		})

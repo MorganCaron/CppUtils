@@ -15,8 +15,8 @@ namespace UnitTests::Container::Vector
 			const auto vector = CppUtils::Container::Vector::merge({std::cref(a), std::cref(b), std::cref(c), std::cref(d)});
 			ASSERT(vector.size() == 8);
 			for (const auto& string : vector)
-				CppUtils::Logger::logInformation(string, false);
-			CppUtils::Logger::logInformation("");
+				CppUtils::Log::Logger::logInformation(string, false);
+			CppUtils::Log::Logger::logInformation("");
 		})
 
 	};

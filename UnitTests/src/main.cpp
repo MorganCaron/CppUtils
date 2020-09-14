@@ -1,7 +1,9 @@
+#include <UnitTests/Chrono/Chronometer.hpp>
 #include <UnitTests/Container/MeshNode.hpp>
 #include <UnitTests/Container/Vector.hpp>
 #include <UnitTests/FileSystem/File/Binary.hpp>
 #include <UnitTests/FileSystem/File/String.hpp>
+#include <UnitTests/Log/ChronoLogger.hpp>
 #include <UnitTests/Log/Logger.hpp>
 #include <UnitTests/String/String.hpp>
 #include <UnitTests/Switch/Switch.hpp>
@@ -12,10 +14,12 @@
 int main()
 {
 	const auto tests = CppUtils::Container::Vector::merge({
+		std::cref(UnitTests::Chrono::Chronometer::tests),
 		std::cref(UnitTests::Container::MeshNode::tests),
 		std::cref(UnitTests::Container::Vector::tests),
 		std::cref(UnitTests::FileSystem::File::Binary::tests),
 		std::cref(UnitTests::FileSystem::File::String::tests),
+		std::cref(UnitTests::Log::ChronoLogger::tests),
 		std::cref(UnitTests::Log::Logger::tests),
 		std::cref(UnitTests::String::tests),
 		std::cref(UnitTests::Switch::tests),

@@ -10,7 +10,7 @@ namespace UnitTests::String
 			const auto strings = std::vector{"A"s, "B"s, "C"s};
 			const auto string = CppUtils::String::concatenateStringsWithDelimiter(strings, ", ");
 
-			CppUtils::Logger::logInformation(string);
+			CppUtils::Log::Logger::logInformation(string);
 			ASSERT(string == "A, B, C");
 		}),
 
@@ -24,9 +24,9 @@ namespace UnitTests::String
 			{
 				const auto& string = strings.at(i);
 				ASSERT(std::string{cstringArray[i]} == string);
-				CppUtils::Logger::logInformation(string, false);
+				CppUtils::Log::Logger::logInformation(string, false);
 			}
-			CppUtils::Logger::logInformation("");
+			CppUtils::Log::Logger::logInformation("");
 		})
 
 	};

@@ -38,7 +38,7 @@ namespace CppUtils::Test
 
 		bool pass() const
 		{
-			CppUtils::Logger::logDebug(std::string(50, '_') + '\n' + m_name + ':');
+			CppUtils::Log::Logger::logImportant(std::string(50, '_') + '\n' + m_name + ':');
 			auto switchIds = CppUtils::Switch::getEnabledIds();
 			try
 			{
@@ -48,32 +48,32 @@ namespace CppUtils::Test
 			catch (const TestException& exception)
 			{
 				CppUtils::Switch::setEnabledIds(std::move(switchIds));
-				CppUtils::Logger::logError("The following test didn't pass:\n"s + m_name + "\n" + exception.what());
+				CppUtils::Log::Logger::logError("The following test didn't pass:\n"s + m_name + "\n" + exception.what());
 				return false;
 			}
 			catch (const std::exception& exception)
 			{
 				CppUtils::Switch::setEnabledIds(std::move(switchIds));
-				CppUtils::Logger::logError("An exception occurred during tests:\n"s + m_name + "\n" + exception.what());
+				CppUtils::Log::Logger::logError("An exception occurred during tests:\n"s + m_name + "\n" + exception.what());
 				return false;
 			}
-			CppUtils::Logger::logSuccess(m_name + " passed");
+			CppUtils::Log::Logger::logSuccess(m_name + " passed");
 			return true;
 		}
 
 		static int executeTests(const std::vector<UnitTest>& tests)
 		{
-			CppUtils::Logger::logImportant(std::to_string(tests.size()) + " unit tests found. Execution:");
+			CppUtils::Log::Logger::logImportant(std::to_string(tests.size()) + " unit tests found. Execution:");
 			for (const auto& test : tests)
 			{
 				if (!test.pass())
 				{
-					CppUtils::Logger::logError("The tests failed");
+					CppUtils::Log::Logger::logError("The tests failed");
 					return EXIT_FAILURE;
 				}
 			}
 			
-			CppUtils::Logger::logSuccess("All tests passed successfully");
+			CppUtils::Log::Logger::logSuccess("All tests passed successfully");
 			return EXIT_SUCCESS;
 		}
 

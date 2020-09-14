@@ -9,7 +9,7 @@ namespace UnitTests::Container::MeshNode
 		CppUtils::Test::UnitTest("Container/MeshNode/One", [] {
 			using StringMeshNode = CppUtils::Container::MeshNode<std::string, std::string>;
 			auto banana = std::make_shared<StringMeshNode>("banana");
-			CppUtils::Logger::logInformation(banana->value);
+			CppUtils::Log::Logger::logInformation(banana->value);
 			ASSERT(banana->value == "banana");
 		}),
 
@@ -24,7 +24,7 @@ namespace UnitTests::Container::MeshNode
 			ASSERT(fruitName->value == "banana");
 
 			for (const auto& aFruit : fruit->get("Elements"))
-				CppUtils::Logger::logInformation(aFruit->value + " is a " + aFruit->get("Categories")[0]->value);
+				CppUtils::Log::Logger::logInformation(aFruit->value + " is a " + aFruit->get("Categories")[0]->value);
 		}),
 
 		CppUtils::Test::UnitTest("Container/MeshNode/Many", [] {
@@ -53,7 +53,7 @@ namespace UnitTests::Container::MeshNode
 			ASSERT(fruitColor->value == "yellow");
 			
 			for (const auto& aFruit : fruit->get("Elements"))
-				CppUtils::Logger::logInformation(aFruit->value + " is a " + aFruit->get("Colors")[0]->value + " " + aFruit->get("Categories")[0]->value);
+				CppUtils::Log::Logger::logInformation(aFruit->value + " is a " + aFruit->get("Colors")[0]->value + " " + aFruit->get("Categories")[0]->value);
 		})
 
 	};

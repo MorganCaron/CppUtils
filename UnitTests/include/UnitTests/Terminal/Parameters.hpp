@@ -18,7 +18,7 @@ namespace UnitTests::Terminal::Parameters
 			const auto parameters = CppUtils::Terminal::Parameters::parseParameters(argc, argv);
 
 			for (const auto& [command, value] : parameters)
-				CppUtils::Logger::logInformation(command + "["s + value + "]");
+				CppUtils::Log::Logger::logInformation(command + "["s + value + "]");
 			
 			ASSERT(parameters.size() == 5);
 			ASSERT(parameters.at("A") == "aaa");
@@ -36,7 +36,7 @@ namespace UnitTests::Terminal::Parameters
 				{
 					"info",
 					[]([[maybe_unused]] auto value) -> bool {
-						CppUtils::Logger::logInformation("info");
+						CppUtils::Log::Logger::logInformation("info");
 						return false;
 					}
 				},
@@ -58,8 +58,8 @@ namespace UnitTests::Terminal::Parameters
 
 			ASSERT(abort == false);
 
-			CppUtils::Logger::logInformation("settings.verbose = "s + std::to_string(settings.verbose));
-			CppUtils::Logger::logInformation("settings.parameter = "s + settings.parameter);
+			CppUtils::Log::Logger::logInformation("settings.verbose = "s + std::to_string(settings.verbose));
+			CppUtils::Log::Logger::logInformation("settings.parameter = "s + settings.parameter);
 			
 			ASSERT(settings.verbose == true);
 			ASSERT(settings.parameter == "value");

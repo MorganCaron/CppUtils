@@ -7,13 +7,13 @@ namespace UnitTests::Log::Logger
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
 		CppUtils::Test::UnitTest("Log/Logger", [] {
-			CppUtils::Logger::logInformation("Information message");
-			CppUtils::Logger::logImportant("Important message");
-			CppUtils::Logger::logSuccess("Success message");
-			CppUtils::Logger::logDebug("Debug message");
-			CppUtils::Logger::logDetail("Detail message");
-			CppUtils::Logger::logWarning("Warning message");
-			CppUtils::Logger::logError("Error message");
+			CppUtils::Log::Logger::logInformation("Information message");
+			CppUtils::Log::Logger::logImportant("Important message");
+			CppUtils::Log::Logger::logSuccess("Success message");
+			CppUtils::Log::Logger::logDebug("Debug message");
+			CppUtils::Log::Logger::logDetail("Detail message");
+			CppUtils::Log::Logger::logWarning("Warning message");
+			CppUtils::Log::Logger::logError("Error message");
 			ASSERT(true);
 		})
 

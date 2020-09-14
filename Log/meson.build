@@ -11,6 +11,7 @@ sources = files([
 ])
 
 headers = files([
+	'include/Log/ChronoLogger.hpp',
 	'include/Log/Logger.hpp'
 ])
 

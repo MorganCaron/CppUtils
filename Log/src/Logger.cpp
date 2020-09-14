@@ -1,6 +1,6 @@
 #include <Log/Logger.hpp>
 
-namespace CppUtils
+namespace CppUtils::Log
 {
 	const Logger::MessageType Logger::InformationType = Switch::newId(true);
 	const Logger::MessageType Logger::ImportantType = Switch::newId(true);

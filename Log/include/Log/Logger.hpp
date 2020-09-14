@@ -9,7 +9,7 @@
 #include <Terminal/TextModifier/TextModifier.hpp>
 #include <Switch/Switch.hpp>
 
-namespace CppUtils
+namespace CppUtils::Log
 {
 	class Logger
 	{

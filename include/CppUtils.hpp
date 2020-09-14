@@ -19,6 +19,7 @@
 #include <Terminal/Parameters.hpp>
 #include <Terminal/TextModifier/TextModifier.hpp>
 
+#include <Log/ChronoLogger.hpp>
 #include <Log/Logger.hpp>
 
 #include <Test/UnitTest.hpp>

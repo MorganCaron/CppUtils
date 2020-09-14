@@ -10,10 +10,12 @@ sources = files([
 ])
 
 headers = files([
+	'include/UnitTests/Chrono/Chronometer.hpp',
 	'include/UnitTests/Container/MeshNode.hpp',
 	'include/UnitTests/Container/Vector.hpp',
 	'include/UnitTests/FileSystem/File/Binary.hpp',
 	'include/UnitTests/FileSystem/File/String.hpp',
+	'include/UnitTests/Log/ChronoLogger.hpp',
 	'include/UnitTests/Log/Logger.hpp',
 	'include/UnitTests/String/String.hpp',
 	'include/UnitTests/Switch/Switch.hpp',

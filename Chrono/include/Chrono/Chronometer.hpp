@@ -5,7 +5,7 @@
 
 namespace CppUtils::Chrono
 {
-	class Chronometer
+	class Chronometer final
 	{
 	public:
 		Chronometer()
@@ -59,7 +59,7 @@ namespace CppUtils::Chrono
 			return !str.empty() ? str.substr(1) : "0ns";
 		}
 
-	public:
+	private:
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_end;
 	};
