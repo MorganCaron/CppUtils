@@ -63,18 +63,26 @@ namespace CppUtils::Test
 
 		static int executeTests(const std::vector<UnitTest>& tests)
 		{
+			auto nbSuccess = std::size_t{0};
+			auto nbFail = std::size_t{0};
+			
 			CppUtils::Log::Logger::logImportant(std::to_string(tests.size()) + " unit tests found. Execution:");
 			for (const auto& test : tests)
 			{
-				if (!test.pass())
-				{
-					CppUtils::Log::Logger::logError("The tests failed");
-					return EXIT_FAILURE;
-				}
+				if (test.pass())
+					++nbSuccess;
+				else
+					++nbFail;
 			}
 			
-			CppUtils::Log::Logger::logSuccess("All tests passed successfully");
-			return EXIT_SUCCESS;
+			CppUtils::Log::Logger::logImportant(std::string(50, '_'));
+			if (nbFail == 0)
+			{
+				CppUtils::Log::Logger::logSuccess("All tests passed successfully");
+				return EXIT_SUCCESS;
+			}
+			CppUtils::Log::Logger::logError("The tests failed:\n- " + std::to_string(nbSuccess) + " successful tests\n- " + std::to_string(nbFail) + " failed tests");
+			return EXIT_FAILURE;
 		}
 
 	protected:
