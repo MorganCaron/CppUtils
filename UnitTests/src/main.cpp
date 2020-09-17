@@ -9,7 +9,7 @@
 #include <UnitTests/Switch/Switch.hpp>
 #include <UnitTests/Terminal/Parameters.hpp>
 #include <UnitTests/Test/UnitTest.hpp>
-#include <UnitTests/Type/Index.hpp>
+#include <UnitTests/Type/TypeId.hpp>
 
 int main()
 {
@@ -25,7 +25,7 @@ int main()
 		std::cref(UnitTests::Switch::tests),
 		std::cref(UnitTests::Terminal::Parameters::tests),
 		std::cref(UnitTests::Test::UnitTest::tests),
-		std::cref(UnitTests::Type::Index::tests)
+		std::cref(UnitTests::Type::TypeId::tests)
 	});
 
 	return CppUtils::Test::UnitTest::executeTests(tests);

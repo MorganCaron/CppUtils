@@ -1,6 +1,11 @@
 #pragma once
 
+#include <string>
 #include <typeindex>
+#include <string_view>
+#include <unordered_map>
+
+#include <Hash/Hash.hpp>
 
 namespace CppUtils::Type
 {
@@ -34,5 +39,19 @@ namespace CppUtils::Type
 
 		std::string_view name;
 		Index id;
+	};
+
+	class TypeIdStorage final
+	{
+	public:
+		static inline void saveTypeId(TypeId& typeId)
+		{
+			if (m_typeIdNames.find(typeId.id) == m_typeIdNames.end())
+				m_typeIdNames[typeId.id] = typeId.name;
+			typeId.name = m_typeIdNames[typeId.id];
+		}
+
+	private:
+		static std::unordered_map<Index, std::string> m_typeIdNames;
 	};
 }

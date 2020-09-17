@@ -28,8 +28,8 @@
 #include <Thread/LoopThread.hpp>
 
 #include <Type/Cloneable.hpp>
-#include <Type/Index.hpp>
 #include <Type/Named.hpp>
 #include <Type/NonCopyable.hpp>
 #include <Type/NonInstanciable.hpp>
 #include <Type/NonMovable.hpp>
+#include <Type/TypeId.hpp>
