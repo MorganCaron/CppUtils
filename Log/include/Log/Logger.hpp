@@ -14,7 +14,7 @@ namespace CppUtils::Log
 	class Logger
 	{
 	public:
-		enum OutputType
+		enum class OutputType
 		{
 			Cerr = 0,
 			Cout,

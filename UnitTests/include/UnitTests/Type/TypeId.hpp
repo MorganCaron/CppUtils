@@ -21,12 +21,12 @@ namespace UnitTests::Type::TypeId
 				auto numberTypeName = std::string{"Number"};
 				numberType0 = CppUtils::Type::TypeId{numberTypeName};
 				numberType1 = CppUtils::Type::TypeId{numberTypeName};
-				CppUtils::Type::TypeIdStorage::saveTypeId(numberType1);
+				numberType1.saveTypename();
 				numberTypeName = "azerty";
 				ASSERT(numberType0 == numberType1);
 			}
 			auto numberType2 = CppUtils::Type::TypeId{"Number"};
-			CppUtils::Type::TypeIdStorage::saveTypeId(numberType2);
+			numberType2.saveTypename();
 			
 			ASSERT(numberType0 == numberType1);
 			ASSERT(numberType1 == numberType2);

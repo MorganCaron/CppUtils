@@ -37,19 +37,15 @@ namespace CppUtils::Type
 			return id != rhs.id;
 		}
 
+		inline void saveTypename()
+		{
+			if (m_typeIdNames.find(id) == m_typeIdNames.end())
+				m_typeIdNames[id] = name;
+			name = m_typeIdNames[id];
+		}
+
 		std::string_view name;
 		Index id;
-	};
-
-	class TypeIdStorage final
-	{
-	public:
-		static inline void saveTypeId(TypeId& typeId)
-		{
-			if (m_typeIdNames.find(typeId.id) == m_typeIdNames.end())
-				m_typeIdNames[typeId.id] = typeId.name;
-			typeId.name = m_typeIdNames[typeId.id];
-		}
 
 	private:
 		static std::unordered_map<Index, std::string> m_typeIdNames;
