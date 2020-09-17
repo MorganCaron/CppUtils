@@ -75,13 +75,18 @@ namespace CppUtils::Test
 					++nbFail;
 			}
 			
-			CppUtils::Log::Logger::logImportant(std::string(50, '_'));
+			CppUtils::Log::Logger::logImportant(std::string(50, '_') + "\nTest results");
 			if (nbFail == 0)
 			{
 				CppUtils::Log::Logger::logSuccess("All tests passed successfully");
 				return EXIT_SUCCESS;
 			}
-			CppUtils::Log::Logger::logError("The tests failed:\n- " + std::to_string(nbSuccess) + " successful tests\n- " + std::to_string(nbFail) + " failed tests");
+			CppUtils::Log::Logger::logError("The tests failed:");
+			if (nbSuccess > 0)
+				CppUtils::Log::Logger::logSuccess("- "+ std::to_string(nbSuccess) + " successful tests");
+			else
+				CppUtils::Log::Logger::logError("- 0 successful tests");
+			CppUtils::Log::Logger::logError("- " + std::to_string(nbFail) + " failed tests");
 			return EXIT_FAILURE;
 		}
 
