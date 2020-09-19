@@ -17,6 +17,7 @@ headers = files([
 	'include/UnitTests/FileSystem/File/String.hpp',
 	'include/UnitTests/Log/ChronoLogger.hpp',
 	'include/UnitTests/Log/Logger.hpp',
+	'include/UnitTests/Parser/Cursor.hpp',
 	'include/UnitTests/String/String.hpp',
 	'include/UnitTests/Switch/Switch.hpp',
 	'include/UnitTests/Terminal/Parameters.hpp',

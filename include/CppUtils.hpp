@@ -12,6 +12,8 @@
 
 #include <Hash/Hash.hpp>
 
+#include <Parser/Cursor.hpp>
+
 #include <String/String.hpp>
 
 #include <Switch/Switch.hpp>

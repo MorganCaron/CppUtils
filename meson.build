@@ -19,6 +19,7 @@ subdir('Hash')
 subdir('Terminal')
 subdir('Switch')
 subdir('Log')
+subdir('Parser')
 subdir('String')
 subdir('Test')
 subdir('Thread')
@@ -33,6 +34,7 @@ public_dependencies = [
 	hash_dep,
 	terminal_dep,
 	log_dep,
+	parser_dep,
 	string_dep,
 	test_dep,
 	thread_dep,
