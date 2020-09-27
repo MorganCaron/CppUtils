@@ -27,6 +27,22 @@ namespace UnitTests::String
 				CppUtils::Log::Logger::logInformation(string, false);
 			}
 			CppUtils::Log::Logger::logInformation("");
+		}),
+
+		CppUtils::Test::UnitTest("String/trimString", [] {
+			const auto string = "\n \t Hello World!\n \t ";
+			const auto leftTrimString = CppUtils::String::leftTrimString(string);
+			const auto rightTrimString = CppUtils::String::rightTrimString(string);
+			const auto trimString = CppUtils::String::trimString(string);
+			
+			CppUtils::Log::Logger::logInformation('[' + std::string{leftTrimString} + ']');
+			ASSERT(leftTrimString == "Hello World!\n \t ");
+
+			CppUtils::Log::Logger::logInformation('[' + std::string{rightTrimString} + ']');
+			ASSERT(rightTrimString == "\n \t Hello World!");
+
+			CppUtils::Log::Logger::logInformation('[' + std::string{trimString} + ']');
+			ASSERT(trimString == "Hello World!");
 		})
 
 	};

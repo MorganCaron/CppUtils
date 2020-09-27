@@ -20,4 +20,33 @@ namespace CppUtils::String
 			return std::vector<std::string>{};
 		return std::vector<std::string>{cstringArray, cstringArray + length};
 	}
+
+	[[nodiscard]] inline std::string_view leftTrimString(std::string_view stringView)
+	{
+		stringView.remove_prefix(std::distance(stringView.cbegin(),
+			std::find_if(stringView.cbegin(), stringView.cend(),
+        		[](char c) {
+					return !std::isspace(c);
+				}
+			)
+		));
+		return stringView;
+	}
+
+	[[nodiscard]] inline std::string_view rightTrimString(std::string_view stringView)
+	{
+		stringView.remove_suffix(std::distance(stringView.crbegin(),
+			std::find_if(stringView.crbegin(), stringView.crend(),
+        		[](char c) {
+					return !std::isspace(c);
+				}
+			)
+		));
+		return stringView;
+	}
+
+	[[nodiscard]] inline std::string_view trimString(std::string_view stringView)
+	{
+		return rightTrimString(leftTrimString(stringView));
+	}
 }
