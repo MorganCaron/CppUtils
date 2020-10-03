@@ -2,5 +2,5 @@
 
 namespace CppUtils::Type
 {
-	std::unordered_map<Index, std::string> TypeId::m_typeIdNames{};
+	std::unordered_map<Index, std::string> TypeId::m_typeNames{};
 }

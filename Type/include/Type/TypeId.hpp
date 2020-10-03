@@ -28,26 +28,34 @@ namespace CppUtils::Type
 		~TypeId() = default;
 		TypeId& operator=(const TypeId&) = default;
 
-		inline constexpr bool operator==(const TypeId& rhs) const noexcept
+		[[nodiscard]] inline constexpr bool operator==(const TypeId& rhs) const noexcept
 		{
 			return id == rhs.id;
 		}
-		inline constexpr bool operator!=(const TypeId& rhs) const noexcept
+		[[nodiscard]] inline constexpr bool operator!=(const TypeId& rhs) const noexcept
 		{
 			return id != rhs.id;
 		}
 
+		struct hash_fn
+		{
+			[[nodiscard]] inline constexpr std::size_t operator()(const TypeId &type) const noexcept
+			{
+				return type.id;
+			}
+		};
+
 		inline void saveTypename()
 		{
-			if (m_typeIdNames.find(id) == m_typeIdNames.end())
-				m_typeIdNames[id] = name;
-			name = m_typeIdNames[id];
+			if (m_typeNames.find(id) == m_typeNames.end())
+				m_typeNames[id] = name;
+			name = m_typeNames[id];
 		}
 
 		std::string_view name;
 		Index id;
 
 	private:
-		static std::unordered_map<Index, std::string> m_typeIdNames;
+		static std::unordered_map<Index, std::string> m_typeNames;
 	};
 }

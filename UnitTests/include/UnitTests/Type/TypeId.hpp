@@ -12,6 +12,14 @@ namespace UnitTests::Type::TypeId
 			const auto stringType = CppUtils::Type::TypeId{"String"};
 			ASSERT(numberType0 == numberType1);
 			ASSERT(numberType0 != stringType);
+
+			const auto types = std::unordered_map<CppUtils::Type::TypeId, std::string, CppUtils::Type::TypeId::hash_fn>{
+				{numberType0, std::string{numberType0.name}},
+				{stringType, std::string{stringType.name}}
+			};
+			CppUtils::Log::Logger::logInformation(types.at(stringType));
+			ASSERT(types.at(numberType0) == "Number");
+			ASSERT(types.at(stringType) == "String");
 		}),
 
 		CppUtils::Test::UnitTest("Type/TypeId/TypeIdStorage", [] {
