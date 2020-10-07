@@ -4,6 +4,7 @@
 #include <functional>
 
 #include <String/String.hpp>
+#include <Parser/Cursor.hpp>
 
 namespace CppUtils::Terminal::Parameters
 {
@@ -11,57 +12,59 @@ namespace CppUtils::Terminal::Parameters
 
 	[[nodiscard]] inline std::unordered_map<std::string, std::string> parseParameters(const std::size_t argc, const char *argv[])
 	{
-		const auto parameters = String::cstringArrayToVectorOfStrings(argv + 1, argc - 1);
-		const auto command = String::concatenateStringsWithDelimiter(parameters, " ");
-
-		const auto skipSpaces = [](std::string_view src, std::size_t& pos) -> void {
-			while (pos < src.size() && std::isspace(src.at(pos)))
-				++pos;
-		};
-
-		const auto parseCommand = [](std::string_view src, std::size_t& pos) -> std::string {
+		static const auto parseCommand = [](Parser::Cursor& cursor) -> std::string {
 			auto wordLength = 0u;
-			while (pos + wordLength < src.size() && std::isgraph(src.at(pos + wordLength)) && src.at(pos + wordLength) != Delimiters.first && src.at(pos + wordLength) != Delimiters.second)
+			while (cursor.pos + wordLength < cursor.src.size() &&
+				std::isgraph(cursor.src.at(cursor.pos + wordLength)) &&
+				cursor.src.at(cursor.pos + wordLength) != Delimiters.first &&
+				cursor.src.at(cursor.pos + wordLength) != Delimiters.second)
 				++wordLength;
-			auto word = src.substr(pos, wordLength);
-			pos += wordLength;
+			auto word = cursor.src.substr(cursor.pos, wordLength);
+			cursor.pos += wordLength;
 			if (wordLength == 0)
 				throw std::runtime_error{"A command name is expected"};
 			return std::string{word};
 		};
 
-		const auto parseValue = [](std::string_view src, std::size_t& pos) -> std::string {
+		static const auto parseValue = [](Parser::Cursor& cursor) -> std::string {
 			auto wordLength = 0u;
-			while (pos + wordLength < src.size() && src.at(pos + wordLength) != Delimiters.first && src.at(pos + wordLength) != Delimiters.second)
+			while (cursor.pos + wordLength < cursor.src.size() &&
+				cursor.src.at(cursor.pos + wordLength) != Delimiters.first &&
+				cursor.src.at(cursor.pos + wordLength) != Delimiters.second)
 				++wordLength;
-			while (wordLength > 0 && pos + wordLength < src.size() && std::isspace(src.at(pos + wordLength - 1)))
+			while (wordLength > 0 &&
+				cursor.pos + wordLength < cursor.src.size() &&
+				std::isspace(cursor.src.at(cursor.pos + wordLength - 1)))
 				--wordLength;
-			auto word = src.substr(pos, wordLength);
-			pos += wordLength;
+			auto word = cursor.src.substr(cursor.pos, wordLength);
+			cursor.pos += wordLength;
 			return std::string{word};
 		};
 
-		auto map = std::unordered_map<std::string, std::string>{};
+		const auto parameters = String::cstringArrayToVectorOfStrings(argv + 1, argc - 1);
+		const auto src = String::concatenateStringsWithDelimiter(parameters, " ");
 		auto pos = std::size_t{0};
+		auto cursor = Parser::Cursor{src, pos};
+		auto map = std::unordered_map<std::string, std::string>{};
 
-		skipSpaces(command, pos);
-		while (pos < command.size())
+		cursor.skipSpaces();
+		while (!cursor.isEndOfString())
 		{
-			const auto parameter = parseCommand(command, pos);
-			skipSpaces(command, pos);
-			if (pos < command.size() && command.at(pos) == Delimiters.first)
+			const auto parameter = parseCommand(cursor);
+			cursor.skipSpaces();
+			if (!cursor.isEndOfString() && cursor.getChar() == Delimiters.first)
 			{
-				++pos;
-				skipSpaces(command, pos);
-				map[parameter] = parseValue(command, pos);
-				skipSpaces(command, pos);
-				if (pos >= command.size() || command.at(pos) != Delimiters.second)
+				++cursor.pos;
+				cursor.skipSpaces();
+				map[parameter] = parseValue(cursor);
+				cursor.skipSpaces();
+				if (cursor.isEndOfString() || cursor.getChar() != Delimiters.second)
 					throw std::runtime_error{"Missing parenthesis closure in the parameters passed to the executable"};
-				++pos;
+				++cursor.pos;
 			}
 			else
 				map[parameter] = "";
-			skipSpaces(command, pos);
+			cursor.skipSpaces();
 		}
 
 		return map;
