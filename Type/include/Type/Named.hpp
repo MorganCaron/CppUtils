@@ -9,6 +9,7 @@ namespace CppUtils::Type
 	class Named
 	{
 	public:
+		Named() = default;
 		explicit Named(std::string name): m_name{std::move(name)}
 		{}
 

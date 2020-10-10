@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <stdexcept>
 #include <unordered_map>
 
 namespace CppUtils::Container
