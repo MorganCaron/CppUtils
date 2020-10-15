@@ -2,13 +2,15 @@
 
 #include <Chrono/Chronometer.hpp>
 
-#include <Container/MeshNode.hpp>
 #include <Container/Vector.hpp>
 
 #include <External/DllExport.hpp>
 #include <External/DynamicLibrary.hpp>
 
 #include <FileSystem/File.hpp>
+
+#include <Graph/MeshNode.hpp>
+#include <Graph/TreeNode.hpp>
 
 #include <Hash/Hash.hpp>
 

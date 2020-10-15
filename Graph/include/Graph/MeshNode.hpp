@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-namespace CppUtils::Container
+namespace CppUtils::Graph
 {
 	template<typename Key, typename Value>
 	class MeshNode

@@ -8,10 +8,11 @@ sources = files([
 ])
 
 headers = files([
-	'include/Container/Vector.hpp'
+	'include/Graph/MeshNode.hpp',
+	'include/Graph/TreeNode.hpp'
 ])
 
-container_dep = declare_dependency(
+graph_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )
