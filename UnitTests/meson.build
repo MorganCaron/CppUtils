@@ -14,6 +14,7 @@ headers = files([
 	'include/UnitTests/Container/Vector.hpp',
 	'include/UnitTests/FileSystem/File/Binary.hpp',
 	'include/UnitTests/FileSystem/File/String.hpp',
+	'include/UnitTests/Functional/Function.hpp',
 	'include/UnitTests/Graph/MeshNode.hpp',
 	'include/UnitTests/Graph/TreeNode.hpp',
 	'include/UnitTests/Log/ChronoLogger.hpp',

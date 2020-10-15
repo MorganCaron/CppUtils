@@ -9,6 +9,8 @@
 
 #include <FileSystem/File.hpp>
 
+#include <Functional/Function.hpp>
+
 #include <Graph/MeshNode.hpp>
 #include <Graph/TreeNode.hpp>
 

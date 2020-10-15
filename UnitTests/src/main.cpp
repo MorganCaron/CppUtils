@@ -2,6 +2,7 @@
 #include <UnitTests/Container/Vector.hpp>
 #include <UnitTests/FileSystem/File/Binary.hpp>
 #include <UnitTests/FileSystem/File/String.hpp>
+#include <UnitTests/Functional/Function.hpp>
 #include <UnitTests/Graph/MeshNode.hpp>
 #include <UnitTests/Graph/TreeNode.hpp>
 #include <UnitTests/Log/ChronoLogger.hpp>
@@ -20,6 +21,7 @@ int main()
 		std::cref(UnitTests::Container::Vector::tests),
 		std::cref(UnitTests::FileSystem::File::Binary::tests),
 		std::cref(UnitTests::FileSystem::File::String::tests),
+		std::cref(UnitTests::Functional::Function::tests),
 		std::cref(UnitTests::Graph::MeshNode::tests),
 		std::cref(UnitTests::Graph::TreeNode::tests),
 		std::cref(UnitTests::Log::ChronoLogger::tests),
