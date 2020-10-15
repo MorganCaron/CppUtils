@@ -8,7 +8,7 @@ namespace CppUtils::Log
 	class ChronoLogger final
 	{
 	public:
-		ChronoLogger(std::string name, bool enabled = true):
+		explicit ChronoLogger(std::string name, bool enabled = true):
 			m_name{std::move(name)},
 			m_enabled{enabled}
 		{}
