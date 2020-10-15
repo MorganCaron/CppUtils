@@ -20,6 +20,7 @@ namespace UnitTests::Graph::TreeNode
 
 			auto& branch0 = root.childs[0];
 			branch0.childs.emplace_back(StringTreeNode{"SubBranch0"});
+			branch0.childs[0].childs.emplace_back(StringTreeNode{"SubSubBranch0"});
 			branch0.childs.emplace_back(StringTreeNode{"SubBranch1"});
 			branch0.childs.emplace_back(StringTreeNode{"SubBranch2"});
 			ASSERT(branch0.childs.size() == 3);
@@ -32,7 +33,7 @@ namespace UnitTests::Graph::TreeNode
 			subBranch0.childs.emplace_back(StringTreeNode{"SubSubBranch1"});
 			root.childs.emplace_back(StringTreeNode{"Branch3"});
 			CppUtils::Terminal::setConsoleOutputUTF8();
-			CppUtils::Log::Logger::logDetail(CppUtils::Graph::treeNodeToString(root));
+			CppUtils::Graph::logTreeNode(root);
 		})
 
 	};

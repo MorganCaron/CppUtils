@@ -2,6 +2,9 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
+
+#include <Log/Logger.hpp>
 
 namespace CppUtils::Graph
 {
@@ -12,14 +15,19 @@ namespace CppUtils::Graph
 		std::vector<TreeNode<Storage>> childs = {};
 	};
 
-	std::string treeNodeToString(const TreeNode<std::string> treeNode, const std::string prefix = "") noexcept
+	template<typename Storage>
+	void logTreeNode(const TreeNode<Storage>& treeNode, const std::string& prefix = " ") noexcept
 	{
-		auto output = " " + treeNode.self + '\n';
+		auto os = std::ostringstream{};
+		os << " " << treeNode.self;
+		CppUtils::Log::Logger::logInformation(os.str());
 		const auto nbChilds = treeNode.childs.size();
 
 		for (auto i = 0u; i < nbChilds; ++i)
-			output += prefix + " " + ((i != nbChilds - 1) ? "├" : "└") + "─" + treeNodeToString(treeNode.childs.at(i), prefix + ((i != nbChilds - 1) ? " |" : "  "));
-		return output;
+		{
+			CppUtils::Log::Logger::logDetail(prefix + ((i != nbChilds - 1) ? "├" : "└") + "─", false);
+			logTreeNode(treeNode.childs.at(i), prefix + ((i != nbChilds - 1) ? "|" : " ") + "  ");
+		}
 	}
 	/*
 	├ = 195
@@ -27,5 +35,4 @@ namespace CppUtils::Graph
 	│ = 179
 	└ = 192
 	*/
-
 }
