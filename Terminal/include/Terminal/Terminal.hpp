@@ -21,4 +21,11 @@ namespace CppUtils::Terminal
 		return terminalHandle;
 	}
 #endif
+
+	inline void setConsoleOutputUTF8()
+	{
+#if defined(OS_WINDOWS)
+		SetConsoleOutputCP(CP_UTF8);
+#endif
+	}
 }
