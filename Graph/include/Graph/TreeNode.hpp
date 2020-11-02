@@ -13,6 +13,36 @@ namespace CppUtils::Graph
 	{
 		Storage self;
 		std::vector<TreeNode<Storage>> childs = {};
+
+		[[nodiscard]] bool operator==(const TreeNode<Storage>& rhs) const
+		{
+			return (self == rhs.self && childs == rhs.childs);
+		}
+
+		[[nodiscard]] TreeNode<Storage>& operator[](const Storage& key)
+		{
+			for (auto& child : childs)
+				if (child.self == key)
+					return child;
+			childs.emplace_back(TreeNode<Storage>{key});
+			return childs[childs.size() - 1];
+		}
+
+		[[nodiscard]] bool exists(const Storage& key) const noexcept
+		{
+			for (const auto& child : childs)
+				if (child.self == key)
+					return true;
+			return false;
+		}
+
+		[[nodiscard]] const TreeNode<Storage>& at(const Storage& key) const
+		{
+			for (const auto& child : childs)
+				if (child.self == key)
+					return child;
+			throw std::out_of_range{"The TreeNode does not contain the requested child"};
+		}
 	};
 
 	template<typename Storage>
@@ -26,13 +56,7 @@ namespace CppUtils::Graph
 		for (auto i = 0u; i < nbChilds; ++i)
 		{
 			CppUtils::Log::Logger::logDetail(prefix + ((i != nbChilds - 1) ? "├" : "└") + "─", false);
-			logTreeNode(treeNode.childs.at(i), prefix + ((i != nbChilds - 1) ? "|" : " ") + "  ");
+			logTreeNode(treeNode.childs.at(i), prefix + ((i != nbChilds - 1) ? "│" : " ") + "  ");
 		}
 	}
-	/*
-	├ = 195
-	─ = 196
-	│ = 179
-	└ = 192
-	*/
 }
