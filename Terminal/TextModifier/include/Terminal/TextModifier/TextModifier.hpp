@@ -15,8 +15,8 @@ namespace CppUtils::Terminal::TextModifier
 #if defined(OS_LINUX) || defined(OS_MACOS)
 	namespace ANSIEscapeCode
 	{
-		[[maybe_unused]] static constexpr const auto Reset = "\x1B[0m"sv;
-		[[maybe_unused]] static constexpr const auto EraseCurrentLine = "\x1B[2K0E"sv;
+		[[maybe_unused]] static constexpr auto Reset = "\x1B[0m"sv;
+		[[maybe_unused]] static constexpr auto EraseCurrentLine = "\x1B[2K0E"sv;
 	}
 #endif
 

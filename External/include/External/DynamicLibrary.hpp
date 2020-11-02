@@ -4,6 +4,7 @@
 #include <sstream>
 #include <utility>
 #include <iostream>
+#include <string_view>
 
 #if defined(_WIN32) || defined(_WIN64)
 # include <windows.h>
@@ -13,17 +14,19 @@
 
 #include <External/DllExport.hpp>
 
+using namespace std::literals;
+
 namespace CppUtils::External
 {
 	class DLL_PUBLIC DynamicLibrary final
 	{
 	public:
 		#if defined(_WIN32) || defined(_WIN64)
-		static constexpr const char* ext = ".dll";
+		static constexpr auto ext = ".dll"sv;
 		#elif defined(__linux__)
-		static constexpr const char* ext = ".so";
+		static constexpr auto ext = ".so"sv;
 		#elif defined(__APPLE__)
-		static constexpr const char* ext = ".dylib";
+		static constexpr auto ext = ".dylib"sv;
 		#endif
 
 		DynamicLibrary() = default;

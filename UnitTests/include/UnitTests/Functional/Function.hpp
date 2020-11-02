@@ -7,7 +7,7 @@ namespace UnitTests::Functional::Function
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
 		CppUtils::Test::UnitTest("Functional/callFunction", [] {
-			const auto sum = std::function{[](int a, int b, int c) {
+			const auto sum = std::function<int(int, int, int)>{[](int a, int b, int c) {
 				return a + b + c;
 			}};
 			const auto vec = std::vector<int>{10, 15, 17};
