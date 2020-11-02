@@ -4,12 +4,14 @@
 
 namespace UnitTests::Type::TypeId
 {
+	using namespace CppUtils::Type::Literals;
+
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
 		CppUtils::Test::UnitTest("Type/TypeId/TypeId", [] {
-			const auto numberType0 = CppUtils::Type::TypeId{"Number"};
-			const auto numberType1 = CppUtils::Type::TypeId{"Number"};
-			const auto stringType = CppUtils::Type::TypeId{"String"};
+			const auto numberType0 = "Number"_typeId;
+			const auto numberType1 = "Number"_typeId;
+			const auto stringType = "String"_typeId;
 			ASSERT(numberType0 == numberType1);
 			ASSERT(numberType0 != stringType);
 
@@ -33,7 +35,7 @@ namespace UnitTests::Type::TypeId
 				numberTypeName = "azerty";
 				ASSERT(numberType0 == numberType1);
 			}
-			auto numberType2 = CppUtils::Type::TypeId{"Number"};
+			auto numberType2 = "Number"_typeId;
 			numberType2.saveTypename();
 			
 			ASSERT(numberType0 == numberType1);

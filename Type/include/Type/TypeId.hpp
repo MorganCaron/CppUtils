@@ -9,24 +9,20 @@
 
 namespace CppUtils::Type
 {
-	using Index = std::size_t;
-	
-	template<typename T>
-	class Type
-	{
-		const Index Id = std::hash<std::type_index>()(std::type_index(typeid(T)));
-	};
-
 	struct TypeId final
 	{
+	public:
+		using Index = std::size_t;
+
 		TypeId() = default;
 		explicit constexpr TypeId(std::string_view c_name):
 			name(c_name),
 			id(CppUtils::Hash::constexprHash(name))
 		{}
 		TypeId(const TypeId&) = default;
-		~TypeId() = default;
+		TypeId(TypeId&&) noexcept = default;
 		TypeId& operator=(const TypeId&) = default;
+		TypeId& operator=(TypeId&&) noexcept = default;
 
 		[[nodiscard]] inline constexpr bool operator==(const TypeId& rhs) const noexcept
 		{
@@ -58,4 +54,18 @@ namespace CppUtils::Type
 	private:
 		static std::unordered_map<Index, std::string> m_typeNames;
 	};
+
+	inline std::ostream& operator<<(std::ostream& os, const TypeId& typeId)
+	{
+		os << typeId.name;
+		return os;
+	}
+
+	namespace Literals
+	{
+		constexpr TypeId operator"" _typeId(const char* cstring, std::size_t)
+		{
+			return TypeId{cstring};
+		}
+	}
 }
