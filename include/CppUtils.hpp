@@ -38,4 +38,5 @@
 #include <Type/NonCopyable.hpp>
 #include <Type/NonInstanciable.hpp>
 #include <Type/NonMovable.hpp>
+#include <Type/Typed.hpp>
 #include <Type/TypeId.hpp>

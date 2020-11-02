@@ -24,6 +24,7 @@ headers = files([
 	'include/UnitTests/Switch/Switch.hpp',
 	'include/UnitTests/Terminal/Parameters.hpp',
 	'include/UnitTests/Test/UnitTest.hpp',
+	'include/UnitTests/Type/Typed.hpp',
 	'include/UnitTests/Type/TypeId.hpp'
 ])
 
