@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <string_view>
 
-namespace CppUtils::Parser
+namespace CppUtils::Language::Parser
 {
 	struct Cursor
 	{
@@ -57,15 +57,16 @@ namespace CppUtils::Parser
 
 		[[nodiscard]] std::string getKeyword() const
 		{
-			auto keywordLength = std::size_t{0};
+			const auto srcLength = src.length();
+			auto subPosition = pos;
 
-			if (std::isalpha(src.at(pos + keywordLength)) || src.at(pos + keywordLength) == '_')
+			if (subPosition < srcLength && (std::isalpha(src.at(subPosition)) || src.at(subPosition) == '_'))
 			{
 				do
-					++keywordLength;
-				while (std::isalnum(src.at(pos + keywordLength)) || src.at(pos + keywordLength) == '_');
+					++subPosition;
+				while (subPosition < srcLength && (std::isalnum(src.at(subPosition)) || src.at(subPosition) == '_'));
 			}
-			return std::string{src.substr(pos, keywordLength)};
+			return std::string{src.substr(pos, subPosition - pos)};
 		}
 
 		[[nodiscard]] std::string getKeywordAndSkipIt()

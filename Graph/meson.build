@@ -1,4 +1,6 @@
-public_dependencies = []
+public_dependencies = [
+	log_dep
+]
 private_dependencies = []
 
 includeDir = include_directories(['include/', '.'])

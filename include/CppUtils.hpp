@@ -16,7 +16,10 @@
 
 #include <Hash/Hash.hpp>
 
-#include <Parser/Cursor.hpp>
+#include <Language/Grammar.hpp>
+#include <Language/Lexer.hpp>
+#include <Language/Parser.hpp>
+#include <Language/Parsers.hpp>
 
 #include <String/String.hpp>
 

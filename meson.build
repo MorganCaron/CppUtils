@@ -16,16 +16,16 @@ subdir('Container')
 subdir('External')
 subdir('FileSystem')
 subdir('Functional')
-subdir('Graph')
 subdir('Hash')
 subdir('Terminal')
 subdir('Switch')
 subdir('Log')
-subdir('Parser')
+subdir('Graph')
 subdir('String')
 subdir('Test')
 subdir('Thread')
 subdir('Type')
+subdir('Language')
 
 public_dependencies = [
 	platform_dep,
@@ -34,15 +34,15 @@ public_dependencies = [
 	external_dep,
 	filesystem_dep,
 	functional_dep,
-	graph_dep,
 	hash_dep,
 	terminal_dep,
 	log_dep,
-	parser_dep,
+	graph_dep,
 	string_dep,
 	test_dep,
 	thread_dep,
-	type_dep
+	type_dep,
+	language_dep
 ]
 private_dependencies = []
 

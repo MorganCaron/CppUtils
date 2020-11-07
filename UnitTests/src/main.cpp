@@ -5,9 +5,11 @@
 #include <UnitTests/Functional/Function.hpp>
 #include <UnitTests/Graph/MeshNode.hpp>
 #include <UnitTests/Graph/TreeNode.hpp>
+#include <UnitTests/Language/Grammar.hpp>
+#include <UnitTests/Language/Lexer.hpp>
+#include <UnitTests/Language/Parser.hpp>
 #include <UnitTests/Log/ChronoLogger.hpp>
 #include <UnitTests/Log/Logger.hpp>
-#include <UnitTests/Parser/Cursor.hpp>
 #include <UnitTests/String/String.hpp>
 #include <UnitTests/Switch/Switch.hpp>
 #include <UnitTests/Terminal/Parameters.hpp>
@@ -25,9 +27,11 @@ int main()
 		std::cref(UnitTests::Functional::Function::tests),
 		std::cref(UnitTests::Graph::MeshNode::tests),
 		std::cref(UnitTests::Graph::TreeNode::tests),
+		std::cref(UnitTests::Language::Grammar::tests),
+		std::cref(UnitTests::Language::Lexer::tests),
+		std::cref(UnitTests::Language::Parser::tests),
 		std::cref(UnitTests::Log::ChronoLogger::tests),
 		std::cref(UnitTests::Log::Logger::tests),
-		std::cref(UnitTests::Parser::Cursor::tests),
 		std::cref(UnitTests::String::tests),
 		std::cref(UnitTests::Switch::tests),
 		std::cref(UnitTests::Terminal::Parameters::tests),

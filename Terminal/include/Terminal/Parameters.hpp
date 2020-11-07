@@ -4,15 +4,15 @@
 #include <functional>
 
 #include <String/String.hpp>
-#include <Parser/Cursor.hpp>
+#include <Language/Parser.hpp>
 
 namespace CppUtils::Terminal::Parameters
 {
-	static constexpr const auto Delimiters = std::pair<char, char>{'[', ']'};
+	static constexpr auto Delimiters = std::pair<char, char>{'[', ']'};
 
 	[[nodiscard]] inline std::unordered_map<std::string, std::string> parseParameters(const std::size_t argc, const char *argv[])
 	{
-		static const auto parseCommand = [](Parser::Cursor& cursor) -> std::string {
+		static const auto parseCommand = [](Language::Parser::Cursor& cursor) -> std::string {
 			auto wordLength = 0u;
 			while (cursor.pos + wordLength < cursor.src.size() &&
 				std::isgraph(cursor.src.at(cursor.pos + wordLength)) &&
@@ -26,7 +26,7 @@ namespace CppUtils::Terminal::Parameters
 			return std::string{word};
 		};
 
-		static const auto parseValue = [](Parser::Cursor& cursor) -> std::string {
+		static const auto parseValue = [](Language::Parser::Cursor& cursor) -> std::string {
 			auto wordLength = 0u;
 			while (cursor.pos + wordLength < cursor.src.size() &&
 				cursor.src.at(cursor.pos + wordLength) != Delimiters.first &&
@@ -44,7 +44,7 @@ namespace CppUtils::Terminal::Parameters
 		const auto parameters = String::cstringArrayToVectorOfStrings(argv + 1, argc - 1);
 		const auto src = String::concatenateStringsWithDelimiter(parameters, " ");
 		auto pos = std::size_t{0};
-		auto cursor = Parser::Cursor{src, pos};
+		auto cursor = Language::Parser::Cursor{src, pos};
 		auto map = std::unordered_map<std::string, std::string>{};
 
 		cursor.skipSpaces();
