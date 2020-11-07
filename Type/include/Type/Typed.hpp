@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <stdexcept>
 #include <functional>
 
 #include <External/DllExport.hpp>
@@ -40,7 +41,7 @@ namespace CppUtils::Type
 	[[nodiscard]] TargetType& ensureType(const std::unique_ptr<ITyped>& typed)
 	{
 		if (typed->getType() != TargetType::Type)
-			throw std::runtime_error{"Incorrect type. Expected type: "s + TargetType::Type.name.data()};
+			throw std::runtime_error{"Incorrect type. Expected type: " + std::string{TargetType::Type.name}};
 		return dynamic_cast<TargetType&>(*typed);
 	}
 }
