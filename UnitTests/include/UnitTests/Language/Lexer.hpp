@@ -62,11 +62,11 @@ namespace UnitTests::Language::Lexer
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer{};
-			auto& grammarLexeme = lexer.lexeme("grammar"_typeId);
+			auto& mainLexeme = lexer.lexeme("main"_typeId);
 			auto& printLexeme = lexer.lexeme("print"_typeId);
 			auto& stringLexeme = lexer.lexeme("string"_typeId);
 
-			grammarLexeme
+			mainLexeme
 				>> (printLexeme >= 0)
 				>> CppUtils::Language::Parser::spaceParser;
 			printLexeme
@@ -81,12 +81,12 @@ namespace UnitTests::Language::Lexer
 			print(\"Hello World!\");\
 			print(\"Test\");\
 			print(\"Ok\");"sv;
-			const auto tokenTree = lexer.parse("grammar"_typeId, src);
+			const auto tokenTree = lexer.parse("main"_typeId, src);
 
 			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(tokenTree.self == "grammar"_typeId);
+			ASSERT(tokenTree.self == "main"_typeId);
 			ASSERT(tokenTree.childs.size() == 3);
 			for (const auto& child : tokenTree.childs)
 				ASSERT(child.self == "print"_typeId);
@@ -96,12 +96,12 @@ namespace UnitTests::Language::Lexer
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer{};
-			auto& grammarLexeme = lexer.lexeme("grammar"_typeId);
+			auto& mainLexeme = lexer.lexeme("main"_typeId);
 			auto& valueLexeme = lexer.lexeme("value"_typeId);
 			auto& keywordLexeme = lexer.lexeme("keyword"_typeId);
 			auto& stringLexeme = lexer.lexeme("string"_typeId);
 
-			grammarLexeme
+			mainLexeme
 				>> (valueLexeme >= 0)
 				>> CppUtils::Language::Parser::spaceParser;
 			valueLexeme
@@ -115,12 +115,12 @@ namespace UnitTests::Language::Lexer
 			static constexpr auto src = "\
 			test \"test\" test \"test\"\
 			"sv;
-			const auto tokenTree = lexer.parse("grammar"_typeId, src);
+			const auto tokenTree = lexer.parse("main"_typeId, src);
 
 			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(tokenTree.self == "grammar"_typeId);
+			ASSERT(tokenTree.self == "main"_typeId);
 			ASSERT(tokenTree.childs.size() == 4);
 			for (const auto& child : tokenTree.childs)
 				ASSERT(child.self == "value"_typeId);

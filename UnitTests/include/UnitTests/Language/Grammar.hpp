@@ -13,7 +13,7 @@ namespace UnitTests::Language::Grammar
 			auto grammarLexer = CppUtils::Language::GrammarLexer{};
 
 			static constexpr auto grammarSrc = "\
-			grammar: \"Test\";\
+			main: \"Test\";\
 			"sv;
 			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
 			CppUtils::Graph::logTreeNode(grammarTree);
@@ -22,7 +22,7 @@ namespace UnitTests::Language::Grammar
 			const auto tokenTree = grammarLexer.parseLanguage(languageSrc);
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(tokenTree.self == "grammar"_typeId);
+			ASSERT(tokenTree.self == "main"_typeId);
 			ASSERT(tokenTree.childs.size() == 0);
 		}),
 
@@ -37,7 +37,7 @@ namespace UnitTests::Language::Grammar
 			grammarLexer.addParserFunction("quoteParser"_typeId, CppUtils::Language::Parser::quoteParser);
 			
 			static constexpr auto grammarSrc = "\
-			grammar: _instruction spaceParser;\
+			main: _instruction spaceParser;\
 			_instruction: function spaceParser ';';\
 			function: spaceParser keywordParser spaceParser '(' _argument spaceParser ')';\
 			_argument: string;\
@@ -50,7 +50,7 @@ namespace UnitTests::Language::Grammar
 			const auto tokenTree = grammarLexer.parseLanguage(languageSrc);
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(tokenTree.self == "grammar"_typeId);
+			ASSERT(tokenTree.self == "main"_typeId);
 			ASSERT(tokenTree.childs.size() == 1);
 			ASSERT(tokenTree.childs.at(0).self == "function"_typeId);
 			ASSERT(tokenTree.childs.at(0).childs.size() == 2);
@@ -70,7 +70,7 @@ namespace UnitTests::Language::Grammar
 			grammarLexer.addParserFunction("keywordParser"_typeId, CppUtils::Language::Parser::keywordParser);
 			
 			static constexpr auto grammarSrc = "\
-			grammar: (_word >= 0) spaceParser;\
+			main: (_word >= 0) spaceParser;\
 			_word: spaceParser keywordParser;\
 			"sv;
 			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
@@ -80,7 +80,7 @@ namespace UnitTests::Language::Grammar
 			const auto tokenTree = grammarLexer.parseLanguage(languageSrc);
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(tokenTree.self == "grammar"_typeId);
+			ASSERT(tokenTree.self == "main"_typeId);
 			ASSERT(tokenTree.childs.size() == 4);
 		}),
 
@@ -95,7 +95,7 @@ namespace UnitTests::Language::Grammar
 			grammarLexer.addParserFunction("quoteParser"_typeId, CppUtils::Language::Parser::quoteParser);
 			
 			static constexpr auto grammarSrc = "\
-			grammar: (_instruction >= 0) spaceParser;\
+			main: (_instruction >= 0) spaceParser;\
 			_instruction: (function || variableDeclaration) spaceParser ';';\
 			function: spaceParser keywordParser spaceParser '(' !_arguments spaceParser ')';\
 			_arguments: _value !_secondaryArgument;\
@@ -116,7 +116,7 @@ namespace UnitTests::Language::Grammar
 			const auto tokenTree = grammarLexer.parseLanguage(languageSrc);
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(tokenTree.self == "grammar"_typeId);
+			ASSERT(tokenTree.self == "main"_typeId);
 			ASSERT(tokenTree.childs.size() == 4);
 		})
 

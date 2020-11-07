@@ -10,7 +10,7 @@ namespace CppUtils::Language
 	public:
 		GrammarLexer()
 		{
-			auto& grammar = m_grammarLexer.lexeme("grammar"_typeId);
+			auto& main = m_grammarLexer.lexeme("main"_typeId);
 			auto& statement = m_grammarLexer.lexeme("statement"_typeId);
 			auto& lexemes = m_grammarLexer.lexeme("lexemes"_typeId);
 			auto& lexeme = m_grammarLexer.lexeme("lexeme"_typeId, false);
@@ -26,7 +26,7 @@ namespace CppUtils::Language
 			auto& moreOrEqualTo = m_grammarLexer.lexeme("moreOrEqualTo"_typeId);
 			auto& moreThan = m_grammarLexer.lexeme("moreThan"_typeId);
 			
-			grammar >> (statement >= 0) >> Parser::spaceParser;
+			main >> (statement >= 0) >> Parser::spaceParser;
 			statement
 				>> Parser::spaceParser >> Parser::keywordParser
 				>> Parser::spaceParser >> ':'
@@ -68,7 +68,7 @@ namespace CppUtils::Language
 
 		Lexeme::TokenNode parseGrammar(std::string_view src)
 		{
-			const auto tokenTree = m_grammarLexer.parse("grammar"_typeId, src);
+			const auto tokenTree = m_grammarLexer.parse("main"_typeId, src);
 			auto existingStatements = std::unordered_map<Lexeme::Token, bool, Lexeme::Token::hash_fn>{};
 
 			for (const auto& statement : tokenTree.childs)
@@ -112,7 +112,7 @@ namespace CppUtils::Language
 
 		[[nodiscard]] inline Lexeme::TokenNode parseLanguage(std::string_view src) const
 		{
-			return m_languageLexer.parse("grammar"_typeId, src);
+			return m_languageLexer.parse("main"_typeId, src);
 		}
 
 	private:

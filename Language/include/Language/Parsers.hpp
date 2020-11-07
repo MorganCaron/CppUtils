@@ -4,13 +4,13 @@
 
 namespace CppUtils::Language::Parser
 {
-	[[nodiscard]] bool spaceParser(Cursor& cursor, [[maybe_unused]] Lexeme::TokenNode& parentNode)
+	[[nodiscard]] inline bool spaceParser(Cursor& cursor, [[maybe_unused]] Lexeme::TokenNode& parentNode)
 	{
 		cursor.skipSpaces();
 		return true;
 	}
 
-	[[nodiscard]] bool keywordParser(Cursor& cursor, Lexeme::TokenNode& parentNode)
+	[[nodiscard]] inline bool keywordParser(Cursor& cursor, Lexeme::TokenNode& parentNode)
 	{
 		const auto keyword = cursor.getKeywordAndSkipIt();
 		if (keyword.empty())
@@ -21,7 +21,7 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	[[nodiscard]] bool quoteParser(Cursor& cursor, Lexeme::TokenNode& parentNode)
+	[[nodiscard]] inline bool quoteParser(Cursor& cursor, Lexeme::TokenNode& parentNode)
 	{
 		if (cursor.isEndOfString())
 			return false;
@@ -40,21 +40,21 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	[[nodiscard]] bool singleQuoteParser(Cursor& cursor, Lexeme::TokenNode& parentNode)
+	[[nodiscard]] inline bool singleQuoteParser(Cursor& cursor, Lexeme::TokenNode& parentNode)
 	{
 		if (cursor.isEndOfString() || cursor.getChar() != '\'')
 			return false;
 		return quoteParser(cursor, parentNode);
 	}
 
-	[[nodiscard]] bool doubleQuoteParser(Cursor& cursor, Lexeme::TokenNode& parentNode)
+	[[nodiscard]] inline bool doubleQuoteParser(Cursor& cursor, Lexeme::TokenNode& parentNode)
 	{
 		if (cursor.isEndOfString() || cursor.getChar() != '"')
 			return false;
 		return quoteParser(cursor, parentNode);
 	}
 
-	[[nodiscard]] bool uintParser(Cursor& cursor, Lexeme::TokenNode& parentNode)
+	[[nodiscard]] inline bool uintParser(Cursor& cursor, Lexeme::TokenNode& parentNode)
 	{
 		auto string = ""s;
 		while (!cursor.isEndOfString() && cursor.getChar() >= '0' && cursor.getChar() <= '9')

@@ -20,7 +20,7 @@ namespace CppUtils::Terminal::Parameters
 				++cursor.pos;
 			if (cursor.isEndOfString())
 				return false;
-			auto stringToken = Language::Lexeme::Token{cursor.src.substr(startPos, cursor.pos - startPos)};
+			auto stringToken = Language::Lexeme::Token{String::trimString(cursor.src.substr(startPos, cursor.pos - startPos))};
 			++cursor.pos;
 			stringToken.saveTypename();
 			parentNode.childs.emplace_back(Language::Lexeme::TokenNode{std::move(stringToken)});
@@ -28,7 +28,7 @@ namespace CppUtils::Terminal::Parameters
 		});
 		
 		static constexpr auto grammarSrc = "\
-		grammar: (command >= 0) spaceParser;\
+		main: (command >= 0) spaceParser;\
 		command: spaceParser keywordParser !_value;\
 		_value: spaceParser valueParser;\
 		"sv;
@@ -40,7 +40,7 @@ namespace CppUtils::Terminal::Parameters
 
 		auto map = std::unordered_map<std::string, std::string>{};
 		for (const auto& command : commandTree.childs)
-			map[std::string{command.childs.at(0).self.name}] = (command.childs.size() == 2 ? String::trimString(command.childs.at(1).self.name) : "");
+			map[std::string{command.childs.at(0).self.name}] = (command.childs.size() == 2 ? command.childs.at(1).self.name : "");
 		return map;
 	}
 

@@ -17,6 +17,7 @@
 #include <Hash/Hash.hpp>
 
 #include <Language/Grammar.hpp>
+#include <Language/Lexeme.hpp>
 #include <Language/Lexer.hpp>
 #include <Language/Parser.hpp>
 #include <Language/Parsers.hpp>
