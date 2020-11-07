@@ -1,72 +1,46 @@
 #pragma once
 
-#include <cctype>
-#include <functional>
-
-#include <String/String.hpp>
-#include <Language/Parser.hpp>
+#include <Language/Grammar.hpp>
 
 namespace CppUtils::Terminal::Parameters
 {
-	static constexpr auto Delimiters = std::pair<char, char>{'[', ']'};
-
 	[[nodiscard]] inline std::unordered_map<std::string, std::string> parseParameters(const std::size_t argc, const char *argv[])
 	{
-		static const auto parseCommand = [](Language::Parser::Cursor& cursor) -> std::string {
-			auto wordLength = 0u;
-			while (cursor.pos + wordLength < cursor.src.size() &&
-				std::isgraph(cursor.src.at(cursor.pos + wordLength)) &&
-				cursor.src.at(cursor.pos + wordLength) != Delimiters.first &&
-				cursor.src.at(cursor.pos + wordLength) != Delimiters.second)
-				++wordLength;
-			auto word = cursor.src.substr(cursor.pos, wordLength);
-			cursor.pos += wordLength;
-			if (wordLength == 0)
-				throw std::runtime_error{"A command name is expected"};
-			return std::string{word};
-		};
+		using namespace Type::Literals;
+		auto grammarLexer = Language::GrammarLexer{};
 
-		static const auto parseValue = [](Language::Parser::Cursor& cursor) -> std::string {
-			auto wordLength = 0u;
-			while (cursor.pos + wordLength < cursor.src.size() &&
-				cursor.src.at(cursor.pos + wordLength) != Delimiters.first &&
-				cursor.src.at(cursor.pos + wordLength) != Delimiters.second)
-				++wordLength;
-			while (wordLength > 0 &&
-				cursor.pos + wordLength < cursor.src.size() &&
-				std::isspace(cursor.src.at(cursor.pos + wordLength - 1)))
-				--wordLength;
-			auto word = cursor.src.substr(cursor.pos, wordLength);
-			cursor.pos += wordLength;
-			return std::string{word};
-		};
-
+		grammarLexer.addParserFunction("spaceParser"_typeId, Language::Parser::spaceParser);
+		grammarLexer.addParserFunction("keywordParser"_typeId, Language::Parser::keywordParser);
+		grammarLexer.addParserFunction("valueParser"_typeId, [](auto& cursor, auto& parentNode) {
+			cursor.skipSpaces();
+			if (!cursor.isEndOfString() && cursor.getChar() != '[')
+				return false;
+			const auto startPos = ++cursor.pos;
+			while (!cursor.isEndOfString() && cursor.getChar() != ']')
+				++cursor.pos;
+			if (cursor.isEndOfString())
+				return false;
+			auto stringToken = Language::Lexeme::Token{cursor.src.substr(startPos, cursor.pos - startPos)};
+			++cursor.pos;
+			stringToken.saveTypename();
+			parentNode.childs.emplace_back(Language::Lexeme::TokenNode{std::move(stringToken)});
+			return true;
+		});
+		
+		static constexpr auto grammarSrc = "\
+		grammar: (command >= 0) spaceParser;\
+		command: spaceParser keywordParser !_value;\
+		_value: spaceParser valueParser;\
+		"sv;
+		grammarLexer.parseGrammar(grammarSrc);
+		
 		const auto parameters = String::cstringArrayToVectorOfStrings(argv + 1, argc - 1);
 		const auto src = String::concatenateStringsWithDelimiter(parameters, " ");
-		auto pos = std::size_t{0};
-		auto cursor = Language::Parser::Cursor{src, pos};
+		const auto commandTree = grammarLexer.parseLanguage(src);
+
 		auto map = std::unordered_map<std::string, std::string>{};
-
-		cursor.skipSpaces();
-		while (!cursor.isEndOfString())
-		{
-			const auto parameter = parseCommand(cursor);
-			cursor.skipSpaces();
-			if (!cursor.isEndOfString() && cursor.getChar() == Delimiters.first)
-			{
-				++cursor.pos;
-				cursor.skipSpaces();
-				map[parameter] = parseValue(cursor);
-				cursor.skipSpaces();
-				if (cursor.isEndOfString() || cursor.getChar() != Delimiters.second)
-					throw std::runtime_error{"Missing parenthesis closure in the parameters passed to the executable"};
-				++cursor.pos;
-			}
-			else
-				map[parameter] = "";
-			cursor.skipSpaces();
-		}
-
+		for (const auto& command : commandTree.childs)
+			map[std::string{command.childs.at(0).self.name}] = (command.childs.size() == 2 ? String::trimString(command.childs.at(1).self.name) : "");
 		return map;
 	}
 

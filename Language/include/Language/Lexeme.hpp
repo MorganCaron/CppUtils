@@ -25,7 +25,7 @@ namespace CppUtils::Language::Lexeme
 	using StringLexeme = Lexeme<StringLexemeType, std::string>;
 
 	static constexpr auto ParserLexemeType = "ParserLexeme"_typeId;
-	using ParserFunction = std::function<bool (Parser::Cursor&, TokenNode& parentNode)>;
+	using ParserFunction = std::function<bool (Parser::Cursor&, TokenNode&)>;
 	using ParserLexeme = Lexeme<ParserLexemeType, ParserFunction>; 
 
 	static constexpr auto TokenLexemeType = "TokenLexeme"_typeId;
