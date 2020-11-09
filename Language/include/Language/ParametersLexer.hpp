@@ -17,8 +17,8 @@ namespace CppUtils::Language::Parameters
 		{
 			using namespace Type::Literals;
 
-			m_grammarLexer.addParserFunction("spaceParser"_typeId, Language::Parser::spaceParser);
-			m_grammarLexer.addParserFunction("keywordParser"_typeId, Language::Parser::keywordParser);
+			m_grammarLexer.addParserFunction("spaceParser"_typeId, Parser::spaceParser);
+			m_grammarLexer.addParserFunction("keywordParser"_typeId, Parser::keywordParser);
 			m_grammarLexer.addParserFunction("valueParser"_typeId, [](auto& cursor, auto& parentNode) {
 				cursor.skipSpaces();
 				if (!cursor.isEndOfString() && cursor.getChar() != '[')
@@ -28,10 +28,10 @@ namespace CppUtils::Language::Parameters
 					++cursor.pos;
 				if (cursor.isEndOfString())
 					return false;
-				auto stringToken = Language::Lexeme::Token{String::trimString(cursor.src.substr(startPos, cursor.pos - startPos))};
+				auto stringToken = Lexeme::Token{String::trimString(cursor.src.substr(startPos, cursor.pos - startPos))};
 				++cursor.pos;
 				stringToken.saveTypename();
-				parentNode.childs.emplace_back(Language::Lexeme::TokenNode{std::move(stringToken)});
+				parentNode.childs.emplace_back(Lexeme::TokenNode{std::move(stringToken)});
 				return true;
 			});
 

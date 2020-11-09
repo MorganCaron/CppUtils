@@ -28,34 +28,55 @@ namespace CppUtils::Language::Parser
 			return src.at(pos++);
 		}
 
-		inline void skipSpaces()
+		[[nodiscard]] inline std::string_view getStringIf(const std::function<bool(char)>& validator) const
 		{
-			while (!isEndOfString() && std::isspace(getChar()))
+			const auto length = src.length();
+			auto nbChars = 0u;
+			while (nbChars < length && validator(src.at(pos + nbChars)))
+				++nbChars;
+			return src.substr(pos, nbChars);
+		}
+
+		[[nodiscard]] inline std::string_view getStringAndSkipItIf(const std::function<bool(char)>& validator)
+		{
+			const auto string = getStringIf(validator);
+			pos += string.length();
+			return string;
+		}
+
+		inline void skipStringIf(const std::function<bool(char)>& validator)
+		{
+			while (!isEndOfString() && validator(getChar()))
 				++pos;
 		}
 
-		[[nodiscard]] inline std::string getNextNChar(const std::size_t size) const
+		inline void skipSpaces()
 		{
-			return std::string{src.substr(pos, std::min(size, src.length() - pos))};
+			skipStringIf([](const char c) -> bool {
+				return std::isspace(static_cast<unsigned char>(c));
+			});
 		}
 
-		[[nodiscard]] std::string getWord() const
+		[[nodiscard]] inline std::string_view getNextNChar(const std::size_t size) const
 		{
-			auto wordLength = std::size_t{0};
-
-			while (std::isalpha(src.at(pos + wordLength)))
-				++wordLength;
-			return std::string{src.substr(pos, wordLength)};
+			return src.substr(pos, std::min(size, src.length() - pos));
 		}
 
-		[[nodiscard]] std::string getWordAndSkipIt()
+		[[nodiscard]] std::string_view getWord() const
+		{
+			return getStringIf([](const char c) -> bool {
+				return std::isalpha(static_cast<unsigned char>(c));
+			});
+		}
+
+		[[nodiscard]] std::string_view getWordAndSkipIt()
 		{
 			auto word = getWord();
 			pos += word.length();
 			return word;
 		}
 
-		[[nodiscard]] std::string getKeyword() const
+		[[nodiscard]] std::string_view getKeyword() const
 		{
 			const auto srcLength = src.length();
 			auto subPosition = pos;
@@ -66,17 +87,17 @@ namespace CppUtils::Language::Parser
 					++subPosition;
 				while (subPosition < srcLength && (std::isalnum(src.at(subPosition)) || src.at(subPosition) == '_'));
 			}
-			return std::string{src.substr(pos, subPosition - pos)};
+			return src.substr(pos, subPosition - pos);
 		}
 
-		[[nodiscard]] std::string getKeywordAndSkipIt()
+		[[nodiscard]] std::string_view getKeywordAndSkipIt()
 		{
 			auto keyword = getKeyword();
 			pos += keyword.length();
 			return keyword;
 		}
 
-		[[nodiscard]] std::string getKeywordRequired(std::string_view errorMessage)
+		[[nodiscard]] std::string_view getKeywordRequired(std::string_view errorMessage)
 		{
 			auto keyword = getKeywordAndSkipIt();
 			if (keyword.empty())
