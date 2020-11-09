@@ -16,9 +16,10 @@
 
 #include <Hash/Hash.hpp>
 
-#include <Language/Grammar.hpp>
+#include <Language/GrammarLexer.hpp>
 #include <Language/Lexeme.hpp>
 #include <Language/Lexer.hpp>
+#include <Language/ParametersLexer.hpp>
 #include <Language/Parser.hpp>
 #include <Language/Parsers.hpp>
 
@@ -26,7 +27,6 @@
 
 #include <Switch/Switch.hpp>
 
-#include <Terminal/Parameters.hpp>
 #include <Terminal/TextModifier/TextModifier.hpp>
 
 #include <Log/ChronoLogger.hpp>

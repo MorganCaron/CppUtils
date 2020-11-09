@@ -19,12 +19,12 @@ headers = files([
 	'include/UnitTests/Graph/TreeNode.hpp',
 	'include/UnitTests/Language/Grammar.hpp',
 	'include/UnitTests/Language/Lexer.hpp',
+	'include/UnitTests/Language/Parameters.hpp',
 	'include/UnitTests/Language/Parser.hpp',
 	'include/UnitTests/Log/ChronoLogger.hpp',
 	'include/UnitTests/Log/Logger.hpp',
 	'include/UnitTests/String/String.hpp',
 	'include/UnitTests/Switch/Switch.hpp',
-	'include/UnitTests/Terminal/Parameters.hpp',
 	'include/UnitTests/Test/UnitTest.hpp',
 	'include/UnitTests/Type/Typed.hpp',
 	'include/UnitTests/Type/TypeId.hpp'

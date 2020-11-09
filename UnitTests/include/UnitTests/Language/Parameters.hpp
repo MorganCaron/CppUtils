@@ -2,7 +2,7 @@
 
 #include <CppUtils.hpp>
 
-namespace UnitTests::Terminal::Parameters
+namespace UnitTests::Language::Parameters
 {
 	struct ProgramSettings
 	{
@@ -12,10 +12,11 @@ namespace UnitTests::Terminal::Parameters
 
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
-		CppUtils::Test::UnitTest("Terminal/Parameters/parseParameters", [] {
+		CppUtils::Test::UnitTest("Language/Parameters/parseParameters", [] {
 			const auto argc = 8;
 			const char* argv[] = {"executable", "A[aaa]", "B[", "0", "]", "C", "DDD[]", "E[e e e ]"};
-			const auto parameters = CppUtils::Terminal::Parameters::parseParameters(argc, argv);
+			const auto parametersLexer = CppUtils::Language::Parameters::ParametersLexer{};
+			const auto parameters = parametersLexer.parseParameters(argc, argv);
 
 			for (const auto& [command, value] : parameters)
 				CppUtils::Log::Logger::logInformation(command + "["s + value + "]");
@@ -28,11 +29,12 @@ namespace UnitTests::Terminal::Parameters
 			ASSERT(parameters.at("E") == "e e e");
 		}),
 
-		CppUtils::Test::UnitTest("Terminal/Parameters/executeCommands", [] {
+		CppUtils::Test::UnitTest("Language/Parameters/executeCommands", [] {
 			const auto argc = 4;
 			const char* argv[] = {"executable", "info", "verbose", "parameter[value]"};
 			auto settings = ProgramSettings{};
-			const auto abort = CppUtils::Terminal::Parameters::executeCommands(argc, argv, {
+			const auto parametersLexer = CppUtils::Language::Parameters::ParametersLexer{};
+			const auto abort = parametersLexer.executeCommands(argc, argv, {
 				{
 					"info",
 					[]([[maybe_unused]] auto value) -> bool {

@@ -11,9 +11,10 @@ sources = files([
 ])
 
 headers = files([
-	'include/Language/Grammar.hpp',
+	'include/Language/GrammarLexer.hpp',
 	'include/Language/Lexeme.hpp',
 	'include/Language/Lexer.hpp',
+	'include/Language/ParametersLexer.hpp',
 	'include/Language/Parser.hpp',
 	'include/Language/Parsers.hpp'
 ])
@@ -26,7 +27,7 @@ language_lib = library(
 )
 
 language_dep = declare_dependency(
-	link_with:language_lib,
+	link_with: language_lib,
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )
