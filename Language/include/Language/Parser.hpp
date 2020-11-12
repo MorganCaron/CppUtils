@@ -1,120 +1,69 @@
 #pragma once
 
-#include <cctype>
-#include <algorithm>
-#include <string_view>
+#include <Language/Lexeme.hpp>
 
 namespace CppUtils::Language::Parser
 {
-	struct Cursor
+	[[nodiscard]] inline bool spaceParser(Reader::Cursor& cursor, [[maybe_unused]] Lexeme::TokenNode& parentNode)
 	{
-		Cursor(std::string_view c_src, std::size_t& c_pos):
-			src{c_src},
-			pos{c_pos}
-		{}
+		cursor.skipSpaces();
+		return true;
+	}
 
-		[[nodiscard]] inline bool isEndOfString() const noexcept
-		{
-			return (pos >= src.length());
-		}
-		
-		[[nodiscard]] inline char getChar() const
-		{
-			return src.at(pos);
-		}
+	[[nodiscard]] inline bool keywordParser(Reader::Cursor& cursor, Lexeme::TokenNode& parentNode)
+	{
+		const auto keyword = cursor.getKeywordAndSkipIt();
+		if (keyword.empty())
+			return false;
+		auto keywordToken = Lexeme::Token{keyword};
+		keywordToken.saveTypename();
+		parentNode.childs.emplace_back(Lexeme::TokenNode{std::move(keywordToken)});
+		return true;
+	}
 
-		[[nodiscard]] inline char getCharAndSkipIt()
-		{
-			return src.at(pos++);
-		}
+	[[nodiscard]] inline bool quoteParser(Reader::Cursor& cursor, Lexeme::TokenNode& parentNode)
+	{
+		if (cursor.isEndOfString())
+			return false;
+		const auto quote = cursor.getChar();
+		if (quote != '\'' && quote != '"')
+			return false;
+		const auto startPos = ++cursor.pos;
+		while (!cursor.isEndOfString() && cursor.getChar() != quote)
+			++cursor.pos;
+		if (cursor.getChar() != quote)
+			return false;
+		auto stringToken = Lexeme::Token{cursor.src.substr(startPos, cursor.pos - startPos)};
+		stringToken.saveTypename();
+		parentNode.childs.emplace_back(Lexeme::TokenNode{std::move(stringToken)});
+		++cursor.pos;
+		return true;
+	}
 
-		[[nodiscard]] inline std::string_view getStringIf(const std::function<bool(char)>& validator) const
-		{
-			const auto length = src.length();
-			auto nbChars = 0u;
-			while (nbChars < length && validator(src.at(pos + nbChars)))
-				++nbChars;
-			return src.substr(pos, nbChars);
-		}
+	[[nodiscard]] inline bool singleQuoteParser(Reader::Cursor& cursor, Lexeme::TokenNode& parentNode)
+	{
+		if (cursor.isEndOfString() || cursor.getChar() != '\'')
+			return false;
+		return quoteParser(cursor, parentNode);
+	}
 
-		[[nodiscard]] inline std::string_view getStringAndSkipItIf(const std::function<bool(char)>& validator)
-		{
-			const auto string = getStringIf(validator);
-			pos += string.length();
-			return string;
-		}
+	[[nodiscard]] inline bool doubleQuoteParser(Reader::Cursor& cursor, Lexeme::TokenNode& parentNode)
+	{
+		if (cursor.isEndOfString() || cursor.getChar() != '"')
+			return false;
+		return quoteParser(cursor, parentNode);
+	}
 
-		inline void skipStringIf(const std::function<bool(char)>& validator)
-		{
-			while (!isEndOfString() && validator(getChar()))
-				++pos;
-		}
-
-		inline void skipSpaces()
-		{
-			skipStringIf([](const char c) -> bool {
-				return std::isspace(static_cast<unsigned char>(c));
-			});
-		}
-
-		[[nodiscard]] inline std::string_view getNextNChar(const std::size_t size) const
-		{
-			return src.substr(pos, std::min(size, src.length() - pos));
-		}
-
-		[[nodiscard]] std::string_view getWord() const
-		{
-			return getStringIf([](const char c) -> bool {
-				return std::isalpha(static_cast<unsigned char>(c));
-			});
-		}
-
-		[[nodiscard]] std::string_view getWordAndSkipIt()
-		{
-			auto word = getWord();
-			pos += word.length();
-			return word;
-		}
-
-		[[nodiscard]] std::string_view getKeyword() const
-		{
-			const auto srcLength = src.length();
-			auto subPosition = pos;
-
-			if (subPosition < srcLength && (std::isalpha(src.at(subPosition)) || src.at(subPosition) == '_'))
-			{
-				do
-					++subPosition;
-				while (subPosition < srcLength && (std::isalnum(src.at(subPosition)) || src.at(subPosition) == '_'));
-			}
-			return src.substr(pos, subPosition - pos);
-		}
-
-		[[nodiscard]] std::string_view getKeywordAndSkipIt()
-		{
-			auto keyword = getKeyword();
-			pos += keyword.length();
-			return keyword;
-		}
-
-		[[nodiscard]] std::string_view getKeywordRequired(std::string_view errorMessage)
-		{
-			auto keyword = getKeywordAndSkipIt();
-			if (keyword.empty())
-				throw std::runtime_error{errorMessage.data()};
-			return keyword;
-		}
-
-		bool isEqualSkipIt(std::string_view str)
-		{
-			const auto length = str.length();
-			if (getNextNChar(length) != str)
-				return false;
-			pos += length;
-			return true;
-		}
-
-		std::string_view src;
-		std::size_t& pos;
-	};
+	[[nodiscard]] inline bool uintParser(Reader::Cursor& cursor, Lexeme::TokenNode& parentNode)
+	{
+		auto string = ""s;
+		while (!cursor.isEndOfString() && cursor.getChar() >= '0' && cursor.getChar() <= '9')
+			string += cursor.getCharAndSkipIt();
+		if (string.empty())
+			return false;
+		auto stringToken = Lexeme::Token{string};
+		stringToken.saveTypename();
+		parentNode.childs.emplace_back(Lexeme::TokenNode{std::move(stringToken)});
+		return true;
+	}
 }

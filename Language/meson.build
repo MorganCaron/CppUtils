@@ -11,12 +11,12 @@ sources = files([
 ])
 
 headers = files([
-	'include/Language/GrammarLexer.hpp',
+	'include/Language/Reader.hpp',
 	'include/Language/Lexeme.hpp',
-	'include/Language/Lexer.hpp',
-	'include/Language/ParametersLexer.hpp',
 	'include/Language/Parser.hpp',
-	'include/Language/Parsers.hpp'
+	'include/Language/Lexer.hpp',
+	'include/Language/GrammarLexer.hpp',
+	'include/Language/ParametersLexer.hpp'
 ])
 
 language_lib = library(

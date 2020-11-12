@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Language/Lexer.hpp>
-#include <Language/Parsers.hpp>
+#include <Language/Parser.hpp>
 
 namespace CppUtils::Language
 {

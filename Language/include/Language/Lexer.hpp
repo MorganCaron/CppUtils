@@ -12,7 +12,7 @@ namespace CppUtils::Language
 	private:
 		struct Context final
 		{
-			Parser::Cursor cursor;
+			Reader::Cursor cursor;
 			Lexeme::TokenNode parentNode;
 		};
 
@@ -36,7 +36,7 @@ namespace CppUtils::Language
 			const auto& definition = getDefinition(token);
 			auto pos = std::size_t{0};
 			auto context = Context{
-				Parser::Cursor{src, pos},
+				Reader::Cursor{src, pos},
 				Lexeme::TokenNode{token}
 			};
 
