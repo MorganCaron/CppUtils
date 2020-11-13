@@ -1,46 +1,46 @@
 #pragma once
 
-#include <Chrono/Chronometer.hpp>
+#include <CppUtils/Chrono/Chronometer.hpp>
 
-#include <Container/Vector.hpp>
+#include <CppUtils/Container/Vector.hpp>
 
-#include <External/DllExport.hpp>
-#include <External/DynamicLibrary.hpp>
+#include <CppUtils/External/DllExport.hpp>
+#include <CppUtils/External/DynamicLibrary.hpp>
 
-#include <FileSystem/File.hpp>
+#include <CppUtils/FileSystem/File.hpp>
 
-#include <Functional/Function.hpp>
+#include <CppUtils/Functional/Function.hpp>
 
-#include <Graph/MeshNode.hpp>
-#include <Graph/TreeNode.hpp>
+#include <CppUtils/Graph/MeshNode.hpp>
+#include <CppUtils/Graph/TreeNode.hpp>
 
-#include <Hash/Hash.hpp>
+#include <CppUtils/Hash/Hash.hpp>
 
-#include <Language/GrammarLexer.hpp>
-#include <Language/Lexeme.hpp>
-#include <Language/Lexer.hpp>
-#include <Language/ParametersLexer.hpp>
-#include <Language/Parser.hpp>
-#include <Language/Reader.hpp>
+#include <CppUtils/Language/GrammarLexer.hpp>
+#include <CppUtils/Language/Lexeme.hpp>
+#include <CppUtils/Language/Lexer.hpp>
+#include <CppUtils/Language/ParametersLexer.hpp>
+#include <CppUtils/Language/Parser.hpp>
+#include <CppUtils/Language/Reader.hpp>
 
-#include <String/String.hpp>
+#include <CppUtils/String/String.hpp>
 
-#include <Switch/Switch.hpp>
+#include <CppUtils/Switch/Switch.hpp>
 
-#include <Terminal/TextModifier/TextModifier.hpp>
+#include <CppUtils/Terminal/TextModifier/TextModifier.hpp>
 
-#include <Log/ChronoLogger.hpp>
-#include <Log/Logger.hpp>
+#include <CppUtils/Log/ChronoLogger.hpp>
+#include <CppUtils/Log/Logger.hpp>
 
-#include <Test/UnitTest.hpp>
+#include <CppUtils/Test/UnitTest.hpp>
 
-#include <Thread/AsyncIStreamListener.hpp>
-#include <Thread/LoopThread.hpp>
+#include <CppUtils/Thread/AsyncIStreamListener.hpp>
+#include <CppUtils/Thread/LoopThread.hpp>
 
-#include <Type/Cloneable.hpp>
-#include <Type/Named.hpp>
-#include <Type/NonCopyable.hpp>
-#include <Type/NonInstanciable.hpp>
-#include <Type/NonMovable.hpp>
-#include <Type/Typed.hpp>
-#include <Type/TypeId.hpp>
+#include <CppUtils/Type/Cloneable.hpp>
+#include <CppUtils/Type/Named.hpp>
+#include <CppUtils/Type/NonCopyable.hpp>
+#include <CppUtils/Type/NonInstanciable.hpp>
+#include <CppUtils/Type/NonMovable.hpp>
+#include <CppUtils/Type/Typed.hpp>
+#include <CppUtils/Type/TypeId.hpp>

@@ -8,8 +8,8 @@ sources = files([
 ])
 
 headers = files([
-	'include/Thread/AsyncIStreamListener.hpp',
-	'include/Thread/LoopThread.hpp'
+	'include/CppUtils/Thread/AsyncIStreamListener.hpp',
+	'include/CppUtils/Thread/LoopThread.hpp'
 ])
 
 thread_dep = declare_dependency(

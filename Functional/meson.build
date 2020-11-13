@@ -8,7 +8,7 @@ sources = files([
 ])
 
 headers = files([
-	'include/Functional/Function.hpp',
+	'include/CppUtils/Functional/Function.hpp',
 ])
 
 functional_dep = declare_dependency(

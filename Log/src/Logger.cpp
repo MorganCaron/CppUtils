@@ -1,4 +1,4 @@
-#include <Log/Logger.hpp>
+#include <CppUtils/Log/Logger.hpp>
 
 namespace CppUtils::Log
 {
@@ -43,7 +43,7 @@ namespace CppUtils::Log
 
 		if (logType == InformationType)
 		{
-			stream << ((newLine) ? (message.data() + "\n"s) : message) << std::flush;
+			stream << ((newLine) ? (std::string{message} + '\n') : message) << std::flush;
 			return;
 		}
 
@@ -54,7 +54,7 @@ namespace CppUtils::Log
 			CppUtils::Terminal::TextModifier::colorize(stream, m_colors.at(logType));
 		else
 			CppUtils::Terminal::TextModifier::reset(stream);
-		stream << ((newLine) ? (message.data() + "\n"s) : message) << std::flush;
+		stream << ((newLine) ? (std::string{message} + '\n') : message) << std::flush;
 #if defined(OS_WINDOWS)
 		SetConsoleTextAttribute(Terminal::getTerminalHandle(stream), attributes);
 #elif defined(OS_LINUX) || defined(OS_MACOS)

@@ -1,4 +1,4 @@
-#include <Switch/Switch.hpp>
+#include <CppUtils/Switch/Switch.hpp>
 
 namespace CppUtils
 {

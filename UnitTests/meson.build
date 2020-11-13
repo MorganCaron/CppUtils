@@ -10,24 +10,24 @@ sources = files([
 ])
 
 headers = files([
-	'include/UnitTests/Chrono/Chronometer.hpp',
-	'include/UnitTests/Container/Vector.hpp',
-	'include/UnitTests/FileSystem/File/Binary.hpp',
-	'include/UnitTests/FileSystem/File/String.hpp',
-	'include/UnitTests/Functional/Function.hpp',
-	'include/UnitTests/Graph/MeshNode.hpp',
-	'include/UnitTests/Graph/TreeNode.hpp',
-	'include/UnitTests/Language/Grammar.hpp',
-	'include/UnitTests/Language/Lexer.hpp',
-	'include/UnitTests/Language/Parameters.hpp',
-	'include/UnitTests/Language/Parser.hpp',
-	'include/UnitTests/Log/ChronoLogger.hpp',
-	'include/UnitTests/Log/Logger.hpp',
-	'include/UnitTests/String/String.hpp',
-	'include/UnitTests/Switch/Switch.hpp',
-	'include/UnitTests/Test/UnitTest.hpp',
-	'include/UnitTests/Type/Typed.hpp',
-	'include/UnitTests/Type/TypeId.hpp'
+	'include/CppUtils/UnitTests/Chrono/Chronometer.hpp',
+	'include/CppUtils/UnitTests/Container/Vector.hpp',
+	'include/CppUtils/UnitTests/FileSystem/File/Binary.hpp',
+	'include/CppUtils/UnitTests/FileSystem/File/String.hpp',
+	'include/CppUtils/UnitTests/Functional/Function.hpp',
+	'include/CppUtils/UnitTests/Graph/MeshNode.hpp',
+	'include/CppUtils/UnitTests/Graph/TreeNode.hpp',
+	'include/CppUtils/UnitTests/Language/Grammar.hpp',
+	'include/CppUtils/UnitTests/Language/Lexer.hpp',
+	'include/CppUtils/UnitTests/Language/Parameters.hpp',
+	'include/CppUtils/UnitTests/Language/Parser.hpp',
+	'include/CppUtils/UnitTests/Log/ChronoLogger.hpp',
+	'include/CppUtils/UnitTests/Log/Logger.hpp',
+	'include/CppUtils/UnitTests/String/String.hpp',
+	'include/CppUtils/UnitTests/Switch/Switch.hpp',
+	'include/CppUtils/UnitTests/Test/UnitTest.hpp',
+	'include/CppUtils/UnitTests/Type/Typed.hpp',
+	'include/CppUtils/UnitTests/Type/TypeId.hpp'
 ])
 
 unitTests_exe = executable(

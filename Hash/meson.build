@@ -8,7 +8,7 @@ sources = files([
 ])
 
 headers = files([
-	'include/Hash/Hash.hpp'
+	'include/CppUtils/Hash/Hash.hpp'
 ])
 
 hash_dep = declare_dependency(

@@ -8,7 +8,7 @@ sources = files([
 ])
 
 headers = files([
-	'include/Container/Vector.hpp'
+	'include/CppUtils/Container/Vector.hpp'
 ])
 
 container_dep = declare_dependency(

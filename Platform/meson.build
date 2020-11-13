@@ -8,7 +8,7 @@ sources = files([
 ])
 
 headers = files([
-	'include/Platform/OS.hpp'
+	'include/CppUtils/Platform/OS.hpp'
 ])
 
 platform_dep = declare_dependency(

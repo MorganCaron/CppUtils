@@ -8,7 +8,7 @@ sources = files([
 ])
 
 headers = files([
-	'include/Switch/Switch.hpp'
+	'include/CppUtils/Switch/Switch.hpp'
 ])
 
 switch_lib = library(

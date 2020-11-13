@@ -5,8 +5,8 @@ sources = files([
 ])
 
 headers = files([
-	'include/External/DllExport.hpp',
-	'include/External/DynamicLibrary.hpp'
+	'include/CppUtils/External/DllExport.hpp',
+	'include/CppUtils/External/DynamicLibrary.hpp'
 ])
 
 external_lib = library(

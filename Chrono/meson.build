@@ -8,7 +8,7 @@ sources = files([
 ])
 
 headers = files([
-	'include/Chrono/Chronometer.hpp'
+	'include/CppUtils/Chrono/Chronometer.hpp'
 ])
 
 chrono_dep = declare_dependency(

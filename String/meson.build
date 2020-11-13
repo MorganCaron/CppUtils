@@ -8,7 +8,7 @@ sources = files([
 ])
 
 headers = files([
-	'include/String/String.hpp'
+	'include/CppUtils/String/String.hpp'
 ])
 
 string_dep = declare_dependency(

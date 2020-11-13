@@ -10,8 +10,8 @@ sources = files([
 ])
 
 headers = files([
-	'include/Graph/MeshNode.hpp',
-	'include/Graph/TreeNode.hpp'
+	'include/CppUtils/Graph/MeshNode.hpp',
+	'include/CppUtils/Graph/TreeNode.hpp'
 ])
 
 graph_dep = declare_dependency(

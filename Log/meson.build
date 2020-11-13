@@ -11,8 +11,8 @@ sources = files([
 ])
 
 headers = files([
-	'include/Log/ChronoLogger.hpp',
-	'include/Log/Logger.hpp'
+	'include/CppUtils/Log/ChronoLogger.hpp',
+	'include/CppUtils/Log/Logger.hpp'
 ])
 
 log_lib = library(

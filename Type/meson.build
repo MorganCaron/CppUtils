@@ -11,13 +11,13 @@ sources = files([
 ])
 
 headers = files([
-	'include/Type/Named.hpp',
-	'include/Type/Cloneable.hpp',
-	'include/Type/NonCopyable.hpp',
-	'include/Type/NonInstanciable.hpp',
-	'include/Type/NonMovable.hpp',
-	'include/Type/Typed.hpp',
-	'include/Type/TypeId.hpp'
+	'include/CppUtils/Type/Named.hpp',
+	'include/CppUtils/Type/Cloneable.hpp',
+	'include/CppUtils/Type/NonCopyable.hpp',
+	'include/CppUtils/Type/NonInstanciable.hpp',
+	'include/CppUtils/Type/NonMovable.hpp',
+	'include/CppUtils/Type/Typed.hpp',
+	'include/CppUtils/Type/TypeId.hpp'
 ])
 
 type_lib = library(

@@ -8,7 +8,7 @@ sources = files([
 ])
 
 headers = files([
-	'include/Test/UnitTest.hpp'
+	'include/CppUtils/Test/UnitTest.hpp'
 ])
 
 test_dep = declare_dependency(
