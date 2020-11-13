@@ -5,6 +5,7 @@
 
 namespace CppUtils::Language
 {
+	using namespace std::literals;
 	using namespace Type::Literals;
 
 	class Lexer final
@@ -27,7 +28,7 @@ namespace CppUtils::Language
 		inline const Lexeme::Definition& getDefinition(const Lexeme::Token& token) const
 		{
 			if (m_lexemeDefinitions.find(token) == m_lexemeDefinitions.end())
-				throw std::runtime_error{"Undefined " + std::string{token.name} + " lexeme"};
+				throw std::runtime_error{"Undefined definition: " + std::string{token.name}};
 			return m_lexemeDefinitions.at(token);
 		}
 
@@ -41,25 +42,39 @@ namespace CppUtils::Language
 			};
 
 			if (!parseDefinition(definition, context))
-				throw std::runtime_error{"Syntax error in the " + std::string{token.name} + " lexeme."};
+				throw std::runtime_error{"Syntax error in the " + std::string{token.name} + " definition."};
 			if (!context.cursor.isEndOfString())
-				throw std::runtime_error{"Syntax error:\nThe following string does not correspond to any known lexeme:\n" + std::string{String::trimString(context.cursor.getNextNChar(20))} + "..."};
+				throw std::runtime_error{"Syntax error:\nThe following string does not correspond to any known element:\n" + std::string{String::rightTrimString(context.cursor.getNextNChar(20))} + "..."};
 			return context.parentNode;
 		}
 
 	private:
+		[[nodiscard]] inline std::string getLexemeName(const std::unique_ptr<Lexeme::ILexeme>& lexeme) const
+		{
+			if (lexeme->getType() == Lexeme::StringLexemeType)
+				return std::string{'"' + Type::ensureType<Lexeme::StringLexeme>(lexeme).value + '"'};
+			if (lexeme->getType() == Lexeme::TokenLexemeType)
+				return std::string{Type::ensureType<Lexeme::TokenLexeme>(lexeme).value.name};
+			return ""s;
+		}
+
 		[[nodiscard]] inline bool parseDefinition(const Lexeme::Definition& definition, Context& context) const
 		{
 			if (definition.lexemes.empty())
-				throw std::runtime_error{"Undefined " + std::string{definition.token.name} + " lexeme"};
+				throw std::runtime_error{"Undefined definition: " + std::string{definition.token.name}};
 			const auto startPos = context.cursor.pos;
+			auto partialMatch = false;
 			for (const auto& lexeme : definition.lexemes)
 			{
 				if (!parseLexeme(lexeme, context))
 				{
+					if (partialMatch)
+						throw std::runtime_error{"Syntax error in " + std::string{definition.token.name} + ":\n" + std::string{String::rightTrimString(context.cursor.getNextNChar(20))} + "...\nExpected format: " + std::string{lexeme->getType().name} + " " + getLexemeName(lexeme)};
 					context.cursor.pos = startPos;
 					return false;
 				}
+				if (lexeme->getType() == Lexeme::StringLexemeType)
+					partialMatch = true;
 			}
 			return true;
 		}

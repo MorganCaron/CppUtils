@@ -21,14 +21,14 @@ namespace CppUtils::Language::Lexeme
 	template<const Type::TypeId& StorageTypeId, typename StorageType>
 	using Lexeme = Type::Typed<StorageTypeId, StorageType>;
 	
-	static constexpr auto StringLexemeType = "StringLexeme"_typeId;
+	static constexpr auto StringLexemeType = "string"_typeId;
 	using StringLexeme = Lexeme<StringLexemeType, std::string>;
 
-	static constexpr auto ParserLexemeType = "ParserLexeme"_typeId;
+	static constexpr auto ParserLexemeType = "parser"_typeId;
 	using ParserFunction = std::function<bool (Reader::Cursor&, TokenNode&)>;
 	using ParserLexeme = Lexeme<ParserLexemeType, ParserFunction>; 
 
-	static constexpr auto TokenLexemeType = "TokenLexeme"_typeId;
+	static constexpr auto TokenLexemeType = "token"_typeId;
 	using TokenLexeme = Lexeme<TokenLexemeType, Token>;
 
 	enum class RecurrenceType
@@ -46,7 +46,7 @@ namespace CppUtils::Language::Lexeme
 		std::size_t repetitions;
 	};
 
-	static constexpr auto RecurrentLexemeType = "RecurrentLexeme"_typeId;
+	static constexpr auto RecurrentLexemeType = "recurrence"_typeId;
 	using RecurrentLexeme = Lexeme<RecurrentLexemeType, Recurrence>;
 
 	struct Definition;
@@ -57,7 +57,7 @@ namespace CppUtils::Language::Lexeme
 		[[nodiscard]] Contingence& operator||(const Definition& rhs);
 	};
 
-	static constexpr auto ContingentLexemeType = "ContingentLexeme"_typeId;
+	static constexpr auto ContingentLexemeType = "contingency"_typeId;
 	using ContingentLexeme = Lexeme<ContingentLexemeType, Contingence>;
 
 	struct Definition final
