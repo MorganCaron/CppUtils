@@ -33,6 +33,12 @@ jobs:
     - uses: actions/setup-python@v1
       with:
         python-version: '3.x'
+    - uses: haya14busa/action-cond@v1
+      id: compiler
+      with:
+        cond: ${{ matrix.os.value == 'ubuntu-latest' && matrix.compiler == 'g++' }}
+        if_true: 'g++-9'
+        if_false: ${{ matrix.compiler }}
     - name: Install LLVM
       if: matrix.os.value == 'windows-latest' && matrix.compiler == 'clang++'
       run: choco install llvm
@@ -42,7 +48,7 @@ jobs:
       run: ${{ matrix.os.install-ninja }}
     - name: Run Meson
       env:
-        CXX: ${{ matrix.compiler }}
+        CXX: ${{ steps.compiler.outputs.value }}
       run: ${{ matrix.os.before-meson-build }} meson build -Ddefault_library=${{ matrix.library-type }}
     - name: Run Ninja
       run: ninja -C build
