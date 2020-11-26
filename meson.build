@@ -56,15 +56,7 @@ headers = files([
 	'include/CppUtils.hpp'
 ])
 
-cppUtils_lib = library(
-	'CppUtils',
-	sources + headers,
-	include_directories: includeDir,
-	dependencies: public_dependencies + private_dependencies
-)
-
 cppUtils_dep = declare_dependency(
-	link_with: cppUtils_lib,
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )
