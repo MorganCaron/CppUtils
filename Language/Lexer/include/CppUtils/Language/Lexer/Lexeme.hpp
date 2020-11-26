@@ -8,9 +8,9 @@
 #include <CppUtils/Type/Typed.hpp>
 #include <CppUtils/Type/TypeId.hpp>
 #include <CppUtils/Graph/TreeNode.hpp>
-#include <CppUtils/Language/Reader.hpp>
+#include <CppUtils/Language/Parser/Cursor.hpp>
 
-namespace CppUtils::Language::Lexeme
+namespace CppUtils::Language::Lexer::Lexeme
 {
 	using namespace Type::Literals;
 
@@ -25,7 +25,7 @@ namespace CppUtils::Language::Lexeme
 	using StringLexeme = Lexeme<StringLexemeType, std::string>;
 
 	static constexpr auto ParserLexemeType = "parser"_typeId;
-	using ParserFunction = std::function<bool (Reader::Cursor&, TokenNode&)>;
+	using ParserFunction = std::function<bool (Parser::Cursor&, TokenNode&)>;
 	using ParserLexeme = Lexeme<ParserLexemeType, ParserFunction>; 
 
 	static constexpr auto TokenLexemeType = "token"_typeId;

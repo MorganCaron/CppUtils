@@ -1,6 +1,6 @@
-#include <CppUtils/Language/Lexeme.hpp>
+#include <CppUtils/Language/Lexer/Lexeme.hpp>
 
-namespace CppUtils::Language::Lexeme
+namespace CppUtils::Language::Lexer::Lexeme
 {
 	Contingence& Contingence::operator||(const Definition& rhs)
 	{

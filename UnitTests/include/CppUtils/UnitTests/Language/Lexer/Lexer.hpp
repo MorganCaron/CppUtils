@@ -11,7 +11,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 		CppUtils::Test::UnitTest("Language/Lexer/Lexemes", [] {
 			using namespace CppUtils::Type::Literals;
 
-			auto lexer = CppUtils::Language::Lexer{};
+			auto lexer = CppUtils::Language::Lexer::Lexer{};
 
 			auto& printLexeme = lexer.lexeme("print"_typeId);
 			auto& stringLexeme = lexer.lexeme("string"_typeId);
@@ -34,17 +34,17 @@ namespace CppUtils::UnitTests::Language::Lexer
 		CppUtils::Test::UnitTest("Language/Lexer/Parsers", [] {
 			using namespace CppUtils::Type::Literals;
 
-			auto lexer = CppUtils::Language::Lexer{};
+			auto lexer = CppUtils::Language::Lexer::Lexer{};
 			auto& printLexeme = lexer.lexeme("print"_typeId);
 			auto& stringLexeme = lexer.lexeme("string"_typeId);
 
 			printLexeme
-				>> CppUtils::Language::Parser::spaceParser >> "print("
+				>> CppUtils::Language::Lexer::Parsers::spaceParser >> "print("
 				>> stringLexeme
-				>> CppUtils::Language::Parser::spaceParser >> ");";
+				>> CppUtils::Language::Lexer::Parsers::spaceParser >> ");";
 			stringLexeme
-				>> CppUtils::Language::Parser::spaceParser
-				>> CppUtils::Language::Parser::quoteParser;
+				>> CppUtils::Language::Lexer::Parsers::spaceParser
+				>> CppUtils::Language::Lexer::Parsers::quoteParser;
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
 			const auto tokenTree = lexer.parse("print"_typeId, src);
@@ -63,21 +63,21 @@ namespace CppUtils::UnitTests::Language::Lexer
 		CppUtils::Test::UnitTest("Language/Lexer/Recurrence", [] {
 			using namespace CppUtils::Type::Literals;
 
-			auto lexer = CppUtils::Language::Lexer{};
+			auto lexer = CppUtils::Language::Lexer::Lexer{};
 			auto& mainLexeme = lexer.lexeme("main"_typeId);
 			auto& printLexeme = lexer.lexeme("print"_typeId);
 			auto& stringLexeme = lexer.lexeme("string"_typeId);
 
 			mainLexeme
 				>> (printLexeme >= 0)
-				>> CppUtils::Language::Parser::spaceParser;
+				>> CppUtils::Language::Lexer::Parsers::spaceParser;
 			printLexeme
-				>> CppUtils::Language::Parser::spaceParser >> "print("
+				>> CppUtils::Language::Lexer::Parsers::spaceParser >> "print("
 				>> stringLexeme
-				>> CppUtils::Language::Parser::spaceParser >> ");";
+				>> CppUtils::Language::Lexer::Parsers::spaceParser >> ");";
 			stringLexeme
-				>> CppUtils::Language::Parser::spaceParser
-				>> CppUtils::Language::Parser::quoteParser;
+				>> CppUtils::Language::Lexer::Parsers::spaceParser
+				>> CppUtils::Language::Lexer::Parsers::quoteParser;
 
 			static constexpr auto src = "\
 			print(\"Hello World!\");\
@@ -97,7 +97,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 		CppUtils::Test::UnitTest("Language/Lexer/Contingence", [] {
 			using namespace CppUtils::Type::Literals;
 
-			auto lexer = CppUtils::Language::Lexer{};
+			auto lexer = CppUtils::Language::Lexer::Lexer{};
 			auto& mainLexeme = lexer.lexeme("main"_typeId);
 			auto& valueLexeme = lexer.lexeme("value"_typeId);
 			auto& keywordLexeme = lexer.lexeme("keyword"_typeId);
@@ -105,14 +105,14 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 			mainLexeme
 				>> (valueLexeme >= 0)
-				>> CppUtils::Language::Parser::spaceParser;
+				>> CppUtils::Language::Lexer::Parsers::spaceParser;
 			valueLexeme
-				>> CppUtils::Language::Parser::spaceParser
+				>> CppUtils::Language::Lexer::Parsers::spaceParser
 				>> (keywordLexeme || stringLexeme);
 			keywordLexeme
-				>> CppUtils::Language::Parser::keywordParser;
+				>> CppUtils::Language::Lexer::Parsers::keywordParser;
 			stringLexeme
-				>> CppUtils::Language::Parser::quoteParser;
+				>> CppUtils::Language::Lexer::Parsers::quoteParser;
 
 			static constexpr auto src = "\
 			test \"test\" test \"test\"\

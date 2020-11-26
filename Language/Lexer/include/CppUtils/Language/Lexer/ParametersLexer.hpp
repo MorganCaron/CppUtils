@@ -1,10 +1,10 @@
 #pragma once
 
-#include <CppUtils/Language/GrammarLexer.hpp>
+#include <CppUtils/Language/Lexer/GrammarLexer.hpp>
 
-namespace CppUtils::Language::Parameters
+namespace CppUtils::Language::Lexer::Parameters
 {
-	struct Command
+	struct Command final
 	{
 		std::string_view name;
 		std::function<bool(std::string_view)> function;
@@ -18,8 +18,8 @@ namespace CppUtils::Language::Parameters
 			using namespace std::literals;
 			using namespace Type::Literals;
 
-			m_grammarLexer.addParserFunction("spaceParser"_typeId, Parser::spaceParser);
-			m_grammarLexer.addParserFunction("keywordParser"_typeId, Parser::keywordParser);
+			m_grammarLexer.addParserFunction("spaceParser"_typeId, Parsers::spaceParser);
+			m_grammarLexer.addParserFunction("keywordParser"_typeId, Parsers::keywordParser);
 			m_grammarLexer.addParserFunction("valueParser"_typeId, [](auto& cursor, auto& parentNode) {
 				cursor.skipSpaces();
 				if (!cursor.isEndOfString() && cursor.getChar() != '[')

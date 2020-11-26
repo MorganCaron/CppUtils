@@ -1,9 +1,9 @@
 #pragma once
 
-#include <CppUtils/Language/Lexeme.hpp>
+#include <CppUtils/Language/Lexer/Lexeme.hpp>
 #include <CppUtils/String/String.hpp>
 
-namespace CppUtils::Language
+namespace CppUtils::Language::Lexer
 {
 	using namespace std::literals;
 	using namespace Type::Literals;
@@ -13,7 +13,7 @@ namespace CppUtils::Language
 	private:
 		struct Context final
 		{
-			Reader::Cursor cursor;
+			Parser::Cursor cursor;
 			Lexeme::TokenNode parentNode;
 		};
 
@@ -37,7 +37,7 @@ namespace CppUtils::Language
 			const auto& definition = getDefinition(token);
 			auto pos = std::size_t{0};
 			auto context = Context{
-				Reader::Cursor{src, pos},
+				Parser::Cursor{src, pos},
 				Lexeme::TokenNode{token}
 			};
 

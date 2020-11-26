@@ -1,9 +1,10 @@
 #pragma once
 
-#include <CppUtils/Language/Lexer.hpp>
-#include <CppUtils/Language/Parser.hpp>
+#include <CppUtils/Language/Parser/Cursor.hpp>
+#include <CppUtils/Language/Lexer/Lexer.hpp>
+#include <CppUtils/Language/Lexer/Parsers.hpp>
 
-namespace CppUtils::Language
+namespace CppUtils::Language::Lexer
 {
 	class GrammarLexer final
 	{
@@ -26,36 +27,36 @@ namespace CppUtils::Language
 			auto& moreOrEqualTo = m_grammarLexer.lexeme("moreOrEqualTo"_typeId);
 			auto& moreThan = m_grammarLexer.lexeme("moreThan"_typeId);
 			
-			main >> (statement >= 0) >> Parser::spaceParser;
+			main >> (statement >= 0) >> Parsers::spaceParser;
 			statement
-				>> Parser::spaceParser >> Parser::keywordParser
-				>> Parser::spaceParser >> ':'
+				>> Parsers::spaceParser >> Parsers::keywordParser
+				>> Parsers::spaceParser >> ':'
 				>> lexemes
-				>> Parser::spaceParser >> ';';
+				>> Parsers::spaceParser >> ';';
 			lexemes	>> (lexeme >= 1);
 			lexeme
-				>> Parser::spaceParser >> (string || token || optional || parenthesis);
-			string >> Parser::quoteParser;
-			token >> Parser::keywordParser;
+				>> Parsers::spaceParser >> (string || token || optional || parenthesis);
+			string >> Parsers::quoteParser;
+			token >> Parsers::keywordParser;
 			optional
 				>> '!'
-				>> Parser::spaceParser >> token;
+				>> Parsers::spaceParser >> token;
 			parenthesis
 				>> '('
-				>> Parser::spaceParser >> (recurrence || contingence)
-				>> Parser::spaceParser >> ')';
+				>> Parsers::spaceParser >> (recurrence || contingence)
+				>> Parsers::spaceParser >> ')';
 			recurrence
-				>> Parser::spaceParser >> token
+				>> Parsers::spaceParser >> token
 				>> recurrenceOperator
-				>> Parser::spaceParser >> Parser::uintParser;
+				>> Parsers::spaceParser >> Parsers::uintParser;
 			contingence
-				>> Parser::spaceParser >> token
+				>> Parsers::spaceParser >> token
 				>> (contingenceArgument >= 1);
 			contingenceArgument
-				>> Parser::spaceParser >> "||"
-				>> Parser::spaceParser >> token;
+				>> Parsers::spaceParser >> "||"
+				>> Parsers::spaceParser >> token;
 			recurrenceOperator
-				>> Parser::spaceParser >> (equalTo || moreOrEqualTo || moreThan);
+				>> Parsers::spaceParser >> (equalTo || moreOrEqualTo || moreThan);
 			equalTo >> "*";
 			moreOrEqualTo >> ">=";
 			moreThan >> '>';

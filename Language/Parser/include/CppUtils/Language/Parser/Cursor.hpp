@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <string_view>
 
-namespace CppUtils::Language::Reader
+namespace CppUtils::Language::Parser
 {
 	struct Cursor
 	{

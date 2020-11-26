@@ -16,12 +16,18 @@
 
 #include <CppUtils/Hash/Hash.hpp>
 
-#include <CppUtils/Language/GrammarLexer.hpp>
-#include <CppUtils/Language/Lexeme.hpp>
-#include <CppUtils/Language/Lexer.hpp>
-#include <CppUtils/Language/ParametersLexer.hpp>
-#include <CppUtils/Language/Parser.hpp>
-#include <CppUtils/Language/Reader.hpp>
+#include <CppUtils/Language/Parser/Cursor.hpp>
+
+#include <CppUtils/Language/Lexer/GrammarLexer.hpp>
+#include <CppUtils/Language/Lexer/Lexeme.hpp>
+#include <CppUtils/Language/Lexer/Lexer.hpp>
+#include <CppUtils/Language/Lexer/ParametersLexer.hpp>
+#include <CppUtils/Language/Lexer/Parsers.hpp>
+
+#include <CppUtils/Language/VM/Bytecode.hpp>
+#include <CppUtils/Language/VM/Cursor.hpp>
+#include <CppUtils/Language/VM/Operations.hpp>
+#include <CppUtils/Language/VM/VM.hpp>
 
 #include <CppUtils/String/String.hpp>
 

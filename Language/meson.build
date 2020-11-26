@@ -1,22 +1,24 @@
+subdir('Parser')
+subdir('Lexer')
+subdir('VM')
+# subdir('Compiler')
+
 public_dependencies = [
-	type_dep,
-	graph_dep
+	language_parser_dep,
+	language_lexer_dep,
+	language_vm_dep,
+#	language_compiler_dep
 ]
 private_dependencies = []
 
-includeDir = include_directories(['include/', '.'])
+includeDir = include_directories(['.'])
 
 sources = files([
-	'src/Lexeme.cpp'
+
 ])
 
 headers = files([
-	'include/CppUtils/Language/Reader.hpp',
-	'include/CppUtils/Language/Lexeme.hpp',
-	'include/CppUtils/Language/Parser.hpp',
-	'include/CppUtils/Language/Lexer.hpp',
-	'include/CppUtils/Language/GrammarLexer.hpp',
-	'include/CppUtils/Language/ParametersLexer.hpp'
+
 ])
 
 language_lib = library(

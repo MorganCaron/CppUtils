@@ -33,7 +33,7 @@ namespace CppUtils::Type
 			return id != rhs.id;
 		}
 
-		struct hash_fn
+		struct hash_fn final
 		{
 			[[nodiscard]] inline constexpr std::size_t operator()(const TypeId &type) const noexcept
 			{

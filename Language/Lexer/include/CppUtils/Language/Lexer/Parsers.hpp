@@ -1,18 +1,18 @@
 #pragma once
 
-#include <CppUtils/Language/Lexeme.hpp>
+#include <CppUtils/Language/Lexer/Lexeme.hpp>
 
-namespace CppUtils::Language::Parser
+namespace CppUtils::Language::Lexer::Parsers
 {
 	using namespace std::literals;
 	
-	[[nodiscard]] inline bool spaceParser(Reader::Cursor& cursor, [[maybe_unused]] Lexeme::TokenNode& parentNode)
+	[[nodiscard]] inline bool spaceParser(Parser::Cursor& cursor, [[maybe_unused]] Lexeme::TokenNode& parentNode)
 	{
 		cursor.skipSpaces();
 		return true;
 	}
 
-	[[nodiscard]] inline bool keywordParser(Reader::Cursor& cursor, Lexeme::TokenNode& parentNode)
+	[[nodiscard]] inline bool keywordParser(Parser::Cursor& cursor, Lexeme::TokenNode& parentNode)
 	{
 		const auto keyword = cursor.getKeywordAndSkipIt();
 		if (keyword.empty())
@@ -23,7 +23,7 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	[[nodiscard]] inline bool quoteParser(Reader::Cursor& cursor, Lexeme::TokenNode& parentNode)
+	[[nodiscard]] inline bool quoteParser(Parser::Cursor& cursor, Lexeme::TokenNode& parentNode)
 	{
 		if (cursor.isEndOfString())
 			return false;
@@ -42,21 +42,21 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	[[nodiscard]] inline bool singleQuoteParser(Reader::Cursor& cursor, Lexeme::TokenNode& parentNode)
+	[[nodiscard]] inline bool singleQuoteParser(Parser::Cursor& cursor, Lexeme::TokenNode& parentNode)
 	{
 		if (cursor.isEndOfString() || cursor.getChar() != '\'')
 			return false;
 		return quoteParser(cursor, parentNode);
 	}
 
-	[[nodiscard]] inline bool doubleQuoteParser(Reader::Cursor& cursor, Lexeme::TokenNode& parentNode)
+	[[nodiscard]] inline bool doubleQuoteParser(Parser::Cursor& cursor, Lexeme::TokenNode& parentNode)
 	{
 		if (cursor.isEndOfString() || cursor.getChar() != '"')
 			return false;
 		return quoteParser(cursor, parentNode);
 	}
 
-	[[nodiscard]] inline bool uintParser(Reader::Cursor& cursor, Lexeme::TokenNode& parentNode)
+	[[nodiscard]] inline bool uintParser(Parser::Cursor& cursor, Lexeme::TokenNode& parentNode)
 	{
 		auto string = ""s;
 		while (!cursor.isEndOfString() && cursor.getChar() >= '0' && cursor.getChar() <= '9')

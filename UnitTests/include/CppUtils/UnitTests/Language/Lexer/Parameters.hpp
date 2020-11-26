@@ -2,7 +2,7 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTests::Language::Parameters
+namespace CppUtils::UnitTests::Language::Lexer::Parameters
 {
 	using namespace std::literals;
 	
@@ -14,10 +14,10 @@ namespace CppUtils::UnitTests::Language::Parameters
 
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
-		CppUtils::Test::UnitTest("Language/Parameters/parseParameters", [] {
+		CppUtils::Test::UnitTest("Language/Lexer/Parameters/parseParameters", [] {
 			const auto argc = 8;
 			const char* argv[] = {"executable", "A[aaa]", "B[", "0", "]", "C", "DDD[]", "E[e e e ]"};
-			const auto parametersLexer = CppUtils::Language::Parameters::ParametersLexer{};
+			const auto parametersLexer = CppUtils::Language::Lexer::Parameters::ParametersLexer{};
 			const auto parameters = parametersLexer.parseParameters(argc, argv);
 
 			for (const auto& [command, value] : parameters)
@@ -31,11 +31,11 @@ namespace CppUtils::UnitTests::Language::Parameters
 			ASSERT(parameters.at("E") == "e e e");
 		}),
 
-		CppUtils::Test::UnitTest("Language/Parameters/executeCommands", [] {
+		CppUtils::Test::UnitTest("Language/Lexer/Parameters/executeCommands", [] {
 			const auto argc = 4;
 			const char* argv[] = {"executable", "info", "verbose", "parameter[value]"};
 			auto settings = ProgramSettings{};
-			const auto parametersLexer = CppUtils::Language::Parameters::ParametersLexer{};
+			const auto parametersLexer = CppUtils::Language::Lexer::Parameters::ParametersLexer{};
 			const auto abort = parametersLexer.executeCommands(argc, argv, {
 				{
 					"info",
