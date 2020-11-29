@@ -5,9 +5,10 @@
 #include <CppUtils/UnitTests/Functional/Function.hpp>
 #include <CppUtils/UnitTests/Graph/MeshNode.hpp>
 #include <CppUtils/UnitTests/Graph/TreeNode.hpp>
-#include <CppUtils/UnitTests/Language/Lexer/Grammar.hpp>
+#include <CppUtils/UnitTests/Language/Lexer/GrammarLexer.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Lexer.hpp>
-#include <CppUtils/UnitTests/Language/Lexer/Parameters.hpp>
+#include <CppUtils/UnitTests/Language/Lexer/ParametersLexer.hpp>
+#include <CppUtils/UnitTests/Language/Lexer/StringTreeLexer.hpp>
 #include <CppUtils/UnitTests/Language/Parser/Cursor.hpp>
 #include <CppUtils/UnitTests/Language/VM/VM.hpp>
 #include <CppUtils/UnitTests/Log/ChronoLogger.hpp>
@@ -28,9 +29,10 @@ int main()
 		std::cref(CppUtils::UnitTests::Functional::Function::tests),
 		std::cref(CppUtils::UnitTests::Graph::MeshNode::tests),
 		std::cref(CppUtils::UnitTests::Graph::TreeNode::tests),
-		std::cref(CppUtils::UnitTests::Language::Lexer::Grammar::tests),
+		std::cref(CppUtils::UnitTests::Language::Lexer::GrammarLexer::tests),
 		std::cref(CppUtils::UnitTests::Language::Lexer::tests),
-		std::cref(CppUtils::UnitTests::Language::Lexer::Parameters::tests),
+		std::cref(CppUtils::UnitTests::Language::Lexer::ParametersLexer::tests),
+		std::cref(CppUtils::UnitTests::Language::Lexer::StringTreeLexer::tests),
 		std::cref(CppUtils::UnitTests::Language::Parser::Cursor::tests),
 		std::cref(CppUtils::UnitTests::Language::VM::tests),
 		std::cref(CppUtils::UnitTests::Log::ChronoLogger::tests),

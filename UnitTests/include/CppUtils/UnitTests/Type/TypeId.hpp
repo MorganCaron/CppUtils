@@ -4,11 +4,11 @@
 
 namespace CppUtils::UnitTests::Type::TypeId
 {
-	using namespace CppUtils::Type::Literals;
-
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
-		CppUtils::Test::UnitTest("Type/TypeId/TypeId", [] {
+		CppUtils::Test::UnitTest{"Type/TypeId/TypeId", [] {
+			using namespace CppUtils::Type::Literals;
+
 			const auto numberType0 = "Number"_typeId;
 			const auto numberType1 = "Number"_typeId;
 			const auto stringType = "String"_typeId;
@@ -22,9 +22,11 @@ namespace CppUtils::UnitTests::Type::TypeId
 			CppUtils::Log::Logger::logInformation(types.at(stringType));
 			ASSERT(types.at(numberType0) == "Number");
 			ASSERT(types.at(stringType) == "String");
-		}),
+		}},
 
-		CppUtils::Test::UnitTest("Type/TypeId/TypeIdStorage", [] {
+		CppUtils::Test::UnitTest{"Type/TypeId/TypeIdStorage", [] {
+			using namespace CppUtils::Type::Literals;
+			
 			auto numberType0 = CppUtils::Type::TypeId{};
 			auto numberType1 = CppUtils::Type::TypeId{};
 			{
@@ -45,7 +47,7 @@ namespace CppUtils::UnitTests::Type::TypeId
 			CppUtils::Log::Logger::logInformation(numberType1.name);
 			ASSERT(numberType0.name != numberType1.name);
 			ASSERT(numberType1.name == numberType2.name);
-		})
+		}}
 
 	};
 }

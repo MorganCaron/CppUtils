@@ -6,7 +6,7 @@ namespace CppUtils::UnitTests::Functional::Function
 {
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
-		CppUtils::Test::UnitTest("Functional/callFunction", [] {
+		CppUtils::Test::UnitTest{"Functional/callFunction", [] {
 			const auto sum = std::function<int(int, int, int)>{[](int a, int b, int c) {
 				return a + b + c;
 			}};
@@ -14,7 +14,7 @@ namespace CppUtils::UnitTests::Functional::Function
 			const auto result = CppUtils::Functional::callFunction<3>(sum, vec);
 			CppUtils::Log::Logger::logInformation(std::to_string(result));
 			ASSERT(result == 42);
-		})
+		}}
 
 	};
 }

@@ -16,7 +16,8 @@ headers = files([
 	'include/CppUtils/Language/Lexer/Lexer.hpp',
 	'include/CppUtils/Language/Lexer/GrammarLexer.hpp',
 	'include/CppUtils/Language/Lexer/ParametersLexer.hpp',
-	'include/CppUtils/Language/Lexer/Parsers.hpp'
+	'include/CppUtils/Language/Lexer/Parsers.hpp',
+	'include/CppUtils/Language/Lexer/StringTreeLexer.hpp'
 ])
 
 language_lexer_lib = library(

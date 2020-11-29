@@ -15,7 +15,7 @@ namespace CppUtils::UnitTests::Type::Typed
 
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
-		CppUtils::Test::UnitTest("Type/Typed", [] {
+		CppUtils::Test::UnitTest{"Type/Typed", [] {
 			const auto typedInt = Int{42};
 			const auto typedString = String{"String"};
 
@@ -25,9 +25,9 @@ namespace CppUtils::UnitTests::Type::Typed
 
 			CppUtils::Log::Logger::logInformation(std::to_string(typedInt.value));
 			CppUtils::Log::Logger::logInformation(typedString.value);
-		}),
+		}},
 
-		CppUtils::Test::UnitTest("Type/Typed/vector", [] {
+		CppUtils::Test::UnitTest{"Type/Typed/vector", [] {
 			auto values = std::vector<std::unique_ptr<CppUtils::Type::ITyped>>{};
 			values.emplace_back(std::make_unique<Int>(42));
 			values.emplace_back(std::make_unique<String>("String"));
@@ -43,7 +43,7 @@ namespace CppUtils::UnitTests::Type::Typed
 
 			ASSERT(values.at(0)->getType() == IntType);
 			ASSERT(values.at(1)->getType() == StringType);
-		})
+		}}
 
 	};
 }

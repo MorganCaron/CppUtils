@@ -36,6 +36,11 @@ namespace CppUtils::Test
 			m_function{std::move(function)}
 		{}
 
+		[[nodiscard]] inline std::string_view getName() const noexcept
+		{
+			return m_name;
+		}
+
 		bool pass() const
 		{
 			CppUtils::Log::Logger::logImportant(std::string(50, '_') + '\n' + m_name + ':');

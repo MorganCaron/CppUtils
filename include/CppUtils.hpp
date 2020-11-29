@@ -22,6 +22,7 @@
 #include <CppUtils/Language/Lexer/Lexeme.hpp>
 #include <CppUtils/Language/Lexer/Lexer.hpp>
 #include <CppUtils/Language/Lexer/ParametersLexer.hpp>
+#include <CppUtils/Language/Lexer/StringTreeLexer.hpp>
 #include <CppUtils/Language/Lexer/Parsers.hpp>
 
 #include <CppUtils/Language/VM/Bytecode.hpp>

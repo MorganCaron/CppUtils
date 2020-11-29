@@ -4,11 +4,10 @@
 
 namespace CppUtils::UnitTests::Language::Lexer
 {
-	using namespace std::literals;
-	
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
-		CppUtils::Test::UnitTest("Language/Lexer/Lexemes", [] {
+		CppUtils::Test::UnitTest{"Language/Lexer/Lexemes", [] {
+			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
@@ -29,9 +28,10 @@ namespace CppUtils::UnitTests::Language::Lexer
 			ASSERT(tokenTree.childs.size() == 1);
 			ASSERT(tokenTree.childs.at(0).self == "string"_typeId);
 			ASSERT(tokenTree.childs.at(0).childs.size() == 0);
-		}),
+		}},
 
-		CppUtils::Test::UnitTest("Language/Lexer/Parsers", [] {
+		CppUtils::Test::UnitTest{"Language/Lexer/Parsers", [] {
+			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
@@ -58,9 +58,10 @@ namespace CppUtils::UnitTests::Language::Lexer
 			ASSERT(tokenTree.childs.at(0).childs.size() == 1);
 			ASSERT(tokenTree.childs.at(0).childs.at(0).self == "Hello World!"_typeId);
 			ASSERT(tokenTree.childs.at(0).childs.at(0).childs.size() == 0);
-		}),
+		}},
 
-		CppUtils::Test::UnitTest("Language/Lexer/Recurrence", [] {
+		CppUtils::Test::UnitTest{"Language/Lexer/Recurrence", [] {
+			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
@@ -79,10 +80,11 @@ namespace CppUtils::UnitTests::Language::Lexer
 				>> CppUtils::Language::Lexer::Parsers::spaceParser
 				>> CppUtils::Language::Lexer::Parsers::quoteParser;
 
-			static constexpr auto src = "\
-			print(\"Hello World!\");\
-			print(\"Test\");\
-			print(\"Ok\");"sv;
+			static constexpr auto src = R"(
+				print("Hello World!");
+				print("Test");
+				print("Ok");
+			)"sv;
 			const auto tokenTree = lexer.parse("main"_typeId, src);
 
 			CppUtils::Terminal::setConsoleOutputUTF8();
@@ -92,9 +94,10 @@ namespace CppUtils::UnitTests::Language::Lexer
 			ASSERT(tokenTree.childs.size() == 3);
 			for (const auto& child : tokenTree.childs)
 				ASSERT(child.self == "print"_typeId);
-		}),
+		}},
 
-		CppUtils::Test::UnitTest("Language/Lexer/Contingence", [] {
+		CppUtils::Test::UnitTest{"Language/Lexer/Contingence", [] {
+			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
@@ -114,9 +117,9 @@ namespace CppUtils::UnitTests::Language::Lexer
 			stringLexeme
 				>> CppUtils::Language::Lexer::Parsers::quoteParser;
 
-			static constexpr auto src = "\
-			test \"test\" test \"test\"\
-			"sv;
+			static constexpr auto src = R"(
+				test "test" test "test"
+			)"sv;
 			const auto tokenTree = lexer.parse("main"_typeId, src);
 
 			CppUtils::Terminal::setConsoleOutputUTF8();
@@ -126,7 +129,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			ASSERT(tokenTree.childs.size() == 4);
 			for (const auto& child : tokenTree.childs)
 				ASSERT(child.self == "value"_typeId);
-		})
+		}}
 
 	};
 }

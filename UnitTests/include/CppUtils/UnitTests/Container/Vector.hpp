@@ -6,7 +6,7 @@ namespace CppUtils::UnitTests::Container::Vector
 {
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
-		CppUtils::Test::UnitTest("Container/Vector/merge", [] {
+		CppUtils::Test::UnitTest{"Container/Vector/merge", [] {
 			const auto a = std::vector<std::string>{"a", "b"};
 			const auto b = std::vector<std::string>{"c", "d"};
 			const auto c = std::vector<std::string>{"e", "f"};
@@ -17,7 +17,7 @@ namespace CppUtils::UnitTests::Container::Vector
 			for (const auto& string : vector)
 				CppUtils::Log::Logger::logInformation(string, false);
 			CppUtils::Log::Logger::logInformation("");
-		})
+		}}
 
 	};
 }

@@ -2,13 +2,16 @@
 
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
 
-namespace CppUtils::Language::Lexer::Parameters
+namespace CppUtils::Language::Lexer
 {
-	struct Command final
+	namespace Parameters
 	{
-		std::string_view name;
-		std::function<bool(std::string_view)> function;
-	};
+		struct Command final
+		{
+			std::string_view name;
+			std::function<bool(std::string_view)> function;
+		};
+	}
 
 	class ParametersLexer final
 	{
@@ -57,7 +60,7 @@ namespace CppUtils::Language::Lexer::Parameters
 			return map;
 		}
 
-		[[nodiscard]] inline bool executeCommands(const std::size_t argc, const char *argv[], const std::vector<Command>& commands) const
+		[[nodiscard]] inline bool executeCommands(const std::size_t argc, const char *argv[], const std::vector<Parameters::Command>& commands) const
 		{
 			const auto parameters = parseParameters(argc, argv);
 			for (auto const& command : commands)

@@ -6,7 +6,7 @@ namespace CppUtils::UnitTests::Switch
 {
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
-		CppUtils::Test::UnitTest("Switch", [] {
+		CppUtils::Test::UnitTest{"Switch", [] {
 			const auto id0 = CppUtils::Switch::newId();
 			const auto id1 = CppUtils::Switch::newId(true);
 			const auto id2 = CppUtils::Switch::newId();
@@ -25,7 +25,7 @@ namespace CppUtils::UnitTests::Switch
 			ASSERT(CppUtils::Switch::isEnabled(id3) == true);
 			ASSERT(CppUtils::Switch::isEnabled(id4) == false);
 			ASSERT(CppUtils::Switch::isEnabled(id5) == false);
-		})
+		}}
 
 	};
 }

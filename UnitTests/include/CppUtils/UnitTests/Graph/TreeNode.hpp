@@ -6,7 +6,7 @@ namespace CppUtils::UnitTests::Graph::TreeNode
 {
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
-		CppUtils::Test::UnitTest("Graph/TreeNode", [] {
+		CppUtils::Test::UnitTest{"Graph/TreeNode", [] {
 			using StringTreeNode = CppUtils::Graph::TreeNode<std::string>;
 			
 			auto root = StringTreeNode{"Root"};
@@ -34,7 +34,7 @@ namespace CppUtils::UnitTests::Graph::TreeNode
 			root.childs.emplace_back(StringTreeNode{"Branch3"});
 			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(root);
-		})
+		}}
 
 	};
 }

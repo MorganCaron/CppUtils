@@ -6,9 +6,9 @@ namespace CppUtils::UnitTests::Test::UnitTest
 {
 	const auto tests = std::vector<CppUtils::Test::UnitTest>{
 
-		CppUtils::Test::UnitTest("Test/UnitTest", [] {
+		CppUtils::Test::UnitTest{"Test/UnitTest", [] {
 			ASSERT(true);
-		})
+		}}
 
 	};
 }
