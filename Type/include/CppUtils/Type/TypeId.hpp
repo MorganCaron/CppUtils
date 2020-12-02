@@ -16,8 +16,8 @@ namespace CppUtils::Type
 
 		TypeId() = default;
 		explicit constexpr TypeId(std::string_view c_name):
-			name(c_name),
-			id(CppUtils::Hash::constexprHash(name))
+			name{c_name},
+			id{CppUtils::Hash::constexprHash(name)}
 		{}
 		TypeId(const TypeId&) = default;
 		TypeId(TypeId&&) noexcept = default;

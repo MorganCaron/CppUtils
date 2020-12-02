@@ -6,7 +6,7 @@
 
 namespace CppUtils::Language::Parser
 {
-	struct Cursor
+	struct Cursor final
 	{
 		Cursor(std::string_view c_src, std::size_t& c_pos):
 			src{c_src},

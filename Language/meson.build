@@ -1,13 +1,15 @@
 subdir('Parser')
 subdir('Lexer')
-subdir('VM')
+subdir('Interpreter')
 # subdir('Compiler')
+subdir('ASM')
 
 public_dependencies = [
 	language_parser_dep,
 	language_lexer_dep,
-	language_vm_dep,
-#	language_compiler_dep
+	language_interpreter_dep,
+#	language_compiler_dep,
+	language_asm_dep
 ]
 private_dependencies = []
 
