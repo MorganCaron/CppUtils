@@ -28,21 +28,21 @@ subdir('Type')
 subdir('Language')
 
 public_dependencies = [
-	platform_dep,
-	chrono_dep,
-	container_dep,
-	external_dep,
-	filesystem_dep,
-	functional_dep,
-	hash_dep,
-	terminal_dep,
-	log_dep,
-	graph_dep,
-	string_dep,
-	test_dep,
-	thread_dep,
-	type_dep,
-	language_dep
+	cppUtils_platform_dep,
+	cppUtils_chrono_dep,
+	cppUtils_container_dep,
+	cppUtils_external_dep,
+	cppUtils_filesystem_dep,
+	cppUtils_functional_dep,
+	cppUtils_hash_dep,
+	cppUtils_terminal_dep,
+	cppUtils_log_dep,
+	cppUtils_graph_dep,
+	cppUtils_string_dep,
+	cppUtils_test_dep,
+	cppUtils_thread_dep,
+	cppUtils_type_dep,
+	cppUtils_language_dep
 ]
 private_dependencies = []
 

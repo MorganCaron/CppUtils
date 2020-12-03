@@ -15,7 +15,7 @@ headers = files([
 	'include/CppUtils/Language/ASM/VM.hpp'
 ])
 
-language_asm_dep = declare_dependency(
+cppUtils_language_asm_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

@@ -11,7 +11,7 @@ headers = files([
 	'include/CppUtils/Language/Parser/Cursor.hpp'
 ])
 
-language_parser_dep = declare_dependency(
+cppUtils_language_parser_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

@@ -11,7 +11,7 @@ headers = files([
 	'include/CppUtils/String/String.hpp'
 ])
 
-string_dep = declare_dependency(
+cppUtils_string_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

@@ -11,7 +11,7 @@ headers = files([
 	'include/CppUtils/Chrono/Chronometer.hpp'
 ])
 
-chrono_dep = declare_dependency(
+cppUtils_chrono_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

@@ -11,7 +11,7 @@ headers = files([
 	'include/CppUtils/Functional/Function.hpp',
 ])
 
-functional_dep = declare_dependency(
+cppUtils_functional_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

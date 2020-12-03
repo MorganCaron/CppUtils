@@ -12,7 +12,7 @@ headers = files([
 	'include/CppUtils/Language/Interpreter/VM.hpp'
 ])
 
-language_interpreter_dep = declare_dependency(
+cppUtils_language_interpreter_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

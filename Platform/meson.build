@@ -11,7 +11,7 @@ headers = files([
 	'include/CppUtils/Platform/OS.hpp'
 ])
 
-platform_dep = declare_dependency(
+cppUtils_platform_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

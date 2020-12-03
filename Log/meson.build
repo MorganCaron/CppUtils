@@ -1,6 +1,6 @@
 public_dependencies = [
-	terminal_dep,
-	switch_dep
+	cppUtils_terminal_dep,
+	cppUtils_switch_dep
 ]
 private_dependencies = []
 
@@ -15,15 +15,15 @@ headers = files([
 	'include/CppUtils/Log/Logger.hpp'
 ])
 
-log_lib = library(
+cppUtils_log_lib = library(
 	'CppUtils-Log',
 	sources + headers,
 	include_directories: includeDir,
 	dependencies: public_dependencies + private_dependencies,
 )
 
-log_dep = declare_dependency(
-	link_with: log_lib,
+cppUtils_log_dep = declare_dependency(
+	link_with: cppUtils_log_lib,
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

@@ -11,15 +11,15 @@ headers = files([
 	'include/CppUtils/Switch/Switch.hpp'
 ])
 
-switch_lib = library(
+cppUtils_switch_lib = library(
 	'CppUtils-Switch',
 	sources + headers,
 	include_directories: includeDir,
 	dependencies: public_dependencies + private_dependencies,
 )
 
-switch_dep = declare_dependency(
-	link_with: switch_lib,
+cppUtils_switch_dep = declare_dependency(
+	link_with: cppUtils_switch_lib,
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

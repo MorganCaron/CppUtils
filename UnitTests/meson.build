@@ -32,11 +32,11 @@ headers = files([
 	'include/CppUtils/UnitTests/Type/TypeId.hpp'
 ])
 
-unitTests_exe = executable(
+cppUtils_unitTests_exe = executable(
 	'UnitTests',
 	sources: sources + headers,
 	include_directories: includeDir,
 	dependencies: private_dependencies
 )
 
-test('Unit tests', unitTests_exe)
+test('Unit tests', cppUtils_unitTests_exe)

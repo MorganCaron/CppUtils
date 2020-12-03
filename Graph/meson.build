@@ -1,5 +1,5 @@
 public_dependencies = [
-	log_dep
+	cppUtils_log_dep
 ]
 private_dependencies = []
 
@@ -14,7 +14,7 @@ headers = files([
 	'include/CppUtils/Graph/TreeNode.hpp'
 ])
 
-graph_dep = declare_dependency(
+cppUtils_graph_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

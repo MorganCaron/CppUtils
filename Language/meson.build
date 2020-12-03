@@ -5,11 +5,11 @@ subdir('Interpreter')
 subdir('ASM')
 
 public_dependencies = [
-	language_parser_dep,
-	language_lexer_dep,
-	language_interpreter_dep,
-#	language_compiler_dep,
-	language_asm_dep
+	cppUtils_language_parser_dep,
+	cppUtils_language_lexer_dep,
+	cppUtils_language_interpreter_dep,
+#	cppUtils_language_compiler_dep,
+	cppUtils_language_asm_dep
 ]
 private_dependencies = []
 
@@ -23,7 +23,7 @@ headers = files([
 
 ])
 
-language_dep = declare_dependency(
+cppUtils_language_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

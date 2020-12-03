@@ -11,7 +11,7 @@ headers = files([
 	'include/CppUtils/Hash/Hash.hpp'
 ])
 
-hash_dep = declare_dependency(
+cppUtils_hash_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

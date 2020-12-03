@@ -1,5 +1,5 @@
 public_dependencies = [
-	platform_dep
+	cppUtils_platform_dep
 ]
 private_dependencies = []
 
@@ -16,7 +16,7 @@ headers = files([
 	'include/CppUtils/Terminal/TextModifier/TextModifier.hpp'
 ])
 
-terminal_textModifier_dep = declare_dependency(
+cppUtils_terminal_textModifier_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

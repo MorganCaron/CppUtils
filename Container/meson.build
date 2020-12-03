@@ -11,7 +11,7 @@ headers = files([
 	'include/CppUtils/Container/Vector.hpp'
 ])
 
-container_dep = declare_dependency(
+cppUtils_container_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

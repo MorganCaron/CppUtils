@@ -12,7 +12,7 @@ headers = files([
 	'include/CppUtils/Thread/LoopThread.hpp'
 ])
 
-thread_dep = declare_dependency(
+cppUtils_thread_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )
