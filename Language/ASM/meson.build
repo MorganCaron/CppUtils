@@ -12,7 +12,7 @@ headers = files([
 	'include/CppUtils/Language/ASM/Instruction.hpp',
 	'include/CppUtils/Language/ASM/Operations.hpp',
 	'include/CppUtils/Language/ASM/Value.hpp',
-	'include/CppUtils/Language/ASM/VM.hpp'
+	'include/CppUtils/Language/ASM/VirtualMachine.hpp'
 ])
 
 cppUtils_language_asm_dep = declare_dependency(

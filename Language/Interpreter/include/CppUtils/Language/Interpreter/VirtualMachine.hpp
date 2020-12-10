@@ -8,16 +8,13 @@
 
 namespace CppUtils::Language::Interpreter
 {
-	using namespace std::literals;
-	using namespace Type::Literals;
-
 	template<typename Instruction, typename Context>
-	class VM final
+	class VirtualMachine
 	{
 	public:
 		using Operation = std::function<void(Cursor<Instruction>&, Context&)>;
 
-		VM(std::unordered_map<Type::TypeId, Operation, Type::TypeId::hash_fn>&& operations = {}):
+		VirtualMachine(std::unordered_map<Type::TypeId, Operation, Type::TypeId::hash_fn>&& operations = {}):
 			m_operations{operations}
 		{}
 
@@ -28,6 +25,7 @@ namespace CppUtils::Language::Interpreter
 
 		void run(Context& context) const
 		{
+			using namespace std::literals;
 			auto cursor = Cursor<Instruction>{m_instructions};
 			
 			try
@@ -42,7 +40,7 @@ namespace CppUtils::Language::Interpreter
 			}
 			catch (const std::exception& exception)
 			{
-				throw std::runtime_error{"Exception occurred during code execution in VM:\n"s + exception.what()};
+				throw std::runtime_error{"An exception occurred during code execution on the virtual machine:\n"s + exception.what()};
 			}
 		}
 

@@ -1,0 +1,76 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="641px" height="241px" viewBox="-0.5 -0.5 641 241" content="&lt;mxfile host=&quot;0c2d7835-88b3-4050-8359-052d7c113eb3&quot; modified=&quot;2020-12-12T22:29:20.799Z&quot; agent=&quot;5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.52.0 Chrome/83.0.4103.122 Electron/9.3.5 Safari/537.36&quot; etag=&quot;rFg4Za4VeCBIPNoGvYPx&quot; version=&quot;13.10.0&quot; type=&quot;embed&quot;&gt;&lt;diagram id=&quot;WdbN4sIHK6oubeP7y9FS&quot; name=&quot;Page-1&quot;&gt;7VjJbtswEP0aA+2l0GIp8TFSlh4cIIhb9ExLtESE4ggUFdv5+g4larOcRC2cFAWsCAb5ZobLvDeM6ZkbZrs7SfL0HmLKZ44V72bu9cxxfMvDTw3sa8C2PatGEslig3XAir1QAzZuJYtpMXBUAFyxfAhGIASN1AAjUsJ26LYBPpw1JwkdAauI8DH6i8UqbVZnWZ3hO2VJqg4taxI9JRJKYSYUIGhtyUgzjnEtUhLDtge5NzM3lACqbmW7kHKd1yZlddztK9Z2zZIKNSXgsg54Jrw02xYko0VOIlyxFeb5T8U4JvIK3zCVIMCsW+2bPBVblnGCO3SDpnnLOA+Bg6w83E31oJ2TNeVBm53GpcqPG2wOojz9p0dVEp5oz+JXj44AoXp4/SA+zoJJzDOViu56kMnKHYWMKrlHF2OdG4L2w+62U4LfYGlPBK0jMepL2pE7FrBhiDhOymJESsRJUWhCKgpwQCrf4kHnZWUsNvYJZ4nAdoT5wEg30HlgKPUrY1CQIxqljMdLsodS76ZQSFTTC1KQ7AWHJdyMiWapTNU6/sBjpSMRthCVtECfh4YK+wC6J7uB45IUygARcE7ygq3bbWREJkwEoBRkxuk9xbX1pZ2TKovDwCUTzfCVJmncTp+xyLT/nW4vT69bzz+iW/vCf123ZrJHPGWJSDj9k9ls+1iVHExGOMpSEEUDnd5iVCvtNieVz9we1c9DuebIpmPdU5WCmaFfPJhdNaLsCL8GmlhQ+hxlIlnSjd74vEMeTS40BBi74ZVIUxbHVFRSVESRWvlagDkwoapkeQG+mNLQ+ubNPFx6iH276+Or3SXqS+BuCKuURLGstlSX1uBscJp+XcaLsTRbyZqFm6CxUBeThbofauA9ZTonOFBtZ6SI3kn65eup5MArov8zMfTYtqrnNPzOp/L7xsEzlV/XG/H7DGjUnOJ/qTPBH0HwhfOJBPuvEwz5md+P4Hdx+Yn8Xoz4JaUCfQuk6rqURDEQmmZ928ONn+k+Od22M/9Evsf3zkLF9TUTN66/aFTU/0Bez7R/KO3exBvCX9CO3e6XjPqLfPdTkXvzGw==&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs>
+        <clipPath id="mx-clip-44-71-552-20-0">
+            <rect x="44" y="71" width="552" height="20"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-91-552-26-0">
+            <rect x="44" y="91" width="552" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-117-552-26-0">
+            <rect x="44" y="117" width="552" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-143-552-26-0">
+            <rect x="44" y="143" width="552" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-169-552-26-0">
+            <rect x="44" y="169" width="552" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-195-552-26-0">
+            <rect x="44" y="195" width="552" height="26"/>
+        </clipPath>
+    </defs>
+    <g>
+        <path d="M 0 23 L 0 0 L 640 0 L 640 23" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 23 L 0 240 L 640 240 L 640 23" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 23 L 640 23" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <g fill="#333333" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="319.5" y="16">
+                namespace CppUtils::Chrono
+            </text>
+        </g>
+        <path d="M 40 66 L 40 40 L 600 40 L 600 66" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 40 66 L 40 216 L 600 216 L 600 66" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 40 66 L 600 66" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <g fill="#333333" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="319.5" y="57.5">
+                class Chronometer
+            </text>
+        </g>
+        <rect x="40" y="66" width="560" height="20" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#666666" font-family="Helvetica" font-style="italic" clip-path="url(#mx-clip-44-71-552-20-0)" text-anchor="middle" font-size="9px">
+            <text x="319.5" y="80.5">
+                Public Methods
+            </text>
+        </g>
+        <rect x="40" y="86" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-91-552-26-0)" font-size="12px">
+            <text x="45.5" y="103.5">
+                Chronometer()
+            </text>
+        </g>
+        <rect x="40" y="112" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-117-552-26-0)" font-size="12px">
+            <text x="45.5" y="129.5">
+                void start()
+            </text>
+        </g>
+        <rect x="40" y="138" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-143-552-26-0)" font-size="12px">
+            <text x="45.5" y="155.5">
+                void stop()
+            </text>
+        </g>
+        <rect x="40" y="164" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-169-552-26-0)" font-size="12px">
+            <text x="45.5" y="181.5">
+                auto getDuration() const
+            </text>
+        </g>
+        <rect x="40" y="190" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-195-552-26-0)" font-size="12px">
+            <text x="45.5" y="207.5">
+                std::string getText() const
+            </text>
+        </g>
+    </g>
+</svg>

@@ -7,8 +7,6 @@
 
 namespace CppUtils::FileSystem::File
 {
-	using namespace std::string_literals;
-	
 	template <typename FuncType>
 	inline void forFilesWithExtension(const std::string& path, const std::string& ext, FuncType&& function)
 	{

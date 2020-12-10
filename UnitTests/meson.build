@@ -17,7 +17,7 @@ headers = files([
 	'include/CppUtils/UnitTests/Functional/Function.hpp',
 	'include/CppUtils/UnitTests/Graph/MeshNode.hpp',
 	'include/CppUtils/UnitTests/Graph/TreeNode.hpp',
-	'include/CppUtils/UnitTests/Language/ASM/VM.hpp',
+	'include/CppUtils/UnitTests/Language/ASM/VirtualMachine.hpp',
 	'include/CppUtils/UnitTests/Language/Lexer/GrammarLexer.hpp',
 	'include/CppUtils/UnitTests/Language/Lexer/Lexer.hpp',
 	'include/CppUtils/UnitTests/Language/Lexer/ParametersLexer.hpp',

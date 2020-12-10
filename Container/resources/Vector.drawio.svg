@@ -1,0 +1,23 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="681px" height="56px" viewBox="-0.5 -0.5 681 56" content="&lt;mxfile host=&quot;2e72c0a5-ff67-4529-bdd1-3dec0a56aff8&quot; modified=&quot;2020-12-12T22:29:36.444Z&quot; agent=&quot;5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.52.0 Chrome/83.0.4103.122 Electron/9.3.5 Safari/537.36&quot; etag=&quot;nqdxQ30Rm03lvfzkO-OE&quot; version=&quot;13.10.0&quot; type=&quot;embed&quot;&gt;&lt;diagram id=&quot;WdbN4sIHK6oubeP7y9FS&quot; name=&quot;Page-1&quot;&gt;lZXbbtswDIafJsB2MzhxHayXjXvYRQoMyw6Xg2ozNlFZMmSmSfr0o2zKh7gFOsVIrJ+kDtRHZRGn1enBqbp8tDnoxSrKT4v4drFaraOEv71w7oTlMok6pXCYizYIO3wFEYPbAXNoJo5krSasp2JmjYGMJppyzh6nbnurp7PWqoCZsMuUnqt/MKcyrC6KBsM3wKKkS8uTyp4LZw9GJjTWQGepVBhHXJtS5fY4kuK7RZw6a6l7q04paJ/XkLIu7v4da79mB4Y+EnDdBbwofZBtG1VBU6uMVxyldf2LUHMib/hJrSGFBlzX/c1Jt062QeeQtuaIlVa84Xiz54CdWJbcVxoLw+8ZL86PsnkBR8gZvxED2ZrVrESdb9XZHvwWGuJsht6mtA5f/Tq0jMlmRwLPaj3x2PlIliNWHTTs8z3kZXkhParTxHGrGhIhs1qrusGnfhuVcgWajSWylTiFTd+j1qnVnBafi3jfNm8Px+ydC62a5iJwiyYM34IDeT99hZm8a/UEetPDFSZq8eJsX8yd+E+bIWefYWRZt03OZ6R3jfU5RMKVPy84jSSB6gFsBeTO7CLWK+H7PO0eh0JafxWtHNVQspL6ldot+oEHhvlFMH4b6TiZMU1Q1VoRI73WniI61+A5Z6+frBXUbpopzju0XwTtznvsUoEr4BNfOczHKAANEjLer+D+avS2LrR3cLAHTmcGf498W9bQDz4b6t25Z7+q8tXyeVaBfEQ0O/c3IBEpVKWGPb1bk/5GQFNsW5/bq0H5IYfnJcuxe91yXmKeg2lpJkWqKx7PcG3RUHu6yYYfZiCNviSLhBeecn859Pnx7o4R5RQ5vnn8PMCVeQRfnZf4Rm17E9/rD+MrvPJN8iFeg99/8Mrd4XpvbaP/z/juHw==&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs>
+        <clipPath id="mx-clip-4-31-672-26-0">
+            <rect x="4" y="31" width="672" height="26"/>
+        </clipPath>
+    </defs>
+    <g>
+        <path d="M 0 26 L 0 0 L 680 0 L 680 26" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 26 L 0 52 L 680 52 L 680 26" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 26 L 680 26" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <g fill="#333333" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="339.5" y="17.5">
+                namespace CppUtils::Container::Vector
+            </text>
+        </g>
+        <rect x="0" y="26" width="680" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-4-31-672-26-0)" font-size="12px">
+            <text x="5.5" y="43.5">
+                template&lt;typename T&gt; std::vector&lt;T&gt; merge(const std::initializer_list&lt;std::reference_wrapper&lt;const std::vector&lt;T&gt;&gt;&gt;&amp;)
+            </text>
+        </g>
+    </g>
+</svg>

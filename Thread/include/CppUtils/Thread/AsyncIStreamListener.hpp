@@ -16,9 +16,9 @@ namespace CppUtils::Thread
 		AsyncIStreamListener() = delete;
 
 		explicit AsyncIStreamListener(std::basic_istream<Type>& istream,
-			const std::function<void(Type data)>& m_function):
+			const std::function<void(Type data)>& function):
 			m_istream(std::ref(istream)),
-			m_function(std::move(m_function)),
+			m_function(std::move(function)),
 			m_loopThread(std::bind(&AsyncIStreamListener::listener, this), 0s)
 		{}
 
@@ -26,6 +26,21 @@ namespace CppUtils::Thread
 		AsyncIStreamListener(AsyncIStreamListener&&) noexcept = default;
 		AsyncIStreamListener& operator=(const AsyncIStreamListener&) = delete;
 		AsyncIStreamListener& operator=(AsyncIStreamListener&&) noexcept = default;
+
+		[[nodiscard]] inline bool isRunning() const noexcept
+		{
+			return m_loopThread.isRunning();
+		}
+
+		inline void start()
+		{
+			m_loopThread.start(0s);
+		}
+
+		inline void stop()
+		{
+			m_loopThread.stop();
+		}
 
 	private:
 		void listener()

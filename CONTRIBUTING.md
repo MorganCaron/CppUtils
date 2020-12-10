@@ -1,4 +1,6 @@
-## Contributing
+# [CppUtils](README.md) / Contributing
+
+[![Back to Parent Page](https://img.shields.io/badge/-Back_to_Parent_Page-blue?style=for-the-badge)](README.md)
 
 The project becomes better for everyone when people like you help make it better!
 

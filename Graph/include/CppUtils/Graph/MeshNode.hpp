@@ -19,9 +19,7 @@ namespace CppUtils::Graph
 			node0->attach(branchName1, node1);
 		}
 		
-		explicit MeshNode(const Value& m_value): value(m_value)
-		{}
-		explicit MeshNode(Value&& m_value): value(std::move(m_value))
+		explicit MeshNode(Value c_value): value(std::move(c_value))
 		{}
 
 		[[nodiscard]] inline bool exists(const Key& branchName) const
@@ -39,14 +37,14 @@ namespace CppUtils::Graph
 		[[nodiscard]] std::vector<Link>& operator[](const Key& branchName)
 		{
 			if (!exists(branchName))
-				m_branchs[branchName.data()] = std::vector<Link>();
+				m_branchs[branchName.data()] = std::vector<Link>{};
 			return m_branchs[branchName.data()];
 		}
 
 		void attach(const Key& branchName, const Link& node)
 		{
 			if (!exists(branchName))
-				m_branchs[branchName.data()] = std::vector<Link>();
+				m_branchs[branchName.data()] = std::vector<Link>{};
 			m_branchs[branchName.data()].push_back(node);
 		}
 

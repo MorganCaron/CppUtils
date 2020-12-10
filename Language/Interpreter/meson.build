@@ -9,7 +9,7 @@ sources = files([
 
 headers = files([
 	'include/CppUtils/Language/Interpreter/Cursor.hpp',
-	'include/CppUtils/Language/Interpreter/VM.hpp'
+	'include/CppUtils/Language/Interpreter/VirtualMachine.hpp'
 ])
 
 cppUtils_language_interpreter_dep = declare_dependency(

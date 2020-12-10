@@ -11,7 +11,7 @@ namespace CppUtils
 	public:
 		using Id = std::size_t;
 
-		static inline Id newId(bool enable = false)
+		[[nodiscard]] static inline Id newId(bool enable = false)
 		{
 			static auto id = Id{0};
 			if (enable)
@@ -19,7 +19,7 @@ namespace CppUtils
 			return id++;
 		}
 
-		static inline bool isEnabled(const Id id)
+		[[nodiscard]] static inline bool isEnabled(const Id id)
 		{
 			return (std::find(m_enabledIds.begin(), m_enabledIds.end(), id) != m_enabledIds.end());
 		}
@@ -50,7 +50,7 @@ namespace CppUtils
 			disable(ids...);
 		}
 
-		static inline std::vector<Id> getEnabledIds()
+		[[nodiscard]] static inline std::vector<Id> getEnabledIds() noexcept
 		{
 			return m_enabledIds;
 		}

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <CppUtils.hpp>
 
 namespace CppUtils::UnitTests::Language::ASM
@@ -8,8 +10,8 @@ namespace CppUtils::UnitTests::Language::ASM
 
 	const auto tests = std::vector<Test::UnitTest>{
 
-		Test::UnitTest{"Language/ASM/VM/HALT", [] {
-			auto vm = VM{};
+		Test::UnitTest{"Language/ASM/VirtualMachine/HALT", [] {
+			auto vm = VirtualMachine<std::uint32_t>{};
 			vm.setInstructions({
 				Instruction{"HALT"_typeId}
 			});
@@ -17,8 +19,8 @@ namespace CppUtils::UnitTests::Language::ASM
 			vm.run(context);
 		}},
 
-		Test::UnitTest{"Language/ASM/VM/NOP", [] {
-			auto vm = VM{};
+		Test::UnitTest{"Language/ASM/VirtualMachine/NOP", [] {
+			auto vm = VirtualMachine<std::uint32_t>{};
 			vm.setInstructions({
 				Instruction{"NOP"_typeId},
 				Instruction{"HALT"_typeId}
@@ -28,8 +30,8 @@ namespace CppUtils::UnitTests::Language::ASM
 		}},
 
 		/*
-		Test::UnitTest{"Language/ASM/VM/MOVE", [] {
-			auto vm = VM{};
+		Test::UnitTest{"Language/ASM/VirtualMachine/MOVE", [] {
+			auto vm = VirtualMachine{};
 			vm.setInstructions({
 				Instruction{"MOVE"_typeId, { "R0"_typeId, "42"_typeId }},
 				Instruction{"HALT"_typeId}
@@ -38,8 +40,8 @@ namespace CppUtils::UnitTests::Language::ASM
 			vm.run(context);
 		}},
 
-		Test::UnitTest{"Language/ASM/VM/PUSH and POP", [] {
-			auto vm = VM{};
+		Test::UnitTest{"Language/ASM/VirtualMachine/PUSH and POP", [] {
+			auto vm = VirtualMachine{};
 			vm.setInstructions({
 				Instruction{"MOVE"_typeId, { "R0"_typeId, "42"_typeId }},
 				Instruction{"PUSH"_typeId, { "R0"_typeId }},

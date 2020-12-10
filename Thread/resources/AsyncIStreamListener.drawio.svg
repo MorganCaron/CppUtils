@@ -1,0 +1,62 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="681px" height="211px" viewBox="-0.5 -0.5 681 211" content="&lt;mxfile host=&quot;f9821246-a61e-4234-9c10-0fa0cb6a5a01&quot; modified=&quot;2020-12-13T01:49:24.613Z&quot; agent=&quot;5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.52.0 Chrome/83.0.4103.122 Electron/9.3.5 Safari/537.36&quot; etag=&quot;_wFN7UZxTMru1FqbdWud&quot; version=&quot;13.10.0&quot; type=&quot;embed&quot;&gt;&lt;diagram id=&quot;WdbN4sIHK6oubeP7y9FS&quot; name=&quot;Page-1&quot;&gt;7VhtT9swEP41lcqXKS9t1n4kGbBJRUKUaR+Rm7iJhWNHzpU2/PqdE+eNpFunFaZJhIjaz9355Z7njMvEDdLDjSJZcisjyieOFR0m7peJ43iui781UFSAbc+tCokViwzWAmv2Qg1Yu+1YRPOeI0jJgWV9MJRC0BB6GFFK7vtuW8n7s2YkpgNgHRI+RH+wCJJ6dZbVGr5SFifw2rIh4VOs5E6YCYUUtLKkpB7HuOYJieS+A7lXEzdQUkLVSg8B5TqvdcqquOsj1mbNigo4JWBRBTwTvjPbFiSleUZCXLEVZNl3YBwTeYnvQ6Ioicy6oajzlO9Zygnu0PXr5jXjPJBcqtLD3ZYP2jnZUO432aldyvy4/vZV1Fz/6FFBySfasXjloyOkgA5ePYgPs2AS80wV0EMHMlm5oTKloAp0MdaZIajod/etEryFwZKOCBr1EqO+uBm5ZQEbhohxUpYDUoCmGSeAnHgcZ/KhyKgmCr0esIlwDOW+rZCTPMfPy7wQ4bc1IGXpiuVABVW/ok6ncm0sNvYJZ7HAdogpxEjX16ljWB2XxgAyQzRMGI9WpJA7nYAckNu65ydSsRcclnAzJpoVmEJ3vJ7HWkcibCGqaI4+dzV79ivolhx6jiuSgwFCyTnJcrZptpESFTPhSwCZGqcxkRoFNtWo/eIyk/2YFRP1yKWCadTMnLLQtP+dyhdvoHJrROXNUT6mcjPZPZ7JRMSc/slstj1WU15/MsJRkQKrwdfpzQeV1WzzpGKb2YNqu9ttOLLpWLcUEmlm6NYNZhcGlI3wa6ATa0mfukzEK7rVG5+1yL3JhYYkxm55KdKERREVpRSBAKlErwWYSSagTNbcxxdTGlif5pM5Lj3Avt328dXuCvUlcDeElUqiWFF7qquqdyw4db+q4OVQmo1kzcJN0FCoy5OFWvQ18DtlOmc4fmfOQBFjp+k0h6j6w7ghOQsfEdbm+ojun8seSbPqgG7cgurugmnW2jJDbXciBCZFPcqzZNG0GsqKkOSLsSHroItzCZWXEvzPZNrRoVU+jfIGMhsR41HlzU5VnncG5bkD5W3wyluq5n4nBCZ5etGRjZD0ENIMPng/P++fnXfkfTbgXRd+ySlemaYfhf0GBC8X70ewOz9OsMw++D3C719dGWxn9mYEY7f9jl5dOtt/grhXPwE=&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs>
+        <clipPath id="mx-clip-44-71-592-20-0">
+            <rect x="44" y="71" width="592" height="20"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-91-592-26-0">
+            <rect x="44" y="91" width="592" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-117-592-26-0">
+            <rect x="44" y="117" width="592" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-143-592-26-0">
+            <rect x="44" y="143" width="592" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-169-592-26-0">
+            <rect x="44" y="169" width="592" height="26"/>
+        </clipPath>
+    </defs>
+    <g>
+        <path d="M 0 23 L 0 0 L 680 0 L 680 23" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 23 L 0 210 L 680 210 L 680 23" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 23 L 680 23" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <g fill="#333333" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="339.5" y="16">
+                namespace CppUtils::Thread
+            </text>
+        </g>
+        <path d="M 40 66 L 40 40 L 640 40 L 640 66" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 40 66 L 40 190 L 640 190 L 640 66" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="none"/>
+        <path d="M 40 66 L 640 66" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="none"/>
+        <g fill="#333333" font-family="Helvetica" font-weight="bold" pointer-events="none" text-anchor="middle" font-size="12px">
+            <text x="339.5" y="57.5">
+                template&lt;typename Type&gt; class AsyncIStreamListener
+            </text>
+        </g>
+        <g fill="#666666" font-family="Helvetica" font-style="italic" pointer-events="none" clip-path="url(#mx-clip-44-71-592-20-0)" text-anchor="middle" font-size="9px">
+            <text x="339.5" y="80.5">
+                Public Methods
+            </text>
+        </g>
+        <g fill="#000000" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-44-91-592-26-0)" font-size="12px">
+            <text x="45.5" y="103.5">
+                AsyncIStreamListener(std::basic_istream&lt;Type&gt;&amp; istream, const std::function&lt;void(Type data)&gt;&amp; function)
+            </text>
+        </g>
+        <g fill="#000000" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-44-117-592-26-0)" font-size="12px">
+            <text x="45.5" y="129.5">
+                bool isRunning() const noexcept
+            </text>
+        </g>
+        <g fill="#000000" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-44-143-592-26-0)" font-size="12px">
+            <text x="45.5" y="155.5">
+                void start()
+            </text>
+        </g>
+        <g fill="#000000" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-44-169-592-26-0)" font-size="12px">
+            <text x="45.5" y="181.5">
+                void stop()
+            </text>
+        </g>
+    </g>
+</svg>

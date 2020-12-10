@@ -1,0 +1,39 @@
+<svg version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+	<filter id="glow-blue">
+		<feFlood flood-color="rgba(0,145,223,0.5)" flood-opacity="0.5" in="SourceGraphic" />
+		<feComposite operator="in" in2="SourceGraphic" />
+		<feGaussianBlur stdDeviation="3" />
+		<feComponentTransfer result="glow">
+			<feFuncA type="linear" slope="4" intercept="0" />
+		</feComponentTransfer>
+		<feMerge>
+			<feMergeNode in="glow" />
+			<feMergeNode in="SourceGraphic" />
+		</feMerge>
+	</filter>
+	<filter id="glow-white">
+		<feFlood flood-color="#aaaaaa" flood-opacity="0.5" in="SourceGraphic" />
+		<feComposite operator="in" in2="SourceGraphic" />
+		<feGaussianBlur stdDeviation="3" />
+		<feComponentTransfer result="glow">
+			<feFuncA type="linear" slope="4" intercept="0" />
+		</feComponentTransfer>
+		<feMerge>
+			<feMergeNode in="glow" />
+			<feMergeNode in="SourceGraphic" />
+		</feMerge>
+	</filter>
+	<path d="M 50 10 l 34.64 20 l -17.32 10 l -17.32 -10 l -17.32 10 v 20 l 17.32 10 l 17.32 -10 l 17.32 10 l -34.64 20 l -34.64 -20 v -40 Z" fill="#0090DF" filter="url(#glow-blue)" />
+	<path d="M 50 10 v 20 l 17.32 -10 Z" fill="rgba(0, 0, 0, 0.05)" />
+	<path d="M 50 30 l 17.32 -10 v 20 Z" fill="rgba(0, 0, 0, 0.1)" />
+	<path d="M 84.64 30 l -17.32 -10 v 20 Z" fill="rgba(0, 0, 0, 0.05)" />
+	<path d="M 50 30 l -17.32 -10 v 20 Z" fill="rgba(0, 0, 0, 0.05)" />
+	<path d="M 15.36 30 l 17.32 -10 v 20 Z" fill="rgba(0, 0, 0, 0.1)" />
+	<path d="M 15.36 30 v 20 l 17.32 -10 Z" fill="rgba(0, 0, 0, 0.05)" />
+	<path d="M 15.36 50 v 20 l 17.32 -10 Z" fill="rgba(0, 0, 0, 0.1)" />
+	<path d="M 15.36 70 l 17.32 -10 v 20 Z" fill="rgba(0, 0, 0, 0.05)" />
+	<path d="M 50 70 v 20 l 17.32 -10 Z" fill="rgba(0, 0, 0, 0.1)" />
+	<path d="M 50 70 l 17.32 -10 v 20Z" fill="rgba(0, 0, 0, 0.05)" />
+	<text x="50" y="50" dx="-6.5" dy="7" fill="white" font-size="24" letter-spacing="1rem" filter="url(#glow-white)">++</text>
+	<text x="56" y="50" transform="rotate(30)" fill="white" font-family="'Trebuchet MS', Helvetica, sans-serif" font-size="6" letter-spacing="0.2rem" filter="url(#glow-white)">Utils</text>
+</svg>

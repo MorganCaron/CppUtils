@@ -18,7 +18,7 @@ namespace CppUtils::Type
 			m_name = std::move(name);
 		}
 		
-		inline std::string_view getName() const noexcept
+		[[nodiscard]] inline std::string_view getName() const noexcept
 		{
 			return m_name;
 		}

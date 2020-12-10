@@ -2,7 +2,7 @@
 
 namespace CppUtils::External
 {
-	#if defined(_WIN32) || defined(_WIN64)
+	#if defined(OS_WINDOWS)
 
 	void DynamicLibrary::open(std::string_view path)
 	{
@@ -34,7 +34,7 @@ namespace CppUtils::External
 		m_library = nullptr;
 	}
 
-	#else
+	#elif defined(OS_LINUX) || defined(OS_MACOS)
 
 	void DynamicLibrary::open(std::string_view path)
 	{

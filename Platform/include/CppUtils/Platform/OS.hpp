@@ -4,7 +4,7 @@
 #	define OS_WINDOWS
 #elif defined(__APPLE__)
 #	define OS_MACOS
-#elif defined(__unix__) || defined(__unix)
+#elif defined(__linux__) || defined(__unix__) || defined(__unix)
 #	define OS_LINUX
 #else
 #	error unsupported platform

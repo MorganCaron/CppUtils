@@ -1,7 +1,7 @@
 public_dependencies = [
 	cppUtils_type_dep,
 	cppUtils_graph_dep,
-	cppUtils_language_parser_dep,
+	cppUtils_language_parser_dep
 ]
 private_dependencies = []
 
@@ -24,7 +24,7 @@ cppUtils_language_lexer_lib = library(
 	'CppUtils-Language-Lexer',
 	sources + headers,
 	include_directories: includeDir,
-	dependencies: public_dependencies + private_dependencies,
+	dependencies: public_dependencies + private_dependencies
 )
 
 cppUtils_language_lexer_dep = declare_dependency(

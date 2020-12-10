@@ -26,13 +26,13 @@
 #include <CppUtils/Language/Lexer/Parsers.hpp>
 
 #include <CppUtils/Language/Interpreter/Cursor.hpp>
-#include <CppUtils/Language/Interpreter/VM.hpp>
+#include <CppUtils/Language/Interpreter/VirtualMachine.hpp>
 
 #include <CppUtils/Language/ASM/Context.hpp>
 #include <CppUtils/Language/ASM/Instruction.hpp>
 #include <CppUtils/Language/ASM/Operations.hpp>
 #include <CppUtils/Language/ASM/Value.hpp>
-#include <CppUtils/Language/ASM/VM.hpp>
+#include <CppUtils/Language/ASM/VirtualMachine.hpp>
 
 #include <CppUtils/String/String.hpp>
 

@@ -1,0 +1,26 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="642px" height="74px" viewBox="-0.5 -0.5 642 74" content="&lt;mxfile host=&quot;425067e1-a193-4f8f-8dc6-e4dc00e32d5a&quot; modified=&quot;2020-12-11T23:38:14.612Z&quot; agent=&quot;5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.52.0 Chrome/83.0.4103.122 Electron/9.3.5 Safari/537.36&quot; etag=&quot;21XlQDmp7SHgMp2WbRc-&quot; version=&quot;13.10.0&quot; type=&quot;embed&quot;&gt;&lt;diagram id=&quot;WdbN4sIHK6oubeP7y9FS&quot; name=&quot;Page-1&quot;&gt;lVXbbqMwEP2aSN2XiIQkbR8betmHVFo1Wu3jagoTsGpsZIYm6dfv2NhcQit1KarsM1fG5zizOClPTwaq4llnKGfLKDvN4vvZcnlzfcP/LXBugfj2ugVyI7IWWvTAXnygByOPNiLDeuRIWksS1RhMtVKY0ggDY/Rx7HbQcly1ghwnwD4FOUX/iIyK0F0U9YafKPKCLi2vkL7lRjfKF1RaYWspIeTxrnUBmT4OoPhhFidGa2pX5SlBaccaRtbGPX5h7Xo2qOg7AbdtwDvIxn+2ghLrClLuOEqq6jcJyYO84/exUSkJrUD63ukcZlUfRSmBvzLeHrSivbcseA9S5IrXKXeEhoF3NCR4zHfeQLpiNC2EzHZw1o3tuyYeYdhtC23EB6flwm1ONhvyjFluRh57G8lwxKjBmn1+hWEsLqBnOI0cd1CTB1ItJVS1eO0+owSTC7XVRLr0TuGjH4WUiZbauFnEB/dYezhb65xLqOuLwJ1QIb1jC2Zd+VKkfi3hFeW2Y1Qo5DjF076ovbZ/bkJGv+HAsnGPP58B3j6MT5njyWTPC08DyDPpCXWJZM7s4q0rT+rzeHvs1bMJWDEQzrXHwAs27xL3xOWF5+4XxF9OiExYVhKIebyR5EaStTy2Z/2XLIEtg5aJvVjOFVri8/IFqTFqDM/nc97dmbwpeTr1JCZYuFRObpYbHu3CHl9IFzHjZVDQFd9Ztesg9HTwltBsG3bVleQOfgyyQ1m5RdTHJe1VOE77zhcjn7RP+kmbXSIIlX5MxM2nTxNKfcI/DwXBSzzQl3K3N4xQ+c753K965MXzwkKaYw/SSagQWYbKCYWAoNWlnW+lhT0RbnS95ZeplETz9Wx9byey3i76Pb/W3TD7eUoGhOM5suiPaIV/qYzIPZ8q4/bbyvBSsHz4jhRWq/+WAm/7nwtnG/wcxw//AA==&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs>
+        <clipPath id="mx-clip-4-31-632-44-0">
+            <rect x="4" y="31" width="632" height="44"/>
+        </clipPath>
+    </defs>
+    <g>
+        <path d="M 0 26 L 0 0 L 640 0 L 640 26" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 26 L 0 70 L 640 70 L 640 26" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 26 L 640 26" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <g fill="#333333" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="319.5" y="17.5">
+                namespace CppUtils::Functional
+            </text>
+        </g>
+        <rect x="0" y="26" width="640" height="44" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-4-31-632-44-0)" font-size="12px">
+            <text x="5.5" y="43.5">
+                template&lt;std::size_t size, typename Return, typename... Arguments, typename Argument&gt;
+            </text>
+            <text x="5.5" y="57.5">
+                Return callFunction(const std::function&lt;Return(Arguments...)&gt;&amp; function, const std::vector&lt;Argument&gt;&amp; arguments)
+            </text>
+        </g>
+    </g>
+</svg>

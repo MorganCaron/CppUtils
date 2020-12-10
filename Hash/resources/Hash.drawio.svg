@@ -1,0 +1,23 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="641px" height="56px" viewBox="-0.5 -0.5 641 56" content="&lt;mxfile host=&quot;aec22805-baf3-4503-9f03-976d3df77908&quot; modified=&quot;2020-12-12T22:30:46.373Z&quot; agent=&quot;5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.52.0 Chrome/83.0.4103.122 Electron/9.3.5 Safari/537.36&quot; etag=&quot;f7zRUJIvJI4oi9QVhEx7&quot; version=&quot;13.10.0&quot; type=&quot;embed&quot;&gt;&lt;diagram id=&quot;WdbN4sIHK6oubeP7y9FS&quot; name=&quot;Page-1&quot;&gt;lVVNb+IwEP01kXYvq0AapB5L+nWg0mrRao+VSYbEquOJnIGE/vodOzYhQCVqLLDfzNjj5zcmSrK6fzGiqd6wABXN46KPksdoPl/EKX9b4DAAs1kaD0hpZOGxEVjLT/BgcNvJAtqJIyEqks0UzFFryGmCCWOwm7ptUU13bUQJF8A6F+oS/ScLqkJ2cTwaXkGWFZ1bNiL/KA3utN9Qo4bBUouwjndtK1FgdwIlT1GSGUQaRnWfgbK8BsqGuOcvrMecDWi6JeB+CNgLtfPH1qKGthE5ZxxnTfOXpGIiH7i/irbyWdMhsNR2slaCz5cst6hp7S0zngslS83jnHMBw8AeDEkm+MEbCBtG80qqYiUOuLMZt8TkhdmyQiM/eVmh/JpsNuS1Ml9MPNY2kuGYUQMt+/wONMzOoDfRTxxXoiUP5KiUaFq5OR6jFqaUeolEWHuncOhnqVSGCo3jItm6Zu3hVq1zqUTbngWupA7LO51Acdy+lrkfK7EBtTxqKWzk1MRsn+2d2o9jyOAHnFgWrvn7OcGHxvilZryM7H1BfwJ5Db0A1kDmwC7eeuflfJhOu7FuFgGrTkomnfty9aVaHhceJcsDr9rrCk7SCwnzi9By4o1xUi0G9dp7fqfhvRisVs8/RjsZqcv3vYTOhZmf/KMR+hwaupA9L0AXZF+5GQ+FUlCwpS8LwVYdp7ByPo93I/LHM2Yh5NitcuKqZFGAdhIiQWJQrBVOg1KTozRdcmfis/hXGqWceMbz2Tjnbt0N64JJMUI6BQCXQwe2JM41E7t2VTP3N2vGi4TL9yaRBL9viISn4xPqbCf/UcnTfw==&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs>
+        <clipPath id="mx-clip-4-31-632-26-0">
+            <rect x="4" y="31" width="632" height="26"/>
+        </clipPath>
+    </defs>
+    <g>
+        <path d="M 0 26 L 0 0 L 640 0 L 640 26" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 26 L 0 52 L 640 52 L 640 26" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 26 L 640 26" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <g fill="#333333" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="319.5" y="17.5">
+                namespace CppUtils::Hash
+            </text>
+        </g>
+        <rect x="0" y="26" width="640" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-4-31-632-26-0)" font-size="12px">
+            <text x="5.5" y="43.5">
+                constexpr std::size_t constexprHash(std::string_view str) noexcept
+            </text>
+        </g>
+    </g>
+</svg>
