@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string>
 #include <vector>
 #include <numeric>
+#include <string_view>
 
 namespace CppUtils::String
 {
@@ -13,12 +13,21 @@ namespace CppUtils::String
 				return lhs.empty() ? rhs : (lhs + delimiter.data() + rhs);
 			});
 	}
+	
+	[[nodiscard]] inline std::string concatenateStringsWithDelimiter(const std::vector<std::string_view>& strings, std::string_view delimiter)
+	{
+		return std::accumulate(strings.begin(), strings.end(), std::string{},
+			[delimiter](const std::string_view& lhs, const std::string_view& rhs) {
+				return lhs.empty() ? std::string{rhs} : (std::string{lhs} + std::string{delimiter} + std::string{rhs});
+			});
+	}
 
-	[[nodiscard]] inline std::vector<std::string> cstringArrayToVectorOfStrings(const char** cstringArray, std::size_t length)
+	template<typename String>
+	[[nodiscard]] inline std::vector<String> cstringArrayToVectorOfStrings(const char** cstringArray, std::size_t length)
 	{
 		if (length == 0)
-			return std::vector<std::string>{};
-		return std::vector<std::string>{cstringArray, cstringArray + length};
+			return {};
+		return std::vector<String>{cstringArray, cstringArray + length};
 	}
 
 	[[nodiscard]] inline std::string_view leftTrimString(std::string_view stringView)

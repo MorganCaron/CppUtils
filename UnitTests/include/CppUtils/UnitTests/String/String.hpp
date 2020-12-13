@@ -9,7 +9,7 @@ namespace CppUtils::UnitTests::String
 		CppUtils::Test::UnitTest{"String/concatenateStringsWithDelimiter", [] {
 			using namespace std::literals;
 			
-			const auto strings = std::vector{"A"s, "B"s, "C"s};
+			const auto strings = std::vector{"A"sv, "B"sv, "C"sv};
 			const auto string = CppUtils::String::concatenateStringsWithDelimiter(strings, ", ");
 
 			CppUtils::Log::Logger::logInformation(string);
@@ -18,7 +18,7 @@ namespace CppUtils::UnitTests::String
 
 		CppUtils::Test::UnitTest{"String/cstringArrayToVectorOfStrings", [] {
 			const char* cstringArray[] = {"A", "B", "C"};
-			const auto strings = CppUtils::String::cstringArrayToVectorOfStrings(cstringArray, 3);
+			const auto strings = CppUtils::String::cstringArrayToVectorOfStrings<std::string_view>(cstringArray, 3);
 
 			ASSERT(strings.size() == 3);
 

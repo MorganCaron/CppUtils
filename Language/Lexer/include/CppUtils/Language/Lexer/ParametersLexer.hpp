@@ -50,7 +50,7 @@ namespace CppUtils::Language::Lexer
 		[[nodiscard]] inline std::unordered_map<std::string, std::string> parseParameters(const std::size_t argc, const char *argv[]) const
 		{
 			
-			const auto parameters = String::cstringArrayToVectorOfStrings(argv + 1, argc - 1);
+			const auto parameters = String::cstringArrayToVectorOfStrings<std::string_view>(argv + 1, argc - 1);
 			const auto src = String::concatenateStringsWithDelimiter(parameters, " ");
 			const auto commandTree = m_grammarLexer.parseLanguage(src);
 
