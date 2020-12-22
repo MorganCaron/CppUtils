@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::Chrono::Chronometer
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Chrono/Chronometer", [] {
+		CppUtils::Test{"Chrono/Chronometer", [] {
 			auto chrono = CppUtils::Chrono::Chronometer{};
 
 			chrono.stop();

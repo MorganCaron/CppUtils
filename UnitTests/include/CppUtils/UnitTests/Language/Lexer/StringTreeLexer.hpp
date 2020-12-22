@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::Language::Lexer::StringTreeLexer
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Language/Lexer/StringTreeLexer/parse", [] {
+		CppUtils::Test{"Language/Lexer/StringTreeLexer/parse", [] {
 			using namespace CppUtils::Type::Literals;
 
 			const auto stringTreeLexer = CppUtils::Language::Lexer::StringTreeLexer{};

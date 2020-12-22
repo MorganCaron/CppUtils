@@ -2,11 +2,11 @@
 
 [![Back to Parent Page](https://img.shields.io/badge/-Back_to_Parent_Page-blue?style=for-the-badge)](../README.md)
 
-## UnitTest
+## Test
 
 Unit tests are used to test different components of a project in order to verify the proper functioning of a specific part of a program.
 
-The ``UnitTest`` class is used to create unit tests. Its static function ``executeTests(tests)`` allows to execute a set of tests.
+The ``Test`` class is used to create unit tests. Its static function ``executeTests(tests)`` allows to execute a set of tests.
 The function returns an error code if they have failed.
 Executing unit tests writes logs to the terminal. You can add your own logs in each test.
 
@@ -21,19 +21,19 @@ It throws a TestException caught by the unit test.
 
 int main()
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"UnitTest 1", [] {
+		CppUtils::Test{"UnitTest 1", [] {
 			ASSERT("azerty" != "qwerty");
 		}},
 
-		CppUtils::Test::UnitTest{"UnitTest 2", [] {
+		CppUtils::Test{"UnitTest 2", [] {
 			ASSERT("azerty" == "qwerty");
 		}}
 
 	};
 
-	return CppUtils::Test::UnitTest::executeTests(tests);
+	return CppUtils::Test::executeTests(tests);
 }
 ```
 

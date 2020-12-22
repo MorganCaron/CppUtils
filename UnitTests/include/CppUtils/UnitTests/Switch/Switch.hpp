@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::Switch
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Switch", [] {
+		CppUtils::Test{"Switch", [] {
 			const auto id0 = CppUtils::Switch::newId();
 			const auto id1 = CppUtils::Switch::newId(true);
 			const auto id2 = CppUtils::Switch::newId();

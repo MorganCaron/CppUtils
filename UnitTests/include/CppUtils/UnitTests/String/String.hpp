@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::String
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"String/concatenateStringsWithDelimiter", [] {
+		CppUtils::Test{"String/concatenateStringsWithDelimiter", [] {
 			using namespace std::literals;
 			
 			const auto strings = std::vector{"A"sv, "B"sv, "C"sv};
@@ -16,7 +16,7 @@ namespace CppUtils::UnitTests::String
 			ASSERT(string == "A, B, C");
 		}},
 
-		CppUtils::Test::UnitTest{"String/cstringArrayToVectorOfStrings", [] {
+		CppUtils::Test{"String/cstringArrayToVectorOfStrings", [] {
 			const char* cstringArray[] = {"A", "B", "C"};
 			const auto strings = CppUtils::String::cstringArrayToVectorOfStrings<std::string_view>(cstringArray, 3);
 
@@ -31,7 +31,7 @@ namespace CppUtils::UnitTests::String
 			CppUtils::Log::Logger::logInformation("");
 		}},
 
-		CppUtils::Test::UnitTest{"String/trimString", [] {
+		CppUtils::Test{"String/trimString", [] {
 			const auto string = "\n \t Hello World!\n \t ";
 			const auto leftTrimString = CppUtils::String::leftTrimString(string);
 			const auto rightTrimString = CppUtils::String::rightTrimString(string);

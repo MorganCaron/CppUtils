@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::Container::Vector
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Container/Vector/merge", [] {
+		CppUtils::Test{"Container/Vector/merge", [] {
 			const auto a = std::vector<std::string>{"a", "b"};
 			const auto b = std::vector<std::string>{"c", "d"};
 			const auto c = std::vector<std::string>{"e", "f"};

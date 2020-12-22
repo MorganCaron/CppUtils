@@ -10,9 +10,9 @@ namespace CppUtils::UnitTests::Language::Lexer::ParametersLexer
 		std::string parameter;
 	};
 
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Language/Lexer/ParametersLexer/parseParameters", [] {
+		CppUtils::Test{"Language/Lexer/ParametersLexer/parseParameters", [] {
 			using namespace std::literals;
 
 			const auto argc = 8;
@@ -31,7 +31,7 @@ namespace CppUtils::UnitTests::Language::Lexer::ParametersLexer
 			ASSERT(parameters.at("E") == "e e e");
 		}},
 
-		CppUtils::Test::UnitTest{"Language/Lexer/ParametersLexer/executeCommands", [] {
+		CppUtils::Test{"Language/Lexer/ParametersLexer/executeCommands", [] {
 			using namespace std::literals;
 			
 			const auto argc = 4;

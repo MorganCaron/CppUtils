@@ -27,7 +27,7 @@ headers = files([
 	'include/CppUtils/UnitTests/Log/Logger.hpp',
 	'include/CppUtils/UnitTests/String/String.hpp',
 	'include/CppUtils/UnitTests/Switch/Switch.hpp',
-	'include/CppUtils/UnitTests/Test/UnitTest.hpp',
+	'include/CppUtils/UnitTests/Test/Test.hpp',
 	'include/CppUtils/UnitTests/Type/Typed.hpp',
 	'include/CppUtils/UnitTests/Type/TypeId.hpp'
 ])

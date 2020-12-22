@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::Graph::TreeNode
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Graph/TreeNode", [] {
+		CppUtils::Test{"Graph/TreeNode", [] {
 			using StringTreeNode = CppUtils::Graph::TreeNode<std::string>;
 			
 			auto root = StringTreeNode{"Root"};

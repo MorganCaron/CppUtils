@@ -8,9 +8,9 @@ namespace CppUtils::UnitTests::Language::ASM
 {
 	using namespace CppUtils::Language::ASM;
 
-	const auto tests = std::vector<Test::UnitTest>{
+	const auto tests = std::vector<Test>{
 
-		Test::UnitTest{"Language/ASM/VirtualMachine/HALT", [] {
+		Test{"Language/ASM/VirtualMachine/HALT", [] {
 			auto vm = VirtualMachine<std::uint32_t>{};
 			vm.setInstructions({
 				Instruction{"HALT"_typeId}
@@ -19,7 +19,7 @@ namespace CppUtils::UnitTests::Language::ASM
 			vm.run(context);
 		}},
 
-		Test::UnitTest{"Language/ASM/VirtualMachine/NOP", [] {
+		Test{"Language/ASM/VirtualMachine/NOP", [] {
 			auto vm = VirtualMachine<std::uint32_t>{};
 			vm.setInstructions({
 				Instruction{"NOP"_typeId},
@@ -30,7 +30,7 @@ namespace CppUtils::UnitTests::Language::ASM
 		}},
 
 		/*
-		Test::UnitTest{"Language/ASM/VirtualMachine/MOVE", [] {
+		Test{"Language/ASM/VirtualMachine/MOVE", [] {
 			auto vm = VirtualMachine{};
 			vm.setInstructions({
 				Instruction{"MOVE"_typeId, { "R0"_typeId, "42"_typeId }},
@@ -40,7 +40,7 @@ namespace CppUtils::UnitTests::Language::ASM
 			vm.run(context);
 		}},
 
-		Test::UnitTest{"Language/ASM/VirtualMachine/PUSH and POP", [] {
+		Test{"Language/ASM/VirtualMachine/PUSH and POP", [] {
 			auto vm = VirtualMachine{};
 			vm.setInstructions({
 				Instruction{"MOVE"_typeId, { "R0"_typeId, "42"_typeId }},

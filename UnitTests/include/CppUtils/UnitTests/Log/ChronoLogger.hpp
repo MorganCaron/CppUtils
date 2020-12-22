@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::Log::ChronoLogger
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Log/ChronoLogger", [] {
+		CppUtils::Test{"Log/ChronoLogger", [] {
 			auto chronoLogger = CppUtils::Log::ChronoLogger{"Test"};
 
 			chronoLogger.stop();

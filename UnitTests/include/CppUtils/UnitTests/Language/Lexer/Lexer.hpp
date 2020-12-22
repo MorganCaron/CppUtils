@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::Language::Lexer
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Language/Lexer/Lexemes", [] {
+		CppUtils::Test{"Language/Lexer/Lexemes", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
 
@@ -30,7 +30,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			ASSERT(tokenTree.childs.at(0).childs.size() == 0);
 		}},
 
-		CppUtils::Test::UnitTest{"Language/Lexer/Parsers", [] {
+		CppUtils::Test{"Language/Lexer/Parsers", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
 
@@ -60,7 +60,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			ASSERT(tokenTree.childs.at(0).childs.at(0).childs.size() == 0);
 		}},
 
-		CppUtils::Test::UnitTest{"Language/Lexer/Recurrence", [] {
+		CppUtils::Test{"Language/Lexer/Recurrence", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
 
@@ -96,7 +96,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 				ASSERT(child.self == "print"_typeId);
 		}},
 
-		CppUtils::Test::UnitTest{"Language/Lexer/Contingence", [] {
+		CppUtils::Test{"Language/Lexer/Contingence", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
 

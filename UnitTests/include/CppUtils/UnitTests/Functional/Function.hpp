@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::Functional::Function
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Functional/callFunction", [] {
+		CppUtils::Test{"Functional/callFunction", [] {
 			const auto sum = std::function<int(int, int, int)>{[](int a, int b, int c) {
 				return a + b + c;
 			}};

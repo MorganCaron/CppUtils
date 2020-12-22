@@ -13,9 +13,9 @@ namespace CppUtils::UnitTests::Type::Typed
 	constexpr auto StringType = "String"_typeId;
 	using String = CppUtils::Type::Typed<StringType, std::string>;
 
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Type/Typed", [] {
+		CppUtils::Test{"Type/Typed", [] {
 			const auto typedInt = Int{42};
 			const auto typedString = String{"String"};
 
@@ -27,7 +27,7 @@ namespace CppUtils::UnitTests::Type::Typed
 			CppUtils::Log::Logger::logInformation(typedString.value);
 		}},
 
-		CppUtils::Test::UnitTest{"Type/Typed/vector", [] {
+		CppUtils::Test{"Type/Typed/vector", [] {
 			auto values = std::vector<std::unique_ptr<CppUtils::Type::ITyped>>{};
 			values.emplace_back(std::make_unique<Int>(42));
 			values.emplace_back(std::make_unique<String>("String"));

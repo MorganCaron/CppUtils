@@ -4,16 +4,16 @@
 
 namespace CppUtils::UnitTests::Graph::MeshNode
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Graph/MeshNode/One", [] {
+		CppUtils::Test{"Graph/MeshNode/One", [] {
 			using StringMeshNode = CppUtils::Graph::MeshNode<std::string, std::string>;
 			auto banana = std::make_shared<StringMeshNode>("banana");
 			CppUtils::Log::Logger::logInformation(banana->value);
 			ASSERT(banana->value == "banana");
 		}},
 
-		CppUtils::Test::UnitTest{"Graph/MeshNode/Two", [] {
+		CppUtils::Test{"Graph/MeshNode/Two", [] {
 			using StringMeshNode = CppUtils::Graph::MeshNode<std::string, std::string>;
 			auto fruit = std::make_shared<StringMeshNode>("fruit");
 			auto banana = std::make_shared<StringMeshNode>("banana");
@@ -27,7 +27,7 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 				CppUtils::Log::Logger::logInformation(aFruit->value + " is a " + aFruit->get("Categories")[0]->value);
 		}},
 
-		CppUtils::Test::UnitTest{"Graph/MeshNode/Many", [] {
+		CppUtils::Test{"Graph/MeshNode/Many", [] {
 			using StringMeshNode = CppUtils::Graph::MeshNode<std::string, std::string>;
 			auto fruit = std::make_shared<StringMeshNode>("fruit");
 			auto banana = std::make_shared<StringMeshNode>("banana");

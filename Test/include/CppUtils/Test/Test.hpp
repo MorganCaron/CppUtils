@@ -8,12 +8,10 @@
 
 #include <CppUtils/Log/Logger.hpp>
 
-#define ASSERT(condition) void((condition) ? 0 : throw CppUtils::Test::TestException("ASSERT(" #condition ")", __FILE__, __LINE__))
+#define ASSERT(condition) void((condition) ? 0 : throw CppUtils::TestException("ASSERT(" #condition ")", __FILE__, __LINE__))
 
-namespace CppUtils::Test
+namespace CppUtils
 {
-	using namespace std::string_literals;
-	
 	class TestException: public std::runtime_error
 	{
 	public:
@@ -28,10 +26,10 @@ namespace CppUtils::Test
 		int m_line;
 	};
 
-	class UnitTest
+	class Test
 	{
 	public:
-		explicit UnitTest(std::string name, std::function<void()> function):
+		explicit Test(std::string name, std::function<void()> function):
 			m_name{std::move(name)},
 			m_function{std::move(function)}
 		{}
@@ -43,6 +41,8 @@ namespace CppUtils::Test
 
 		bool pass() const
 		{
+			using namespace std::string_literals;
+
 			CppUtils::Log::Logger::logImportant(std::string(50, '_') + '\n' + m_name + ':');
 			auto switchIds = CppUtils::Switch::getEnabledIds();
 			try
@@ -66,12 +66,12 @@ namespace CppUtils::Test
 			return true;
 		}
 
-		static int executeTests(const std::vector<UnitTest>& tests)
+		static int executeTests(const std::vector<Test>& tests)
 		{
 			auto nbSuccess = std::size_t{0};
 			auto nbFail = std::size_t{0};
 			
-			CppUtils::Log::Logger::logImportant(std::to_string(tests.size()) + " unit tests found. Execution:");
+			CppUtils::Log::Logger::logImportant(std::to_string(tests.size()) + " tests found. Execution:");
 			for (const auto& test : tests)
 			{
 				if (test.pass())
@@ -88,7 +88,7 @@ namespace CppUtils::Test
 			}
 			CppUtils::Log::Logger::logError("The tests failed:");
 			if (nbSuccess > 0)
-				CppUtils::Log::Logger::logSuccess("- "+ std::to_string(nbSuccess) + " successful tests");
+				CppUtils::Log::Logger::logSuccess("- " + std::to_string(nbSuccess) + " successful tests");
 			else
 				CppUtils::Log::Logger::logError("- 0 successful tests");
 			CppUtils::Log::Logger::logError("- " + std::to_string(nbFail) + " failed tests");

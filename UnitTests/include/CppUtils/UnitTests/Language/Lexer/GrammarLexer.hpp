@@ -6,9 +6,9 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 {
 	using namespace std::literals;
 	
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Language/Lexer/GrammarLexer/Lexeme", [] {
+		CppUtils::Test{"Language/Lexer/GrammarLexer/Lexeme", [] {
 			using namespace CppUtils::Type::Literals;
 			CppUtils::Terminal::setConsoleOutputUTF8();
 			
@@ -28,7 +28,7 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			ASSERT(tokenTree.childs.size() == 0);
 		}},
 
-		CppUtils::Test::UnitTest{"Language/Lexer/GrammarLexer/Definitions", [] {
+		CppUtils::Test{"Language/Lexer/GrammarLexer/Definitions", [] {
 			using namespace CppUtils::Type::Literals;
 			CppUtils::Terminal::setConsoleOutputUTF8();
 
@@ -64,7 +64,7 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			ASSERT(tokenTree.childs.at(0).childs.at(1).childs.at(0).self == "Hello World!"_typeId);
 		}},
 
-		CppUtils::Test::UnitTest{"Language/Lexer/GrammarLexer/Recurrence", [] {
+		CppUtils::Test{"Language/Lexer/GrammarLexer/Recurrence", [] {
 			using namespace CppUtils::Type::Literals;
 			CppUtils::Terminal::setConsoleOutputUTF8();
 
@@ -88,7 +88,7 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			ASSERT(tokenTree.childs.size() == 4);
 		}},
 
-		CppUtils::Test::UnitTest{"Language/Lexer/GrammarLexer/Avanced", [] {
+		CppUtils::Test{"Language/Lexer/GrammarLexer/Avanced", [] {
 			using namespace CppUtils::Type::Literals;
 			CppUtils::Terminal::setConsoleOutputUTF8();
 

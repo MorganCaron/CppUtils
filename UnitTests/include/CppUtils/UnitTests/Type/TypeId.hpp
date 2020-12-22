@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::Type::TypeId
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test::UnitTest{"Type/TypeId/TypeId", [] {
+		CppUtils::Test{"Type/TypeId/TypeId", [] {
 			using namespace CppUtils::Type::Literals;
 
 			const auto numberType0 = "Number"_typeId;
@@ -24,7 +24,7 @@ namespace CppUtils::UnitTests::Type::TypeId
 			ASSERT(types.at(stringType) == "String");
 		}},
 
-		CppUtils::Test::UnitTest{"Type/TypeId/TypeIdStorage", [] {
+		CppUtils::Test{"Type/TypeId/TypeIdStorage", [] {
 			using namespace CppUtils::Type::Literals;
 			
 			auto numberType0 = CppUtils::Type::TypeId{};

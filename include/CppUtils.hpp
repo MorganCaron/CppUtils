@@ -43,7 +43,7 @@
 #include <CppUtils/Log/ChronoLogger.hpp>
 #include <CppUtils/Log/Logger.hpp>
 
-#include <CppUtils/Test/UnitTest.hpp>
+#include <CppUtils/Test/Test.hpp>
 
 #include <CppUtils/Thread/AsyncIStreamListener.hpp>
 #include <CppUtils/Thread/LoopThread.hpp>

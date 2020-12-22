@@ -15,7 +15,7 @@
 #include <CppUtils/UnitTests/Log/Logger.hpp>
 #include <CppUtils/UnitTests/String/String.hpp>
 #include <CppUtils/UnitTests/Switch/Switch.hpp>
-#include <CppUtils/UnitTests/Test/UnitTest.hpp>
+#include <CppUtils/UnitTests/Test/Test.hpp>
 #include <CppUtils/UnitTests/Type/Typed.hpp>
 #include <CppUtils/UnitTests/Type/TypeId.hpp>
 
@@ -39,10 +39,10 @@ int main()
 		std::cref(CppUtils::UnitTests::Log::Logger::tests),
 		std::cref(CppUtils::UnitTests::String::tests),
 		std::cref(CppUtils::UnitTests::Switch::tests),
-		std::cref(CppUtils::UnitTests::Test::UnitTest::tests),
+		std::cref(CppUtils::UnitTests::Test::tests),
 		std::cref(CppUtils::UnitTests::Type::Typed::tests),
 		std::cref(CppUtils::UnitTests::Type::TypeId::tests)
 	});
 
-	return CppUtils::Test::UnitTest::executeTests(tests);
+	return CppUtils::Test::executeTests(tests);
 }
