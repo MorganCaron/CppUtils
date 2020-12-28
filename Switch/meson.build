@@ -11,7 +11,7 @@ headers = files([
 	'include/CppUtils/Switch/Switch.hpp'
 ])
 
-cppUtils_switch_lib = library(
+cppUtils_switch_lib = static_library(
 	'CppUtils-Switch',
 	sources + headers,
 	include_directories: includeDir,
