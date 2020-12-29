@@ -1,0 +1,116 @@
+name: CD C++
+
+on:
+  push:
+    tags:
+    - 'v*'
+
+jobs:
+  build:
+    name: ${{ matrix.os.name }} (${{ matrix.compiler }}, ${{ matrix.library-type }})
+    runs-on: ${{ matrix.os.value }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - {
+          name: "Windows",
+          value: windows-latest,
+          install-ninja: choco install ninja
+        }
+        - {
+          name: "Ubuntu",
+          value: ubuntu-latest,
+          install-ninja: sudo apt install -yq --no-install-recommends ninja-build libxt-dev libxpm-dev libxaw7-dev
+        }
+        - {
+          name: "MacOS",
+          value: macos-latest,
+          install-ninja: brew install ninja
+        }
+        compiler: [g++, clang++]
+        library-type: [static, shared]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1
+      if: ${{ matrix.os.name != 'Windows' }}
+      with:
+        python-version: '3.x'
+    - uses: haya14busa/action-cond@v1
+      id: compiler
+      with:
+        cond: ${{ matrix.os.name == 'Ubuntu' && matrix.compiler == 'g++' }}
+        if_true: 'g++-9'
+        if_false: ${{ matrix.compiler }}
+    - uses: msys2/setup-msys2@v2
+      if: ${{ matrix.os.name == 'Windows' }}
+      with:
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-clang
+          mingw-w64-x86_64-meson
+          mingw-w64-x86_64-ninja
+    - name: Install Meson
+      if: ${{ matrix.os.name != 'Windows' }}
+      run: pip install meson
+    - name: Install Ninja
+      if: ${{ matrix.os.name != 'Windows' }}
+      run: ${{ matrix.os.install-ninja }}
+    - name: Compile on Windows
+      shell: msys2 {0}
+      if: ${{ matrix.os.name == 'Windows' }}
+      env:
+        CXX: ${{ steps.compiler.outputs.value }}
+      run: |
+        meson build -Ddefault_library=${{ matrix.library-type }}
+        ninja -C build
+    - name: Compile on Ubuntu/MacOS
+      if: ${{ matrix.os.name != 'Windows' }}
+      env:
+        CXX: ${{ steps.compiler.outputs.value }}
+        LDFLAGS: '-ldl'
+      run: |
+        meson build -Ddefault_library=${{ matrix.library-type }}
+        ninja -C build
+    - name: Generate Artifact
+      run: |
+        zip --junk-paths CppUtils-Artifact \
+          ./LICENSE \
+          ./resources/README.txt \
+          ./build/External/libCppUtils-External.a \
+          ./build/Language/Lexer/libCppUtils-Language-Lexer.a \
+          ./build/Log/libCppUtils-Log.a \
+          ./build/Switch/libCppUtils-Switch.a \
+          ./build/Type/libCppUtils-Type.a
+        if [ ${{ matrix.library-type }} == "shared" ]; then
+          if [ ${{ matrix.os.name }} == "Windows" ]; then
+            zip --junk-paths CppUtils-Artifact \
+              ./build/External/libCppUtils-External.dll \
+              ./build/Language/Lexer/libCppUtils-Language-Lexer.dll \
+              ./build/Log/libCppUtils-Log.dll \
+              ./build/Type/libCppUtils-Type.dll
+          else
+            zip --junk-paths CppUtils-Artifact \
+              ./build/External/libCppUtils-External.so \
+              ./build/Language/Lexer/libCppUtils-Language-Lexer.so \
+              ./build/Log/libCppUtils-Log.so \
+              ./build/Type/libCppUtils-Type.so
+          fi
+        fi
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./CppUtils-Artifact.zip
+        asset_name: CppUtils-Artifact.zip
+        asset_content_type: application/zip
