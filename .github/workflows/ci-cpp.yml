@@ -61,7 +61,14 @@ jobs:
       run: |
         meson build -Ddefault_library=${{ matrix.library-type }}
         ninja -C build
-        ./build/UnitTests/UnitTests && ninja -C build test
+        if [ ${{ matrix.library-type }} == "shared" ]; then
+          cp ./build/External/libCppUtils-External.dll ./build/UnitTests
+          cp ./build/Language/Lexer/libCppUtils-Language-Lexer.dll ./build/UnitTests
+          cp ./build/Log/libCppUtils-Log.dll ./build/UnitTests
+          cp ./build/Type/libCppUtils-Type.dll ./build/UnitTests
+        fi
+        ./build/UnitTests/UnitTests
+        ninja -C build test
     - name: Compile and Run on Ubuntu/MacOS
       if: ${{ matrix.os.name != 'Windows' }}
       env:
@@ -70,4 +77,5 @@ jobs:
       run: |
         meson build -Ddefault_library=${{ matrix.library-type }}
         ninja -C build
-        ./build/UnitTests/UnitTests && ninja -C build test
+        ./build/UnitTests/UnitTests
+        ninja -C build test
