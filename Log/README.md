@@ -14,8 +14,18 @@ The ``Logger`` class encapsulates these streams by adding these features.
 
 <p align="center"><img src="resources/Logger.drawio.svg" alt="Logger diagram"/></p>
 
-The macro ``ASSERT(condition);`` can be called in unit tests to make them fail if the condition is false.
-It throws a TestException caught by the unit test.
+The ``Logger`` provides a list of log types already defined.
+Each log type has its output stream and color.
+
+| Log Type    | Output Stream | Color        |
+| ----------- | ------------- | ------------ |
+| Information | std::cout     | None (White) |
+| Important   | std::cout     | Cyan         |
+| Success     | std::cout     | Green        |
+| Debug       | std::cout     | Magenta      |
+| Detail      | std::cout     | Blue         |
+| Warning     | std::cout     | Yellow       |
+| Error       | std::cerr     | Red          |
 
 ### Example
 ```cpp
@@ -23,19 +33,15 @@ It throws a TestException caught by the unit test.
 
 int main()
 {
-	const auto tests = std::vector<CppUtils::Test::UnitTest>{
+	CppUtils::Log::Logger::logInformation("Information message");
+	CppUtils::Log::Logger::logImportant("Important message");
+	CppUtils::Log::Logger::logSuccess("Success message");
+	CppUtils::Log::Logger::logDebug("Debug message");
+	CppUtils::Log::Logger::logDetail("Detail message");
+	CppUtils::Log::Logger::logWarning("Warning message");
+	CppUtils::Log::Logger::logError("Error message");
 
-		CppUtils::Test::UnitTest{"UnitTest 1", [] {
-			ASSERT("azerty" != "qwerty");
-		}},
-
-		CppUtils::Test::UnitTest{"UnitTest 2", [] {
-			ASSERT("azerty" == "qwerty");
-		}}
-
-	};
-
-	return CppUtils::Test::UnitTest::executeTests(tests);
+	return 0;
 }
 ```
 
