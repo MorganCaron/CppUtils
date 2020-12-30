@@ -19,6 +19,13 @@ namespace CppUtils::Type
 			name{c_name},
 			id{CppUtils::Hash::constexprHash(name)}
 		{}
+		explicit constexpr TypeId(Index c_id):
+			name{""},
+			id{c_id}
+		{
+			if (m_typeNames.find(id) != m_typeNames.end())
+				name = m_typeNames[id];
+		}
 		TypeId(const TypeId&) = default;
 		TypeId(TypeId&&) noexcept = default;
 		TypeId& operator=(const TypeId&) = default;
@@ -35,7 +42,7 @@ namespace CppUtils::Type
 
 		struct hash_fn final
 		{
-			[[nodiscard]] inline constexpr std::size_t operator()(const TypeId &type) const noexcept
+			[[nodiscard]] inline constexpr std::size_t operator()(const TypeId& type) const noexcept
 			{
 				return type.id;
 			}
@@ -43,6 +50,8 @@ namespace CppUtils::Type
 
 		inline void saveTypename()
 		{
+			if (name.empty() && id != CppUtils::Hash::constexprHash(""))
+				return;
 			if (m_typeNames.find(id) == m_typeNames.end())
 				m_typeNames[id] = name;
 			name = m_typeNames[id];
@@ -63,7 +72,7 @@ namespace CppUtils::Type
 
 	namespace Literals
 	{
-		constexpr TypeId operator"" _typeId(const char* cstring, std::size_t)
+		[[nodiscard]] constexpr TypeId operator"" _typeId(const char* cstring, std::size_t)
 		{
 			return TypeId{cstring};
 		}

@@ -1,0 +1,77 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="641px" height="251px" viewBox="-0.5 -0.5 641 251" content="&lt;mxfile host=&quot;ef0a0d14-bf36-4b6e-8b51-12061f81a1b7&quot; modified=&quot;2020-12-30T10:13:02.032Z&quot; agent=&quot;5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.52.1 Chrome/83.0.4103.122 Electron/9.3.5 Safari/537.36&quot; etag=&quot;4X-qr3CTHeVV4s55uQJ9&quot; version=&quot;13.10.0&quot; type=&quot;embed&quot;&gt;&lt;diagram id=&quot;WdbN4sIHK6oubeP7y9FS&quot; name=&quot;Page-1&quot;&gt;7Vhdb9owFP01SNvDpnyQFB6b0HYPdKpGpz2bxCRWHTtyTIE+7Lfv2nG+MFtRS7tNIkU0Pvfaic85dm4Y+XGxvRGozG95iunIc9LtyJ+NPM+/GMO3AnY14LpuUCOZIKnBOmBBnrABHYOuSYqrQaLknEpSDsGEM4YTOcCQEHwzTFtxOrxqiTJsAYsEURv9QVKZN3fnOF3gCyZZLvcjS5Q8ZIKvmbkg4wzXkQI145jUKkcp3/Qg/2rkx4JzWZ8V2xhTxWtDWd3v+jfR9p4FZvKYDpO6wyOiazNthgpclSiBO3bisvwuCQUiL+FzvyvNNCq5a1iqNqSgCObnR83pNaE05pQLneGv9AFxipaYRi03TYpmx49We70C9adGlYI/4F4k1IfqwZns4fUBuM2BoeURC4m3PchwcoN5gaXYQYqJjo08u2Fz0/kgbLC8ZwEvMCAy3svakTsN4MTIcFiSqSWJxEVJkQTyQwpXiiQIoWSCrBkW5BGnEMmknrqTUFRV8P8rZzEvd2hJ/yiaInFhIi60ESUZg/MEyMPAbKRII7AqLk1A8hLQJCc0naMdX6upVxJUbVpRzgV5gmERNWNCWEizwL1wkLFQPQF2ABW4gpy7Rjd3D7pF20HiHFXSAAmnFJUVWbbTKJDICIu4lLwwSc/Zs12KKjnTLA47zglrhtcGxml7+YIk5vzvmXxyepMH4QGTuxeT15s8GFsuv1svKdDoObdY5jytLNfCtKTF1QFiDXSkk9VeR1g2xys1v3GHfDNTVhCHviuq3ZGTNMVMe0AiiWrLKeVLTpjUlAQRfIC52PkcjAK49RjabteGj0oXICyD2SCiJcTg5w1Wnh4sSq9p1+tnanui9Yq5cdPJdsj0aIcYS8BiPcoS3gm2vcB+FPW2sA+Jomp/WwtRoST8CLju4UANgqW9373QOVR74j/zTc8Yjj5OY4XxsVYIX28F17Os0D3naskhyksskNRzbd2xn3Z2xts748J7P2eEtjMsSSmpq1EtaVO5uy/SswBlKO4EvFf6zj65lsi+LbJ/QFBdHNzxikjC1fiizt0T+jktrWIh1sdp1JxOjlPzBDVA6Ns1ADAG73JqBZ/LgH+mDHCd96wD7Peffh3Q39FXaA3vQ+ct/eRbunt04XeKPd2xBP95Vvy9FQ/e7ikOze4HLR3r/WLoX/0C&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs>
+        <clipPath id="mx-clip-44-71-552-20-0">
+            <rect x="44" y="71" width="552" height="20"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-91-552-26-0">
+            <rect x="44" y="91" width="552" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-117-552-26-0">
+            <rect x="44" y="117" width="552" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-151-552-20-0">
+            <rect x="44" y="151" width="552" height="20"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-171-552-26-0">
+            <rect x="44" y="171" width="552" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-197-552-26-0">
+            <rect x="44" y="197" width="552" height="26"/>
+        </clipPath>
+    </defs>
+    <g>
+        <path d="M 0 23 L 0 0 L 640 0 L 640 23" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 23 L 0 250 L 640 250 L 640 23" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 23 L 640 23" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <g fill="#333333" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="319.5" y="16">
+                namespace CppUtils::Type
+            </text>
+        </g>
+        <path d="M 40 66 L 40 40 L 600 40 L 600 66" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 40 66 L 40 218 L 600 218 L 600 66" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 40 66 L 600 66" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <g fill="#333333" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="319.5" y="57.5">
+                template&lt;typename Derived&gt; class NonCopyable
+            </text>
+        </g>
+        <rect x="40" y="66" width="560" height="20" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#666666" font-family="Helvetica" font-style="italic" clip-path="url(#mx-clip-44-71-552-20-0)" text-anchor="middle" font-size="9px">
+            <text x="319.5" y="80.5">
+                Public Methods
+            </text>
+        </g>
+        <rect x="40" y="86" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-91-552-26-0)" font-size="12px">
+            <text x="45.5" y="103.5">
+                NonCopyable(const NonCopyable&amp;) = delete
+            </text>
+        </g>
+        <rect x="40" y="112" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-117-552-26-0)" font-size="12px">
+            <text x="45.5" y="129.5">
+                Derived&amp; operator=(const Derived&amp;) = delete
+            </text>
+        </g>
+        <path d="M 40 142 L 600 142" fill="none" stroke="#cccccc" stroke-miterlimit="10" pointer-events="all"/>
+        <rect x="40" y="146" width="560" height="20" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#666666" font-family="Helvetica" font-style="italic" clip-path="url(#mx-clip-44-151-552-20-0)" text-anchor="middle" font-size="9px">
+            <text x="319.5" y="160.5">
+                Protected Methods
+            </text>
+        </g>
+        <rect x="40" y="166" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-171-552-26-0)" font-size="12px">
+            <text x="45.5" y="183.5">
+                NonCopyable() = default
+            </text>
+        </g>
+        <rect x="40" y="192" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-197-552-26-0)" font-size="12px">
+            <text x="45.5" y="209.5">
+                ~NonCopyable() = default
+            </text>
+        </g>
+    </g>
+</svg>

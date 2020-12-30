@@ -53,11 +53,11 @@ ninja -C build test
 	- [TreeNode](Graph/README.md#TreeNode)
 - **[Hash](Hash/README.md)**
 - **[Language](Language/README.md)**
-	- [ASM](Language/README.md#ASM)
-	- [Compiler](Language/README.md#Compiler)
-	- [Interpreter](Language/README.md#Interpreter)
-	- [Lexer](Language/README.md#Lexer)
-	- [Parser](Language/README.md#Parser)
+	- [ASM](Language/ASM/README.md)
+	- [Compiler](Language/Compiler/README.md)
+	- [Interpreter](Language/Interpreter/README.md)
+	- [Lexer](Language/Lexer/README.md)
+	- [Parser](Language/Parser/README.md)
 - **[Log](Log/README.md)**
 	- [ChronoLogger](Log/README.md#ChronoLogger)
 	- [Logger](Log/README.md#Logger)
@@ -76,7 +76,7 @@ ninja -C build test
 	- [Cloneable](Type/README.md#Cloneable)
 	- [Named](Type/README.md#Named)
 	- [NonCopyable](Type/README.md#NonCopyable)
-	- [NonInstanciable](Type/README.md#NonInstanciable)
+	- [NonInstantiable](Type/README.md#NonInstantiable)
 	- [NonMovable](Type/README.md#NonMovable)
 	- [Typed](Type/README.md#Typed)
 	- [TypeId](Type/README.md#TypeId)

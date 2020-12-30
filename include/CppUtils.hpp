@@ -51,7 +51,7 @@
 #include <CppUtils/Type/Cloneable.hpp>
 #include <CppUtils/Type/Named.hpp>
 #include <CppUtils/Type/NonCopyable.hpp>
-#include <CppUtils/Type/NonInstanciable.hpp>
+#include <CppUtils/Type/NonInstantiable.hpp>
 #include <CppUtils/Type/NonMovable.hpp>
 #include <CppUtils/Type/Typed.hpp>
 #include <CppUtils/Type/TypeId.hpp>

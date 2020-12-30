@@ -2,9 +2,9 @@
 
 namespace CppUtils::Type
 {
-	class NonInstanciable
+	class NonInstantiable
 	{
 	public:
-		NonInstanciable() = delete;
+		NonInstantiable() = delete;
 	};
 }

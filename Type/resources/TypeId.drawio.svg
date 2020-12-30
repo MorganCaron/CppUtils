@@ -1,102 +1,166 @@
-<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="641px" height="331px" viewBox="-0.5 -0.5 641 331" content="&lt;mxfile host=&quot;ab5439a0-a67c-4653-ac54-540483079c70&quot; modified=&quot;2020-12-12T22:33:30.136Z&quot; agent=&quot;5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.52.0 Chrome/83.0.4103.122 Electron/9.3.5 Safari/537.36&quot; etag=&quot;54v7hvu-YKjetDceJf-v&quot; version=&quot;13.10.0&quot; type=&quot;embed&quot;&gt;&lt;diagram id=&quot;WdbN4sIHK6oubeP7y9FS&quot; name=&quot;Page-1&quot;&gt;7Vnbbts4EP0aA8nDLnSxlOSxdtLuQ7IINi32saClsUSUIgWKvvXrd0hRN9NZa1ul3QJWBEecGVLknEMe0p6Fy2L/QZIyfxIpsFngpftZeD8LgtiL8FMbDrXB9yOvtmSSptbWGV7oV7DGJmxDU6gGgUoIpmg5NCaCc0jUwEakFLth2Fqw4VtLkoFjeEkIc61/01TlTe88r3P8ATTL1bFnRZIvmRQbbl/IBYfaU5CmHRta5SQVu54pfJiFSymEqp+K/RKYzmuTsrre+1e8bZ8lcDWmwm1dYUvYxg6bkwKqkiTYY29Zlp8UZZjId3h/hErZXqtDk6VqRwtGcHzhonl8TxlbCiakiQjX5kI/IytgizY3TYjJTrhYH9WK9J9uVUnxBXqe2Fy6huCqZ68vtLs5sGnZglSw75lsTj6AKEDJA4ZY79zCcxgWdx0P4saW9ygQhtZILPeytuUOA3ywMJyG5M6BJGGkqtCkAXjYJ1AqKrjGBEe5WTGaGEjSGiW54YoW8BlwCsh/g0un78V6fCwTRjNs9T7BtAHmdKHTRXE+vLMOJUq0Jjll6SM5iI0edKUQz6a0yIWkX7FZwmyb6JbKTu0gHkS86Jpo9tAqocKY5wYx/8j0RPaDwEdSKWtIBGOkrOiqHUZBZEb5QiglCht0jpjtJNTBmUn2sOIj5U3zhrqQtq8vMPv188+j9+309I7iE/S+Cb6f3dHcofdzw+EnULlIK4e0OCrlpOpEXq1pJJH1Ikd59ghrPbx5Z/nLjlibBNZdM0OOnKYpcEMBRRSpGaeBLwXlyqQkWuCNiVt6v0ezCLu+xLLflfHW4RJx5TgaQg2CgHTe6bV1OCeDplxPnzuXEi1VbMdtJZcgd6MJYhmBc3UUI4IJ1js/cBgxWOiu2qUNU6ZHiTIKVaXVG/PbW/laN3ICtIzVfp3kwGM4ha/xPxdgGp6KZMzQ5xejWI9DnrmmYc18LGvi72dN+LpMfuJUndurXMTvIn42OBypfv7N7QTyF78uf0gKddHBt9TB8H8thPPQ4UatXbCHZKNAr2nVVaJT1pe9LR5+9U4/Zjpz3eIXZ8okISZFaR48pRu4vijfWeX77zz5kdIX3Tg8cTBltD6SG0ybry/8bwK0QGgYdAh+1ADf/+Y7KIcuyuEJRI1UPIuK1qfYe1nHHiF9DkxHOpbmmgjO5qRzDs4pFCG6HIh+ASG4HblLmEQIPIcSzbJ+4jDUnXRa33rDEzO7rChsBU2vrjtJ8JqAixi8hRj43liyTKAGc98hyxFHPm8p7DAiA/UncuXqcgx+a/xH7xqnwN/9+mQlBDODqCoDtt0yXpCeHulo5EbhG5DGYvc7kPH1fmgLH/4B&lt;/diagram&gt;&lt;/mxfile&gt;">
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="641px" height="551px" viewBox="-0.5 -0.5 641 551" content="&lt;mxfile host=&quot;f99493a0-8e1f-4317-9f9f-bd1735bc6f92&quot; modified=&quot;2020-12-30T12:30:25.407Z&quot; agent=&quot;5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.52.1 Chrome/83.0.4103.122 Electron/9.3.5 Safari/537.36&quot; etag=&quot;hAweBsM0FLNrWbx3_0EH&quot; version=&quot;13.10.0&quot; type=&quot;embed&quot;&gt;&lt;diagram id=&quot;WdbN4sIHK6oubeP7y9FS&quot; name=&quot;Page-1&quot;&gt;7Vptb6M4EP4t9yFSe9KeeAk0/dgku3srpVJ13dV9jBxwgrUGc8Z5219/Y2OTF9OUa0k2e4KixozHBuZ5POMx7vmjdPOZozx5ZDGmPc+JNz1/3PM8/y6A/1KwLQWu62rJgpNYy3aCZ/IDa6GjpUsS4+JAUTBGBckPhRHLMhyJAxninK0P1eaMHt41RwtsCZ4jRG3p3yQWiXk6x9lV/InJIhHHNTMUfV9wtsz0DTOW4bImRaYfrVokKGbrPZH/seePOGOiLKWbEabSrsZkZbtPL9RWz8xxJpo0GJQNVogu9WtnKMVFjiJ4YmeU598EoWDIBzi/bnP9GoXYGisVa5JSBO/nD03xE6F0xCjjSsOfqwPqKZphOqxsY1SUdfzh/KhVIP9kr4Kz73ivJlSHbMEysScvD5DbNtBmWWEu8GZPpG3yGbMUC74FFV3b1/BsDy/XOx6ERpbsUSAItBBp7i2qnncYQEHDUA9JeBqTCRGYI8DkBBLSMs+6xoVrRMkig3IEFsFgrqG0BAGqP+gKwXKQRgmh8QRt2VK+TyEAKnM1TBgnP6BbRHWfUM2FHrVeeKDxLFuC2AEpxwXoPBkw3CPRI9ocKE5QIbQgYpSivCCz6jVSxBckGzIhWKqVXuNcNb6k8oKiojhqOCGZ6V6xEsfV7VMS6fLPY+7gvcwd2NQNwjrqeu9n7p1jMbcXDOHMWEyKCPG4F4zlqZx2AW+UcyhLv/IlhgLLgdkCrOKF/yylBxzul5ypUIo3qq3sI0H8d/kLhibZoueN1ICIS28l2TQVt9YwgbsKC5waJLXIDB2K5+LFgSPHJjzBROmM+zvJX9rAUsSg7ZwqMiYkjnGmKCeQQCXDJdFyRjKhEFB2A3uOnD8CZbIRXLu7azilOgcegTU4IooxGIbPGsshdMwxRx21HAubk0yzCsZ7I1IZvfeQauBZpIL3XUZinzlzkoFj+iVj07tHeMMB3vdaiE1BaIHxtJxRcJQlGHZUeuNweyVSXeuAM0HXM9dlfLy3GVExRT+4blTDD68xQTQj/IaMaIMQfd8ixLJQztj5AsF0A79KeuyXO7f8qlv+78AHTYFvwS0Hd3asP8aUktL3KkxNDuW+CdAUoKF4h+BXCfD4g2uh7Nso+zWIKn//xAoiCJP981L3COnXwLT8/0gdLcF51zDKDlpAs/+yX3/EImFx59mvwLMP+pfz7K4974L5OlCCiNr5+83Ow6vp+HRF8FpqTmX22s3Dz+HwXacpIdrw+Pa6xGlCmAlANCVxh/9Z8G881WsD/3s74jfI7meM0f3cHhr64yqHNxlciNK8zPJ5UtyaLuA3Y3gT4bybMJ6FP8EFE/nQbYM/v3XsuRr2mCYXYY+9trhiRK79FGiFJRHkNOOmizPnQNpzBhdE2l5j6jLLdjNLz284b2whtQxPpJYPAlKF2VJ064bXkF16/ab+vI2vnHXL+rUJpPTrnVc/h1cPm+Ldgle/t7MHkx/KKN7B2z68gwsGbdex52dd1G43avvu5aK269jZWhW2n5ezD93XviuJ2r7X1Iu3ELVtJ159i09QkUznWa/Bx/hue9L/ZntSc7rW717wa75ZVnuW2t6fFNofq5usQFmfrqvFqJvbE0tRcrdStxb1psnOfWNWvbwhqZZFb5jqwOVuO66q29vv7H/8Fw==&lt;/diagram&gt;&lt;/mxfile&gt;">
     <defs>
-        <clipPath id="mx-clip-44-71-552-20-0">
-            <rect x="44" y="71" width="552" height="20"/>
+        <clipPath id="mx-clip-44-511-552-26-0">
+            <rect x="44" y="511" width="552" height="26"/>
         </clipPath>
-        <clipPath id="mx-clip-44-91-552-26-0">
-            <rect x="44" y="91" width="552" height="26"/>
+        <clipPath id="mx-clip-44-75-552-20-0">
+            <rect x="44" y="75" width="552" height="20"/>
         </clipPath>
-        <clipPath id="mx-clip-44-161-552-20-0">
-            <rect x="44" y="161" width="552" height="20"/>
+        <clipPath id="mx-clip-44-95-552-26-0">
+            <rect x="44" y="95" width="552" height="26"/>
         </clipPath>
-        <clipPath id="mx-clip-44-181-552-26-0">
-            <rect x="44" y="181" width="552" height="26"/>
+        <clipPath id="mx-clip-44-129-552-20-0">
+            <rect x="44" y="129" width="552" height="20"/>
         </clipPath>
-        <clipPath id="mx-clip-44-215-552-20-0">
-            <rect x="44" y="215" width="552" height="20"/>
+        <clipPath id="mx-clip-44-149-552-26-0">
+            <rect x="44" y="149" width="552" height="26"/>
         </clipPath>
-        <clipPath id="mx-clip-44-235-552-26-0">
-            <rect x="44" y="235" width="552" height="26"/>
+        <clipPath id="mx-clip-44-175-552-26-0">
+            <rect x="44" y="175" width="552" height="26"/>
         </clipPath>
-        <clipPath id="mx-clip-44-261-552-26-0">
-            <rect x="44" y="261" width="552" height="26"/>
+        <clipPath id="mx-clip-44-201-552-26-0">
+            <rect x="44" y="201" width="552" height="26"/>
         </clipPath>
-        <clipPath id="mx-clip-44-287-552-26-0">
-            <rect x="44" y="287" width="552" height="26"/>
+        <clipPath id="mx-clip-44-227-552-26-0">
+            <rect x="44" y="227" width="552" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-253-552-26-0">
+            <rect x="44" y="253" width="552" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-287-552-20-0">
+            <rect x="44" y="287" width="552" height="20"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-307-552-26-0">
+            <rect x="44" y="307" width="552" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-333-552-26-0">
+            <rect x="44" y="333" width="552" height="26"/>
+        </clipPath>
+        <clipPath id="mx-clip-44-367-552-20-0">
+            <rect x="44" y="367" width="552" height="20"/>
+        </clipPath>
+        <clipPath id="mx-clip-84-421-472-26-0">
+            <rect x="84" y="421" width="472" height="26"/>
         </clipPath>
     </defs>
     <g>
         <path d="M 0 23 L 0 0 L 640 0 L 640 23" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
-        <path d="M 0 23 L 0 330 L 640 330 L 640 23" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 0 23 L 0 550 L 640 550 L 640 23" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
         <path d="M 0 23 L 640 23" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
         <g fill="#333333" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
             <text x="319.5" y="16">
-                namespace CppUtils::Test
+                namespace CppUtils::Type
             </text>
         </g>
-        <path d="M 40 66 L 40 40 L 600 40 L 600 66" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
-        <path d="M 40 66 L 40 112 L 600 112 L 600 66" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
-        <path d="M 40 66 L 600 66" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 40 506 L 40 480 L 600 480 L 600 506" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 40 506 L 40 532 L 600 532 L 600 506" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 40 506 L 600 506" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
         <g fill="#333333" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
-            <text x="319.5" y="57.5">
-                class TestException: public std::runtime_error
+            <text x="319.5" y="497.5">
+                namespace Literals
             </text>
         </g>
-        <rect x="40" y="66" width="560" height="20" fill="none" stroke="none" pointer-events="all"/>
-        <g fill="#666666" font-family="Helvetica" font-style="italic" clip-path="url(#mx-clip-44-71-552-20-0)" text-anchor="middle" font-size="9px">
-            <text x="319.5" y="80.5">
+        <rect x="40" y="506" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-511-552-26-0)" font-size="12px">
+            <text x="45.5" y="523.5">
+                [[nodiscard]] constexpr TypeId operator"" _typeId(const char* cstring, std::size_t)
+            </text>
+        </g>
+        <path d="M 40 63 L 40 40 L 600 40 L 600 63" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 40 63 L 40 460 L 600 460 L 600 63" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 40 63 L 600 63" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <g fill="#333333" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
+            <text x="319.5" y="56">
+                struct TypeId final
+            </text>
+        </g>
+        <rect x="40" y="70" width="560" height="20" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#666666" font-family="Helvetica" font-style="italic" clip-path="url(#mx-clip-44-75-552-20-0)" text-anchor="middle" font-size="9px">
+            <text x="319.5" y="84.5">
+                Public Types
+            </text>
+        </g>
+        <rect x="40" y="90" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-95-552-26-0)" font-size="12px">
+            <text x="45.5" y="107.5">
+                using Index = std::size_t
+            </text>
+        </g>
+        <path d="M 40 120 L 600 120" fill="none" stroke="#cccccc" stroke-miterlimit="10" pointer-events="all"/>
+        <rect x="40" y="124" width="560" height="20" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#666666" font-family="Helvetica" font-style="italic" clip-path="url(#mx-clip-44-129-552-20-0)" text-anchor="middle" font-size="9px">
+            <text x="319.5" y="138.5">
                 Public Methods
             </text>
         </g>
-        <rect x="40" y="86" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
-        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-91-552-26-0)" font-size="12px">
-            <text x="45.5" y="103.5">
-                TestException(std::string message, std::string filename, int line) noexcept
+        <rect x="40" y="144" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-149-552-26-0)" font-size="12px">
+            <text x="45.5" y="161.5">
+                explicit constexpr TypeId(std::string_view c_name)
             </text>
         </g>
-        <path d="M 40 156 L 40 130 L 600 130 L 600 156" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
-        <path d="M 40 156 L 40 308 L 600 308 L 600 156" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
-        <path d="M 40 156 L 600 156" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <rect x="40" y="170" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-175-552-26-0)" font-size="12px">
+            <text x="45.5" y="187.5">
+                explicit constexpr TypeId(Index c_id)
+            </text>
+        </g>
+        <rect x="40" y="196" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-201-552-26-0)" font-size="12px">
+            <text x="45.5" y="213.5">
+                [[nodiscard]] constexpr bool operator==(const TypeId&amp; rhs) const noexcept
+            </text>
+        </g>
+        <rect x="40" y="222" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-227-552-26-0)" font-size="12px">
+            <text x="45.5" y="239.5">
+                [[nodiscard]] constexpr bool operator!=(const TypeId&amp; rhs) const noexcept
+            </text>
+        </g>
+        <rect x="40" y="248" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-253-552-26-0)" font-size="12px">
+            <text x="45.5" y="265.5">
+                void saveTypename()
+            </text>
+        </g>
+        <path d="M 40 278 L 600 278" fill="none" stroke="#cccccc" stroke-miterlimit="10" pointer-events="all"/>
+        <rect x="40" y="282" width="560" height="20" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#666666" font-family="Helvetica" font-style="italic" clip-path="url(#mx-clip-44-287-552-20-0)" text-anchor="middle" font-size="9px">
+            <text x="319.5" y="296.5">
+                Public Attributes
+            </text>
+        </g>
+        <rect x="40" y="302" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-307-552-26-0)" font-size="12px">
+            <text x="45.5" y="319.5">
+                std::string_view name
+            </text>
+        </g>
+        <rect x="40" y="328" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-333-552-26-0)" font-size="12px">
+            <text x="45.5" y="345.5">
+                Index id
+            </text>
+        </g>
+        <path d="M 40 358 L 600 358" fill="none" stroke="#cccccc" stroke-miterlimit="10" pointer-events="all"/>
+        <rect x="40" y="362" width="560" height="20" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#666666" font-family="Helvetica" font-style="italic" clip-path="url(#mx-clip-44-367-552-20-0)" text-anchor="middle" font-size="9px">
+            <text x="319.5" y="376.5">
+                Public Sub-Types
+            </text>
+        </g>
+        <path d="M 80 416 L 80 390 L 560 390 L 560 416" fill="#f5f5f5" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 80 416 L 80 442 L 560 442 L 560 416" fill="#ffffff" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
+        <path d="M 80 416 L 560 416" fill="none" stroke="#666666" stroke-miterlimit="10" pointer-events="all"/>
         <g fill="#333333" font-family="Helvetica" font-weight="bold" text-anchor="middle" font-size="12px">
-            <text x="319.5" y="147.5">
-                class UnitTest
+            <text x="319.5" y="407.5">
+                struct hash_fn final
             </text>
         </g>
-        <rect x="40" y="156" width="560" height="20" fill="none" stroke="none" pointer-events="all"/>
-        <g fill="#666666" font-family="Helvetica" font-style="italic" clip-path="url(#mx-clip-44-161-552-20-0)" text-anchor="middle" font-size="9px">
-            <text x="319.5" y="170.5">
-                Public Static Methods
-            </text>
-        </g>
-        <rect x="40" y="176" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
-        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-181-552-26-0)" font-size="12px">
-            <text x="45.5" y="193.5">
-                int executeTests(const std::vector&lt;UnitTest&gt;&amp; tests)
-            </text>
-        </g>
-        <path d="M 40 206 L 600 206" fill="none" stroke="#cccccc" stroke-miterlimit="10" pointer-events="all"/>
-        <rect x="40" y="210" width="560" height="20" fill="none" stroke="none" pointer-events="all"/>
-        <g fill="#666666" font-family="Helvetica" font-style="italic" clip-path="url(#mx-clip-44-215-552-20-0)" text-anchor="middle" font-size="9px">
-            <text x="319.5" y="224.5">
-                Public Methods
-            </text>
-        </g>
-        <rect x="40" y="230" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
-        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-235-552-26-0)" font-size="12px">
-            <text x="45.5" y="247.5">
-                UnitTest(std::string name, std::function&lt;void()&gt; function)
-            </text>
-        </g>
-        <rect x="40" y="256" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
-        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-261-552-26-0)" font-size="12px">
-            <text x="45.5" y="273.5">
-                std::string_view getName() noexcept
-            </text>
-        </g>
-        <rect x="40" y="282" width="560" height="26" fill="none" stroke="none" pointer-events="all"/>
-        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-44-287-552-26-0)" font-size="12px">
-            <text x="45.5" y="299.5">
-                bool pass() const
+        <rect x="80" y="416" width="480" height="26" fill="none" stroke="none" pointer-events="all"/>
+        <g fill="#000000" font-family="Helvetica" clip-path="url(#mx-clip-84-421-472-26-0)" font-size="12px">
+            <text x="85.5" y="433.5">
+                [[nodiscard]] constexpr std::size_t operator()(const TypeId&amp; type) const noexcept
             </text>
         </g>
     </g>

@@ -8,7 +8,7 @@ namespace CppUtils::Type
 	{
 	public:
 		virtual ~ICloneable() = default;
-		virtual std::unique_ptr<ICloneable> clone() const = 0;
+		[[nodiscard]] virtual std::unique_ptr<ICloneable> clone() const = 0;
 	};
 
 	template<class Derived>
@@ -17,7 +17,7 @@ namespace CppUtils::Type
 	public:
 		virtual ~Cloneable() = default;
 
-		std::unique_ptr<ICloneable> clone() const override
+		[[nodiscard]] std::unique_ptr<ICloneable> clone() const override
 		{
 			return std::make_unique<Derived>(*this);
 		}

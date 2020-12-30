@@ -36,7 +36,7 @@ cppUtils_unitTests_exe = executable(
 	'UnitTests',
 	sources: sources + headers,
 	include_directories: includeDir,
-	dependencies: private_dependencies
+	dependencies: public_dependencies + private_dependencies
 )
 
 test('Unit tests', cppUtils_unitTests_exe)

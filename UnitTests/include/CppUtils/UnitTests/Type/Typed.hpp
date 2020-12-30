@@ -17,7 +17,7 @@ namespace CppUtils::UnitTests::Type::Typed
 
 		CppUtils::Test{"Type/Typed", [] {
 			const auto typedInt = Int{42};
-			const auto typedString = String{"String"};
+			const auto typedString = String{"text"};
 
 			ASSERT(typedInt.getType() == IntType);
 			ASSERT(typedString.getType() == StringType);
@@ -30,7 +30,7 @@ namespace CppUtils::UnitTests::Type::Typed
 		CppUtils::Test{"Type/Typed/vector", [] {
 			auto values = std::vector<std::unique_ptr<CppUtils::Type::ITyped>>{};
 			values.emplace_back(std::make_unique<Int>(42));
-			values.emplace_back(std::make_unique<String>("String"));
+			values.emplace_back(std::make_unique<String>("text"));
 
 			for (const auto& value : values)
 			{

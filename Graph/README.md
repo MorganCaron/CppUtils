@@ -54,7 +54,7 @@ int main()
 }
 ```
 
-<p align="center"><img src="resources/MeshNodeFig.drawio.svg" alt="MeshNode figure diagram"/></p>
+<p align="center"><img src="resources/MeshNodeFig.drawio.svg" alt="MeshNode figure"/></p>
 
 Result:
 ```
@@ -95,7 +95,7 @@ int main()
 }
 ```
 
-<p align="center"><img src="resources/TreeNodeFig.drawio.svg" alt="TreeNode figure diagram"/></p>
+<p align="center"><img src="resources/TreeNodeFig.drawio.svg" alt="TreeNode figure"/></p>
 
 Result:
 ```
