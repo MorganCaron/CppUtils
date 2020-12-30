@@ -1,4 +1,4 @@
-name: CD C++
+name: "CD C++: Release publication"
 
 on:
   push:

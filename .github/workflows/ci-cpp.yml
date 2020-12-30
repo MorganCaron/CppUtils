@@ -1,4 +1,4 @@
-name: CI C++
+name: "CI C++: Test execution"
 
 on: [push, pull_request]
 
