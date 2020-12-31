@@ -1,124 +1,126 @@
 #pragma once
 
-#include <CppUtils/Language/Lexer/Lexeme.hpp>
+#include <CppUtils/Language/Parser/Expression.hpp>
 #include <CppUtils/String/String.hpp>
 
 namespace CppUtils::Language::Lexer
 {
-	using namespace std::literals;
-	using namespace Type::Literals;
-
 	class Lexer final
 	{
 	private:
 		struct Context final
 		{
 			Parser::Cursor cursor;
-			Lexeme::TokenNode parentNode;
+			Parser::TokenNode parentNode;
 		};
 
 	public:
-		inline Lexeme::Definition& lexeme(const Lexeme::Token& token, const bool isNode = true)
+		[[nodiscard]] inline bool expressionExists(const Parser::Token& token) const noexcept
 		{
-			if (m_lexemeDefinitions.find(token) == m_lexemeDefinitions.end())
-				m_lexemeDefinitions[token] = Lexeme::Definition{token, isNode};
-			return m_lexemeDefinitions[token];
+			return (m_expressions.find(token) != m_expressions.end());
 		}
 
-		inline const Lexeme::Definition& getDefinition(const Lexeme::Token& token) const
+		[[nodiscard]] inline Parser::Expression& expression(const Parser::Token& token, const bool isNode = true)
 		{
-			if (m_lexemeDefinitions.find(token) == m_lexemeDefinitions.end())
-				throw std::runtime_error{"Undefined definition: " + std::string{token.name}};
-			return m_lexemeDefinitions.at(token);
+			if (!expressionExists(token))
+				m_expressions[token] = Parser::Expression{token, isNode};
+			return m_expressions[token];
 		}
 
-		[[nodiscard]] Lexeme::TokenNode parse(const Lexeme::Token& token, std::string_view src) const
+		[[nodiscard]] inline const Parser::Expression& getExpression(const Parser::Token& token) const
 		{
-			const auto& definition = getDefinition(token);
+			if (!expressionExists(token))
+				throw std::runtime_error{"Undefined expression: " + std::string{token.name}};
+			return m_expressions.at(token);
+		}
+
+		[[nodiscard]] Parser::TokenNode parse(const Parser::Token& token, std::string_view src) const
+		{
+			const auto& expression = getExpression(token);
 			auto pos = std::size_t{0};
 			auto context = Context{
 				Parser::Cursor{src, pos},
-				Lexeme::TokenNode{token}
+				Parser::TokenNode{token}
 			};
 
-			if (!parseDefinition(definition, context))
-				throw std::runtime_error{"Syntax error in the " + std::string{token.name} + " definition."};
+			if (!parseExpression(expression, context))
+				throw std::runtime_error{"Syntax error in the " + std::string{token.name} + " expression."};
 			if (!context.cursor.isEndOfString())
 				throw std::runtime_error{"Syntax error:\nThe following string does not correspond to any known element:\n" + std::string{String::rightTrimString(context.cursor.getNextNChar(20))} + "..."};
 			return context.parentNode;
 		}
 
 	private:
-		[[nodiscard]] inline std::string getLexemeName(const std::unique_ptr<Lexeme::ILexeme>& lexeme) const
+		[[nodiscard]] inline std::string getLexemeName(const std::unique_ptr<Parser::ILexeme>& lexeme) const
 		{
-			if (lexeme->getType() == Lexeme::StringLexemeType)
-				return std::string{'"' + Type::ensureType<Lexeme::StringLexeme>(lexeme).value + '"'};
-			if (lexeme->getType() == Lexeme::TokenLexemeType)
-				return std::string{Type::ensureType<Lexeme::TokenLexeme>(lexeme).value.name};
-			return ""s;
+			if (lexeme->getType() == Parser::StringLexemeType)
+				return std::string{'"' + Type::ensureType<Parser::StringLexeme>(lexeme).value + '"'};
+			if (lexeme->getType() == Parser::TokenLexemeType)
+				return std::string{Type::ensureType<Parser::TokenLexeme>(lexeme).value.name};
+			return "";
 		}
 
-		[[nodiscard]] inline bool parseDefinition(const Lexeme::Definition& definition, Context& context) const
+		[[nodiscard]] inline bool parseExpression(const Parser::Expression& expression, Context& context) const
 		{
-			if (definition.lexemes.empty())
-				throw std::runtime_error{"Undefined definition: " + std::string{definition.token.name}};
+			if (expression.lexemes.empty())
+				throw std::runtime_error{"Undefined expression: " + std::string{expression.token.name}};
 			const auto startPos = context.cursor.pos;
 			auto partialMatch = false;
-			for (const auto& lexeme : definition.lexemes)
+			for (const auto& lexeme : expression.lexemes)
 			{
 				if (!parseLexeme(lexeme, context))
 				{
 					if (partialMatch)
-						throw std::runtime_error{"Syntax error in " + std::string{definition.token.name} + ":\n" + std::string{String::rightTrimString(context.cursor.getNextNChar(20))} + "...\nExpected format: " + std::string{lexeme->getType().name} + " " + getLexemeName(lexeme)};
+						throw std::runtime_error{"Syntax error in " + std::string{expression.token.name} + ":\n" + std::string{String::rightTrimString(context.cursor.getNextNChar(20))} + "...\nExpected format: " + std::string{lexeme->getType().name} + " " + getLexemeName(lexeme)};
 					context.cursor.pos = startPos;
 					return false;
 				}
-				if (lexeme->getType() == Lexeme::StringLexemeType)
+				if (lexeme->getType() == Parser::StringLexemeType)
 					partialMatch = true;
 			}
 			return true;
 		}
 
-		inline bool parseNode(const Lexeme::Definition& definition, Context& context) const
+		inline bool parseNode(const Parser::Expression& expression, Context& context) const
 		{
 			auto& [cursor, parentNode] = context;
 
-			if (definition.isNode)
+			if (expression.isNode)
 			{
 				auto newContext = Context{
 					cursor,
-					Lexeme::TokenNode{definition.token}
+					Parser::TokenNode{expression.token}
 				};
-				if (!parseDefinition(definition, newContext))
+				if (!parseExpression(expression, newContext))
 					return false;
 				parentNode.childs.emplace_back(newContext.parentNode);
 			}
-			else if (!parseDefinition(definition, context))
+			else if (!parseExpression(expression, context))
 				return false;
 			return true;
 		}
 
-		[[nodiscard]] bool parseLexeme(const std::unique_ptr<Lexeme::ILexeme>& lexeme, Context& context) const
+		[[nodiscard]] bool parseLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Context& context) const
 		{
 			switch (lexeme->getType().id)
 			{
-				case Lexeme::StringLexemeType.id:
+				case Parser::StringLexemeType.id:
 					if (!parseStringLexeme(lexeme, context))
 						return false;
 					break;
-				case Lexeme::ParserLexemeType.id:
+				case Parser::ParserLexemeType.id:
 					if (!parseParserLexeme(lexeme, context))
 						return false;
 					break;
-				case Lexeme::TokenLexemeType.id:
+				case Parser::TokenLexemeType.id:
 					if (!parseTokenLexeme(lexeme, context))
 						return false;
 					break;
-				case Lexeme::RecurrentLexemeType.id:
+				case Parser::RecurrentLexemeType.id:
 					if (!parseRecurrentLexeme(lexeme, context))
 						return false;
 					break;
-				case Lexeme::ContingentLexemeType.id:
+				case Parser::ContingentLexemeType.id:
 					if (!parseContingentLexeme(lexeme, context))
 						return false;
 					break;
@@ -129,18 +131,18 @@ namespace CppUtils::Language::Lexer
 			return true;
 		}
 
-		[[nodiscard]] inline bool parseStringLexeme(const std::unique_ptr<Lexeme::ILexeme>& lexeme, Context& context) const
+		[[nodiscard]] inline bool parseStringLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Context& context) const
 		{
-			const auto& stringLexeme = Type::ensureType<Lexeme::StringLexeme>(lexeme);
+			const auto& stringLexeme = Type::ensureType<Parser::StringLexeme>(lexeme);
 			if (!context.cursor.isEqualSkipIt(stringLexeme.value))
 				return false;
 			return true;
 		}
 
-		[[nodiscard]] inline bool parseParserLexeme(const std::unique_ptr<Lexeme::ILexeme>& lexeme, Context& context) const
+		[[nodiscard]] inline bool parseParserLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Context& context) const
 		{
 			auto& [cursor, parentNode] = context;
-			const auto& parserLexeme = Type::ensureType<Lexeme::ParserLexeme>(lexeme);
+			const auto& parserLexeme = Type::ensureType<Parser::ParserLexeme>(lexeme);
 			const auto startPos = cursor.pos;
 			
 			if (!parserLexeme.value(cursor, parentNode))
@@ -151,43 +153,43 @@ namespace CppUtils::Language::Lexer
 			return true;
 		}
 
-		[[nodiscard]] inline bool parseTokenLexeme(const std::unique_ptr<Lexeme::ILexeme>& lexeme, Context& context) const
+		[[nodiscard]] inline bool parseTokenLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Context& context) const
 		{
-			const auto& tokenLexeme = Type::ensureType<Lexeme::TokenLexeme>(lexeme);
+			const auto& tokenLexeme = Type::ensureType<Parser::TokenLexeme>(lexeme);
 			const auto& token = tokenLexeme.value;
-			const auto& definition = getDefinition(token);
-			return parseNode(definition, context);
+			const auto& expression = getExpression(token);
+			return parseNode(expression, context);
 		}
 
-		[[nodiscard]] inline bool parseRecurrentLexeme(const std::unique_ptr<Lexeme::ILexeme>& lexeme, Context& context) const
+		[[nodiscard]] inline bool parseRecurrentLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Context& context) const
 		{
-			const auto& recurrentLexeme = Type::ensureType<Lexeme::RecurrentLexeme>(lexeme);
+			const auto& recurrentLexeme = Type::ensureType<Parser::RecurrentLexeme>(lexeme);
 			const auto& recurrence = recurrentLexeme.value;
 			const auto& [token, recurrenceType, repetitions] = recurrence;
-			const auto& definition = getDefinition(token);
+			const auto& expression = getExpression(token);
 			
 			switch (recurrenceType)
 			{
-				case Lexeme::RecurrenceType::Optional:
+				case Parser::RecurrenceType::Optional:
 				{
-					parseNode(definition, context);
+					parseNode(expression, context);
 					break;
 				}
-				case Lexeme::RecurrenceType::EqualTo:
+				case Parser::RecurrenceType::EqualTo:
 				{
 					for (auto i = repetitions; i > 0; --i)
-						if (!parseNode(definition, context))
+						if (!parseNode(expression, context))
 							return false;
 					break;
 				}
-				case Lexeme::RecurrenceType::MoreThan:
-				case Lexeme::RecurrenceType::MoreOrEqualTo:
+				case Parser::RecurrenceType::MoreThan:
+				case Parser::RecurrenceType::MoreOrEqualTo:
 				{
 					auto i = 0u;
-					while (parseNode(definition, context))
+					while (parseNode(expression, context))
 						++i;
-					if ((recurrenceType == Lexeme::RecurrenceType::MoreThan && i <= repetitions) ||
-						(recurrenceType == Lexeme::RecurrenceType::MoreOrEqualTo && i < repetitions))
+					if ((recurrenceType == Parser::RecurrenceType::MoreThan && i <= repetitions) ||
+						(recurrenceType == Parser::RecurrenceType::MoreOrEqualTo && i < repetitions))
 						return false;
 					break;
 				}
@@ -197,23 +199,23 @@ namespace CppUtils::Language::Lexer
 			return true;
 		}
 
-		[[nodiscard]] inline bool parseContingentLexeme(const std::unique_ptr<Lexeme::ILexeme>& lexeme, Context& context) const
+		[[nodiscard]] inline bool parseContingentLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Context& context) const
 		{
 			auto& [cursor, parentNode] = context;
-			const auto& contingentLexeme = Type::ensureType<Lexeme::ContingentLexeme>(lexeme);
+			const auto& contingentLexeme = Type::ensureType<Parser::ContingentLexeme>(lexeme);
 			const auto& contingence = contingentLexeme.value;
 			const auto startPos = cursor.pos;
 
 			for (const auto& token : contingence.tokens)
 			{
-				const auto& definition = getDefinition(token);
-				if (parseNode(definition, context))
+				const auto& expression = getExpression(token);
+				if (parseNode(expression, context))
 					return true;
 				cursor.pos = startPos;
 			}
 			return false;
 		}
 
-		std::unordered_map<Lexeme::Token, Lexeme::Definition, Lexeme::Token::hash_fn> m_lexemeDefinitions;
+		std::unordered_map<Parser::Token, Parser::Expression, Parser::Token::hash_fn> m_expressions;
 	};
 }

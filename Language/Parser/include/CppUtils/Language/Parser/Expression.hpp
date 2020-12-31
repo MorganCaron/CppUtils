@@ -10,7 +10,7 @@
 #include <CppUtils/Graph/TreeNode.hpp>
 #include <CppUtils/Language/Parser/Cursor.hpp>
 
-namespace CppUtils::Language::Lexer::Lexeme
+namespace CppUtils::Language::Parser
 {
 	using namespace Type::Literals;
 
@@ -36,7 +36,7 @@ namespace CppUtils::Language::Lexer::Lexeme
 		Optional,
 		EqualTo,
 		MoreThan,
-		MoreOrEqualTo,
+		MoreOrEqualTo
 	};
 
 	struct Recurrence final
@@ -49,60 +49,60 @@ namespace CppUtils::Language::Lexer::Lexeme
 	static constexpr auto RecurrentLexemeType = "recurrence"_typeId;
 	using RecurrentLexeme = Lexeme<RecurrentLexemeType, Recurrence>;
 
-	struct Definition;
+	struct Expression;
 	struct Contingence final
 	{
 		std::vector<Token> tokens;
 
-		[[nodiscard]] Contingence& operator||(const Definition& rhs);
+		[[nodiscard]] Contingence& operator||(const Expression& rhs);
 	};
 
 	static constexpr auto ContingentLexemeType = "contingency"_typeId;
 	using ContingentLexeme = Lexeme<ContingentLexemeType, Contingence>;
 
-	struct Definition final
+	struct Expression final
 	{
 		Token token;
 		bool isNode;
 		std::vector<std::unique_ptr<ILexeme>> lexemes;
 
-		Definition() = default;
-		explicit Definition(Token c_token, const bool c_isNode):
+		Expression() = default;
+		explicit Expression(Token c_token, const bool c_isNode):
 			token{std::move(c_token)},
 			isNode{c_isNode}
 		{};
 
-		Definition& operator>>(std::string string)
+		Expression& operator>>(std::string string)
 		{
 			lexemes.emplace_back(std::make_unique<StringLexeme>(std::move(string)));
 			return *this;
 		}
 
-		Definition& operator>>(char c)
+		Expression& operator>>(char c)
 		{
 			lexemes.emplace_back(std::make_unique<StringLexeme>(std::string{c}));
 			return *this;
 		}
 
-		Definition& operator>>(const Definition& lexeme)
+		Expression& operator>>(const Expression& lexeme)
 		{
 			lexemes.emplace_back(std::make_unique<TokenLexeme>(lexeme.token));
 			return *this;
 		}
 
-		Definition& operator>>(ParserFunction function)
+		Expression& operator>>(ParserFunction function)
 		{
 			lexemes.emplace_back(std::make_unique<ParserLexeme>(std::move(function)));
 			return *this;
 		}
 
-		Definition& operator>>(Recurrence recurrence)
+		Expression& operator>>(Recurrence recurrence)
 		{
 			lexemes.emplace_back(std::make_unique<RecurrentLexeme>(std::move(recurrence)));
 			return *this;
 		}
 
-		Definition& operator>>(Contingence contingence)
+		Expression& operator>>(Contingence contingence)
 		{
 			lexemes.emplace_back(std::make_unique<ContingentLexeme>(std::move(contingence)));
 			return *this;
@@ -128,7 +128,7 @@ namespace CppUtils::Language::Lexer::Lexeme
 			return Recurrence{token, RecurrenceType::EqualTo, repetitions};
 		}
 
-		[[nodiscard]] Contingence operator||(const Definition& rhs) const
+		[[nodiscard]] Contingence operator||(const Expression& rhs) const
 		{
 			return Contingence{std::vector<Token>{token, rhs.token}};
 		}

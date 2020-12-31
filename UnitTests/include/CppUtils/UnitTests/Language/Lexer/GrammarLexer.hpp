@@ -28,15 +28,15 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			ASSERT(tokenTree.childs.size() == 0);
 		}},
 
-		CppUtils::Test{"Language/Lexer/GrammarLexer/Definitions", [] {
+		CppUtils::Test{"Language/Lexer/GrammarLexer/Expressions", [] {
 			using namespace CppUtils::Type::Literals;
 			CppUtils::Terminal::setConsoleOutputUTF8();
 
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer{};
 
-			grammarLexer.addParserFunction("spaceParser"_typeId, CppUtils::Language::Lexer::Parsers::spaceParser);
-			grammarLexer.addParserFunction("keywordParser"_typeId, CppUtils::Language::Lexer::Parsers::keywordParser);
-			grammarLexer.addParserFunction("quoteParser"_typeId, CppUtils::Language::Lexer::Parsers::quoteParser);
+			grammarLexer.addParserFunction("spaceParser"_typeId, CppUtils::Language::Parser::spaceParser);
+			grammarLexer.addParserFunction("keywordParser"_typeId, CppUtils::Language::Parser::keywordParser);
+			grammarLexer.addParserFunction("quoteParser"_typeId, CppUtils::Language::Parser::quoteParser);
 			
 			static constexpr auto grammarSrc = R"(
 			main: _instruction spaceParser;
@@ -70,8 +70,8 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer{};
 
-			grammarLexer.addParserFunction("spaceParser"_typeId, CppUtils::Language::Lexer::Parsers::spaceParser);
-			grammarLexer.addParserFunction("keywordParser"_typeId, CppUtils::Language::Lexer::Parsers::keywordParser);
+			grammarLexer.addParserFunction("spaceParser"_typeId, CppUtils::Language::Parser::spaceParser);
+			grammarLexer.addParserFunction("keywordParser"_typeId, CppUtils::Language::Parser::keywordParser);
 			
 			static constexpr auto grammarSrc = R"(
 			main: (_word >= 0) spaceParser;
@@ -94,9 +94,9 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer{};
 
-			grammarLexer.addParserFunction("spaceParser"_typeId, CppUtils::Language::Lexer::Parsers::spaceParser);
-			grammarLexer.addParserFunction("keywordParser"_typeId, CppUtils::Language::Lexer::Parsers::keywordParser);
-			grammarLexer.addParserFunction("quoteParser"_typeId, CppUtils::Language::Lexer::Parsers::quoteParser);
+			grammarLexer.addParserFunction("spaceParser"_typeId, CppUtils::Language::Parser::spaceParser);
+			grammarLexer.addParserFunction("keywordParser"_typeId, CppUtils::Language::Parser::keywordParser);
+			grammarLexer.addParserFunction("quoteParser"_typeId, CppUtils::Language::Parser::quoteParser);
 			
 			static constexpr auto grammarSrc = R"(
 			main: (_instruction >= 0) spaceParser;

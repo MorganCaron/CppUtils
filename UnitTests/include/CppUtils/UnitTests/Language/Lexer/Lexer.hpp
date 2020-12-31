@@ -12,11 +12,11 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
 
-			auto& printLexeme = lexer.lexeme("print"_typeId);
-			auto& stringLexeme = lexer.lexeme("string"_typeId);
+			auto& printExpression = lexer.expression("print"_typeId);
+			auto& stringExpression = lexer.expression("string"_typeId);
 
-			printLexeme >> "print(" >> stringLexeme >> ");";
-			stringLexeme >> "\"Hello World!\"";
+			printExpression >> "print(" >> stringExpression >> ");";
+			stringExpression >> "\"Hello World!\"";
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
 			const auto tokenTree = lexer.parse("print"_typeId, src);
@@ -35,16 +35,16 @@ namespace CppUtils::UnitTests::Language::Lexer
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
-			auto& printLexeme = lexer.lexeme("print"_typeId);
-			auto& stringLexeme = lexer.lexeme("string"_typeId);
+			auto& printExpression = lexer.expression("print"_typeId);
+			auto& stringExpression = lexer.expression("string"_typeId);
 
-			printLexeme
-				>> CppUtils::Language::Lexer::Parsers::spaceParser >> "print("
-				>> stringLexeme
-				>> CppUtils::Language::Lexer::Parsers::spaceParser >> ");";
-			stringLexeme
-				>> CppUtils::Language::Lexer::Parsers::spaceParser
-				>> CppUtils::Language::Lexer::Parsers::quoteParser;
+			printExpression
+				>> CppUtils::Language::Parser::spaceParser >> "print("
+				>> stringExpression
+				>> CppUtils::Language::Parser::spaceParser >> ");";
+			stringExpression
+				>> CppUtils::Language::Parser::spaceParser
+				>> CppUtils::Language::Parser::quoteParser;
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
 			const auto tokenTree = lexer.parse("print"_typeId, src);
@@ -65,20 +65,20 @@ namespace CppUtils::UnitTests::Language::Lexer
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
-			auto& mainLexeme = lexer.lexeme("main"_typeId);
-			auto& printLexeme = lexer.lexeme("print"_typeId);
-			auto& stringLexeme = lexer.lexeme("string"_typeId);
+			auto& mainExpression = lexer.expression("main"_typeId);
+			auto& printExpression = lexer.expression("print"_typeId);
+			auto& stringExpression = lexer.expression("string"_typeId);
 
-			mainLexeme
-				>> (printLexeme >= 0)
-				>> CppUtils::Language::Lexer::Parsers::spaceParser;
-			printLexeme
-				>> CppUtils::Language::Lexer::Parsers::spaceParser >> "print("
-				>> stringLexeme
-				>> CppUtils::Language::Lexer::Parsers::spaceParser >> ");";
-			stringLexeme
-				>> CppUtils::Language::Lexer::Parsers::spaceParser
-				>> CppUtils::Language::Lexer::Parsers::quoteParser;
+			mainExpression
+				>> (printExpression >= 0)
+				>> CppUtils::Language::Parser::spaceParser;
+			printExpression
+				>> CppUtils::Language::Parser::spaceParser >> "print("
+				>> stringExpression
+				>> CppUtils::Language::Parser::spaceParser >> ");";
+			stringExpression
+				>> CppUtils::Language::Parser::spaceParser
+				>> CppUtils::Language::Parser::quoteParser;
 
 			static constexpr auto src = R"(
 				print("Hello World!");
@@ -101,21 +101,21 @@ namespace CppUtils::UnitTests::Language::Lexer
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
-			auto& mainLexeme = lexer.lexeme("main"_typeId);
-			auto& valueLexeme = lexer.lexeme("value"_typeId);
-			auto& keywordLexeme = lexer.lexeme("keyword"_typeId);
-			auto& stringLexeme = lexer.lexeme("string"_typeId);
+			auto& mainExpression = lexer.expression("main"_typeId);
+			auto& valueExpression = lexer.expression("value"_typeId);
+			auto& keywordExpression = lexer.expression("keyword"_typeId);
+			auto& stringExpression = lexer.expression("string"_typeId);
 
-			mainLexeme
-				>> (valueLexeme >= 0)
-				>> CppUtils::Language::Lexer::Parsers::spaceParser;
-			valueLexeme
-				>> CppUtils::Language::Lexer::Parsers::spaceParser
-				>> (keywordLexeme || stringLexeme);
-			keywordLexeme
-				>> CppUtils::Language::Lexer::Parsers::keywordParser;
-			stringLexeme
-				>> CppUtils::Language::Lexer::Parsers::quoteParser;
+			mainExpression
+				>> (valueExpression >= 0)
+				>> CppUtils::Language::Parser::spaceParser;
+			valueExpression
+				>> CppUtils::Language::Parser::spaceParser
+				>> (keywordExpression || stringExpression);
+			keywordExpression
+				>> CppUtils::Language::Parser::keywordParser;
+			stringExpression
+				>> CppUtils::Language::Parser::quoteParser;
 
 			static constexpr auto src = R"(
 				test "test" test "test"

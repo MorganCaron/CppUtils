@@ -63,7 +63,7 @@ jobs:
         ninja -C build
         if [ ${{ matrix.library-type }} == "shared" ]; then
           cp ./build/External/libCppUtils-External.dll ./build/UnitTests
-          cp ./build/Language/Lexer/libCppUtils-Language-Lexer.dll ./build/UnitTests
+          cp ./build/Language/Parser/libCppUtils-Language-Parser.dll ./build/UnitTests
           cp ./build/Log/libCppUtils-Log.dll ./build/UnitTests
           cp ./build/Type/libCppUtils-Type.dll ./build/UnitTests
         fi

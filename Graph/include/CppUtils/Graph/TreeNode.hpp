@@ -19,6 +19,14 @@ namespace CppUtils::Graph
 			return (self == rhs.self && childs == rhs.childs);
 		}
 
+		[[nodiscard]] bool exists(const Storage& key) const noexcept
+		{
+			for (const auto& child : childs)
+				if (child.self == key)
+					return true;
+			return false;
+		}
+
 		[[nodiscard]] TreeNode<Storage>& operator[](const Storage& key)
 		{
 			for (auto& child : childs)
@@ -26,14 +34,6 @@ namespace CppUtils::Graph
 					return child;
 			childs.emplace_back(TreeNode<Storage>{key});
 			return childs[childs.size() - 1];
-		}
-
-		[[nodiscard]] bool exists(const Storage& key) const noexcept
-		{
-			for (const auto& child : childs)
-				if (child.self == key)
-					return true;
-			return false;
 		}
 
 		[[nodiscard]] const TreeNode<Storage>& at(const Storage& key) const
