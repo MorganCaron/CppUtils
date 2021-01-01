@@ -20,11 +20,11 @@ subdir('Hash')
 subdir('Terminal')
 subdir('Switch')
 subdir('Log')
+subdir('Type')
 subdir('Graph')
 subdir('String')
 subdir('Test')
 subdir('Thread')
-subdir('Type')
 subdir('Language')
 
 public_dependencies = [
@@ -37,11 +37,11 @@ public_dependencies = [
 	cppUtils_hash_dep,
 	cppUtils_terminal_dep,
 	cppUtils_log_dep,
+	cppUtils_type_dep,
 	cppUtils_graph_dep,
 	cppUtils_string_dep,
 	cppUtils_test_dep,
 	cppUtils_thread_dep,
-	cppUtils_type_dep,
 	cppUtils_language_dep
 ]
 private_dependencies = []

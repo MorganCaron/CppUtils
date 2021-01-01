@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-#include <CppUtils/Type/TypeId.hpp>
+#include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Language/Interpreter/Cursor.hpp>
 
 namespace CppUtils::Language::Interpreter
@@ -14,7 +14,7 @@ namespace CppUtils::Language::Interpreter
 	public:
 		using Operation = std::function<void(Cursor<Instruction>&, Context&)>;
 
-		VirtualMachine(std::unordered_map<Type::TypeId, Operation, Type::TypeId::hash_fn>&& operations = {}):
+		VirtualMachine(std::unordered_map<Type::Token, Operation, Type::Token::hash_fn>&& operations = {}):
 			m_operations{operations}
 		{}
 
@@ -30,12 +30,12 @@ namespace CppUtils::Language::Interpreter
 			
 			try
 			{
-				while (cursor.pos < cursor.instructions.size())
+				while (cursor.pos < cursor.elements.size())
 				{
-					const auto operation = m_operations.find(cursor.getInstruction().type);
+					const auto operation = m_operations.find(cursor.getElement().type);
 					if (operation == m_operations.end())
-						throw std::runtime_error{"Unknown instruction:\n" + std::string{cursor.getInstruction().type.name}};
-					m_operations.at(cursor.getInstruction().type)(cursor, context);
+						throw std::runtime_error{"Unknown instruction:\n" + std::string{cursor.getElement().type.name}};
+					m_operations.at(cursor.getElement().type)(cursor, context);
 				}
 			}
 			catch (const std::exception& exception)
@@ -45,7 +45,7 @@ namespace CppUtils::Language::Interpreter
 		}
 
 	private:
-		std::unordered_map<Type::TypeId, Operation, Type::TypeId::hash_fn> m_operations;
+		std::unordered_map<Type::Token, Operation, Type::Token::hash_fn> m_operations;
 		std::vector<Instruction> m_instructions;
 	};
 }

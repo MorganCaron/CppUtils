@@ -3,12 +3,12 @@
 #include <stack>
 #include <unordered_map>
 
-#include <CppUtils/Type/TypeId.hpp>
+#include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Language/ASM/Value.hpp>
 
 namespace CppUtils::Language::ASM
 {
-	using RegisterFile = std::unordered_map<Type::TypeId, Value, Type::TypeId::hash_fn>;
+	using RegisterFile = std::unordered_map<Type::Token, Value, Type::Token::hash_fn>;
 
 	struct Context final
 	{

@@ -12,21 +12,21 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
 
-			auto& printExpression = lexer.expression("print"_typeId);
-			auto& stringExpression = lexer.expression("string"_typeId);
+			auto& printExpression = lexer.expression("print"_token);
+			auto& stringExpression = lexer.expression("string"_token);
 
 			printExpression >> "print(" >> stringExpression >> ");";
 			stringExpression >> "\"Hello World!\"";
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
-			const auto tokenTree = lexer.parse("print"_typeId, src);
+			const auto tokenTree = lexer.parse("print"_token, src);
 
 			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(tokenTree.self == "print"_typeId);
+			ASSERT(tokenTree.self == "print"_token);
 			ASSERT(tokenTree.childs.size() == 1);
-			ASSERT(tokenTree.childs.at(0).self == "string"_typeId);
+			ASSERT(tokenTree.childs.at(0).self == "string"_token);
 			ASSERT(tokenTree.childs.at(0).childs.size() == 0);
 		}},
 
@@ -35,8 +35,8 @@ namespace CppUtils::UnitTests::Language::Lexer
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
-			auto& printExpression = lexer.expression("print"_typeId);
-			auto& stringExpression = lexer.expression("string"_typeId);
+			auto& printExpression = lexer.expression("print"_token);
+			auto& stringExpression = lexer.expression("string"_token);
 
 			printExpression
 				>> CppUtils::Language::Parser::spaceParser >> "print("
@@ -47,16 +47,16 @@ namespace CppUtils::UnitTests::Language::Lexer
 				>> CppUtils::Language::Parser::quoteParser;
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
-			const auto tokenTree = lexer.parse("print"_typeId, src);
+			const auto tokenTree = lexer.parse("print"_token, src);
 
 			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(tokenTree.self == "print"_typeId);
+			ASSERT(tokenTree.self == "print"_token);
 			ASSERT(tokenTree.childs.size() == 1);
-			ASSERT(tokenTree.childs.at(0).self == "string"_typeId);
+			ASSERT(tokenTree.childs.at(0).self == "string"_token);
 			ASSERT(tokenTree.childs.at(0).childs.size() == 1);
-			ASSERT(tokenTree.childs.at(0).childs.at(0).self == "Hello World!"_typeId);
+			ASSERT(tokenTree.childs.at(0).childs.at(0).self == "Hello World!"_token);
 			ASSERT(tokenTree.childs.at(0).childs.at(0).childs.size() == 0);
 		}},
 
@@ -65,9 +65,9 @@ namespace CppUtils::UnitTests::Language::Lexer
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
-			auto& mainExpression = lexer.expression("main"_typeId);
-			auto& printExpression = lexer.expression("print"_typeId);
-			auto& stringExpression = lexer.expression("string"_typeId);
+			auto& mainExpression = lexer.expression("main"_token);
+			auto& printExpression = lexer.expression("print"_token);
+			auto& stringExpression = lexer.expression("string"_token);
 
 			mainExpression
 				>> (printExpression >= 0)
@@ -85,15 +85,15 @@ namespace CppUtils::UnitTests::Language::Lexer
 				print("Test");
 				print("Ok");
 			)"sv;
-			const auto tokenTree = lexer.parse("main"_typeId, src);
+			const auto tokenTree = lexer.parse("main"_token, src);
 
 			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(tokenTree.self == "main"_typeId);
+			ASSERT(tokenTree.self == "main"_token);
 			ASSERT(tokenTree.childs.size() == 3);
 			for (const auto& child : tokenTree.childs)
-				ASSERT(child.self == "print"_typeId);
+				ASSERT(child.self == "print"_token);
 		}},
 
 		CppUtils::Test{"Language/Lexer/Contingence", [] {
@@ -101,10 +101,10 @@ namespace CppUtils::UnitTests::Language::Lexer
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
-			auto& mainExpression = lexer.expression("main"_typeId);
-			auto& valueExpression = lexer.expression("value"_typeId);
-			auto& keywordExpression = lexer.expression("keyword"_typeId);
-			auto& stringExpression = lexer.expression("string"_typeId);
+			auto& mainExpression = lexer.expression("main"_token);
+			auto& valueExpression = lexer.expression("value"_token);
+			auto& keywordExpression = lexer.expression("keyword"_token);
+			auto& stringExpression = lexer.expression("string"_token);
 
 			mainExpression
 				>> (valueExpression >= 0)
@@ -120,15 +120,15 @@ namespace CppUtils::UnitTests::Language::Lexer
 			static constexpr auto src = R"(
 				test "test" test "test"
 			)"sv;
-			const auto tokenTree = lexer.parse("main"_typeId, src);
+			const auto tokenTree = lexer.parse("main"_token, src);
 
 			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(tokenTree.self == "main"_typeId);
+			ASSERT(tokenTree.self == "main"_token);
 			ASSERT(tokenTree.childs.size() == 4);
 			for (const auto& child : tokenTree.childs)
-				ASSERT(child.self == "value"_typeId);
+				ASSERT(child.self == "value"_token);
 		}}
 
 	};

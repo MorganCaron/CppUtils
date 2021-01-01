@@ -6,28 +6,28 @@
 #include <functional>
 
 #include <CppUtils/External/DllExport.hpp>
-#include <CppUtils/Type/TypeId.hpp>
+#include <CppUtils/Type/Token.hpp>
 
 namespace CppUtils::Type
 {
 	struct DLL_PUBLIC ITyped
 	{
 		virtual ~ITyped() = default;
-		virtual const TypeId& getType() const noexcept = 0;
+		virtual const Token& getType() const noexcept = 0;
 	};
 
-	template<const TypeId& StorageTypeId, typename StorageType>
+	template<const Token& StorageToken, typename StorageType>
 	struct DLL_PUBLIC Typed final: public ITyped
 	{
 	public:
-		static constexpr auto Type = StorageTypeId;
+		static constexpr auto Type = StorageToken;
 		using Storage = StorageType;
 
 		explicit constexpr Typed(Storage c_value):
 			value{std::move(c_value)}
 		{}
 
-		const TypeId& getType() const noexcept override final
+		const Token& getType() const noexcept override final
 		{
 			return Type;
 		}

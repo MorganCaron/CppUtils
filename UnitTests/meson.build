@@ -29,7 +29,7 @@ headers = files([
 	'include/CppUtils/UnitTests/Switch/Switch.hpp',
 	'include/CppUtils/UnitTests/Test/Test.hpp',
 	'include/CppUtils/UnitTests/Type/Typed.hpp',
-	'include/CppUtils/UnitTests/Type/TypeId.hpp'
+	'include/CppUtils/UnitTests/Type/Token.hpp'
 ])
 
 cppUtils_unitTests_exe = executable(

@@ -7,7 +7,7 @@ private_dependencies = []
 includeDir = include_directories(['include/', '.'])
 
 sources = files([
-	'src/TypeId.cpp'
+	'src/Token.cpp'
 ])
 
 headers = files([
@@ -17,7 +17,7 @@ headers = files([
 	'include/CppUtils/Type/NonInstantiable.hpp',
 	'include/CppUtils/Type/NonMovable.hpp',
 	'include/CppUtils/Type/Typed.hpp',
-	'include/CppUtils/Type/TypeId.hpp'
+	'include/CppUtils/Type/Token.hpp'
 ])
 
 cppUtils_type_lib = library(

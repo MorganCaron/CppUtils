@@ -11,36 +11,36 @@ namespace CppUtils::Language::Lexer
 		struct Context final
 		{
 			Parser::Cursor cursor;
-			Parser::TokenNode parentNode;
+			Graph::TokenNode parentNode;
 		};
 
 	public:
-		[[nodiscard]] inline bool expressionExists(const Parser::Token& token) const noexcept
+		[[nodiscard]] inline bool expressionExists(const Type::Token& token) const noexcept
 		{
 			return (m_expressions.find(token) != m_expressions.end());
 		}
 
-		[[nodiscard]] inline Parser::Expression& expression(const Parser::Token& token, const bool isNode = true)
+		[[nodiscard]] inline Parser::Expression& expression(const Type::Token& token, const bool isNode = true)
 		{
 			if (!expressionExists(token))
 				m_expressions[token] = Parser::Expression{token, isNode};
 			return m_expressions[token];
 		}
 
-		[[nodiscard]] inline const Parser::Expression& getExpression(const Parser::Token& token) const
+		[[nodiscard]] inline const Parser::Expression& getExpression(const Type::Token& token) const
 		{
 			if (!expressionExists(token))
 				throw std::runtime_error{"Undefined expression: " + std::string{token.name}};
 			return m_expressions.at(token);
 		}
 
-		[[nodiscard]] Parser::TokenNode parse(const Parser::Token& token, std::string_view src) const
+		[[nodiscard]] Graph::TokenNode parse(const Type::Token& token, std::string_view src) const
 		{
 			const auto& expression = getExpression(token);
 			auto pos = std::size_t{0};
 			auto context = Context{
 				Parser::Cursor{src, pos},
-				Parser::TokenNode{token}
+				Graph::TokenNode{token}
 			};
 
 			if (!parseExpression(expression, context))
@@ -89,7 +89,7 @@ namespace CppUtils::Language::Lexer
 			{
 				auto newContext = Context{
 					cursor,
-					Parser::TokenNode{expression.token}
+					Graph::TokenNode{expression.token}
 				};
 				if (!parseExpression(expression, newContext))
 					return false;
@@ -216,6 +216,6 @@ namespace CppUtils::Language::Lexer
 			return false;
 		}
 
-		std::unordered_map<Parser::Token, Parser::Expression, Parser::Token::hash_fn> m_expressions;
+		std::unordered_map<Type::Token, Parser::Expression, Type::Token::hash_fn> m_expressions;
 	};
 }

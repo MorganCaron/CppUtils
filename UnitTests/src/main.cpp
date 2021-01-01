@@ -17,7 +17,7 @@
 #include <CppUtils/UnitTests/Switch/Switch.hpp>
 #include <CppUtils/UnitTests/Test/Test.hpp>
 #include <CppUtils/UnitTests/Type/Typed.hpp>
-#include <CppUtils/UnitTests/Type/TypeId.hpp>
+#include <CppUtils/UnitTests/Type/Token.hpp>
 
 int main()
 {
@@ -41,7 +41,7 @@ int main()
 		std::cref(CppUtils::UnitTests::Switch::tests),
 		std::cref(CppUtils::UnitTests::Test::tests),
 		std::cref(CppUtils::UnitTests::Type::Typed::tests),
-		std::cref(CppUtils::UnitTests::Type::TypeId::tests)
+		std::cref(CppUtils::UnitTests::Type::Token::tests)
 	});
 
 	return CppUtils::Test::executeTests(tests);

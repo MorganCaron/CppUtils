@@ -21,9 +21,9 @@ namespace CppUtils::Language::Lexer
 			using namespace std::literals;
 			using namespace Type::Literals;
 
-			m_grammarLexer.addParserFunction("spaceParser"_typeId, Parser::spaceParser);
-			m_grammarLexer.addParserFunction("keywordParser"_typeId, Parser::keywordParser);
-			m_grammarLexer.addParserFunction("valueParser"_typeId, [](auto& cursor, auto& parentNode) {
+			m_grammarLexer.addParserFunction("spaceParser"_token, Parser::spaceParser);
+			m_grammarLexer.addParserFunction("keywordParser"_token, Parser::keywordParser);
+			m_grammarLexer.addParserFunction("valueParser"_token, [](auto& cursor, auto& parentNode) {
 				cursor.skipSpaces();
 				if (!cursor.isEndOfString() && cursor.getChar() != '[')
 					return false;
@@ -32,10 +32,10 @@ namespace CppUtils::Language::Lexer
 					++cursor.pos;
 				if (cursor.isEndOfString())
 					return false;
-				auto stringToken = Parser::Token{String::trimString(cursor.src.substr(startPos, cursor.pos - startPos))};
+				auto stringToken = Type::Token{String::trimString(cursor.src.substr(startPos, cursor.pos - startPos))};
 				++cursor.pos;
 				stringToken.saveTypename();
-				parentNode.childs.emplace_back(Parser::TokenNode{std::move(stringToken)});
+				parentNode.childs.emplace_back(Graph::TokenNode{std::move(stringToken)});
 				return true;
 			});
 

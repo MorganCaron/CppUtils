@@ -6,7 +6,7 @@
 #include <string_view>
 
 #include <CppUtils/Type/Typed.hpp>
-#include <CppUtils/Type/TypeId.hpp>
+#include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Graph/TreeNode.hpp>
 #include <CppUtils/Language/Parser/Cursor.hpp>
 
@@ -14,22 +14,19 @@ namespace CppUtils::Language::Parser
 {
 	using namespace Type::Literals;
 
-	using Token = Type::TypeId;
-	using TokenNode = Graph::TreeNode<Token>;
-
 	using ILexeme = Type::ITyped;
-	template<const Type::TypeId& StorageTypeId, typename StorageType>
-	using Lexeme = Type::Typed<StorageTypeId, StorageType>;
+	template<const Type::Token& StorageToken, typename StorageType>
+	using Lexeme = Type::Typed<StorageToken, StorageType>;
 	
-	static constexpr auto StringLexemeType = "string"_typeId;
+	static constexpr auto StringLexemeType = "string"_token;
 	using StringLexeme = Lexeme<StringLexemeType, std::string>;
 
-	static constexpr auto ParserLexemeType = "parser"_typeId;
-	using ParserFunction = std::function<bool (Parser::Cursor&, TokenNode&)>;
+	static constexpr auto ParserLexemeType = "parser"_token;
+	using ParserFunction = std::function<bool (Parser::Cursor&, Graph::TokenNode&)>;
 	using ParserLexeme = Lexeme<ParserLexemeType, ParserFunction>; 
 
-	static constexpr auto TokenLexemeType = "token"_typeId;
-	using TokenLexeme = Lexeme<TokenLexemeType, Token>;
+	static constexpr auto TokenLexemeType = "token"_token;
+	using TokenLexeme = Lexeme<TokenLexemeType, Type::Token>;
 
 	enum class RecurrenceType
 	{
@@ -41,33 +38,33 @@ namespace CppUtils::Language::Parser
 
 	struct Recurrence final
 	{
-		Token token;
+		Type::Token token;
 		RecurrenceType type;
 		std::size_t repetitions;
 	};
 
-	static constexpr auto RecurrentLexemeType = "recurrence"_typeId;
+	static constexpr auto RecurrentLexemeType = "recurrence"_token;
 	using RecurrentLexeme = Lexeme<RecurrentLexemeType, Recurrence>;
 
 	struct Expression;
 	struct Contingence final
 	{
-		std::vector<Token> tokens;
+		std::vector<Type::Token> tokens;
 
 		[[nodiscard]] Contingence& operator||(const Expression& rhs);
 	};
 
-	static constexpr auto ContingentLexemeType = "contingency"_typeId;
+	static constexpr auto ContingentLexemeType = "contingency"_token;
 	using ContingentLexeme = Lexeme<ContingentLexemeType, Contingence>;
 
 	struct Expression final
 	{
-		Token token;
+		Type::Token token;
 		bool isNode;
 		std::vector<std::unique_ptr<ILexeme>> lexemes;
 
 		Expression() = default;
-		explicit Expression(Token c_token, const bool c_isNode):
+		explicit Expression(Type::Token c_token, const bool c_isNode):
 			token{std::move(c_token)},
 			isNode{c_isNode}
 		{};
@@ -130,7 +127,7 @@ namespace CppUtils::Language::Parser
 
 		[[nodiscard]] Contingence operator||(const Expression& rhs) const
 		{
-			return Contingence{std::vector<Token>{token, rhs.token}};
+			return Contingence{std::vector<Type::Token>{token, rhs.token}};
 		}
 	};
 }

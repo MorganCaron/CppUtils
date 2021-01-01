@@ -87,10 +87,10 @@ int main()
 {
 	using namespace CppUtils::Type::Literals;
 
-	constexpr auto IntType = "Int"_typeId;
+	constexpr auto IntType = "Int"_token;
 	using Int = CppUtils::Type::Typed<IntType, int>;
 
-	constexpr auto StringType = "String"_typeId;
+	constexpr auto StringType = "String"_token;
 	using String = CppUtils::Type::Typed<StringType, std::string>;
 
 	auto values = std::vector<std::unique_ptr<CppUtils::Type::ITyped>>{};
@@ -118,19 +118,19 @@ String: text
 
 ---
 
-## TypeId
+## Token
 
-The ``TypeId`` struct allows you to create identifiers from a character string.
+The ``Token`` struct allows you to create identifiers from a character string.
 These identifiers can be used as key for ``std::map`` or ``std::unordered_map`` to have better performance than with ``std::string`` as key.
 
-<p align="center"><img src="resources/TypeId.drawio.svg" alt="TypeId diagram"/></p>
+<p align="center"><img src="resources/Token.drawio.svg" alt="Token diagram"/></p>
 
-**``TypeId`` is non-owner of the text value**.
-To keep the text value after it is unallocated, call the ``saveTypename()`` method of the ``TypeId`` struct.
+**``Token`` is non-owner of the text value**.
+To keep the text value after it is unallocated, call the ``saveTypename()`` method of the ``Token`` struct.
 
-The ``hash_fn`` struct must be passed to ``std::map`` or ``std::unordered_map`` so that they know how to use ``TypeId`` as a key.
+The ``hash_fn`` struct must be passed to ``std::map`` or ``std::unordered_map`` so that they know how to use ``Token`` as a key.
 
-The ``""_typeId`` literal allows you to instantiate TypeId.
+The ``""_token`` literal allows you to instantiate Token.
 
 ### Example
 ```cpp
@@ -140,12 +140,12 @@ int main()
 {
 	using namespace CppUtils::Type::Literals;
 
-	const auto values = std::unordered_map<CppUtils::Type::TypeId, std::string, CppUtils::Type::TypeId::hash_fn>{
-		{"Number"_typeId, "42"},
-		{"String"_typeId, "text"}
+	const auto values = std::unordered_map<CppUtils::Type::Token, std::string, CppUtils::Type::Token::hash_fn>{
+		{"Number"_token, "42"},
+		{"String"_token, "text"}
 	};
 
-	std::cout << values.at("Number"_typeId) << std::endl;
+	std::cout << values.at("Number"_token) << std::endl;
 
 	return 0;
 }

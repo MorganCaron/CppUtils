@@ -79,7 +79,7 @@ ninja -C build test
 	- [NonInstantiable](Type/README.md#NonInstantiable)
 	- [NonMovable](Type/README.md#NonMovable)
 	- [Typed](Type/README.md#Typed)
-	- [TypeId](Type/README.md#TypeId)
+	- [Token](Type/README.md#Token)
 
 ---
 

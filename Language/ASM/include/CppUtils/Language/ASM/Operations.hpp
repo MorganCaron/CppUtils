@@ -17,14 +17,14 @@ namespace CppUtils::Language::ASM::Operations
 
 	inline void jump(Cursor& cursor, [[maybe_unused]] Context& context)
 	{
-		const auto& parameters = cursor.getInstruction().parameters;
+		const auto& parameters = cursor.getElement().parameters;
 
 		cursor.pos = parameters.at(0).id;
 	}
 
 	inline void move(Cursor& cursor, Context& context)
 	{
-		const auto& parameters = cursor.getInstruction().parameters;
+		const auto& parameters = cursor.getElement().parameters;
 		auto& [registerFile, stack] = context;
 
 		registerFile[parameters.at(0)] = registerFile.at(parameters.at(1));
@@ -33,7 +33,7 @@ namespace CppUtils::Language::ASM::Operations
 	
 	inline void push(Cursor& cursor, Context& context)
 	{
-		const auto& parameters = cursor.getInstruction().parameters;
+		const auto& parameters = cursor.getElement().parameters;
 		auto& [registerFile, stack] = context;
 
 		stack.emplace(registerFile.at(parameters.at(0)));
@@ -42,7 +42,7 @@ namespace CppUtils::Language::ASM::Operations
 
 	inline void pop(Cursor& cursor, Context& context)
 	{
-		const auto& parameters = cursor.getInstruction().parameters;
+		const auto& parameters = cursor.getElement().parameters;
 		auto& [registerFile, stack] = context;
 
 		if (stack.size() == 0)

@@ -9,40 +9,40 @@
 
 namespace CppUtils::Type
 {
-	struct TypeId final
+	struct Token final
 	{
 	public:
 		using Index = std::size_t;
 
-		TypeId() = default;
-		explicit constexpr TypeId(std::string_view c_name):
+		Token() = default;
+		explicit constexpr Token(std::string_view c_name):
 			name{c_name},
 			id{CppUtils::Hash::constexprHash(name)}
 		{}
-		explicit constexpr TypeId(Index c_id):
+		explicit constexpr Token(Index c_id):
 			name{""},
 			id{c_id}
 		{
 			if (m_typeNames.find(id) != m_typeNames.end())
 				name = m_typeNames[id];
 		}
-		TypeId(const TypeId&) = default;
-		TypeId(TypeId&&) noexcept = default;
-		TypeId& operator=(const TypeId&) = default;
-		TypeId& operator=(TypeId&&) noexcept = default;
+		Token(const Token&) = default;
+		Token(Token&&) noexcept = default;
+		Token& operator=(const Token&) = default;
+		Token& operator=(Token&&) noexcept = default;
 
-		[[nodiscard]] inline constexpr bool operator==(const TypeId& rhs) const noexcept
+		[[nodiscard]] inline constexpr bool operator==(const Token& rhs) const noexcept
 		{
 			return id == rhs.id;
 		}
-		[[nodiscard]] inline constexpr bool operator!=(const TypeId& rhs) const noexcept
+		[[nodiscard]] inline constexpr bool operator!=(const Token& rhs) const noexcept
 		{
 			return id != rhs.id;
 		}
 
 		struct hash_fn final
 		{
-			[[nodiscard]] inline constexpr std::size_t operator()(const TypeId& type) const noexcept
+			[[nodiscard]] inline constexpr std::size_t operator()(const Token& type) const noexcept
 			{
 				return type.id;
 			}
@@ -64,17 +64,17 @@ namespace CppUtils::Type
 		static std::unordered_map<Index, std::string> m_typeNames;
 	};
 
-	inline std::ostream& operator<<(std::ostream& os, const TypeId& typeId)
+	inline std::ostream& operator<<(std::ostream& os, const Token& token)
 	{
-		os << typeId.name;
+		os << token.name;
 		return os;
 	}
 
 	namespace Literals
 	{
-		[[nodiscard]] constexpr TypeId operator"" _typeId(const char* cstring, std::size_t)
+		[[nodiscard]] constexpr Token operator"" _token(const char* cstring, std::size_t)
 		{
-			return TypeId{cstring};
+			return Token{cstring};
 		}
 	}
 }

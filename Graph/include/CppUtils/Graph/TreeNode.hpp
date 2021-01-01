@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 
+#include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Log/Logger.hpp>
 
 namespace CppUtils::Graph
@@ -59,4 +60,6 @@ namespace CppUtils::Graph
 			logTreeNode(treeNode.childs.at(i), prefix + ((i != nbChilds - 1) ? "│" : " ") + "  ");
 		}
 	}
+
+	using TokenNode = TreeNode<Type::Token>;
 }

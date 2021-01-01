@@ -18,11 +18,11 @@ namespace CppUtils::Language::ASM
 	{
 	public:
 		VirtualMachine(): Interpreter::VirtualMachine<Instruction, Context>{{
-				{ "HALT"_typeId, Operations::halt },
-				{ "NOP"_typeId, Operations::nop },
-				{ "JUMP"_typeId, Operations::jump },
-				{ "PUSH"_typeId, Operations::push },
-				{ "POP"_typeId, Operations::pop }
+				{ "HALT"_token, Operations::halt },
+				{ "NOP"_token, Operations::nop },
+				{ "JUMP"_token, Operations::jump },
+				{ "PUSH"_token, Operations::push },
+				{ "POP"_token, Operations::pop }
 			}}
 		{}
 	};

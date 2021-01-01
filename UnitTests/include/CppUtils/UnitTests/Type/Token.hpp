@@ -2,20 +2,20 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTests::Type::TypeId
+namespace CppUtils::UnitTests::Type::Token
 {
 	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test{"Type/TypeId/TypeId", [] {
+		CppUtils::Test{"Type/Token/Token", [] {
 			using namespace CppUtils::Type::Literals;
 
-			const auto numberType0 = "Number"_typeId;
-			const auto numberType1 = "Number"_typeId;
-			const auto stringType = "String"_typeId;
+			const auto numberType0 = "Number"_token;
+			const auto numberType1 = "Number"_token;
+			const auto stringType = "String"_token;
 			ASSERT(numberType0 == numberType1);
 			ASSERT(numberType0 != stringType);
 
-			const auto types = std::unordered_map<CppUtils::Type::TypeId, std::string, CppUtils::Type::TypeId::hash_fn>{
+			const auto types = std::unordered_map<CppUtils::Type::Token, std::string, CppUtils::Type::Token::hash_fn>{
 				{numberType0, std::string{numberType0.name}},
 				{stringType, std::string{stringType.name}}
 			};
@@ -24,20 +24,20 @@ namespace CppUtils::UnitTests::Type::TypeId
 			ASSERT(types.at(stringType) == "String");
 		}},
 
-		CppUtils::Test{"Type/TypeId/TypeIdStorage", [] {
+		CppUtils::Test{"Type/Token/TokenStorage", [] {
 			using namespace CppUtils::Type::Literals;
 			
-			auto numberType0 = CppUtils::Type::TypeId{};
-			auto numberType1 = CppUtils::Type::TypeId{};
+			auto numberType0 = CppUtils::Type::Token{};
+			auto numberType1 = CppUtils::Type::Token{};
 			{
 				auto numberTypeName = std::string{"Number"};
-				numberType0 = CppUtils::Type::TypeId{numberTypeName};
-				numberType1 = CppUtils::Type::TypeId{numberTypeName};
+				numberType0 = CppUtils::Type::Token{numberTypeName};
+				numberType1 = CppUtils::Type::Token{numberTypeName};
 				numberType1.saveTypename();
 				numberTypeName = "azerty";
 				ASSERT(numberType0 == numberType1);
 			}
-			auto numberType2 = "Number"_typeId;
+			auto numberType2 = "Number"_token;
 			numberType2.saveTypename();
 			
 			ASSERT(numberType0 == numberType1);

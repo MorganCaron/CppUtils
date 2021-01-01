@@ -13,7 +13,7 @@ namespace CppUtils::UnitTests::Language::ASM
 		Test{"Language/ASM/VirtualMachine/HALT", [] {
 			auto vm = VirtualMachine<std::uint32_t>{};
 			vm.setInstructions({
-				Instruction{"HALT"_typeId}
+				Instruction{"HALT"_token}
 			});
 			auto context = Context{};
 			vm.run(context);
@@ -22,8 +22,8 @@ namespace CppUtils::UnitTests::Language::ASM
 		Test{"Language/ASM/VirtualMachine/NOP", [] {
 			auto vm = VirtualMachine<std::uint32_t>{};
 			vm.setInstructions({
-				Instruction{"NOP"_typeId},
-				Instruction{"HALT"_typeId}
+				Instruction{"NOP"_token},
+				Instruction{"HALT"_token}
 			});
 			auto context = Context{};
 			vm.run(context);
@@ -33,8 +33,8 @@ namespace CppUtils::UnitTests::Language::ASM
 		Test{"Language/ASM/VirtualMachine/MOVE", [] {
 			auto vm = VirtualMachine{};
 			vm.setInstructions({
-				Instruction{"MOVE"_typeId, { "R0"_typeId, "42"_typeId }},
-				Instruction{"HALT"_typeId}
+				Instruction{"MOVE"_token, { "R0"_token, "42"_token }},
+				Instruction{"HALT"_token}
 			});
 			auto context = Context{};
 			vm.run(context);
@@ -43,10 +43,10 @@ namespace CppUtils::UnitTests::Language::ASM
 		Test{"Language/ASM/VirtualMachine/PUSH and POP", [] {
 			auto vm = VirtualMachine{};
 			vm.setInstructions({
-				Instruction{"MOVE"_typeId, { "R0"_typeId, "42"_typeId }},
-				Instruction{"PUSH"_typeId, { "R0"_typeId }},
-				Instruction{"POP"_typeId, { "R1"_typeId }},
-				Instruction{"HALT"_typeId}
+				Instruction{"MOVE"_token, { "R0"_token, "42"_token }},
+				Instruction{"PUSH"_token, { "R0"_token }},
+				Instruction{"POP"_token, { "R1"_token }},
+				Instruction{"HALT"_token}
 			});
 			auto context = Context{};
 			vm.run(context);

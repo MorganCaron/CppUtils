@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CppUtils/Type/TypeId.hpp>
+#include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Language/Interpreter/Cursor.hpp>
 
 namespace CppUtils::Language::ASM
@@ -9,8 +9,8 @@ namespace CppUtils::Language::ASM
 
 	struct Instruction final
 	{
-		Type::TypeId type;
-		std::vector<Type::TypeId> parameters = {};
+		Type::Token type;
+		std::vector<Type::Token> parameters = {};
 		Instruction* nextInstruction = nullptr;
 		Instruction* targetInstruction = nullptr;
 	};

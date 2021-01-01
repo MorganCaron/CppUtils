@@ -7,10 +7,10 @@ namespace CppUtils::UnitTests::Type::Typed
 	using namespace std::literals;
 	using namespace CppUtils::Type::Literals;
 
-	constexpr auto IntType = "Int"_typeId;
+	constexpr auto IntType = "Int"_token;
 	using Int = CppUtils::Type::Typed<IntType, int>;
 
-	constexpr auto StringType = "String"_typeId;
+	constexpr auto StringType = "String"_token;
 	using String = CppUtils::Type::Typed<StringType, std::string>;
 
 	const auto tests = std::vector<CppUtils::Test>{

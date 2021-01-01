@@ -4,25 +4,25 @@
 
 namespace CppUtils::Language::Interpreter
 {
-	template<typename Instruction>
+	template<typename Element>
 	struct Cursor final
 	{
-		explicit Cursor(const std::vector<Instruction>& c_instructions, const std::size_t c_pos = 0):
-			instructions{c_instructions},
+		explicit Cursor(const std::vector<Element>& c_elements, const std::size_t c_pos = 0):
+			elements{c_elements},
 			pos{c_pos}
 		{}
 
-		[[nodiscard]] inline const Instruction& getInstruction() const
+		[[nodiscard]] inline const Element& getElement() const
 		{
-			return instructions.at(pos);
+			return elements.at(pos);
 		}
 
 		inline void exit() noexcept
 		{
-			pos = instructions.size();
+			pos = elements.size();
 		}
 
-		const std::vector<Instruction>& instructions;
+		const std::vector<Element>& elements;
 		std::size_t pos;
 	};
 }

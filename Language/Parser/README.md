@@ -19,8 +19,7 @@ The ``expression.hpp`` file contains all necessary tools to manipulate expressio
 An expression is a syntax element that combines a set of lexemes returning a value.
 A lexeme is a lexical unit.
 
-The term ``Token`` is an alias that represents a [``CppUtils::Type::TypeId``](../../Type/README.md).
-It is used to name an expression.
+``Token``s are used to name expressions.
 
 There are different types of lexemes. For ease of use, they all inherit the ``ILexeme``.
 
@@ -48,7 +47,7 @@ int main()
 {
 	using namespace CppUtils::Type::Literals;
 
-	const stringExpression = CppUtils::Language::Parser::Expression{"string"_typeId, true};
+	const stringExpression = CppUtils::Language::Parser::Expression{"string"_token, true};
 	stringExpression >> '"' >> CppUtils::Language::Parser::stringParser >> '"';
 
 	for (const auto& lexeme : stringExpression.lexemes)
@@ -76,7 +75,7 @@ Various parsing functions allow you to read specific formats of information, suc
 
 The parsing functions all have the same signature:
 ```cpp
-bool(Parser::Cursor&, Parser::TokenNode&);
+bool(Parser::Cursor&, Graph::TokenNode&);
 ```
 The ``Cursor`` represents the character from which to start parsing.
 The ``TokenNode`` is the parent node of the [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) on which to store the information extracted from the parsed string.
@@ -93,7 +92,7 @@ int main()
 	const auto src = "\"Text\""sv;
 	auto pos = std::size_t{0};
 	auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
-	auto root = CppUtils::Language::Parser::TokenNode{"Root"_typeId};
+	auto root = CppUtils::Language::Graph::TokenNode{"Root"_token};
 
 	if (doubleQuoteParser(cursor, root))
 	{

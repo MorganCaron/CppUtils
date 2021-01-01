@@ -54,4 +54,4 @@
 #include <CppUtils/Type/NonInstantiable.hpp>
 #include <CppUtils/Type/NonMovable.hpp>
 #include <CppUtils/Type/Typed.hpp>
-#include <CppUtils/Type/TypeId.hpp>
+#include <CppUtils/Type/Token.hpp>
