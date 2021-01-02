@@ -8,7 +8,6 @@ sources = files([
 ])
 
 headers = files([
-	'include/CppUtils/Language/Interpreter/Cursor.hpp',
 	'include/CppUtils/Language/Interpreter/VirtualMachine.hpp'
 ])
 

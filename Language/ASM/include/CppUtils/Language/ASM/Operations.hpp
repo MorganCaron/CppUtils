@@ -5,51 +5,48 @@
 
 namespace CppUtils::Language::ASM::Operations
 {
-	inline void halt(Cursor& cursor, [[maybe_unused]] Context& context) noexcept
+	inline void halt([[maybe_unused]] Iterator instructionIterator, Context& context) noexcept
 	{
-		cursor.exit();
+		context.running = false;
 	}
 
-	inline void nop(Cursor& cursor, [[maybe_unused]] Context& context) noexcept
+	inline void nop(Iterator instructionIterator, [[maybe_unused]] Context& context) noexcept
 	{
-		++cursor.pos;
+		++instructionIterator;
 	}
 
-	inline void jump(Cursor& cursor, [[maybe_unused]] Context& context)
+	inline void jump(Iterator instructionIterator, [[maybe_unused]] Context& context)
 	{
-		const auto& parameters = cursor.getElement().parameters;
+		[[maybe_unused]] const auto& parameters = instructionIterator->parameters;
 
-		cursor.pos = parameters.at(0).id;
+		// instructionIterator.pos = parameters.at(0).id;
 	}
 
-	inline void move(Cursor& cursor, Context& context)
+	inline void move(Iterator instructionIterator, Context& context)
 	{
-		const auto& parameters = cursor.getElement().parameters;
-		auto& [registerFile, stack] = context;
+		const auto& parameters = instructionIterator->parameters;
 
-		registerFile[parameters.at(0)] = registerFile.at(parameters.at(1));
-		++cursor.pos;
+		context.registerFile[parameters.at(0)] = context.registerFile.at(parameters.at(1));
+		++instructionIterator;
 	}
 	
-	inline void push(Cursor& cursor, Context& context)
+	inline void push(Iterator instructionIterator, Context& context)
 	{
-		const auto& parameters = cursor.getElement().parameters;
-		auto& [registerFile, stack] = context;
+		const auto& parameters = instructionIterator->parameters;
 
-		stack.emplace(registerFile.at(parameters.at(0)));
-		++cursor.pos;
+		context.stack.emplace(context.registerFile.at(parameters.at(0)));
+		++instructionIterator;
 	}
 
-	inline void pop(Cursor& cursor, Context& context)
+	inline void pop(Iterator instructionIterator, Context& context)
 	{
-		const auto& parameters = cursor.getElement().parameters;
-		auto& [registerFile, stack] = context;
+		const auto& parameters = instructionIterator->parameters;
 
-		if (stack.size() == 0)
+		if (context.stack.size() == 0)
 			throw std::runtime_error{"Stack underflow"};
 
-		registerFile[parameters.at(0)] = stack.top();
-		stack.pop();
-		++cursor.pos;
+		context.registerFile[parameters.at(0)] = context.stack.top();
+		context.stack.pop();
+		++instructionIterator;
 	}
 }

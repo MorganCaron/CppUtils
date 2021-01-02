@@ -25,7 +25,6 @@
 #include <CppUtils/Language/Lexer/ParametersLexer.hpp>
 #include <CppUtils/Language/Lexer/StringTreeLexer.hpp>
 
-#include <CppUtils/Language/Interpreter/Cursor.hpp>
 #include <CppUtils/Language/Interpreter/VirtualMachine.hpp>
 
 #include <CppUtils/Language/ASM/Context.hpp>

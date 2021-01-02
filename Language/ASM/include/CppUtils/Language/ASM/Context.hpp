@@ -10,7 +10,7 @@ namespace CppUtils::Language::ASM
 {
 	using RegisterFile = std::unordered_map<Type::Token, Value, Type::Token::hash_fn>;
 
-	struct Context final
+	struct Context final: public Interpreter::Context
 	{
 		RegisterFile registerFile;
 		std::stack<Value> stack;

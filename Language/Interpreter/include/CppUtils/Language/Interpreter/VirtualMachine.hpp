@@ -1,41 +1,41 @@
 #pragma once
 
-#include <vector>
+#include <span>
 #include <string>
 
 #include <CppUtils/Type/Token.hpp>
-#include <CppUtils/Language/Interpreter/Cursor.hpp>
 
 namespace CppUtils::Language::Interpreter
 {
+	struct Context
+	{
+		bool running = true;
+	};
+
 	template<typename Instruction, typename Context>
 	class VirtualMachine
 	{
 	public:
-		using Operation = std::function<void(Cursor<Instruction>&, Context&)>;
+		using Iterator = typename std::span<const Instruction>::iterator&;
+		using Operation = std::function<void(Iterator, Context&)>;
 
 		VirtualMachine(std::unordered_map<Type::Token, Operation, Type::Token::hash_fn>&& operations = {}):
 			m_operations{operations}
 		{}
 
-		inline void setInstructions(std::vector<Instruction> instructions) noexcept
-		{
-			m_instructions = std::move(instructions);
-		}
-
-		void run(Context& context) const
+		void run(std::span<const Instruction> instructions, Context& context) const
 		{
 			using namespace std::literals;
-			auto cursor = Cursor<Instruction>{m_instructions};
+			auto instructionIterator = instructions.begin();
 			
 			try
 			{
-				while (cursor.pos < cursor.elements.size())
+				while (context.running && instructionIterator != instructions.end())
 				{
-					const auto operation = m_operations.find(cursor.getElement().type);
+					const auto operation = m_operations.find(instructionIterator->type);
 					if (operation == m_operations.end())
-						throw std::runtime_error{"Unknown instruction:\n" + std::string{cursor.getElement().type.name}};
-					m_operations.at(cursor.getElement().type)(cursor, context);
+						throw std::runtime_error{"Unknown instruction:\n" + std::string{instructionIterator->type.name}};
+					m_operations.at(instructionIterator->type)(instructionIterator, context);
 				}
 			}
 			catch (const std::exception& exception)
@@ -46,6 +46,5 @@ namespace CppUtils::Language::Interpreter
 
 	private:
 		std::unordered_map<Type::Token, Operation, Type::Token::hash_fn> m_operations;
-		std::vector<Instruction> m_instructions;
 	};
 }

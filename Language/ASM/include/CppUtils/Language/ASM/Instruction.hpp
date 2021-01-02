@@ -1,7 +1,6 @@
 #pragma once
 
 #include <CppUtils/Type/Token.hpp>
-#include <CppUtils/Language/Interpreter/Cursor.hpp>
 
 namespace CppUtils::Language::ASM
 {
@@ -15,5 +14,5 @@ namespace CppUtils::Language::ASM
 		Instruction* targetInstruction = nullptr;
 	};
 
-	using Cursor = Interpreter::Cursor<Instruction>;
+	using Iterator = typename std::span<const Instruction>::iterator&;
 }

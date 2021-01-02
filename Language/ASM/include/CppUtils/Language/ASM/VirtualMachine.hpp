@@ -10,8 +10,8 @@
 namespace CppUtils::Language::ASM
 {
 	using namespace Type::Literals;
-
-	using Operation = std::function<void(Cursor&, Context&)>;
+	
+	using Operation = std::function<bool(Iterator, Context&)>;
 
 	template<typename Address>
 	class VirtualMachine final: public Interpreter::VirtualMachine<Instruction, Context>
