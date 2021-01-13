@@ -25,6 +25,7 @@ subdir('Graph')
 subdir('String')
 subdir('Test')
 subdir('Thread')
+subdir('Logical')
 subdir('Language')
 
 public_dependencies = [
@@ -42,6 +43,7 @@ public_dependencies = [
 	cppUtils_string_dep,
 	cppUtils_test_dep,
 	cppUtils_thread_dep,
+	cppUtils_logical_dep,
 	cppUtils_language_dep
 ]
 private_dependencies = []
