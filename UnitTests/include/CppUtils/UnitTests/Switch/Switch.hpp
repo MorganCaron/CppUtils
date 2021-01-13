@@ -7,24 +7,27 @@ namespace CppUtils::UnitTests::Switch
 	const auto tests = std::vector<CppUtils::Test>{
 
 		CppUtils::Test{"Switch", [] {
-			const auto id0 = CppUtils::Switch::newId();
+			const auto id0 = CppUtils::Switch::newId(false);
 			const auto id1 = CppUtils::Switch::newId(true);
-			const auto id2 = CppUtils::Switch::newId();
-			CppUtils::Switch::enable(id2);
+			const auto id2 = CppUtils::Switch::newId(false);
+			CppUtils::Switch::setValue(id2, true);
 
-			ASSERT(CppUtils::Switch::isEnabled(id0) == false);
-			ASSERT(CppUtils::Switch::isEnabled(id1) == true);
-			ASSERT(CppUtils::Switch::isEnabled(id2) == true);
+			ASSERT(CppUtils::Switch::getValue(id0) == false);
+			ASSERT(CppUtils::Switch::getValue(id1) == true);
+			ASSERT(CppUtils::Switch::getValue(id2) == true);
+		}},
 
-			const auto id3 = CppUtils::Switch::newId();
-			const auto id4 = CppUtils::Switch::newId();
-			const auto id5 = CppUtils::Switch::newId();
-			CppUtils::Switch::enable(id3, id4, id5);
-			CppUtils::Switch::disable(id4, id5);
+		CppUtils::Test{"Switch/Tag", [] {
+			using namespace Type::Literals;
 
-			ASSERT(CppUtils::Switch::isEnabled(id3) == true);
-			ASSERT(CppUtils::Switch::isEnabled(id4) == false);
-			ASSERT(CppUtils::Switch::isEnabled(id5) == false);
+			const auto id0 = CppUtils::Switch::newId(false);
+			const auto id1 = CppUtils::Switch::newId(false, std::array{ "Tag0"_token });
+			const auto id2 = CppUtils::Switch::newId(false, std::array{ "Tag1"_token });
+			CppUtils::Switch::setValue("Tag0"_token, true);
+
+			ASSERT(CppUtils::Switch::getValue(id0) == false);
+			ASSERT(CppUtils::Switch::getValue(id1) == true);
+			ASSERT(CppUtils::Switch::getValue(id2) == false);
 		}}
 
 	};

@@ -42,23 +42,25 @@ namespace CppUtils
 		bool pass() const
 		{
 			using namespace std::string_literals;
+			using namespace Type::Literals;
 
 			CppUtils::Log::Logger::logImportant(std::string(50, '_') + '\n' + m_name + ':');
-			auto switchIds = CppUtils::Switch::getEnabledIds();
+			auto loggersState = CppUtils::Switch::getValues("Logger"_token);
+			CppUtils::Switch::setValue("Logger"_token, true);
 			try
 			{
 				m_function();
-				CppUtils::Switch::setEnabledIds(std::move(switchIds));
+				CppUtils::Switch::setValues(loggersState);
 			}
 			catch (const TestException& exception)
 			{
-				CppUtils::Switch::setEnabledIds(std::move(switchIds));
+				CppUtils::Switch::setValues(loggersState);
 				CppUtils::Log::Logger::logError("The following test didn't pass:\n"s + m_name + "\n" + exception.what());
 				return false;
 			}
 			catch (const std::exception& exception)
 			{
-				CppUtils::Switch::setEnabledIds(std::move(switchIds));
+				CppUtils::Switch::setValues(loggersState);
 				CppUtils::Log::Logger::logError("An exception occurred during tests:\n"s + m_name + "\n" + exception.what());
 				return false;
 			}

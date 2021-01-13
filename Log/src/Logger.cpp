@@ -1,14 +1,18 @@
 #include <CppUtils/Log/Logger.hpp>
 
+#include <array>
+
 namespace CppUtils::Log
 {
-	const Logger::MessageType Logger::InformationType = Switch::newId(true);
-	const Logger::MessageType Logger::ImportantType = Switch::newId(true);
-	const Logger::MessageType Logger::SuccessType = Switch::newId(true);
-	const Logger::MessageType Logger::DebugType = Switch::newId(true);
-	const Logger::MessageType Logger::DetailType = Switch::newId(true);
-	const Logger::MessageType Logger::WarningType = Switch::newId(true);
-	const Logger::MessageType Logger::ErrorType = Switch::newId(true);
+	using namespace Type::Literals;
+	
+	const Logger::MessageType Logger::InformationType = Switch::newId(true, std::array{ "Logger"_token });
+	const Logger::MessageType Logger::ImportantType = Switch::newId(true, std::array{ "Logger"_token });
+	const Logger::MessageType Logger::SuccessType = Switch::newId(true, std::array{ "Logger"_token });
+	const Logger::MessageType Logger::DebugType = Switch::newId(true, std::array{ "Logger"_token });
+	const Logger::MessageType Logger::DetailType = Switch::newId(true, std::array{ "Logger"_token });
+	const Logger::MessageType Logger::WarningType = Switch::newId(true, std::array{ "Logger"_token });
+	const Logger::MessageType Logger::ErrorType = Switch::newId(true, std::array{ "Logger"_token });
 	
 	std::unordered_map<Logger::OutputType, std::ostream*> Logger::m_outputs{
 		{ Logger::OutputType::Cout, &std::cout },
@@ -27,7 +31,7 @@ namespace CppUtils::Log
 
 	void Logger::log(OutputType loggerOutput, MessageType logType, std::string_view message, bool newLine)
 	{
-		if (!Switch::isEnabled(logType))
+		if (!Switch::getValue(logType))
 			return;
 		
 		if (m_outputs.find(loggerOutput) == m_outputs.end())

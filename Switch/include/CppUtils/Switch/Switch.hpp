@@ -1,66 +1,80 @@
 #pragma once
 
+#include <span>
 #include <vector>
-#include <iostream>
-#include <algorithm>
+#include <stdexcept>
+#include <unordered_map>
+
+#include <CppUtils/Type/Token.hpp>
 
 namespace CppUtils
 {
-	class Switch
+	class Switch final
 	{
 	public:
 		using Id = std::size_t;
+		using Tag = Type::Token;
 
-		[[nodiscard]] static inline Id newId(bool enable = false)
+		[[nodiscard]] static inline Id newId(bool enabled, std::span<const Tag> tags = {})
 		{
 			static auto id = Id{0};
-			if (enable)
-				m_enabledIds.push_back(id);
+			setValue(id, enabled);
+			for (const auto& tag : tags)
+				m_tags[tag].push_back(id);
 			return id++;
 		}
 
-		[[nodiscard]] static inline bool isEnabled(const Id id)
+		[[nodiscard]] static inline bool valueExists(Id id) noexcept
 		{
-			return (std::find(m_enabledIds.begin(), m_enabledIds.end(), id) != m_enabledIds.end());
+			return (m_idStates.find(id) != m_idStates.end());
 		}
 
-		static inline void enable(const Id id)
+		[[nodiscard]] static inline bool getValue(Id id)
 		{
-			if (!isEnabled(id))
-				m_enabledIds.push_back(id);
+			if (!valueExists(id))
+				throw std::runtime_error{"Undefined Switch id"};
+			return m_idStates.at(id);
 		}
 
-		static inline void disable(const Id id)
+		static inline void setValue(Id id, bool value)
 		{
-			const auto it = std::find(m_enabledIds.begin(), m_enabledIds.end(), id);
-			if (it != m_enabledIds.end())
-				m_enabledIds.erase(it);
+			m_idStates[id] = value;
 		}
 
-		template<typename... Ids>
-		static inline void enable(const Id id, Ids... ids)
+		static inline void deleteId(Id id)
 		{
-			enable(id);
-			enable(ids...);
-		}
-		template<typename... Ids>
-		static inline void disable(const Id id, Ids... ids)
-		{
-			disable(id);
-			disable(ids...);
+			m_idStates.erase(id);
 		}
 
-		[[nodiscard]] static inline std::vector<Id> getEnabledIds() noexcept
+		[[nodiscard]] static inline std::span<const Id> getIds(const Tag& tag)
 		{
-			return m_enabledIds;
+			if (m_tags.find(tag) == m_tags.end())
+				throw std::runtime_error{"Undefined tag"};
+			return m_tags.at(tag);
 		}
 
-		static inline void setEnabledIds(std::vector<Id> enabledIds)
+		[[nodiscard]] static std::unordered_map<Id, bool> getValues(const Tag& tag)
 		{
-			m_enabledIds = std::move(enabledIds);
+			auto values = std::unordered_map<Id, bool>{};
+			for (const auto& id : getIds(tag))
+				values[id] = getValue(id);
+			return values;
+		}
+
+		static inline void setValues(const std::unordered_map<Id, bool>& values)
+		{
+			for (const auto& [id, value] : values)
+				setValue(id, value);
+		}
+
+		static inline void setValue(const Tag& tag, bool value)
+		{
+			for (const auto& id : getIds(tag))
+				setValue(id, value);
 		}
 
 	private:
-		static std::vector<Id> m_enabledIds;
+		static std::unordered_map<Id, bool> m_idStates;
+		static std::unordered_map<Tag, std::vector<Id>, Tag::hash_fn> m_tags;
 	};
 }

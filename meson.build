@@ -18,9 +18,9 @@ subdir('FileSystem')
 subdir('Functional')
 subdir('Hash')
 subdir('Terminal')
+subdir('Type')
 subdir('Switch')
 subdir('Log')
-subdir('Type')
 subdir('Graph')
 subdir('String')
 subdir('Test')
@@ -36,8 +36,8 @@ public_dependencies = [
 	cppUtils_functional_dep,
 	cppUtils_hash_dep,
 	cppUtils_terminal_dep,
-	cppUtils_log_dep,
 	cppUtils_type_dep,
+	cppUtils_log_dep,
 	cppUtils_graph_dep,
 	cppUtils_string_dep,
 	cppUtils_test_dep,
