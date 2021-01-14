@@ -20,7 +20,7 @@ namespace CppUtils::Language::Lexer
 			return (m_expressions.find(token) != m_expressions.end());
 		}
 
-		[[nodiscard]] inline Parser::Expression& expression(const Type::Token& token, const bool isNode = true)
+		[[nodiscard]] inline Parser::Expression& newExpression(const Type::Token& token, const bool isNode = true)
 		{
 			if (!expressionExists(token))
 				m_expressions[token] = Parser::Expression{token, isNode};

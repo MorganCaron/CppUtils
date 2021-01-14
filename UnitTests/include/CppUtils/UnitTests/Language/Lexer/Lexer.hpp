@@ -12,8 +12,8 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
 
-			auto& printExpression = lexer.expression("print"_token);
-			auto& stringExpression = lexer.expression("string"_token);
+			auto& printExpression = lexer.newExpression("print"_token);
+			auto& stringExpression = lexer.newExpression("string"_token);
 
 			printExpression >> "print(" >> stringExpression >> ");";
 			stringExpression >> "\"Hello World!\"";
@@ -35,8 +35,8 @@ namespace CppUtils::UnitTests::Language::Lexer
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
-			auto& printExpression = lexer.expression("print"_token);
-			auto& stringExpression = lexer.expression("string"_token);
+			auto& printExpression = lexer.newExpression("print"_token);
+			auto& stringExpression = lexer.newExpression("string"_token);
 
 			printExpression
 				>> CppUtils::Language::Parser::spaceParser >> "print("
@@ -65,9 +65,9 @@ namespace CppUtils::UnitTests::Language::Lexer
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
-			auto& mainExpression = lexer.expression("main"_token);
-			auto& printExpression = lexer.expression("print"_token);
-			auto& stringExpression = lexer.expression("string"_token);
+			auto& mainExpression = lexer.newExpression("main"_token);
+			auto& printExpression = lexer.newExpression("print"_token);
+			auto& stringExpression = lexer.newExpression("string"_token);
 
 			mainExpression
 				>> (printExpression >= 0)
@@ -101,10 +101,10 @@ namespace CppUtils::UnitTests::Language::Lexer
 			using namespace CppUtils::Type::Literals;
 
 			auto lexer = CppUtils::Language::Lexer::Lexer{};
-			auto& mainExpression = lexer.expression("main"_token);
-			auto& valueExpression = lexer.expression("value"_token);
-			auto& keywordExpression = lexer.expression("keyword"_token);
-			auto& stringExpression = lexer.expression("string"_token);
+			auto& mainExpression = lexer.newExpression("main"_token);
+			auto& valueExpression = lexer.newExpression("value"_token);
+			auto& keywordExpression = lexer.newExpression("keyword"_token);
+			auto& stringExpression = lexer.newExpression("string"_token);
 
 			mainExpression
 				>> (valueExpression >= 0)

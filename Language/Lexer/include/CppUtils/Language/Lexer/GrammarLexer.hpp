@@ -13,50 +13,51 @@ namespace CppUtils::Language::Lexer
 		{
 			using namespace Type::Literals;
 
-			auto& main = m_grammarLexer.expression("main"_token);
-			auto& statement = m_grammarLexer.expression("statement"_token);
-			auto& lexemes = m_grammarLexer.expression("lexemes"_token);
-			auto& lexeme = m_grammarLexer.expression("lexeme"_token, false);
-			auto& string = m_grammarLexer.expression("string"_token);
-			auto& token = m_grammarLexer.expression("token"_token);
-			auto& optional = m_grammarLexer.expression("optional"_token);
-			auto& parenthesis = m_grammarLexer.expression("parenthesis"_token, false);
-			auto& recurrence = m_grammarLexer.expression("recurrence"_token);
-			auto& contingence = m_grammarLexer.expression("contingence"_token);
-			auto& contingenceArgument = m_grammarLexer.expression("contingenceArgument"_token, false);
-			auto& recurrenceOperator = m_grammarLexer.expression("recurrenceOperator"_token, false);
-			auto& equalTo = m_grammarLexer.expression("equalTo"_token);
-			auto& moreOrEqualTo = m_grammarLexer.expression("moreOrEqualTo"_token);
-			auto& moreThan = m_grammarLexer.expression("moreThan"_token);
+			auto& main = m_grammarLexer.newExpression("main"_token);
+			auto& identifier = m_grammarLexer.newExpression("identifier"_token, false);
+			auto& token = m_grammarLexer.newExpression("token"_token);
+			auto& statement = m_grammarLexer.newExpression("statement"_token);
+			auto& lexemes = m_grammarLexer.newExpression("lexemes"_token);
+			auto& lexeme = m_grammarLexer.newExpression("lexeme"_token, false);
+			auto& string = m_grammarLexer.newExpression("string"_token);
+			auto& optional = m_grammarLexer.newExpression("optional"_token);
+			auto& parenthesis = m_grammarLexer.newExpression("parenthesis"_token, false);
+			auto& recurrence = m_grammarLexer.newExpression("recurrence"_token);
+			auto& contingence = m_grammarLexer.newExpression("contingence"_token);
+			auto& contingenceArgument = m_grammarLexer.newExpression("contingenceArgument"_token, false);
+			auto& recurrenceOperator = m_grammarLexer.newExpression("recurrenceOperator"_token, false);
+			auto& equalTo = m_grammarLexer.newExpression("equalTo"_token);
+			auto& moreOrEqualTo = m_grammarLexer.newExpression("moreOrEqualTo"_token);
+			auto& moreThan = m_grammarLexer.newExpression("moreThan"_token);
 			
 			main >> (statement >= 0) >> Parser::spaceParser;
+			identifier >> Parser::spaceParser >> Parser::keywordParser;
+			token >> identifier;
 			statement
-				>> Parser::spaceParser >> Parser::keywordParser
+				>> identifier
 				>> Parser::spaceParser >> ':'
 				>> lexemes
 				>> Parser::spaceParser >> ';';
 			lexemes	>> (lexeme >= 1);
-			lexeme
-				>> Parser::spaceParser >> (string || token || optional || parenthesis);
+			lexeme >> Parser::spaceParser >> (string || token || optional || parenthesis);
 			string >> Parser::quoteParser;
-			token >> Parser::keywordParser;
 			optional
 				>> '!'
-				>> Parser::spaceParser >> token;
+				>> Parser::spaceParser >> lexeme;
 			parenthesis
 				>> '('
-				>> Parser::spaceParser >> (recurrence || contingence)
+				>> Parser::spaceParser >> (recurrence || contingence || lexemes)
 				>> Parser::spaceParser >> ')';
 			recurrence
-				>> Parser::spaceParser >> token
+				>> Parser::spaceParser >> lexeme
 				>> recurrenceOperator
 				>> Parser::spaceParser >> Parser::uintParser;
 			contingence
-				>> Parser::spaceParser >> token
+				>> Parser::spaceParser >> lexeme
 				>> (contingenceArgument >= 1);
 			contingenceArgument
 				>> Parser::spaceParser >> "||"
-				>> Parser::spaceParser >> token;
+				>> Parser::spaceParser >> lexeme;
 			recurrenceOperator
 				>> Parser::spaceParser >> (equalTo || moreOrEqualTo || moreThan);
 			equalTo >> "*";
@@ -79,7 +80,7 @@ namespace CppUtils::Language::Lexer
 			for (const auto& statement : tokenTree.childs)
 			{
 				const auto& token = statement.childs.at(0).self;
-				auto& expression = m_languageLexer.expression(token, token.name.at(0) != '_');
+				auto& expression = m_languageLexer.newExpression(token, token.name.at(0) != '_');
 				existingStatements[token] = true;
 				const auto& lexemes = statement.childs.at(1).childs;
 
@@ -135,7 +136,7 @@ namespace CppUtils::Language::Lexer
 			{
 				if (existingStatements.find(token) == existingStatements.end())
 					existingStatements[token] = false;
-				expression >> m_languageLexer.expression(token, token.name.at(0) != '_');
+				expression >> m_languageLexer.newExpression(token, token.name.at(0) != '_');
 			}
 		}
 
@@ -147,7 +148,7 @@ namespace CppUtils::Language::Lexer
 		void parseOptional(Parser::Expression& expression, const std::vector<Graph::TokenNode>& attributes, [[maybe_unused]] ExistingStatements& existingStatements)
 		{
 			const auto& token = attributes.at(0).childs.at(0).self;
-			const auto& tokenLexeme = m_languageLexer.expression(token, token.name.at(0) != '_');
+			const auto& tokenLexeme = m_languageLexer.newExpression(token, token.name.at(0) != '_');
 
 			if (existingStatements.find(token) == existingStatements.end())
 				existingStatements[token] = false;
@@ -162,7 +163,7 @@ namespace CppUtils::Language::Lexer
 			const auto& recurrenceOperator = attributes.at(1).self;
 			const auto longRepetitions = std::stoul(std::string{attributes.at(2).self.name});
 			const auto repetitions = static_cast<unsigned int>(longRepetitions);
-			const auto& tokenExpression = m_languageLexer.expression(token, token.name.at(0) != '_');
+			const auto& tokenExpression = m_languageLexer.newExpression(token, token.name.at(0) != '_');
 			
 			if (repetitions != longRepetitions)
 				throw std::out_of_range{"Number of repetitions too large"};

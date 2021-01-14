@@ -16,11 +16,10 @@ namespace CppUtils::Type
 		virtual const Token& getType() const noexcept = 0;
 	};
 
-	template<const Token& StorageToken, typename StorageType>
+	template<const Token& storageToken, typename StorageType>
 	struct DLL_PUBLIC Typed final: public ITyped
 	{
-	public:
-		static constexpr auto Type = StorageToken;
+		static constexpr auto Type = storageToken;
 		using Storage = StorageType;
 
 		explicit constexpr Typed(Storage c_value):
