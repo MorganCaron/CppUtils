@@ -43,7 +43,10 @@ namespace CppUtils
 
 		static inline void deleteId(Id id)
 		{
-			m_idStates.erase(id);
+			const auto it = m_idStates.find(id);
+			if (it == m_idStates.end())
+				return;
+			m_idStates.erase(it);
 			for (auto& [tag, ids] : m_tags)
 			{
 				const auto it = std::find(ids.begin(), ids.end(), id);
