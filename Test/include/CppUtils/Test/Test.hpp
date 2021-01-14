@@ -54,29 +54,33 @@ namespace CppUtils
 			using namespace std::string_literals;
 			using namespace Type::Literals;
 
-			auto loggersState = CppUtils::Switch::getValues("Logger"_token);
+			auto loggersState = Switch::getValues("Logger"_token);
 			if (settings.verbose)
-				CppUtils::Log::Logger::logImportant(std::string(50, '_') + '\n' + m_name + ':');
-			CppUtils::Switch::setValue("Logger"_token, settings.verbose && settings.detail);
+				Log::Logger::logImportant(std::string(50, '_') + '\n' + m_name + ':');
+			Switch::setValue("Logger"_token, settings.verbose);
+			Switch::setValue(Log::Logger::InformationType, settings.verbose && settings.detail);
+			Switch::setValue(Log::Logger::DetailType, settings.verbose && settings.detail);
 			try
 			{
+				auto chronoLogger = Log::ChronoLogger{"Test", settings.verbose && settings.chrono};
 				m_function();
+				chronoLogger.stop();
 			}
 			catch (const TestException& exception)
 			{
-				CppUtils::Switch::setValues(loggersState);
-				CppUtils::Log::Logger::logError("The following test didn't pass:\n"s + m_name + "\n" + exception.what());
+				Switch::setValues(loggersState);
+				Log::Logger::logError("The following test didn't pass:\n"s + m_name + "\n" + exception.what());
 				return false;
 			}
 			catch (const std::exception& exception)
 			{
-				CppUtils::Switch::setValues(loggersState);
-				CppUtils::Log::Logger::logError("An exception occurred during tests:\n"s + m_name + "\n" + exception.what());
+				Switch::setValues(loggersState);
+				Log::Logger::logError("An exception occurred during tests:\n"s + m_name + "\n" + exception.what());
 				return false;
 			}
-			CppUtils::Switch::setValues(loggersState);
+			Switch::setValues(loggersState);
 			if (settings.verbose)
-				CppUtils::Log::Logger::logSuccess(m_name + " passed");
+				Log::Logger::logSuccess(m_name + " passed");
 			return true;
 		}
 
@@ -91,7 +95,7 @@ namespace CppUtils
 						return test.getName().substr(0, settings.filter.size()) != settings.filter;
 					}
 				), tests.end());
-			CppUtils::Log::Logger::logImportant(std::to_string(tests.size()) + " tests found. Execution:");
+			Log::Logger::logImportant(std::to_string(tests.size()) + " tests found. Execution:");
 			for (const auto& test : tests)
 			{
 				if (test.pass(settings))
@@ -100,18 +104,18 @@ namespace CppUtils
 					++nbFail;
 			}
 			
-			CppUtils::Log::Logger::logImportant(std::string(50, '_') + "\nTest results");
+			Log::Logger::logImportant(std::string(50, '_') + "\nTest results");
 			if (nbFail == 0)
 			{
-				CppUtils::Log::Logger::logSuccess("All tests passed successfully");
+				Log::Logger::logSuccess("All tests passed successfully");
 				return EXIT_SUCCESS;
 			}
-			CppUtils::Log::Logger::logError("The tests failed:");
+			Log::Logger::logError("The tests failed:");
 			if (nbSuccess > 0)
-				CppUtils::Log::Logger::logSuccess("- " + std::to_string(nbSuccess) + " successful tests");
+				Log::Logger::logSuccess("- " + std::to_string(nbSuccess) + " successful tests");
 			else
-				CppUtils::Log::Logger::logError("- 0 successful tests");
-			CppUtils::Log::Logger::logError("- " + std::to_string(nbFail) + " failed tests");
+				Log::Logger::logError("- 0 successful tests");
+			Log::Logger::logError("- " + std::to_string(nbFail) + " failed tests");
 			return EXIT_FAILURE;
 		}
 
