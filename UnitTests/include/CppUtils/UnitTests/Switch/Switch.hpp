@@ -15,6 +15,9 @@ namespace CppUtils::UnitTests::Switch
 			ASSERT(CppUtils::Switch::getValue(id0) == false);
 			ASSERT(CppUtils::Switch::getValue(id1) == true);
 			ASSERT(CppUtils::Switch::getValue(id2) == true);
+			CppUtils::Switch::deleteId(id0);
+			CppUtils::Switch::deleteId(id1);
+			CppUtils::Switch::deleteId(id2);
 		}},
 
 		CppUtils::Test{"Switch/Tag", [] {
@@ -28,6 +31,9 @@ namespace CppUtils::UnitTests::Switch
 			ASSERT(CppUtils::Switch::getValue(id0) == false);
 			ASSERT(CppUtils::Switch::getValue(id1) == true);
 			ASSERT(CppUtils::Switch::getValue(id2) == false);
+			CppUtils::Switch::deleteId(id0);
+			CppUtils::Switch::deleteId(id1);
+			CppUtils::Switch::deleteId(id2);
 		}}
 
 	};

@@ -44,13 +44,19 @@ namespace CppUtils
 		static inline void deleteId(Id id)
 		{
 			m_idStates.erase(id);
+			for (auto& [tag, ids] : m_tags)
+			{
+				const auto it = std::find(ids.begin(), ids.end(), id);
+				if (it != ids.end())
+					ids.erase(it);
+			}
 		}
 
-		[[nodiscard]] static inline std::span<const Id> getIds(const Tag& tag)
+		[[nodiscard]] static inline std::span<const Id> getIds(const Tag& tag) noexcept
 		{
-			if (m_tags.find(tag) == m_tags.end())
-				throw std::runtime_error{"Undefined tag"};
-			return m_tags.at(tag);
+			if (m_tags.find(tag) != m_tags.end())
+				return m_tags.at(tag);
+			return std::span<const Id>{};
 		}
 
 		[[nodiscard]] static std::unordered_map<Id, bool> getValues(const Tag& tag)
