@@ -19,30 +19,43 @@
 #include <CppUtils/UnitTests/Type/Typed.hpp>
 #include <CppUtils/UnitTests/Type/Token.hpp>
 
-int main()
+int main(const int argc, const char *argv[])
 {
-	const auto tests = CppUtils::Container::Vector::merge({
-		std::cref(CppUtils::UnitTests::Chrono::Chronometer::tests),
-		std::cref(CppUtils::UnitTests::Container::Vector::tests),
-		std::cref(CppUtils::UnitTests::FileSystem::File::Binary::tests),
-		std::cref(CppUtils::UnitTests::FileSystem::File::String::tests),
-		std::cref(CppUtils::UnitTests::Functional::Function::tests),
-		std::cref(CppUtils::UnitTests::Graph::MeshNode::tests),
-		std::cref(CppUtils::UnitTests::Graph::TreeNode::tests),
-		std::cref(CppUtils::UnitTests::Language::ASM::tests),
-		std::cref(CppUtils::UnitTests::Language::Lexer::GrammarLexer::tests),
-		std::cref(CppUtils::UnitTests::Language::Lexer::tests),
-		std::cref(CppUtils::UnitTests::Language::Lexer::ParametersLexer::tests),
-		std::cref(CppUtils::UnitTests::Language::Lexer::StringTreeLexer::tests),
-		std::cref(CppUtils::UnitTests::Language::Parser::Cursor::tests),
-		std::cref(CppUtils::UnitTests::Log::ChronoLogger::tests),
-		std::cref(CppUtils::UnitTests::Log::Logger::tests),
-		std::cref(CppUtils::UnitTests::String::tests),
-		std::cref(CppUtils::UnitTests::Switch::tests),
-		std::cref(CppUtils::UnitTests::Test::tests),
-		std::cref(CppUtils::UnitTests::Type::Typed::tests),
-		std::cref(CppUtils::UnitTests::Type::Token::tests)
-	});
+	try
+	{
+		const auto tests = CppUtils::Container::Vector::merge({
+			std::cref(CppUtils::UnitTests::Chrono::Chronometer::tests),
+			std::cref(CppUtils::UnitTests::Container::Vector::tests),
+			std::cref(CppUtils::UnitTests::FileSystem::File::Binary::tests),
+			std::cref(CppUtils::UnitTests::FileSystem::File::String::tests),
+			std::cref(CppUtils::UnitTests::Functional::Function::tests),
+			std::cref(CppUtils::UnitTests::Graph::MeshNode::tests),
+			std::cref(CppUtils::UnitTests::Graph::TreeNode::tests),
+			std::cref(CppUtils::UnitTests::Language::ASM::tests),
+			std::cref(CppUtils::UnitTests::Language::Lexer::GrammarLexer::tests),
+			std::cref(CppUtils::UnitTests::Language::Lexer::tests),
+			std::cref(CppUtils::UnitTests::Language::Lexer::ParametersLexer::tests),
+			std::cref(CppUtils::UnitTests::Language::Lexer::StringTreeLexer::tests),
+			std::cref(CppUtils::UnitTests::Language::Parser::Cursor::tests),
+			std::cref(CppUtils::UnitTests::Log::ChronoLogger::tests),
+			std::cref(CppUtils::UnitTests::Log::Logger::tests),
+			std::cref(CppUtils::UnitTests::String::tests),
+			std::cref(CppUtils::UnitTests::Switch::tests),
+			std::cref(CppUtils::UnitTests::Test::tests),
+			std::cref(CppUtils::UnitTests::Type::Typed::tests),
+			std::cref(CppUtils::UnitTests::Type::Token::tests)
+		});
 
-	return CppUtils::Test::executeTests(tests);
+		const auto settings = CppUtils::Test::executeCommands(argc, argv);
+		if (settings.abort)
+			return EXIT_SUCCESS;
+		return CppUtils::Test::executeTests(std::move(tests), std::move(settings));
+	}
+	catch (const std::exception& exception)
+	{
+		using namespace std::literals;
+		CppUtils::Log::Logger::logError("An exception occurred:\n"s + exception.what());
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
 }
