@@ -81,14 +81,13 @@ namespace CppUtils::Language::Parser
 	[[nodiscard]] inline bool uintParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
-		auto string = std::string{""};
-		while (!cursor.isEndOfString() && cursor.getChar() >= '0' && cursor.getChar() <= '9')
-			string += cursor.getCharAndSkipIt();
-		if (string.empty())
+		if (cursor.isEndOfString() || !std::isdigit(cursor.getChar()))
 			return false;
-		const auto number = std::stoul(string);
+		auto numberLength = std::size_t{};
+		const auto number = std::stoul(cursor.src.substr(cursor.position).data(), &numberLength);
 		if (number != static_cast<unsigned int>(number))
 			throw std::out_of_range{"Number too large"};
+		cursor.position += numberLength;
 		parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{number});
 		return true;
 	}
@@ -99,8 +98,19 @@ namespace CppUtils::Language::Parser
 		auto& [cursor, parentNode] = context;
 		if (cursor.isEndOfString())
 			return false;
+		bool hasDigit = std::isdigit(cursor.getChar());
+		if (cursor.getChar() == '+' || cursor.getChar() == '-')
+		{
+			++cursor.position;
+			if (cursor.isEndOfString())
+				return false;
+			hasDigit |= std::isdigit(cursor.getChar());
+			--cursor.position;
+		}
+		if (!hasDigit)
+			return false;
 		auto numberLength = std::size_t{};
-		const auto number = std::stoi(cursor.src.data(), &numberLength);
+		const auto number = std::stoi(cursor.src.substr(cursor.position).data(), &numberLength);
 		cursor.position += numberLength;
 		parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{number});
 		return true;

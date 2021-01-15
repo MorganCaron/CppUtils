@@ -23,9 +23,14 @@ subdir('Switch')
 subdir('Log')
 subdir('Graph')
 subdir('String')
-subdir('Test')
 subdir('Thread')
 subdir('Language')
+subdir('Ini')
+subdir('Json')
+subdir('Parameters')
+subdir('StringTree')
+subdir('ASM')
+subdir('Test')
 
 public_dependencies = [
 	cppUtils_platform_dep,
@@ -40,9 +45,14 @@ public_dependencies = [
 	cppUtils_log_dep,
 	cppUtils_graph_dep,
 	cppUtils_string_dep,
-	cppUtils_test_dep,
 	cppUtils_thread_dep,
-	cppUtils_language_dep
+	cppUtils_language_dep,
+	cppUtils_ini_dep,
+	cppUtils_json_dep,
+	cppUtils_parameters_dep,
+	cppUtils_stringtree_dep,
+	cppUtils_asm_dep,
+	cppUtils_test_dep
 ]
 private_dependencies = []
 

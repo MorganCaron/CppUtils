@@ -11,11 +11,7 @@ sources = files([])
 
 headers = files([
 	'include/CppUtils/Language/Lexer/Lexer.hpp',
-	'include/CppUtils/Language/Lexer/GrammarLexer.hpp',
-	'include/CppUtils/Language/Lexer/ParametersLexer.hpp',
-	'include/CppUtils/Language/Lexer/StringTreeLexer.hpp',
-	'include/CppUtils/Language/Lexer/IniLexer.hpp',
-	'include/CppUtils/Language/Lexer/JsonLexer.hpp'
+	'include/CppUtils/Language/Lexer/GrammarLexer.hpp'
 ])
 
 cppUtils_language_lexer_dep = declare_dependency(

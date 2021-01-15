@@ -1,4 +1,6 @@
-public_dependencies = []
+public_dependencies = [
+	cppUtils_parameters_dep
+]
 private_dependencies = []
 
 includeDir = include_directories(['include/', '.'])

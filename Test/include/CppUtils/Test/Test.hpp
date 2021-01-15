@@ -7,6 +7,7 @@
 #include <functional>
 
 #include <CppUtils/Log/Logger.hpp>
+#include <CppUtils/Parameters/ParametersLexer.hpp>
 
 #define ASSERT(condition) void((condition) ? 0 : throw CppUtils::TestException("ASSERT(" #condition ")", __FILE__, __LINE__))
 
@@ -123,7 +124,7 @@ namespace CppUtils
 		{
 			using namespace std::literals;
 			
-			const auto parametersLexer = Language::Lexer::ParametersLexer{};
+			const auto parametersLexer = Parameters::ParametersLexer{};
 			auto settings = TestSettings{};
 			
 			settings.abort = parametersLexer.executeCommands(argc, argv, {

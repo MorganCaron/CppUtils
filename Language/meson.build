@@ -1,15 +1,15 @@
 subdir('Parser')
 subdir('Lexer')
-subdir('Interpreter')
-# subdir('Compiler')
-subdir('ASM')
+subdir('IR')
+subdir('VM')
+subdir('Compiler')
 
 public_dependencies = [
 	cppUtils_language_parser_dep,
 	cppUtils_language_lexer_dep,
-	cppUtils_language_interpreter_dep,
-#	cppUtils_language_compiler_dep,
-	cppUtils_language_asm_dep
+	cppUtils_language_ir_dep,
+	cppUtils_language_vm_dep,
+	cppUtils_language_compiler_dep
 ]
 private_dependencies = []
 
