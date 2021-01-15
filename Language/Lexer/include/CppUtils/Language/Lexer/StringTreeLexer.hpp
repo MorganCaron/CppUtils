@@ -17,7 +17,7 @@ namespace CppUtils::Language::Lexer
 
 			static constexpr auto grammarSrc = R"(
 			main: (node >= 0) spaceParser;
-			node: spaceParser quoteParser !childs;
+			node: spaceParser quoteParser ~childs;
 			childs: spaceParser '{' (node >= 1) spaceParser '}';
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);

@@ -23,8 +23,8 @@ namespace CppUtils::Language::Lexer
 			auto& optional = m_grammarLexer.newExpression("optional"_token);
 			auto& parenthesis = m_grammarLexer.newExpression("parenthesis"_token, false);
 			auto& recurrence = m_grammarLexer.newExpression("recurrence"_token);
-			auto& contingence = m_grammarLexer.newExpression("contingence"_token);
-			auto& contingenceArgument = m_grammarLexer.newExpression("contingenceArgument"_token, false);
+			auto& alternative = m_grammarLexer.newExpression("alternative"_token);
+			auto& alternativeArgument = m_grammarLexer.newExpression("alternativeArgument"_token, false);
 			auto& recurrenceOperator = m_grammarLexer.newExpression("recurrenceOperator"_token, false);
 			auto& equalTo = m_grammarLexer.newExpression("equalTo"_token);
 			auto& moreOrEqualTo = m_grammarLexer.newExpression("moreOrEqualTo"_token);
@@ -42,20 +42,20 @@ namespace CppUtils::Language::Lexer
 			lexeme >> Parser::spaceParser >> (string || token || optional || parenthesis);
 			string >> Parser::quoteParser;
 			optional
-				>> '!'
+				>> '~'
 				>> Parser::spaceParser >> lexeme;
 			parenthesis
 				>> '('
-				>> Parser::spaceParser >> (recurrence || contingence || lexemes)
+				>> Parser::spaceParser >> (recurrence || alternative || lexemes)
 				>> Parser::spaceParser >> ')';
 			recurrence
 				>> Parser::spaceParser >> lexeme
 				>> recurrenceOperator
 				>> Parser::spaceParser >> Parser::uintParser;
-			contingence
+			alternative
 				>> Parser::spaceParser >> lexeme
-				>> (contingenceArgument >= 1);
-			contingenceArgument
+				>> (alternativeArgument >= 1);
+			alternativeArgument
 				>> Parser::spaceParser >> "||"
 				>> Parser::spaceParser >> lexeme;
 			recurrenceOperator
@@ -102,17 +102,17 @@ namespace CppUtils::Language::Lexer
 						case "recurrence"_token.id:
 							parseRecurrence(expression, lexeme.childs, existingStatements);
 							break;
-						case "contingence"_token.id:
-							parseContingence(expression, lexeme.childs, existingStatements);
+						case "alternative"_token.id:
+							parseAlternative(expression, lexeme.childs, existingStatements);
 							break;
 						default:
-							throw std::runtime_error{"Unknown token type: " + std::string{lexemeType.name}};
+							throw std::runtime_error{"Unknown lexeme type: " + std::string{lexemeType.name}};
 					}
 				}
 			}
 			for (const auto& [token, state] : existingStatements)
 				if (!state)
-					throw std::runtime_error{"Undefined token: " + std::string{token.name}};
+					throw std::runtime_error{"Undefined expression: " + std::string{token.name}};
 			return tokenTree;
 		}
 
@@ -152,7 +152,7 @@ namespace CppUtils::Language::Lexer
 
 			if (existingStatements.find(token) == existingStatements.end())
 				existingStatements[token] = false;
-			expression >> !tokenLexeme;
+			expression >> ~tokenLexeme;
 		}
 
 		void parseRecurrence(Parser::Expression& expression, const std::vector<Graph::TokenNode>& attributes, ExistingStatements& existingStatements)
@@ -185,7 +185,7 @@ namespace CppUtils::Language::Lexer
 			}
 		}
 
-		void parseContingence(Parser::Expression& expression, const std::vector<Graph::TokenNode>& attributes, ExistingStatements& existingStatements)
+		void parseAlternative(Parser::Expression& expression, const std::vector<Graph::TokenNode>& attributes, ExistingStatements& existingStatements)
 		{
 			auto tokens = std::vector<Type::Token>{};
 			tokens.reserve(attributes.size());
@@ -195,7 +195,7 @@ namespace CppUtils::Language::Lexer
 			for (const auto& token : tokens)
 				if (existingStatements.find(token) == existingStatements.end())
 					existingStatements[token] = false;
-			expression >> Parser::Contingence{std::move(tokens)};
+			expression >> Parser::Alternative{std::move(tokens)};
 		}
 
 		std::unordered_map<Type::Token, Parser::ParserFunction, Type::Token::hash_fn> m_parserFunctions;

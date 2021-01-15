@@ -1,53 +1,82 @@
 #pragma once
 
+#include <span>
 #include <cctype>
 #include <algorithm>
 #include <string_view>
 
 namespace CppUtils::Language::Parser
 {
+	template<typename Element>
 	struct Cursor final
 	{
-		Cursor(std::string_view c_src, std::size_t& c_pos):
+		[[nodiscard]] inline bool isEnd() const noexcept
+		{
+			return (position >= elements.size());
+		}
+
+		[[nodiscard]] inline const Element& getElement() const
+		{
+			return elements[position];
+		}
+
+		[[nodiscard]] inline const Element& getElementAndSkipIt()
+		{
+			return elements[position++];
+		}
+
+		[[nodiscard]] inline std::size_t end() const noexcept
+		{
+			return elements.size();
+		}
+
+		std::span<const Element> elements;
+		std::size_t position;
+	};
+
+	template<>
+	struct Cursor<std::string> final
+	{
+		Cursor(std::string_view c_src, std::size_t& c_position):
 			src{c_src},
-			pos{c_pos}
+			position{c_position}
 		{}
 
 		[[nodiscard]] inline bool isEndOfString() const noexcept
 		{
-			return (pos >= src.length());
+			return (position >= src.length());
 		}
 		
 		[[nodiscard]] inline char getChar() const
 		{
-			return src.at(pos);
+			return src.at(position);
 		}
 
 		[[nodiscard]] inline char getCharAndSkipIt()
 		{
-			return src.at(pos++);
+			return src.at(position++);
 		}
 
 		[[nodiscard]] inline std::string_view getStringIf(const std::function<bool(char)>& validator) const
 		{
 			const auto length = src.length();
 			auto nbChars = 0u;
-			while (nbChars < length && validator(src.at(pos + nbChars)))
+			while (nbChars < length && validator(src.at(position + nbChars)))
 				++nbChars;
-			return src.substr(pos, nbChars);
+			return src.substr(position, nbChars);
 		}
 
 		[[nodiscard]] inline std::string_view getStringAndSkipItIf(const std::function<bool(char)>& validator)
 		{
 			const auto string = getStringIf(validator);
-			pos += string.length();
+			position += string.length();
 			return string;
 		}
 
 		inline void skipStringIf(const std::function<bool(char)>& validator)
 		{
 			while (!isEndOfString() && validator(getChar()))
-				++pos;
+				++position;
 		}
 
 		inline void skipSpaces()
@@ -59,7 +88,7 @@ namespace CppUtils::Language::Parser
 
 		[[nodiscard]] inline std::string_view getNextNChar(const std::size_t size) const
 		{
-			return src.substr(pos, std::min(size, src.length() - pos));
+			return src.substr(position, std::min(size, src.length() - position));
 		}
 
 		[[nodiscard]] std::string_view getWord() const
@@ -72,14 +101,14 @@ namespace CppUtils::Language::Parser
 		[[nodiscard]] std::string_view getWordAndSkipIt()
 		{
 			auto word = getWord();
-			pos += word.length();
+			position += word.length();
 			return word;
 		}
 
 		[[nodiscard]] std::string_view getKeyword() const
 		{
 			const auto srcLength = src.length();
-			auto subPosition = pos;
+			auto subPosition = position;
 
 			if (subPosition < srcLength && (std::isalpha(src.at(subPosition)) || src.at(subPosition) == '_'))
 			{
@@ -87,13 +116,13 @@ namespace CppUtils::Language::Parser
 					++subPosition;
 				while (subPosition < srcLength && (std::isalnum(src.at(subPosition)) || src.at(subPosition) == '_'));
 			}
-			return src.substr(pos, subPosition - pos);
+			return src.substr(position, subPosition - position);
 		}
 
 		[[nodiscard]] std::string_view getKeywordAndSkipIt()
 		{
 			auto keyword = getKeyword();
-			pos += keyword.length();
+			position += keyword.length();
 			return keyword;
 		}
 
@@ -110,11 +139,11 @@ namespace CppUtils::Language::Parser
 			const auto length = str.length();
 			if (getNextNChar(length) != str)
 				return false;
-			pos += length;
+			position += length;
 			return true;
 		}
 
 		std::string_view src;
-		std::size_t& pos;
+		std::size_t& position;
 	};
 }

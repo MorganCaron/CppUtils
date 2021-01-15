@@ -10,7 +10,7 @@ namespace CppUtils::Language::Lexer
 	private:
 		struct Context final
 		{
-			Parser::Cursor cursor;
+			Parser::Cursor<std::string> cursor;
 			Graph::TokenNode parentNode;
 		};
 
@@ -37,9 +37,9 @@ namespace CppUtils::Language::Lexer
 		[[nodiscard]] Graph::TokenNode parse(const Type::Token& token, std::string_view src) const
 		{
 			const auto& expression = getExpression(token);
-			auto pos = std::size_t{0};
+			auto position = std::size_t{0};
 			auto context = Context{
-				Parser::Cursor{src, pos},
+				Parser::Cursor<std::string>{src, position},
 				Graph::TokenNode{token}
 			};
 
@@ -64,7 +64,7 @@ namespace CppUtils::Language::Lexer
 		{
 			if (expression.lexemes.empty())
 				throw std::runtime_error{"Undefined expression: " + std::string{expression.token.name}};
-			const auto startPos = context.cursor.pos;
+			const auto startPosition = context.cursor.position;
 			auto partialMatch = false;
 			for (const auto& lexeme : expression.lexemes)
 			{
@@ -72,7 +72,7 @@ namespace CppUtils::Language::Lexer
 				{
 					if (partialMatch)
 						throw std::runtime_error{"Syntax error in " + std::string{expression.token.name} + ":\n" + std::string{String::rightTrimString(context.cursor.getNextNChar(20))} + "...\nExpected format: " + std::string{lexeme->getType().name} + " " + getLexemeName(lexeme)};
-					context.cursor.pos = startPos;
+					context.cursor.position = startPosition;
 					return false;
 				}
 				if (lexeme->getType() == Parser::StringLexemeType)
@@ -120,8 +120,8 @@ namespace CppUtils::Language::Lexer
 					if (!parseRecurrentLexeme(lexeme, context))
 						return false;
 					break;
-				case Parser::ContingentLexemeType.id:
-					if (!parseContingentLexeme(lexeme, context))
+				case Parser::AlternativeLexemeType.id:
+					if (!parseAlternativeLexeme(lexeme, context))
 						return false;
 					break;
 				default:
@@ -143,11 +143,11 @@ namespace CppUtils::Language::Lexer
 		{
 			auto& [cursor, parentNode] = context;
 			const auto& parserLexeme = Type::ensureType<Parser::ParserLexeme>(lexeme);
-			const auto startPos = cursor.pos;
+			const auto startPosition = cursor.position;
 			
 			if (!parserLexeme.value(cursor, parentNode))
 			{
-				cursor.pos = startPos;
+				cursor.position = startPosition;
 				return false;
 			}
 			return true;
@@ -199,19 +199,19 @@ namespace CppUtils::Language::Lexer
 			return true;
 		}
 
-		[[nodiscard]] inline bool parseContingentLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Context& context) const
+		[[nodiscard]] inline bool parseAlternativeLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Context& context) const
 		{
 			auto& [cursor, parentNode] = context;
-			const auto& contingentLexeme = Type::ensureType<Parser::ContingentLexeme>(lexeme);
-			const auto& contingence = contingentLexeme.value;
-			const auto startPos = cursor.pos;
+			const auto& alternativeLexeme = Type::ensureType<Parser::AlternativeLexeme>(lexeme);
+			const auto& alternative = alternativeLexeme.value;
+			const auto startPosition = cursor.position;
 
-			for (const auto& token : contingence.tokens)
+			for (const auto& token : alternative.tokens)
 			{
 				const auto& expression = getExpression(token);
 				if (parseNode(expression, context))
 					return true;
-				cursor.pos = startPos;
+				cursor.position = startPosition;
 			}
 			return false;
 		}

@@ -5,48 +5,48 @@
 
 namespace CppUtils::Language::ASM::Operations
 {
-	inline void halt([[maybe_unused]] Iterator instructionIterator, Context& context) noexcept
+	inline void halt(Parser::Cursor<Instruction>& cursor, [[maybe_unused]] Context& context) noexcept
 	{
-		context.running = false;
+		cursor.position = cursor.end();
 	}
 
-	inline void nop(Iterator instructionIterator, [[maybe_unused]] Context& context) noexcept
+	inline void nop(Parser::Cursor<Instruction>& cursor, [[maybe_unused]] Context& context) noexcept
 	{
-		++instructionIterator;
+		++cursor.position;
 	}
 
-	inline void jump(Iterator instructionIterator, [[maybe_unused]] Context& context)
+	inline void jump(Parser::Cursor<Instruction>& cursor, [[maybe_unused]] Context& context)
 	{
-		[[maybe_unused]] const auto& parameters = instructionIterator->parameters;
+		[[maybe_unused]] const auto& parameters = cursor.getElement().parameters;
 
-		// instructionIterator.pos = parameters.at(0).id;
+		// cursor.position = parameters.at(0).id;
 	}
 
-	inline void move(Iterator instructionIterator, Context& context)
+	inline void move(Parser::Cursor<Instruction>& cursor, Context& context)
 	{
-		const auto& parameters = instructionIterator->parameters;
+		const auto& parameters = cursor.getElement().parameters;
 
 		context.registerFile[parameters.at(0)] = context.registerFile.at(parameters.at(1));
-		++instructionIterator;
+		++cursor.position;
 	}
 	
-	inline void push(Iterator instructionIterator, Context& context)
+	inline void push(Parser::Cursor<Instruction>& cursor, Context& context)
 	{
-		const auto& parameters = instructionIterator->parameters;
+		const auto& parameters = cursor.getElement().parameters;
 
 		context.stack.emplace(context.registerFile.at(parameters.at(0)));
-		++instructionIterator;
+		++cursor.position;
 	}
 
-	inline void pop(Iterator instructionIterator, Context& context)
+	inline void pop(Parser::Cursor<Instruction>& cursor, Context& context)
 	{
-		const auto& parameters = instructionIterator->parameters;
+		const auto& parameters = cursor.getElement().parameters;
 
 		if (context.stack.size() == 0)
 			throw std::runtime_error{"Stack underflow"};
 
 		context.registerFile[parameters.at(0)] = context.stack.top();
 		context.stack.pop();
-		++instructionIterator;
+		++cursor.position;
 	}
 }

@@ -24,16 +24,15 @@ namespace CppUtils::Language::Lexer
 			m_grammarLexer.addParserFunction("spaceParser"_token, Parser::spaceParser);
 			m_grammarLexer.addParserFunction("keywordParser"_token, Parser::keywordParser);
 			m_grammarLexer.addParserFunction("valueParser"_token, [](auto& cursor, auto& parentNode) {
-				cursor.skipSpaces();
 				if (!cursor.isEndOfString() && cursor.getChar() != '[')
 					return false;
-				const auto startPos = ++cursor.pos;
+				const auto startPosition = ++cursor.position;
 				while (!cursor.isEndOfString() && cursor.getChar() != ']')
-					++cursor.pos;
+					++cursor.position;
 				if (cursor.isEndOfString())
 					return false;
-				auto stringToken = Type::Token{String::trimString(cursor.src.substr(startPos, cursor.pos - startPos))};
-				++cursor.pos;
+				auto stringToken = Type::Token{String::trimString(cursor.src.substr(startPosition, cursor.position - startPosition))};
+				++cursor.position;
 				stringToken.saveTypename();
 				parentNode.childs.emplace_back(Graph::TokenNode{std::move(stringToken)});
 				return true;
@@ -41,7 +40,7 @@ namespace CppUtils::Language::Lexer
 
 			static constexpr auto grammarSrc = "\
 			main: (command >= 0) spaceParser;\
-			command: spaceParser keywordParser !_value;\
+			command: spaceParser keywordParser ~_value;\
 			_value: spaceParser valueParser;\
 			"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);

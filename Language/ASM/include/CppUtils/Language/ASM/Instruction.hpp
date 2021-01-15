@@ -10,8 +10,8 @@ namespace CppUtils::Language::ASM
 	{
 		Type::Token type;
 		std::vector<Type::Token> parameters = {};
-		Instruction* nextInstruction = nullptr;
-		Instruction* targetInstruction = nullptr;
+		std::size_t nextInstruction = 0;
+		std::size_t targetInstruction = 0;
 	};
 
 	using Iterator = typename std::span<const Instruction>::iterator&;

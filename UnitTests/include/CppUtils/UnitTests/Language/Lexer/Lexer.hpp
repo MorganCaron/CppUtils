@@ -6,7 +6,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 {
 	const auto tests = std::vector<CppUtils::Test>{
 
-		CppUtils::Test{"Language/Lexer/Lexemes", [] {
+		CppUtils::Test{"Language/Lexer/Expression", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
 
@@ -96,7 +96,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 				ASSERT(child.self == "print"_token);
 		}},
 
-		CppUtils::Test{"Language/Lexer/Contingence", [] {
+		CppUtils::Test{"Language/Lexer/Alternative", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
 

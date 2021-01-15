@@ -14,7 +14,7 @@ It has a multitude of member functions to analyze the string for parsing purpose
 
 ## Expression
 
-The ``expression.hpp`` file contains all necessary tools to manipulate expressions.
+The ``Expression.hpp`` file contains all necessary tools to manipulate expressions.
 
 An expression is a syntax element that combines a set of lexemes returning a value.
 A lexeme is a lexical unit.
@@ -36,7 +36,7 @@ The function should return ``false`` if it failed to read what it expected, and 
 - ``RecurrentLexeme`` defines a lexeme as a repetition of an ``Expression`` (defined by its ``Token``).\
 Depending on the desired number of repetitions, a recurrence type can be defined with the following values: ``Optional``, ``EqualTo``, ``MoreThan`` or ``MoreOrEqualTo``, followed by the number of repetitions.
 
-- ``ContingentLexeme`` defines a lexeme as varying from one ``Expression`` to another.\
+- ``AlternativeLexeme`` defines a lexeme as varying from one ``Expression`` to another.\
 It contains a list of tokens, only one of which will be read depending on the format of the string.
 
 ### Example

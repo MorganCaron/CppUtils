@@ -22,7 +22,7 @@ namespace CppUtils::Language::Parser
 	using StringLexeme = Lexeme<StringLexemeType, std::string>;
 
 	static constexpr auto ParserLexemeType = "parser"_token;
-	using ParserFunction = std::function<bool (Parser::Cursor&, Graph::TokenNode&)>;
+	using ParserFunction = std::function<bool (Parser::Cursor<std::string>&, Graph::TokenNode&)>;
 	using ParserLexeme = Lexeme<ParserLexemeType, ParserFunction>; 
 
 	static constexpr auto TokenLexemeType = "token"_token;
@@ -47,15 +47,15 @@ namespace CppUtils::Language::Parser
 	using RecurrentLexeme = Lexeme<RecurrentLexemeType, Recurrence>;
 
 	struct Expression;
-	struct Contingence final
+	struct Alternative final
 	{
 		std::vector<Type::Token> tokens;
 
-		[[nodiscard]] Contingence& operator||(const Expression& rhs);
+		[[nodiscard]] Alternative& operator||(const Expression& rhs);
 	};
 
-	static constexpr auto ContingentLexemeType = "contingency"_token;
-	using ContingentLexeme = Lexeme<ContingentLexemeType, Contingence>;
+	static constexpr auto AlternativeLexemeType = "alternative"_token;
+	using AlternativeLexeme = Lexeme<AlternativeLexemeType, Alternative>;
 
 	struct Expression final
 	{
@@ -99,13 +99,13 @@ namespace CppUtils::Language::Parser
 			return *this;
 		}
 
-		Expression& operator>>(Contingence contingence)
+		Expression& operator>>(Alternative alternative)
 		{
-			lexemes.emplace_back(std::make_unique<ContingentLexeme>(std::move(contingence)));
+			lexemes.emplace_back(std::make_unique<AlternativeLexeme>(std::move(alternative)));
 			return *this;
 		}
 
-		[[nodiscard]] Recurrence operator!() const
+		[[nodiscard]] Recurrence operator~() const
 		{
 			return Recurrence{token, RecurrenceType::Optional, 0};
 		}
@@ -125,9 +125,9 @@ namespace CppUtils::Language::Parser
 			return Recurrence{token, RecurrenceType::EqualTo, repetitions};
 		}
 
-		[[nodiscard]] Contingence operator||(const Expression& rhs) const
+		[[nodiscard]] Alternative operator||(const Expression& rhs) const
 		{
-			return Contingence{std::vector<Type::Token>{token, rhs.token}};
+			return Alternative{std::vector<Type::Token>{token, rhs.token}};
 		}
 	};
 }

@@ -10,11 +10,11 @@ namespace CppUtils::UnitTests::Language::Parser::Cursor
 			using namespace std::literals;
 
 			const auto src = "A"sv;
-			auto pos = std::size_t{0};
-			auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
+			auto position = std::size_t{0};
+			auto cursor = CppUtils::Language::Parser::Cursor<std::string>{src, position};
 
 			ASSERT(cursor.isEndOfString() == false);
-			++cursor.pos;
+			++cursor.position;
 			ASSERT(cursor.isEndOfString() == true);
 		}},
 
@@ -22,11 +22,11 @@ namespace CppUtils::UnitTests::Language::Parser::Cursor
 			using namespace std::literals;
 
 			const auto src = "AZ"sv;
-			auto pos = std::size_t{0};
-			auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
+			auto position = std::size_t{0};
+			auto cursor = CppUtils::Language::Parser::Cursor<std::string>{src, position};
 
 			ASSERT(cursor.getChar() == 'A');
-			++cursor.pos;
+			++cursor.position;
 			ASSERT(cursor.getChar() == 'Z');
 		}},
 
@@ -34,8 +34,8 @@ namespace CppUtils::UnitTests::Language::Parser::Cursor
 			using namespace std::literals;
 
 			const auto src = "AZ"sv;
-			auto pos = std::size_t{0};
-			auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
+			auto position = std::size_t{0};
+			auto cursor = CppUtils::Language::Parser::Cursor<std::string>{src, position};
 
 			ASSERT(cursor.getCharAndSkipIt() == 'A');
 			ASSERT(cursor.getCharAndSkipIt() == 'Z');
@@ -45,8 +45,8 @@ namespace CppUtils::UnitTests::Language::Parser::Cursor
 			using namespace std::literals;
 
 			const auto src = "\n 	 \n	 	A"sv;
-			auto pos = std::size_t{0};
-			auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
+			auto position = std::size_t{0};
+			auto cursor = CppUtils::Language::Parser::Cursor<std::string>{src, position};
 
 			cursor.skipSpaces();
 			ASSERT(cursor.isEndOfString() == false);
@@ -57,8 +57,8 @@ namespace CppUtils::UnitTests::Language::Parser::Cursor
 			using namespace std::literals;
 			
 			const auto src = "Hello world!"sv;
-			auto pos = std::size_t{0};
-			auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
+			auto position = std::size_t{0};
+			auto cursor = CppUtils::Language::Parser::Cursor<std::string>{src, position};
 
 			auto word = cursor.getNextNChar(11);
 			CppUtils::Log::Logger::logInformation(word);
@@ -73,8 +73,8 @@ namespace CppUtils::UnitTests::Language::Parser::Cursor
 			using namespace std::literals;
 
 			const auto src = "Hello world!"sv;
-			auto pos = std::size_t{0};
-			auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
+			auto position = std::size_t{0};
+			auto cursor = CppUtils::Language::Parser::Cursor<std::string>{src, position};
 
 			auto word = cursor.getWord();
 			CppUtils::Log::Logger::logInformation(word);
@@ -89,8 +89,8 @@ namespace CppUtils::UnitTests::Language::Parser::Cursor
 			using namespace std::literals;
 
 			const auto src = "Hello world!"sv;
-			auto pos = std::size_t{0};
-			auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
+			auto position = std::size_t{0};
+			auto cursor = CppUtils::Language::Parser::Cursor<std::string>{src, position};
 
 			auto word = cursor.getWordAndSkipIt();
 			CppUtils::Log::Logger::logInformation(word);
@@ -107,8 +107,8 @@ namespace CppUtils::UnitTests::Language::Parser::Cursor
 			using namespace std::literals;
 
 			const auto src = "variable_name0 functionName(argument);"sv;
-			auto pos = std::size_t{0};
-			auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
+			auto position = std::size_t{0};
+			auto cursor = CppUtils::Language::Parser::Cursor<std::string>{src, position};
 
 			auto keyword = cursor.getKeyword();
 			CppUtils::Log::Logger::logInformation(keyword);
@@ -123,8 +123,8 @@ namespace CppUtils::UnitTests::Language::Parser::Cursor
 			using namespace std::literals;
 
 			const auto src = "variable_name0 functionName(argument);"sv;
-			auto pos = std::size_t{0};
-			auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
+			auto position = std::size_t{0};
+			auto cursor = CppUtils::Language::Parser::Cursor<std::string>{src, position};
 
 			auto word = cursor.getKeywordAndSkipIt();
 			CppUtils::Log::Logger::logInformation(word);
@@ -141,8 +141,8 @@ namespace CppUtils::UnitTests::Language::Parser::Cursor
 			using namespace std::literals;
 			
 			const auto src = "variable_name0 functionName(argument);"sv;
-			auto pos = std::size_t{0};
-			auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
+			auto position = std::size_t{0};
+			auto cursor = CppUtils::Language::Parser::Cursor<std::string>{src, position};
 
 			const auto keyword = cursor.getKeywordRequired("error message");
 			CppUtils::Log::Logger::logInformation(keyword);
@@ -153,8 +153,8 @@ namespace CppUtils::UnitTests::Language::Parser::Cursor
 			using namespace std::literals;
 			
 			const auto src = "Hello world!"sv;
-			auto pos = std::size_t{0};
-			auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
+			auto position = std::size_t{0};
+			auto cursor = CppUtils::Language::Parser::Cursor<std::string>{src, position};
 
 			ASSERT(cursor.isEqualSkipIt("Hello") == true);
 			cursor.skipSpaces();

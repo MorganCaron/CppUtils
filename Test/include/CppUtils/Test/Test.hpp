@@ -26,7 +26,7 @@ namespace CppUtils
 		int m_line;
 	};
 
-	struct TestSettings
+	struct TestSettings final
 	{
 		bool verbose = true;
 		bool detail = true;
@@ -36,7 +36,7 @@ namespace CppUtils
 		std::string filter;
 	};
 
-	class Test
+	class Test final
 	{
 	public:
 		explicit Test(std::string name, std::function<void()> function):

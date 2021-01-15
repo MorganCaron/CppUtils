@@ -101,8 +101,8 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			static constexpr auto grammarSrc = R"(
 			main: (_instruction >= 0) spaceParser;
 			_instruction: (function || variableDeclaration) spaceParser ';';
-			function: spaceParser keywordParser spaceParser '(' !_arguments spaceParser ')';
-			_arguments: _value !_secondaryArgument;
+			function: spaceParser keywordParser spaceParser '(' ~_arguments spaceParser ')';
+			_arguments: _value ~_secondaryArgument;
 			_secondaryArgument: spaceParser ',' _arguments;
 			variableDeclaration: spaceParser keywordParser spaceParser '=' string;
 			_value: (string || variableCall);

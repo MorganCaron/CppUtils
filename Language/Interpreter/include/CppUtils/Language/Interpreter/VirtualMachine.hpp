@@ -7,17 +7,11 @@
 
 namespace CppUtils::Language::Interpreter
 {
-	struct Context
-	{
-		bool running = true;
-	};
-
 	template<typename Instruction, typename Context>
 	class VirtualMachine
 	{
 	public:
-		using Iterator = typename std::span<const Instruction>::iterator&;
-		using Operation = std::function<void(Iterator, Context&)>;
+		using Operation = std::function<void(Parser::Cursor<Instruction>&, Context&)>;
 
 		VirtualMachine(std::unordered_map<Type::Token, Operation, Type::Token::hash_fn>&& operations = {}):
 			m_operations{operations}
@@ -26,16 +20,17 @@ namespace CppUtils::Language::Interpreter
 		void run(std::span<const Instruction> instructions, Context& context) const
 		{
 			using namespace std::literals;
-			auto instructionIterator = instructions.begin();
-			
+			auto cursor = Parser::Cursor<Instruction>{instructions, 0};
+
 			try
 			{
-				while (context.running && instructionIterator != instructions.end())
+				while (!cursor.isEnd())
 				{
-					const auto operation = m_operations.find(instructionIterator->type);
+					const auto& instruction = cursor.getElement();
+					const auto operation = m_operations.find(instruction.type);
 					if (operation == m_operations.end())
-						throw std::runtime_error{"Unknown instruction:\n" + std::string{instructionIterator->type.name}};
-					m_operations.at(instructionIterator->type)(instructionIterator, context);
+						throw std::runtime_error{"Unknown instruction:\n" + std::string{instruction.type.name}};
+					operation->second(cursor, context);
 				}
 			}
 			catch (const std::exception& exception)
