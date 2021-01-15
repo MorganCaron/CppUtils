@@ -9,6 +9,7 @@ includeDir = include_directories(['include/', '.'])
 sources = files([])
 
 headers = files([
+	'include/CppUtils/Language/Parser/Context.hpp',
 	'include/CppUtils/Language/Parser/Cursor.hpp',
 	'include/CppUtils/Language/Parser/Expression.hpp',
 	'include/CppUtils/Language/Parser/Parsers.hpp',

@@ -9,7 +9,7 @@
 #include <CppUtils/Type/Typed.hpp>
 #include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Graph/TreeNode.hpp>
-#include <CppUtils/Language/Parser/Cursor.hpp>
+#include <CppUtils/Language/Parser/Context.hpp>
 
 namespace CppUtils::Language::Parser
 {
@@ -24,12 +24,14 @@ namespace CppUtils::Language::Parser
 
 	static constexpr auto ParserLexemeType = "parser"_token;
 	template<typename... Types>
-	using ParserFunction = std::function<bool (Parser::Cursor<std::string>&, Graph::VariantTreeNode<Types...>&)>;
-	template<typename... Types>
-	using ParserLexeme = Lexeme<ParserLexemeType, ParserFunction<Types...>>; 
+	using ParserLexeme = Lexeme<ParserLexemeType, ParsingFunction<Types...>>; 
 
 	static constexpr auto TokenLexemeType = "token"_token;
 	using TokenLexeme = Lexeme<TokenLexemeType, Type::Token>;
+
+	static constexpr auto TagLexemeType = "tag"_token;
+	template<typename... Types>
+	using TagLexeme = Lexeme<TagLexemeType, ParsingFunction<Types...>>;
 
 	template<typename... Types> struct Expression;
 	static constexpr auto ExpressionLexemeType = "expression"_token;
@@ -101,9 +103,15 @@ namespace CppUtils::Language::Parser
 			return *this;
 		}
 		
-		Expression& operator>>(ParserFunction<Types...> function)
+		Expression& operator>>(ParsingFunction<Types...> function)
 		{
 			lexemes.emplace_back(std::make_unique<ParserLexeme<Types...>>(std::move(function)));
+			return *this;
+		}
+
+		Expression& operator>>(TagLexeme<Types...> nameLexeme)
+		{
+			lexemes.emplace_back(std::make_unique<TagLexeme<Types...>>(std::move(nameLexeme)));
 			return *this;
 		}
 

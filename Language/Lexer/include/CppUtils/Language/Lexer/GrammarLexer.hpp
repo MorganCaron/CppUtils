@@ -26,6 +26,7 @@ namespace CppUtils::Language::Lexer
 			auto& lexemes = m_grammarLexer.newExpression("lexemes"_token);
 			auto& lexeme = m_grammarLexer.newExpression("lexeme"_token, false);
 			auto& string = m_grammarLexer.newExpression("string"_token);
+			auto& tag = m_grammarLexer.newExpression("tag"_token);
 			auto& optional = m_grammarLexer.newExpression("optional"_token);
 			auto& parenthesis = m_grammarLexer.newExpression("parenthesis"_token, false);
 			auto& recurrence = m_grammarLexer.newExpression("recurrence"_token);
@@ -45,8 +46,12 @@ namespace CppUtils::Language::Lexer
 				>> lexemes
 				>> Parser::spaceParser<Type::Token, unsigned int> >> ';';
 			lexemes	>> (lexeme >= 1);
-			lexeme >> Parser::spaceParser<Type::Token, unsigned int> >> (string || token || optional || parenthesis);
+			lexeme >> Parser::spaceParser<Type::Token, unsigned int> >> (string || token || tag || optional || parenthesis);
 			string >> Parser::quoteParser<Type::Token, unsigned int>;
+			tag
+				>> '['
+				>> Parser::spaceParser<Type::Token, unsigned int> >> identifier
+				>> Parser::spaceParser<Type::Token, unsigned int> >> ']';
 			optional
 				>> '~'
 				>> Parser::spaceParser<Type::Token, unsigned int> >> lexeme;
@@ -71,16 +76,16 @@ namespace CppUtils::Language::Lexer
 			moreThan >> '>';
 		}
 
-		inline void addParserFunction(const Type::Token& token, Parser::ParserFunction<Types...> parserFunction)
+		inline void addParsingFunction(const Type::Token& token, Parser::ParsingFunction<Types...> parsingFunction)
 		{
-			m_parserFunctions[token] = std::move(parserFunction);
+			m_parsingFunctions[token] = std::move(parsingFunction);
 		}
 
 		GrammarLexerTreeNode parseGrammar(std::string_view src)
 		{
 			using namespace Type::Literals;
 
-			const auto tokenTree = m_grammarLexer.parse("main"_token, src);
+			auto tokenTree = m_grammarLexer.parseString("main"_token, src);
 			auto existingStatements = std::unordered_map<Type::Token, bool, Type::Token::hash_fn>{};
 
 			for (const auto& statement : tokenTree.childs)
@@ -102,6 +107,9 @@ namespace CppUtils::Language::Lexer
 						case "string"_token.id:
 							parseString(expression, lexeme.childs, existingStatements);
 							break;
+						case "tag"_token.id:
+							parseName(expression, lexeme.childs, existingStatements);
+							break;
 						case "optional"_token.id:
 							parseOptional(expression, lexeme.childs, existingStatements);
 							break;
@@ -122,11 +130,14 @@ namespace CppUtils::Language::Lexer
 			return tokenTree;
 		}
 
-		[[nodiscard]] inline Graph::VariantTreeNode<Types...> parseLanguage(std::string_view src) const
+		[[nodiscard]] inline Graph::VariantTreeNode<Types...> parseLanguage(const Type::Token& token, std::string_view src) const
 		{
-			using namespace Type::Literals;
+			return m_languageLexer.parseString(token, src);
+		}
 
-			return m_languageLexer.parse("main"_token, src);
+		inline void parseSegment(const Type::Token& token, Parser::Context<Types...>& context) const
+		{
+			m_languageLexer.parseSegment(token, context);
 		}
 
 	private:
@@ -136,8 +147,8 @@ namespace CppUtils::Language::Lexer
 		{
 			const auto& token = std::get<Type::Token>(attributes.at(0).value);
 
-			if (m_parserFunctions.find(token) != m_parserFunctions.end())
-				expression >> m_parserFunctions.at(token);
+			if (m_parsingFunctions.find(token) != m_parsingFunctions.end())
+				expression >> m_parsingFunctions.at(token);
 			else
 			{
 				if (existingStatements.find(token) == existingStatements.end())
@@ -149,6 +160,15 @@ namespace CppUtils::Language::Lexer
 		void parseString(Parser::Expression<Types...>& expression, const std::vector<GrammarLexerTreeNode>& attributes, [[maybe_unused]] ExistingStatements& existingStatements)
 		{
 			expression >> std::string{std::get<Type::Token>(attributes.at(0).value).name};
+		}
+
+		void parseName(Parser::Expression<Types...>& expression, const std::vector<GrammarLexerTreeNode>& attributes, [[maybe_unused]] ExistingStatements& existingStatements)
+		{
+			const auto& token = std::get<Type::Token>(attributes.at(0).value);
+
+			if (m_parsingFunctions.find(token) == m_parsingFunctions.end())
+				throw std::runtime_error{"Unknown parsing function: " + std::string{token.name}};
+			expression >> Parser::TagLexeme<Types...>{m_parsingFunctions.at(token)};
 		}
 
 		void parseOptional(Parser::Expression<Types...>& expression, const std::vector<GrammarLexerTreeNode>& attributes, [[maybe_unused]] ExistingStatements& existingStatements)
@@ -201,7 +221,7 @@ namespace CppUtils::Language::Lexer
 			expression >> Parser::Alternative{std::move(tokens)};
 		}
 
-		std::unordered_map<Type::Token, Parser::ParserFunction<Types...>, Type::Token::hash_fn> m_parserFunctions;
+		std::unordered_map<Type::Token, Parser::ParsingFunction<Types...>, Type::Token::hash_fn> m_parsingFunctions;
 		Lexer<Type::Token, unsigned int> m_grammarLexer;
 		Lexer<Types...> m_languageLexer;
 	};

@@ -19,6 +19,7 @@ headers = files([
 	'include/CppUtils/UnitTests/Graph/TreeNode.hpp',
 	'include/CppUtils/UnitTests/Language/ASM/VirtualMachine.hpp',
 	'include/CppUtils/UnitTests/Language/Lexer/GrammarLexer.hpp',
+	'include/CppUtils/UnitTests/Language/Lexer/IniLexer.hpp',
 	'include/CppUtils/UnitTests/Language/Lexer/Lexer.hpp',
 	'include/CppUtils/UnitTests/Language/Lexer/ParametersLexer.hpp',
 	'include/CppUtils/UnitTests/Language/Lexer/StringTreeLexer.hpp',

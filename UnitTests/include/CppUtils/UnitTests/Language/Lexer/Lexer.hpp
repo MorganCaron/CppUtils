@@ -19,7 +19,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			stringExpression >> "\"Hello World!\"";
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
-			const auto tokenTree = lexer.parse("print"_token, src);
+			const auto tokenTree = lexer.parseString("print"_token, src);
 
 			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
@@ -47,7 +47,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 				>> CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token>;
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
-			const auto tokenTree = lexer.parse("print"_token, src);
+			const auto tokenTree = lexer.parseString("print"_token, src);
 
 			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
@@ -85,7 +85,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 				print("Test");
 				print("Ok");
 			)"sv;
-			const auto tokenTree = lexer.parse("main"_token, src);
+			const auto tokenTree = lexer.parseString("main"_token, src);
 
 			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
@@ -120,7 +120,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			static constexpr auto src = R"(
 				test "test" test "test"
 			)"sv;
-			const auto tokenTree = lexer.parse("main"_token, src);
+			const auto tokenTree = lexer.parseString("main"_token, src);
 
 			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);

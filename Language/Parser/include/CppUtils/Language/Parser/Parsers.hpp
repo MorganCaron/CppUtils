@@ -1,20 +1,22 @@
 #pragma once
 
 #include <CppUtils/Type/Concepts.hpp>
+#include <CppUtils/Language/Parser/Context.hpp>
 #include <CppUtils/Language/Parser/Expression.hpp>
 
 namespace CppUtils::Language::Parser
 {
 	template<typename... Types>
-	inline bool spaceParser(Parser::Cursor<std::string>& cursor, [[maybe_unused]] Graph::VariantTreeNode<Types...>& parentNode)
+	inline bool spaceParser(Context<Types...>& context)
 	{
-		cursor.skipSpaces();
+		context.cursor.skipSpaces();
 		return true;
 	}
 
 	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...> || Type::Concept::isPresent<std::string, Types...>
-	[[nodiscard]] inline bool keywordParser(Parser::Cursor<std::string>& cursor, Graph::VariantTreeNode<Types...>& parentNode)
+	[[nodiscard]] inline bool keywordParser(Context<Types...>& context)
 	{
+		auto& [cursor, parentNode] = context;
 		const auto keyword = cursor.getKeywordAndSkipIt();
 		if (keyword.empty())
 			return false;
@@ -22,17 +24,18 @@ namespace CppUtils::Language::Parser
 		{
 			auto keywordToken = Type::Token{keyword};
 			keywordToken.saveTypename();
-			parentNode.childs.emplace_back(Graph::VariantTreeNode<Types...>{std::move(keywordToken)});
+			parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{std::move(keywordToken)});
 			return true;
 		}
 		else
-			parentNode.childs.emplace_back(Graph::VariantTreeNode<Types...>{std::string{keyword}});
+			parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{std::string{keyword}});
 		return true;
 	}
 
 	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...> || Type::Concept::isPresent<std::string, Types...>
-	[[nodiscard]] inline bool quoteParser(Parser::Cursor<std::string>& cursor, Graph::VariantTreeNode<Types...>& parentNode)
+	[[nodiscard]] inline bool quoteParser(Context<Types...>& context)
 	{
+		auto& [cursor, parentNode] = context;
 		if (cursor.isEndOfString())
 			return false;
 		const auto quote = cursor.getChar();
@@ -48,33 +51,36 @@ namespace CppUtils::Language::Parser
 		{
 			auto stringToken = Type::Token{content};
 			stringToken.saveTypename();
-			parentNode.childs.emplace_back(Graph::VariantTreeNode<Types...>{std::move(stringToken)});
+			parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{std::move(stringToken)});
 		}
 		else
-			parentNode.childs.emplace_back(Graph::VariantTreeNode<Types...>{std::string{content}});
+			parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{std::string{content}});
 		++cursor.position;
 		return true;
 	}
 
 	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...> || Type::Concept::isPresent<std::string, Types...>
-	[[nodiscard]] inline bool singleQuoteParser(Parser::Cursor<std::string>& cursor, Graph::VariantTreeNode<Types...>& parentNode)
+	[[nodiscard]] inline bool singleQuoteParser(Context<Types...>& context)
 	{
+		auto& [cursor, parentNode] = context;
 		if (cursor.isEndOfString() || cursor.getChar() != '\'')
 			return false;
 		return quoteParser(cursor, parentNode);
 	}
 
 	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...> || Type::Concept::isPresent<std::string, Types...>
-	[[nodiscard]] inline bool doubleQuoteParser(Parser::Cursor<std::string>& cursor, Graph::VariantTreeNode<Types...>& parentNode)
+	[[nodiscard]] inline bool doubleQuoteParser(Context<Types...>& context)
 	{
+		auto& [cursor, parentNode] = context;
 		if (cursor.isEndOfString() || cursor.getChar() != '"')
 			return false;
 		return quoteParser(cursor, parentNode);
 	}
 
 	template<typename... Types> requires Type::Concept::isPresent<unsigned int, Types...>
-	[[nodiscard]] inline bool uintParser(Parser::Cursor<std::string>& cursor, Graph::VariantTreeNode<Types...>& parentNode)
+	[[nodiscard]] inline bool uintParser(Context<Types...>& context)
 	{
+		auto& [cursor, parentNode] = context;
 		auto string = std::string{""};
 		while (!cursor.isEndOfString() && cursor.getChar() >= '0' && cursor.getChar() <= '9')
 			string += cursor.getCharAndSkipIt();
@@ -83,7 +89,63 @@ namespace CppUtils::Language::Parser
 		const auto number = std::stoul(string);
 		if (number != static_cast<unsigned int>(number))
 			throw std::out_of_range{"Number too large"};
-		parentNode.childs.emplace_back(Graph::VariantTreeNode<Types...>{number});
+		parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{number});
 		return true;
+	}
+
+	template<typename... Types> requires Type::Concept::isPresent<int, Types...>
+	[[nodiscard]] inline bool intParser(Context<Types...>& context)
+	{
+		auto& [cursor, parentNode] = context;
+		if (cursor.isEndOfString())
+			return false;
+		auto numberLength = std::size_t{};
+		const auto number = std::stoi(cursor.src.data(), &numberLength);
+		cursor.position += numberLength;
+		parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{number});
+		return true;
+	}
+
+	template<typename... Types> requires Type::Concept::isPresent<float, Types...>
+	[[nodiscard]] inline bool floatParser(Context<Types...>& context)
+	{
+		auto& [cursor, parentNode] = context;
+		if (cursor.isEndOfString())
+			return false;
+		bool hasDigit = std::isdigit(cursor.getChar());
+		bool isInfinity = cursor.isEqual("inf", false);
+		if (cursor.getChar() == '+' || cursor.getChar() == '-')
+		{
+			++cursor.position;
+			if (cursor.isEndOfString())
+				return false;
+			hasDigit |= std::isdigit(cursor.getChar());
+			isInfinity |= cursor.isEqual("inf", false);
+			--cursor.position;
+		}
+		if (!hasDigit && !isInfinity)
+			return false;
+		auto numberLength = std::size_t{};
+		const auto number = std::stof(cursor.src.substr(cursor.position).data(), &numberLength);
+		cursor.position += numberLength;
+		parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{number});
+		return true;
+	}
+
+	template<typename... Types> requires Type::Concept::isPresent<bool, Types...>
+	[[nodiscard]] inline bool booleanParser(Context<Types...>& context)
+	{
+		auto& [cursor, parentNode] = context;
+		if (cursor.isEqualSkipIt("true", false))
+		{
+			parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{true});
+			return true;
+		}
+		if (cursor.isEqualSkipIt("false", false))
+		{
+			parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{false});
+			return true;
+		}
+		return false;
 	}
 }

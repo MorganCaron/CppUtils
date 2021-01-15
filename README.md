@@ -10,7 +10,7 @@
 
 ### Project Health
 [![Codacy](https://img.shields.io/codacy/grade/2fab3fcb24a34138a9e77f847da68b28?logo=Codacy&style=for-the-badge)](https://www.codacy.com/manual/MorganCaron/CppUtils)
-[![Github Actions](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++?logo=Github&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions?query=workflow%3A%22CI+C%2B%2B%22)
+[![Github Actions](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Test%20execution?logo=Github&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions?query=workflow%3A%22CI+C%2B%2B%22)
 
 ---
 

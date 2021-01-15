@@ -42,6 +42,19 @@ namespace CppUtils::Language::Parser
 			position{c_position}
 		{}
 
+		[[nodiscard]] inline std::size_t getLineNumber() const noexcept
+		{
+			const auto subString = src.substr(0, position);
+			return std::count(subString.begin(), subString.end(), '\n') + 1;
+		}
+
+		[[nodiscard]] inline std::size_t getPositionInTheLine() const noexcept
+		{
+			const auto startingLinePosition = src.find_last_of('\n', position);
+			return ((startingLinePosition != std::string::npos) ? (position - startingLinePosition) : position);
+				return position;
+		}
+
 		[[nodiscard]] inline bool isEndOfString() const noexcept
 		{
 			return (position >= src.length());
@@ -60,8 +73,8 @@ namespace CppUtils::Language::Parser
 		[[nodiscard]] inline std::string_view getStringIf(const std::function<bool(char)>& validator) const
 		{
 			const auto length = src.length();
-			auto nbChars = 0u;
-			while (nbChars < length && validator(src.at(position + nbChars)))
+			auto nbChars = std::size_t{0};
+			while ((position + nbChars) < length && validator(src.at(position + nbChars)))
 				++nbChars;
 			return src.substr(position, nbChars);
 		}
@@ -134,13 +147,28 @@ namespace CppUtils::Language::Parser
 			return keyword;
 		}
 
-		bool isEqualSkipIt(std::string_view str)
+		bool isEqual(std::string_view str, bool caseSensitive = true)
 		{
 			const auto length = str.length();
-			if (getNextNChar(length) != str)
+			const auto nextNChar = getNextNChar(length);
+			if (nextNChar.length() != length)
 				return false;
-			position += length;
-			return true;
+			if (caseSensitive)
+				return (str == nextNChar);
+			else
+				return std::equal(nextNChar.begin(), nextNChar.end(), str.begin(), [](char lhs, char rhs) -> bool {
+					return (std::tolower(lhs) == std::tolower(rhs));
+				});
+		}
+
+		bool isEqualSkipIt(std::string_view str, bool caseSensitive = true)
+		{
+			if (isEqual(str, caseSensitive))
+			{
+				position += str.length();
+				return true;
+			}
+			return false;
 		}
 
 		std::string_view src;

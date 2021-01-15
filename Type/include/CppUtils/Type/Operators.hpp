@@ -12,3 +12,33 @@ inline std::ostream& operator<<(std::ostream& os, const std::variant<Type, Types
 		return os << value;
 	}, variant);
 }
+
+template<typename LhsType, typename... RhsTypes>
+inline bool operator==(const LhsType& lhs, const std::variant<RhsTypes...>& rhs)
+{
+	if constexpr(!CppUtils::Type::Concept::isPresent<LhsType, RhsTypes...>)
+		return false;
+	else if (!std::holds_alternative<LhsType>(rhs))
+		return false;
+	else
+		return std::visit([&lhs](auto&& rhsValue) -> bool {
+			return lhs == rhsValue;
+		}, rhs);
+}
+
+template<typename... LhsTypes, typename RhsType>
+inline bool operator==(const std::variant<LhsTypes...>& lhs, const RhsType& rhs)
+{
+	return rhs == lhs;
+}
+
+template<typename... LhsTypes, typename... RhsTypes>
+inline bool operator==(const std::variant<LhsTypes...>& lhs, const std::variant<RhsTypes...>& rhs)
+{
+	return std::visit([&rhs](auto&& lhsValue) -> bool {
+		if constexpr(!CppUtils::Type::Concept::isPresent<decltype(lhsValue), RhsTypes...>)
+			return lhsValue == rhs;
+		else
+			return false;
+	}, lhs);
+}

@@ -7,6 +7,7 @@
 #include <CppUtils/UnitTests/Graph/TreeNode.hpp>
 #include <CppUtils/UnitTests/Language/ASM/VirtualMachine.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/GrammarLexer.hpp>
+#include <CppUtils/UnitTests/Language/Lexer/IniLexer.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Lexer.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/ParametersLexer.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/StringTreeLexer.hpp>
@@ -33,6 +34,7 @@ int main(const int argc, const char *argv[])
 			std::cref(CppUtils::UnitTests::Graph::TreeNode::tests),
 			std::cref(CppUtils::UnitTests::Language::ASM::tests),
 			std::cref(CppUtils::UnitTests::Language::Lexer::GrammarLexer::tests),
+			std::cref(CppUtils::UnitTests::Language::Lexer::IniLexer::tests),
 			std::cref(CppUtils::UnitTests::Language::Lexer::tests),
 			std::cref(CppUtils::UnitTests::Language::Lexer::ParametersLexer::tests),
 			std::cref(CppUtils::UnitTests::Language::Lexer::StringTreeLexer::tests),

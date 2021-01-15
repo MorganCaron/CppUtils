@@ -21,9 +21,10 @@ namespace CppUtils::Language::Lexer
 			using namespace std::literals;
 			using namespace Type::Literals;
 
-			m_grammarLexer.addParserFunction("spaceParser"_token, Parser::spaceParser<Type::Token>);
-			m_grammarLexer.addParserFunction("keywordParser"_token, Parser::keywordParser<Type::Token>);
-			m_grammarLexer.addParserFunction("valueParser"_token, [](auto& cursor, auto& parentNode) {
+			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token>);
+			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Type::Token>);
+			m_grammarLexer.addParsingFunction("valueParser"_token, [](auto& context) {
+				auto& [cursor, parentNode] = context;
 				if (!cursor.isEndOfString() && cursor.getChar() != '[')
 					return false;
 				const auto startPosition = ++cursor.position;
@@ -34,7 +35,7 @@ namespace CppUtils::Language::Lexer
 				auto stringToken = Type::Token{String::trimString(cursor.src.substr(startPosition, cursor.position - startPosition))};
 				++cursor.position;
 				stringToken.saveTypename();
-				parentNode.childs.emplace_back(Graph::VariantTreeNode<Type::Token>{std::move(stringToken)});
+				parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Type::Token>{std::move(stringToken)});
 				return true;
 			});
 
@@ -48,10 +49,10 @@ namespace CppUtils::Language::Lexer
 
 		[[nodiscard]] inline std::unordered_map<std::string, std::string> parseParameters(const std::size_t argc, const char *argv[]) const
 		{
-			
+			using namespace Type::Literals;
 			const auto parameters = String::cstringArrayToVectorOfStrings<std::string_view>(argv + 1, argc - 1);
 			const auto src = String::concatenateStringsWithDelimiter(parameters, " ");
-			const auto commandTree = m_grammarLexer.parseLanguage(src);
+			const auto commandTree = m_grammarLexer.parseLanguage("main"_token, src);
 
 			auto map = std::unordered_map<std::string, std::string>{};
 			for (const auto& command : commandTree.childs)

@@ -21,9 +21,21 @@ namespace CppUtils::Graph
 			childs{std::move(c_childs)}
 		{}
 
-		[[nodiscard]] bool operator==(const TreeNode<Storage>& rhs) const
+		template<typename RhsStorage>
+		[[nodiscard]] bool operator==(const TreeNode<RhsStorage>& rhs) const
 		{
-			return (value == rhs.value && childs == rhs.childs);
+			if constexpr(std::is_same_v<Storage, RhsStorage>)
+				return (value == rhs.value && childs == rhs.childs);
+			else
+			{
+				const auto nbChilds = childs.size();
+				if (value != rhs.value || nbChilds != rhs.childs.size())
+					return false;
+				for (auto i = std::size_t{0}; i < nbChilds; ++i)
+					if (childs.at(i) != rhs.childs.at(i))
+						return false;
+				return true;
+			}
 		}
 
 		[[nodiscard]] bool exists(const Storage& key) const noexcept

@@ -14,13 +14,13 @@ namespace CppUtils::Language::Lexer
 			using namespace std::literals;
 			using namespace Type::Literals;
 
-			m_grammarLexer.addParserFunction("spaceParser"_token, Parser::spaceParser<Type::Token>);
-			m_grammarLexer.addParserFunction("quoteParser"_token, Parser::quoteParser<Type::Token>);
+			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token>);
+			m_grammarLexer.addParsingFunction("quoteParser"_token, Parser::quoteParser<Type::Token>);
 
 			static constexpr auto grammarSrc = R"(
-			main: (node >= 0) spaceParser;
-			node: spaceParser quoteParser ~childs;
-			childs: spaceParser '{' (node >= 1) spaceParser '}';
+			main: (_node >= 0) spaceParser;
+			_node: spaceParser [quoteParser] ~_childs;
+			_childs: spaceParser '{' (_node >= 1) spaceParser '}';
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
@@ -28,25 +28,10 @@ namespace CppUtils::Language::Lexer
 		[[nodiscard]] inline TreeNode parse(const std::string_view src) const
 		{
 			using namespace Type::Literals;
-
-			const auto tokenTree = m_grammarLexer.parseLanguage(src);
-			auto finalTree = TreeNode{"main"_token};
-			for (const auto& node : tokenTree.childs)
-				finalTree.childs.emplace_back(generateNode(node));
-
-			return finalTree;
+			return m_grammarLexer.parseLanguage("main"_token, src);
 		}
 
 	private:
-		static TreeNode generateNode(const TreeNode& srcNode)
-		{
-			auto destNode = srcNode.childs.at(0);
-			if (srcNode.childs.size() == 2)
-				for (const auto& childNode : srcNode.childs.at(1).childs)
-					destNode.childs.emplace_back(generateNode(childNode));
-			return destNode;
-		}
-
 		GrammarLexer<Type::Token> m_grammarLexer;
 	};
 
