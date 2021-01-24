@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <concepts>
 
 #include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Log/Logger.hpp>
@@ -46,7 +47,12 @@ namespace CppUtils::Graph
 		}
 	};
 
-	template<typename Storage>
+	template<typename T>
+	concept isPrintable = requires(std::ostream& os, T rhs) {
+		{ os << rhs } -> std::same_as<std::ostream&>;
+	};
+
+	template<typename Storage> requires isPrintable<Storage>
 	void logTreeNode(const TreeNode<Storage>& treeNode, const std::string& prefix = " ") noexcept
 	{
 		auto os = std::ostringstream{};
