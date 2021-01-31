@@ -16,7 +16,7 @@ namespace CppUtils::Graph
 		Storage value;
 		std::vector<TreeNode<Storage>> childs;
 
-		TreeNode(Storage c_value, std::vector<TreeNode<Storage>> c_childs = {}):
+		explicit TreeNode(Storage c_value, std::vector<TreeNode<Storage>> c_childs = {}):
 			value{std::move(c_value)},
 			childs{std::move(c_childs)}
 		{}
