@@ -7,13 +7,15 @@ namespace CppUtils::Language::Lexer
 	class StringTreeLexer final
 	{
 	public:
+		using TreeNode = Graph::VariantTreeNode<Type::Token>;
+
 		StringTreeLexer()
 		{
 			using namespace std::literals;
 			using namespace Type::Literals;
 
-			m_grammarLexer.addParserFunction("spaceParser"_token, Parser::spaceParser);
-			m_grammarLexer.addParserFunction("quoteParser"_token, Parser::quoteParser);
+			m_grammarLexer.addParserFunction("spaceParser"_token, Parser::spaceParser<Type::Token>);
+			m_grammarLexer.addParserFunction("quoteParser"_token, Parser::quoteParser<Type::Token>);
 
 			static constexpr auto grammarSrc = R"(
 			main: (node >= 0) spaceParser;
@@ -23,12 +25,12 @@ namespace CppUtils::Language::Lexer
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Graph::TokenNode parse(const std::string_view src) const
+		[[nodiscard]] inline TreeNode parse(const std::string_view src) const
 		{
 			using namespace Type::Literals;
 
 			const auto tokenTree = m_grammarLexer.parseLanguage(src);
-			auto finalTree = Graph::TokenNode{"main"_token};
+			auto finalTree = TreeNode{"main"_token};
 			for (const auto& node : tokenTree.childs)
 				finalTree.childs.emplace_back(generateNode(node));
 
@@ -36,7 +38,7 @@ namespace CppUtils::Language::Lexer
 		}
 
 	private:
-		static Graph::TokenNode generateNode(const Graph::TokenNode& srcNode)
+		static TreeNode generateNode(const TreeNode& srcNode)
 		{
 			auto destNode = srcNode.childs.at(0);
 			if (srcNode.childs.size() == 2)
@@ -45,12 +47,12 @@ namespace CppUtils::Language::Lexer
 			return destNode;
 		}
 
-		GrammarLexer m_grammarLexer;
+		GrammarLexer<Type::Token> m_grammarLexer;
 	};
 
 	namespace StringTree
 	{
-		[[nodiscard]] inline Graph::TokenNode parse(const std::string_view src)
+		[[nodiscard]] inline StringTreeLexer::TreeNode parse(const std::string_view src)
 		{
 			static const auto stringTreeLexer = CppUtils::Language::Lexer::StringTreeLexer{};
 			return stringTreeLexer.parse(src);

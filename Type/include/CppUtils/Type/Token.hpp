@@ -14,7 +14,7 @@ namespace CppUtils::Type
 	public:
 		using Index = std::size_t;
 
-		Token() = default;
+		constexpr Token() = default;
 		explicit constexpr Token(std::string_view c_name):
 			name{c_name},
 			id{CppUtils::Hash::constexprHash(name)}
@@ -64,7 +64,7 @@ namespace CppUtils::Type
 		static std::unordered_map<Index, std::string> m_typeNames;
 	};
 
-	inline std::ostream& operator<<(std::ostream& os, const Token& token)
+	inline std::ostream& operator<<(std::ostream& os, const Token& token) noexcept
 	{
 		os << token.name;
 		return os;

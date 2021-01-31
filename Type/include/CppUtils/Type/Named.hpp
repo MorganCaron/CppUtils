@@ -28,7 +28,7 @@ namespace CppUtils::Type
 	};
 }
 
-inline std::ostream& operator<<(std::ostream& os, const CppUtils::Type::Named& named)
+inline std::ostream& operator<<(std::ostream& os, const CppUtils::Type::Named& named) noexcept
 {
 	os << named.getName();
 	return os;

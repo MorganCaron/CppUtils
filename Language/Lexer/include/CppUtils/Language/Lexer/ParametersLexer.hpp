@@ -21,8 +21,8 @@ namespace CppUtils::Language::Lexer
 			using namespace std::literals;
 			using namespace Type::Literals;
 
-			m_grammarLexer.addParserFunction("spaceParser"_token, Parser::spaceParser);
-			m_grammarLexer.addParserFunction("keywordParser"_token, Parser::keywordParser);
+			m_grammarLexer.addParserFunction("spaceParser"_token, Parser::spaceParser<Type::Token>);
+			m_grammarLexer.addParserFunction("keywordParser"_token, Parser::keywordParser<Type::Token>);
 			m_grammarLexer.addParserFunction("valueParser"_token, [](auto& cursor, auto& parentNode) {
 				if (!cursor.isEndOfString() && cursor.getChar() != '[')
 					return false;
@@ -34,7 +34,7 @@ namespace CppUtils::Language::Lexer
 				auto stringToken = Type::Token{String::trimString(cursor.src.substr(startPosition, cursor.position - startPosition))};
 				++cursor.position;
 				stringToken.saveTypename();
-				parentNode.childs.emplace_back(Graph::TokenNode{std::move(stringToken)});
+				parentNode.childs.emplace_back(Graph::VariantTreeNode<Type::Token>{std::move(stringToken)});
 				return true;
 			});
 
@@ -55,7 +55,7 @@ namespace CppUtils::Language::Lexer
 
 			auto map = std::unordered_map<std::string, std::string>{};
 			for (const auto& command : commandTree.childs)
-				map[std::string{command.childs.at(0).self.name}] = (command.childs.size() == 2 ? command.childs.at(1).self.name : "");
+				map[std::string{std::get<Type::Token>(command.childs.at(0).value).name}] = (command.childs.size() == 2 ? std::get<Type::Token>(command.childs.at(1).value).name : "");
 			return map;
 		}
 
@@ -69,6 +69,6 @@ namespace CppUtils::Language::Lexer
 		}
 
 	private:
-		GrammarLexer m_grammarLexer;
+		GrammarLexer<Type::Token> m_grammarLexer;
 	};
 }

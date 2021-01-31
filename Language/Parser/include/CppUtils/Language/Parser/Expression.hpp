@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <variant>
 #include <string_view>
 
 #include <CppUtils/Type/Typed.hpp>
@@ -22,11 +23,18 @@ namespace CppUtils::Language::Parser
 	using StringLexeme = Lexeme<StringLexemeType, std::string>;
 
 	static constexpr auto ParserLexemeType = "parser"_token;
-	using ParserFunction = std::function<bool (Parser::Cursor<std::string>&, Graph::TokenNode&)>;
-	using ParserLexeme = Lexeme<ParserLexemeType, ParserFunction>; 
+	template<typename... Types>
+	using ParserFunction = std::function<bool (Parser::Cursor<std::string>&, Graph::VariantTreeNode<Types...>&)>;
+	template<typename... Types>
+	using ParserLexeme = Lexeme<ParserLexemeType, ParserFunction<Types...>>; 
 
 	static constexpr auto TokenLexemeType = "token"_token;
 	using TokenLexeme = Lexeme<TokenLexemeType, Type::Token>;
+
+	template<typename... Types> struct Expression;
+	static constexpr auto ExpressionLexemeType = "expression"_token;
+	template<typename... Types>
+	using ExpressionLexeme = Lexeme<ExpressionLexemeType, Expression<Types...>>;
 
 	enum class RecurrenceType
 	{
@@ -46,17 +54,23 @@ namespace CppUtils::Language::Parser
 	static constexpr auto RecurrentLexemeType = "recurrence"_token;
 	using RecurrentLexeme = Lexeme<RecurrentLexemeType, Recurrence>;
 
-	struct Expression;
 	struct Alternative final
 	{
 		std::vector<Type::Token> tokens;
 
-		[[nodiscard]] Alternative& operator||(const Expression& rhs);
+		template<typename... Types>
+		[[nodiscard]] Alternative& operator||(const Expression<Types...>& rhs)
+		{
+			tokens.emplace_back(rhs.token);
+			return *this;
+		}
 	};
 
 	static constexpr auto AlternativeLexemeType = "alternative"_token;
 	using AlternativeLexeme = Lexeme<AlternativeLexemeType, Alternative>;
 
+	struct Alternative;
+	template<typename... Types>
 	struct Expression final
 	{
 		Type::Token token;
@@ -86,10 +100,10 @@ namespace CppUtils::Language::Parser
 			lexemes.emplace_back(std::make_unique<TokenLexeme>(lexeme.token));
 			return *this;
 		}
-
-		Expression& operator>>(ParserFunction function)
+		
+		Expression& operator>>(ParserFunction<Types...> function)
 		{
-			lexemes.emplace_back(std::make_unique<ParserLexeme>(std::move(function)));
+			lexemes.emplace_back(std::make_unique<ParserLexeme<Types...>>(std::move(function)));
 			return *this;
 		}
 

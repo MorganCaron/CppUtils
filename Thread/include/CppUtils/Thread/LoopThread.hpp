@@ -19,7 +19,7 @@ namespace CppUtils::Thread
 		explicit LoopThread(const std::function<void()>& function): m_function(function), m_running(false)
 		{}
 
-		template<class Rep, class Period>
+		template<typename Rep, typename Period>
 		explicit LoopThread(const std::function<void()>& function,
 			const std::chrono::duration<Rep, Period>& interval): m_function(function), m_running(false)
 		{
@@ -51,7 +51,7 @@ namespace CppUtils::Thread
 			return m_running.load();
 		}
 
-		template<class Rep, class Period>
+		template<typename Rep, typename Period>
 		void start(const std::chrono::duration<Rep, Period>& interval)
 		{
 			if (isRunning())
@@ -68,7 +68,7 @@ namespace CppUtils::Thread
 		}
 
 	private:
-		template<class Rep, class Period>
+		template<typename Rep, typename Period>
 		void run(const std::chrono::duration<Rep, Period>& interval)
 		{
 			m_running = true;

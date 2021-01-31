@@ -13,6 +13,7 @@
 
 #include <CppUtils/Graph/MeshNode.hpp>
 #include <CppUtils/Graph/TreeNode.hpp>
+#include <CppUtils/Graph/VariantTreeNode.hpp>
 
 #include <CppUtils/Hash/Hash.hpp>
 
@@ -48,9 +49,12 @@
 #include <CppUtils/Thread/LoopThread.hpp>
 
 #include <CppUtils/Type/Cloneable.hpp>
+#include <CppUtils/Type/Concepts.hpp>
 #include <CppUtils/Type/Named.hpp>
 #include <CppUtils/Type/NonCopyable.hpp>
 #include <CppUtils/Type/NonInstantiable.hpp>
 #include <CppUtils/Type/NonMovable.hpp>
+#include <CppUtils/Type/Operators.hpp>
 #include <CppUtils/Type/Typed.hpp>
 #include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Type/VariadicTemplate.hpp>

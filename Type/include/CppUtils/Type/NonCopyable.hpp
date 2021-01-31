@@ -2,7 +2,7 @@
 
 namespace CppUtils::Type
 {
-	template<class Derived>
+	template<typename Derived>
 	class NonCopyable
 	{
 	public:

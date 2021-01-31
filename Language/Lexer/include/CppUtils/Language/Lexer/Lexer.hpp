@@ -5,13 +5,14 @@
 
 namespace CppUtils::Language::Lexer
 {
+	template<typename... Types>
 	class Lexer final
 	{
 	private:
 		struct Context final
 		{
 			Parser::Cursor<std::string> cursor;
-			Graph::TokenNode parentNode;
+			Graph::VariantTreeNode<Types...> parentNode;
 		};
 
 	public:
@@ -20,27 +21,27 @@ namespace CppUtils::Language::Lexer
 			return (m_expressions.find(token) != m_expressions.end());
 		}
 
-		[[nodiscard]] inline Parser::Expression& newExpression(const Type::Token& token, const bool isNode = true)
+		[[nodiscard]] inline Parser::Expression<Types...>& newExpression(const Type::Token& token, const bool isNode = true)
 		{
 			if (!expressionExists(token))
-				m_expressions[token] = Parser::Expression{token, isNode};
+				m_expressions[token] = Parser::Expression<Types...>{token, isNode};
 			return m_expressions[token];
 		}
 
-		[[nodiscard]] inline const Parser::Expression& getExpression(const Type::Token& token) const
+		[[nodiscard]] inline const Parser::Expression<Types...>& getExpression(const Type::Token& token) const
 		{
 			if (!expressionExists(token))
 				throw std::runtime_error{"Undefined expression: " + std::string{token.name}};
 			return m_expressions.at(token);
 		}
 
-		[[nodiscard]] Graph::TokenNode parse(const Type::Token& token, std::string_view src) const
+		[[nodiscard]] Graph::VariantTreeNode<Types...> parse(const Type::Token& token, std::string_view src) const
 		{
 			const auto& expression = getExpression(token);
 			auto position = std::size_t{0};
 			auto context = Context{
 				Parser::Cursor<std::string>{src, position},
-				Graph::TokenNode{token}
+				Graph::VariantTreeNode<Types...>{token}
 			};
 
 			if (!parseExpression(expression, context))
@@ -60,7 +61,7 @@ namespace CppUtils::Language::Lexer
 			return "";
 		}
 
-		[[nodiscard]] inline bool parseExpression(const Parser::Expression& expression, Context& context) const
+		[[nodiscard]] inline bool parseExpression(const Parser::Expression<Types...>& expression, Context& context) const
 		{
 			if (expression.lexemes.empty())
 				throw std::runtime_error{"Undefined expression: " + std::string{expression.token.name}};
@@ -81,7 +82,7 @@ namespace CppUtils::Language::Lexer
 			return true;
 		}
 
-		inline bool parseNode(const Parser::Expression& expression, Context& context) const
+		inline bool parseNode(const Parser::Expression<Types...>& expression, Context& context) const
 		{
 			auto& [cursor, parentNode] = context;
 
@@ -89,7 +90,7 @@ namespace CppUtils::Language::Lexer
 			{
 				auto newContext = Context{
 					cursor,
-					Graph::TokenNode{expression.token}
+					Graph::VariantTreeNode<Types...>{expression.token}
 				};
 				if (!parseExpression(expression, newContext))
 					return false;
@@ -142,7 +143,7 @@ namespace CppUtils::Language::Lexer
 		[[nodiscard]] inline bool parseParserLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Context& context) const
 		{
 			auto& [cursor, parentNode] = context;
-			const auto& parserLexeme = Type::ensureType<Parser::ParserLexeme>(lexeme);
+			const auto& parserLexeme = Type::ensureType<Parser::ParserLexeme<Types...>>(lexeme);
 			const auto startPosition = cursor.position;
 			
 			if (!parserLexeme.value(cursor, parentNode))
@@ -216,6 +217,6 @@ namespace CppUtils::Language::Lexer
 			return false;
 		}
 
-		std::unordered_map<Type::Token, Parser::Expression, Type::Token::hash_fn> m_expressions;
+		std::unordered_map<Type::Token, Parser::Expression<Types...>, Type::Token::hash_fn> m_expressions;
 	};
 }
