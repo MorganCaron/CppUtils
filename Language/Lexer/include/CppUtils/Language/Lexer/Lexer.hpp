@@ -52,15 +52,6 @@ namespace CppUtils::Language::Lexer
 		}
 
 	private:
-		[[nodiscard]] inline std::string getLexemeName(const std::unique_ptr<Parser::ILexeme>& lexeme) const
-		{
-			if (lexeme->getType() == Parser::StringLexemeType)
-				return std::string{'"' + Type::ensureType<Parser::StringLexeme>(lexeme).value + '"'};
-			if (lexeme->getType() == Parser::TokenLexemeType)
-				return std::string{Type::ensureType<Parser::TokenLexeme>(lexeme).value.name};
-			return "";
-		}
-
 		[[nodiscard]] inline bool parseExpression(const Parser::Expression<Types...>& expression, Context& context) const
 		{
 			if (expression.lexemes.empty())
@@ -72,7 +63,7 @@ namespace CppUtils::Language::Lexer
 				if (!parseLexeme(lexeme, context))
 				{
 					if (partialMatch)
-						throw std::runtime_error{"Syntax error in " + std::string{expression.token.name} + ":\n" + std::string{String::rightTrimString(context.cursor.getNextNChar(20))} + "...\nExpected format: " + std::string{lexeme->getType().name} + " " + getLexemeName(lexeme)};
+						throw std::runtime_error{"Syntax error in the " + std::string{expression.token.name} + " expression:\n" + std::string{String::rightTrimString(context.cursor.getNextNChar(20))} + "...\nExpected format: " + lexeme->getPrintable()};
 					context.cursor.position = startPosition;
 					return false;
 				}

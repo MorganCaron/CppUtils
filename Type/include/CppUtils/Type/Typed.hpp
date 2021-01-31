@@ -1,12 +1,12 @@
 #pragma once
 
 #include <memory>
-#include <vector>
+#include <iostream>
 #include <stdexcept>
-#include <functional>
 
-#include <CppUtils/External/DllExport.hpp>
 #include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Type/Concepts.hpp>
+#include <CppUtils/External/DllExport.hpp>
 
 namespace CppUtils::Type
 {
@@ -14,6 +14,7 @@ namespace CppUtils::Type
 	{
 		virtual ~ITyped() = default;
 		virtual const Token& getType() const noexcept = 0;
+		virtual std::string getPrintable() const noexcept = 0;
 	};
 
 	template<const Token& storageToken, typename StorageType>
@@ -26,9 +27,18 @@ namespace CppUtils::Type
 			value{std::move(c_value)}
 		{}
 
-		const Token& getType() const noexcept override final
+		[[nodiscard]] const Token& getType() const noexcept override final
 		{
 			return Type;
+		}
+
+		[[nodiscard]] std::string getPrintable() const noexcept override final
+		{
+			auto ss = std::stringstream{};
+			ss << storageToken.name;
+			if constexpr(CppUtils::Type::Concept::isPrintable<StorageType>)
+				ss << " " << value;
+			return ss.str();
 		}
 
 		Storage value;
