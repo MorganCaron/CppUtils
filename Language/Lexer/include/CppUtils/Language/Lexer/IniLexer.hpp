@@ -78,4 +78,12 @@ namespace CppUtils::Language::Lexer
 			return iniLexer.parse(src);
 		}
 	}
+
+	namespace Literals
+	{
+		[[nodiscard]] Graph::VariantTreeNode<Type::Token, bool, float> operator"" _ini(const char* cstring, std::size_t) noexcept
+		{
+			return Ini::parse(cstring);
+		}
+	}
 }
