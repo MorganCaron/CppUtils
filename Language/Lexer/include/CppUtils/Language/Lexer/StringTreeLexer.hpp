@@ -46,7 +46,7 @@ namespace CppUtils::Language::Lexer
 
 	namespace Literals
 	{
-		[[nodiscard]] StringTreeLexer::TreeNode operator"" _stringTree(const char* cstring, std::size_t) noexcept
+		[[nodiscard]] StringTreeLexer::TreeNode operator"" _stringTree(const char* cstring, std::size_t)
 		{
 			return StringTree::parse(cstring);
 		}

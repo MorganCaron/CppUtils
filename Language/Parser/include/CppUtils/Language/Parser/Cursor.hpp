@@ -51,7 +51,7 @@ namespace CppUtils::Language::Parser
 		[[nodiscard]] inline std::size_t getPositionInTheLine() const noexcept
 		{
 			const auto startingLinePosition = src.find_last_of('\n', position);
-			return ((startingLinePosition != std::string::npos) ? (position - startingLinePosition) : position);
+			return ((startingLinePosition != std::string::npos) ? (position - startingLinePosition - 1) : position);
 				return position;
 		}
 

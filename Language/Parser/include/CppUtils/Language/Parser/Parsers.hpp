@@ -65,7 +65,7 @@ namespace CppUtils::Language::Parser
 		auto& [cursor, parentNode] = context;
 		if (cursor.isEndOfString() || cursor.getChar() != '\'')
 			return false;
-		return quoteParser(cursor, parentNode);
+		return quoteParser(context);
 	}
 
 	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...> || Type::Concept::isPresent<std::string, Types...>
@@ -74,7 +74,7 @@ namespace CppUtils::Language::Parser
 		auto& [cursor, parentNode] = context;
 		if (cursor.isEndOfString() || cursor.getChar() != '"')
 			return false;
-		return quoteParser(cursor, parentNode);
+		return quoteParser(context);
 	}
 
 	template<typename... Types> requires Type::Concept::isPresent<unsigned int, Types...>

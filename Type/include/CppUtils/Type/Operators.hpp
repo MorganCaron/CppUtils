@@ -21,9 +21,7 @@ inline bool operator==(const LhsType& lhs, const std::variant<RhsTypes...>& rhs)
 	else if (!std::holds_alternative<LhsType>(rhs))
 		return false;
 	else
-		return std::visit([&lhs](auto&& rhsValue) -> bool {
-			return lhs == rhsValue;
-		}, rhs);
+		return lhs == std::get<LhsType>(rhs);
 }
 
 template<typename... LhsTypes, typename RhsType>

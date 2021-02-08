@@ -81,7 +81,7 @@ namespace CppUtils::Language::Lexer
 
 	namespace Literals
 	{
-		[[nodiscard]] Graph::VariantTreeNode<Type::Token, bool, float> operator"" _ini(const char* cstring, std::size_t) noexcept
+		[[nodiscard]] Graph::VariantTreeNode<Type::Token, bool, float> operator"" _ini(const char* cstring, std::size_t)
 		{
 			return Ini::parse(cstring);
 		}

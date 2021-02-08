@@ -44,7 +44,7 @@ namespace CppUtils::Language::Lexer
 			}
 			catch (const std::exception& exception)
 			{
-				throw std::runtime_error{"An error occurred at line " + std::to_string(context.cursor.getLineNumber()) + ", position " + std::to_string(context.cursor.getPositionInTheLine())+ ":\n" + std::string{String::rightTrimString(context.cursor.getNextNChar(20))} + "...\n" + exception.what()};
+				throw std::runtime_error{"At line " + std::to_string(context.cursor.getLineNumber()) + ", position " + std::to_string(context.cursor.getPositionInTheLine())+ ":\n" + std::string{String::rightTrimString(context.cursor.getNextNChar(20))} + "...\n" + exception.what()};
 			}
 			return rootNode;
 		}
@@ -73,8 +73,7 @@ namespace CppUtils::Language::Lexer
 					cursor.position = startPosition;
 					return false;
 				}
-				if (lexeme->getType() == Parser::StringLexemeType)
-					partialMatch = true;
+				partialMatch |= lexeme->getType() == Parser::StringLexemeType || lexeme->getType() == Parser::TagLexemeType;
 			}
 			return true;
 		}
