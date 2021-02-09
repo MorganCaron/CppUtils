@@ -15,11 +15,11 @@ namespace CppUtils::Language::Lexer
 
 			static const auto identifierParser = [](auto& context, char delimiter) -> bool {
 				auto& [cursor, parentNode] = context;
-				if (cursor.isEndOfString() || cursor.getChar() == ';' || cursor.getChar() == delimiter)
-					return false;
-				const auto string = cursor.getCharAndSkipIt() + std::string{String::trimString(cursor.getStringAndSkipItIf([&delimiter](char c) -> bool {
-					return c != ';' && c != delimiter;
+				const auto string = std::string{String::trimString(cursor.getStringAndSkipItIf([&delimiter](char c) -> bool {
+					return c != delimiter && c != ';' && c != '[' && c != ']' && (std::isspace(c) || std::isgraph(c));
 				}))};
+				if (string.empty())
+					return false;
 				auto stringToken = Type::Token{string};
 				stringToken.saveTypename();
 				parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Type::Token, bool, float>{std::move(stringToken)});

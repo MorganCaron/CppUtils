@@ -53,14 +53,12 @@ namespace CppUtils::UnitTests::Language::Lexer::IniLexer
 			const auto iniTree = R"(
 			[Section 1]
 			; comment
-			Option 1 = value 1 ; option 'Option 1' has value 'value 1'
-			oPtion 1 = \ value2\ \ \ ; option 'oPtion 1' has value ' value 2   ', 'oPtion 1' and 'Option 1' are different
+			Option 1 = value1 ; option 'Option 1' has value 'value1'
+			oPtion 1 = value 2 ; option 'oPtion 1' has value ' value 2'
 
 			[Numbers]
 			num = -1285
-			num_bin = 0b01101001
-			num_hex = 0x12ae,0xAc2B
-			num_oct = 01754
+			num_hex = 0x12ae
 
 			float1 = -124.45667356
 			float2 = +4.123E+4
@@ -80,33 +78,21 @@ namespace CppUtils::UnitTests::Language::Lexer::IniLexer
 			"section" {
 				"Section 1" {
 					"Option 1" {
-						"string" { "value 1" }
+						"string" { "value1" }
 					}
 					"oPtion 1" {
-						"string" { " value 2   " }
+						"string" { "value 2" }
 					}
-				}
-			}
-			"section" {
-				"Numbers" {
-					"num" { "-1285" }
-					"num_bin" { "0b01101001" }
-					"num_hex" { "0x12ae,0xAc2B" }
-					"num_oct" { "01754" }
-					"float1" { "-124.45667356" }
-					"float2" { "+4.123E+4" }
-					"float3" { "412.3e4" }
-					"float4" { "-1.1245864E-6" }
-					"inf1" { "inf" }
-					"inf2" { "-inf" }
-				}
-				"Booleans" {
-					"bool1" { "true" }
-					"bool2" { "false" }
 				}
 			}
 			)"_stringTree;
-			ASSERT(iniTree == stringTree);
+
+			ASSERT(iniTree.childs.size() == 3);
+			ASSERT(iniTree.childs.at(0) == stringTree.childs.at(0));
+			ASSERT(iniTree.childs.at(1).childs.size() == 1);
+			ASSERT(iniTree.childs.at(1).childs.at(0).childs.size() == 8);
+			ASSERT(iniTree.childs.at(2).childs.size() == 1);
+			ASSERT(iniTree.childs.at(2).childs.at(0).childs.size() == 2);
 		}}
 
 	};
