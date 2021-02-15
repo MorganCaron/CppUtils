@@ -13,7 +13,7 @@ namespace CppUtils::Language::Compiler
 	public:
 		using CompilationFunction = std::function<BytecodeInstruction(const IRInstruction<Types...>&)>;
 
-		Compiler(std::unordered_map<Type::Token, CompilationFunction, Type::Token::hash_fn>&& compilationFunctions):
+		explicit Compiler(std::unordered_map<Type::Token, CompilationFunction, Type::Token::hash_fn>&& compilationFunctions):
 			m_compilationFunctions{compilationFunctions}
 		{}
 

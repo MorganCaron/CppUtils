@@ -9,6 +9,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 		CppUtils::Test{"Language/Lexer/Expression", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
+			CppUtils::Terminal::setConsoleOutputUTF8();
 
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
 
@@ -20,8 +21,6 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
 			const auto tokenTree = lexer.parseString("print"_token, src);
-
-			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
 
 			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.value) == "print"_token);
@@ -33,6 +32,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 		CppUtils::Test{"Language/Lexer/Parsers", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
+			CppUtils::Terminal::setConsoleOutputUTF8();
 
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
 			auto& printExpression = lexer.newExpression("print"_token);
@@ -48,8 +48,6 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
 			const auto tokenTree = lexer.parseString("print"_token, src);
-
-			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
 
 			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.value) == "print"_token);
@@ -63,6 +61,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 		CppUtils::Test{"Language/Lexer/Recurrence", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
+			CppUtils::Terminal::setConsoleOutputUTF8();
 
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
 			auto& mainExpression = lexer.newExpression("main"_token);
@@ -86,8 +85,6 @@ namespace CppUtils::UnitTests::Language::Lexer
 				print("Ok");
 			)"sv;
 			const auto tokenTree = lexer.parseString("main"_token, src);
-
-			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
 
 			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.value) == "main"_token);
@@ -99,6 +96,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 		CppUtils::Test{"Language/Lexer/Alternative", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
+			CppUtils::Terminal::setConsoleOutputUTF8();
 
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
 			auto& mainExpression = lexer.newExpression("main"_token);
@@ -121,8 +119,6 @@ namespace CppUtils::UnitTests::Language::Lexer
 				test "test" test "test"
 			)"sv;
 			const auto tokenTree = lexer.parseString("main"_token, src);
-
-			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(tokenTree);
 
 			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.value) == "main"_token);

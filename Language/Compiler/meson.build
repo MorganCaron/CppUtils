@@ -1,8 +1,4 @@
-subdir('IR')
-
-public_dependencies = [
-	cppUtils_language_compiler_ir_dep
-]
+public_dependencies = []
 private_dependencies = []
 
 includeDir = include_directories(['include/', '.'])

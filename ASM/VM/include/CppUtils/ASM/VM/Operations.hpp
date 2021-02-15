@@ -24,10 +24,18 @@ namespace CppUtils::ASM::VM
 		static void move(Language::Parser::Cursor<BytecodeInstruction>& cursor, Context<Types...>& context)
 		{
 			auto& [registerFile, stack] = context;
-			const auto moveInstruction = cursor.getElement();
-			const auto registerAddress = std::get<Type::Token>(moveInstruction.parameters.at(0));
-			const auto value = moveInstruction.parameters.at(1);
-			registerFile[registerAddress] = value;
+			const auto& moveInstruction = cursor.getElement();
+			const auto& registerAddress = std::get<Type::Token>(moveInstruction.parameters.at(0));
+			const auto& rhs = moveInstruction.parameters.at(1);
+			if (std::holds_alternative<Type::Token>(rhs))
+				registerFile[registerAddress] = registerFile.at(std::get<Type::Token>(rhs));
+			else
+				registerFile[registerAddress] = std::visit([](auto&& value) -> std::variant<Types...> {
+					if constexpr(std::is_same_v<std::decay_t<decltype(value)>, Type::Token>)
+						throw std::runtime_error{"Incorrect format in the move statement"};
+					else
+						return std::variant<Types...>{std::forward<decltype(value)>(value)};
+				}, rhs);
 			++cursor.position;
 		}
 

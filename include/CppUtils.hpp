@@ -21,7 +21,6 @@
 #include <CppUtils/Language/IR/StackIRLexer.hpp>
 #include <CppUtils/Language/VM/VirtualMachine.hpp>
 #include <CppUtils/Language/Compiler/Compiler.hpp>
-#include <CppUtils/Language/Compiler/IR/Value.hpp>
 #include <CppUtils/ASM/Compiler/Bytecode.hpp>
 #include <CppUtils/ASM/Compiler/Compiler.hpp>
 #include <CppUtils/ASM/Lexer/Lexer.hpp>

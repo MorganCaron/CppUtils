@@ -9,6 +9,8 @@ namespace CppUtils::UnitTests::Json::JsonLexer
 		CppUtils::Test{"Json/JsonLexer/minimalist", [] {
 			using namespace CppUtils::Type::Literals;
 			using namespace CppUtils::Json::Literals;
+			CppUtils::Terminal::setConsoleOutputUTF8();
+
 			const auto jsonTree = R"(
 			{
 				"value0": "text",
@@ -33,6 +35,8 @@ namespace CppUtils::UnitTests::Json::JsonLexer
 		CppUtils::Test{"Json/JsonLexer/object", [] {
 			using namespace CppUtils::Type::Literals;
 			using namespace CppUtils::Json::Literals;
+			CppUtils::Terminal::setConsoleOutputUTF8();
+
 			const auto jsonTree = R"(
 			{
 				"value0": "text",
@@ -57,6 +61,8 @@ namespace CppUtils::UnitTests::Json::JsonLexer
 		CppUtils::Test{"Json/JsonLexer/array", [] {
 			using namespace CppUtils::Type::Literals;
 			using namespace CppUtils::Json::Literals;
+			CppUtils::Terminal::setConsoleOutputUTF8();
+
 			const auto jsonTree = R"(
 			{
 				"array0": [0, 1, 2, 3, 4]

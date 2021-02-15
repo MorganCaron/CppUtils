@@ -11,7 +11,7 @@ namespace CppUtils::ASM::VM
 	template<typename... Types>
 	struct Context final
 	{
-		std::unordered_map<Type::Token, std::variant<Type::Token, Types...>, Type::Token::hash_fn> registerFile;
+		std::unordered_map<Type::Token, std::variant<Types...>, Type::Token::hash_fn> registerFile;
 		std::stack<std::variant<Types...>> stack;
 	};
 }

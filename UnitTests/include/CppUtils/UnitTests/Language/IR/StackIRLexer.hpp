@@ -8,6 +8,8 @@ namespace CppUtils::UnitTests::Language::IR::StackIRLexer
 
 		Test{"Language/IR/StackIRLexer", [] {
 			using namespace std::literals;
+			CppUtils::Terminal::setConsoleOutputUTF8();
+
 			const auto stackIRTree = CppUtils::Language::IR::StackIR::parse<float>(R"(
 			load b
 			load c

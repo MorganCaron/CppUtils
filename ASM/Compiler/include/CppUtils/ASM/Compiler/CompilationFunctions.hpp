@@ -33,7 +33,7 @@ namespace CppUtils::ASM::Compiler
 				.type = "move"_token,
 				.parameters = std::vector<std::variant<Type::Token, Types...>>{
 					irInstruction.childs.at(0).value,
-					irInstruction.childs.at(1).childs.at(0).value
+					irInstruction.childs.at(1).childs.at(0).childs.at(0).value
 				}
 			};
 		}
@@ -45,7 +45,7 @@ namespace CppUtils::ASM::Compiler
 				.type = "add"_token,
 				.parameters = std::vector<std::variant<Type::Token, Types...>>{
 					irInstruction.childs.at(0).value,
-					irInstruction.childs.at(1).childs.at(0).value
+					irInstruction.childs.at(1).childs.at(0).childs.at(0).value
 				}
 			};
 		}
