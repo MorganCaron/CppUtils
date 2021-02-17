@@ -86,13 +86,11 @@ jobs:
           if [ ${{ matrix.os.name }} == "Windows" ]; then
             zip --junk-paths CppUtils-Artifact \
               ./build/External/libCppUtils-External.dll \
-              ./build/Language/Parser/libCppUtils-Language-Parser.dll \
               ./build/Log/libCppUtils-Log.dll \
               ./build/Type/libCppUtils-Type.dll
           else
             zip --junk-paths CppUtils-Artifact \
               ./build/External/libCppUtils-External.so \
-              ./build/Language/Parser/libCppUtils-Language-Parser.so \
               ./build/Log/libCppUtils-Log.so \
               ./build/Type/libCppUtils-Type.so
           fi
