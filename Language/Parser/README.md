@@ -8,8 +8,12 @@ The ``Cursor<T>`` structure allows you to place a cursor in a list of items to b
 It contains a non-owner pointer to the list of items and the position of the cursor in this list.
 The structure provides some basic methods to facilitate the parsing of elements in this list.
 
+<p align="center"><img src="resources/CursorOfT.drawio.svg" alt="Cursor<T> diagram"/></p>
+
 The override ``Cursor<std::string>`` allows to create a cursor to browse a string.
 This overload offers many more parsing methods.
+
+<p align="center"><img src="resources/CursorOfString.drawio.svg" alt="Cursor<std::string> diagram"/></p>
 
 ---
 

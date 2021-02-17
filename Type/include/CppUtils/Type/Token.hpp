@@ -14,7 +14,10 @@ namespace CppUtils::Type
 	public:
 		using Index = std::size_t;
 
-		constexpr Token() = default;
+		constexpr Token():
+			name{""},
+			id{CppUtils::Hash::constexprHash("")}
+		{};
 		explicit constexpr Token(std::string_view c_name):
 			name{c_name},
 			id{CppUtils::Hash::constexprHash(name)}

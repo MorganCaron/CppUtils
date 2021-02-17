@@ -16,8 +16,8 @@ namespace CppUtils
 	class TestException: public std::runtime_error
 	{
 	public:
-		explicit TestException(std::string message, std::string filename, int line) noexcept:
-			std::runtime_error{message + "\nat line " + std::to_string(line) + " in " + filename},
+		explicit TestException(std::string_view message, std::string filename, int line) noexcept:
+			std::runtime_error{std::string{message} + "\nat line " + std::to_string(line) + " in " + filename},
 			m_filename{std::move(filename)},
 			m_line{line}
 		{}

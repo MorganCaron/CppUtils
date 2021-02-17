@@ -52,7 +52,6 @@ namespace CppUtils::Language::Parser
 		{
 			const auto startingLinePosition = src.find_last_of('\n', position);
 			return ((startingLinePosition != std::string::npos) ? (position - startingLinePosition - 1) : position);
-				return position;
 		}
 
 		[[nodiscard]] inline bool isEndOfString() const noexcept

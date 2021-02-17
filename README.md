@@ -37,13 +37,17 @@ ninja -C build test
 
 ## Documentation
 
+- **ASM**
+	- Lexer
+	- Compiler
+	- VM
 - **[Chrono](Chrono/README.md)**
 	- [Chronometer](Chrono/README.md#Chronometer)
 - **[Container](Container/README.md)**
 	- [Vector](Container/README.md#Vector)
-- **[External](External/README.md)**
-	- [DllExport](External/README.md#DllExport)
-	- [DynamicLibrary](External/README.md#DynamicLibrary)
+- **External**
+	- DllExport
+	- DynamicLibrary
 - **[FileSystem](FileSystem/README.md)**
 	- [File](FileSystem/README.md#File)
 - **[Functional](Functional/README.md)**
@@ -53,11 +57,11 @@ ninja -C build test
 	- [TreeNode](Graph/README.md#TreeNode)
 - **[Hash](Hash/README.md)**
 - **[Language](Language/README.md)**
-	- [ASM](Language/ASM/README.md)
-	- [Compiler](Language/Compiler/README.md)
-	- [Interpreter](Language/Interpreter/README.md)
-	- [Lexer](Language/Lexer/README.md)
 	- [Parser](Language/Parser/README.md)
+	- [Lexer](Language/Lexer/README.md)
+	- Intermediate Representation
+	- Compiler
+	- VM
 - **[Log](Log/README.md)**
 	- [ChronoLogger](Log/README.md#ChronoLogger)
 	- [Logger](Log/README.md#Logger)
@@ -65,8 +69,8 @@ ninja -C build test
 	- [OS](Platform/README.md#OS)
 - **[String](String/README.md)**
 - **[Switch](Switch/README.md)**
-- **[Terminal](Terminal/README.md)**
-	- [TextModifier](Terminal/TextModifier/README.md)
+- **Terminal**
+	- TextModifier
 - **[Test](Test/README.md)**
 	- [UnitTest](Test/README.md#UnitTest)
 - **[Thread](Thread/README.md)**

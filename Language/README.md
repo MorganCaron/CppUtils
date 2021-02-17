@@ -7,9 +7,9 @@ The namespace Language provides all the necessary tools for creating, analyzing 
 ## Namespaces
 - [Parser](Parser/README.md)
 - [Lexer](Lexer/README.md)
-- [Interpreter](Interpreter/README.md)
-- [Compiler](Compiler/README.md)
-- [ASM](ASM/README.md)
+- Intermediate Representation
+- Compiler
+- VM
 
 <p align="center"><img src="resources/Language.drawio.svg" alt="Language diagram"/></p>
 
