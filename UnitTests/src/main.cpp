@@ -59,6 +59,7 @@ int main(const int argc, const char *argv[])
 		const auto settings = CppUtils::Test::executeCommands(argc, argv);
 		if (settings.abort)
 			return EXIT_SUCCESS;
+		CppUtils::Terminal::setConsoleOutputUTF8();
 		return CppUtils::Test::executeTests(std::move(tests), std::move(settings));
 	}
 	catch (const std::exception& exception)

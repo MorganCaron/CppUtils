@@ -77,7 +77,7 @@ namespace CppUtils::Language::Parser
 		return quoteParser(context);
 	}
 
-	template<typename... Types> requires Type::Concept::isPresent<unsigned int, Types...>
+	template<typename... Types> requires ((std::is_integral<Types>::value && std::is_unsigned<Types>::value && sizeof(Types) >= 4) || ...)
 	[[nodiscard]] inline bool uintParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
@@ -92,7 +92,7 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	template<typename... Types> requires Type::Concept::isPresent<int, Types...>
+	template<typename... Types> requires ((std::is_integral<Types>::value && std::is_signed<Types>::value && sizeof(Types) >= 4) || ...)
 	[[nodiscard]] inline bool intParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
@@ -116,7 +116,7 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	template<typename... Types> requires Type::Concept::isPresent<float, Types...>
+	template<typename... Types> requires (std::is_floating_point<Types>::value || ...)
 	[[nodiscard]] inline bool floatParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;

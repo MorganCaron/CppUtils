@@ -32,7 +32,6 @@ namespace CppUtils::UnitTests::Graph::TreeNode
 			subBranch0.childs.emplace_back(StringTreeNode{"SubSubBranch0"});
 			subBranch0.childs.emplace_back(StringTreeNode{"SubSubBranch1"});
 			root.childs.emplace_back(StringTreeNode{"Branch3"});
-			CppUtils::Terminal::setConsoleOutputUTF8();
 			CppUtils::Graph::logTreeNode(root);
 		}}
 

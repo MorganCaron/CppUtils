@@ -9,10 +9,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 		CppUtils::Test{"Language/Lexer/Expression", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
-
 			auto& printExpression = lexer.newExpression("print"_token);
 			auto& stringExpression = lexer.newExpression("string"_token);
 
@@ -32,8 +29,6 @@ namespace CppUtils::UnitTests::Language::Lexer
 		CppUtils::Test{"Language/Lexer/Parsers", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
 			auto& printExpression = lexer.newExpression("print"_token);
 			auto& stringExpression = lexer.newExpression("string"_token);
@@ -61,8 +56,6 @@ namespace CppUtils::UnitTests::Language::Lexer
 		CppUtils::Test{"Language/Lexer/Recurrence", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
 			auto& mainExpression = lexer.newExpression("main"_token);
 			auto& printExpression = lexer.newExpression("print"_token);
@@ -96,8 +89,6 @@ namespace CppUtils::UnitTests::Language::Lexer
 		CppUtils::Test{"Language/Lexer/Alternative", [] {
 			using namespace std::literals;
 			using namespace CppUtils::Type::Literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
 			auto& mainExpression = lexer.newExpression("main"_token);
 			auto& valueExpression = lexer.newExpression("value"_token);

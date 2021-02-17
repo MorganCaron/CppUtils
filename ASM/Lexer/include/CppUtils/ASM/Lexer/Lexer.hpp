@@ -28,8 +28,8 @@ namespace CppUtils::ASM
 			value: _value;
 			halt: "hlt";
 			nop: "nop";
-			move: "mov" _variable (value || variable);
-			add: "add" _variable (value || variable);
+			move: "mov" _variable spaceParser ',' (value || variable);
+			add: "add" _variable spaceParser ',' (value || variable);
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}

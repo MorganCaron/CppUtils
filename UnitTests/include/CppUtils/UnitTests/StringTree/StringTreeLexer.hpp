@@ -9,8 +9,6 @@ namespace CppUtils::UnitTests::StringTree::StringTreeLexer
 		CppUtils::Test{"StringTree/StringTreeLexer/parse", [] {
 			using namespace CppUtils::StringTree::Literals;
 			using namespace CppUtils::Type::Literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-
 			const auto stringTreeLexer = CppUtils::StringTree::StringTreeLexer{};
 			const auto stringTree = R"(
 			"root" {

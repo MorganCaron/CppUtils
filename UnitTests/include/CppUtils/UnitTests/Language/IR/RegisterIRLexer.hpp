@@ -8,8 +8,6 @@ namespace CppUtils::UnitTests::Language::IR::RegisterIRLexer
 
 		Test{"Language/IR/RegisterIRLexer", [] {
 			using namespace std::literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-
 			const auto registerIRTree = CppUtils::Language::IR::RegisterIR::parse<float>(R"(
 			r0 = load b
 			r1 = load c

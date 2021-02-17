@@ -10,30 +10,30 @@ namespace CppUtils::UnitTests::ASM::VirtualMachine
 
 		Test{"ASM/VirtualMachine/Halt", [] {
 			using namespace std::literals;
-			CppUtils::ASM::VM::VirtualMachine<int>::run(R"(
+			CppUtils::ASM::VM::VirtualMachine<std::int64_t>::run(R"(
 			hlt
 			)"sv);
 		}},
 
 		Test{"ASM/VirtualMachine/Nop", [] {
 			using namespace std::literals;
-			CppUtils::ASM::VM::VirtualMachine<int>::run(R"(
+			CppUtils::ASM::VM::VirtualMachine<std::int64_t>::run(R"(
 			nop
 			)"sv);
 		}},
 
 		Test{"ASM/VirtualMachine/Move", [] {
 			using namespace std::literals;
-			CppUtils::ASM::VM::VirtualMachine<int>::run(R"(
-			mov r0 20
+			CppUtils::ASM::VM::VirtualMachine<std::int64_t>::run(R"(
+			mov r0, 20
 			)"sv);
 		}},
 		
 		Test{"ASM/VirtualMachine/Add", [] {
 			using namespace std::literals;
-			CppUtils::ASM::VM::VirtualMachine<int>::run(R"(
-			mov r0 20
-			add r0 22
+			CppUtils::ASM::VM::VirtualMachine<std::int64_t>::run(R"(
+			mov r0, 20
+			add r0, 22
 			)"sv);
 		}}/*,
 

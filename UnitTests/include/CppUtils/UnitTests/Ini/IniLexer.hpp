@@ -9,8 +9,6 @@ namespace CppUtils::UnitTests::Ini::IniLexer
 		CppUtils::Test{"Ini/IniLexer/minimalist", [] {
 			using namespace CppUtils::Ini::Literals;
 			using namespace CppUtils::StringTree::Literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-
 			const auto iniTree = R"(
 			[Section 1]
 			key=value
@@ -32,8 +30,6 @@ namespace CppUtils::UnitTests::Ini::IniLexer
 		CppUtils::Test{"Ini/IniLexer/comments", [] {
 			using namespace CppUtils::Ini::Literals;
 			using namespace CppUtils::StringTree::Literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-
 			const auto iniTree = R"(
 			;comment
 			[Section 1];comment
@@ -57,8 +53,6 @@ namespace CppUtils::UnitTests::Ini::IniLexer
 		CppUtils::Test{"Ini/IniLexer/full", [] {
 			using namespace CppUtils::Ini::Literals;
 			using namespace CppUtils::StringTree::Literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-
 			const auto iniTree = R"(
 			[Section 1]
 			; comment

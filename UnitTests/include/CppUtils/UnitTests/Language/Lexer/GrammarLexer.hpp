@@ -10,8 +10,6 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 
 		CppUtils::Test{"Language/Lexer/GrammarLexer/Lexeme", [] {
 			using namespace CppUtils::Type::Literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-			
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token>{};
 
 			static constexpr auto grammarSrc = R"(
@@ -30,8 +28,6 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 
 		CppUtils::Test{"Language/Lexer/GrammarLexer/Expressions", [] {
 			using namespace CppUtils::Type::Literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token>{};
 
 			grammarLexer.addParsingFunction("spaceParser"_token, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token>);
@@ -66,8 +62,6 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 
 		CppUtils::Test{"Language/Lexer/GrammarLexer/Recurrence", [] {
 			using namespace CppUtils::Type::Literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token>{};
 
 			grammarLexer.addParsingFunction("spaceParser"_token, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token>);
@@ -90,8 +84,6 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 
 		CppUtils::Test{"Language/Lexer/GrammarLexer/Avanced", [] {
 			using namespace CppUtils::Type::Literals;
-			CppUtils::Terminal::setConsoleOutputUTF8();
-
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token>{};
 
 			grammarLexer.addParsingFunction("spaceParser"_token, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token>);
