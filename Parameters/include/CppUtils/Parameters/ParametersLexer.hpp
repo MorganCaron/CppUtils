@@ -36,11 +36,11 @@ namespace CppUtils::Parameters
 				return true;
 			});
 
-			static constexpr auto grammarSrc = "\
-			main: (command >= 0) spaceParser;\
-			command: spaceParser keywordParser ~_value;\
-			_value: spaceParser valueParser;\
-			"sv;
+			static constexpr auto grammarSrc = R"(
+			main: (command >= 0) spaceParser;
+			command: spaceParser keywordParser ~_value;
+			_value: spaceParser valueParser;
+			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 

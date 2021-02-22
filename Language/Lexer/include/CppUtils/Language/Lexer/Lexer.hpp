@@ -59,14 +59,21 @@ namespace CppUtils::Language::Lexer
 	private:
 		[[nodiscard]] inline bool parseExpression(const Parser::Expression<Types...>& expression, Parser::Context<Types...>& context) const
 		{
+			using namespace Type::Literals;
+
 			if (expression.lexemes.empty())
 				throw std::runtime_error{std::string{expression.token.name} + " expression is empty"};
 			auto& [cursor, parentNode] = context;
 			const auto startPosition = cursor.position;
 			auto partialMatch = false;
+			auto tempParentNode = Graph::VariantTreeNode<Types...>{parentNode.get().value};
+			auto tempContext = Parser::Context<Types...>{
+				cursor,
+				tempParentNode
+			};
 			for (const auto& lexeme : expression.lexemes)
 			{
-				if (!parseLexeme(lexeme, context))
+				if (!parseLexeme(lexeme, tempContext))
 				{
 					if (partialMatch)
 						throw std::runtime_error{"Syntax error in the " + std::string{expression.token.name} + " expression. Expected format: " + lexeme->getPrintable()};
@@ -75,6 +82,7 @@ namespace CppUtils::Language::Lexer
 				}
 				partialMatch |= lexeme->getType() == Parser::StringLexemeType || lexeme->getType() == Parser::TagLexemeType;
 			}
+			std::move(tempParentNode.childs.begin(), tempParentNode.childs.end(), std::back_inserter(parentNode.get().childs));
 			return true;
 		}
 
@@ -150,18 +158,18 @@ namespace CppUtils::Language::Lexer
 
 		[[nodiscard]] inline bool parseTagLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
-			const auto& nameParser = Type::ensureType<Parser::TagLexeme<Types...>>(lexeme).value;
 			auto& [cursor, parentNode] = context;
-			const auto startPosition = cursor.position;
-			if (!nameParser(context))
-			{
-				cursor.position = startPosition;
+			auto& parentChilds = parentNode.get().childs;
+			const auto& token = Type::ensureType<Parser::TagLexeme>(lexeme).value;
+			const auto& expression = getExpression(token);
+			auto nextChildId = parentChilds.size();
+			if (!parseNode(expression, context) || parentChilds.size() <= nextChildId)
 				return false;
-			}
-			auto nbChilds = parentNode.get().childs.size();
-			if (nbChilds == 0)
-				throw std::runtime_error{"The parsing function of the name lexeme must define a name"};
-			parentNode = parentNode.get().childs.at(nbChilds - 1);
+			auto newChild = std::move(parentChilds.at(nextChildId));
+			parentChilds.erase(parentChilds.begin() + nextChildId);
+			std::move(parentChilds.begin(), parentChilds.end(), std::back_inserter(newChild.childs));
+			parentChilds = std::vector<Graph::VariantTreeNode<Types...>>{std::move(newChild)};
+			parentNode = parentChilds.at(0);
 			return true;
 		}
 
@@ -217,5 +225,6 @@ namespace CppUtils::Language::Lexer
 		}
 
 		std::unordered_map<Type::Token, Parser::Expression<Types...>, Type::Token::hash_fn> m_expressions;
+		std::vector<std::vector<std::variant<Types...>>> m_lexemesCache;
 	};
 }

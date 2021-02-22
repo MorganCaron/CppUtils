@@ -108,7 +108,7 @@ namespace CppUtils::Language::Lexer
 							parseString(expression, lexeme.childs, existingStatements);
 							break;
 						case "tag"_token.id:
-							parseName(expression, lexeme.childs, existingStatements);
+							parseTag(expression, lexeme.childs, existingStatements);
 							break;
 						case "optional"_token.id:
 							parseOptional(expression, lexeme.childs, existingStatements);
@@ -162,13 +162,13 @@ namespace CppUtils::Language::Lexer
 			expression >> std::string{std::get<Type::Token>(attributes.at(0).value).name};
 		}
 
-		void parseName(Parser::Expression<Types...>& expression, const std::vector<GrammarLexerTreeNode>& attributes, [[maybe_unused]] ExistingStatements& existingStatements)
+		void parseTag(Parser::Expression<Types...>& expression, const std::vector<GrammarLexerTreeNode>& attributes, [[maybe_unused]] ExistingStatements& existingStatements)
 		{
 			const auto& token = std::get<Type::Token>(attributes.at(0).value);
 
-			if (m_parsingFunctions.find(token) == m_parsingFunctions.end())
-				throw std::runtime_error{"Unknown parsing function: " + std::string{token.name}};
-			expression >> Parser::TagLexeme<Types...>{m_parsingFunctions.at(token)};
+			if (m_parsingFunctions.find(token) != m_parsingFunctions.end())
+				throw std::runtime_error{"Error in tag \"" + std::string{token.name} + "\": Tags only accept tokens, not parsing functions"};
+			expression >> Parser::TagLexeme{token};
 		}
 
 		void parseOptional(Parser::Expression<Types...>& expression, const std::vector<GrammarLexerTreeNode>& attributes, [[maybe_unused]] ExistingStatements& existingStatements)

@@ -30,8 +30,7 @@ namespace CppUtils::Language::Parser
 	using TokenLexeme = Lexeme<TokenLexemeType, Type::Token>;
 
 	static constexpr auto TagLexemeType = "tag"_token;
-	template<typename... Types>
-	using TagLexeme = Lexeme<TagLexemeType, ParsingFunction<Types...>>;
+	using TagLexeme = Lexeme<TagLexemeType, Type::Token>;
 
 	template<typename... Types> struct Expression;
 	static constexpr auto ExpressionLexemeType = "expression"_token;
@@ -109,9 +108,9 @@ namespace CppUtils::Language::Parser
 			return *this;
 		}
 
-		Expression& operator>>(TagLexeme<Types...> nameLexeme)
+		Expression& operator>>(TagLexeme nameLexeme)
 		{
-			lexemes.emplace_back(std::make_unique<TagLexeme<Types...>>(std::move(nameLexeme)));
+			lexemes.emplace_back(std::make_unique<TagLexeme>(std::move(nameLexeme)));
 			return *this;
 		}
 

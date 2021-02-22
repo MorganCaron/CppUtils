@@ -19,7 +19,8 @@ namespace CppUtils::StringTree
 
 			static constexpr auto grammarSrc = R"(
 			main: (_node >= 0) spaceParser;
-			_node: spaceParser [quoteParser] ~_childs;
+			_string: quoteParser;
+			_node: spaceParser [_string] ~_childs;
 			_childs: spaceParser '{' (_node >= 1) spaceParser '}';
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);

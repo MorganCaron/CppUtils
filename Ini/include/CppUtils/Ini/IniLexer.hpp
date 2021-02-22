@@ -47,11 +47,13 @@ namespace CppUtils::Ini
 			static constexpr auto grammarSrc = R"(
 			main: (_line >= 0) spaceParser;
 			_line: spaceParser (_comment || section || assignment);
+			_sectionName: sectionIdentifierParser;
+			_keyName: keyIdentifierParser;
 			_comment: spaceParser commentParser;
-			section: '[' spaceParser [sectionIdentifierParser] spaceParser ']' ~_comment _assignments;
+			section: '[' spaceParser [_sectionName] spaceParser ']' ~_comment _assignments;
 			_assignments: (_assignment >= 0) ~_comment;
 			assignment: _assignment;
-			_assignment: spaceParser [keyIdentifierParser] '=' _value ~_comment;
+			_assignment: spaceParser [_keyName] '=' _value ~_comment;
 			_value: spaceParser (boolean || float || string);
 			boolean: booleanParser;
 			float: floatParser;

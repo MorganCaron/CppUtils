@@ -22,9 +22,10 @@ namespace CppUtils::Json
 			_object: spaceParser '{' ~_pairs spaceParser '}';
 			_pairs: _pair ~_nextPair;
 			_nextPair: spaceParser ',' _pairs;
-			_pair: spaceParser [doubleQuoteParser] spaceParser ':' _value;
+			_string: doubleQuoteParser;
+			string: _string;
+			_pair: spaceParser [_string] spaceParser ':' _value;
 			_value: spaceParser (string || number || object || array || boolean || null);
-			string: doubleQuoteParser;
 			number: floatParser;
 			object: _object;
 			array: '[' _values spaceParser ']';
