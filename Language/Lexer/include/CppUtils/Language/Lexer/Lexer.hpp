@@ -160,14 +160,16 @@ namespace CppUtils::Language::Lexer
 		{
 			auto& [cursor, parentNode] = context;
 			auto& parentChilds = parentNode.get().childs;
-			auto nextChildId = parentChilds.size();
+			auto tagChildId = parentChilds.size();
 			const auto& tagLexeme = Type::ensureType<Parser::TagLexeme>(lexeme).value;
-			if (!parseLexeme(tagLexeme, context) || parentChilds.size() <= nextChildId)
+			if (!parseLexeme(tagLexeme, context) || parentChilds.size() <= tagChildId)
 				return false;
-			auto newChild = std::move(parentChilds.at(nextChildId));
-			parentChilds.erase(parentChilds.begin() + nextChildId);
-			std::move(parentChilds.begin(), parentChilds.end(), std::back_inserter(newChild.childs));
-			parentChilds = std::vector<Graph::VariantTreeNode<Types...>>{std::move(newChild)};
+			auto tagNode = std::move(parentChilds.at(tagChildId));
+			parentChilds.erase(parentChilds.begin() + tagChildId);
+			auto tagChilds = std::move(tagNode.childs);
+			tagNode.childs = std::move(parentChilds);
+			std::move(tagChilds.begin(), tagChilds.end(), std::back_inserter(tagNode.childs));
+			parentChilds = std::vector<Graph::VariantTreeNode<Types...>>{std::move(tagNode)};
 			parentNode = parentChilds.at(0);
 			return true;
 		}
