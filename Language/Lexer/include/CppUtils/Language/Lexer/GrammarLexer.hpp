@@ -21,8 +21,8 @@ namespace CppUtils::Language::Lexer
 			auto& main = m_grammarLexer.newExpression("main"_token);
 			auto& identifier = m_grammarLexer.newExpression("identifier"_token, false);
 			auto& token = m_grammarLexer.newExpression("token"_token);
-			auto& statement = m_grammarLexer.newExpression("statement"_token);
-			auto& lexemes = m_grammarLexer.newExpression("lexemes"_token);
+			auto& statement = m_grammarLexer.newExpression("statement"_token, false);
+			auto& lexemes = m_grammarLexer.newExpression("lexemes"_token, false);
 			auto& lexeme = m_grammarLexer.newExpression("lexeme"_token, false);
 			auto& string = m_grammarLexer.newExpression("string"_token);
 			auto& tag = m_grammarLexer.newExpression("tag"_token);
@@ -40,7 +40,7 @@ namespace CppUtils::Language::Lexer
 			identifier >> Parser::spaceParser<Type::Token, unsigned int> >> Parser::keywordParser<Type::Token, unsigned int>;
 			token >> identifier;
 			statement
-				>> identifier
+				>> Parser::TagLexeme{std::make_unique<Parser::TokenLexeme>(identifier.token)}
 				>> Parser::spaceParser<Type::Token, unsigned int> >> ':'
 				>> lexemes
 				>> Parser::spaceParser<Type::Token, unsigned int> >> ';';
@@ -87,11 +87,10 @@ namespace CppUtils::Language::Lexer
 			auto existingStatements = std::unordered_map<Type::Token, bool, Type::Token::hash_fn>{};
 			for (const auto& statement : tokenTree.childs)
 			{
-				const auto& token = std::get<Type::Token>(statement.childs.at(0).value);
+				const auto& token = std::get<Type::Token>(statement.value);
 				auto& expression = m_languageLexer.newExpression(token, token.name.at(0) != '_');
 				existingStatements[token] = true;
-				const auto& lexemes = statement.childs.at(1).childs;
-
+				const auto& lexemes = statement.childs;
 				for (const auto& lexeme : lexemes)
 					expression.lexemes.emplace_back(parseLexeme(lexeme, existingStatements));
 			}
@@ -165,11 +164,8 @@ namespace CppUtils::Language::Lexer
 
 		[[nodiscard]] std::unique_ptr<Parser::ILexeme> parseOptional(const std::vector<GrammarLexerTreeNode>& attributes, ExistingStatements& existingStatements)
 		{
-			const auto& token = std::get<Type::Token>(attributes.at(0).childs.at(0).value);
-			const auto& tokenLexeme = m_languageLexer.newExpression(token, token.name.at(0) != '_');
-			if (existingStatements.find(token) == existingStatements.end())
-				existingStatements[token] = false;
-			return std::make_unique<Parser::RecurrentLexeme>(~tokenLexeme);
+			const auto& lexeme = attributes.at(0);
+			return std::make_unique<Parser::RecurrentLexeme>(Parser::Recurrence{parseLexeme(lexeme, existingStatements), Parser::RecurrenceType::Optional, 0});
 		}
 
 		[[nodiscard]] std::unique_ptr<Parser::ILexeme> parseRecurrence(const std::vector<GrammarLexerTreeNode>& attributes, ExistingStatements& existingStatements)
