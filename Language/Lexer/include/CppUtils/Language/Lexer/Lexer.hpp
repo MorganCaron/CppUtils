@@ -110,7 +110,7 @@ namespace CppUtils::Language::Lexer
 			return true;
 		}
 
-		[[nodiscard]] bool parseLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
+		bool parseLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			switch (lexeme->getType().id)
 			{
@@ -129,7 +129,7 @@ namespace CppUtils::Language::Lexer
 				default:
 					throw std::runtime_error{"Unknown lexeme type: " + std::string{lexeme->getType().name}};
 			}
-			return true;
+			return false;
 		}
 
 		[[nodiscard]] inline bool parseStringLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
@@ -160,10 +160,9 @@ namespace CppUtils::Language::Lexer
 		{
 			auto& [cursor, parentNode] = context;
 			auto& parentChilds = parentNode.get().childs;
-			const auto& token = Type::ensureType<Parser::TagLexeme>(lexeme).value;
-			const auto& expression = getExpression(token);
 			auto nextChildId = parentChilds.size();
-			if (!parseNode(expression, context) || parentChilds.size() <= nextChildId)
+			const auto& tagLexeme = Type::ensureType<Parser::TagLexeme>(lexeme).value;
+			if (!parseLexeme(tagLexeme, context) || parentChilds.size() <= nextChildId)
 				return false;
 			auto newChild = std::move(parentChilds.at(nextChildId));
 			parentChilds.erase(parentChilds.begin() + nextChildId);
@@ -176,19 +175,18 @@ namespace CppUtils::Language::Lexer
 		[[nodiscard]] inline bool parseRecurrentLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			const auto& recurrence = Type::ensureType<Parser::RecurrentLexeme>(lexeme).value;
-			const auto& [token, recurrenceType, repetitions] = recurrence;
-			const auto& expression = getExpression(token);
+			const auto& [recurrenceLexeme, recurrenceType, repetitions] = recurrence;
 			switch (recurrenceType)
 			{
 				case Parser::RecurrenceType::Optional:
 				{
-					parseNode(expression, context);
+					parseLexeme(recurrenceLexeme, context);
 					break;
 				}
 				case Parser::RecurrenceType::EqualTo:
 				{
 					for (auto i = repetitions; i > 0; --i)
-						if (!parseNode(expression, context))
+						if (!parseLexeme(recurrenceLexeme, context))
 							return false;
 					break;
 				}
@@ -196,7 +194,7 @@ namespace CppUtils::Language::Lexer
 				case Parser::RecurrenceType::MoreOrEqualTo:
 				{
 					auto i = std::size_t{0};
-					while (parseNode(expression, context))
+					while (parseLexeme(recurrenceLexeme, context))
 						++i;
 					if ((recurrenceType == Parser::RecurrenceType::MoreThan && i <= repetitions) ||
 						(recurrenceType == Parser::RecurrenceType::MoreOrEqualTo && i < repetitions))
@@ -214,10 +212,9 @@ namespace CppUtils::Language::Lexer
 			const auto& alternative = Type::ensureType<Parser::AlternativeLexeme>(lexeme).value;
 			auto& [cursor, parentNode] = context;
 			const auto startPosition = cursor.position;
-			for (const auto& token : alternative.tokens)
+			for (const auto& lexeme : alternative.lexemes)
 			{
-				const auto& expression = getExpression(token);
-				if (parseNode(expression, context))
+				if (parseLexeme(lexeme, context))
 					return true;
 				cursor.position = startPosition;
 			}

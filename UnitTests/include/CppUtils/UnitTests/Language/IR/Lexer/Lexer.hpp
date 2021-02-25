@@ -9,13 +9,17 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 		Test{"Language/IR/Lexer", [] {
 			using namespace std::literals;
 			const auto irTree = CppUtils::Language::IR::Lexer::parse<int>(R"(
-			nop;
-			a = (10 + 12) * 2;
-			halt;
+			test()
+			{
+				nop;
+				a = (10 + 12) * 2;
+				ret a;
+			}
 			)"sv);
 			CppUtils::Graph::logTreeNode(irTree);
-			ASSERT(irTree.childs.size() == 3);
-			ASSERT(irTree.childs.at(1).childs.size() == 2);
+			ASSERT(irTree.childs.size() == 1);
+			ASSERT(irTree.childs.at(0).childs.size() == 3);
+			ASSERT(irTree.childs.at(0).childs.at(1).childs.size() == 2);
 		}}
 
 	};

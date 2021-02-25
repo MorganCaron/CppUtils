@@ -18,21 +18,24 @@ namespace CppUtils::Language::IR::Lexer
 			m_grammarLexer.addParsingFunction("intParser"_token, Language::Parser::intParser<Type::Token, Types...>);
 
 			static constexpr auto grammarSrc = R"(
-			main: (_instruction >= 0) spaceParser;
+			main: (_functionDeclaration >= 0) spaceParser;
 
-			instructions: spaceParser '{' (_instruction >= 0) spaceParser '}';
+			_functionDeclaration: [_functionName] _argumentsDeclaration _instructions;
+			_instructions: spaceParser '{' (_instruction >= 0) spaceParser '}';
+			instructions: _instructions;
 			_token: spaceParser keywordParser;
 			_variable: _token;
+			variable: _variable;
 			_functionName: _token;
 			_comma: spaceParser ',';
-			_value: spaceParser (_parenthesis || _literal);
+			_value: spaceParser (_parenthesis || _literal || variable);
 			_parenthesis: '(' _operation spaceParser ')';
 			
 			_operation: _operand;
 			_operand: _value ~[_secondOperand];
 			_secondOperand: [_operator] _operand;
 
-			_argumentsDeclaration: '(' ~_argumentDeclaration spaceParser ')';
+			_argumentsDeclaration: spaceParser '(' ~_argumentDeclaration spaceParser ')';
 			_argumentDeclaration: _variable ~_secondArgumentDeclaration;
 			_secondArgumentDeclaration: _comma _argumentDeclaration;
 
@@ -54,7 +57,7 @@ namespace CppUtils::Language::IR::Lexer
 			nop: "nop";
 			copy: _variable spaceParser '=' _operation;
 			call: "call" _functionName _arguments;
-			ret: "ret";
+			ret: "ret" _value;
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}

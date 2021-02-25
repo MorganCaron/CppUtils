@@ -30,7 +30,7 @@ namespace CppUtils::Language::Parser
 	using TokenLexeme = Lexeme<TokenLexemeType, Type::Token>;
 
 	static constexpr auto TagLexemeType = "tag"_token;
-	using TagLexeme = Lexeme<TagLexemeType, Type::Token>;
+	using TagLexeme = Lexeme<TagLexemeType, std::unique_ptr<ILexeme>>;
 
 	template<typename... Types> struct Expression;
 	static constexpr auto ExpressionLexemeType = "expression"_token;
@@ -47,7 +47,7 @@ namespace CppUtils::Language::Parser
 
 	struct Recurrence final
 	{
-		Type::Token token;
+		std::unique_ptr<ILexeme> lexeme;
 		RecurrenceType type;
 		std::size_t repetitions;
 	};
@@ -57,12 +57,16 @@ namespace CppUtils::Language::Parser
 
 	struct Alternative final
 	{
-		std::vector<Type::Token> tokens;
+		std::vector<std::unique_ptr<ILexeme>> lexemes;
+
+		explicit Alternative(std::vector<std::unique_ptr<ILexeme>> c_lexemes):
+			lexemes(std::move(c_lexemes))
+		{}
 
 		template<typename... Types>
 		[[nodiscard]] Alternative& operator||(const Expression<Types...>& rhs)
 		{
-			tokens.emplace_back(rhs.token);
+			lexemes.emplace_back(std::make_unique<TokenLexeme>(rhs.token));
 			return *this;
 		}
 	};
@@ -79,9 +83,10 @@ namespace CppUtils::Language::Parser
 		std::vector<std::unique_ptr<ILexeme>> lexemes;
 
 		Expression() = default;
-		explicit Expression(Type::Token c_token, const bool c_isNode):
+		explicit Expression(Type::Token c_token, const bool c_isNode, std::vector<std::unique_ptr<ILexeme>> c_lexemes = {}):
 			token{std::move(c_token)},
-			isNode{c_isNode}
+			isNode{c_isNode},
+			lexemes{std::move(c_lexemes)}
 		{};
 
 		Expression& operator>>(std::string string)
@@ -96,9 +101,9 @@ namespace CppUtils::Language::Parser
 			return *this;
 		}
 
-		Expression& operator>>(const Expression& lexeme)
+		Expression& operator>>(const Expression& expression)
 		{
-			lexemes.emplace_back(std::make_unique<TokenLexeme>(lexeme.token));
+			lexemes.emplace_back(std::make_unique<TokenLexeme>(expression.token));
 			return *this;
 		}
 		
@@ -108,9 +113,9 @@ namespace CppUtils::Language::Parser
 			return *this;
 		}
 
-		Expression& operator>>(TagLexeme nameLexeme)
+		Expression& operator>>(TagLexeme tagLexeme)
 		{
-			lexemes.emplace_back(std::make_unique<TagLexeme>(std::move(nameLexeme)));
+			lexemes.emplace_back(std::make_unique<TagLexeme>(std::move(tagLexeme)));
 			return *this;
 		}
 
@@ -128,27 +133,30 @@ namespace CppUtils::Language::Parser
 
 		[[nodiscard]] Recurrence operator~() const
 		{
-			return Recurrence{token, RecurrenceType::Optional, 0};
+			return Recurrence{std::make_unique<TokenLexeme>(token), RecurrenceType::Optional, 0};
 		}
 
 		[[nodiscard]] Recurrence operator>(std::size_t repetitions) const
 		{
-			return Recurrence{token, RecurrenceType::MoreThan, repetitions};
+			return Recurrence{std::make_unique<TokenLexeme>(token), RecurrenceType::MoreThan, repetitions};
 		}
 
 		[[nodiscard]] Recurrence operator>=(std::size_t repetitions) const
 		{
-			return Recurrence{token, RecurrenceType::MoreOrEqualTo, repetitions};
+			return Recurrence{std::make_unique<TokenLexeme>(token), RecurrenceType::MoreOrEqualTo, repetitions};
 		}
 
 		[[nodiscard]] Recurrence operator*(std::size_t repetitions) const
 		{
-			return Recurrence{token, RecurrenceType::EqualTo, repetitions};
+			return Recurrence{std::make_unique<TokenLexeme>(token), RecurrenceType::EqualTo, repetitions};
 		}
 
 		[[nodiscard]] Alternative operator||(const Expression& rhs) const
 		{
-			return Alternative{std::vector<Type::Token>{token, rhs.token}};
+			auto lexemes = std::vector<std::unique_ptr<ILexeme>>{};
+			lexemes.emplace_back(std::make_unique<TokenLexeme>(token));
+			lexemes.emplace_back(std::make_unique<TokenLexeme>(rhs.token));
+			return Alternative{std::move(lexemes)};
 		}
 	};
 }
