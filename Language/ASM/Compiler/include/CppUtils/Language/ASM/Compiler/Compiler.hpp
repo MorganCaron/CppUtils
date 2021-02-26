@@ -1,6 +1,10 @@
 #pragma once
 
-namespace CppUtils::Language::IR::Compiler
+#include <CppUtils/Language/ASM/Lexer/Lexer.hpp>
+#include <CppUtils/Language/ASM/Compiler/Bytecode.hpp>
+#include <CppUtils/Language/ASM/Compiler/CompilationFunctions.hpp>
+
+namespace CppUtils::Language::ASM::Compiler
 {
 	using namespace Type::Literals;
 

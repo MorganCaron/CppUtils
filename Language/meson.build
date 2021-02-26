@@ -3,13 +3,21 @@ subdir('Lexer')
 subdir('IR')
 subdir('VM')
 subdir('Compiler')
+subdir('Ini')
+subdir('Json')
+subdir('StringTree')
+subdir('ASM')
 
 public_dependencies = [
 	cppUtils_language_parser_dep,
 	cppUtils_language_lexer_dep,
 	cppUtils_language_ir_dep,
 	cppUtils_language_vm_dep,
-	cppUtils_language_compiler_dep
+	cppUtils_language_compiler_dep,
+	cppUtils_language_ini_dep,
+	cppUtils_language_json_dep,
+	cppUtils_language_stringtree_dep,
+	cppUtils_language_asm_dep
 ]
 private_dependencies = []
 

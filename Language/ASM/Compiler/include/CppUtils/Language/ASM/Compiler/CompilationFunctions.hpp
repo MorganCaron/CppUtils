@@ -1,0 +1,53 @@
+#pragma once
+
+#include <CppUtils/Language/ASM/Compiler/Context.hpp>
+
+namespace CppUtils::Language::ASM::Compiler
+{
+	template<typename... Types>
+	class CompilationFunctions final
+	{
+	public:
+		CompilationFunctions() = delete;
+
+		static std::vector<Bytecode::Instruction<Types...>> compileHalt([[maybe_unused]] const Parser::ASTNode<Type::Token, Types...>& irInstruction)
+		{
+			using namespace Type::Literals;
+			return std::vector<Bytecode::Instruction<Types...>>{{
+				.type = "halt"_token
+			}};
+		}
+
+		static std::vector<Bytecode::Instruction<Types...>> compileNop([[maybe_unused]] const Parser::ASTNode<Type::Token, Types...>& irInstruction)
+		{
+			using namespace Type::Literals;
+			return std::vector<Bytecode::Instruction<Types...>>{{
+				.type = "nop"_token
+			}};
+		}
+
+		static std::vector<Bytecode::Instruction<Types...>> compileMove([[maybe_unused]] const Parser::ASTNode<Type::Token, Types...>& irInstruction)
+		{
+			using namespace Type::Literals;
+			return std::vector<Bytecode::Instruction<Types...>>{{
+				.type = "move"_token,
+				.parameters = std::vector<std::variant<Type::Token, Types...>>{
+					irInstruction.childs.at(0).value,
+					irInstruction.childs.at(1).childs.at(0).childs.at(0).value
+				}
+			}};
+		}
+
+		static std::vector<Bytecode::Instruction<Types...>> compileAdd([[maybe_unused]] const Parser::ASTNode<Type::Token, Types...>& irInstruction)
+		{
+			using namespace Type::Literals;
+			return std::vector<Bytecode::Instruction<Types...>>{{
+				.type = "add"_token,
+				.parameters = std::vector<std::variant<Type::Token, Types...>>{
+					irInstruction.childs.at(0).value,
+					irInstruction.childs.at(1).childs.at(0).childs.at(0).value
+				}
+			}};
+		}
+	};
+}
