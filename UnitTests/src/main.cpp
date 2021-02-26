@@ -9,6 +9,7 @@
 #include <CppUtils/UnitTests/Graph/TreeNode.hpp>
 #include <CppUtils/UnitTests/Language/IR/RegisterIRLexer.hpp>
 #include <CppUtils/UnitTests/Language/IR/StackIRLexer.hpp>
+#include <CppUtils/UnitTests/Language/IR/Compiler/Compiler.hpp>
 #include <CppUtils/UnitTests/Language/IR/Lexer/Lexer.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/GrammarLexer.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Lexer.hpp>
@@ -43,6 +44,7 @@ int main(const int argc, const char *argv[])
 			std::cref(CppUtils::UnitTests::Json::JsonLexer::tests),
 			std::cref(CppUtils::UnitTests::Language::IR::RegisterIRLexer::tests),
 			std::cref(CppUtils::UnitTests::Language::IR::StackIRLexer::tests),
+			std::cref(CppUtils::UnitTests::Language::IR::Compiler::tests),
 			std::cref(CppUtils::UnitTests::Language::IR::Lexer::tests),
 			std::cref(CppUtils::UnitTests::Language::Lexer::GrammarLexer::tests),
 			std::cref(CppUtils::UnitTests::Language::Lexer::tests),

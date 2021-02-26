@@ -32,7 +32,7 @@ namespace CppUtils::Parameters
 				auto stringToken = Type::Token{String::trimString(cursor.src.substr(startPosition, cursor.position - startPosition))};
 				++cursor.position;
 				stringToken.saveTypename();
-				parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Type::Token>{std::move(stringToken)});
+				parentNode.get().childs.emplace_back(Language::Parser::ASTNode<Type::Token>{std::move(stringToken)});
 				return true;
 			});
 

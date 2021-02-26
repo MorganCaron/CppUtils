@@ -10,11 +10,9 @@ namespace CppUtils::Language::Lexer
 	class GrammarLexer final
 	{
 	private:
-		using GrammarLexerTreeNode = Graph::VariantTreeNode<Type::Token, unsigned int>;
+		using GrammarLexerTreeNode = Parser::ASTNode<Type::Token, unsigned int>;
 
 	public:
-		using LanguageTreeNode = Graph::VariantTreeNode<Types...>;
-
 		GrammarLexer()
 		{
 			using namespace Type::Literals;
@@ -100,7 +98,7 @@ namespace CppUtils::Language::Lexer
 			return tokenTree;
 		}
 
-		[[nodiscard]] inline Graph::VariantTreeNode<Types...> parseLanguage(const Type::Token& token, std::string_view src) const
+		[[nodiscard]] inline Parser::ASTNode<Types...> parseLanguage(const Type::Token& token, std::string_view src) const
 		{
 			return m_languageLexer.parseString(token, src);
 		}

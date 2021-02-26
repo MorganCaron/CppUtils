@@ -37,7 +37,7 @@ namespace CppUtils::Json
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Graph::VariantTreeNode<Type::Token, bool, float> parse(const std::string_view src) const
+		[[nodiscard]] inline Language::Parser::ASTNode<Type::Token, bool, float> parse(const std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
@@ -47,7 +47,7 @@ namespace CppUtils::Json
 		Language::Lexer::GrammarLexer<Type::Token, bool, float> m_grammarLexer;
 	};
 
-	[[nodiscard]] inline Graph::VariantTreeNode<Type::Token, bool, float> parse(const std::string_view src)
+	[[nodiscard]] inline Language::Parser::ASTNode<Type::Token, bool, float> parse(const std::string_view src)
 	{
 		static const auto jsonLexer = JsonLexer{};
 		return jsonLexer.parse(src);
@@ -55,7 +55,7 @@ namespace CppUtils::Json
 
 	namespace Literals
 	{
-		[[nodiscard]] Graph::VariantTreeNode<Type::Token, bool, float> operator"" _json(const char* cstring, std::size_t)
+		[[nodiscard]] Language::Parser::ASTNode<Type::Token, bool, float> operator"" _json(const char* cstring, std::size_t)
 		{
 			return parse(cstring);
 		}

@@ -6,5 +6,5 @@
 namespace CppUtils::ASM::Compiler
 {
 	template<typename... Types>
-	using Context = Language::Compiler::Context<Graph::VariantTreeNode<Type::Token, Types...>, Bytecode::Instruction<Types...>>;
+	using Context = Language::Compiler::Context<Language::Parser::ASTNode<Type::Token, Types...>, Bytecode::Instruction<Types...>>;
 }

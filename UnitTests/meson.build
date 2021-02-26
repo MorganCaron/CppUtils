@@ -23,6 +23,8 @@ headers = files([
 	'include/CppUtils/UnitTests/Json/JsonLexer.hpp',
 	'include/CppUtils/UnitTests/Language/IR/RegisterIRLexer.hpp',
 	'include/CppUtils/UnitTests/Language/IR/StackIRLexer.hpp',
+	'include/CppUtils/UnitTests/Language/IR/Compiler/Compiler.hpp',
+	'include/CppUtils/UnitTests/Language/IR/Lexer/Lexer.hpp',
 	'include/CppUtils/UnitTests/Language/Lexer/GrammarLexer.hpp',
 	'include/CppUtils/UnitTests/Language/Lexer/Lexer.hpp',
 	'include/CppUtils/UnitTests/Language/Parser/Cursor.hpp',

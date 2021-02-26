@@ -40,7 +40,7 @@ namespace CppUtils::Language::IR
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Graph::VariantTreeNode<Type::Token, Types...> parse(const std::string_view src) const
+		[[nodiscard]] inline Parser::ASTNode<Type::Token, Types...> parse(const std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
@@ -53,7 +53,7 @@ namespace CppUtils::Language::IR
 	namespace RegisterIR
 	{
 		template<typename... Types>
-		[[nodiscard]] inline Graph::VariantTreeNode<Type::Token, Types...> parse(const std::string_view src)
+		[[nodiscard]] inline Parser::ASTNode<Type::Token, Types...> parse(const std::string_view src)
 		{
 			static const auto registerIRLexer = RegisterIRLexer<Types...>{};
 			return registerIRLexer.parse(src);

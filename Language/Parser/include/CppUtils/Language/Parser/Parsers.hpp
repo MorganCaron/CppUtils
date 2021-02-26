@@ -24,11 +24,11 @@ namespace CppUtils::Language::Parser
 		{
 			auto keywordToken = Type::Token{keyword};
 			keywordToken.saveTypename();
-			parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{std::move(keywordToken)});
+			parentNode.get().childs.emplace_back(ASTNode<Types...>{std::move(keywordToken)});
 			return true;
 		}
 		else
-			parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{std::string{keyword}});
+			parentNode.get().childs.emplace_back(ASTNode<Types...>{std::string{keyword}});
 		return true;
 	}
 
@@ -51,10 +51,10 @@ namespace CppUtils::Language::Parser
 		{
 			auto stringToken = Type::Token{content};
 			stringToken.saveTypename();
-			parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{std::move(stringToken)});
+			parentNode.get().childs.emplace_back(ASTNode<Types...>{std::move(stringToken)});
 		}
 		else
-			parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{std::string{content}});
+			parentNode.get().childs.emplace_back(ASTNode<Types...>{std::string{content}});
 		++cursor.position;
 		return true;
 	}
@@ -88,7 +88,7 @@ namespace CppUtils::Language::Parser
 		if (number != static_cast<unsigned int>(number))
 			throw std::out_of_range{"Number too large"};
 		cursor.position += numberLength;
-		parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{number});
+		parentNode.get().childs.emplace_back(ASTNode<Types...>{number});
 		return true;
 	}
 
@@ -112,7 +112,7 @@ namespace CppUtils::Language::Parser
 		auto numberLength = std::size_t{};
 		const auto number = std::stoi(cursor.src.substr(cursor.position).data(), &numberLength);
 		cursor.position += numberLength;
-		parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{number});
+		parentNode.get().childs.emplace_back(ASTNode<Types...>{number});
 		return true;
 	}
 
@@ -138,7 +138,7 @@ namespace CppUtils::Language::Parser
 		auto numberLength = std::size_t{};
 		const auto number = std::stof(cursor.src.substr(cursor.position).data(), &numberLength);
 		cursor.position += numberLength;
-		parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{number});
+		parentNode.get().childs.emplace_back(ASTNode<Types...>{number});
 		return true;
 	}
 
@@ -148,12 +148,12 @@ namespace CppUtils::Language::Parser
 		auto& [cursor, parentNode] = context;
 		if (cursor.isEqualSkipIt("true", false))
 		{
-			parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{true});
+			parentNode.get().childs.emplace_back(ASTNode<Types...>{true});
 			return true;
 		}
 		if (cursor.isEqualSkipIt("false", false))
 		{
-			parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Types...>{false});
+			parentNode.get().childs.emplace_back(ASTNode<Types...>{false});
 			return true;
 		}
 		return false;

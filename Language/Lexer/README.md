@@ -11,7 +11,7 @@ The ``Lexer<Types...>`` also needs to know the literal types recognized by the p
 The ``Lexer<Types...>`` class provides a method ``Parser::Expression<Types...>& newExpression(const Type::Token& token, const bool isNode = true)`` to create new ``Expression``s in the desired language.
 The argument ``isNode`` allows to determine if the expression must be present as a node in the generated AST.
 
-The method ``Graph::VariantTreeNode<Types...> parseString(const Type::Token& token, std::string_view src) const`` allows to generate an AST from the given string. The ``Expression`` representing the entry point must be indicated by its ``Token``.
+The method ``Parser::ASTNode<Types...> parseString(const Type::Token& token, std::string_view src) const`` allows to generate an AST from the given string. The ``Expression`` representing the entry point must be indicated by its ``Token``.
 
 ---
 
@@ -23,6 +23,6 @@ Unlike ``Lexer<Types...>``, ``GrammarLexer<Types...>`` receives the grammar of t
 
 Its method ``GrammarLexerTreeNode parseGrammar(std::string_view src)`` defines the grammar of the parsed language. The function returns the AST of the grammar, which is only useful for debugging purposes.
 
-The method ``Graph::VariantTreeNode<Types...> parseLanguage(const Type::Token& token, std::string_view src) const`` parses the language using the grammar and returns the generated AST.
+The method ``Parser::ASTNode<Types...> parseLanguage(const Type::Token& token, std::string_view src) const`` parses the language using the grammar and returns the generated AST.
 
 ---

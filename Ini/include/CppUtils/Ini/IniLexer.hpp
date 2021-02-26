@@ -22,7 +22,7 @@ namespace CppUtils::Ini
 					return false;
 				auto stringToken = Type::Token{string};
 				stringToken.saveTypename();
-				parentNode.get().childs.emplace_back(Graph::VariantTreeNode<Type::Token, bool, float>{std::move(stringToken)});
+				parentNode.get().childs.emplace_back(Language::Parser::ASTNode<Type::Token, bool, float>{std::move(stringToken)});
 				return true;
 			};
 
@@ -62,7 +62,7 @@ namespace CppUtils::Ini
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Graph::VariantTreeNode<Type::Token, bool, float> parse(const std::string_view src) const
+		[[nodiscard]] inline Language::Parser::ASTNode<Type::Token, bool, float> parse(const std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
@@ -72,7 +72,7 @@ namespace CppUtils::Ini
 		Language::Lexer::GrammarLexer<Type::Token, bool, float> m_grammarLexer;
 	};
 
-	[[nodiscard]] inline Graph::VariantTreeNode<Type::Token, bool, float> parse(const std::string_view src)
+	[[nodiscard]] inline Language::Parser::ASTNode<Type::Token, bool, float> parse(const std::string_view src)
 	{
 		static const auto iniLexer = IniLexer{};
 		return iniLexer.parse(src);
@@ -80,7 +80,7 @@ namespace CppUtils::Ini
 
 	namespace Literals
 	{
-		[[nodiscard]] Graph::VariantTreeNode<Type::Token, bool, float> operator"" _ini(const char* cstring, std::size_t)
+		[[nodiscard]] Language::Parser::ASTNode<Type::Token, bool, float> operator"" _ini(const char* cstring, std::size_t)
 		{
 			return parse(cstring);
 		}

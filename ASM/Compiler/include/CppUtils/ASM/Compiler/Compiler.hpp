@@ -22,10 +22,10 @@ namespace CppUtils::ASM::Compiler
 
 		[[nodiscard]] inline auto compile(std::string_view src) const
 		{
-			return m_compiler.compile(parse<Types...>(src));
+			return compile(parse<Types...>(src));
 		}
 
-		[[nodiscard]] inline auto compile(const Graph::VariantTreeNode<Type::Token, Types...>& ast) const
+		[[nodiscard]] inline auto compile(const Language::Parser::ASTNode<Type::Token, Types...>& ast) const
 		{
 			return m_compiler.compile(ast);
 		}

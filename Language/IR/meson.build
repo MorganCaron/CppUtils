@@ -1,9 +1,11 @@
+subdir('Compiler')
 subdir('Lexer')
 
 public_dependencies = [
 	cppUtils_type_dep,
 	cppUtils_graph_dep,
 	cppUtils_language_lexer_dep,
+	cppUtils_language_ir_compiler_dep,
 	cppUtils_language_ir_lexer_dep
 ]
 private_dependencies = []

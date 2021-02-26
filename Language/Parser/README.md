@@ -44,7 +44,7 @@ int main()
 	const auto src = "\"Text\""sv;
 	auto pos = std::size_t{0};
 	auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
-	auto rootNode = CppUtils::Graph::VariantTreeNode<CppUtils::Type::Token>{"Root"_token};
+	auto rootNode = CppUtils::Parser::ASTNode<CppUtils::Type::Token>{"Root"_token};
 	auto context = Parser::Context<Types...>{
 		cursor,
 		rootNode

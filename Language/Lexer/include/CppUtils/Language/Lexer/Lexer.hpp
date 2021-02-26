@@ -28,10 +28,10 @@ namespace CppUtils::Language::Lexer
 			return m_expressions.at(token);
 		}
 
-		[[nodiscard]] Graph::VariantTreeNode<Types...> parseString(const Type::Token& token, std::string_view src) const
+		[[nodiscard]] Parser::ASTNode<Types...> parseString(const Type::Token& token, std::string_view src) const
 		{
 			auto position = std::size_t{0};
-			auto rootNode = Graph::VariantTreeNode<Types...>{token};
+			auto rootNode = Parser::ASTNode<Types...>{token};
 			auto context = Parser::Context<Types...>{
 				Parser::Cursor<std::string>{src, position},
 				rootNode
@@ -66,7 +66,7 @@ namespace CppUtils::Language::Lexer
 			auto& [cursor, parentNode] = context;
 			const auto startPosition = cursor.position;
 			auto partialMatch = false;
-			auto tempParentNode = Graph::VariantTreeNode<Types...>{parentNode.get().value};
+			auto tempParentNode = Parser::ASTNode<Types...>{parentNode.get().value};
 			auto tempContext = Parser::Context<Types...>{
 				cursor,
 				tempParentNode
@@ -91,7 +91,7 @@ namespace CppUtils::Language::Lexer
 			auto& [cursor, parentNode] = context;
 			if (expression.isNode)
 			{
-				auto newNode = Graph::VariantTreeNode<Types...>{expression.token};
+				auto newNode = Parser::ASTNode<Types...>{expression.token};
 				auto newContext = Parser::Context<Types...>{
 					cursor,
 					newNode
@@ -169,7 +169,7 @@ namespace CppUtils::Language::Lexer
 			auto tagChilds = std::move(tagNode.childs);
 			tagNode.childs = std::move(parentChilds);
 			std::move(tagChilds.begin(), tagChilds.end(), std::back_inserter(tagNode.childs));
-			parentChilds = std::vector<Graph::VariantTreeNode<Types...>>{std::move(tagNode)};
+			parentChilds = std::vector<Parser::ASTNode<Types...>>{std::move(tagNode)};
 			parentNode = parentChilds.at(0);
 			return true;
 		}

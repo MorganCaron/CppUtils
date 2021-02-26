@@ -2,11 +2,11 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTests::Language::IR::Lexer
+namespace CppUtils::UnitTests::Language::IR::Compiler
 {
 	const auto tests = std::vector<Test>{
 
-		Test{"Language/IR/Lexer", [] {
+		Test{"Language/IR/Compiler", [] {
 			using namespace std::literals;
 			const auto irTree = CppUtils::Language::IR::Lexer::parse<int>(R"(
 			main()
