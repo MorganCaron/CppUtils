@@ -13,8 +13,8 @@ namespace CppUtils::Language::IR
 			using namespace std::literals;
 			using namespace Type::Literals;
 
-			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, Types...>);
-			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Type::Token, Types...>);
+			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Types...>);
+			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Types...>);
 
 			static constexpr auto grammarSrc = R"(
 			main: (_instruction >= 0) spaceParser;
@@ -31,20 +31,20 @@ namespace CppUtils::Language::IR
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Parser::ASTNode<Type::Token, Types...> parse(const std::string_view src) const
+		[[nodiscard]] inline Parser::ASTNode<Types...> parse(std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
 		}
 
 	private:
-		Lexer::GrammarLexer<Type::Token, Types...> m_grammarLexer;
+		Lexer::GrammarLexer<Types...> m_grammarLexer;
 	};
 
 	namespace StackIR
 	{
 		template<typename... Types>
-		[[nodiscard]] inline Parser::ASTNode<Type::Token, Types...> parse(const std::string_view src)
+		[[nodiscard]] inline Parser::ASTNode<Types...> parse(std::string_view src)
 		{
 			static const auto stackIRLexer = StackIRLexer<Types...>{};
 			return stackIRLexer.parse(src);

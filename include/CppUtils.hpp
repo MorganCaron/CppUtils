@@ -20,6 +20,7 @@
 #include <CppUtils/Language/IR/Lexer/Lexer.hpp>
 #include <CppUtils/Language/VM/VirtualMachine.hpp>
 #include <CppUtils/Language/Compiler/Compiler.hpp>
+#include <CppUtils/Language/Compiler/Context.hpp>
 #include <CppUtils/Language/ASM/Compiler/Bytecode.hpp>
 #include <CppUtils/Language/ASM/Compiler/Compiler.hpp>
 #include <CppUtils/Language/ASM/Lexer/Lexer.hpp>

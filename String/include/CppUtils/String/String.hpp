@@ -17,7 +17,7 @@ namespace CppUtils::String
 	[[nodiscard]] inline std::string concatenateStringsWithDelimiter(const std::vector<std::string_view>& strings, std::string_view delimiter)
 	{
 		return std::accumulate(strings.begin(), strings.end(), std::string{},
-			[delimiter](const std::string_view& lhs, const std::string_view& rhs) {
+			[delimiter](std::string_view lhs, std::string_view rhs) {
 				return lhs.empty() ? std::string{rhs} : (std::string{lhs} + std::string{delimiter} + std::string{rhs});
 			});
 	}

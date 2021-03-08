@@ -13,39 +13,34 @@ namespace CppUtils::Language::ASM::VM
 {
 	using namespace Type::Literals;
 
-	template<typename... Types>
+	template<typename Type>
 	class VirtualMachine final
 	{
 	public:
-		using Instruction = Compiler::Bytecode::Instruction<Types...>;
+		using Instruction = Compiler::Bytecode::Instruction<Type>;
 
 		VirtualMachine(): m_virtualMachine{{
-				{ "halt"_token, Operations<Instruction, Types...>::halt },
-				{ "nop"_token, Operations<Instruction, Types...>::nop },
-				{ "move"_token, Operations<Instruction, Types...>::move },
-				{ "add"_token, Operations<Instruction, Types...>::add }/*,
+				{ "move"_token, Operations<Instruction, Type>::move },
+				{ "add"_token, Operations<Instruction, Type>::add }/*,
 				{ "jump"_token, Operations<Types...>::jump },
 				{ "push"_token, Operations<Types...>::push },
 				{ "pop"_token, Operations<Types...>::pop }*/
 			}}
 		{}
 
-		inline void run(std::span<const Instruction> instructions) const
+		inline void run(std::span<const std::unique_ptr<Instruction>> instructions, Context<Type> context = {}) const
 		{
-			auto context = Context<Types...>{};
 			m_virtualMachine.run(instructions, context);
 		}
 
 		static void run(std::string_view src)
 		{
-			const auto ast = parse<Types...>(src);
-			static const auto compiler = Compiler::Compiler<Types...>{};
-			const auto bytecode = compiler.compile(ast);
-			static const auto vm = VM::VirtualMachine<Types...>{};
+			const auto bytecode = Compiler::compile<Type>(src);
+			static const auto vm = VM::VirtualMachine<Type>{};
 			vm.run(bytecode);
 		}
 
 	private:
-		Language::VM::VirtualMachine<Instruction, Context<Types...>> m_virtualMachine;
+		Language::VM::VirtualMachine<Instruction, Context<Type>> m_virtualMachine;
 	};
 }

@@ -1,32 +1,34 @@
 #pragma once
 
 #include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Language/Compiler/Context.hpp>
 
 namespace CppUtils::Language::Compiler
 {
-	template<typename OutputInstruction, typename... Types>
+	template<typename Instruction, typename Context, typename... Types>
+	requires (std::is_base_of<Compiler::Context<Instruction>, Context>::value && Type::Concept::isPresent<Type::Token, Types...>)
 	class Compiler final
 	{
 	public:
-		using CompilationFunction = std::function<std::vector<OutputInstruction>(const Parser::ASTNode<Type::Token, Types...>&)>;
+		using CompilationFunction = std::function<void(const Parser::ASTNode<Types...>&, Context&)>;
 
-		explicit Compiler(std::unordered_map<Type::Token, CompilationFunction, Type::Token::hash_fn>&& compilationFunctions):
-			m_compilationFunctions{compilationFunctions}
+		explicit Compiler(std::unordered_map<Type::Token, CompilationFunction, Type::Token::hash_fn> compilationFunctions):
+			m_compilationFunctions{std::move(compilationFunctions)}
 		{}
 
-		std::vector<OutputInstruction> compile(const Parser::ASTNode<Type::Token, Types...>& ast) const
+		void compile(const Parser::ASTNode<Types...>& astNode, Context& context) const
 		{
-			auto outputInstructions = std::vector<OutputInstruction>{};
-			const auto instructions = ast.childs;
-			for (const auto instruction : instructions)
-			{
-				const auto& instructionType = std::get<Type::Token>(instruction.value);
-				if (m_compilationFunctions.find(instructionType) == m_compilationFunctions.end())
-					throw std::runtime_error{"No compile function for instruction type " + std::string{instructionType.name}};
-				auto newOutputInstructions = m_compilationFunctions.at(instructionType)(instruction);
-				std::move(newOutputInstructions.begin(), newOutputInstructions.end(), std::back_inserter(outputInstructions));
-			}
-			return outputInstructions;
+			const auto& nodeType = std::get<Type::Token>(astNode.value);
+			if (m_compilationFunctions.find(nodeType) == m_compilationFunctions.end())
+				throw std::runtime_error{"No compile function for AST node \"" + std::string{nodeType.name} + '"'};
+			m_compilationFunctions.at(nodeType)(astNode, context);
+		}
+
+		[[nodiscard]] std::vector<std::unique_ptr<Instruction>> compile(const std::vector<Parser::ASTNode<Types...>>& astNodes, Context& context) const
+		{
+			for (const auto astNode : astNodes)
+				compile(astNode, context);
+			return std::move(context.instructions);
 		}
 
 	private:

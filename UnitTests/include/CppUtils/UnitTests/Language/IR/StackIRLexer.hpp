@@ -8,7 +8,7 @@ namespace CppUtils::UnitTests::Language::IR::StackIRLexer
 
 		Test{"Language/IR/StackIRLexer", [] {
 			using namespace std::literals;
-			const auto stackIRTree = CppUtils::Language::IR::StackIR::parse<float>(R"(
+			const auto stackIRTree = CppUtils::Language::IR::StackIR::parse<Type::Token, float>(R"(
 			load b
 			load c
 			add

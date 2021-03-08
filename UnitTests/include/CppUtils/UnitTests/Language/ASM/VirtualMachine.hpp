@@ -8,17 +8,17 @@ namespace CppUtils::UnitTests::Language::ASM::VirtualMachine
 {
 	const auto tests = std::vector<Test>{
 
-		Test{"Language/ASM/VirtualMachine/Halt", [] {
-			using namespace std::literals;
-			CppUtils::Language::ASM::VM::VirtualMachine<std::int64_t>::run(R"(
-			hlt
-			)"sv);
-		}},
-
 		Test{"Language/ASM/VirtualMachine/Nop", [] {
 			using namespace std::literals;
 			CppUtils::Language::ASM::VM::VirtualMachine<std::int64_t>::run(R"(
 			nop
+			)"sv);
+		}},
+
+		Test{"Language/ASM/VirtualMachine/Halt", [] {
+			using namespace std::literals;
+			CppUtils::Language::ASM::VM::VirtualMachine<std::int64_t>::run(R"(
+			hlt
 			)"sv);
 		}},
 

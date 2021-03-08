@@ -7,6 +7,7 @@
 #include <CppUtils/UnitTests/Graph/MeshNode.hpp>
 #include <CppUtils/UnitTests/Graph/TreeNode.hpp>
 #include <CppUtils/UnitTests/Language/ASM/Lexer.hpp>
+#include <CppUtils/UnitTests/Language/ASM/Compiler.hpp>
 #include <CppUtils/UnitTests/Language/ASM/VirtualMachine.hpp>
 #include <CppUtils/UnitTests/Language/IR/RegisterIRLexer.hpp>
 #include <CppUtils/UnitTests/Language/IR/StackIRLexer.hpp>
@@ -40,6 +41,7 @@ int main(const int argc, const char *argv[])
 			std::cref(CppUtils::UnitTests::Graph::MeshNode::tests),
 			std::cref(CppUtils::UnitTests::Graph::TreeNode::tests),
 			std::cref(CppUtils::UnitTests::Language::ASM::Lexer::tests),
+			std::cref(CppUtils::UnitTests::Language::ASM::Compiler::tests),
 			std::cref(CppUtils::UnitTests::Language::ASM::VirtualMachine::tests),
 			std::cref(CppUtils::UnitTests::Language::IR::RegisterIRLexer::tests),
 			std::cref(CppUtils::UnitTests::Language::IR::StackIRLexer::tests),

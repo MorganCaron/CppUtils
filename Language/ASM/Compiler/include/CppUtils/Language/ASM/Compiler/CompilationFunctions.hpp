@@ -4,50 +4,37 @@
 
 namespace CppUtils::Language::ASM::Compiler
 {
-	template<typename... Types>
+	template<typename Type>
 	class CompilationFunctions final
 	{
 	public:
 		CompilationFunctions() = delete;
 
-		static std::vector<Bytecode::Instruction<Types...>> compileHalt([[maybe_unused]] const Parser::ASTNode<Type::Token, Types...>& irInstruction)
+		static void compileNop([[maybe_unused]] const Parser::ASTNode<CppUtils::Type::Token, std::size_t>& astNode, Context<Type>& context)
 		{
-			using namespace Type::Literals;
-			return std::vector<Bytecode::Instruction<Types...>>{{
-				.type = "halt"_token
-			}};
+			context.addInstruction(context.createInstruction());
 		}
 
-		static std::vector<Bytecode::Instruction<Types...>> compileNop([[maybe_unused]] const Parser::ASTNode<Type::Token, Types...>& irInstruction)
+		static void compileHalt([[maybe_unused]] const Parser::ASTNode<CppUtils::Type::Token, std::size_t>& astNode, Context<Type>& context)
 		{
-			using namespace Type::Literals;
-			return std::vector<Bytecode::Instruction<Types...>>{{
-				.type = "nop"_token
-			}};
+			using namespace CppUtils::Type::Literals;
+			context.addInstruction(context.createInstruction("exit"_token, std::size_t{0}));
 		}
 
-		static std::vector<Bytecode::Instruction<Types...>> compileMove([[maybe_unused]] const Parser::ASTNode<Type::Token, Types...>& irInstruction)
+		static void compileMove(const Parser::ASTNode<CppUtils::Type::Token, std::size_t>& astNode, Context<Type>& context)
 		{
-			using namespace Type::Literals;
-			return std::vector<Bytecode::Instruction<Types...>>{{
-				.type = "move"_token,
-				.parameters = std::vector<std::variant<Type::Token, Types...>>{
-					irInstruction.childs.at(0).value,
-					irInstruction.childs.at(1).childs.at(0).childs.at(0).value
-				}
-			}};
+			using namespace CppUtils::Type::Literals;
+			const auto lhs = std::get<std::size_t>(astNode.childs.at(0).value);
+			const auto rhs = std::get<std::size_t>(astNode.childs.at(1).value);
+			context.addInstruction(context.createInstruction("move"_token, lhs, rhs));
 		}
 
-		static std::vector<Bytecode::Instruction<Types...>> compileAdd([[maybe_unused]] const Parser::ASTNode<Type::Token, Types...>& irInstruction)
+		static void compileAdd(const Parser::ASTNode<CppUtils::Type::Token, std::size_t>& astNode, Context<Type>& context)
 		{
-			using namespace Type::Literals;
-			return std::vector<Bytecode::Instruction<Types...>>{{
-				.type = "add"_token,
-				.parameters = std::vector<std::variant<Type::Token, Types...>>{
-					irInstruction.childs.at(0).value,
-					irInstruction.childs.at(1).childs.at(0).childs.at(0).value
-				}
-			}};
+			using namespace CppUtils::Type::Literals;
+			const auto lhs = std::get<std::size_t>(astNode.childs.at(0).value);
+			const auto rhs = std::get<std::size_t>(astNode.childs.at(1).value);
+			context.addInstruction(context.createInstruction("add"_token, lhs, rhs));
 		}
 	};
 }

@@ -8,8 +8,8 @@ sources = files([
 ])
 
 headers = files([
-	'include/CppUtils/Language/Compiler/Context.hpp',
-	'include/CppUtils/Language/Compiler/Compiler.hpp'
+	'include/CppUtils/Language/Compiler/Compiler.hpp',
+	'include/CppUtils/Language/Compiler/Context.hpp'
 ])
 
 cppUtils_language_compiler_dep = declare_dependency(

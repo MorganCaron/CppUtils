@@ -8,7 +8,7 @@ namespace CppUtils::UnitTests::Language::IR::Compiler
 
 		Test{"Language/IR/Compiler", [] {
 			using namespace std::literals;
-			const auto irTree = CppUtils::Language::IR::Lexer::parse<int>(R"(
+			const auto irTree = CppUtils::Language::IR::Lexer::parse<Type::Token, int>(R"(
 			main()
 			{
 				nop;

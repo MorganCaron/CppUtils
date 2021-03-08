@@ -5,43 +5,28 @@
 
 namespace CppUtils::Language::ASM::VM
 {
-	template<typename BytecodeInstruction, typename... Types>
+	template<typename Instruction, typename Type>
 	class Operations final
 	{
 	public:
 		Operations() = delete;
 
-		static void halt(Parser::Cursor<BytecodeInstruction>& cursor, [[maybe_unused]] Context<Types...>& context)
-		{
-			cursor.position = cursor.end();
-		}
-
-		static void nop(Parser::Cursor<BytecodeInstruction>& cursor, [[maybe_unused]] Context<Types...>& context)
-		{
-			++cursor.position;
-		}
-
-		static void move(Parser::Cursor<BytecodeInstruction>& cursor, Context<Types...>& context)
+		static void move(Instruction* instruction, Context<Type>& context)
 		{
 			auto& [registerFile, stack] = context;
-			const auto& moveInstruction = cursor.getElement();
-			const auto& registerAddress = std::get<Type::Token>(moveInstruction.parameters.at(0));
-			const auto& rhs = moveInstruction.parameters.at(1);
-			if (std::holds_alternative<Type::Token>(rhs))
-				registerFile[registerAddress] = registerFile.at(std::get<Type::Token>(rhs));
-			else
-				registerFile[registerAddress] = std::visit([](auto&& value) -> std::variant<Types...> {
-					if constexpr(std::is_same_v<std::decay_t<decltype(value)>, Type::Token>)
-						throw std::runtime_error{"Incorrect format in the move statement"};
-					else
-						return std::variant<Types...>{std::forward<decltype(value)>(value)};
-				}, rhs);
-			++cursor.position;
+			const auto& register0 = instruction->parametersId.at(0);
+			const auto& register1 = instruction->parametersId.at(1);
+			registerFile[register0] = registerFile.at(register1);
+			instruction = instruction->nextInstruction;
 		}
 
-		static void add(Parser::Cursor<BytecodeInstruction>& cursor, [[maybe_unused]] Context<Types...>& context)
+		static void add(Instruction* instruction, Context<Type>& context)
 		{
-			++cursor.position;
+			auto& [registerFile, stack] = context;
+			const auto& register0 = instruction->parametersId.at(0);
+			const auto& register1 = instruction->parametersId.at(1);
+			registerFile[register0] = registerFile.at(register0) + registerFile.at(register1);
+			instruction = instruction->nextInstruction;
 		}
 	};
 

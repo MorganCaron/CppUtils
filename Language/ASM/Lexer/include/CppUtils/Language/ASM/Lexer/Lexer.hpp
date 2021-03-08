@@ -1,10 +1,11 @@
 #pragma once
 
+#include <CppUtils/Type/Concepts.hpp>
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
 
-namespace CppUtils::Language::ASM
+namespace CppUtils::Language::ASM::Lexer
 {
-	template<typename... Types>
+	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...>
 	class Lexer final
 	{
 	public:
@@ -13,9 +14,9 @@ namespace CppUtils::Language::ASM
 			using namespace std::literals;
 			using namespace Type::Literals;
 
-			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, Types...>);
-			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Type::Token, Types...>);
-			m_grammarLexer.addParsingFunction("intParser"_token, Parser::intParser<Type::Token, Types...>);
+			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Types...>);
+			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Types...>);
+			m_grammarLexer.addParsingFunction("ulongParser"_token, Parser::ulongParser<Types...>);
 
 			static constexpr auto grammarSrc = R"(
 			main: (_instruction >= 0) spaceParser;
@@ -23,31 +24,30 @@ namespace CppUtils::Language::ASM
 			_token: spaceParser keywordParser;
 			_variable: _token;
 			variable: _variable;
-			_value: spaceParser int;
-			int: intParser;
-			value: _value;
+			_value: spaceParser number;
+			number: ulongParser;
 			halt: "hlt";
 			nop: "nop";
-			move: "mov" _variable spaceParser ',' (value || variable);
-			add: "add" _variable spaceParser ',' (value || variable);
+			move: "mov" _variable spaceParser ',' (_value || variable);
+			add: "add" _variable spaceParser ',' (_value || variable);
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Parser::ASTNode<Type::Token, Types...> parse(const std::string_view src) const
+		[[nodiscard]] inline Parser::ASTNode<Types...> parse(std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
 		}
 
 	private:
-		Language::Lexer::GrammarLexer<Type::Token, Types...> m_grammarLexer;
+		Language::Lexer::GrammarLexer<Types...> m_grammarLexer;
 	};
 
-	template<typename... Types>
-	[[nodiscard]] inline Parser::ASTNode<Type::Token, Types...> parse(const std::string_view src)
+	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...>
+	[[nodiscard]] inline Parser::ASTNode<Types...> parse(std::string_view src)
 	{
-		static const auto stackIRLexer = Lexer<Types...>{};
-		return stackIRLexer.parse(src);
+		static const auto asmLexer = Lexer<Types...>{};
+		return asmLexer.parse(src);
 	}
 }

@@ -1,17 +1,14 @@
 #pragma once
 
 #include <stack>
-#include <variant>
 #include <unordered_map>
-
-#include <CppUtils/Language/ASM/Compiler/Bytecode.hpp>
 
 namespace CppUtils::Language::ASM::VM
 {
-	template<typename... Types>
+	template<typename Type>
 	struct Context final
 	{
-		std::unordered_map<Type::Token, std::variant<Types...>, Type::Token::hash_fn> registerFile;
-		std::stack<std::variant<Types...>> stack;
+		std::unordered_map<std::size_t, Type> registerFile;
+		std::stack<Type> stack;
 	};
 }

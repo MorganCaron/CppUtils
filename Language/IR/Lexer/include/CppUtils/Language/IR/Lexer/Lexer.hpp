@@ -13,9 +13,9 @@ namespace CppUtils::Language::IR::Lexer
 			using namespace std::literals;
 			using namespace Type::Literals;
 
-			m_grammarLexer.addParsingFunction("spaceParser"_token, Language::Parser::spaceParser<Type::Token, Types...>);
-			m_grammarLexer.addParsingFunction("keywordParser"_token, Language::Parser::keywordParser<Type::Token, Types...>);
-			m_grammarLexer.addParsingFunction("intParser"_token, Language::Parser::intParser<Type::Token, Types...>);
+			m_grammarLexer.addParsingFunction("spaceParser"_token, Language::Parser::spaceParser<Types...>);
+			m_grammarLexer.addParsingFunction("keywordParser"_token, Language::Parser::keywordParser<Types...>);
+			m_grammarLexer.addParsingFunction("intParser"_token, Language::Parser::intParser<Types...>);
 
 			static constexpr auto grammarSrc = R"(
 			main: (_functionDeclaration >= 0) spaceParser;
@@ -62,18 +62,18 @@ namespace CppUtils::Language::IR::Lexer
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Parser::ASTNode<Type::Token, Types...> parse(const std::string_view src) const
+		[[nodiscard]] inline Parser::ASTNode<Types...> parse(std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
 		}
 
 	private:
-		Language::Lexer::GrammarLexer<Type::Token, Types...> m_grammarLexer;
+		Language::Lexer::GrammarLexer<Types...> m_grammarLexer;
 	};
 
 	template<typename... Types>
-	[[nodiscard]] inline Parser::ASTNode<Type::Token, Types...> parse(const std::string_view src)
+	[[nodiscard]] inline Parser::ASTNode<Types...> parse(std::string_view src)
 	{
 		static const auto irLexer = Lexer<Types...>{};
 		return irLexer.parse(src);

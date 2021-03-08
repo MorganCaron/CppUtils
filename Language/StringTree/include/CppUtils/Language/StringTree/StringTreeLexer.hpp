@@ -26,7 +26,7 @@ namespace CppUtils::Language::StringTree
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline ASTNode parse(const std::string_view src) const
+		[[nodiscard]] inline ASTNode parse(std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
@@ -36,7 +36,7 @@ namespace CppUtils::Language::StringTree
 		Lexer::GrammarLexer<Type::Token> m_grammarLexer;
 	};
 
-	[[nodiscard]] inline StringTreeLexer::ASTNode parse(const std::string_view src)
+	[[nodiscard]] inline StringTreeLexer::ASTNode parse(std::string_view src)
 	{
 		static const auto stringTreeLexer = StringTreeLexer{};
 		return stringTreeLexer.parse(src);

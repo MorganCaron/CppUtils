@@ -116,6 +116,19 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
+	template<typename... Types> requires ((std::is_integral<Types>::value && std::is_unsigned<Types>::value && sizeof(Types) >= 8) || ...)
+	[[nodiscard]] inline bool ulongParser(Context<Types...>& context)
+	{
+		auto& [cursor, parentNode] = context;
+		if (cursor.isEndOfString() || !std::isdigit(cursor.getChar()))
+			return false;
+		auto numberLength = std::size_t{};
+		const auto number = std::stoul(cursor.src.substr(cursor.position).data(), &numberLength);
+		cursor.position += numberLength;
+		parentNode.get().childs.emplace_back(ASTNode<Types...>{number});
+		return true;
+	}
+
 	template<typename... Types> requires (std::is_floating_point<Types>::value || ...)
 	[[nodiscard]] inline bool floatParser(Context<Types...>& context)
 	{

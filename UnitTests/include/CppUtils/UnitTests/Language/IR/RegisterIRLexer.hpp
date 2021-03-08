@@ -8,7 +8,7 @@ namespace CppUtils::UnitTests::Language::IR::RegisterIRLexer
 
 		Test{"Language/IR/RegisterIRLexer", [] {
 			using namespace std::literals;
-			const auto registerIRTree = CppUtils::Language::IR::RegisterIR::parse<float>(R"(
+			const auto registerIRTree = CppUtils::Language::IR::RegisterIR::parse<Type::Token, float>(R"(
 			r0 = load b
 			r1 = load c
 			r2 = r0 + r1

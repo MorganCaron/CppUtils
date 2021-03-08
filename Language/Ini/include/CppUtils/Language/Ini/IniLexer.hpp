@@ -62,7 +62,7 @@ namespace CppUtils::Language::Ini
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Parser::ASTNode<Type::Token, bool, float> parse(const std::string_view src) const
+		[[nodiscard]] inline Parser::ASTNode<Type::Token, bool, float> parse(std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
@@ -72,7 +72,7 @@ namespace CppUtils::Language::Ini
 		Lexer::GrammarLexer<Type::Token, bool, float> m_grammarLexer;
 	};
 
-	[[nodiscard]] inline Parser::ASTNode<Type::Token, bool, float> parse(const std::string_view src)
+	[[nodiscard]] inline Parser::ASTNode<Type::Token, bool, float> parse(std::string_view src)
 	{
 		static const auto iniLexer = IniLexer{};
 		return iniLexer.parse(src);

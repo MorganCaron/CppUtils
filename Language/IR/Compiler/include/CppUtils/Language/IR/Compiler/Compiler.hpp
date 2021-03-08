@@ -21,7 +21,7 @@ namespace CppUtils::Language::IR::Compiler
 			return compile(parse<Types...>(src));
 		}
 
-		[[nodiscard]] inline auto compile(const Parser::ASTNode<Type::Token, Types...>& ast) const
+		[[nodiscard]] inline auto compile(const Parser::ASTNode<Types...>& ast) const
 		{
 			return m_compiler.compile(ast);
 		}

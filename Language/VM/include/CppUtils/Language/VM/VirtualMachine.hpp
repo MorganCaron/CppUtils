@@ -11,26 +11,24 @@ namespace CppUtils::Language::VM
 	class VirtualMachine
 	{
 	public:
-		using Operation = std::function<void(Parser::Cursor<Instruction>&, Context&)>;
+		using Operation = std::function<void(Instruction*, Context&)>;
 
 		VirtualMachine(std::unordered_map<Type::Token, Operation, Type::Token::hash_fn>&& operations = {}):
 			m_operations{operations}
 		{}
 
-		void run(std::span<const Instruction> instructions, Context& context) const
+		void run(std::span<const std::unique_ptr<Instruction>> instructions, Context& context) const
 		{
 			using namespace std::literals;
-			auto cursor = Parser::Cursor<Instruction>{instructions, 0};
-
 			try
 			{
-				while (!cursor.isEnd())
+				auto instruction = instructions[0].get();
+				while (instruction != nullptr)
 				{
-					const auto& instruction = cursor.getElement();
-					const auto operation = m_operations.find(instruction.type);
+					const auto operation = m_operations.find(instruction->type);
 					if (operation == m_operations.end())
-						throw std::runtime_error{"Unknown bytecode instruction:\n" + std::string{instruction.type.name}};
-					operation->second(cursor, context);
+						throw std::runtime_error{"Unknown bytecode instruction:\n" + std::string{instruction->type.name}};
+					operation->second(instruction, context);
 				}
 			}
 			catch (const std::exception& exception)

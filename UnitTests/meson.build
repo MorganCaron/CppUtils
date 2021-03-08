@@ -18,6 +18,7 @@ headers = files([
 	'include/CppUtils/UnitTests/Graph/MeshNode.hpp',
 	'include/CppUtils/UnitTests/Graph/TreeNode.hpp',
 	'include/CppUtils/UnitTests/Language/ASM/Lexer.hpp',
+	'include/CppUtils/UnitTests/Language/ASM/Compiler.hpp',
 	'include/CppUtils/UnitTests/Language/ASM/VirtualMachine.hpp',
 	'include/CppUtils/UnitTests/Language/Ini/IniLexer.hpp',
 	'include/CppUtils/UnitTests/Language/IR/RegisterIRLexer.hpp',
