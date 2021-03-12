@@ -4,10 +4,12 @@
 
 namespace CppUtils::UnitTests::Language::IR::Lexer
 {
-	const auto tests = std::vector<Test>{
+	TEST_GROUP("Language/IR/Lexer")
+	{
+		using namespace std::literals;
 
-		Test{"Language/IR/Lexer", [] {
-			using namespace std::literals;
+		addTest("", [] {
+			
 			const auto irTree = CppUtils::Language::IR::Lexer::parse<Type::Token, int>(R"(
 			main()
 			{
@@ -20,7 +22,6 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 			ASSERT(irTree.childs.size() == 1);
 			ASSERT(irTree.childs.at(0).childs.size() == 3);
 			ASSERT(irTree.childs.at(0).childs.at(1).childs.size() == 2);
-		}}
-
-	};
+		});
+	}
 }

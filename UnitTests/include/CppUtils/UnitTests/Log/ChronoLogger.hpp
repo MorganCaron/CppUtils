@@ -4,14 +4,12 @@
 
 namespace CppUtils::UnitTests::Log::ChronoLogger
 {
-	const auto tests = std::vector<CppUtils::Test>{
-
-		CppUtils::Test{"Log/ChronoLogger", [] {
+	TEST_GROUP("Log/ChronoLogger")
+	{
+		addTest("", [] {
 			auto chronoLogger = CppUtils::Log::ChronoLogger{"Test"};
-
 			chronoLogger.stop();
 			ASSERT(true);
-		}}
-
-	};
+		});
+	}
 }

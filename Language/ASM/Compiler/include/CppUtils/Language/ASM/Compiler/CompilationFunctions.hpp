@@ -21,9 +21,16 @@ namespace CppUtils::Language::ASM::Compiler
 			context.addInstruction(context.createInstruction("exit"_token, std::size_t{0}));
 		}
 
+		static void compileNumber([[maybe_unused]] const Parser::ASTNode<CppUtils::Type::Token, std::size_t>& astNode, Context<Type>& context)
+		{
+			const auto number = std::get<std::size_t>(astNode.childs.at(0).value);
+			context.addInstruction(context.createInstruction("", number));
+		}
+
 		static void compileMove(const Parser::ASTNode<CppUtils::Type::Token, std::size_t>& astNode, Context<Type>& context)
 		{
 			using namespace CppUtils::Type::Literals;
+			Graph::logTreeNode(astNode);
 			const auto lhs = std::get<std::size_t>(astNode.childs.at(0).value);
 			const auto rhs = std::get<std::size_t>(astNode.childs.at(1).value);
 			context.addInstruction(context.createInstruction("move"_token, lhs, rhs));

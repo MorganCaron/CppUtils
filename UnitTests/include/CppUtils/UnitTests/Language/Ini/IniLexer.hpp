@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::Language::Ini::IniLexer
 {
-	const auto tests = std::vector<CppUtils::Test>{
-
-		CppUtils::Test{"Language/Ini/IniLexer/minimalist", [] {
+	TEST_GROUP("Language/Ini/IniLexer")
+	{
+		addTest("minimalist", [] {
 			using namespace CppUtils::Language::Ini::Literals;
 			using namespace CppUtils::Language::StringTree::Literals;
 			const auto iniTree = R"(
@@ -25,9 +25,9 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			}
 			)"_stringTree;
 			ASSERT(iniTree == stringTree);
-		}},
+		});
 
-		CppUtils::Test{"Language/Ini/IniLexer/comments", [] {
+		addTest("comments", [] {
 			using namespace CppUtils::Language::Ini::Literals;
 			using namespace CppUtils::Language::StringTree::Literals;
 			const auto iniTree = R"(
@@ -48,9 +48,9 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			}
 			)"_stringTree;
 			ASSERT(iniTree == stringTree);
-		}},
+		});
 
-		CppUtils::Test{"Language/Ini/IniLexer/full", [] {
+		addTest("full", [] {
 			using namespace CppUtils::Language::Ini::Literals;
 			using namespace CppUtils::Language::StringTree::Literals;
 			const auto iniTree = R"(
@@ -96,7 +96,6 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			ASSERT(iniTree.childs.at(1).childs.at(0).childs.size() == 8);
 			ASSERT(iniTree.childs.at(2).childs.size() == 1);
 			ASSERT(iniTree.childs.at(2).childs.at(0).childs.size() == 2);
-		}}
-
-	};
+		});
+	}
 }

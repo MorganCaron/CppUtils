@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::Language::IR::RegisterIRLexer
 {
-	const auto tests = std::vector<Test>{
-
-		Test{"Language/IR/RegisterIRLexer", [] {
+	TEST_GROUP("Language/IR/RegisterIRLexer")
+	{
+		addTest("", [] {
 			using namespace std::literals;
 			const auto registerIRTree = CppUtils::Language::IR::RegisterIR::parse<Type::Token, float>(R"(
 			r0 = load b
@@ -19,9 +19,7 @@ namespace CppUtils::UnitTests::Language::IR::RegisterIRLexer
 			store a r6
 			)"sv);
 			CppUtils::Graph::logTreeNode(registerIRTree);
-
 			ASSERT(registerIRTree.childs.size() == 8);
-		}}
-
-	};
+		});
+	}
 }

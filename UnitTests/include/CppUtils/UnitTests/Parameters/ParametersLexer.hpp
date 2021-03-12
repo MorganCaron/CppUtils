@@ -10,30 +10,26 @@ namespace CppUtils::UnitTests::Parameters::ParametersLexer
 		std::string parameter;
 	};
 
-	const auto tests = std::vector<CppUtils::Test>{
+	TEST_GROUP("Parameters/ParametersLexer")
+	{
+		using namespace std::literals;
 
-		CppUtils::Test{"Parameters/ParametersLexer/parseParameters", [] {
-			using namespace std::literals;
-
+		addTest("parseParameters", [] {
 			const auto argc = 8;
 			const char* argv[] = {"executable", "A[aaa]", "B[", "0", "]", "C", "DDD[]", "E[e e e ]"};
 			const auto parametersLexer = CppUtils::Parameters::ParametersLexer{};
 			const auto parameters = parametersLexer.parseParameters(argc, argv);
-
 			for (const auto& [command, value] : parameters)
-				CppUtils::Log::Logger::logInformation(command + "["s + value + "]");
-			
+				CppUtils::Log::Logger::logInformation(command + "["s + value + "]");	
 			ASSERT(parameters.size() == 5);
 			ASSERT(parameters.at("A") == "aaa");
 			ASSERT(parameters.at("B") == "0");
 			ASSERT(parameters.at("C") == "");
 			ASSERT(parameters.at("DDD") == "");
 			ASSERT(parameters.at("E") == "e e e");
-		}},
+		});
 
-		CppUtils::Test{"Parameters/ParametersLexer/executeCommands", [] {
-			using namespace std::literals;
-			
+		addTest("executeCommands", [] {
 			const auto argc = 4;
 			const char* argv[] = {"executable", "info", "verbose", "parameter[value]"};
 			auto settings = ProgramSettings{};
@@ -61,15 +57,11 @@ namespace CppUtils::UnitTests::Parameters::ParametersLexer
 					}
 				}
 			});
-
 			ASSERT(abort == false);
-
 			CppUtils::Log::Logger::logInformation("settings.verbose = "s + std::to_string(settings.verbose));
 			CppUtils::Log::Logger::logInformation("settings.parameter = "s + settings.parameter);
-			
 			ASSERT(settings.verbose == true);
 			ASSERT(settings.parameter == "value");
-		}}
-
-	};
+		});
+	}
 }

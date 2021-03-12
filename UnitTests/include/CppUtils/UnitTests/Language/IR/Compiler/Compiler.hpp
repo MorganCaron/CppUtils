@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::Language::IR::Compiler
 {
-	const auto tests = std::vector<Test>{
-
-		Test{"Language/IR/Compiler", [] {
+	TEST_GROUP("Language/IR/Compiler")
+	{
+		addTest("", [] {
 			using namespace std::literals;
 			const auto irTree = CppUtils::Language::IR::Lexer::parse<Type::Token, int>(R"(
 			main()
@@ -20,7 +20,6 @@ namespace CppUtils::UnitTests::Language::IR::Compiler
 			ASSERT(irTree.childs.size() == 1);
 			ASSERT(irTree.childs.at(0).childs.size() == 3);
 			ASSERT(irTree.childs.at(0).childs.at(1).childs.size() == 2);
-		}}
-
-	};
+		});
+	}
 }

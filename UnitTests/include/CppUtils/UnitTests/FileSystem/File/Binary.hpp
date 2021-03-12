@@ -4,9 +4,9 @@
 
 namespace CppUtils::UnitTests::FileSystem::File::Binary
 {
-	const auto tests = std::vector<CppUtils::Test>{
-
-		CppUtils::Test{"FileSystem/File/Binary/WriteRead", [] {
+	TEST_GROUP("FileSystem/File/Binary")
+	{
+		addTest("WriteRead", [] {
 			const auto filePath = std::filesystem::path{"test.tmp"};
 			const auto originalString = 12345;
 			CppUtils::FileSystem::File::Binary::write(filePath, originalString);
@@ -14,9 +14,9 @@ namespace CppUtils::UnitTests::FileSystem::File::Binary
 			CppUtils::Log::Logger::logInformation(std::to_string(fileContent));
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			ASSERT(fileContent == originalString);
-		}},
+		});
 
-		CppUtils::Test{"FileSystem/File/Binary/WriteReadVector", [] {
+		addTest("WriteReadVector", [] {
 			const auto filePath = std::filesystem::path{"test.tmp"};
 			const auto originalVector = std::vector<int>{ 1, 2, 3, 4, 5 };
 			CppUtils::FileSystem::File::Binary::writeVector(filePath, originalVector);
@@ -26,7 +26,6 @@ namespace CppUtils::UnitTests::FileSystem::File::Binary
 			CppUtils::Log::Logger::logInformation("");
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			ASSERT(vector == originalVector);
-		}}
-
-	};
+		});
+	}
 }

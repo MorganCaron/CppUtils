@@ -4,11 +4,12 @@
 
 namespace CppUtils::UnitTests::Language::Json::JsonLexer
 {
-	const auto tests = std::vector<CppUtils::Test>{
-
-		CppUtils::Test{"Language/Json/JsonLexer/minimalist", [] {
-			using namespace CppUtils::Type::Literals;
-			using namespace CppUtils::Language::Json::Literals;
+	TEST_GROUP("Language/Json/JsonLexer")
+	{
+		using namespace CppUtils::Type::Literals;
+		using namespace CppUtils::Language::Json::Literals;
+		
+		addTest("minimalist", [] {
 			const auto jsonTree = R"(
 			{
 				"value0": "text",
@@ -28,11 +29,9 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 			ASSERT(jsonTree.childs.at(1).childs.at(0).childs.size() == 1);
 			ASSERT(jsonTree.childs.at(0).childs.at(0).childs.at(0).value == "text"_token);
 			ASSERT(jsonTree.childs.at(1).childs.at(0).childs.at(0).value == 3.14159f);
-		}},
+		});
 
-		CppUtils::Test{"Language/Json/JsonLexer/object", [] {
-			using namespace CppUtils::Type::Literals;
-			using namespace CppUtils::Language::Json::Literals;
+		addTest("object", [] {
 			const auto jsonTree = R"(
 			{
 				"value0": "text",
@@ -52,11 +51,9 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 			ASSERT(jsonTree.childs.at(2).childs.at(0).childs.size() == 2);
 			ASSERT(jsonTree.childs.at(2).childs.at(0).childs.at(0) == jsonTree.childs.at(0));
 			ASSERT(jsonTree.childs.at(2).childs.at(0).childs.at(1) == jsonTree.childs.at(1));
-		}},
+		});
 
-		CppUtils::Test{"Language/Json/JsonLexer/array", [] {
-			using namespace CppUtils::Type::Literals;
-			using namespace CppUtils::Language::Json::Literals;
+		addTest("array", [] {
 			const auto jsonTree = R"(
 			{
 				"array0": [0, 1, 2, 3, 4]
@@ -69,7 +66,6 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 			ASSERT(jsonTree.childs.at(0).childs.size() == 1);
 			ASSERT(jsonTree.childs.at(0).childs.at(0).value == "array"_token);
 			ASSERT(jsonTree.childs.at(0).childs.at(0).childs.size() == 5);
-		}}
-
-	};
+		});
+	}
 }

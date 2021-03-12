@@ -24,11 +24,10 @@ namespace CppUtils::Language::Compiler
 			m_compilationFunctions.at(nodeType)(astNode, context);
 		}
 
-		[[nodiscard]] std::vector<std::unique_ptr<Instruction>> compile(const std::vector<Parser::ASTNode<Types...>>& astNodes, Context& context) const
+		void compile(const std::vector<Parser::ASTNode<Types...>>& astNodes, Context& context) const
 		{
 			for (const auto astNode : astNodes)
 				compile(astNode, context);
-			return std::move(context.instructions);
 		}
 
 	private:

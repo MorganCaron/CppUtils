@@ -6,44 +6,45 @@
 
 namespace CppUtils::UnitTests::Language::ASM::Compiler
 {
-	const auto tests = std::vector<Test>{
+	TEST_GROUP("Language/ASM/Compiler")
+	{
+		using namespace std::literals;
 
-		Test{"Language/ASM/Compiler/Nop", [] {
-			using namespace std::literals;
-			const auto instructions = CppUtils::Language::ASM::Compiler::compile<std::int64_t>(R"(
+		addTest("Nop", [] {
+			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
+			const auto context = compiler.compile(R"(
 			nop
 			)"sv);
-			for (const auto& instruction : instructions)
+			for (const auto& instruction : context.instructions)
 				std::cout << *instruction << std::endl;
-		}},
-		
-		Test{"Language/ASM/Compiler/Halt", [] {
-			using namespace std::literals;
-			const auto instructions = CppUtils::Language::ASM::Compiler::compile<std::int64_t>(R"(
+		});
+
+		addTest("Halt", [] {
+			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
+			const auto context = compiler.compile(R"(
 			hlt
 			)"sv);
-			for (const auto& instruction : instructions)
+			for (const auto& instruction : context.instructions)
 				std::cout << *instruction << std::endl;
-		}},
+		});
 
-		Test{"Language/ASM/Compiler/Move", [] {
-			using namespace std::literals;
-			const auto instructions = CppUtils::Language::ASM::Compiler::compile<std::int64_t>(R"(
-			mov r0, 20
+		addTest("Move", [] {
+			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
+			const auto context = compiler.compile(R"(
+			mov r0, 42
 			)"sv);
-			for (const auto& instruction : instructions)
+			for (const auto& instruction : context.instructions)
 				std::cout << *instruction << std::endl;
-		}},
-		
-		Test{"Language/ASM/Compiler/Add", [] {
-			using namespace std::literals;
-			const auto instructions = CppUtils::Language::ASM::Compiler::compile<std::int64_t>(R"(
+		});
+
+		addTest("Add", [] {
+			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
+			const auto context = compiler.compile(R"(
 			mov r0, 20
 			add r0, 22
 			)"sv);
-			for (const auto& instruction : instructions)
+			for (const auto& instruction : context.instructions)
 				std::cout << *instruction << std::endl;
-		}}
-
-	};
+		});
+	}
 }

@@ -26,7 +26,7 @@ subdir('String')
 subdir('Thread')
 subdir('Language')
 subdir('Parameters')
-subdir('Test')
+subdir('UnitTest')
 
 public_dependencies = [
 	cppUtils_platform_dep,
@@ -44,7 +44,7 @@ public_dependencies = [
 	cppUtils_thread_dep,
 	cppUtils_language_dep,
 	cppUtils_parameters_dep,
-	cppUtils_test_dep
+	cppUtils_unittest_dep
 ]
 private_dependencies = []
 

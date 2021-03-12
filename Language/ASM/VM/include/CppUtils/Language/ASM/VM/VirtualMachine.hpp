@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <functional>
 
-#include <CppUtils/Language/ASM/Compiler/Bytecode.hpp>
+#include <CppUtils/Language/ASM/Compiler/Compiler.hpp>
 #include <CppUtils/Language/ASM/VM/Context.hpp>
 #include <CppUtils/Language/ASM/VM/Operations.hpp>
 #include <CppUtils/Language/VM/VirtualMachine.hpp>
@@ -28,16 +28,15 @@ namespace CppUtils::Language::ASM::VM
 			}}
 		{}
 
-		inline void run(std::span<const std::unique_ptr<Instruction>> instructions, Context<Type> context = {}) const
+		inline void run(std::span<const std::unique_ptr<Instruction>> instructions, Context<Type>& context) const
 		{
 			m_virtualMachine.run(instructions, context);
 		}
 
-		static void run(std::string_view src)
+		inline void run(std::string_view src, Context<Type>& context) const
 		{
-			const auto bytecode = Compiler::compile<Type>(src);
-			static const auto vm = VM::VirtualMachine<Type>{};
-			vm.run(bytecode);
+			static const auto compiler = Compiler::Compiler<Type>{};
+			run(compiler.compile(src).instructions, context);
 		}
 
 	private:

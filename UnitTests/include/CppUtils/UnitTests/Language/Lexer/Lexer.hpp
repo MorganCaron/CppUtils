@@ -4,11 +4,12 @@
 
 namespace CppUtils::UnitTests::Language::Lexer
 {
-	const auto tests = std::vector<CppUtils::Test>{
-
-		CppUtils::Test{"Language/Lexer/Expression", [] {
-			using namespace std::literals;
-			using namespace CppUtils::Type::Literals;
+	TEST_GROUP("Language/Lexer")
+	{
+		using namespace std::literals;
+		using namespace CppUtils::Type::Literals;
+		
+		addTest("Expression", [] {
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
 			auto& printExpression = lexer.newExpression("print"_token);
 			auto& stringExpression = lexer.newExpression("string"_token);
@@ -24,11 +25,9 @@ namespace CppUtils::UnitTests::Language::Lexer
 			ASSERT(tokenTree.childs.size() == 1);
 			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.childs.at(0).value) == "string"_token);
 			ASSERT(tokenTree.childs.at(0).childs.size() == 0);
-		}},
+		});
 
-		CppUtils::Test{"Language/Lexer/Parsers", [] {
-			using namespace std::literals;
-			using namespace CppUtils::Type::Literals;
+		addTest("Parsers", [] {
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
 			auto& printExpression = lexer.newExpression("print"_token);
 			auto& stringExpression = lexer.newExpression("string"_token);
@@ -51,11 +50,9 @@ namespace CppUtils::UnitTests::Language::Lexer
 			ASSERT(tokenTree.childs.at(0).childs.size() == 1);
 			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.childs.at(0).childs.at(0).value) == "Hello World!"_token);
 			ASSERT(tokenTree.childs.at(0).childs.at(0).childs.size() == 0);
-		}},
+		});
 
-		CppUtils::Test{"Language/Lexer/Recurrence", [] {
-			using namespace std::literals;
-			using namespace CppUtils::Type::Literals;
+		addTest("Recurrence", [] {
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
 			auto& mainExpression = lexer.newExpression("main"_token);
 			auto& printExpression = lexer.newExpression("print"_token);
@@ -84,11 +81,9 @@ namespace CppUtils::UnitTests::Language::Lexer
 			ASSERT(tokenTree.childs.size() == 3);
 			for (const auto& child : tokenTree.childs)
 				ASSERT(std::get<CppUtils::Type::Token>(child.value) == "print"_token);
-		}},
+		});
 
-		CppUtils::Test{"Language/Lexer/Alternative", [] {
-			using namespace std::literals;
-			using namespace CppUtils::Type::Literals;
+		addTest("Alternative", [] {
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
 			auto& mainExpression = lexer.newExpression("main"_token);
 			auto& valueExpression = lexer.newExpression("value"_token);
@@ -116,7 +111,6 @@ namespace CppUtils::UnitTests::Language::Lexer
 			ASSERT(tokenTree.childs.size() == 4);
 			for (const auto& child : tokenTree.childs)
 				ASSERT(std::get<CppUtils::Type::Token>(child.value) == "value"_token);
-		}}
-
-	};
+		});
+	}
 }

@@ -4,11 +4,12 @@
 
 namespace CppUtils::UnitTests::Language::StringTree::StringTreeLexer
 {
-	const auto tests = std::vector<CppUtils::Test>{
-
-		CppUtils::Test{"Language/StringTree/StringTreeLexer/parse", [] {
-			using namespace CppUtils::Language::StringTree::Literals;
-			using namespace CppUtils::Type::Literals;
+	TEST_GROUP("Language/StringTree/StringTreeLexer")
+	{
+		using namespace CppUtils::Type::Literals;
+		using namespace CppUtils::Language::StringTree::Literals;
+		
+		addTest("parse", [] {
 			const auto stringTreeLexer = CppUtils::Language::StringTree::StringTreeLexer{};
 			const auto stringTree = R"(
 			"root" {
@@ -30,7 +31,6 @@ namespace CppUtils::UnitTests::Language::StringTree::StringTreeLexer
 			ASSERT(stringTree.childs.at(0).childs.at(1).childs.size() == 1);
 			ASSERT(std::get<CppUtils::Type::Token>(stringTree.childs.at(0).childs.at(1).childs.at(0).value) == "subchild0"_token);
 			ASSERT(stringTree.childs.at(0).childs.at(1).childs.at(0).childs.size() == 0);
-		}}
-
-	};
+		});
+	}
 }

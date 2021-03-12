@@ -4,12 +4,12 @@
 
 namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 {
-	using namespace std::literals;
-	
-	const auto tests = std::vector<CppUtils::Test>{
-
-		CppUtils::Test{"Language/Lexer/GrammarLexer/Lexeme", [] {
-			using namespace CppUtils::Type::Literals;
+	TEST_GROUP("Language/Lexer/GrammarLexer")
+	{
+		using namespace std::literals;
+		using namespace CppUtils::Type::Literals;
+		
+		addTest("Lexeme", [] {
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token>{};
 
 			static constexpr auto grammarSrc = R"(
@@ -24,10 +24,9 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 
 			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.value) == "main"_token);
 			ASSERT(tokenTree.childs.size() == 0);
-		}},
+		});
 
-		CppUtils::Test{"Language/Lexer/GrammarLexer/Expressions", [] {
-			using namespace CppUtils::Type::Literals;
+		addTest("Expressions", [] {
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token>{};
 
 			grammarLexer.addParsingFunction("spaceParser"_token, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token>);
@@ -58,10 +57,9 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.childs.at(0).childs.at(1).value) == "string"_token);
 			ASSERT(tokenTree.childs.at(0).childs.at(1).childs.size() == 1);
 			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.childs.at(0).childs.at(1).childs.at(0).value) == "Hello World!"_token);
-		}},
+		});
 
-		CppUtils::Test{"Language/Lexer/GrammarLexer/Recurrence", [] {
-			using namespace CppUtils::Type::Literals;
+		addTest("Recurrence", [] {
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token>{};
 
 			grammarLexer.addParsingFunction("spaceParser"_token, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token>);
@@ -80,10 +78,9 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 
 			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.value) == "main"_token);
 			ASSERT(tokenTree.childs.size() == 4);
-		}},
+		});
 
-		CppUtils::Test{"Language/Lexer/GrammarLexer/Avanced", [] {
-			using namespace CppUtils::Type::Literals;
+		addTest("Avanced", [] {
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token>{};
 
 			grammarLexer.addParsingFunction("spaceParser"_token, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token>);
@@ -115,7 +112,6 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 
 			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.value) == "main"_token);
 			ASSERT(tokenTree.childs.size() == 4);
-		}}
-
-	};
+		});
+	}
 }

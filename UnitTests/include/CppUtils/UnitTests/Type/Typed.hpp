@@ -4,7 +4,6 @@
 
 namespace CppUtils::UnitTests::Type::Typed
 {
-	using namespace std::literals;
 	using namespace CppUtils::Type::Literals;
 
 	constexpr auto IntType = "Int"_token;
@@ -13,9 +12,11 @@ namespace CppUtils::UnitTests::Type::Typed
 	constexpr auto StringType = "String"_token;
 	using String = CppUtils::Type::Typed<StringType, std::string>;
 
-	const auto tests = std::vector<CppUtils::Test>{
-
-		CppUtils::Test{"Type/Typed", [] {
+	TEST_GROUP("Type/Typed")
+	{
+		using namespace std::literals;
+		
+		addTest("", [] {
 			const auto typedInt = Int{42};
 			const auto typedString = String{"text"};
 
@@ -25,9 +26,9 @@ namespace CppUtils::UnitTests::Type::Typed
 
 			CppUtils::Log::Logger::logInformation(std::to_string(typedInt.value));
 			CppUtils::Log::Logger::logInformation(typedString.value);
-		}},
+		});
 
-		CppUtils::Test{"Type/Typed/vector", [] {
+		addTest("vector", [] {
 			auto values = std::vector<std::unique_ptr<CppUtils::Type::ITyped>>{};
 			values.emplace_back(std::make_unique<Int>(42));
 			values.emplace_back(std::make_unique<String>("text"));
@@ -43,7 +44,6 @@ namespace CppUtils::UnitTests::Type::Typed
 
 			ASSERT(values.at(0)->getType() == IntType);
 			ASSERT(values.at(1)->getType() == StringType);
-		}}
-
-	};
+		});
+	}
 }

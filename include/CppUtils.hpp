@@ -36,7 +36,12 @@
 #include <CppUtils/Log/ChronoLogger.hpp>
 #include <CppUtils/Log/Logger.hpp>
 #include <CppUtils/Parameters/ParametersLexer.hpp>
-#include <CppUtils/Test/Test.hpp>
+#include <CppUtils/UnitTest/Test.hpp>
+#include <CppUtils/UnitTest/Testable.hpp>
+#include <CppUtils/UnitTest/TestException.hpp>
+#include <CppUtils/UnitTest/TestRunner.hpp>
+#include <CppUtils/UnitTest/TestSettingsLexer.hpp>
+#include <CppUtils/UnitTest/TestSettings.hpp>
 #include <CppUtils/Thread/AsyncIStreamListener.hpp>
 #include <CppUtils/Thread/LoopThread.hpp>
 #include <CppUtils/Type/Cloneable.hpp>

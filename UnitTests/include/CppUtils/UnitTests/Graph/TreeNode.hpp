@@ -4,11 +4,11 @@
 
 namespace CppUtils::UnitTests::Graph::TreeNode
 {
-	const auto tests = std::vector<CppUtils::Test>{
+	TEST_GROUP("Graph/TreeNode")
+	{
+		using StringTreeNode = CppUtils::Graph::TreeNode<std::string>;
 
-		CppUtils::Test{"Graph/TreeNode", [] {
-			using StringTreeNode = CppUtils::Graph::TreeNode<std::string>;
-			
+		addTest("", [] {
 			auto root = StringTreeNode{"Root"};
 			CppUtils::Log::Logger::logInformation(root.value);
 			ASSERT(root.value == "Root");
@@ -33,7 +33,6 @@ namespace CppUtils::UnitTests::Graph::TreeNode
 			subBranch0.childs.emplace_back(StringTreeNode{"SubSubBranch1"});
 			root.childs.emplace_back(StringTreeNode{"Branch3"});
 			CppUtils::Graph::logTreeNode(root);
-		}}
-
-	};
+		});
+	}
 }
