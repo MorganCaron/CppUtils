@@ -10,6 +10,7 @@ namespace CppUtils::UnitTests::Language::ASM::VirtualMachine
 	{
 		using namespace std::literals;
 
+		/*
 		addTest("Nop", [] {
 			static const auto vm = CppUtils::Language::ASM::VM::VirtualMachine<std::int64_t>{};
 			auto context = CppUtils::Language::ASM::VM::Context<std::int64_t>{};
@@ -42,5 +43,6 @@ namespace CppUtils::UnitTests::Language::ASM::VirtualMachine
 			add r0, 22
 			)"sv, context);
 		});
+		*/
 	}
 }

@@ -23,8 +23,8 @@ namespace CppUtils::Language::ASM::Compiler::Bytecode
 		Instruction<Type>* nextInstruction = nullptr;
 		Instruction<Type>* targetInstruction = nullptr;
 
-		explicit Instruction(std::string_view c_name = ""sv, Type c_value = Type{}):
-			type{"init"_token}, name{c_name}, value{c_value}
+		explicit Instruction(std::size_t registerId = 0, std::string_view c_name = ""sv, Type c_value = Type{}):
+			type{"init"_token}, name{c_name}, value{c_value}, parametersId{registerId}
 		{}
 
 		explicit Instruction(Instruction<Type>* c_targetInstruction):

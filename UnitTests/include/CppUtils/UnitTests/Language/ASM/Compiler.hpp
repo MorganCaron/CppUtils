@@ -46,5 +46,15 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 			for (const auto& instruction : context.instructions)
 				std::cout << *instruction << std::endl;
 		});
+
+		addTest("Label", [] {
+			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
+			const auto context = compiler.compile(R"(
+			main: mov r0, 20
+			add r0, 22
+			)"sv);
+			for (const auto& instruction : context.instructions)
+				std::cout << *instruction << std::endl;
+		});
 	}
 }

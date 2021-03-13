@@ -18,21 +18,30 @@ namespace CppUtils::Language::ASM::Compiler
 		static void compileHalt([[maybe_unused]] const Parser::ASTNode<CppUtils::Type::Token, std::size_t>& astNode, Context<Type>& context)
 		{
 			using namespace CppUtils::Type::Literals;
-			context.addInstruction(context.createInstruction("exit"_token, std::size_t{0}));
+			context.addInstruction(context.createInstruction("halt"_token, std::size_t{0}));
+			context.returnRegister = std::size_t{0};
 		}
 
-		static void compileNumber([[maybe_unused]] const Parser::ASTNode<CppUtils::Type::Token, std::size_t>& astNode, Context<Type>& context)
+		static void compileNumber(const Parser::ASTNode<CppUtils::Type::Token, std::size_t>& astNode, Context<Type>& context)
 		{
 			const auto number = std::get<std::size_t>(astNode.childs.at(0).value);
-			context.addInstruction(context.createInstruction("", number));
+			context.returnRegister = context.newRegister();
+			context.addInstruction(context.createInstruction(context.returnRegister, "", number));
+		}
+
+		static void compileString(const Parser::ASTNode<CppUtils::Type::Token, std::size_t>& astNode, Context<Type>& context)
+		{
+			const auto string = std::get<std::size_t>(astNode.childs.at(0).value);
+			context.returnRegister = context.newRegister();
+			context.addInstruction(context.createInstruction(context.returnRegister, "", string));
 		}
 
 		static void compileMove(const Parser::ASTNode<CppUtils::Type::Token, std::size_t>& astNode, Context<Type>& context)
 		{
 			using namespace CppUtils::Type::Literals;
-			Graph::logTreeNode(astNode);
 			const auto lhs = std::get<std::size_t>(astNode.childs.at(0).value);
-			const auto rhs = std::get<std::size_t>(astNode.childs.at(1).value);
+			context.compiler.get().compile(astNode.childs.at(1), context);
+			const auto rhs = context.returnRegister;
 			context.addInstruction(context.createInstruction("move"_token, lhs, rhs));
 		}
 
@@ -40,8 +49,14 @@ namespace CppUtils::Language::ASM::Compiler
 		{
 			using namespace CppUtils::Type::Literals;
 			const auto lhs = std::get<std::size_t>(astNode.childs.at(0).value);
-			const auto rhs = std::get<std::size_t>(astNode.childs.at(1).value);
+			context.compiler.get().compile(astNode.childs.at(1), context);
+			const auto rhs = context.returnRegister;
 			context.addInstruction(context.createInstruction("add"_token, lhs, rhs));
+		}
+
+		static void compileLabel(const Parser::ASTNode<CppUtils::Type::Token, std::size_t>& astNode, Context<Type>& context)
+		{
+			context.compiler.get().compile(astNode.childs.at(1), context);
 		}
 	};
 }

@@ -5,10 +5,14 @@
 
 namespace CppUtils::Language::Compiler
 {
-	template<typename Instruction>
+	template<typename Compiler, typename Instruction>
 	struct Context
 	{
-		std::vector<std::unique_ptr<Instruction>> instructions;
+		std::reference_wrapper<const Compiler> compiler;
+		std::vector<std::unique_ptr<Instruction>> instructions = {};
+
+		explicit Context(std::reference_wrapper<const Compiler> c_compiler): compiler{c_compiler}
+		{}
 
 		template<typename... Args>
 		inline Instruction* createInstruction(Args... args)

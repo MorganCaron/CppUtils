@@ -19,8 +19,10 @@ namespace CppUtils::Language::ASM::Compiler
 			{ "nop"_token, CompilationFunctions<Type>::compileNop },
 			{ "halt"_token, CompilationFunctions<Type>::compileHalt },
 			{ "number"_token, CompilationFunctions<Type>::compileNumber },
+			{ "string"_token, CompilationFunctions<Type>::compileString },
 			{ "move"_token, CompilationFunctions<Type>::compileMove },
-			{ "add"_token, CompilationFunctions<Type>::compileAdd }
+			{ "add"_token, CompilationFunctions<Type>::compileAdd },
+			{ "label"_token, CompilationFunctions<Type>::compileLabel }
 		}}
 		{}
 
@@ -36,12 +38,12 @@ namespace CppUtils::Language::ASM::Compiler
 
 		[[nodiscard]] inline Context<Type> compile(std::string_view src) const
 		{
-			auto context = Context<Type>{};
+			auto context = Context<Type>{std::cref(*this)};
 			compile(Lexer::parse<CppUtils::Type::Token, std::size_t>(src).childs, context);
 			return context;
 		}
 
 	private:
-		Language::Compiler::Compiler<Bytecode::Instruction<Type>, Context<Type>, CppUtils::Type::Token, std::size_t> m_compiler;
+		Language::Compiler::Compiler<Context<Type>, CppUtils::Type::Token, std::size_t> m_compiler;
 	};
 }

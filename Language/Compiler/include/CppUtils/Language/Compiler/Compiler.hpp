@@ -5,8 +5,8 @@
 
 namespace CppUtils::Language::Compiler
 {
-	template<typename Instruction, typename Context, typename... Types>
-	requires (std::is_base_of<Compiler::Context<Instruction>, Context>::value && Type::Concept::isPresent<Type::Token, Types...>)
+	template<typename Context, typename... Types>
+	requires Type::Concept::isPresent<Type::Token, Types...>
 	class Compiler final
 	{
 	public:
@@ -18,6 +18,8 @@ namespace CppUtils::Language::Compiler
 
 		void compile(const Parser::ASTNode<Types...>& astNode, Context& context) const
 		{
+			if (!std::holds_alternative<Type::Token>(astNode.value))
+				throw std::runtime_error{"The AST node to compile must be a token."};
 			const auto& nodeType = std::get<Type::Token>(astNode.value);
 			if (m_compilationFunctions.find(nodeType) == m_compilationFunctions.end())
 				throw std::runtime_error{"No compile function for AST node \"" + std::string{nodeType.name} + '"'};

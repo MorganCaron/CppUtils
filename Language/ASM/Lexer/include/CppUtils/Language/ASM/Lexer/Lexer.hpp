@@ -20,16 +20,22 @@ namespace CppUtils::Language::ASM::Lexer
 
 			static constexpr auto grammarSrc = R"(
 			main: (_instruction >= 0) spaceParser;
-			_instruction: spaceParser (halt || nop || move || add);
+			_instruction: ~[label] spaceParser (halt || nop || move || add);
+
 			_token: spaceParser keywordParser;
-			_variable: _token;
-			variable: _variable;
+			label: _token spaceParser ':';
+			_number: ulongParser;
+			number: _number;
 			_value: spaceParser number;
-			number: ulongParser;
+			value: _value;
+
+			_register: spaceParser 'r' _number;
+			register: _register;
+
 			halt: "hlt";
 			nop: "nop";
-			move: "mov" _variable spaceParser ',' (_value || variable);
-			add: "add" _variable spaceParser ',' (_value || variable);
+			move: "mov" _register spaceParser ',' (_value || register);
+			add: "add" _register spaceParser ',' (_value || register);
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
