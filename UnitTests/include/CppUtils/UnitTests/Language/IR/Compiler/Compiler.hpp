@@ -6,20 +6,20 @@ namespace CppUtils::UnitTests::Language::IR::Compiler
 {
 	TEST_GROUP("Language/IR/Compiler")
 	{
+		using namespace std::literals;
+
 		addTest("", [] {
-			using namespace std::literals;
-			const auto irTree = CppUtils::Language::IR::Lexer::parse<Type::Token, int>(R"(
+			const auto compiler = CppUtils::Language::IR::Compiler::Compiler<std::int64_t>{};
+			const auto context = compiler.compile(R"(
 			main()
 			{
 				nop;
-				a = (10 + 12) * 2;
+				a = (20 + 24) - 2;
 				ret a;
 			}
 			)"sv);
-			CppUtils::Graph::logTreeNode(irTree);
-			ASSERT(irTree.childs.size() == 1);
-			ASSERT(irTree.childs.at(0).childs.size() == 3);
-			ASSERT(irTree.childs.at(0).childs.at(1).childs.size() == 2);
+			for (const auto& instruction : context.instructions)
+				std::cout << *instruction << std::endl;
 		});
 	}
 }

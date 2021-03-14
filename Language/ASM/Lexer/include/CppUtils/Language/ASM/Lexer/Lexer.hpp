@@ -5,7 +5,7 @@
 
 namespace CppUtils::Language::ASM::Lexer
 {
-	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...>
+	template<typename Address> requires std::is_integral_v<Address>
 	class Lexer final
 	{
 	public:
@@ -14,9 +14,18 @@ namespace CppUtils::Language::ASM::Lexer
 			using namespace std::literals;
 			using namespace Type::Literals;
 
-			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Types...>);
-			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Types...>);
-			m_grammarLexer.addParsingFunction("ulongParser"_token, Parser::ulongParser<Types...>);
+			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, Address>);
+			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Type::Token, Address>);
+			auto addressParser = []() -> Parser::ParsingFunction<Type::Token, Address> {
+				if constexpr(sizeof(Address) >= 8) {
+					if constexpr(std::is_signed_v<Address>)	return Parser::longParser<Type::Token, Address>;
+					else									return Parser::ulongParser<Type::Token, Address>;
+				} else {
+					if constexpr(std::is_signed_v<Address>)	return Parser::intParser<Type::Token, Address>;
+					else									return Parser::uintParser<Type::Token, Address>;
+				}
+			}();
+			m_grammarLexer.addParsingFunction("addressParser"_token, std::move(addressParser));
 
 			static constexpr auto grammarSrc = R"(
 			main: (_instruction >= 0) spaceParser;
@@ -24,7 +33,7 @@ namespace CppUtils::Language::ASM::Lexer
 
 			_token: spaceParser keywordParser;
 			label: _token spaceParser ':';
-			_number: ulongParser;
+			_number: addressParser;
 			number: _number;
 			_value: spaceParser number;
 			value: _value;
@@ -40,20 +49,20 @@ namespace CppUtils::Language::ASM::Lexer
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Parser::ASTNode<Types...> parse(std::string_view src) const
+		[[nodiscard]] inline Parser::ASTNode<Type::Token, Address> parse(std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
 		}
 
 	private:
-		Language::Lexer::GrammarLexer<Types...> m_grammarLexer;
+		Language::Lexer::GrammarLexer<Type::Token, Address> m_grammarLexer;
 	};
 
-	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...>
-	[[nodiscard]] inline Parser::ASTNode<Types...> parse(std::string_view src)
+	template<typename Address> requires std::is_integral_v<Address>
+	[[nodiscard]] inline Parser::ASTNode<Type::Token, Address> parse(std::string_view src)
 	{
-		static const auto asmLexer = Lexer<Types...>{};
+		static const auto asmLexer = Lexer<Address>{};
 		return asmLexer.parse(src);
 	}
 }

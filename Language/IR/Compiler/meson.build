@@ -1,4 +1,7 @@
-public_dependencies = []
+public_dependencies = [
+	cppUtils_language_lexer_dep,
+	cppUtils_language_compiler_dep
+]
 private_dependencies = []
 
 includeDir = include_directories(['include/', '.'])
@@ -8,7 +11,10 @@ sources = files([
 ])
 
 headers = files([
-	'include/CppUtils/Language/IR/Compiler/Compiler.hpp'
+	'include/CppUtils/Language/IR/Compiler/Bytecode.hpp',
+	'include/CppUtils/Language/IR/Compiler/CompilationFunctions.hpp',
+	'include/CppUtils/Language/IR/Compiler/Compiler.hpp',
+	'include/CppUtils/Language/IR/Compiler/Context.hpp'
 ])
 
 cppUtils_language_ir_compiler_dep = declare_dependency(

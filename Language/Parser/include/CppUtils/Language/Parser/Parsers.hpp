@@ -77,7 +77,7 @@ namespace CppUtils::Language::Parser
 		return quoteParser(context);
 	}
 
-	template<typename... Types> requires ((std::is_integral<Types>::value && std::is_unsigned<Types>::value && sizeof(Types) >= 4) || ...)
+	template<typename... Types> requires ((std::is_integral_v<Types> && std::is_unsigned_v<Types> && sizeof(Types) >= 4) || ...)
 	[[nodiscard]] inline bool uintParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
@@ -92,7 +92,7 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	template<typename... Types> requires ((std::is_integral<Types>::value && std::is_signed<Types>::value && sizeof(Types) >= 4) || ...)
+	template<typename... Types> requires ((std::is_integral_v<Types> && std::is_signed_v<Types> && sizeof(Types) >= 4) || ...)
 	[[nodiscard]] inline bool intParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
@@ -116,7 +116,7 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	template<typename... Types> requires ((std::is_integral<Types>::value && std::is_unsigned<Types>::value && sizeof(Types) >= 8) || ...)
+	template<typename... Types> requires ((std::is_integral_v<Types> && std::is_unsigned_v<Types> && sizeof(Types) >= 8) || ...)
 	[[nodiscard]] inline bool ulongParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
@@ -129,7 +129,31 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	template<typename... Types> requires (std::is_floating_point<Types>::value || ...)
+	template<typename... Types> requires ((std::is_integral_v<Types> && std::is_signed_v<Types> && sizeof(Types) >= 8) || ...)
+	[[nodiscard]] inline bool longParser(Context<Types...>& context)
+	{
+		auto& [cursor, parentNode] = context;
+		if (cursor.isEndOfString())
+			return false;
+		bool hasDigit = std::isdigit(cursor.getChar());
+		if (cursor.getChar() == '+' || cursor.getChar() == '-')
+		{
+			++cursor.position;
+			if (cursor.isEndOfString())
+				return false;
+			hasDigit |= std::isdigit(cursor.getChar());
+			--cursor.position;
+		}
+		if (!hasDigit)
+			return false;
+		auto numberLength = std::size_t{};
+		const auto number = std::stol(cursor.src.substr(cursor.position).data(), &numberLength);
+		cursor.position += numberLength;
+		parentNode.get().childs.emplace_back(ASTNode<Types...>{number});
+		return true;
+	}
+
+	template<typename... Types> requires (std::is_floating_point_v<Types> || ...)
 	[[nodiscard]] inline bool floatParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;

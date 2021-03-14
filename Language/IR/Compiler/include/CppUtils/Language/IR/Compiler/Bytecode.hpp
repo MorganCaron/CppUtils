@@ -8,7 +8,7 @@
 
 #include <CppUtils/Type/Token.hpp>
 
-namespace CppUtils::Language::ASM::Compiler::Bytecode
+namespace CppUtils::Language::IR::Compiler::Bytecode
 {
 	using namespace std::literals;
 	using namespace Type::Literals;
