@@ -2,8 +2,8 @@
 
 #include <functional>
 
-#include <CppUtils/Language/Parser/Cursor.hpp>
 #include <CppUtils/Graph/VariantTreeNode.hpp>
+#include <CppUtils/Language/Parser/Cursor.hpp>
 
 namespace CppUtils::Language::Parser
 {

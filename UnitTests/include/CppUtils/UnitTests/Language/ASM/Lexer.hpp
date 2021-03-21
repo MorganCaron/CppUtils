@@ -26,23 +26,23 @@ namespace CppUtils::UnitTests::Language::ASM::Lexer
 
 		addTest("Move", [] {
 			const auto ast = CppUtils::Language::ASM::Lexer::parse<std::int64_t>(R"(
-			mov r0, 42
+			mov r1, 42
 			)"sv);
 			CppUtils::Graph::logTreeNode(ast);
 		});
 		
 		addTest("Add", [] {
 			const auto ast = CppUtils::Language::ASM::Lexer::parse<std::int64_t>(R"(
-			mov r0, 20
-			add r0, 22
+			mov r2, 20
+			add r2, 22
 			)"sv);
 			CppUtils::Graph::logTreeNode(ast);
 		});
 
 		addTest("Label", [] {
 			const auto ast = CppUtils::Language::ASM::Lexer::parse<std::int64_t>(R"(
-			main: mov r0, 20
-			add r0, 22
+			main: mov r2, 20
+			add r2, 22
 			)"sv);
 			CppUtils::Graph::logTreeNode(ast);
 		});

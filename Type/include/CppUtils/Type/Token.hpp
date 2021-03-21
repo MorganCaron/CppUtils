@@ -43,6 +43,11 @@ namespace CppUtils::Type
 			return id != rhs.id;
 		}
 
+		[[nodiscard]] inline constexpr bool isEmpty() const noexcept
+		{
+			return id == CppUtils::Hash::constexprHash("");
+		}
+
 		struct hash_fn final
 		{
 			[[nodiscard]] inline constexpr std::size_t operator()(const Token& type) const noexcept

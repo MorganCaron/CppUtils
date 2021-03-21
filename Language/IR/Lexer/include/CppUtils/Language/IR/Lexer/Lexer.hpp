@@ -25,48 +25,59 @@ namespace CppUtils::Language::IR::Lexer
 				}
 			}();
 			m_grammarLexer.addParsingFunction("addressParser"_token, std::move(addressParser));
+			m_grammarLexer.addParsingFunction("quoteParser"_token, Parser::quoteParser<Type::Token, Address>);
 
 			static constexpr auto grammarSrc = R"(
 			main: (label >= 0) spaceParser;
 
-			_functionDeclaration: [_functionName] _argumentsDeclaration _instructions;
-			label: _functionDeclaration;
-			_instructions: spaceParser '{' (_instruction >= 0) spaceParser '}';
-			instructions: _instructions;
-			_token: spaceParser keywordParser;
-			_variable: _token;
-			variable: _variable;
-			ident: _variable;
-			_functionName: _token;
-			_comma: spaceParser ',';
-			_value: spaceParser (_parenthesis || _literal || ident);
-			_parenthesis: '(' _operation spaceParser ')';
+			!functionDeclaration: [functionName] ~parameters instructions;
+			!instructions: spaceParser '{' (instruction > 0) spaceParser '}';
+			!token: spaceParser keywordParser;
+			!comma: spaceParser ',';
+			!variable: token;
+			!functionName: token;
+			!functionCall: functionName arguments;
+			!parenthesis: '(' operand spaceParser ')';
+
+			!argumentsDeclaration: spaceParser '(' ~argumentDeclaration spaceParser ')';
+			!argumentDeclaration: variable ~secondArgumentDeclaration;
+			!secondArgumentDeclaration: comma argumentDeclaration;
+
+			!arguments: '(' ~argument spaceParser ')';
+			!argument: rvalue ~secondArgument;
+			!secondArgument: comma argument;
 			
-			_operation: _operand;
-			_operand: _value ~[_secondOperand];
-			_secondOperand: [_operator] _operand;
+			!assignment: lvalue [assignmentOperator] operand;
+			!operand: rvalue ~[secondOperand];
+			!secondOperand: [operator] operand;
 
-			_argumentsDeclaration: spaceParser '(' ~_argumentDeclaration spaceParser ')';
-			_argumentDeclaration: _variable ~_secondArgumentDeclaration;
-			_secondArgumentDeclaration: _comma _argumentDeclaration;
-
-			_arguments: '(' ~_argument spaceParser ')';
-			_argument: _operation ~_secondArgument;
-			_secondArgument: _comma _argument;
-
-			_literal: number;
+			label: functionDeclaration;
+			!parameters: !argumentsDeclaration;
+			ident: variable;
 			number: addressParser;
+			string: quoteParser;
 
-			_operator: spaceParser (add || neg);
-			add: '+';
-			neg: '-';
+			!literal: spaceParser (number || string);
+			ref: spaceParser '&' spaceParser rvalue;
+			deref: spaceParser '*' spaceParser rvalue;
+			!lvalue: spaceParser (deref || ident);
+			!rvalue: spaceParser (parenthesis || ref || deref || call || literal || ident);
 
-			_instruction: spaceParser (halt || nop || copy || call || ret) spaceParser ';';
+			!assignmentOperator: spaceParser (assignOperator || addAssignOperator || subAssignOperator);
+			assignOperator[copy]: '=';
+			addAssignOperator[add]: '+=';
+			subAssignOperator[sub]: '-=';
+
+			!operator: spaceParser (addOperator || subOperator);
+			addOperator[add]: '+';
+			subOperator[sub]: '-';
+
+			!instruction: spaceParser (halt || nop || copy || call || ret) spaceParser ';';
 			halt: "halt";
 			nop: "nop";
-			copy: ident spaceParser '=' _operation;
-			call: "call" _functionName _arguments;
-			ret: "ret" _value;
+			!copy: assignment;
+			call: functionCall;
+			ret: "ret" rvalue;
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}

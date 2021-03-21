@@ -32,6 +32,9 @@ namespace CppUtils::Language::Parser
 	static constexpr auto TagLexemeType = "tag"_token;
 	using TagLexeme = Lexeme<TagLexemeType, std::unique_ptr<ILexeme>>;
 
+	static constexpr auto MutedLexemeType = "muted"_token;
+	using MutedLexeme = Lexeme<MutedLexemeType, std::unique_ptr<ILexeme>>;
+
 	template<typename... Types> struct Expression;
 	static constexpr auto ExpressionLexemeType = "expression"_token;
 	template<typename... Types>
@@ -79,13 +82,13 @@ namespace CppUtils::Language::Parser
 	struct Expression final
 	{
 		Type::Token token;
-		bool isNode;
+		Type::Token name;
 		std::vector<std::unique_ptr<ILexeme>> lexemes;
 
 		Expression() = default;
-		explicit Expression(Type::Token c_token, const bool c_isNode, std::vector<std::unique_ptr<ILexeme>> c_lexemes = {}):
+		explicit Expression(Type::Token c_token, Type::Token c_name, std::vector<std::unique_ptr<ILexeme>> c_lexemes = {}):
 			token{std::move(c_token)},
-			isNode{c_isNode},
+			name{std::move(c_name)},
 			lexemes{std::move(c_lexemes)}
 		{};
 

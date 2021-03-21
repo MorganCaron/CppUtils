@@ -34,10 +34,10 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			grammarLexer.addParsingFunction("quoteParser"_token, CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token>);
 			
 			static constexpr auto grammarSrc = R"(
-			main: _instruction spaceParser;
-			_instruction: function spaceParser ';';
-			function: spaceParser keywordParser spaceParser '(' _argument spaceParser ')';
-			_argument: string;
+			main: instruction spaceParser;
+			!instruction: function spaceParser ';';
+			function: spaceParser keywordParser spaceParser '(' argument spaceParser ')';
+			!argument: string;
 			string: spaceParser quoteParser;
 			)"sv;
 			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
@@ -66,8 +66,8 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			grammarLexer.addParsingFunction("keywordParser"_token, CppUtils::Language::Parser::keywordParser<CppUtils::Type::Token>);
 			
 			static constexpr auto grammarSrc = R"(
-			main: (_word >= 0) spaceParser;
-			_word: spaceParser keywordParser;
+			main: (word >= 0) spaceParser;
+			!word: spaceParser keywordParser;
 			)"sv;
 			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
 			CppUtils::Graph::logTreeNode(grammarTree);
@@ -88,13 +88,13 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			grammarLexer.addParsingFunction("quoteParser"_token, CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token>);
 			
 			static constexpr auto grammarSrc = R"(
-			main: (_instruction >= 0) spaceParser;
-			_instruction: (function || variableDeclaration) spaceParser ';';
-			function: spaceParser keywordParser spaceParser '(' ~_arguments spaceParser ')';
-			_arguments: _value ~_secondaryArgument;
-			_secondaryArgument: spaceParser ',' _arguments;
+			main: (instruction >= 0) spaceParser;
+			!instruction: (function || variableDeclaration) spaceParser ';';
+			function: spaceParser keywordParser spaceParser '(' ~arguments spaceParser ')';
+			!arguments: value ~secondaryArgument;
+			!secondaryArgument: spaceParser ',' arguments;
 			variableDeclaration: spaceParser keywordParser spaceParser '=' string;
-			_value: (string || variableCall);
+			!value: (string || variableCall);
 			string: spaceParser quoteParser;
 			variableCall: spaceParser keywordParser;
 			)"sv;

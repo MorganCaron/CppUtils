@@ -24,9 +24,11 @@ namespace CppUtils::Language::IR::Compiler
 			{ "string"_token, CompilationFunctions<Address>::compileString },
 			{ "copy"_token, CompilationFunctions<Address>::compileCopy },
 			{ "add"_token, CompilationFunctions<Address>::compileAdd },
-			{ "neg"_token, CompilationFunctions<Address>::compileNeg },
+			{ "sub"_token, CompilationFunctions<Address>::compileSub },
 			{ "label"_token, CompilationFunctions<Address>::compileLabel },
-			{ "ret"_token, CompilationFunctions<Address>::compileRet }
+			{ "ret"_token, CompilationFunctions<Address>::compileRet },
+			{ "deref"_token, CompilationFunctions<Address>::compileDeref },
+			{ "call"_token, CompilationFunctions<Address>::compileCall }
 		}}
 		{}
 

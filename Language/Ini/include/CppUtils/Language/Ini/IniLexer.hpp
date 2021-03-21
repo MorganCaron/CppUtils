@@ -45,16 +45,16 @@ namespace CppUtils::Language::Ini
 			m_grammarLexer.addParsingFunction("stringParser"_token, std::bind(identifierParser, _1, '\n'));
 
 			static constexpr auto grammarSrc = R"(
-			main: (_line >= 0) spaceParser;
-			_line: spaceParser (_comment || section || assignment);
-			_sectionName: sectionIdentifierParser;
-			_keyName: keyIdentifierParser;
-			_comment: spaceParser commentParser;
-			section: '[' spaceParser [_sectionName] spaceParser ']' ~_comment _assignments;
-			_assignments: (_assignment >= 0) ~_comment;
+			main: (line >= 0) spaceParser;
+			!line: spaceParser (comment || section || assignment);
+			!sectionName: sectionIdentifierParser;
+			!keyName: keyIdentifierParser;
+			!comment: spaceParser commentParser;
+			section: '[' spaceParser [sectionName] spaceParser ']' ~comment assignments;
+			!assignments: (_assignment >= 0) ~comment;
 			assignment: _assignment;
-			_assignment: spaceParser [_keyName] '=' _value ~_comment;
-			_value: spaceParser (boolean || float || string);
+			!_assignment: spaceParser [keyName] '=' value ~comment;
+			!value: spaceParser (boolean || float || string);
 			boolean: booleanParser;
 			float: floatParser;
 			string: stringParser;

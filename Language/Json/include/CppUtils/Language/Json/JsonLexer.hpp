@@ -19,18 +19,19 @@ namespace CppUtils::Language::Json
 
 			static constexpr auto grammarSrc = R"(
 			main: _object spaceParser;
-			_object: spaceParser '{' ~_pairs spaceParser '}';
-			_pairs: _pair ~_nextPair;
-			_nextPair: spaceParser ',' _pairs;
-			_string: doubleQuoteParser;
+			!_object: spaceParser '{' ~pairs spaceParser '}';
+			!pairs: pair ~nextPair;
+			!nextPair: spaceParser ',' pairs;
+			!_string: doubleQuoteParser;
+			!pair: spaceParser [_string] spaceParser ':' value;
 			string: _string;
-			_pair: spaceParser [_string] spaceParser ':' _value;
-			_value: spaceParser (string || number || object || array || boolean || null);
-			number: floatParser;
 			object: _object;
-			array: '[' _values spaceParser ']';
-			_values: _value ~_nextValue;
-			_nextValue: spaceParser ',' _values;
+			!value: spaceParser (string || number || object || array || boolean || null);
+			number: floatParser;
+			
+			array: '[' values spaceParser ']';
+			!values: value ~nextValue;
+			!nextValue: spaceParser ',' values;
 			boolean: booleanParser;
 			null: "null";
 			)"sv;

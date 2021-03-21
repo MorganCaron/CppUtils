@@ -11,5 +11,5 @@ namespace CppUtils::Type::Concept
 	};
 
 	template<typename Type, typename... Types>
-	concept isPresent = (std::is_same_v<Type, Types> || ...);
+	concept isPresent = (std::same_as<Type, Types> || ...);
 }

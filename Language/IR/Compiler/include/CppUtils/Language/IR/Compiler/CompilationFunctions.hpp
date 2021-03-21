@@ -45,12 +45,13 @@ namespace CppUtils::Language::IR::Compiler
 		static void compileCopy(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
-			context.compiler.get().compile(astNode.childs.at(0), context);
+			const auto lhsIsDeref = (astNode.childs.at(0).value == "deref"_token);
+			context.compiler.get().compile(lhsIsDeref ? astNode.childs.at(0).childs.at(0) : astNode.childs.at(0), context);
 			const auto lhs = context.returnRegister;
 			context.compiler.get().compile(astNode.childs.at(1), context);
 			const auto rhs = context.returnRegister;
 			context.returnRegister = lhs;
-			context.addInstruction(context.createInstruction("copy"_token, lhs, rhs));
+			context.addInstruction(context.createInstruction(lhsIsDeref ? "write"_token : "copy"_token, lhs, rhs));
 		}
 
 		static void compileAdd(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
@@ -64,7 +65,7 @@ namespace CppUtils::Language::IR::Compiler
 			context.addInstruction(context.createInstruction("add"_token, lhs, rhs));
 		}
 
-		static void compileNeg(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
+		static void compileSub(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
 			context.compiler.get().compile(astNode.childs.at(0), context);
@@ -72,7 +73,7 @@ namespace CppUtils::Language::IR::Compiler
 			context.compiler.get().compile(astNode.childs.at(1), context);
 			const auto rhs = context.returnRegister;
 			context.returnRegister = lhs;
-			context.addInstruction(context.createInstruction("neg"_token, lhs, rhs));
+			context.addInstruction(context.createInstruction("sub"_token, lhs, rhs));
 		}
 
 		static void compileLabel(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
@@ -87,6 +88,17 @@ namespace CppUtils::Language::IR::Compiler
 			using namespace Type::Literals;
 			context.compiler.get().compile(astNode.childs.at(0), context);
 			context.addInstruction(context.createInstruction("ret"_token, context.returnRegister));
+		}
+
+		static void compileDeref(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
+		{
+			using namespace Type::Literals;
+			context.compiler.get().compile(astNode.childs.at(0), context);
+			context.addInstruction(context.createInstruction("read"_token, context.returnRegister));
+		}
+
+		static void compileCall([[maybe_unused]] const Parser::ASTNode<Type::Token, Address>& astNode, [[maybe_unused]] Context<Address>& context)
+		{
 		}
 	};
 }

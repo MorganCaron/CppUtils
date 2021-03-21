@@ -31,7 +31,7 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 		addTest("Move", [] {
 			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
 			const auto context = compiler.compile(R"(
-			mov r0, 42
+			mov r1, 42
 			)"sv);
 			for (const auto& instruction : context.instructions)
 				std::cout << *instruction << std::endl;
@@ -40,8 +40,8 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 		addTest("Add", [] {
 			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
 			const auto context = compiler.compile(R"(
-			mov r0, 20
-			add r0, 22
+			mov r2, 20
+			add r2, 22
 			)"sv);
 			for (const auto& instruction : context.instructions)
 				std::cout << *instruction << std::endl;
@@ -50,8 +50,8 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 		addTest("Label", [] {
 			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
 			const auto context = compiler.compile(R"(
-			main: mov r0, 20
-			add r0, 22
+			main: mov r2, 20
+			add r2, 22
 			)"sv);
 			for (const auto& instruction : context.instructions)
 				std::cout << *instruction << std::endl;

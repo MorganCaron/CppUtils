@@ -24,7 +24,7 @@ namespace CppUtils::Graph
 		template<typename RhsStorage>
 		[[nodiscard]] bool operator==(const TreeNode<RhsStorage>& rhs) const
 		{
-			if constexpr(std::is_same_v<Storage, RhsStorage>)
+			if constexpr(std::same_as<Storage, RhsStorage>)
 				return (value == rhs.value && childs == rhs.childs);
 			else
 			{

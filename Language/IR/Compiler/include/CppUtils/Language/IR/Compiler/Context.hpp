@@ -23,7 +23,7 @@ namespace CppUtils::Language::IR::Compiler
 		std::unordered_map<Type::Token, FunctionInformations<Address>, Type::Token::hash_fn> functions = {};
 		std::unordered_map<Type::Token, Address, Type::Token::hash_fn> variablesToRegisters = {};
 		Bytecode::Instruction<Address>* lastInstruction = nullptr;
-		std::size_t registerCounter = 0;
+		Address registerCounter = 0;
 		Address returnRegister = 0;
 
 		explicit Context(std::reference_wrapper<const Compiler<Address>> compiler):
@@ -47,7 +47,7 @@ namespace CppUtils::Language::IR::Compiler
 
 		[[nodiscard]] inline Address newRegister() noexcept
 		{
-			return static_cast<Address>(registerCounter++);
+			return registerCounter++;
 		}
 
 		[[nodiscard]] inline Address getRegister(const Type::Token& variable)

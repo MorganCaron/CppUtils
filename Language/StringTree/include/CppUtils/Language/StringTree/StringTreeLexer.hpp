@@ -18,10 +18,10 @@ namespace CppUtils::Language::StringTree
 			m_grammarLexer.addParsingFunction("quoteParser"_token, Parser::quoteParser<Type::Token>);
 
 			static constexpr auto grammarSrc = R"(
-			main: (_node >= 0) spaceParser;
-			_string: quoteParser;
-			_node: spaceParser [_string] ~_childs;
-			_childs: spaceParser '{' (_node >= 1) spaceParser '}';
+			main: (node >= 0) spaceParser;
+			!string: quoteParser;
+			!node: spaceParser [string] ~childs;
+			!childs: spaceParser '{' (node >= 1) spaceParser '}';
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}

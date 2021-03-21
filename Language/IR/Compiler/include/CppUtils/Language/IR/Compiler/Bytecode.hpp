@@ -23,7 +23,11 @@ namespace CppUtils::Language::IR::Compiler::Bytecode
 		Instruction<Type>* nextInstruction = nullptr;
 		Instruction<Type>* targetInstruction = nullptr;
 
-		explicit Instruction(Type registerId = 0, std::string_view c_name = ""sv, Type c_value = Type{}):
+		Instruction():
+			type{"nop"_token}
+		{}
+
+		explicit Instruction(Type registerId, std::string_view c_name = ""sv, Type c_value = Type{}):
 			type{"init"_token}, name{c_name}, value{c_value}, parametersId{registerId}
 		{}
 
@@ -31,7 +35,7 @@ namespace CppUtils::Language::IR::Compiler::Bytecode
 			type{"ifnz"_token}, targetInstruction{c_targetInstruction}
 		{}
 		
-		template<typename... Parameters> requires (std::is_same_v<Type, Parameters> && ...)
+		template<typename... Parameters> requires (std::same_as<Type, Parameters> && ...)
 		explicit Instruction(CppUtils::Type::Token c_type, Parameters... c_parametersId):
 			type{c_type}, parametersId{std::forward<Parameters>(c_parametersId)...}
 		{}
@@ -41,7 +45,7 @@ namespace CppUtils::Language::IR::Compiler::Bytecode
 	std::ostream& operator<<(std::ostream& os, const Instruction<Type>& instruction)
 	{
 		using namespace CppUtils::Type::Literals;
-		os << instruction.type;
+		os << instruction.type << '\t';
 		for (const auto& parameterId : instruction.parametersId)
 			os << " R" << parameterId;
 		if (instruction.type == "init"_token)

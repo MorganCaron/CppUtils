@@ -38,8 +38,8 @@ namespace CppUtils::Parameters
 
 			static constexpr auto grammarSrc = R"(
 			main: (command >= 0) spaceParser;
-			command: spaceParser keywordParser ~_value;
-			_value: spaceParser valueParser;
+			command: spaceParser keywordParser ~value;
+			!value: spaceParser valueParser;
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}

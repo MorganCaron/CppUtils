@@ -28,17 +28,17 @@ namespace CppUtils::Language::ASM::Lexer
 			m_grammarLexer.addParsingFunction("addressParser"_token, std::move(addressParser));
 
 			static constexpr auto grammarSrc = R"(
-			main: (_instruction >= 0) spaceParser;
-			_instruction: ~[label] spaceParser (halt || nop || move || add);
+			main: (instruction >= 0) spaceParser;
+			!instruction: ~[label] spaceParser (halt || nop || move || add);
 
-			_token: spaceParser keywordParser;
-			label: _token spaceParser ':';
-			_number: addressParser;
+			!token: spaceParser keywordParser;
+			label: token spaceParser ':';
+			!_number: addressParser;
 			number: _number;
-			_value: spaceParser number;
+			!_value: spaceParser number;
 			value: _value;
 
-			_register: spaceParser 'r' _number;
+			!_register: spaceParser 'r' _number;
 			register: _register;
 
 			halt: "hlt";

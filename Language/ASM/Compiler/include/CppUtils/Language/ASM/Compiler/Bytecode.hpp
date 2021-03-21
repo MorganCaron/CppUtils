@@ -31,7 +31,7 @@ namespace CppUtils::Language::ASM::Compiler::Bytecode
 			type{"ifnz"_token}, targetInstruction{c_targetInstruction}
 		{}
 		
-		template<typename... Parameters> requires (std::is_same_v<Type, Parameters> && ...)
+		template<typename... Parameters> requires (std::same_as<Type, Parameters> && ...)
 		explicit Instruction(CppUtils::Type::Token c_type, Parameters... c_parametersId):
 			type{c_type}, parametersId{std::forward<Parameters>(c_parametersId)...}
 		{}

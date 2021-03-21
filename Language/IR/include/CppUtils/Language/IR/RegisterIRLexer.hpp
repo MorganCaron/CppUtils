@@ -17,12 +17,12 @@ namespace CppUtils::Language::IR
 			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Types...>);
 
 			static constexpr auto grammarSrc = R"(
-			main: (_instruction >= 0) spaceParser;
-			_instruction: spaceParser (lhsFunction || assignment);
+			main: (instruction >= 0) spaceParser;
+			!instruction: spaceParser (lhsFunction || assignment);
 			assignment: _variable spaceParser '=' spaceParser (rhsFunction || operation);
-			operation: variable _operator variable;
-			_token: spaceParser keywordParser;
-			_variable: _token;
+			operation: variable operator variable;
+			!token: spaceParser keywordParser;
+			!_variable: token;
 			variable: _variable;
 
 			lhsFunction: store;
@@ -31,7 +31,7 @@ namespace CppUtils::Language::IR
 			rhsFunction: load;
 			load: "load" _variable;
 
-			_operator: spaceParser (add || sub || mul || div);
+			!operator: spaceParser (add || sub || mul || div);
 			add: '+';
 			sub: '-';
 			mul: '*';

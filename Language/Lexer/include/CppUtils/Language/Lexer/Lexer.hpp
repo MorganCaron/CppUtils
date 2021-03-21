@@ -14,10 +14,35 @@ namespace CppUtils::Language::Lexer
 			return (m_expressions.find(token) != m_expressions.end());
 		}
 
-		[[nodiscard]] inline Parser::Expression<Types...>& newExpression(const Type::Token& token, const bool isNode = true)
+		inline void createExpression(const Type::Token& token, bool isNode = true)
+		{
+			using namespace Type::Literals;
+			m_expressions[token] = Parser::Expression<Types...>{token, isNode ? token : ""_token};
+		}
+
+		inline void createExpression(const Type::Token& token, Type::Token name)
+		{
+			m_expressions[token] = Parser::Expression<Types...>{token, std::move(name)};
+		}
+
+		[[nodiscard]] inline Parser::Expression<Types...>& newExpression(const Type::Token& token, bool isNode = true)
 		{
 			if (!expressionExists(token))
-				m_expressions[token] = Parser::Expression<Types...>{token, isNode};
+				createExpression(token, isNode);
+			return getExpression(token);
+		}
+
+		[[nodiscard]] inline Parser::Expression<Types...>& newExpression(const Type::Token& token, Type::Token name)
+		{
+			if (!expressionExists(token))
+				createExpression(token, std::move(name));
+			return getExpression(token);
+		}
+
+		[[nodiscard]] inline Parser::Expression<Types...>& getExpression(const Type::Token& token)
+		{
+			if (!expressionExists(token))
+				throw std::runtime_error{"Undefined expression: " + std::string{token.name}};
 			return m_expressions[token];
 		}
 
@@ -40,7 +65,7 @@ namespace CppUtils::Language::Lexer
 			{
 				parseSegment(token, context);
 				if (!context.cursor.isEndOfString())
-					throw std::runtime_error{"Syntax error: The string does not correspond to any known element"};
+					throw std::runtime_error{"Syntax error: The string does not correspond to any known element."};
 			}
 			catch (const std::exception& exception)
 			{
@@ -53,7 +78,7 @@ namespace CppUtils::Language::Lexer
 		{
 			const auto& expression = getExpression(token);
 			if (!parseExpression(expression, context))
-				throw std::runtime_error{"Syntax error in the " + std::string{token.name} + " expression"};
+				throw std::runtime_error{"Syntax error in the \"" + std::string{token.name} + "\" expression."};
 		}
 
 	private:
@@ -62,36 +87,36 @@ namespace CppUtils::Language::Lexer
 			using namespace Type::Literals;
 
 			if (expression.lexemes.empty())
-				throw std::runtime_error{std::string{expression.token.name} + " expression is empty"};
+				throw std::runtime_error{'"' + std::string{expression.token.name} + "\" expression is empty."};
 			auto& [cursor, parentNode] = context;
 			const auto startPosition = cursor.position;
 			auto partialMatch = false;
-			auto tempParentNode = Parser::ASTNode<Types...>{parentNode.get().value};
-			auto tempContext = Parser::Context<Types...>{
+			auto newParentNode = Parser::ASTNode<Types...>{parentNode.get().value};
+			auto newContext = Parser::Context<Types...>{
 				cursor,
-				tempParentNode
+				newParentNode
 			};
 			for (const auto& lexeme : expression.lexemes)
 			{
-				if (!parseLexeme(lexeme, tempContext))
+				if (!parseLexeme(lexeme, newContext))
 				{
 					if (partialMatch)
-						throw std::runtime_error{"Syntax error in the " + std::string{expression.token.name} + " expression. Expected format: " + lexeme->getPrintable()};
+						throw std::runtime_error{"Syntax error in the \"" + std::string{expression.token.name} + "\" expression.\nExpected format: " + lexeme->getPrintable()};
 					cursor.position = startPosition;
 					return false;
 				}
 				partialMatch |= lexeme->getType() == Parser::StringLexemeType || lexeme->getType() == Parser::TagLexemeType;
 			}
-			std::move(tempParentNode.childs.begin(), tempParentNode.childs.end(), std::back_inserter(parentNode.get().childs));
+			std::move(newParentNode.childs.begin(), newParentNode.childs.end(), std::back_inserter(parentNode.get().childs));
 			return true;
 		}
 
 		inline bool parseNode(const Parser::Expression<Types...>& expression, Parser::Context<Types...>& context) const
 		{
 			auto& [cursor, parentNode] = context;
-			if (expression.isNode)
+			if (!expression.name.isEmpty())
 			{
-				auto newNode = Parser::ASTNode<Types...>{expression.token};
+				auto newNode = Parser::ASTNode<Types...>{expression.name};
 				auto newContext = Parser::Context<Types...>{
 					cursor,
 					newNode
@@ -122,6 +147,8 @@ namespace CppUtils::Language::Lexer
 					return parseTokenLexeme(lexeme, context);
 				case Parser::TagLexemeType.id:
 					return parseTagLexeme(lexeme, context);
+				case Parser::MutedLexemeType.id:
+					return parseMutedLexeme(lexeme, context);
 				case Parser::RecurrentLexemeType.id:
 					return parseRecurrentLexeme(lexeme, context);
 				case Parser::AlternativeLexemeType.id:
@@ -172,6 +199,17 @@ namespace CppUtils::Language::Lexer
 			parentChilds = std::vector<Parser::ASTNode<Types...>>{std::move(tagNode)};
 			parentNode = parentChilds.at(0);
 			return true;
+		}
+
+		[[nodiscard]] inline bool parseMutedLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
+		{
+			const auto& mutedLexeme = Type::ensureType<Parser::MutedLexeme>(lexeme).value;
+			auto newNode = context.parentNode.get();
+			auto newContext = Parser::Context<Types...>{
+				context.cursor,
+				newNode
+			};
+			return parseLexeme(mutedLexeme, newContext);
 		}
 
 		[[nodiscard]] inline bool parseRecurrentLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
