@@ -23,13 +23,14 @@ namespace CppUtils::Language::Compiler
 			const auto& nodeType = std::get<Type::Token>(astNode.value);
 			if (m_compilationFunctions.find(nodeType) == m_compilationFunctions.end())
 				throw std::runtime_error{"No compile function for AST node \"" + std::string{nodeType.name} + '"'};
-			m_compilationFunctions.at(nodeType)(astNode, context);
-		}
-
-		void compile(const std::vector<Parser::ASTNode<Types...>>& astNodes, Context& context) const
-		{
-			for (const auto astNode : astNodes)
-				compile(astNode, context);
+			try
+			{
+				m_compilationFunctions.at(nodeType)(astNode, context);
+			}
+			catch (const std::exception& exception)
+			{
+				throw std::runtime_error{"In the " + std::string{nodeType.name} + " compilation function:\n" + exception.what()};
+			}
 		}
 
 	private:

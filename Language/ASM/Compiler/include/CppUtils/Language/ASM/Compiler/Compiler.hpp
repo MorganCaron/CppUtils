@@ -34,7 +34,8 @@ namespace CppUtils::Language::ASM::Compiler
 
 		inline void compile(const std::vector<ASTNode>& astNodes, Context<Address>& context) const
 		{
-			m_compiler.compile(astNodes, context);
+			for (const auto& astNode : astNodes)
+				compile(astNode, context);
 		}
 
 		[[nodiscard]] inline Context<Address> compile(std::string_view src) const

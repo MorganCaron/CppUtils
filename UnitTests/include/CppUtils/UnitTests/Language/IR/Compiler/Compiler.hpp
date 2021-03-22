@@ -41,5 +41,29 @@ namespace CppUtils::UnitTests::Language::IR::Compiler
 			for (const auto& instruction : context.instructions)
 				std::cout << *instruction << std::endl;
 		});
+
+		addTest("Conditions", [] {
+			const auto compiler = CppUtils::Language::IR::Compiler::Compiler<std::int64_t>{};
+			const auto context = compiler.compile(R"(
+			getLength(text)
+			{
+				length = 0;
+				while ((text == 0) == 0)
+				{
+					length += 1;
+					text += 1;
+				}
+				ret length;
+			}
+
+			main()
+			{
+				text = "Hello World!";
+				ret getLength(text);
+			}
+			)"sv);
+			for (const auto& instruction : context.instructions)
+				std::cout << *instruction << std::endl;
+		});
 	}
 }

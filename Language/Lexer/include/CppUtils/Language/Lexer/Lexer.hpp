@@ -56,7 +56,8 @@ namespace CppUtils::Language::Lexer
 		[[nodiscard]] Parser::ASTNode<Types...> parseString(const Type::Token& token, std::string_view src) const
 		{
 			auto position = std::size_t{0};
-			auto rootNode = Parser::ASTNode<Types...>{token};
+			const auto& expression = getExpression(token);
+			auto rootNode = Parser::ASTNode<Types...>{expression.name.isEmpty() ? token : expression.name};
 			auto context = Parser::Context<Types...>{
 				Parser::Cursor<std::string>{src, position},
 				rootNode

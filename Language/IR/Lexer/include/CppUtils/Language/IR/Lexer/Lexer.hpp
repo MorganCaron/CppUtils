@@ -28,16 +28,16 @@ namespace CppUtils::Language::IR::Lexer
 			m_grammarLexer.addParsingFunction("quoteParser"_token, Parser::quoteParser<Type::Token, Address>);
 
 			static constexpr auto grammarSrc = R"(
-			main: (label >= 0) spaceParser;
+			main[comma]: (label >= 0) spaceParser;
 
-			!functionDeclaration: [functionName] ~parameters instructions;
-			!instructions: spaceParser '{' (instruction > 0) spaceParser '}';
+			!functionDeclaration: functionName ~parameters instructions;
+			instructions[comma]: spaceParser '{' (instruction >= 0) spaceParser '}';
 			!token: spaceParser keywordParser;
 			!comma: spaceParser ',';
 			!variable: token;
 			!functionName: token;
 			!functionCall: functionName arguments;
-			!parenthesis: '(' operand spaceParser ')';
+			!parenthesis: spaceParser '(' operand spaceParser ')';
 
 			!argumentsDeclaration: spaceParser '(' ~argumentDeclaration spaceParser ')';
 			!argumentDeclaration: variable ~secondArgumentDeclaration;
@@ -60,24 +60,30 @@ namespace CppUtils::Language::IR::Lexer
 			!literal: spaceParser (number || string);
 			ref: spaceParser '&' spaceParser rvalue;
 			deref: spaceParser '*' spaceParser rvalue;
-			!lvalue: spaceParser (deref || ident);
-			!rvalue: spaceParser (parenthesis || ref || deref || call || literal || ident);
+			!lvalue: (deref || ident);
+			!rvalue: (parenthesis || ref || deref || call || literal || ident);
 
 			!assignmentOperator: spaceParser (assignOperator || addAssignOperator || subAssignOperator);
 			assignOperator[copy]: '=';
 			addAssignOperator[add]: '+=';
 			subAssignOperator[sub]: '-=';
 
-			!operator: spaceParser (addOperator || subOperator);
+			!operator: spaceParser (equalOperator || notEqualOperator || addOperator || subOperator);
+			equalOperator[eq]: '==';
+			notEqualOperator[neq]: '!=';
 			addOperator[add]: '+';
 			subOperator[sub]: '-';
 
-			!instruction: spaceParser (halt || nop || copy || call || ret) spaceParser ';';
+			!controlStructure: (if || while);
+			!statement: (halt || nop || ret || call || copy) spaceParser ';';
+			!instruction: spaceParser (controlStructure || statement);
 			halt: "halt";
 			nop: "nop";
-			!copy: assignment;
-			call: functionCall;
 			ret: "ret" rvalue;
+			if: "if" parenthesis (instructions || instruction);
+			while: "while" parenthesis (instructions || instruction);
+			call: functionCall;
+			!copy: assignment;
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}

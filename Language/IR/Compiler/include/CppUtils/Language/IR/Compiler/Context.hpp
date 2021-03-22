@@ -20,6 +20,7 @@ namespace CppUtils::Language::IR::Compiler
 	template<typename Address> requires std::is_integral_v<Address>
 	struct Context final: public Language::Compiler::Context<Compiler<Address>, Bytecode::Instruction<Address>>
 	{
+		std::string stringConstants = "";
 		std::unordered_map<Type::Token, FunctionInformations<Address>, Type::Token::hash_fn> functions = {};
 		std::unordered_map<Type::Token, Address, Type::Token::hash_fn> variablesToRegisters = {};
 		Bytecode::Instruction<Address>* lastInstruction = nullptr;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <CppUtils/Language/IR/Compiler/Context.hpp>
 
 namespace CppUtils::Language::IR::Compiler
@@ -13,6 +14,12 @@ namespace CppUtils::Language::IR::Compiler
 		static void compileNop([[maybe_unused]] const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
 		{
 			context.addInstruction(context.createInstruction());
+		}
+
+		static void compileComma([[maybe_unused]] const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
+		{
+			for (const auto& child : astNode.childs)
+				context.compiler.get().compile(child, context);
 		}
 
 		static void compileHalt([[maybe_unused]] const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
@@ -37,9 +44,9 @@ namespace CppUtils::Language::IR::Compiler
 
 		static void compileString(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
 		{
-			const auto string = std::get<Address>(astNode.childs.at(0).value);
+			const auto string = std::get<Type::Token>(astNode.childs.at(0).value);
 			context.returnRegister = context.newRegister();
-			context.addInstruction(context.createInstruction(context.returnRegister, "", string));
+			context.addInstruction(context.createInstruction(context.returnRegister, "$STR", context.stringConstants.find(std::string{string.name} + '\0')));
 		}
 
 		static void compileCopy(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
@@ -52,6 +59,17 @@ namespace CppUtils::Language::IR::Compiler
 			const auto rhs = context.returnRegister;
 			context.returnRegister = lhs;
 			context.addInstruction(context.createInstruction(lhsIsDeref ? "write"_token : "copy"_token, lhs, rhs));
+		}
+
+		static void compileEq(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
+		{
+			using namespace Type::Literals;
+			context.compiler.get().compile(astNode.childs.at(0), context);
+			const auto lhs = context.returnRegister;
+			context.compiler.get().compile(astNode.childs.at(1), context);
+			const auto rhs = context.returnRegister;
+			context.returnRegister = lhs;
+			context.addInstruction(context.createInstruction("eq"_token, lhs, rhs));
 		}
 
 		static void compileAdd(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
@@ -80,7 +98,7 @@ namespace CppUtils::Language::IR::Compiler
 		{
 			const auto& label = std::get<Type::Token>(astNode.childs.at(0).value);
 			context.addFunction(label, 0);
-			context.compiler.get().compile(astNode.childs.at(0).childs, context);
+			context.compiler.get().compile(astNode.childs.at(1), context);
 		}
 
 		static void compileRet(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
@@ -97,8 +115,45 @@ namespace CppUtils::Language::IR::Compiler
 			context.addInstruction(context.createInstruction("read"_token, context.returnRegister));
 		}
 
-		static void compileCall([[maybe_unused]] const Parser::ASTNode<Type::Token, Address>& astNode, [[maybe_unused]] Context<Address>& context)
+		static void compileCall(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
 		{
+			using namespace Type::Literals;
+			const auto& functionName = std::get<Type::Token>(astNode.childs.at(0).value);
+			context.returnRegister = context.newRegister();
+			context.addInstruction(context.createInstruction(context.returnRegister, functionName.name));
+			auto parameters = std::vector<Address>{context.returnRegister};
+			std::transform(astNode.childs.begin() + 1, astNode.childs.end(), std::back_inserter(parameters), [&context](const auto& astNode) -> Address {
+				context.compiler.get().compile(astNode, context);
+				return context.returnRegister;
+			});
+			context.addInstruction(context.createInstruction("call"_token, std::move(parameters)));
+		}
+
+		static void compileIf(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
+		{
+			using namespace Type::Literals;
+			context.compiler.get().compile(astNode.childs.at(0), context);
+			auto* ifnz = context.createInstruction("ifnz"_token, context.returnRegister);
+			context.addInstruction(ifnz);
+			context.compiler.get().compile(astNode.childs.at(1), context);
+			ifnz->conditionInstruction = ifnz->nextInstruction;
+			auto* nop = context.createInstruction();
+			ifnz->nextInstruction = nop;
+			context.addInstruction(nop);
+		}
+
+		static void compileWhile(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
+		{
+			using namespace Type::Literals;
+			context.compiler.get().compile(astNode.childs.at(0), context);
+			auto* ifnz = context.createInstruction("ifnz"_token, context.returnRegister);
+			context.addInstruction(ifnz);
+			context.compiler.get().compile(astNode.childs.at(1), context);
+			ifnz->conditionInstruction = ifnz->nextInstruction;
+			context.lastInstruction->nextInstruction = ifnz;
+			auto* nop = context.createInstruction();
+			ifnz->nextInstruction = nop;
+			context.addInstruction(nop);
 		}
 	};
 }

@@ -41,7 +41,7 @@ namespace CppUtils::Graph
 		[[nodiscard]] bool exists(const Storage& key) const noexcept
 		{
 			for (const auto& child : childs)
-				if (child.value == key)
+				if (key == child.value)
 					return true;
 			return false;
 		}
@@ -49,7 +49,7 @@ namespace CppUtils::Graph
 		[[nodiscard]] TreeNode<Storage>& operator[](const Storage& key)
 		{
 			for (auto& child : childs)
-				if (child.value == key)
+				if (key == child.value)
 					return child;
 			childs.emplace_back(TreeNode<Storage>{key});
 			return childs[childs.size() - 1];
@@ -58,9 +58,25 @@ namespace CppUtils::Graph
 		[[nodiscard]] const TreeNode<Storage>& at(const Storage& key) const
 		{
 			for (const auto& child : childs)
-				if (child.value == key)
+				if (key == child.value)
 					return child;
-			throw std::out_of_range{"The TreeNode does not contain the requested child"};
+			throw std::out_of_range{"The TreeNode does not contain the requested child."};
+		}
+
+		void forEach(const Storage& key, const std::function<void(const TreeNode<Storage>&)>& function) const
+		{
+			if (key == value)
+				function(*this);
+			for (const auto& child : childs)
+				child.forEach(key, function);
+		}
+
+		void forEach(const Storage& key, const std::function<void(TreeNode<Storage>&)>& function)
+		{
+			if (key == value)
+				function(*this);
+			for (auto& child : childs)
+				child.forEach(key, function);
 		}
 	};
 
