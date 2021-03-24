@@ -1,6 +1,6 @@
 subdir('Parser')
 subdir('Lexer')
-subdir('VM')
+subdir('VirtualMachine')
 subdir('Compiler')
 subdir('IR')
 subdir('Ini')
@@ -11,7 +11,7 @@ subdir('ASM')
 public_dependencies = [
 	cppUtils_language_parser_dep,
 	cppUtils_language_lexer_dep,
-	cppUtils_language_vm_dep,
+	cppUtils_language_virtualMachine_dep,
 	cppUtils_language_compiler_dep,
 	cppUtils_language_ir_dep,
 	cppUtils_language_ini_dep,

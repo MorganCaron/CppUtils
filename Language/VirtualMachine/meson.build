@@ -8,10 +8,10 @@ sources = files([
 ])
 
 headers = files([
-	'include/CppUtils/Language/VM/VirtualMachine.hpp'
+	'include/CppUtils/Language/VirtualMachine/VirtualMachine.hpp'
 ])
 
-cppUtils_language_vm_dep = declare_dependency(
+cppUtils_language_virtualMachine_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

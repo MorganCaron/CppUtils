@@ -35,17 +35,16 @@ namespace CppUtils::Language::IR::Compiler::Bytecode
 		Instruction(CppUtils::Type::Token c_type, std::vector<Address> c_parametersId):
 			type{c_type}, parametersId{std::move(c_parametersId)}
 		{}
-	};
 
-	template<typename Address>
-	std::ostream& operator<<(std::ostream& os, const Instruction<Address>& instruction)
-	{
-		using namespace CppUtils::Type::Literals;
-		os << instruction.type << '\t';
-		for (const auto& parameterId : instruction.parametersId)
-			os << " R" << parameterId;
-		if (instruction.type == "init"_token)
-			os << " \"" << instruction.name << "\" " << instruction.value;
-		return os;
-	}
+		void log(bool newLine = true) const
+		{
+			using namespace std::literals;
+			using namespace Type::Literals;
+			Log::Logger::logInformation(std::string{type.name} + '\t', false);
+			for (const auto& parameterId : parametersId)
+				Log::Logger::logDetail(" R" + std::to_string(parameterId), false);
+			if (type == "init"_token)
+				Log::Logger::logDebug(" \""s + name + "\" " + std::to_string(value), newLine);
+		}
+	};
 }

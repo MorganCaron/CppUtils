@@ -3,7 +3,7 @@
 #include <stack>
 #include <unordered_map>
 
-namespace CppUtils::Language::ASM::VM
+namespace CppUtils::Language::ASM::VirtualMachine
 {
 	template<typename Type>
 	struct Context final

@@ -5,7 +5,7 @@
 
 #include <CppUtils/Type/Token.hpp>
 
-namespace CppUtils::Language::VM
+namespace CppUtils::Language::VirtualMachine
 {
 	template<typename Instruction, typename Context>
 	class VirtualMachine

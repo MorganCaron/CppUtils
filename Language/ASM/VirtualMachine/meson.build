@@ -11,12 +11,12 @@ sources = files([
 ])
 
 headers = files([
-	'include/CppUtils/Language/ASM/VM/Context.hpp',
-	'include/CppUtils/Language/ASM/VM/Operations.hpp',
-	'include/CppUtils/Language/ASM/VM/VirtualMachine.hpp'
+	'include/CppUtils/Language/ASM/VirtualMachine/Context.hpp',
+	'include/CppUtils/Language/ASM/VirtualMachine/Operations.hpp',
+	'include/CppUtils/Language/ASM/VirtualMachine/VirtualMachine.hpp'
 ])
 
-cppUtils_language_asm_vm_dep = declare_dependency(
+cppUtils_language_asm_virtualMachine_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

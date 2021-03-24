@@ -22,7 +22,7 @@
 #include <CppUtils/Language/IR/Compiler/Compiler.hpp>
 #include <CppUtils/Language/IR/Compiler/Context.hpp>
 #include <CppUtils/Language/IR/Lexer/Lexer.hpp>
-#include <CppUtils/Language/VM/VirtualMachine.hpp>
+#include <CppUtils/Language/VirtualMachine/VirtualMachine.hpp>
 #include <CppUtils/Language/Compiler/Compiler.hpp>
 #include <CppUtils/Language/Compiler/Context.hpp>
 #include <CppUtils/Language/ASM/Compiler/Bytecode.hpp>
@@ -30,9 +30,9 @@
 #include <CppUtils/Language/ASM/Compiler/Compiler.hpp>
 #include <CppUtils/Language/ASM/Compiler/Context.hpp>
 #include <CppUtils/Language/ASM/Lexer/Lexer.hpp>
-#include <CppUtils/Language/ASM/VM/Context.hpp>
-#include <CppUtils/Language/ASM/VM/Operations.hpp>
-#include <CppUtils/Language/ASM/VM/VirtualMachine.hpp>
+#include <CppUtils/Language/ASM/VirtualMachine/Context.hpp>
+#include <CppUtils/Language/ASM/VirtualMachine/Operations.hpp>
+#include <CppUtils/Language/ASM/VirtualMachine/VirtualMachine.hpp>
 #include <CppUtils/Language/Ini/IniLexer.hpp>
 #include <CppUtils/Language/Json/JsonLexer.hpp>
 #include <CppUtils/Language/StringTree/StringTreeLexer.hpp>

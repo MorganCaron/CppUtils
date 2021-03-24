@@ -1,9 +1,9 @@
 #pragma once
 
 #include <CppUtils/Language/ASM/Compiler/Bytecode.hpp>
-#include <CppUtils/Language/ASM/VM/Context.hpp>
+#include <CppUtils/Language/ASM/VirtualMachine/Context.hpp>
 
-namespace CppUtils::Language::ASM::VM
+namespace CppUtils::Language::ASM::VirtualMachine
 {
 	template<typename Instruction, typename Type>
 	class Operations final

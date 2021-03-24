@@ -16,7 +16,7 @@ namespace CppUtils::Language::IR::Compiler
 			context.addInstruction(context.createInstruction());
 		}
 
-		static void compileComma([[maybe_unused]] const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
+		static void compileComma(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
 		{
 			for (const auto& child : astNode.childs)
 				context.compiler.get().compile(child, context);
@@ -138,8 +138,8 @@ namespace CppUtils::Language::IR::Compiler
 			context.compiler.get().compile(astNode.childs.at(1), context);
 			ifnz->conditionInstruction = ifnz->nextInstruction;
 			auto* nop = context.createInstruction();
-			ifnz->nextInstruction = nop;
 			context.addInstruction(nop);
+			ifnz->nextInstruction = nop;
 		}
 
 		static void compileWhile(const Parser::ASTNode<Type::Token, Address>& astNode, Context<Address>& context)
@@ -150,10 +150,12 @@ namespace CppUtils::Language::IR::Compiler
 			context.addInstruction(ifnz);
 			context.compiler.get().compile(astNode.childs.at(1), context);
 			ifnz->conditionInstruction = ifnz->nextInstruction;
-			context.lastInstruction->nextInstruction = ifnz;
+			auto* endThen = context.lastInstruction;
 			auto* nop = context.createInstruction();
-			ifnz->nextInstruction = nop;
 			context.addInstruction(nop);
+			endThen->nextInstruction = ifnz;
+			ifnz->nextInstruction = nop;
+			
 		}
 	};
 }

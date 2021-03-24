@@ -18,8 +18,7 @@ namespace CppUtils::UnitTests::Language::IR::Compiler
 				ret a;
 			}
 			)"sv);
-			for (const auto& instruction : context.instructions)
-				std::cout << *instruction << std::endl;
+			CppUtils::Language::IR::Compiler::logContext(context);
 		});
 
 		addTest("Pointers", [] {
@@ -38,8 +37,7 @@ namespace CppUtils::UnitTests::Language::IR::Compiler
 				ret append("hello", '!');
 			}
 			)"sv);
-			for (const auto& instruction : context.instructions)
-				std::cout << *instruction << std::endl;
+			CppUtils::Language::IR::Compiler::logContext(context);
 		});
 
 		addTest("Conditions", [] {
@@ -62,8 +60,7 @@ namespace CppUtils::UnitTests::Language::IR::Compiler
 				ret getLength(text);
 			}
 			)"sv);
-			for (const auto& instruction : context.instructions)
-				std::cout << *instruction << std::endl;
+			CppUtils::Language::IR::Compiler::logContext(context);
 		});
 	}
 }
