@@ -88,7 +88,7 @@ namespace CppUtils::Language::Parser
 		if (number != static_cast<unsigned int>(number))
 			throw std::out_of_range{"Number too large"};
 		cursor.position += numberLength;
-		parentNode.get().childs.emplace_back(ASTNode<Types...>{number});
+		parentNode.get().childs.emplace_back(ASTNode<Types...>{static_cast<unsigned int>(number)});
 		return true;
 	}
 

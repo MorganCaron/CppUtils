@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    name: ${{ matrix.os.name }} (${{ matrix.compiler }}, ${{ matrix.library-type }})
+    name: ${{ matrix.os.name }} (${{ matrix.compiler.cxx }}, ${{ matrix.library-type }})
     runs-on: ${{ matrix.os.value }}
     strategy:
       fail-fast: false
@@ -18,14 +18,28 @@ jobs:
         - {
           name: "Ubuntu",
           value: ubuntu-latest,
-          install-ninja: sudo apt install -yq --no-install-recommends ninja-build libxt-dev libxpm-dev libxaw7-dev
+          install-ninja: sudo apt-get install -y ninja-build
         }
         - {
           name: "MacOS",
           value: macos-latest,
           install-ninja: brew install ninja
         }
-        compiler: [g++, clang++]
+        compiler:
+        - {
+          cc: "gcc",
+          cxx: "g++",
+          install-ubuntu: "sudo apt-get install -y gcc-10 g++-10",
+          alternative-cc: "sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 10",
+          alternative-cxx: "sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 10"
+        }
+        - {
+          cc: "clang",
+          cxx: "clang++",
+          install-ubuntu: "sudo apt-get install -y clang-11 lldb-11 lld-11",
+          alternative-cc: "sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-11 11",
+          alternative-cxx: "sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-11 11"
+        }
         library-type: [static, shared]
     steps:
     - uses: actions/checkout@v2
@@ -33,12 +47,6 @@ jobs:
       if: ${{ matrix.os.name != 'Windows' }}
       with:
         python-version: '3.x'
-    - uses: haya14busa/action-cond@v1
-      id: compiler
-      with:
-        cond: ${{ matrix.os.name == 'Ubuntu' && matrix.compiler == 'g++' }}
-        if_true: 'g++-9'
-        if_false: ${{ matrix.compiler }}
     - uses: msys2/setup-msys2@v2
       if: ${{ matrix.os.name == 'Windows' }}
       with:
@@ -47,34 +55,36 @@ jobs:
           mingw-w64-x86_64-clang
           mingw-w64-x86_64-meson
           mingw-w64-x86_64-ninja
+    - name: Install ${{ matrix.compiler.cc }}/${{ matrix.compiler.cxx }} on Ubuntu
+      if: ${{ matrix.os.name == 'Ubuntu' }}
+      run: |
+        ${{ matrix.compiler.install-ubuntu }}
+        ${{ matrix.compiler.alternative-cc }}
+        ${{ matrix.compiler.alternative-cxx }}
     - name: Install Meson
       if: ${{ matrix.os.name != 'Windows' }}
-      run: pip install meson
+      run: pip3 install meson
     - name: Install Ninja
       if: ${{ matrix.os.name != 'Windows' }}
       run: ${{ matrix.os.install-ninja }}
-    - name: Compile and Run on Windows
-      shell: msys2 {0}
-      if: ${{ matrix.os.name == 'Windows' }}
+    - name: Compile
       env:
-        CXX: ${{ steps.compiler.outputs.value }}
-      run: |
-        meson build -Ddefault_library=${{ matrix.library-type }}
-        ninja -C build
-        if [ ${{ matrix.library-type }} == "shared" ]; then
-          cp ./build/External/libCppUtils-External.dll ./build/UnitTests
-          cp ./build/Log/libCppUtils-Log.dll ./build/UnitTests
-          cp ./build/Type/libCppUtils-Type.dll ./build/UnitTests
-        fi
-        ./build/UnitTests/UnitTests
-        ninja -C build test
-    - name: Compile and Run on Ubuntu/MacOS
-      if: ${{ matrix.os.name != 'Windows' }}
-      env:
-        CXX: ${{ steps.compiler.outputs.value }}
+        CC: ${{ matrix.compiler.cc }}
+        CXX: ${{ matrix.compiler.cxx }}
         LDFLAGS: '-ldl'
       run: |
         meson build -Ddefault_library=${{ matrix.library-type }}
         ninja -C build
+        ./build/UnitTests/UnitTests
+        ninja -C build test
+    - name: Move DLLs on Windows/Shared
+      if: ${{ matrix.os.name == 'Windows' && matrix.library-type == 'shared' }}
+      shell: msys2 {0}
+      run: |
+        cp ./build/External/libCppUtils-External.dll ./build/UnitTests
+        cp ./build/Log/libCppUtils-Log.dll ./build/UnitTests
+        cp ./build/Type/libCppUtils-Type.dll ./build/UnitTests
+    - name: Run
+      run: |
         ./build/UnitTests/UnitTests
         ninja -C build test
