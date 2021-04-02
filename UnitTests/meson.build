@@ -34,7 +34,6 @@ headers = files([
 	'include/CppUtils/UnitTests/Log/ChronoLogger.hpp',
 	'include/CppUtils/UnitTests/Log/Logger.hpp',
 	'include/CppUtils/UnitTests/String/String.hpp',
-	'include/CppUtils/UnitTests/Switch/Switch.hpp',
 	'include/CppUtils/UnitTests/Type/Typed.hpp',
 	'include/CppUtils/UnitTests/Type/Token.hpp',
 	'include/CppUtils/UnitTests/UnitTest/UnitTest.hpp',

@@ -37,7 +37,6 @@
 #include <CppUtils/Language/Json/JsonLexer.hpp>
 #include <CppUtils/Language/StringTree/StringTreeLexer.hpp>
 #include <CppUtils/String/String.hpp>
-#include <CppUtils/Switch/Switch.hpp>
 #include <CppUtils/Terminal/TextModifier/TextModifier.hpp>
 #include <CppUtils/Log/ChronoLogger.hpp>
 #include <CppUtils/Log/Logger.hpp>

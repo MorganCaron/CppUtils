@@ -27,12 +27,12 @@ namespace CppUtils::UnitTest
 			using namespace std::string_literals;
 			using namespace Type::Literals;
 
-			auto loggersState = Switch::getValues("Logger"_token);
+			auto oldLoggerState = Log::Logger::state;
 			if (settings.verbose)
 				Log::Logger::logImportant(std::string(50, '_') + '\n' + getName().data() + ':');
-			Switch::setValue("Logger"_token, settings.verbose);
-			Switch::setValue(Log::Logger::InformationType, settings.verbose && settings.detail);
-			Switch::setValue(Log::Logger::DetailType, settings.verbose && settings.detail);
+			Log::Logger::state.setAll(settings.verbose);
+			Log::Logger::state.set("Information"_token, settings.verbose && settings.detail);
+			Log::Logger::state.set("Detail"_token, settings.verbose && settings.detail);
 			try
 			{
 				auto chronoLogger = Log::ChronoLogger{"Test", settings.verbose && settings.chrono};
@@ -41,17 +41,17 @@ namespace CppUtils::UnitTest
 			}
 			catch (const TestException& exception)
 			{
-				Switch::setValues(loggersState);
+				Log::Logger::state = oldLoggerState;
 				Log::Logger::logError("The following test didn't pass:\n"s + getName().data() + "\n" + exception.what());
 				return false;
 			}
 			catch (const std::exception& exception)
 			{
-				Switch::setValues(loggersState);
+				Log::Logger::state = oldLoggerState;
 				Log::Logger::logError("An exception occurred during tests:\n"s + getName().data() + "\n" + exception.what());
 				return false;
 			}
-			Switch::setValues(loggersState);
+			Log::Logger::state = oldLoggerState;
 			if (settings.verbose)
 				Log::Logger::logSuccess(std::string{getName()} + " passed");
 			return true;

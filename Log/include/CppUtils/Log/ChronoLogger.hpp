@@ -25,7 +25,7 @@ namespace CppUtils::Log
 			if (!m_enabled)
 				return;
 			m_chrono.stop();
-			CppUtils::Log::Logger::logDebug(m_name + " duration: " + m_chrono.getText());
+			Logger::logDebug(m_name + " duration: " + m_chrono.getText());
 		}
 
 		inline void enable() noexcept
@@ -41,6 +41,6 @@ namespace CppUtils::Log
 	private:
 		std::string m_name;
 		bool m_enabled;
-		CppUtils::Chrono::Chronometer m_chrono;
+		Chrono::Chronometer m_chrono;
 	};
 }

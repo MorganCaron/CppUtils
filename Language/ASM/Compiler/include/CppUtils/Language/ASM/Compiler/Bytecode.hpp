@@ -16,7 +16,7 @@ namespace CppUtils::Language::ASM::Compiler::Bytecode
 	template<typename Address>
 	struct Instruction final
 	{
-		CppUtils::Type::Token type;
+		Type::Token type;
 		std::string name;
 		Address value;
 		std::vector<Address> parametersId = {};
@@ -28,7 +28,7 @@ namespace CppUtils::Language::ASM::Compiler::Bytecode
 		{}
 		
 		template<typename... Parameters> requires (std::same_as<Address, Parameters> && ...)
-		explicit Instruction(CppUtils::Type::Token c_type = "nop"_token, Parameters... c_parametersId):
+		explicit Instruction(Type::Token c_type = "nop"_token, Parameters... c_parametersId):
 			type{c_type}, parametersId{std::forward<Parameters>(c_parametersId)...}
 		{}
 	};
@@ -36,7 +36,7 @@ namespace CppUtils::Language::ASM::Compiler::Bytecode
 	template<typename Address>
 	std::ostream& operator<<(std::ostream& os, const Instruction<Address>& instruction)
 	{
-		using namespace CppUtils::Type::Literals;
+		using namespace Type::Literals;
 		os << instruction.type;
 		for (const auto& parameterId : instruction.parametersId)
 			os << " R" << parameterId;

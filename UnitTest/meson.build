@@ -1,4 +1,5 @@
 public_dependencies = [
+	cppUtils_log_dep,
 	cppUtils_parameters_dep
 ]
 private_dependencies = []

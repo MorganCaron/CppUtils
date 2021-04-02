@@ -85,12 +85,12 @@ namespace CppUtils::Graph
 	{
 		auto os = std::ostringstream{};
 		os << " " << treeNode.value;
-		CppUtils::Log::Logger::logInformation(os.str());
+		Log::Logger::logInformation(os.str());
 		const auto nbChilds = treeNode.childs.size();
 
 		for (auto i = 0u; i < nbChilds; ++i)
 		{
-			CppUtils::Log::Logger::logDetail(prefix + ((i != nbChilds - 1) ? "├" : "└") + "─", false);
+			Log::Logger::logDetail(prefix + ((i != nbChilds - 1) ? "├" : "└") + "─", false);
 			logTreeNode(treeNode.childs.at(i), prefix + ((i != nbChilds - 1) ? "│" : " ") + "  ");
 		}
 	}

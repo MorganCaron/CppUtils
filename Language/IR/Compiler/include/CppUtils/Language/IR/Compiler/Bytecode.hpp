@@ -16,7 +16,7 @@ namespace CppUtils::Language::IR::Compiler::Bytecode
 	template<typename Address>
 	struct Instruction final
 	{
-		CppUtils::Type::Token type;
+		Type::Token type;
 		std::string name;
 		Address value;
 		std::vector<Address> parametersId = {};
@@ -28,18 +28,17 @@ namespace CppUtils::Language::IR::Compiler::Bytecode
 		{}
 		
 		template<typename... Parameters> requires (std::same_as<Address, Parameters> && ...)
-		explicit Instruction(CppUtils::Type::Token c_type = "nop"_token, Parameters... c_parametersId):
+		explicit Instruction(Type::Token c_type = "nop"_token, Parameters... c_parametersId):
 			type{c_type}, parametersId{std::forward<Parameters>(c_parametersId)...}
 		{}
 
-		Instruction(CppUtils::Type::Token c_type, std::vector<Address> c_parametersId):
+		Instruction(Type::Token c_type, std::vector<Address> c_parametersId):
 			type{c_type}, parametersId{std::move(c_parametersId)}
 		{}
 
 		void log(bool newLine = true) const
 		{
 			using namespace std::literals;
-			using namespace Type::Literals;
 			Log::Logger::logInformation(std::string{type.name} + '\t', false);
 			for (const auto& parameterId : parametersId)
 				Log::Logger::logDetail(" R" + std::to_string(parameterId), false);

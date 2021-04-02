@@ -5,14 +5,8 @@
 namespace CppUtils::Log
 {
 	using namespace Type::Literals;
-	
-	const Logger::MessageType Logger::InformationType = Switch::newId(true, std::array{ "Logger"_token });
-	const Logger::MessageType Logger::ImportantType = Switch::newId(true, std::array{ "Logger"_token });
-	const Logger::MessageType Logger::SuccessType = Switch::newId(true, std::array{ "Logger"_token });
-	const Logger::MessageType Logger::DebugType = Switch::newId(true, std::array{ "Logger"_token });
-	const Logger::MessageType Logger::DetailType = Switch::newId(true, std::array{ "Logger"_token });
-	const Logger::MessageType Logger::WarningType = Switch::newId(true, std::array{ "Logger"_token });
-	const Logger::MessageType Logger::ErrorType = Switch::newId(true, std::array{ "Logger"_token });
+
+	State Logger::state{};
 	
 	std::unordered_map<Logger::OutputType, std::ostream*> Logger::m_outputs{
 		{ Logger::OutputType::Cout, &std::cout },
@@ -20,18 +14,18 @@ namespace CppUtils::Log
 		{ Logger::OutputType::Clog, &std::clog }
 	};
 
-	std::unordered_map<Logger::MessageType, Terminal::TextModifier::TextColor::TextColorEnum> Logger::m_colors{
-		{ Logger::ImportantType, Terminal::TextModifier::TextColor::TextColorEnum::Cyan },
-		{ Logger::SuccessType, Terminal::TextModifier::TextColor::TextColorEnum::Green },
-		{ Logger::DebugType, Terminal::TextModifier::TextColor::TextColorEnum::Magenta },
-		{ Logger::DetailType, Terminal::TextModifier::TextColor::TextColorEnum::Blue },
-		{ Logger::WarningType, Terminal::TextModifier::TextColor::TextColorEnum::Yellow },
-		{ Logger::ErrorType, Terminal::TextModifier::TextColor::TextColorEnum::Red }
+	std::unordered_map<Type::Token, Terminal::TextModifier::TextColor::TextColorEnum, Type::Token::hash_fn> Logger::m_colors{
+		{ "Important"_token, Terminal::TextModifier::TextColor::TextColorEnum::Cyan },
+		{ "Success"_token, Terminal::TextModifier::TextColor::TextColorEnum::Green },
+		{ "Debug"_token, Terminal::TextModifier::TextColor::TextColorEnum::Magenta },
+		{ "Detail"_token, Terminal::TextModifier::TextColor::TextColorEnum::Blue },
+		{ "Warning"_token, Terminal::TextModifier::TextColor::TextColorEnum::Yellow },
+		{ "Error"_token, Terminal::TextModifier::TextColor::TextColorEnum::Red }
 	};
 
-	void Logger::log(OutputType loggerOutput, MessageType logType, std::string_view message, bool newLine)
+	void Logger::log(OutputType loggerOutput, Type::Token logType, std::string_view message, bool newLine)
 	{
-		if (!Switch::getValue(logType))
+		if (!state.get(logType))
 			return;
 		
 		if (m_outputs.find(loggerOutput) == m_outputs.end())
@@ -45,7 +39,7 @@ namespace CppUtils::Log
 			return;
 		}
 
-		if (logType == InformationType)
+		if (logType == "Information"_token)
 		{
 			stream << ((newLine) ? (std::string{message} + '\n') : message) << std::flush;
 			return;
@@ -55,14 +49,14 @@ namespace CppUtils::Log
 		const auto attributes = Terminal::TextModifier::getTextColor(stream);
 #endif
 		if (m_colors.find(logType) != m_colors.end())
-			CppUtils::Terminal::TextModifier::colorize(stream, m_colors.at(logType));
+			Terminal::TextModifier::colorize(stream, m_colors.at(logType));
 		else
-			CppUtils::Terminal::TextModifier::reset(stream);
+			Terminal::TextModifier::reset(stream);
 		stream << ((newLine) ? (std::string{message} + '\n') : message) << std::flush;
 #if defined(OS_WINDOWS)
 		SetConsoleTextAttribute(Terminal::getTerminalHandle(stream), attributes);
 #elif defined(OS_LINUX) || defined(OS_MACOS)
-		CppUtils::Terminal::TextModifier::reset(stream);
+		Terminal::TextModifier::reset(stream);
 #endif
 	}
 }

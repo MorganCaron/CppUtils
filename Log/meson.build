@@ -1,6 +1,6 @@
 public_dependencies = [
-	cppUtils_terminal_dep,
-	cppUtils_switch_dep
+	cppUtils_type_dep,
+	cppUtils_terminal_dep
 ]
 private_dependencies = []
 
