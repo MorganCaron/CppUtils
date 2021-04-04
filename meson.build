@@ -64,3 +64,13 @@ cppUtils_dep = declare_dependency(
 )
 
 subdir('UnitTests')
+
+standardese = find_program('standardese', required: false)
+
+documentation = custom_target(
+	'docs',
+	output: 'documentation-test',
+	command: [standardese, '--config=../standardese.ini', '../'],
+	install: false,
+	build_by_default: true
+)
