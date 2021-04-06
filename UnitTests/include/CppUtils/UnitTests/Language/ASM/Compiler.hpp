@@ -16,7 +16,7 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 			nop
 			)"sv);
 			for (const auto& instruction : context.instructions)
-				std::cout << *instruction << std::endl;
+				instruction->log(true);
 		});
 
 		addTest("Halt", [] {
@@ -25,7 +25,7 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 			hlt
 			)"sv);
 			for (const auto& instruction : context.instructions)
-				std::cout << *instruction << std::endl;
+				instruction->log(true);
 		});
 
 		addTest("Move", [] {
@@ -34,7 +34,7 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 			mov r1, 42
 			)"sv);
 			for (const auto& instruction : context.instructions)
-				std::cout << *instruction << std::endl;
+				instruction->log(true);
 		});
 
 		addTest("Add", [] {
@@ -44,7 +44,7 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 			add r2, 22
 			)"sv);
 			for (const auto& instruction : context.instructions)
-				std::cout << *instruction << std::endl;
+				instruction->log(true);
 		});
 
 		addTest("Label", [] {
@@ -54,7 +54,7 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 			add r2, 22
 			)"sv);
 			for (const auto& instruction : context.instructions)
-				std::cout << *instruction << std::endl;
+				instruction->log(true);
 		});
 	}
 }

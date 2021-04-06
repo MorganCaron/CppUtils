@@ -2,9 +2,6 @@
 
 #include <string>
 #include <vector>
-#include <variant>
-#include <optional>
-#include <iostream>
 
 #include <CppUtils/Type/Token.hpp>
 
@@ -43,7 +40,9 @@ namespace CppUtils::Language::IR::Compiler::Bytecode
 			for (const auto& parameterId : parametersId)
 				Log::Logger::logDetail(" R" + std::to_string(parameterId), false);
 			if (type == "init"_token)
-				Log::Logger::logDebug(" \""s + name + "\" " + std::to_string(value), newLine);
+				Log::Logger::logDebug(" \""s + name + "\" " + std::to_string(value), false);
+			if (newLine)
+				std::cout << std::endl;
 		}
 	};
 }
