@@ -61,13 +61,14 @@ jobs:
         ${{ matrix.compiler.install-ubuntu }}
         ${{ matrix.compiler.alternative-cc }}
         ${{ matrix.compiler.alternative-cxx }}
-    - name: Install Meson
+    - name: Install Meson on Ubuntu and MacOS
       if: ${{ matrix.os.name != 'Windows' }}
       run: pip3 install meson
-    - name: Install Ninja
+    - name: Install Ninja on Ubuntu and MacOS
       if: ${{ matrix.os.name != 'Windows' }}
       run: ${{ matrix.os.install-ninja }}
-    - name: Compile
+    - name: Compile on Ubuntu and MacOS
+      if: ${{ matrix.os.name != 'Windows' }}
       env:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}
@@ -75,8 +76,15 @@ jobs:
       run: |
         meson build -Ddefault_library=${{ matrix.library-type }}
         ninja -C build
-        ./build/UnitTests/UnitTests
-        ninja -C build test
+    - name: Compile on Windows
+      if: ${{ matrix.os.name == 'Windows' }}
+      shell: msys2 {0}
+      env:
+        CC: ${{ matrix.compiler.cc }}
+        CXX: ${{ matrix.compiler.cxx }}
+      run: |
+        meson build -Ddefault_library=${{ matrix.library-type }}
+        ninja -C build
     - name: Move DLLs on Windows/Shared
       if: ${{ matrix.os.name == 'Windows' && matrix.library-type == 'shared' }}
       shell: msys2 {0}
@@ -84,7 +92,14 @@ jobs:
         cp ./build/External/libCppUtils-External.dll ./build/UnitTests
         cp ./build/Log/libCppUtils-Log.dll ./build/UnitTests
         cp ./build/Type/libCppUtils-Type.dll ./build/UnitTests
-    - name: Run
+    - name: Run on Ubuntu and MacOS
+      if: ${{ matrix.os.name != 'Windows' }}
+      run: |
+        ./build/UnitTests/UnitTests
+        ninja -C build test
+    - name: Run on Windows
+      if: ${{ matrix.os.name == 'Windows' }}
+      shell: msys2 {0}
       run: |
         ./build/UnitTests/UnitTests
         ninja -C build test
