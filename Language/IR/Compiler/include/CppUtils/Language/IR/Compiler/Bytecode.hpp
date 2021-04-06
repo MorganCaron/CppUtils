@@ -20,12 +20,16 @@ namespace CppUtils::Language::IR::Compiler::Bytecode
 		Instruction<Address>* nextInstruction = nullptr;
 		Instruction<Address>* conditionInstruction = nullptr;
 
+		explicit Instruction(Type::Token c_type = "nop"_token):
+			type{c_type}
+		{}
+		
 		explicit Instruction(Address registerId, std::string_view c_name = ""sv, Address c_value = Address{}):
 			type{"init"_token}, name{c_name}, value{c_value}, parametersId{registerId}
 		{}
 		
 		template<typename... Parameters> requires (std::same_as<Address, Parameters> && ...)
-		explicit Instruction(Type::Token c_type = "nop"_token, Parameters... c_parametersId):
+		Instruction(Type::Token c_type, Parameters... c_parametersId):
 			type{c_type}, parametersId{std::forward<Parameters>(c_parametersId)...}
 		{}
 
