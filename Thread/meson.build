@@ -1,4 +1,8 @@
-public_dependencies = []
+thread_dep = dependency('threads')
+
+public_dependencies = [
+	thread_dep
+]
 private_dependencies = []
 
 includeDir = include_directories(['include/', '.'])

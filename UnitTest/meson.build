@@ -19,7 +19,7 @@ headers = files([
 	'include/CppUtils/UnitTest/TestSettings.hpp'
 ])
 
-cppUtils_unittest_dep = declare_dependency(
+cppUtils_unitTest_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

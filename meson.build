@@ -32,7 +32,7 @@ public_dependencies = [
 	cppUtils_chrono_dep,
 	cppUtils_container_dep,
 	cppUtils_external_dep,
-	cppUtils_filesystem_dep,
+	cppUtils_fileSystem_dep,
 	cppUtils_functional_dep,
 	cppUtils_hash_dep,
 	cppUtils_terminal_dep,
@@ -43,7 +43,7 @@ public_dependencies = [
 	cppUtils_thread_dep,
 	cppUtils_language_dep,
 	cppUtils_parameters_dep,
-	cppUtils_unittest_dep
+	cppUtils_unitTest_dep
 ]
 private_dependencies = []
 

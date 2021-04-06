@@ -11,7 +11,7 @@ headers = files([
 	'include/CppUtils/FileSystem/File.hpp'
 ])
 
-cppUtils_filesystem_dep = declare_dependency(
+cppUtils_fileSystem_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )
