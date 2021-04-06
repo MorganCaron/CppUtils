@@ -1,0 +1,26 @@
+site_name: CppUtils
+
+theme: 
+  name: material
+  features:
+    - navigation.instant
+  palette:
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+repo_url: https://github.com/MorganCaron/CppUtils
+
+copyright: Copyright &copy; 2021 Morgan CARON
+
+nav:
+  - Home: index.md
+  - Namespaces: standardese_entities.md
+  - Files: standardese_files.md
