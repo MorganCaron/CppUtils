@@ -3,6 +3,7 @@ project('CppUtils',
 	version: '0.0.0',
 	license: 'LGPL3',
 	default_options: [
+		'c_std=c2x',
 		'cpp_std=c++2a',
 		'warning_level=3',
 		'optimization=3',

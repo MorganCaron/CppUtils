@@ -1,0 +1,60 @@
+name: "CI C++: Linux"
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: ${{ matrix.os.name }} (${{ matrix.compiler.cxx }}, ${{ matrix.library-type }})
+    runs-on: ${{ matrix.os.value }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - {
+          name: "Ubuntu",
+          value: ubuntu-latest
+        }
+        compiler:
+        - {
+          cc: "gcc",
+          cxx: "g++",
+          install: "sudo apt-get install -y gcc-10 g++-10",
+          alternative-cc: "sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 10",
+          alternative-cxx: "sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 10"
+        }
+        - {
+          cc: "clang",
+          cxx: "clang++",
+          install: "sudo apt-get install -y clang-11 lldb-11 lld-11",
+          alternative-cc: "sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-11 11",
+          alternative-cxx: "sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-11 11"
+        }
+        library-type: [static, shared]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install ${{ matrix.compiler.cc }}/${{ matrix.compiler.cxx }}
+      run: |
+        ${{ matrix.compiler.install }}
+        ${{ matrix.compiler.alternative-cc }}
+        ${{ matrix.compiler.alternative-cxx }}
+    - name: Install Meson and Ninja
+      run: pip3 install meson ninja
+    - name: Compile
+      env:
+        CC: ${{ matrix.compiler.cc }}
+        CXX: ${{ matrix.compiler.cxx }}
+        LDFLAGS: '-ldl'
+      run: |
+        meson build -Ddefault_library=${{ matrix.library-type }}
+        ninja -C build -j7
+    - name: Run tests
+      run: |
+        ./build/UnitTests/UnitTests
+        ninja -C build test

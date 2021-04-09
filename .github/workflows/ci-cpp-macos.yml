@@ -1,0 +1,53 @@
+name: "CI C++: MacOS"
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: ${{ matrix.os.name }} (${{ matrix.compiler.cxx }}, ${{ matrix.library-type }})
+    runs-on: ${{ matrix.os.value }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - {
+          name: "MacOS",
+          value: macos-latest
+        }
+        compiler:
+        - {
+          cc: "clang",
+          cxx: "clang++"
+        }
+        library-type: [static, shared]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install LLVM
+      run: |
+        wget -q https://gitlab.com/Arthapz/llvm13-macos/-/raw/master/LLVM13.7z?inline=false -O ${{ runner.workspace }}/LLVM13.7z
+        7z x ${{ runner.workspace }}/LLVM13.7z
+    - name: Install Meson and Ninja
+      run: pip3 install meson ninja
+    - name: Configure native file
+      run: |
+        cp ${{ runner.workspace }}/CppUtils/native-files/macos-llvm13-clang.ini.sample ${{ runner.workspace }}/CppUtils/native-files/macos-llvm13-clang.ini
+        sed -i -e 's|%TOOLCHAIN_PATH%|${{ runner.workspace }}/CppUtils/LLVM13.0.0git.xctoolchain/usr|g' ${{ runner.workspace }}/CppUtils/native-files/macos-llvm13-clang.ini
+    - name: Compile
+      env:
+        CC: ${{ matrix.compiler.cc }}
+        CXX: ${{ matrix.compiler.cxx }}
+        LDFLAGS: '-ldl'
+      run: |
+        meson build -Ddefault_library=${{ matrix.library-type }} --native-file ${{ runner.workspace }}/CppUtils/native-files/macos-llvm13-clang.ini
+        ninja -C build -j7
+    - name: Run tests
+      run: |
+        ./build/UnitTests/UnitTests
+        ninja -C build test

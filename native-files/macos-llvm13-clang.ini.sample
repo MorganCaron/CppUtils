@@ -1,0 +1,30 @@
+[constants]
+toolchain = '%TOOLCHAIN_PATH%'
+common_flags = ['-m64', '--sysroot=' + toolchain, '-isystem ' + toolchain / 'include/c++/v1', '-I /usr/local/include']
+
+[options]
+c_args = common_flags
+cpp_args = c_args + ['-stdlib=libc++']
+c_link_args = ['-L' + toolchain / 'lib', '-L/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib', '-L/usr/local/lib', '-lm', '-lz', '-lcurses', '-lxml2']
+cpp_link_args = c_link_args
+objc_link_args = c_link_args
+objcpp_link_args = c_link_args
+
+[binaries]
+c = toolchain / 'bin/clang'
+cpp = toolchain / 'bin/clang++'
+objc = toolchain / 'bin/clang'
+objcpp = toolchain / 'bin/clang++'
+c_ld = '/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld'
+cpp_ld = c_ld
+objc_ld = c_ld
+objcpp_ld = c_ld
+strip = toolchain / 'bin/llvm-strip'
+addr2line = toolchain / 'bin/llvm-addr2line'
+lib = toolchain / 'bin/llvm-lib'
+ranlib = toolchain / 'bin/llvm-ranlib'
+readelf = toolchain / 'bin/llvm-readelf'
+llvm-config = toolchain / 'bin/llvm-config'
+ar = toolchain / 'bin/llvm-ar'
+as = toolchain / 'bin/llvm-as'
+pkg-config = '/usr/local/bin/pkg-config'
