@@ -98,7 +98,7 @@ namespace CppUtils::Language::Parser
 			});
 		}
 
-		[[nodiscard]] inline std::string_view getNextNChar(const std::size_t size) const
+		[[nodiscard]] inline std::string_view getNextNChar(std::size_t size) const
 		{
 			return src.substr(position, std::min(size, src.length() - position));
 		}

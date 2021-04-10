@@ -253,9 +253,9 @@ namespace CppUtils::Language::Lexer
 			const auto& alternative = Type::ensureType<Parser::AlternativeLexeme>(lexeme).value;
 			auto& [cursor, parentNode] = context;
 			const auto startPosition = cursor.position;
-			for (const auto& lexeme : alternative.lexemes)
+			for (const auto& alternativeLexeme : alternative.lexemes)
 			{
-				if (parseLexeme(lexeme, context))
+				if (parseLexeme(alternativeLexeme, context))
 					return true;
 				cursor.position = startPosition;
 			}

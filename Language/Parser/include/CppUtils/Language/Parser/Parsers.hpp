@@ -104,7 +104,7 @@ namespace CppUtils::Language::Parser
 			++cursor.position;
 			if (cursor.isEndOfString())
 				return false;
-			hasDigit |= std::isdigit(cursor.getChar());
+			hasDigit |= static_cast<bool>(std::isdigit(cursor.getChar()));
 			--cursor.position;
 		}
 		if (!hasDigit)
@@ -141,7 +141,7 @@ namespace CppUtils::Language::Parser
 			++cursor.position;
 			if (cursor.isEndOfString())
 				return false;
-			hasDigit |= std::isdigit(cursor.getChar());
+			hasDigit |= static_cast<bool>(std::isdigit(cursor.getChar()));
 			--cursor.position;
 		}
 		if (!hasDigit)
@@ -166,7 +166,7 @@ namespace CppUtils::Language::Parser
 			++cursor.position;
 			if (cursor.isEndOfString())
 				return false;
-			hasDigit |= std::isdigit(cursor.getChar());
+			hasDigit |= static_cast<bool>(std::isdigit(cursor.getChar()));
 			isInfinity |= cursor.isEqual("inf", false);
 			--cursor.position;
 		}

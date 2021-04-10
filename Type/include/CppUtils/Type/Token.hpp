@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <iostream>
 #include <typeindex>
 #include <string_view>
 #include <unordered_map>
@@ -22,7 +23,7 @@ namespace CppUtils::Type
 			name{c_name},
 			id{CppUtils::Hash::constexprHash(name)}
 		{}
-		explicit constexpr Token(Index c_id):
+		explicit Token(Index c_id):
 			name{""},
 			id{c_id}
 		{

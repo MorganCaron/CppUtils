@@ -30,7 +30,7 @@ inline bool operator==(const std::variant<LhsTypes...>& lhs, const RhsType& rhs)
 	return rhs == lhs;
 }
 
-template<typename... LhsTypes, typename... RhsTypes>
+template<typename... LhsTypes, typename... RhsTypes> requires (!CppUtils::Type::Concept::isPresent<LhsTypes, RhsTypes...> || ...)
 inline bool operator==(const std::variant<LhsTypes...>& lhs, const std::variant<RhsTypes...>& rhs)
 {
 	return std::visit([&rhs](auto&& lhsValue) -> bool {
@@ -39,4 +39,10 @@ inline bool operator==(const std::variant<LhsTypes...>& lhs, const std::variant<
 		else
 			return false;
 	}, lhs);
+}
+
+template<typename... LhsTypes, typename... RhsTypes> requires (!CppUtils::Type::Concept::isPresent<LhsTypes, RhsTypes...> || ...)
+inline bool operator!=(const std::variant<LhsTypes...>& lhs, const std::variant<RhsTypes...>& rhs)
+{
+	return !(lhs == rhs);
 }

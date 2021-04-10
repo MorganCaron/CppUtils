@@ -38,7 +38,7 @@ jobs:
         CXX: ${{ matrix.compiler.cxx }}
         LDFLAGS: '-ldl'
       run: |
-        meson build -Ddefault_library=${{ matrix.library-type }} -Dcpp_std=vc++latest
+        meson build -Ddefault_library=${{ matrix.library-type }} -Dcpp_std=vc++latest -Dcpp_args='/DNOMINMAX'
         ninja -C build -j7
     - name: Move DLLs
       if: ${{ matrix.library-type == 'shared' }}

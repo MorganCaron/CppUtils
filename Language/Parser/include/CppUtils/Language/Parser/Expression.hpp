@@ -156,10 +156,10 @@ namespace CppUtils::Language::Parser
 
 		[[nodiscard]] Alternative operator||(const Expression& rhs) const
 		{
-			auto lexemes = std::vector<std::unique_ptr<ILexeme>>{};
-			lexemes.emplace_back(std::make_unique<TokenLexeme>(token));
-			lexemes.emplace_back(std::make_unique<TokenLexeme>(rhs.token));
-			return Alternative{std::move(lexemes)};
+			auto mergedLexemes = std::vector<std::unique_ptr<ILexeme>>{};
+			mergedLexemes.emplace_back(std::make_unique<TokenLexeme>(token));
+			mergedLexemes.emplace_back(std::make_unique<TokenLexeme>(rhs.token));
+			return Alternative{std::move(mergedLexemes)};
 		}
 	};
 }
