@@ -2,6 +2,7 @@
 
 #include <CppUtils/Chrono/Chronometer.hpp>
 #include <CppUtils/Container/Vector.hpp>
+#include <CppUtils/DesignPattern/Observer.hpp>
 #include <CppUtils/External/DllExport.hpp>
 #include <CppUtils/External/DynamicLibrary.hpp>
 #include <CppUtils/FileSystem/File.hpp>
