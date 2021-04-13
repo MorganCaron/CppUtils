@@ -55,7 +55,7 @@
 #include <CppUtils/Type/NonCopyable.hpp>
 #include <CppUtils/Type/NonInstantiable.hpp>
 #include <CppUtils/Type/NonMovable.hpp>
-#include <CppUtils/Type/Operators.hpp>
 #include <CppUtils/Type/Typed.hpp>
 #include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Type/VariadicTemplate.hpp>
+#include <CppUtils/Type/Variant.hpp>

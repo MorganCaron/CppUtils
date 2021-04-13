@@ -5,7 +5,7 @@
 #include <sstream>
 
 #include <CppUtils/Type/Concepts.hpp>
-#include <CppUtils/Type/Operators.hpp>
+#include <CppUtils/Type/Variant.hpp>
 #include <CppUtils/Log/Logger.hpp>
 
 namespace CppUtils::Graph
