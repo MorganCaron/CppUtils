@@ -20,6 +20,7 @@
 #include <CppUtils/UnitTests/Language/Ini/IniLexer.hpp>
 #include <CppUtils/UnitTests/Language/Json/JsonLexer.hpp>
 #include <CppUtils/UnitTests/Language/StringTree/StringTreeLexer.hpp>
+#include <CppUtils/UnitTests/Language/Xml/XmlLexer.hpp>
 #include <CppUtils/UnitTests/Parameters/ParametersLexer.hpp>
 #include <CppUtils/UnitTests/Log/ChronoLogger.hpp>
 #include <CppUtils/UnitTests/Log/Logger.hpp>
