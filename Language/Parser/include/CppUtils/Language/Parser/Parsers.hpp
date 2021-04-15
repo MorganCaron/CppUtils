@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CppUtils/Type/Concepts.hpp>
+#include <CppUtils/Type/Traits.hpp>
 #include <CppUtils/Language/Parser/Context.hpp>
 #include <CppUtils/Language/Parser/Expression.hpp>
 
@@ -13,14 +13,14 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...> || Type::Concept::isPresent<std::string, Types...>
+	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool keywordParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
 		const auto keyword = cursor.getKeywordAndSkipIt();
 		if (keyword.empty())
 			return false;
-		if constexpr(Type::Concept::isPresent<Type::Token, Types...>)
+		if constexpr(Type::Traits::isPresent<Type::Token, Types...>)
 		{
 			auto keywordToken = Type::Token{keyword};
 			keywordToken.saveTypename();
@@ -32,7 +32,7 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...> || Type::Concept::isPresent<std::string, Types...>
+	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool quoteParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
@@ -47,7 +47,7 @@ namespace CppUtils::Language::Parser
 		if (cursor.getChar() != quote)
 			return false;
 		const auto content = cursor.src.substr(startPosition, cursor.position - startPosition);
-		if constexpr(Type::Concept::isPresent<Type::Token, Types...>)
+		if constexpr(Type::Traits::isPresent<Type::Token, Types...>)
 		{
 			auto stringToken = Type::Token{content};
 			stringToken.saveTypename();
@@ -59,7 +59,7 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...> || Type::Concept::isPresent<std::string, Types...>
+	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool singleQuoteParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
@@ -68,7 +68,7 @@ namespace CppUtils::Language::Parser
 		return quoteParser(context);
 	}
 
-	template<typename... Types> requires Type::Concept::isPresent<Type::Token, Types...> || Type::Concept::isPresent<std::string, Types...>
+	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool doubleQuoteParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
@@ -179,7 +179,7 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	template<typename... Types> requires Type::Concept::isPresent<bool, Types...>
+	template<typename... Types> requires Type::Traits::isPresent<bool, Types...>
 	[[nodiscard]] inline bool booleanParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;

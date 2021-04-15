@@ -3,7 +3,7 @@
 #include <iostream>
 #include <concepts>
 
-namespace CppUtils::Type::Concept
+namespace CppUtils::Type::Traits
 {
 	template<typename T>
 	concept isPrintable = requires(T rhs) {
@@ -12,4 +12,9 @@ namespace CppUtils::Type::Concept
 
 	template<typename Type, typename... Types>
 	concept isPresent = (std::same_as<Type, Types> || ...);
+	
+	template<typename T>
+	concept isDereferenceable = requires(T value) {
+		*value;
+	};
 }

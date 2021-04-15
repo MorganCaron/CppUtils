@@ -6,7 +6,7 @@
 namespace CppUtils::Language::Compiler
 {
 	template<typename Context, typename... Types>
-	requires Type::Concept::isPresent<Type::Token, Types...>
+	requires Type::Traits::isPresent<Type::Token, Types...>
 	class Compiler final
 	{
 	public:

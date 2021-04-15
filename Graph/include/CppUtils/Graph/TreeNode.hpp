@@ -4,7 +4,7 @@
 #include <vector>
 #include <sstream>
 
-#include <CppUtils/Type/Concepts.hpp>
+#include <CppUtils/Type/Traits.hpp>
 #include <CppUtils/Type/Variant.hpp>
 #include <CppUtils/Log/Logger.hpp>
 
@@ -80,7 +80,7 @@ namespace CppUtils::Graph
 		}
 	};
 
-	template<typename Storage>// requires Type::Concept::isPrintable<Storage> // Fonctionne sur GCC mais pas sur Clang https://godbolt.org/z/75cja8
+	template<typename Storage>// requires Type::Traits::isPrintable<Storage> // Fonctionne sur GCC mais pas sur Clang https://godbolt.org/z/75cja8
 	void logTreeNode(const TreeNode<Storage>& treeNode, const std::string& prefix = " ") noexcept
 	{
 		auto os = std::ostringstream{};

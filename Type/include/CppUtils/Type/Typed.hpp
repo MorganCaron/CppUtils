@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 #include <CppUtils/Type/Token.hpp>
-#include <CppUtils/Type/Concepts.hpp>
+#include <CppUtils/Type/Traits.hpp>
 #include <CppUtils/External/DllExport.hpp>
 
 namespace CppUtils::Type
@@ -16,6 +16,11 @@ namespace CppUtils::Type
 		virtual const Token& getType() const noexcept = 0;
 		virtual std::string getPrintable() const noexcept = 0;
 	};
+
+	std::ostream& operator<<(std::ostream& os, const ITyped& typed)
+	{
+		return os << typed.getPrintable();
+	}
 
 	template<const Token& storageToken, typename StorageType>
 	struct DLL_PUBLIC Typed final: public ITyped
@@ -36,8 +41,13 @@ namespace CppUtils::Type
 		{
 			auto ss = std::stringstream{};
 			ss << storageToken.name;
-			if constexpr(CppUtils::Type::Concept::isPrintable<StorageType>)
-				ss << " " << value;
+			if constexpr(Traits::isDereferenceable<StorageType>)
+			{
+				if constexpr(Traits::isPrintable<decltype(*value)>)
+					ss << ": " << *value;
+			}
+			else if constexpr(Traits::isPrintable<StorageType>)
+				ss << ": " << value;
 			return ss.str();
 		}
 
