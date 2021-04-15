@@ -23,6 +23,11 @@ namespace CppUtils::Language::Xml
 				return true;
 			};
 
+			static const auto openingTagParser = [](auto& context) -> bool {
+				auto& [cursor, parentNode] = context;
+				return (!cursor.isEndOfString() && cursor.getCharAndSkipIt() == '<' && !cursor.isEndOfString() && cursor.getChar() != '/');
+			};
+
 			static const auto closingTagValidator = [](auto& context) -> bool {
 				auto& parentNode = context.parentNode.get();
 				const auto& closingTag = parentNode.childs.back().value;
@@ -36,13 +41,14 @@ namespace CppUtils::Language::Xml
 			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("quoteParser"_token, Parser::quoteParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("textParser"_token, textParser);
+			m_grammarLexer.addParsingFunction("openingTagParser"_token, openingTagParser);
 			m_grammarLexer.addParsingFunction("closingTagValidator"_token, closingTagValidator);
 
 			static constexpr auto grammarSrc = R"(
 			main: tags spaceParser;
 			!tags: (tag >= 0);
 			!tag: [openingTag] content closingTag;
-			!openingTag: spaceParser '<' [tagName] attributes spaceParser '>';
+			!openingTag: spaceParser openingTagParser [tagName] attributes spaceParser '>';
 			!closingTag: spaceParser "</" tagName closingTagValidator spaceParser '>';
 			!tagName: spaceParser keywordParser;
 			attributes: (attribute >= 0);
