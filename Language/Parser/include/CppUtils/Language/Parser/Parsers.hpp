@@ -47,14 +47,14 @@ namespace CppUtils::Language::Parser
 		if (cursor.getChar() != quote)
 			return false;
 		const auto content = cursor.src.substr(startPosition, cursor.position - startPosition);
-		if constexpr(Type::Traits::isPresent<Type::Token, Types...>)
+		if constexpr(Type::Traits::isPresent<std::string, Types...>)
+			parentNode.get().childs.emplace_back(ASTNode<Types...>{std::string{content}});
+		else
 		{
 			auto stringToken = Type::Token{content};
 			stringToken.saveTypename();
 			parentNode.get().childs.emplace_back(ASTNode<Types...>{std::move(stringToken)});
 		}
-		else
-			parentNode.get().childs.emplace_back(ASTNode<Types...>{std::string{content}});
 		++cursor.position;
 		return true;
 	}

@@ -6,9 +6,9 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 {
 	TEST_GROUP("Language/Xml/XmlLexer")
 	{
+		using namespace std::literals;
 		using namespace CppUtils::Type::Literals;
 		using namespace CppUtils::Language::Xml::Literals;
-		using namespace CppUtils::Language::StringTree::Literals;
 		
 		addTest("Tag", [] {
 			const auto xmlTree = R"(
@@ -16,12 +16,11 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 			)"_xml;
 			CppUtils::Graph::logTreeNode(xmlTree);
 
-			const auto stringTree = R"(
-			"h1" {
-				"content" { "Title" }
-			}
-			)"_stringTree;
-			ASSERT(xmlTree == stringTree);
+			ASSERT(xmlTree.childs.size() == 1);
+			ASSERT(xmlTree.childs.at(0).value == "h1"_token);
+			ASSERT(xmlTree.childs.at(0).childs.size() == 2);
+			ASSERT(xmlTree.childs.at(0).childs.at(0).value == "attributes"_token);
+			ASSERT(xmlTree.childs.at(0).childs.at(1).value == "Title"s);
 		});
 
 		addTest("Nested tags", [] {
@@ -34,22 +33,15 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 			)"_xml;
 			CppUtils::Graph::logTreeNode(xmlTree);
 
-			const auto stringTree = R"(
-			"ul" {
-				"content" {
-					"li" {
-						"content" { "First" }
-					}
-					"li" {
-						"content" { "Second" }
-					}
-					"li" {
-						"content" { "Third" }
-					}
-				}
-			}
-			)"_stringTree;
-			ASSERT(xmlTree == stringTree);
+			ASSERT(xmlTree.childs.size() == 1);
+			ASSERT(xmlTree.childs.at(0).value == "ul"_token);
+			ASSERT(xmlTree.childs.at(0).childs.size() == 4);
+			ASSERT(xmlTree.childs.at(0).childs.at(0).value == "attributes"_token);
+			for (auto i = 1u; i <= 3; ++i)
+				ASSERT(xmlTree.childs.at(0).childs.at(i).value == "li"_token);
+			ASSERT(xmlTree.childs.at(0).childs.at(1).childs.size() == 2);
+			ASSERT(xmlTree.childs.at(0).childs.at(1).childs.at(0).value == "attributes"_token);
+			ASSERT(xmlTree.childs.at(0).childs.at(1).childs.at(1).value == "First"s);
 		});
 
 		addTest("Attributes", [] {
@@ -58,15 +50,15 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 			)"_xml;
 			CppUtils::Graph::logTreeNode(xmlTree);
 
-			const auto stringTree = R"(
-			"h1" {
-				"attributes" {
-					"color" { "red" }
-				}
-				"content" { "Title" }
-			}
-			)"_stringTree;
-			ASSERT(xmlTree == stringTree);
+			ASSERT(xmlTree.childs.size() == 1);
+			ASSERT(xmlTree.childs.at(0).value == "h1"_token);
+			ASSERT(xmlTree.childs.at(0).childs.size() == 2);
+			ASSERT(xmlTree.childs.at(0).childs.at(0).value == "attributes"_token);
+			ASSERT(xmlTree.childs.at(0).childs.at(0).childs.size() == 1);
+			ASSERT(xmlTree.childs.at(0).childs.at(0).childs.at(0).value == "color"_token);
+			ASSERT(xmlTree.childs.at(0).childs.at(0).childs.at(0).childs.size() == 1);
+			ASSERT(xmlTree.childs.at(0).childs.at(0).childs.at(0).childs.at(0).value == "red"s);
+			ASSERT(xmlTree.childs.at(0).childs.at(1).value == "Title"s);
 		});
 	}
 }
