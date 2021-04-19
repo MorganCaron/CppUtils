@@ -2,6 +2,8 @@
 
 #include <span>
 #include <string>
+#include <memory>
+#include <functional>
 
 #include <CppUtils/Type/Token.hpp>
 

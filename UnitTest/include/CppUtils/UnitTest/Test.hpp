@@ -7,7 +7,7 @@
 #include <functional>
 
 #include <CppUtils/Type/Named.hpp>
-#include <CppUtils/Log/Logger.hpp>
+#include <CppUtils/Log/ChronoLogger.hpp>
 #include <CppUtils/Parameters/ParametersLexer.hpp>
 #include <CppUtils/UnitTest/TestException.hpp>
 #include <CppUtils/UnitTest/TestSettings.hpp>

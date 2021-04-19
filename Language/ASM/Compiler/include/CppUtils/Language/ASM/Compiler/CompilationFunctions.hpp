@@ -1,5 +1,6 @@
 #pragma once
 
+#include <CppUtils/Language/Parser/Context.hpp>
 #include <CppUtils/Language/ASM/Compiler/Context.hpp>
 
 namespace CppUtils::Language::ASM::Compiler

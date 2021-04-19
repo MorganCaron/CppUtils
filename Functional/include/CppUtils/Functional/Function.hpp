@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <utility>
+#include <stdexcept>
 #include <functional>
 
 namespace CppUtils::Functional

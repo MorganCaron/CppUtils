@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <CppUtils/Language/Parser/Context.hpp>
 #include <CppUtils/Language/IR/Compiler/Context.hpp>
 
 namespace CppUtils::Language::IR::Compiler

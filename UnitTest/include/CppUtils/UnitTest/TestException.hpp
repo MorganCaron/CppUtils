@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include <string_view>
 
 #define ASSERT(condition) \
