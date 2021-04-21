@@ -20,17 +20,12 @@ namespace CppUtils::UnitTests::Language::StringTree::StringTreeLexer
 			}
 			)"_stringTree;
 			CppUtils::Graph::logTreeNode(stringTree);
-			
-			ASSERT(std::get<CppUtils::Type::Token>(stringTree.value) == "main"_token);
-			ASSERT(stringTree.childs.size() == 1);
-			ASSERT(std::get<CppUtils::Type::Token>(stringTree.childs.at(0).value) == "root"_token);
-			ASSERT(stringTree.childs.at(0).childs.size() == 2);
-			ASSERT(std::get<CppUtils::Type::Token>(stringTree.childs.at(0).childs.at(0).value) == "child0"_token);
-			ASSERT(stringTree.childs.at(0).childs.at(0).childs.size() == 0);
-			ASSERT(std::get<CppUtils::Type::Token>(stringTree.childs.at(0).childs.at(1).value) == "child1"_token);
-			ASSERT(stringTree.childs.at(0).childs.at(1).childs.size() == 1);
-			ASSERT(std::get<CppUtils::Type::Token>(stringTree.childs.at(0).childs.at(1).childs.at(0).value) == "subchild0"_token);
-			ASSERT(stringTree.childs.at(0).childs.at(1).childs.at(0).childs.size() == 0);
+
+			ASSERT(stringTree.exists("root"_token));
+			const auto& root = stringTree.at("root"_token);
+			ASSERT(root.exists("child0"_token));
+			ASSERT(root.exists("child1"_token));
+			ASSERT(root.at("child1"_token).getChildValue() == "subchild0"_token);
 		});
 	}
 }

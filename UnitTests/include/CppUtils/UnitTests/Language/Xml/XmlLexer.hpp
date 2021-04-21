@@ -16,11 +16,10 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 			)"_xml;
 			CppUtils::Graph::logTreeNode(xmlTree);
 
-			ASSERT(xmlTree.childs.size() == 1);
-			ASSERT(xmlTree.childs.at(0).value == "h1"_token);
-			ASSERT(xmlTree.childs.at(0).childs.size() == 2);
-			ASSERT(xmlTree.childs.at(0).childs.at(0).value == "attributes"_token);
-			ASSERT(xmlTree.childs.at(0).childs.at(1).value == "Title"s);
+			ASSERT(xmlTree.exists("h1"_token));
+			const auto& h1 = xmlTree.at("h1"_token);
+			ASSERT(h1.getChildValue(0) == "attributes"_token);
+			ASSERT(h1.getChildValue(1) == "Title"s);
 		});
 
 		addTest("Nested tags", [] {
@@ -33,15 +32,15 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 			)"_xml;
 			CppUtils::Graph::logTreeNode(xmlTree);
 
-			ASSERT(xmlTree.childs.size() == 1);
-			ASSERT(xmlTree.childs.at(0).value == "ul"_token);
-			ASSERT(xmlTree.childs.at(0).childs.size() == 4);
-			ASSERT(xmlTree.childs.at(0).childs.at(0).value == "attributes"_token);
+			ASSERT(xmlTree.exists("ul"_token));
+			const auto& ul = xmlTree.at("ul"_token);
+			ASSERT(ul.childs.size() == 4);
+			ASSERT(ul.getChildValue(0) == "attributes"_token);
 			for (auto i = 1u; i <= 3; ++i)
-				ASSERT(xmlTree.childs.at(0).childs.at(i).value == "li"_token);
-			ASSERT(xmlTree.childs.at(0).childs.at(1).childs.size() == 2);
-			ASSERT(xmlTree.childs.at(0).childs.at(1).childs.at(0).value == "attributes"_token);
-			ASSERT(xmlTree.childs.at(0).childs.at(1).childs.at(1).value == "First"s);
+				ASSERT(ul.getChildValue(i) == "li"_token);
+			ASSERT(ul.childs.at(1).childs.size() == 2);
+			ASSERT(ul.childs.at(1).getChildValue(0) == "attributes"_token);
+			ASSERT(ul.childs.at(1).getChildValue(1) == "First"s);
 		});
 
 		addTest("Attributes", [] {
@@ -50,15 +49,10 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 			)"_xml;
 			CppUtils::Graph::logTreeNode(xmlTree);
 
-			ASSERT(xmlTree.childs.size() == 1);
-			ASSERT(xmlTree.childs.at(0).value == "h1"_token);
-			ASSERT(xmlTree.childs.at(0).childs.size() == 2);
-			ASSERT(xmlTree.childs.at(0).childs.at(0).value == "attributes"_token);
-			ASSERT(xmlTree.childs.at(0).childs.at(0).childs.size() == 1);
-			ASSERT(xmlTree.childs.at(0).childs.at(0).childs.at(0).value == "color"_token);
-			ASSERT(xmlTree.childs.at(0).childs.at(0).childs.at(0).childs.size() == 1);
-			ASSERT(xmlTree.childs.at(0).childs.at(0).childs.at(0).childs.at(0).value == "red"s);
-			ASSERT(xmlTree.childs.at(0).childs.at(1).value == "Title"s);
+			ASSERT(xmlTree.exists("h1"_token));
+			const auto& h1 = xmlTree.at("h1"_token);
+			ASSERT(h1.at("attributes"_token).at("color"_token).getChildValue() == "red"s);
+			ASSERT(h1.getChildValue(1) == "Title"s);
 		});
 	}
 }

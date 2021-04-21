@@ -1,7 +1,5 @@
 #pragma once
 
-#include <array>
-
 #include <CppUtils.hpp>
 
 namespace CppUtils::UnitTests::Language::ASM::Lexer

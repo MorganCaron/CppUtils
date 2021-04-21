@@ -24,15 +24,15 @@ namespace CppUtils::Language::Json
 			!nextPair: spaceParser ',' pairs;
 			!_string: doubleQuoteParser;
 			!pair: spaceParser [_string] spaceParser ':' value;
-			string: _string;
-			object: _object;
+			!string: _string;
+			!object: _object;
 			!value: spaceParser (string || number || object || array || boolean || null);
-			number: floatParser;
+			!number: floatParser;
 			
-			array: '[' values spaceParser ']';
+			!array: '[' values spaceParser ']';
 			!values: value ~nextValue;
 			!nextValue: spaceParser ',' values;
-			boolean: booleanParser;
+			!boolean: booleanParser;
 			null: "null";
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);

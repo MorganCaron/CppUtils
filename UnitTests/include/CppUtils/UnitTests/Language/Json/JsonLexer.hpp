@@ -12,60 +12,57 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 		addTest("minimalist", [] {
 			const auto jsonTree = R"(
 			{
-				"value0": "text",
-				"value1": 3.14159
+				"null": null,
+				"boolean": true,
+				"number": 3.14159,
+				"string": "Hello World!"
 			}
 			)"_json;
 			CppUtils::Graph::logTreeNode(jsonTree);
 
-			ASSERT(jsonTree.childs.size() == 2);
-			ASSERT(jsonTree.childs.at(0).value == "value0"_token);
-			ASSERT(jsonTree.childs.at(1).value == "value1"_token);
-			ASSERT(jsonTree.childs.at(0).childs.size() == 1);
-			ASSERT(jsonTree.childs.at(1).childs.size() == 1);
-			ASSERT(jsonTree.childs.at(0).childs.at(0).value == "string"_token);
-			ASSERT(jsonTree.childs.at(1).childs.at(0).value == "number"_token);
-			ASSERT(jsonTree.childs.at(0).childs.at(0).childs.size() == 1);
-			ASSERT(jsonTree.childs.at(1).childs.at(0).childs.size() == 1);
-			ASSERT(jsonTree.childs.at(0).childs.at(0).childs.at(0).value == "text"_token);
-			ASSERT(jsonTree.childs.at(1).childs.at(0).childs.at(0).value == 3.14159f);
+			ASSERT(jsonTree.exists("null"_token));
+			ASSERT(jsonTree.exists("boolean"_token));
+			ASSERT(jsonTree.exists("number"_token));
+			ASSERT(jsonTree.exists("string"_token));
+			ASSERT(jsonTree.at("null"_token).getChildValue() == "null"_token);
+			ASSERT(jsonTree.at("boolean"_token).getChildValue() == true);
+			ASSERT(jsonTree.at("number"_token).getChildValue() == 3.14159f);
+			ASSERT(jsonTree.at("string"_token).getChildValue() == "Hello World!"_token);
 		});
 
 		addTest("object", [] {
 			const auto jsonTree = R"(
 			{
-				"value0": "text",
-				"value1": 3.14159,
-				"object0": {
-					"value0": "text",
-					"value1": 3.14159
+				"object": {
+					"key0": "value0",
+					"key1": "value1"
 				}
 			}
 			)"_json;
 			CppUtils::Graph::logTreeNode(jsonTree);
 
-			ASSERT(jsonTree.childs.size() == 3);
-			ASSERT(jsonTree.childs.at(2).value == "object0"_token);
-			ASSERT(jsonTree.childs.at(2).childs.size() == 1);
-			ASSERT(jsonTree.childs.at(2).childs.at(0).value == "object"_token);
-			ASSERT(jsonTree.childs.at(2).childs.at(0).childs.size() == 2);
-			ASSERT(jsonTree.childs.at(2).childs.at(0).childs.at(0) == jsonTree.childs.at(0));
-			ASSERT(jsonTree.childs.at(2).childs.at(0).childs.at(1) == jsonTree.childs.at(1));
+			ASSERT(jsonTree.exists("object"_token));
+			const auto& object = jsonTree.at("object"_token);
+			ASSERT(object.exists("key0"_token));
+			ASSERT(object.exists("key1"_token));
+			ASSERT(object.at("key0"_token).getChildValue() == "value0"_token);
+			ASSERT(object.at("key1"_token).getChildValue() == "value1"_token);
 		});
 
 		addTest("array", [] {
 			const auto jsonTree = R"(
 			{
-				"array0": [0, 1, 2, 3, 4]
+				"array": [0, 1, 2]
 			}
 			)"_json;
 			CppUtils::Graph::logTreeNode(jsonTree);
 
-			ASSERT(jsonTree.childs.size() == 1);
-			ASSERT(jsonTree.childs.at(0).value == "array0"_token);
-			ASSERT(jsonTree.childs.at(0).childs.size() == 1);
-			ASSERT(jsonTree.childs.at(0).childs.at(0).value == "array"_token);
-			ASSERT(jsonTree.childs.at(0).childs.at(0).childs.size() == 5);
+			ASSERT(jsonTree.exists("array"_token));
+			const auto& array = jsonTree.at("array"_token);
+			ASSERT(array.childs.size() == 3);
+			ASSERT(array.getChildValue(0) == 0.f);
+			ASSERT(array.getChildValue(1) == 1.f);
+			ASSERT(array.getChildValue(2) == 2.f);
 		});
 	}
 }
