@@ -1,7 +1,7 @@
 #pragma once
 
 #include <CppUtils/Type/Token.hpp>
-#include <CppUtils/Type/Concepts.hpp>
+#include <CppUtils/Type/Traits.hpp>
 #include <CppUtils/Language/Parser/Context.hpp>
 #include <CppUtils/Language/Compiler/Context.hpp>
 
