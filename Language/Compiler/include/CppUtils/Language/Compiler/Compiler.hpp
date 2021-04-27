@@ -1,6 +1,8 @@
 #pragma once
 
 #include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Type/Traits.hpp>
+#include <CppUtils/Language/Parser/Context.hpp>
 #include <CppUtils/Language/Compiler/Context.hpp>
 
 namespace CppUtils::Language::Compiler

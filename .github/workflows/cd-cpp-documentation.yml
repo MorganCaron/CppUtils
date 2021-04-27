@@ -1,0 +1,49 @@
+name: "CD C++: Documentation"
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: "Documentation"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install LLVM, clang/clang++ and libclang
+      run: |
+        sudo apt-get install -y llvm-11 clang-11 libclang-11-dev
+        sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-11 11
+        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-11 11
+        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-11 11
+    - name: Install Boost
+      run: sudo apt-get install -y libboost-all-dev
+    - name: Install Meson and Ninja
+      run: pip3 install meson ninja
+    - name: Build Standardese
+      env:
+        CC: clang
+        CXX: clang++
+      run: |
+        git clone https://github.com/MorganCaron/standardese
+        cd standardese
+        mkdir build
+        cd build
+        cmake ../ -DLLVM_CONFIG_BINARY=$LLVM_CONFIG_BINARY
+        cmake --build . --target standardese_tool
+        cd ../..
+        sudo update-alternatives --install /usr/bin/standardese standardese ${{ runner.workspace }}/CppUtils/standardese/build/tool/standardese 10
+        standardese --version
+    - name: Generate Documentation
+      env:
+        CC: clang
+        CXX: clang++
+        LDFLAGS: '-ldl'
+      run: |
+        meson build -Ddefault_library=static -Denable_documentation=true
+        ninja -C build -j7

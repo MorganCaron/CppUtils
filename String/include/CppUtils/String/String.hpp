@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cctype>
 #include <vector>
 #include <numeric>
 #include <string_view>

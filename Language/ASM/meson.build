@@ -3,6 +3,7 @@ subdir('Compiler')
 subdir('VirtualMachine')
 
 public_dependencies = [
+	cppUtils_language_compiler_dep,
 	cppUtils_language_asm_lexer_dep,
 	cppUtils_language_asm_compiler_dep,
 	cppUtils_language_asm_virtualMachine_dep

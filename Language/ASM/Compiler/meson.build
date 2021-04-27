@@ -1,5 +1,8 @@
 public_dependencies = [
+	cppUtils_log_dep,
 	cppUtils_type_dep,
+	cppUtils_language_parser_dep,
+	cppUtils_language_compiler_dep,
 	cppUtils_language_asm_lexer_dep
 ]
 private_dependencies = []

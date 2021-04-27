@@ -10,6 +10,8 @@
 
 namespace CppUtils::Type
 {
+	/// \brief The `Token` struct allows you to create identifiers from a character string.
+	/// These identifiers can be used as key for ``std::map`` or ``std::unordered_map`` to have better performance than with ``std::string`` as key.
 	struct Token final
 	{
 	public:

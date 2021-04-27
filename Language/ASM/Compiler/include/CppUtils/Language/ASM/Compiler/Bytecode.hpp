@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Log/Logger.hpp>
 
 namespace CppUtils::Language::ASM::Compiler::Bytecode
 {

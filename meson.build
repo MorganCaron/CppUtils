@@ -64,3 +64,4 @@ cppUtils_dep = declare_dependency(
 )
 
 subdir('UnitTests')
+subdir('resources/documentation')
