@@ -1,0 +1,42 @@
+name: "CD C++: Documentation"
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: "Documentation"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install clang/clang++
+      run: |
+        sudo apt-get install -y clang-11 lldb-11 lld-11
+        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-11 11
+        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-11 11
+    - name: Install Meson and Ninja
+      run: pip3 install meson ninja
+    - name: Install Standardese
+      run: |
+        git clone https://github.com/Arthapz/standardese
+        cd standardese
+        mkdir build
+        cd build
+        cmake ../
+        cmake --build . --target standardese_tool
+        cd ../..
+        sudo update-alternatives --install ${{ runner.workspace }}/standardese/build/tool/standardese standardese
+    - name: Compile
+      env:
+        CC: clang
+        CXX: clang++
+        LDFLAGS: '-ldl'
+      run: |
+        meson build -Ddefault_library=static -Denable_documentation=true
+        ninja -C build -j7
