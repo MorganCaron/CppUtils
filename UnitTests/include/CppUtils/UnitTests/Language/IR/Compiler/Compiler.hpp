@@ -10,40 +10,40 @@ namespace CppUtils::UnitTests::Language::IR::Compiler
 
 		addTest("Operations", [] {
 			const auto compiler = CppUtils::Language::IR::Compiler::Compiler<std::int64_t>{};
-			const auto context = compiler.compile(R"(
-			main()
+			const auto output = compiler.compile(R"(
+			int main()
 			{
 				nop;
 				a = (20 + 24) - 2;
-				ret a;
+				return a;
 			}
 			)"sv);
-			CppUtils::Language::IR::Compiler::logContext(context);
+			output.log();
 		});
 
 		addTest("Pointers", [] {
 			const auto compiler = CppUtils::Language::IR::Compiler::Compiler<std::int64_t>{};
-			const auto context = compiler.compile(R"(
-			append(output, c)
+			const auto output = compiler.compile(R"(
+			address append(output, c)
 			{
 				*output = c;
 				output += 1;
 				*output = 0;
-				ret output;
+				return output;
 			}
 			
-			main()
+			int main()
 			{
-				ret append("hello", '!');
+				return append("hello", '!');
 			}
 			)"sv);
-			CppUtils::Language::IR::Compiler::logContext(context);
+			output.log();
 		});
 
 		addTest("Conditions", [] {
 			const auto compiler = CppUtils::Language::IR::Compiler::Compiler<std::int64_t>{};
-			const auto context = compiler.compile(R"(
-			getLength(text)
+			const auto output = compiler.compile(R"(
+			int getLength(text)
 			{
 				length = 0;
 				while ((text == 0) == 0)
@@ -51,16 +51,16 @@ namespace CppUtils::UnitTests::Language::IR::Compiler
 					length += 1;
 					text += 1;
 				}
-				ret length;
+				return length;
 			}
 
-			main()
+			int main()
 			{
 				text = "Hello World!";
-				ret getLength(text);
+				return getLength(text);
 			}
 			)"sv);
-			CppUtils::Language::IR::Compiler::logContext(context);
+			output.log();
 		});
 	}
 }

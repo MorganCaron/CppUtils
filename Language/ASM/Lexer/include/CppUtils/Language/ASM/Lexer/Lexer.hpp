@@ -5,7 +5,8 @@
 
 namespace CppUtils::Language::ASM::Lexer
 {
-	template<typename Address> requires std::is_integral_v<Address>
+	template<typename Address>
+	requires Type::Traits::isAddress<Address>
 	class Lexer final
 	{
 	public:
@@ -59,7 +60,8 @@ namespace CppUtils::Language::ASM::Lexer
 		Language::Lexer::GrammarLexer<Type::Token, Address> m_grammarLexer;
 	};
 
-	template<typename Address> requires std::is_integral_v<Address>
+	template<typename Address>
+	requires Type::Traits::isAddress<Address>
 	[[nodiscard]] inline Parser::ASTNode<Type::Token, Address> parse(std::string_view src)
 	{
 		static const auto asmLexer = Lexer<Address>{};

@@ -7,11 +7,18 @@
 
 namespace CppUtils::Language::Compiler
 {
-	template<typename Compiler, typename Instruction>
+	template<typename Instruction>
+	struct Output
+	{
+		std::vector<std::unique_ptr<Instruction>> instructions = {};
+	};
+
+	template<typename Compiler, typename Instruction, typename CompilerOutput>
+	requires std::derived_from<CompilerOutput, Output<Instruction>>
 	struct Context
 	{
 		std::reference_wrapper<const Compiler> compiler;
-		std::vector<std::unique_ptr<Instruction>> instructions = {};
+		CompilerOutput output;
 
 		explicit Context(std::reference_wrapper<const Compiler> c_compiler): compiler{c_compiler}
 		{}
@@ -19,7 +26,7 @@ namespace CppUtils::Language::Compiler
 		template<typename... Args>
 		inline Instruction* createInstruction(Args... args)
 		{
-			return instructions.emplace_back(std::make_unique<Instruction>(std::forward<Args>(args)...)).get();
+			return output.instructions.emplace_back(std::make_unique<Instruction>(std::forward<Args>(args)...)).get();
 		}
 	};
 }

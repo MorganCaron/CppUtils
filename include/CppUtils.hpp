@@ -24,6 +24,10 @@
 #include <CppUtils/Language/IR/Compiler/Compiler.hpp>
 #include <CppUtils/Language/IR/Compiler/Context.hpp>
 #include <CppUtils/Language/IR/Lexer/Lexer.hpp>
+#include <CppUtils/Language/IR/VirtualMachine/Context.hpp>
+#include <CppUtils/Language/IR/VirtualMachine/Operations.hpp>
+#include <CppUtils/Language/IR/VirtualMachine/VirtualMachine.hpp>
+#include <CppUtils/Language/VirtualMachine/Stack.hpp>
 #include <CppUtils/Language/VirtualMachine/VirtualMachine.hpp>
 #include <CppUtils/Language/Compiler/Compiler.hpp>
 #include <CppUtils/Language/Compiler/Context.hpp>

@@ -25,13 +25,13 @@ namespace CppUtils::Language::Parser
 			return elements[position++];
 		}
 
-		[[nodiscard]] inline std::size_t end() const noexcept
+		[[nodiscard]] inline std::size_t size() const noexcept
 		{
 			return elements.size();
 		}
 
 		std::span<const Element> elements;
-		std::size_t position;
+		std::size_t& position;
 	};
 
 	template<>

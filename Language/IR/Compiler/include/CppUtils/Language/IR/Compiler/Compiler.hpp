@@ -10,7 +10,8 @@ namespace CppUtils::Language::IR::Compiler
 {
 	using namespace Type::Literals;
 
-	template<typename Address> requires std::is_integral_v<Address>
+	template<typename Address>
+	requires Type::Traits::isAddress<Address>
 	class Compiler final
 	{
 	public:
@@ -41,20 +42,20 @@ namespace CppUtils::Language::IR::Compiler
 			m_compiler.compile(astNode, context);
 		}
 
-		[[nodiscard]] inline Context<Address> compile(const ASTNode& astNode) const
+		[[nodiscard]] inline Output<Address> compile(const ASTNode& astNode) const
 		{
 			auto context = Context<Address>{std::cref(*this)};
-			buildStrings(astNode, context);
+			buildStrings(astNode, context.output.stringConstants);
 			compile(astNode, context);
-			return context;
+			return std::move(context.output);
 		}
 
-		[[nodiscard]] inline Context<Address> compile(std::string_view src) const
+		[[nodiscard]] inline Output<Address> compile(std::string_view src) const
 		{
 			return compile(Lexer::parse<Address>(src));
 		}
 
-		void buildStrings(const ASTNode& astNode, Context<Address>& context) const
+		void buildStrings(const ASTNode& astNode, std::string& stringConstants) const
 		{
 			using namespace Type::Literals;
 			auto strings = std::vector<std::string>{};
@@ -66,8 +67,8 @@ namespace CppUtils::Language::IR::Compiler
 				return (lhs.size() == rhs.size()) ? (lhs < rhs) : (lhs.size() > rhs.size());
 			});
 			for (const auto& string : strings)
-				if (context.stringConstants.find(string) == std::string::npos)
-					context.stringConstants += string;
+				if (stringConstants.find(string) == std::string::npos)
+					stringConstants += string;
 		}
 
 	private:

@@ -5,7 +5,8 @@
 
 namespace CppUtils::Language::ASM::Compiler
 {
-	template<typename Address> requires std::is_integral_v<Address>
+	template<typename Address>
+	requires Type::Traits::isAddress<Address>
 	class CompilationFunctions final
 	{
 	public:

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Type/Traits.hpp>
 #include <CppUtils/Log/Logger.hpp>
 
 namespace CppUtils::Language::IR::Compiler::Bytecode
@@ -12,6 +13,7 @@ namespace CppUtils::Language::IR::Compiler::Bytecode
 	using namespace Type::Literals;
 	
 	template<typename Address>
+	requires Type::Traits::isAddress<Address>
 	struct Instruction final
 	{
 		Type::Token type;

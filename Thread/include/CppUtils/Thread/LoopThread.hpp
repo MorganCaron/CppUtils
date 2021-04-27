@@ -16,21 +16,21 @@ namespace CppUtils::Thread
 	public:
 		LoopThread() = delete;
 
-		explicit LoopThread(const std::function<void()>& function): m_function(function), m_running(false)
+		explicit LoopThread(const std::function<void()>& function): m_function{function}, m_running{false}
 		{}
 
 		template<typename Rep, typename Period>
 		explicit LoopThread(const std::function<void()>& function,
-			const std::chrono::duration<Rep, Period>& interval): m_function(function), m_running(false)
+			const std::chrono::duration<Rep, Period>& interval): m_function{function}, m_running{false}
 		{
 			start(interval);
 		}
 		
 		LoopThread(const LoopThread&) = delete;
 		LoopThread(LoopThread&& src) noexcept:
-			m_function(std::move(src.m_function)),
-			m_running(src.isRunning()),
-			m_thread(std::move(src.m_thread))
+			m_function{std::move(src.m_function)},
+			m_running{src.isRunning()},
+			m_thread{std::move(src.m_thread)}
 		{}
 		LoopThread& operator=(const LoopThread&) = delete;
 		LoopThread& operator=(LoopThread&& rhs) noexcept
@@ -56,7 +56,7 @@ namespace CppUtils::Thread
 		{
 			if (isRunning())
 				stop();
-			m_thread = std::thread(&LoopThread::run<Rep, Period>, this, interval);
+			m_thread = std::thread{&LoopThread::run<Rep, Period>, this, interval};
 		}
 
 		void stop()

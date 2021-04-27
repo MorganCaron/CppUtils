@@ -6,7 +6,8 @@
 
 namespace CppUtils::Language::IR::Compiler
 {
-	template<typename Address> requires std::is_integral_v<Address>
+	template<typename Address>
+	requires Type::Traits::isAddress<Address>
 	class CompilationFunctions final
 	{
 	public:
@@ -47,7 +48,7 @@ namespace CppUtils::Language::IR::Compiler
 		{
 			const auto string = std::get<std::string>(astNode.childs.at(0).value);
 			context.returnRegister = context.newRegister();
-			context.addInstruction(context.createInstruction(context.returnRegister, "$STR", context.stringConstants.find(string + '\0')));
+			context.addInstruction(context.createInstruction(context.returnRegister, "$STR", context.output.stringConstants.find(string + '\0')));
 		}
 
 		static void compileCopy(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
@@ -97,9 +98,9 @@ namespace CppUtils::Language::IR::Compiler
 
 		static void compileLabel(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
 		{
-			const auto& label = std::get<Type::Token>(astNode.childs.at(0).value);
+			const auto& label = std::get<Type::Token>(astNode.childs.at(1).value);
 			context.addFunction(label, 0);
-			context.compiler.get().compile(astNode.childs.at(1), context);
+			context.compiler.get().compile(astNode.childs.at(2), context);
 		}
 
 		static void compileRet(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)

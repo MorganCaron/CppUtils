@@ -10,7 +10,8 @@ namespace CppUtils::Language::ASM::Compiler
 {
 	using namespace Type::Literals;
 
-	template<typename Address> requires std::is_integral_v<Address>
+	template<typename Address>
+	requires Type::Traits::isAddress<Address>
 	class Compiler final
 	{
 	public:
@@ -38,11 +39,11 @@ namespace CppUtils::Language::ASM::Compiler
 				compile(astNode, context);
 		}
 
-		[[nodiscard]] inline Context<Address> compile(std::string_view src) const
+		[[nodiscard]] inline Output<Address> compile(std::string_view src) const
 		{
 			auto context = Context<Address>{std::cref(*this)};
 			compile(Lexer::parse<Address>(src).childs, context);
-			return context;
+			return std::move(context.output);
 		}
 
 	private:

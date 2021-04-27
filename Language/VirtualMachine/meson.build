@@ -8,6 +8,7 @@ sources = files([
 ])
 
 headers = files([
+	'include/CppUtils/Language/VirtualMachine/Stack.hpp',
 	'include/CppUtils/Language/VirtualMachine/VirtualMachine.hpp'
 ])
 
