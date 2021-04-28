@@ -33,6 +33,37 @@ namespace CppUtils::Language::Parser
 	}
 
 	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
+	[[nodiscard]] inline bool delimiterParser(Context<Types...>& context, std::string_view delimiter, ParsingFunction<Types...> contentParsingFunction, bool multipleContent)
+	{
+		auto& [cursor, parentNode] = context;
+		if (cursor.isEndOfString())
+			return false;
+		bool delimiterFound;
+		do
+		{
+			if (!contentParsingFunction(context))
+				return false;
+			delimiterFound = cursor.isEqual(delimiter);
+		}
+		while (multipleContent && !delimiterFound);
+		return delimiterFound;
+	}
+
+	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
+	[[nodiscard]] inline bool charParser(Context<Types...>& context)
+	{
+		auto& [cursor, parentNode] = context;
+		if (cursor.isEndOfString())
+			return false;
+		const auto c = cursor.getCharAndSkipIt();
+		if (parentNode.get().childs.empty())
+			parentNode.get().childs.emplace_back(Parser::ASTNode<Types...>{std::string{c}});
+		else
+			std::get<std::string>(parentNode.get().childs.back().value) += c;
+		return true;
+	}
+
+	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool quoteParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
