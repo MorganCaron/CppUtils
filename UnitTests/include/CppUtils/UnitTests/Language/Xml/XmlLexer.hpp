@@ -18,8 +18,7 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 
 			ASSERT(xmlTree.exists("h1"_token));
 			const auto& h1 = xmlTree.at("h1"_token);
-			ASSERT(h1.getChildValue(0) == "attributes"_token);
-			ASSERT(h1.getChildValue(1) == "Title"s);
+			ASSERT(h1.getChildValue() == "Title"s);
 		});
 
 		addTest("Nested tags", [] {
@@ -34,13 +33,13 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 
 			ASSERT(xmlTree.exists("ul"_token));
 			const auto& ul = xmlTree.at("ul"_token);
-			ASSERT(ul.childs.size() == 4);
-			ASSERT(ul.getChildValue(0) == "attributes"_token);
-			for (auto i = 1u; i <= 3; ++i)
-				ASSERT(ul.getChildValue(i) == "li"_token);
-			ASSERT(ul.childs.at(1).childs.size() == 2);
-			ASSERT(ul.childs.at(1).getChildValue(0) == "attributes"_token);
-			ASSERT(ul.childs.at(1).getChildValue(1) == "First"s);
+			ASSERT(ul.childs.size() == 3);
+			for (const auto& li : ul.childs)
+				ASSERT(li.value == "li"_token);
+			ASSERT(ul.childs.at(0).childs.size() == 1);
+			ASSERT(ul.childs.at(0).getChildValue() == "First"s);
+			ASSERT(ul.childs.at(1).getChildValue() == "Second"s);
+			ASSERT(ul.childs.at(2).getChildValue() == "Third"s);
 		});
 
 		addTest("Attributes", [] {

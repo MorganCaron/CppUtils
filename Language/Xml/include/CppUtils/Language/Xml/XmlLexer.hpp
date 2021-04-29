@@ -48,10 +48,10 @@ namespace CppUtils::Language::Xml
 			main: tags spaceParser;
 			!tags: (tag >= 0);
 			!tag: [openingTag] content closingTag;
-			!openingTag: spaceParser openingTagParser [tagName] attributes spaceParser '>';
+			!openingTag: spaceParser openingTagParser [tagName] ~attributes spaceParser '>';
 			!closingTag: spaceParser "</" tagName closingTagValidator spaceParser '>';
 			!tagName: spaceParser keywordParser;
-			attributes: (attribute >= 0);
+			attributes: (attribute >= 1);
 			!attribute: spaceParser [attributeName] spaceParser '=' attributeValue;
 			!attributeName: spaceParser keywordParser;
 			!attributeValue: spaceParser quoteParser;
