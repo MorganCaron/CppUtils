@@ -50,29 +50,38 @@ namespace CppUtils::UnitTest
 				return result;
 			}
 
-			Log::Logger::logImportant(std::to_string(m_tests.size()) + " tests found. Execution:");
-			auto nbSuccess = std::size_t{0};
-			auto nbFail = std::size_t{0};
-			for (const auto& test : m_tests)
+			if (m_tests.empty())
 			{
-				if (test.pass(settings))
-					++nbSuccess;
+				Log::Logger::logWarning("No tests found.");
+				Log::Logger::logDetail("Create a unit test or adjust the filter.");
+			}
+			else
+			{
+				Log::Logger::logImportant(std::to_string(m_tests.size()) + " tests found. Execution:");
+				auto nbSuccess = std::size_t{0};
+				auto nbFail = std::size_t{0};
+				for (const auto& test : m_tests)
+				{
+					if (test.pass(settings))
+						++nbSuccess;
+					else
+						++nbFail;
+				}
+				
+				Log::Logger::logImportant(std::string(50, '_') + "\nTest results");
+				if (nbFail == 0)
+				{
+					Log::Logger::logSuccess("All tests passed successfully");
+					return EXIT_SUCCESS;
+				}
+				Log::Logger::logError("The tests failed:");
+				if (nbSuccess > 0)
+					Log::Logger::logSuccess("- " + std::to_string(nbSuccess) + " successful tests");
 				else
-					++nbFail;
+					Log::Logger::logError("- 0 successful tests");
+				Log::Logger::logError("- " + std::to_string(nbFail) + " failed tests");
 			}
 			
-			Log::Logger::logImportant(std::string(50, '_') + "\nTest results");
-			if (nbFail == 0)
-			{
-				Log::Logger::logSuccess("All tests passed successfully");
-				return EXIT_SUCCESS;
-			}
-			Log::Logger::logError("The tests failed:");
-			if (nbSuccess > 0)
-				Log::Logger::logSuccess("- " + std::to_string(nbSuccess) + " successful tests");
-			else
-				Log::Logger::logError("- 0 successful tests");
-			Log::Logger::logError("- " + std::to_string(nbFail) + " failed tests");
 			return EXIT_FAILURE;
 		}
 
