@@ -14,7 +14,7 @@ namespace CppUtils::Language::IR::Compiler
 	class Compiler final
 	{
 	public:
-		using ASTNode = Parser::ASTNode<Type::Token, Address>;
+		using ASTNode = Parser::ASTNode<Type::Token, Address, std::string>;
 
 		Compiler(): m_compiler{{
 			{ "nop"_token, CompilationFunctions<Address>::compileNop },
@@ -59,8 +59,8 @@ namespace CppUtils::Language::IR::Compiler
 			using namespace Type::Literals;
 			auto strings = std::vector<std::string>{};
 			astNode.forEach("string"_token, [&strings](const ASTNode& stringNode) {
-				const auto& string = std::get<Type::Token>(stringNode.childs.at(0).value);
-				strings.push_back(std::string{string.name} + '\0');
+				const auto& string = std::get<std::string>(stringNode.childs.at(0).value);
+				strings.push_back(string + '\0');
 			});
 			std::sort(strings.begin(), strings.end(), [](const auto& lhs, const auto& rhs) {
 				return (lhs.size() == rhs.size()) ? (lhs < rhs) : (lhs.size() > rhs.size());
@@ -71,6 +71,6 @@ namespace CppUtils::Language::IR::Compiler
 		}
 
 	private:
-		Language::Compiler::Compiler<Context<Address>, Type::Token, Address> m_compiler;
+		Language::Compiler::Compiler<Context<Address>, Type::Token, Address, std::string> m_compiler;
 	};
 }

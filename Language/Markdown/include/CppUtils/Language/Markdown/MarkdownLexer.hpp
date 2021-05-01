@@ -16,11 +16,12 @@ namespace CppUtils::Language::Markdown
 			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("contentParser"_token, Parser::charParser<Type::Token, std::string>);
-			m_grammarLexer.addParsingFunction("headerContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "\n"sv, Parser::charParser<Type::Token, std::string>, true));
-			m_grammarLexer.addParsingFunction("altContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "]"sv, Parser::charParser<Type::Token, std::string>, true));
-			m_grammarLexer.addParsingFunction("srcContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, ")"sv, Parser::charParser<Type::Token, std::string>, true));
-			m_grammarLexer.addParsingFunction("blockcodeContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "```"sv, Parser::charParser<Type::Token, std::string>, true));
-			m_grammarLexer.addParsingFunction("codeContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "`"sv, Parser::charParser<Type::Token, std::string>, true));
+			m_grammarLexer.addParsingFunction("headerContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "\n"sv, Parser::charParser<Type::Token, std::string>, true, false));
+			m_grammarLexer.addParsingFunction("altContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "]"sv, Parser::charParser<Type::Token, std::string>, true, false));
+			m_grammarLexer.addParsingFunction("srcContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, ")"sv, Parser::charParser<Type::Token, std::string>, true, false));
+			m_grammarLexer.addParsingFunction("blockcodeContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "```"sv, Parser::charParser<Type::Token, std::string>, true, false));
+			m_grammarLexer.addParsingFunction("codeContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "`"sv, Parser::charParser<Type::Token, std::string>, true, false));
+			m_grammarLexer.addParsingFunction("trimConverter"_token, Parser::Converter::trimConverter<Type::Token, std::string>);
 
 			static constexpr auto grammarSrc = R"(
 			main: _content spaceParser;
@@ -55,8 +56,8 @@ namespace CppUtils::Language::Markdown
 			!_italic2: "_" ~content "_";
 			blockcode: "```" ~blockcodeAttributes blockcodeContent "```";
 			blockcodeAttributes[attributes]: blockcodeLang;
-			blockcodeLang[lang]: keywordParser (' ' || '\n');
-			blockcodeContent[content]: blockcodeContentParser;
+			blockcodeLang[lang]: keywordParser;
+			blockcodeContent[content]: spaceParser blockcodeContentParser trimConverter;
 			code: '`' codeContent '`';
 			codeContent[content]: codeContentParser;
 			list: "wip";

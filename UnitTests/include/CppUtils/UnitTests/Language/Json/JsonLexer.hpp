@@ -6,6 +6,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 {
 	TEST_GROUP("Language/Json/JsonLexer")
 	{
+		using namespace std::literals;
 		using namespace CppUtils::Type::Literals;
 		using namespace CppUtils::Language::Json::Literals;
 		
@@ -27,7 +28,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 			ASSERT(jsonTree.at("null"_token).getChildValue() == "null"_token);
 			ASSERT(jsonTree.at("boolean"_token).getChildValue() == true);
 			ASSERT(jsonTree.at("number"_token).getChildValue() == 3.14159f);
-			ASSERT(jsonTree.at("string"_token).getChildValue() == "Hello World!"_token);
+			ASSERT(jsonTree.at("string"_token).getChildValue() == "Hello World!"s);
 		});
 
 		addTest("object", [] {
@@ -45,8 +46,8 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 			const auto& object = jsonTree.at("object"_token);
 			ASSERT(object.exists("key0"_token));
 			ASSERT(object.exists("key1"_token));
-			ASSERT(object.at("key0"_token).getChildValue() == "value0"_token);
-			ASSERT(object.at("key1"_token).getChildValue() == "value1"_token);
+			ASSERT(object.at("key0"_token).getChildValue() == "value0"s);
+			ASSERT(object.at("key1"_token).getChildValue() == "value1"s);
 		});
 
 		addTest("array", [] {

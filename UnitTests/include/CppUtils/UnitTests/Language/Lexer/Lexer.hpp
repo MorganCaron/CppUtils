@@ -21,53 +21,53 @@ namespace CppUtils::UnitTests::Language::Lexer
 			const auto tokenTree = lexer.parseString("print"_token, src);
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.value) == "print"_token);
+			ASSERT(tokenTree.value == "print"_token);
 			ASSERT(tokenTree.childs.size() == 1);
-			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.childs.at(0).value) == "string"_token);
+			ASSERT(tokenTree.childs.at(0).value == "string"_token);
 			ASSERT(tokenTree.childs.at(0).childs.size() == 0);
 		});
 
 		addTest("Parsers", [] {
-			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
+			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token, std::string>{};
 			auto& printExpression = lexer.newExpression("print"_token);
 			auto& stringExpression = lexer.newExpression("string"_token);
 
 			printExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token> >> "print("
+				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string> >> "print("
 				>> stringExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token> >> ");";
+				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string> >> ");";
 			stringExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token>
-				>> CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token>;
+				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>
+				>> CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token, std::string>;
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
 			const auto tokenTree = lexer.parseString("print"_token, src);
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.value) == "print"_token);
+			ASSERT(tokenTree.value == "print"_token);
 			ASSERT(tokenTree.childs.size() == 1);
-			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.childs.at(0).value) == "string"_token);
+			ASSERT(tokenTree.childs.at(0).value == "string"_token);
 			ASSERT(tokenTree.childs.at(0).childs.size() == 1);
-			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.childs.at(0).childs.at(0).value) == "Hello World!"_token);
+			ASSERT(tokenTree.childs.at(0).childs.at(0).value == "Hello World!"s);
 			ASSERT(tokenTree.childs.at(0).childs.at(0).childs.size() == 0);
 		});
 
 		addTest("Recurrence", [] {
-			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
+			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token, std::string>{};
 			auto& mainExpression = lexer.newExpression("main"_token);
 			auto& printExpression = lexer.newExpression("print"_token);
 			auto& stringExpression = lexer.newExpression("string"_token);
 
 			mainExpression
 				>> (printExpression >= 0)
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token>;
+				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>;
 			printExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token> >> "print("
+				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string> >> "print("
 				>> stringExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token> >> ");";
+				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string> >> ");";
 			stringExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token>
-				>> CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token>;
+				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>
+				>> CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token, std::string>;
 
 			static constexpr auto src = R"(
 				print("Hello World!");
@@ -77,14 +77,14 @@ namespace CppUtils::UnitTests::Language::Lexer
 			const auto tokenTree = lexer.parseString("main"_token, src);
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.value) == "main"_token);
+			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.size() == 3);
 			for (const auto& child : tokenTree.childs)
-				ASSERT(std::get<CppUtils::Type::Token>(child.value) == "print"_token);
+				ASSERT(child.value == "print"_token);
 		});
 
 		addTest("Alternative", [] {
-			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
+			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token, std::string>{};
 			auto& mainExpression = lexer.newExpression("main"_token);
 			auto& valueExpression = lexer.newExpression("value"_token);
 			auto& keywordExpression = lexer.newExpression("keyword"_token);
@@ -92,14 +92,14 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 			mainExpression
 				>> (valueExpression >= 0)
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token>;
+				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>;
 			valueExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token>
+				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>
 				>> (keywordExpression || stringExpression);
 			keywordExpression
-				>> CppUtils::Language::Parser::keywordParser<CppUtils::Type::Token>;
+				>> CppUtils::Language::Parser::keywordParser<CppUtils::Type::Token, std::string>;
 			stringExpression
-				>> CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token>;
+				>> CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token, std::string>;
 
 			static constexpr auto src = R"(
 				test "test" test "test"
@@ -107,10 +107,10 @@ namespace CppUtils::UnitTests::Language::Lexer
 			const auto tokenTree = lexer.parseString("main"_token, src);
 			CppUtils::Graph::logTreeNode(tokenTree);
 
-			ASSERT(std::get<CppUtils::Type::Token>(tokenTree.value) == "main"_token);
+			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.size() == 4);
 			for (const auto& child : tokenTree.childs)
-				ASSERT(std::get<CppUtils::Type::Token>(child.value) == "value"_token);
+				ASSERT(child.value == "value"_token);
 		});
 	}
 }

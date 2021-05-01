@@ -6,7 +6,7 @@ namespace CppUtils::UnitTests::Language::StringTree::StringTreeLexer
 {
 	TEST_GROUP("Language/StringTree/StringTreeLexer")
 	{
-		using namespace CppUtils::Type::Literals;
+		using namespace std::literals;
 		using namespace CppUtils::Language::StringTree::Literals;
 		
 		addTest("parse", [] {
@@ -21,11 +21,11 @@ namespace CppUtils::UnitTests::Language::StringTree::StringTreeLexer
 			)"_stringTree;
 			CppUtils::Graph::logTreeNode(stringTree);
 
-			ASSERT(stringTree.exists("root"_token));
-			const auto& root = stringTree.at("root"_token);
-			ASSERT(root.exists("child0"_token));
-			ASSERT(root.exists("child1"_token));
-			ASSERT(root.at("child1"_token).getChildValue() == "subchild0"_token);
+			ASSERT(stringTree.exists("root"s));
+			const auto& root = stringTree.at("root"s);
+			ASSERT(root.exists("child0"s));
+			ASSERT(root.exists("child1"s));
+			ASSERT(root.at("child1"s).getChildValue() == "subchild0"s);
 		});
 	}
 }

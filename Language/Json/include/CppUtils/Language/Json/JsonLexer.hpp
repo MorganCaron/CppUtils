@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
+#include <CppUtils/Language/Parser/Converters.hpp>
 
 namespace CppUtils::Language::Json
 {
@@ -11,11 +12,13 @@ namespace CppUtils::Language::Json
 		{
 			using namespace std::literals;
 			using namespace Type::Literals;
+			using namespace std::placeholders;
 
-			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, bool, float>);
-			m_grammarLexer.addParsingFunction("booleanParser"_token, Parser::booleanParser<Type::Token, bool, float>);
-			m_grammarLexer.addParsingFunction("floatParser"_token, Parser::floatParser<Type::Token, bool, float>);
-			m_grammarLexer.addParsingFunction("doubleQuoteParser"_token, Parser::doubleQuoteParser<Type::Token, bool, float>);
+			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, bool, float, std::string>);
+			m_grammarLexer.addParsingFunction("booleanParser"_token, Parser::booleanParser<Type::Token, bool, float, std::string>);
+			m_grammarLexer.addParsingFunction("floatParser"_token, Parser::floatParser<Type::Token, bool, float, std::string>);
+			m_grammarLexer.addParsingFunction("doubleQuoteParser"_token, Parser::doubleQuoteParser<Type::Token, bool, float, std::string>);
+			m_grammarLexer.addParsingFunction("stringToTokenConverter"_token, std::bind(Parser::Converter::stringToTokenConverter<Type::Token, bool, float, std::string>, _1, true));
 
 			static constexpr auto grammarSrc = R"(
 			main: _object spaceParser;
@@ -23,7 +26,8 @@ namespace CppUtils::Language::Json
 			!pairs: pair ~nextPair;
 			!nextPair: spaceParser ',' pairs;
 			!_string: doubleQuoteParser;
-			!pair: spaceParser [_string] spaceParser ':' value;
+			!_key: _string stringToTokenConverter;
+			!pair: spaceParser [_key] spaceParser ':' value;
 			!string: _string;
 			!object: _object;
 			!value: spaceParser (string || number || object || array || boolean || null);
@@ -38,17 +42,17 @@ namespace CppUtils::Language::Json
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Parser::ASTNode<Type::Token, bool, float> parse(std::string_view src) const
+		[[nodiscard]] inline Parser::ASTNode<Type::Token, bool, float, std::string> parse(std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
 		}
 
 	private:
-		Lexer::GrammarLexer<Type::Token, bool, float> m_grammarLexer;
+		Lexer::GrammarLexer<Type::Token, bool, float, std::string> m_grammarLexer;
 	};
 
-	[[nodiscard]] inline Parser::ASTNode<Type::Token, bool, float> parse(std::string_view src)
+	[[nodiscard]] inline Parser::ASTNode<Type::Token, bool, float, std::string> parse(std::string_view src)
 	{
 		static const auto jsonLexer = JsonLexer{};
 		return jsonLexer.parse(src);
@@ -56,7 +60,7 @@ namespace CppUtils::Language::Json
 
 	namespace Literals
 	{
-		[[nodiscard]] Parser::ASTNode<Type::Token, bool, float> operator"" _json(const char* cstring, std::size_t)
+		[[nodiscard]] Parser::ASTNode<Type::Token, bool, float, std::string> operator"" _json(const char* cstring, std::size_t)
 		{
 			return parse(cstring);
 		}

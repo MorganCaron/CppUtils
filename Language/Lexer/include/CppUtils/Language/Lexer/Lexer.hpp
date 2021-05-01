@@ -263,6 +263,5 @@ namespace CppUtils::Language::Lexer
 		}
 
 		std::unordered_map<Type::Token, Parser::Expression<Types...>, Type::Token::hash_fn> m_expressions;
-		std::vector<std::vector<std::variant<Types...>>> m_lexemesCache;
 	};
 }

@@ -1,26 +1,31 @@
 #pragma once
 
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
+#include <CppUtils/Language/Parser/Converters.hpp>
 
 namespace CppUtils::Language::StringTree
 {
 	class StringTreeLexer final
 	{
 	public:
-		using ASTNode = Parser::ASTNode<Type::Token>;
+		using ASTNode = Parser::ASTNode<Type::Token, std::string>;
 
 		StringTreeLexer()
 		{
 			using namespace std::literals;
 			using namespace Type::Literals;
+			using namespace std::placeholders;
 
-			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token>);
-			m_grammarLexer.addParsingFunction("quoteParser"_token, Parser::quoteParser<Type::Token>);
+			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, std::string>);
+			m_grammarLexer.addParsingFunction("quoteParser"_token, Parser::quoteParser<Type::Token, std::string>);
+			m_grammarLexer.addParsingFunction("stringToTokenConverter"_token, std::bind(Parser::Converter::stringToTokenConverter<Type::Token, std::string>, _1, true));
 
 			static constexpr auto grammarSrc = R"(
 			main: (node >= 0) spaceParser;
 			!string: quoteParser;
-			!node: spaceParser [string] ~childs;
+			!token: 't' quoteParser stringToTokenConverter;
+			!value: spaceParser (string || token);
+			!node: [value] ~childs;
 			!childs: spaceParser '{' (node >= 1) spaceParser '}';
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);
@@ -33,7 +38,7 @@ namespace CppUtils::Language::StringTree
 		}
 
 	private:
-		Lexer::GrammarLexer<Type::Token> m_grammarLexer;
+		Lexer::GrammarLexer<Type::Token, std::string> m_grammarLexer;
 	};
 
 	[[nodiscard]] inline StringTreeLexer::ASTNode parse(std::string_view src)

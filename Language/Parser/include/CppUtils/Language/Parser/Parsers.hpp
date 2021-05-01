@@ -32,23 +32,6 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
-	[[nodiscard]] inline bool delimiterParser(Context<Types...>& context, std::string_view delimiter, ParsingFunction<Types...> contentParsingFunction, bool multipleContent)
-	{
-		auto& [cursor, parentNode] = context;
-		if (cursor.isEndOfString())
-			return false;
-		bool delimiterFound;
-		do
-		{
-			if (!contentParsingFunction(context))
-				return false;
-			delimiterFound = cursor.isEqual(delimiter);
-		}
-		while (multipleContent && !delimiterFound);
-		return delimiterFound;
-	}
-
 	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool charParser(Context<Types...>& context)
 	{
@@ -56,41 +39,82 @@ namespace CppUtils::Language::Parser
 		if (cursor.isEndOfString())
 			return false;
 		const auto c = cursor.getCharAndSkipIt();
-		if (parentNode.get().childs.empty())
+		if (parentNode.get().childs.empty() || !std::holds_alternative<std::string>(parentNode.get().childs.back().value))
 			parentNode.get().childs.emplace_back(Parser::ASTNode<Types...>{std::string{c}});
 		else
 			std::get<std::string>(parentNode.get().childs.back().value) += c;
 		return true;
 	}
 
-	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
-	[[nodiscard]] inline bool quoteParser(Context<Types...>& context)
+	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
+	[[nodiscard]] inline bool escapeCharParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
 		if (cursor.isEndOfString())
 			return false;
-		const auto quote = cursor.getChar();
-		if (quote != '\'' && quote != '"')
-			return false;
-		const auto startPosition = ++cursor.position;
-		while (!cursor.isEndOfString() && cursor.getChar() != quote)
-			++cursor.position;
-		if (cursor.getChar() != quote)
-			return false;
-		const auto content = cursor.src.substr(startPosition, cursor.position - startPosition);
-		if constexpr(Type::Traits::isPresent<std::string, Types...>)
-			parentNode.get().childs.emplace_back(ASTNode<Types...>{std::string{content}});
-		else
+		auto c = cursor.getCharAndSkipIt();
+		if (c == '\\')
 		{
-			auto stringToken = Type::Token{content};
-			stringToken.saveTypename();
-			parentNode.get().childs.emplace_back(ASTNode<Types...>{std::move(stringToken)});
+			if (cursor.isEndOfString())
+				throw std::runtime_error{"An escape character must be followed by another character."};
+			c = cursor.getCharAndSkipIt();
+			switch (c)
+			{
+				case '0': c = '\0'; break;
+				case 'a': c = '\a'; break;
+				case 'b': c = '\b'; break;
+				case 'f': c = '\f'; break;
+				case 'n': c = '\n'; break;
+				case 'r': c = '\r'; break;
+				case 't': c = '\t'; break;
+				case 'v': c = '\v'; break;
+			}
 		}
-		++cursor.position;
+		if (parentNode.get().childs.empty() || !std::holds_alternative<std::string>(parentNode.get().childs.back().value))
+			parentNode.get().childs.emplace_back(Parser::ASTNode<Types...>{std::string{c}});
+		else
+			std::get<std::string>(parentNode.get().childs.back().value) += c;
 		return true;
 	}
 
-	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
+	template<typename... Types>
+	[[nodiscard]] inline bool delimiterParser(Context<Types...>& context, std::string_view delimiter, ParsingFunction<Types...> contentParsingFunction, bool multipleContent, bool skipDelimiter)
+	{
+		using namespace std::literals;
+		auto& [cursor, parentNode] = context;
+		parentNode.get().childs.emplace_back(Parser::ASTNode<Types...>{""s});
+		auto delimiterFound = (skipDelimiter ? cursor.isEqualSkipIt(delimiter) : cursor.isEqual(delimiter));
+		while (!delimiterFound)
+		{
+			if (cursor.isEndOfString() || !contentParsingFunction(context))
+				return false;
+			delimiterFound = (skipDelimiter ? cursor.isEqualSkipIt(delimiter) : cursor.isEqual(delimiter));
+			if (!multipleContent)
+				break;
+		}
+		return delimiterFound;
+	}
+
+	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
+	[[nodiscard]] inline bool stringParser(Context<Types...>& context, std::string_view delimiter, bool skipDelimiter)
+	{
+		return delimiterParser<Types...>(context, delimiter, std::forward<ParsingFunction<Types...>>(escapeCharParser<Types...>), true, skipDelimiter);
+	}
+
+	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
+	[[nodiscard]] inline bool quoteParser(Context<Types...>& context)
+	{
+		using namespace std::literals;
+		auto& [cursor, parentNode] = context;
+		if (cursor.isEndOfString())
+			return false;
+		const auto quote = cursor.getCharAndSkipIt();
+		if (quote != '\'' && quote != '"')
+			return false;
+		return stringParser<Types...>(context, std::string_view{&quote, 1}, true);
+	}
+
+	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool singleQuoteParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;
@@ -99,7 +123,7 @@ namespace CppUtils::Language::Parser
 		return quoteParser(context);
 	}
 
-	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
+	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool doubleQuoteParser(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode] = context;

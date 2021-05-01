@@ -10,7 +10,7 @@ namespace CppUtils::Language::Lexer
 	class GrammarLexer final
 	{
 	private:
-		using GrammarLexerTreeNode = Parser::ASTNode<Type::Token, unsigned int>;
+		using GrammarLexerTreeNode = Parser::ASTNode<Type::Token, unsigned int, std::string>;
 
 	public:
 		GrammarLexer()
@@ -37,44 +37,44 @@ namespace CppUtils::Language::Lexer
 			auto& moreOrEqualTo = m_grammarLexer.newExpression("moreOrEqualTo"_token);
 			auto& moreThan = m_grammarLexer.newExpression("moreThan"_token);
 			
-			main >> (statement >= 0) >> Parser::spaceParser<Type::Token, unsigned int>;
-			identifier >> Parser::spaceParser<Type::Token, unsigned int> >> Parser::keywordParser<Type::Token, unsigned int>;
+			main >> (statement >= 0) >> Parser::spaceParser<Type::Token, unsigned int, std::string>;
+			identifier >> Parser::spaceParser<Type::Token, unsigned int, std::string> >> Parser::keywordParser<Type::Token, unsigned int, std::string>;
 			token >> identifier;
 			statement
 				>> ~hideStatement
 				>> Parser::TagLexeme{std::make_unique<Parser::TokenLexeme>(identifier.token)}
 				>> ~statementName
-				>> Parser::spaceParser<Type::Token, unsigned int> >> ':'
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ':'
 				>> lexemes
-				>> Parser::spaceParser<Type::Token, unsigned int> >> ';';
-			hideStatement >> Parser::spaceParser<Type::Token, unsigned int> >> '!';
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ';';
+			hideStatement >> Parser::spaceParser<Type::Token, unsigned int, std::string> >> '!';
 			statementName
-				>> Parser::spaceParser<Type::Token, unsigned int> >> '['
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> '['
 				>> identifier
-				>> Parser::spaceParser<Type::Token, unsigned int> >> ']';
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ']';
 			lexemes	>> (lexeme >= 1);
-			lexeme >> Parser::spaceParser<Type::Token, unsigned int> >> std::move(string || token || tag || muted || optional || parenthesis);
-			string >> Parser::quoteParser<Type::Token, unsigned int>;
+			lexeme >> Parser::spaceParser<Type::Token, unsigned int, std::string> >> std::move(string || token || tag || muted || optional || parenthesis);
+			string >> Parser::quoteParser<Type::Token, unsigned int, std::string>;
 			tag
 				>> '['
 				>> identifier
-				>> Parser::spaceParser<Type::Token, unsigned int> >> ']';
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ']';
 			muted >> '!' >> lexeme;
 			optional >> '~' >> lexeme;
 			parenthesis
 				>> '('
-				>> Parser::spaceParser<Type::Token, unsigned int> >> std::move(recurrence || alternative || lexemes)
-				>> Parser::spaceParser<Type::Token, unsigned int> >> ')';
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> std::move(recurrence || alternative || lexemes)
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ')';
 			recurrence
 				>> lexeme
 				>> recurrenceOperator
-				>> Parser::spaceParser<Type::Token, unsigned int> >> Parser::uintParser<Type::Token, unsigned int>;
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> Parser::uintParser<Type::Token, unsigned int, std::string>;
 			alternative >> lexeme >> (alternativeArgument >= 1);
 			alternativeArgument
-				>> Parser::spaceParser<Type::Token, unsigned int> >> "||"
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> "||"
 				>> lexeme;
 			recurrenceOperator
-				>> Parser::spaceParser<Type::Token, unsigned int> >> std::move(equalTo || moreOrEqualTo || moreThan);
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> std::move(equalTo || moreOrEqualTo || moreThan);
 			equalTo >> "*";
 			moreOrEqualTo >> ">=";
 			moreThan >> '>';
@@ -172,7 +172,7 @@ namespace CppUtils::Language::Lexer
 
 		[[nodiscard]] std::unique_ptr<Parser::ILexeme> parseString(const std::vector<GrammarLexerTreeNode>& attributes)
 		{
-			return std::make_unique<Parser::StringLexeme>(std::string{std::get<Type::Token>(attributes.at(0).value).name});
+			return std::make_unique<Parser::StringLexeme>(std::get<std::string>(attributes.at(0).value));
 		}
 
 		[[nodiscard]] std::unique_ptr<Parser::ILexeme> parseTag(const std::vector<GrammarLexerTreeNode>& attributes)
@@ -226,7 +226,7 @@ namespace CppUtils::Language::Lexer
 		}
 
 		std::unordered_map<Type::Token, Parser::ParsingFunction<Types...>, Type::Token::hash_fn> m_parsingFunctions;
-		Lexer<Type::Token, unsigned int> m_grammarLexer;
+		Lexer<Type::Token, unsigned int, std::string> m_grammarLexer;
 		Lexer<Types...> m_languageLexer;
 	};
 }

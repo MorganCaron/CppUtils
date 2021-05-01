@@ -30,7 +30,7 @@ jobs:
         CC: clang
         CXX: clang++
       run: |
-        git clone https://github.com/MorganCaron/standardese
+        git clone https://github.com/standardese/standardese
         cd standardese
         mkdir build
         cd build

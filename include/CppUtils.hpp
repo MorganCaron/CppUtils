@@ -13,6 +13,7 @@
 #include <CppUtils/Language/Parser/Cursor.hpp>
 #include <CppUtils/Language/Parser/Expression.hpp>
 #include <CppUtils/Language/Parser/Parsers.hpp>
+#include <CppUtils/Language/Parser/Converters.hpp>
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
 #include <CppUtils/Language/Lexer/Lexer.hpp>
 #include <CppUtils/Language/IR/RegisterIRLexer.hpp>

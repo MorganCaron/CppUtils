@@ -121,8 +121,7 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			ASSERT(blockcode.at("attributes"_token).exists("lang"_token));
 			ASSERT(blockcode.at("attributes"_token).at("lang"_token).getChildValue() == "js"_token);
 			ASSERT(blockcode.exists("content"_token));
-			ASSERT(blockcode.at("content"_token).getChildValue() == R"(			const variable = 42;
-)"s);
+			ASSERT(blockcode.at("content"_token).getChildValue() == "const variable = 42;"s);
 		});
 	}
 }

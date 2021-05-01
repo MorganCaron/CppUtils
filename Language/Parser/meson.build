@@ -1,6 +1,7 @@
 public_dependencies = [
 	cppUtils_type_dep,
-	cppUtils_graph_dep
+	cppUtils_graph_dep,
+	cppUtils_string_dep
 ]
 private_dependencies = []
 
@@ -10,6 +11,7 @@ sources = files([])
 
 headers = files([
 	'include/CppUtils/Language/Parser/Context.hpp',
+	'include/CppUtils/Language/Parser/Converters.hpp',
 	'include/CppUtils/Language/Parser/Cursor.hpp',
 	'include/CppUtils/Language/Parser/Expression.hpp',
 	'include/CppUtils/Language/Parser/Parsers.hpp',
