@@ -20,8 +20,13 @@ namespace CppUtils::Language::Lexer
 			auto& identifier = m_grammarLexer.newExpression("identifier"_token, false);
 			auto& token = m_grammarLexer.newExpression("token"_token);
 			auto& statement = m_grammarLexer.newExpression("statement"_token, false);
-			auto& hideStatement = m_grammarLexer.newExpression("hideStatement"_token);
-			auto& statementName = m_grammarLexer.newExpression("statementName"_token);
+			auto& hide = m_grammarLexer.newExpression("hide"_token);
+			auto& name = m_grammarLexer.newExpression("name"_token);
+			auto& rules = m_grammarLexer.newExpression("rules"_token);
+			auto& ruleList = m_grammarLexer.newExpression("ruleList"_token, false);
+			auto& rule = m_grammarLexer.newExpression("rule"_token, false);
+			auto& exclusion = m_grammarLexer.newExpression("exclusion"_token);
+			auto& nextRule = m_grammarLexer.newExpression("nextRule"_token, false);
 			auto& lexemes = m_grammarLexer.newExpression("lexemes"_token, false);
 			auto& lexeme = m_grammarLexer.newExpression("lexeme"_token, false);
 			auto& string = m_grammarLexer.newExpression("string"_token);
@@ -41,17 +46,32 @@ namespace CppUtils::Language::Lexer
 			identifier >> Parser::spaceParser<Type::Token, unsigned int, std::string> >> Parser::keywordParser<Type::Token, unsigned int, std::string>;
 			token >> identifier;
 			statement
-				>> ~hideStatement
+				>> ~hide
 				>> Parser::TagLexeme{std::make_unique<Parser::TokenLexeme>(identifier.token)}
-				>> ~statementName
+				>> ~name
+				>> ~rules
 				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ':'
 				>> lexemes
 				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ';';
-			hideStatement >> Parser::spaceParser<Type::Token, unsigned int, std::string> >> '!';
-			statementName
+			hide >> Parser::spaceParser<Type::Token, unsigned int, std::string> >> '!';
+			name
 				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> '['
 				>> identifier
 				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ']';
+			rules
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> '('
+				>> ruleList
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ')';
+			ruleList
+				>> rule
+				>> ~nextRule;
+			rule >> exclusion;
+			exclusion
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> '-'
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> identifier;
+			nextRule
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ','
+				>> ruleList;
 			lexemes	>> (lexeme >= 1);
 			lexeme >> Parser::spaceParser<Type::Token, unsigned int, std::string> >> std::move(string || token || tag || muted || optional || parenthesis);
 			string >> Parser::quoteParser<Type::Token, unsigned int, std::string>;
@@ -96,7 +116,9 @@ namespace CppUtils::Language::Lexer
 				{
 					auto& expression = m_languageLexer.getExpression(std::get<Type::Token>(statement.value));
 					for (const auto& lexeme : statement.childs)
-						if (std::get<Type::Token>(lexeme.value) != "hideStatement"_token && std::get<Type::Token>(lexeme.value) != "statementName"_token)
+						if (std::get<Type::Token>(lexeme.value) != "hide"_token &&
+							std::get<Type::Token>(lexeme.value) != "name"_token &&
+							std::get<Type::Token>(lexeme.value) != "rules"_token)
 							expression.lexemes.emplace_back(parseLexeme(lexeme));
 				}
 				return tokenTree;
@@ -125,14 +147,29 @@ namespace CppUtils::Language::Lexer
 			for (const auto& statement : tokenTree.childs)
 			{
 				const auto& token = std::get<Type::Token>(statement.value);
-				const auto& lexemes = statement.childs;
-				const auto nbLexemes = lexemes.size();
-				const auto isHidden = (nbLexemes > 0 && std::get<Type::Token>(lexemes.at(0).value) == "hideStatement"_token);
-				const auto hasDifferentName = (nbLexemes > 0 && std::get<Type::Token>(lexemes.at(0).value) == "statementName"_token);
-				const auto name = (isHidden ? ""_token : (hasDifferentName ? std::get<Type::Token>(lexemes.at(0).childs.at(0).value) : token));
-				if (nbLexemes > 1 && std::get<Type::Token>(lexemes.at(1).value) == "statementName"_token)
+				const auto isHidden = statement.exists("hide"_token);
+				const auto hasDifferentName = statement.exists("name"_token);
+				const auto name = (isHidden ? ""_token : (hasDifferentName ? std::get<Type::Token>(statement.at("name"_token).getChildValue()) : token));
+				if (isHidden && hasDifferentName)
 					throw std::runtime_error{"A muted expression cannot have a name. Remove the '!' before the expression " + std::string{token.name}};
 				m_languageLexer.createExpression(token, std::move(name));
+				if (statement.exists("rules"_token))
+				{
+					auto& expression = m_languageLexer.getExpression(token);
+					const auto& rules = statement.at("rules"_token).childs;
+					for (const auto& rule : rules)
+					{
+						const auto& ruleType = std::get<Type::Token>(rule.value);
+						switch (ruleType.id)
+						{
+							case "exclusion"_token.id:
+								expression -= std::get<Type::Token>(rule.getChildValue());
+								break;
+							default:
+								throw std::runtime_error{"Unknown rule: " + std::string{ruleType.name}};
+						}
+					}
+				}
 			}
 		}
 
@@ -198,7 +235,7 @@ namespace CppUtils::Language::Lexer
 		[[nodiscard]] std::unique_ptr<Parser::ILexeme> parseRecurrence(const std::vector<GrammarLexerTreeNode>& attributes)
 		{
 			using namespace Type::Literals;
-			const auto& token = std::get<Type::Token>(attributes.at(0).childs.at(0).value);
+			const auto& token = std::get<Type::Token>(attributes.at(0).getChildValue());
 			const auto& recurrenceOperator = std::get<Type::Token>(attributes.at(1).value);
 			const auto repetitions = std::get<unsigned int>(attributes.at(2).value);
 			const auto& tokenExpression = m_languageLexer.getExpression(token);

@@ -4,13 +4,13 @@
 #include <CppUtils/String/String.hpp>
 #include <CppUtils/Language/Parser/Context.hpp>
 
-namespace CppUtils::Language::Parser::Converter
+namespace CppUtils::Language::Parser::Modifier
 {
 	template<typename... Types>
 	requires Type::Traits::isPresent<std::string, Types...> || Type::Traits::isPresent<Type::Token, Types...>
-	inline bool stringToTokenConverter(Context<Types...>& context, bool saveTypename)
+	inline bool stringToTokenModifier(Context<Types...>& context, bool saveTypename)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (parentNode.get().childs.empty())
 			return false;
 		auto& lastChild = parentNode.get().childs.back();
@@ -26,9 +26,9 @@ namespace CppUtils::Language::Parser::Converter
 
 	template<typename... Types>
 	requires Type::Traits::isPresent<std::string, Types...>
-	inline bool trimConverter(Context<Types...>& context)
+	inline bool trimModifier(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (parentNode.get().childs.empty())
 			return false;
 		auto& lastChild = parentNode.get().childs.back();

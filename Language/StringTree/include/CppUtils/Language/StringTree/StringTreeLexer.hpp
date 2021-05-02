@@ -1,7 +1,7 @@
 #pragma once
 
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
-#include <CppUtils/Language/Parser/Converters.hpp>
+#include <CppUtils/Language/Parser/Modifiers.hpp>
 
 namespace CppUtils::Language::StringTree
 {
@@ -18,12 +18,12 @@ namespace CppUtils::Language::StringTree
 
 			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("quoteParser"_token, Parser::quoteParser<Type::Token, std::string>);
-			m_grammarLexer.addParsingFunction("stringToTokenConverter"_token, std::bind(Parser::Converter::stringToTokenConverter<Type::Token, std::string>, _1, true));
+			m_grammarLexer.addParsingFunction("stringToTokenModifier"_token, std::bind(Parser::Modifier::stringToTokenModifier<Type::Token, std::string>, _1, true));
 
 			static constexpr auto grammarSrc = R"(
 			main: (node >= 0) spaceParser;
 			!string: quoteParser;
-			!token: 't' quoteParser stringToTokenConverter;
+			!token: 't' quoteParser stringToTokenModifier;
 			!value: spaceParser (string || token);
 			!node: [value] ~childs;
 			!childs: spaceParser '{' (node >= 1) spaceParser '}';

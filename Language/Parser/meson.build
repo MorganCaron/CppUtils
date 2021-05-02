@@ -11,10 +11,12 @@ sources = files([])
 
 headers = files([
 	'include/CppUtils/Language/Parser/Context.hpp',
-	'include/CppUtils/Language/Parser/Converters.hpp',
 	'include/CppUtils/Language/Parser/Cursor.hpp',
 	'include/CppUtils/Language/Parser/Expression.hpp',
+	'include/CppUtils/Language/Parser/Lexemes.hpp',
+	'include/CppUtils/Language/Parser/Modifiers.hpp',
 	'include/CppUtils/Language/Parser/Parsers.hpp',
+	'include/CppUtils/Language/Parser/Rules.hpp',
 ])
 
 cppUtils_language_parser_dep = declare_dependency(

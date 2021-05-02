@@ -23,8 +23,8 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 			ASSERT(tokenTree.value == "print"_token);
 			ASSERT(tokenTree.childs.size() == 1);
-			ASSERT(tokenTree.childs.at(0).value == "string"_token);
-			ASSERT(tokenTree.childs.at(0).childs.size() == 0);
+			ASSERT(tokenTree.getChildValue() == "string"_token);
+			ASSERT(tokenTree.at("string"_token).childs.size() == 0);
 		});
 
 		addTest("Parsers", [] {
@@ -46,10 +46,34 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 			ASSERT(tokenTree.value == "print"_token);
 			ASSERT(tokenTree.childs.size() == 1);
-			ASSERT(tokenTree.childs.at(0).value == "string"_token);
-			ASSERT(tokenTree.childs.at(0).childs.size() == 1);
-			ASSERT(tokenTree.childs.at(0).childs.at(0).value == "Hello World!"s);
-			ASSERT(tokenTree.childs.at(0).childs.at(0).childs.size() == 0);
+			ASSERT(tokenTree.getChildValue() == "string"_token);
+			ASSERT(tokenTree.at("string"_token).childs.size() == 1);
+			ASSERT(tokenTree.at("string"_token).getChildValue() == "Hello World!"s);
+			ASSERT(tokenTree.at("string"_token).at("Hello World!"s).childs.size() == 0);
+		});
+
+		addTest("Exclusion", [] {
+			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
+			auto& mainExpression = lexer.newExpression("main"_token);
+			auto& tagExpression = lexer.newExpression("tag"_token, false);
+			auto& tag1Expression = lexer.newExpression("tag1"_token) -= "tag1"_token;
+			auto& tag2Expression = lexer.newExpression("tag2"_token);
+
+			mainExpression >> tagExpression;
+			tagExpression >> (tag1Expression || tag2Expression);
+			tag1Expression >> "a" >> ~tagExpression;
+			tag2Expression >> "aa" >> ~tagExpression;
+
+			static constexpr auto src = "aaa"sv;
+			const auto tokenTree = lexer.parseString("main"_token, src);
+			CppUtils::Graph::logTreeNode(tokenTree);
+
+			ASSERT(tokenTree.value == "main"_token);
+			ASSERT(tokenTree.childs.size() == 1);
+			ASSERT(tokenTree.getChildValue() == "tag1"_token);
+			ASSERT(tokenTree.at("tag1"_token).childs.size() == 1);
+			ASSERT(tokenTree.at("tag1"_token).getChildValue() == "tag2"_token);
+			ASSERT(tokenTree.at("tag1"_token).at("tag2"_token).childs.size() == 0);
 		});
 
 		addTest("Recurrence", [] {

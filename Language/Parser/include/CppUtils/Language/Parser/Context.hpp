@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stack>
 #include <functional>
 
 #include <CppUtils/Graph/VariantTreeNode.hpp>
@@ -11,9 +12,15 @@ namespace CppUtils::Language::Parser
 	using ASTNode = Graph::VariantTreeNode<Types...>;
 
 	template<typename... Types>
+	struct Expression;
+	template<typename... Types>
+	using ExpressionsStack = std::stack<std::reference_wrapper<const Expression<Types...>>>;
+
+	template<typename... Types>
 	struct Context final
 	{
 		Parser::Cursor<std::string> cursor;
+		std::reference_wrapper<ExpressionsStack<Types...>> expressionsStack;
 		std::reference_wrapper<ASTNode<Types...>> parentNode;
 	};
 

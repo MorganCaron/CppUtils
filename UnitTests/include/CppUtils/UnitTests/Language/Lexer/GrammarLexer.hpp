@@ -59,6 +59,68 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			ASSERT(tokenTree.childs.at(0).childs.at(1).childs.at(0).value == "Hello World!"s);
 		});
 
+		addTest("Hide", [] {
+			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token, std::string>{};
+
+			grammarLexer.addParsingFunction("spaceParser"_token, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>);
+			
+			static constexpr auto grammarSrc = R"(
+			main: word spaceParser;
+			!word: spaceParser 'hide';
+			)"sv;
+			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
+			CppUtils::Graph::logTreeNode(grammarTree);
+			
+			static constexpr auto languageSrc = "hide"sv;
+			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
+			CppUtils::Graph::logTreeNode(tokenTree);
+
+			ASSERT(tokenTree.value == "main"_token);
+			ASSERT(tokenTree.childs.empty());
+		});
+
+		addTest("Name", [] {
+			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token, std::string>{};
+
+			grammarLexer.addParsingFunction("spaceParser"_token, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>);
+			
+			static constexpr auto grammarSrc = R"(
+			main: word spaceParser;
+			word[name]: spaceParser 'name';
+			)"sv;
+			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
+			CppUtils::Graph::logTreeNode(grammarTree);
+			
+			static constexpr auto languageSrc = "name"sv;
+			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
+			CppUtils::Graph::logTreeNode(tokenTree);
+
+			ASSERT(tokenTree.value == "main"_token);
+			ASSERT(tokenTree.getChildValue() == "name"_token);
+		});
+
+		addTest("Exclusion", [] {
+			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token, std::string>{};
+			static constexpr auto grammarSrc = R"(
+			main: tags;
+			!tags: (tag1 || tag2 || tag3);
+			tag1(-tag1): "a" ~tags;
+			tag2: "b" ~tags;
+			tag3: "a" tag2 ~tags;
+			)"sv;
+			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
+			CppUtils::Graph::logTreeNode(grammarTree);
+			
+			static constexpr auto languageSrc = "aab"sv;
+			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
+			CppUtils::Graph::logTreeNode(tokenTree);
+
+			ASSERT(tokenTree.value == "main"_token);
+			ASSERT(tokenTree.exists("tag1"_token));
+			ASSERT(tokenTree.at("tag1"_token).exists("tag3"_token));
+			ASSERT(tokenTree.at("tag1"_token).at("tag3"_token).exists("tag2"_token));
+		});
+
 		addTest("Recurrence", [] {
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token>{};
 

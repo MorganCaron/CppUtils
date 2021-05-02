@@ -16,7 +16,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool keywordParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		const auto keyword = cursor.getKeywordAndSkipIt();
 		if (keyword.empty())
 			return false;
@@ -35,7 +35,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool charParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (cursor.isEndOfString())
 			return false;
 		const auto c = cursor.getCharAndSkipIt();
@@ -49,7 +49,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool escapeCharParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (cursor.isEndOfString())
 			return false;
 		auto c = cursor.getCharAndSkipIt();
@@ -81,7 +81,7 @@ namespace CppUtils::Language::Parser
 	[[nodiscard]] inline bool delimiterParser(Context<Types...>& context, std::string_view delimiter, ParsingFunction<Types...> contentParsingFunction, bool multipleContent, bool skipDelimiter)
 	{
 		using namespace std::literals;
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		parentNode.get().childs.emplace_back(Parser::ASTNode<Types...>{""s});
 		auto delimiterFound = (skipDelimiter ? cursor.isEqualSkipIt(delimiter) : cursor.isEqual(delimiter));
 		while (!delimiterFound)
@@ -105,7 +105,7 @@ namespace CppUtils::Language::Parser
 	[[nodiscard]] inline bool quoteParser(Context<Types...>& context)
 	{
 		using namespace std::literals;
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (cursor.isEndOfString())
 			return false;
 		const auto quote = cursor.getCharAndSkipIt();
@@ -117,7 +117,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool singleQuoteParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (cursor.isEndOfString() || cursor.getChar() != '\'')
 			return false;
 		return quoteParser(context);
@@ -126,7 +126,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool doubleQuoteParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (cursor.isEndOfString() || cursor.getChar() != '"')
 			return false;
 		return quoteParser(context);
@@ -135,7 +135,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires ((std::is_integral_v<Types> && std::is_unsigned_v<Types> && sizeof(Types) >= 4) || ...)
 	[[nodiscard]] inline bool uintParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (cursor.isEndOfString() || !std::isdigit(cursor.getChar()))
 			return false;
 		auto numberLength = std::size_t{};
@@ -150,7 +150,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires ((std::is_integral_v<Types> && std::is_signed_v<Types> && sizeof(Types) >= 4) || ...)
 	[[nodiscard]] inline bool intParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (cursor.isEndOfString())
 			return false;
 		bool hasDigit = std::isdigit(cursor.getChar());
@@ -174,7 +174,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires ((std::is_integral_v<Types> && std::is_unsigned_v<Types> && sizeof(Types) >= 8) || ...)
 	[[nodiscard]] inline bool ulongParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (cursor.isEndOfString() || !std::isdigit(cursor.getChar()))
 			return false;
 		auto numberLength = std::size_t{};
@@ -187,7 +187,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires ((std::is_integral_v<Types> && std::is_signed_v<Types> && sizeof(Types) >= 8) || ...)
 	[[nodiscard]] inline bool longParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (cursor.isEndOfString())
 			return false;
 		bool hasDigit = std::isdigit(cursor.getChar());
@@ -211,7 +211,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires (std::is_floating_point_v<Types> || ...)
 	[[nodiscard]] inline bool floatParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (cursor.isEndOfString())
 			return false;
 		bool hasDigit = std::isdigit(cursor.getChar());
@@ -237,7 +237,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires Type::Traits::isPresent<bool, Types...>
 	[[nodiscard]] inline bool booleanParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, expressionsStack, parentNode] = context;
 		if (cursor.isEqualSkipIt("true", false))
 		{
 			parentNode.get().childs.emplace_back(ASTNode<Types...>{true});

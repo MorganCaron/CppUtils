@@ -21,7 +21,7 @@ namespace CppUtils::Language::Markdown
 			m_grammarLexer.addParsingFunction("srcContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, ")"sv, Parser::charParser<Type::Token, std::string>, true, false));
 			m_grammarLexer.addParsingFunction("blockcodeContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "```"sv, Parser::charParser<Type::Token, std::string>, true, false));
 			m_grammarLexer.addParsingFunction("codeContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "`"sv, Parser::charParser<Type::Token, std::string>, true, false));
-			m_grammarLexer.addParsingFunction("trimConverter"_token, Parser::Converter::trimConverter<Type::Token, std::string>);
+			m_grammarLexer.addParsingFunction("trimModifier"_token, Parser::Modifier::trimModifier<Type::Token, std::string>);
 
 			static constexpr auto grammarSrc = R"(
 			main: _content spaceParser;
@@ -46,18 +46,18 @@ namespace CppUtils::Language::Markdown
 			linkAttributes[attributes]: '[' alt "](" src ')';
 			alt: altContentParser;
 			src: srcContentParser;
-			boldAndItalic[bold]: "___" boldAndItalic2 "___";
+			boldAndItalic[bold](-italic, -bold, -boldAndItalic): "___" boldAndItalic2 "___";
 			boldAndItalic2[italic]: ~content;
-			bold: (_bold1 || _bold2);
+			bold(-bold): (_bold1 || _bold2);
 			!_bold1: "**" ~content "**";
 			!_bold2: "__" ~content "__";
-			italic: (_italic1 || _italic2);
+			italic(-italic): (_italic1 || _italic2);
 			!_italic1: "*" ~content "*";
 			!_italic2: "_" ~content "_";
 			blockcode: "```" ~blockcodeAttributes blockcodeContent "```";
 			blockcodeAttributes[attributes]: blockcodeLang;
 			blockcodeLang[lang]: keywordParser;
-			blockcodeContent[content]: spaceParser blockcodeContentParser trimConverter;
+			blockcodeContent[content]: spaceParser blockcodeContentParser trimModifier;
 			code: '`' codeContent '`';
 			codeContent[content]: codeContentParser;
 			list: "wip";

@@ -21,7 +21,7 @@ namespace CppUtils::Parameters
 			m_grammarLexer.addParsingFunction("spaceParser"_token, Language::Parser::spaceParser<Type::Token>);
 			m_grammarLexer.addParsingFunction("keywordParser"_token, Language::Parser::keywordParser<Type::Token>);
 			m_grammarLexer.addParsingFunction("valueParser"_token, [](auto& context) {
-				auto& [cursor, parentNode] = context;
+				auto& [cursor, expressionsStack, parentNode] = context;
 				if (!cursor.isEndOfString() && cursor.getChar() != '[')
 					return false;
 				const auto startPosition = ++cursor.position;

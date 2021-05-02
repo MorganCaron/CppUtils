@@ -1,7 +1,7 @@
 #pragma once
 
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
-#include <CppUtils/Language/Parser/Converters.hpp>
+#include <CppUtils/Language/Parser/Modifiers.hpp>
 
 namespace CppUtils::Language::Json
 {
@@ -18,7 +18,7 @@ namespace CppUtils::Language::Json
 			m_grammarLexer.addParsingFunction("booleanParser"_token, Parser::booleanParser<Type::Token, bool, float, std::string>);
 			m_grammarLexer.addParsingFunction("floatParser"_token, Parser::floatParser<Type::Token, bool, float, std::string>);
 			m_grammarLexer.addParsingFunction("doubleQuoteParser"_token, Parser::doubleQuoteParser<Type::Token, bool, float, std::string>);
-			m_grammarLexer.addParsingFunction("stringToTokenConverter"_token, std::bind(Parser::Converter::stringToTokenConverter<Type::Token, bool, float, std::string>, _1, true));
+			m_grammarLexer.addParsingFunction("stringToTokenModifier"_token, std::bind(Parser::Modifier::stringToTokenModifier<Type::Token, bool, float, std::string>, _1, true));
 
 			static constexpr auto grammarSrc = R"(
 			main: _object spaceParser;
@@ -26,7 +26,7 @@ namespace CppUtils::Language::Json
 			!pairs: pair ~nextPair;
 			!nextPair: spaceParser ',' pairs;
 			!_string: doubleQuoteParser;
-			!_key: _string stringToTokenConverter;
+			!_key: _string stringToTokenModifier;
 			!pair: spaceParser [_key] spaceParser ':' value;
 			!string: _string;
 			!object: _object;
