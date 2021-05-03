@@ -13,15 +13,24 @@ namespace CppUtils::Language::Markdown
 			using namespace Type::Literals;
 			using namespace std::placeholders;
 
+			static const auto elementParser = [this](auto& context) -> bool {
+				return m_grammarLexer.parseSegment("_element"_token, context);
+			};
+
 			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Type::Token, std::string>);
-			m_grammarLexer.addParsingFunction("contentParser"_token, Parser::charParser<Type::Token, std::string>);
-			m_grammarLexer.addParsingFunction("headerContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "\n"sv, Parser::charParser<Type::Token, std::string>, true, false));
-			m_grammarLexer.addParsingFunction("altContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "]"sv, Parser::charParser<Type::Token, std::string>, true, false));
-			m_grammarLexer.addParsingFunction("srcContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, ")"sv, Parser::charParser<Type::Token, std::string>, true, false));
-			m_grammarLexer.addParsingFunction("blockcodeContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "```"sv, Parser::charParser<Type::Token, std::string>, true, false));
-			m_grammarLexer.addParsingFunction("codeContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "`"sv, Parser::charParser<Type::Token, std::string>, true, false));
+			m_grammarLexer.addParsingFunction("contentParser"_token, Parser::escapeCharParser<Type::Token, std::string>);
+			m_grammarLexer.addParsingFunction("headerContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "\n"sv, Parser::escapeCharParser<Type::Token, std::string>, true, false));
+			m_grammarLexer.addParsingFunction("altContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "]"sv, Parser::escapeCharParser<Type::Token, std::string>, true, false));
+			m_grammarLexer.addParsingFunction("srcContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, ")"sv, Parser::escapeCharParser<Type::Token, std::string>, true, false));
+			m_grammarLexer.addParsingFunction("blockcodeContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "```"sv, Parser::escapeCharParser<Type::Token, std::string>, true, false));
+			m_grammarLexer.addParsingFunction("codeContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "`"sv, Parser::escapeCharParser<Type::Token, std::string>, true, false));
 			m_grammarLexer.addParsingFunction("trimModifier"_token, Parser::Modifier::trimModifier<Type::Token, std::string>);
+			m_grammarLexer.addParsingFunction("bold1ContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "**"sv, elementParser, true, false));
+			m_grammarLexer.addParsingFunction("bold2ContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "__"sv, elementParser, true, false));
+			m_grammarLexer.addParsingFunction("italic1ContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "*"sv, elementParser, true, false));
+			m_grammarLexer.addParsingFunction("italic2ContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "_"sv, elementParser, true, false));
+			m_grammarLexer.addParsingFunction("boldAndItalicContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "___"sv, elementParser, true, false));
 
 			static constexpr auto grammarSrc = R"(
 			main: _content spaceParser;
@@ -47,13 +56,13 @@ namespace CppUtils::Language::Markdown
 			alt: altContentParser;
 			src: srcContentParser;
 			boldAndItalic[bold](-italic, -bold, -boldAndItalic): "___" boldAndItalic2 "___";
-			boldAndItalic2[italic]: ~content;
+			boldAndItalic2[italic]: ~boldAndItalicContentParser;
 			bold(-bold): (_bold1 || _bold2);
-			!_bold1: "**" ~content "**";
-			!_bold2: "__" ~content "__";
+			!_bold1: "**" ~bold1ContentParser "**";
+			!_bold2: "__" ~bold2ContentParser "__";
 			italic(-italic): (_italic1 || _italic2);
-			!_italic1: "*" ~content "*";
-			!_italic2: "_" ~content "_";
+			!_italic1: "*" ~italic1ContentParser "*";
+			!_italic2: "_" ~italic2ContentParser "_";
 			blockcode: "```" ~blockcodeAttributes blockcodeContent "```";
 			blockcodeAttributes[attributes]: blockcodeLang;
 			blockcodeLang[lang]: keywordParser;

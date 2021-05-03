@@ -56,7 +56,8 @@ namespace CppUtils::Language::Lexer
 			auto context = Parser::Context<Types...>{Parser::Cursor<std::string>{src, position}, expressionsStack, rootNode};
 			try
 			{
-				parseSegment(token, context);
+				if (!parseSegment(token, context))
+					throw std::runtime_error{"Syntax error in the \"" + std::string{token.name} + "\" expression."};
 				if (!context.cursor.isEndOfString())
 					throw std::runtime_error{"Syntax error: The string does not correspond to any known element."};
 			}
@@ -67,26 +68,48 @@ namespace CppUtils::Language::Lexer
 			return rootNode;
 		}
 
-		void parseSegment(const Type::Token& token, Parser::Context<Types...>& context) const
+		[[nodiscard]] inline bool parseSegment(const Type::Token& token, Parser::Context<Types...>& context) const
 		{
-			const auto& expression = getExpression(token);
-			if (!parseExpression(expression, context))
-				throw std::runtime_error{"Syntax error in the \"" + std::string{token.name} + "\" expression."};
+			return parseExpression(getExpression(token), context);
+		}
+
+		[[nodiscard]] inline bool expressionIsPermitted(const Type::Token& token, Parser::Context<Types...>& context) const
+		{
+			using namespace Type::Literals;
+			auto expressionsStack = context.expressionsStack.get();
+			for (; !expressionsStack.empty(); expressionsStack.pop())
+			{
+				for (const auto& rule : expressionsStack.top().get().rules)
+				{
+					const auto& ruleType = rule->getType();
+					switch (ruleType.id)
+					{
+						case "exclusion"_token.id:
+							if (token == Type::ensureType<Parser::ExclusionRule>(rule).value)
+								return false;
+							break;
+						default:
+							throw std::runtime_error{"Unknown rule: " + std::string{ruleType.name}};
+					}
+				}
+			}
+			return true;
 		}
 
 	private:
 		[[nodiscard]] inline bool parseExpression(const Parser::Expression<Types...>& expression, Parser::Context<Types...>& context) const
 		{
 			using namespace Type::Literals;
-
+			auto& [cursor, expressionsStack, parentNode] = context;
+			if (!expressionIsPermitted(expression.token, context))
+				return false;
 			if (expression.lexemes.empty())
 				throw std::runtime_error{'"' + std::string{expression.token.name} + "\" expression is empty."};
-			auto& [cursor, expressionsStack, parentNode] = context;
-			const auto startPosition = cursor.position;
-			auto partialMatch = false;
-			auto newParentNode = Parser::ASTNode<Types...>{parentNode.get().value};
 			expressionsStack.get().push(expression);
+			auto newParentNode = Parser::ASTNode<Types...>{parentNode.get().value};
 			auto newContext = Parser::Context<Types...>{cursor, expressionsStack, newParentNode};
+			auto partialMatch = false;
+			const auto startPosition = cursor.position;
 			for (const auto& lexeme : expression.lexemes)
 			{
 				if (!parseLexeme(lexeme, newContext))

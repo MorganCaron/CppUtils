@@ -82,6 +82,8 @@ namespace CppUtils::Language::Parser
 	{
 		using namespace std::literals;
 		auto& [cursor, expressionsStack, parentNode] = context;
+		if (cursor.isEndOfString())
+			return false;
 		parentNode.get().childs.emplace_back(Parser::ASTNode<Types...>{""s});
 		auto delimiterFound = (skipDelimiter ? cursor.isEqualSkipIt(delimiter) : cursor.isEqual(delimiter));
 		while (!delimiterFound)

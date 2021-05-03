@@ -27,11 +27,15 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			_italic_
 			**bold**
 			__bold__
-			**__italic and bold__**
-			__**italic and bold**__
+			*__italic and bold__*
+			_**italic and bold**_
+			__*italic and bold*__
+			**_italic and bold_**
 			___italic and bold___
 			)"_markdown;
 			CppUtils::Graph::logTreeNode(markdownTree);
+
+			ASSERT(markdownTree.childs.size() == 9);
 		});
 
 		addTest("Title", [] {

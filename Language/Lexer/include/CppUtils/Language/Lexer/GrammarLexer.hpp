@@ -135,9 +135,9 @@ namespace CppUtils::Language::Lexer
 			return m_languageLexer.parseString(token, src);
 		}
 
-		inline void parseSegment(const Type::Token& token, Parser::Context<Types...>& context) const
+		[[nodiscard]] inline bool parseSegment(const Type::Token& token, Parser::Context<Types...>& context) const
 		{
-			m_languageLexer.parseSegment(token, context);
+			return m_languageLexer.parseSegment(token, context);
 		}
 
 	private:
