@@ -52,30 +52,6 @@ namespace CppUtils::UnitTests::Language::Lexer
 			ASSERT(tokenTree.at("string"_token).at("Hello World!"s).childs.size() == 0);
 		});
 
-		addTest("Exclusion", [] {
-			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
-			auto& mainExpression = lexer.newExpression("main"_token);
-			auto& tagExpression = lexer.newExpression("tag"_token, false);
-			auto& tag1Expression = lexer.newExpression("tag1"_token) -= "tag1"_token;
-			auto& tag2Expression = lexer.newExpression("tag2"_token);
-
-			mainExpression >> tagExpression;
-			tagExpression >> (tag1Expression || tag2Expression);
-			tag1Expression >> "a" >> ~tagExpression;
-			tag2Expression >> "aa" >> ~tagExpression;
-
-			static constexpr auto src = "aaa"sv;
-			const auto tokenTree = lexer.parseString("main"_token, src);
-			CppUtils::Graph::logTreeNode(tokenTree);
-
-			ASSERT(tokenTree.value == "main"_token);
-			ASSERT(tokenTree.childs.size() == 1);
-			ASSERT(tokenTree.getChildValue() == "tag1"_token);
-			ASSERT(tokenTree.at("tag1"_token).childs.size() == 1);
-			ASSERT(tokenTree.at("tag1"_token).getChildValue() == "tag2"_token);
-			ASSERT(tokenTree.at("tag1"_token).at("tag2"_token).childs.size() == 0);
-		});
-
 		addTest("Recurrence", [] {
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token, std::string>{};
 			auto& mainExpression = lexer.newExpression("main"_token);
@@ -135,6 +111,30 @@ namespace CppUtils::UnitTests::Language::Lexer
 			ASSERT(tokenTree.childs.size() == 4);
 			for (const auto& child : tokenTree.childs)
 				ASSERT(child.value == "value"_token);
+		});
+
+		addTest("Exclusion", [] {
+			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
+			auto& mainExpression = lexer.newExpression("main"_token);
+			auto& aExpression = lexer.newExpression("a"_token);
+			auto& tagsExpression = lexer.newExpression("tags"_token, false);
+
+			mainExpression >> tagsExpression >> 'b';
+			aExpression >> 'a';
+			tagsExpression >> CppUtils::Language::Parser::Recurrence{
+					std::make_unique<CppUtils::Language::Parser::ExcludeLexeme>(CppUtils::Language::Parser::Exclusion{
+						std::make_unique<CppUtils::Language::Parser::TokenLexeme>(aExpression.token),
+						std::make_unique<CppUtils::Language::Parser::StringLexeme>("b")}),
+				CppUtils::Language::Parser::RecurrenceType::MoreOrEqualTo, 0};
+
+			static constexpr auto src = "aab"sv;
+			const auto tokenTree = lexer.parseString("main"_token, src);
+			CppUtils::Graph::logTreeNode(tokenTree);
+
+			ASSERT(tokenTree.value == "main"_token);
+			ASSERT(tokenTree.childs.size() == 2);
+			for (const auto& child : tokenTree.childs)
+				ASSERT(child.value == "a"_token);
 		});
 	}
 }

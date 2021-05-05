@@ -22,11 +22,6 @@ namespace CppUtils::Language::Lexer
 			auto& statement = m_grammarLexer.newExpression("statement"_token, false);
 			auto& hide = m_grammarLexer.newExpression("hide"_token);
 			auto& name = m_grammarLexer.newExpression("name"_token);
-			auto& rules = m_grammarLexer.newExpression("rules"_token);
-			auto& ruleList = m_grammarLexer.newExpression("ruleList"_token, false);
-			auto& rule = m_grammarLexer.newExpression("rule"_token, false);
-			auto& exclusion = m_grammarLexer.newExpression("exclusion"_token);
-			auto& nextRule = m_grammarLexer.newExpression("nextRule"_token, false);
 			auto& lexemes = m_grammarLexer.newExpression("lexemes"_token, false);
 			auto& lexeme = m_grammarLexer.newExpression("lexeme"_token, false);
 			auto& string = m_grammarLexer.newExpression("string"_token);
@@ -35,12 +30,13 @@ namespace CppUtils::Language::Lexer
 			auto& optional = m_grammarLexer.newExpression("optional"_token);
 			auto& parenthesis = m_grammarLexer.newExpression("parenthesis"_token, false);
 			auto& recurrence = m_grammarLexer.newExpression("recurrence"_token);
-			auto& alternative = m_grammarLexer.newExpression("alternative"_token);
-			auto& alternativeArgument = m_grammarLexer.newExpression("alternativeArgument"_token, false);
 			auto& recurrenceOperator = m_grammarLexer.newExpression("recurrenceOperator"_token, false);
 			auto& equalTo = m_grammarLexer.newExpression("equalTo"_token);
 			auto& moreOrEqualTo = m_grammarLexer.newExpression("moreOrEqualTo"_token);
 			auto& moreThan = m_grammarLexer.newExpression("moreThan"_token);
+			auto& alternative = m_grammarLexer.newExpression("alternative"_token);
+			auto& alternativeArgument = m_grammarLexer.newExpression("alternativeArgument"_token, false);
+			auto& exclusion = m_grammarLexer.newExpression("exclusion"_token);
 			
 			main >> (statement >= 0) >> Parser::spaceParser<Type::Token, unsigned int, std::string>;
 			identifier >> Parser::spaceParser<Type::Token, unsigned int, std::string> >> Parser::keywordParser<Type::Token, unsigned int, std::string>;
@@ -49,7 +45,6 @@ namespace CppUtils::Language::Lexer
 				>> ~hide
 				>> Parser::TagLexeme{std::make_unique<Parser::TokenLexeme>(identifier.token)}
 				>> ~name
-				>> ~rules
 				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ':'
 				>> lexemes
 				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ';';
@@ -58,20 +53,6 @@ namespace CppUtils::Language::Lexer
 				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> '['
 				>> identifier
 				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ']';
-			rules
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> '('
-				>> ruleList
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ')';
-			ruleList
-				>> rule
-				>> ~nextRule;
-			rule >> exclusion;
-			exclusion
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> '-'
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> identifier;
-			nextRule
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ','
-				>> ruleList;
 			lexemes	>> (lexeme >= 1);
 			lexeme >> Parser::spaceParser<Type::Token, unsigned int, std::string> >> std::move(string || token || tag || muted || optional || parenthesis);
 			string >> Parser::quoteParser<Type::Token, unsigned int, std::string>;
@@ -83,21 +64,25 @@ namespace CppUtils::Language::Lexer
 			optional >> '~' >> lexeme;
 			parenthesis
 				>> '('
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> std::move(recurrence || alternative || lexemes)
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> std::move(recurrence || alternative || exclusion || lexemes)
 				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ')';
 			recurrence
 				>> lexeme
 				>> recurrenceOperator
 				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> Parser::uintParser<Type::Token, unsigned int, std::string>;
-			alternative >> lexeme >> (alternativeArgument >= 1);
-			alternativeArgument
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> "||"
-				>> lexeme;
 			recurrenceOperator
 				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> std::move(equalTo || moreOrEqualTo || moreThan);
 			equalTo >> "*";
 			moreOrEqualTo >> ">=";
 			moreThan >> '>';
+			alternative >> lexeme >> (alternativeArgument >= 1);
+			alternativeArgument
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> "||"
+				>> lexeme;
+			exclusion
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> lexeme
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> "!="
+				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> lexeme;
 		}
 
 		inline void addParsingFunction(const Type::Token& token, Parser::ParsingFunction<Types...> parsingFunction)
@@ -117,8 +102,7 @@ namespace CppUtils::Language::Lexer
 					auto& expression = m_languageLexer.getExpression(std::get<Type::Token>(statement.value));
 					for (const auto& lexeme : statement.childs)
 						if (std::get<Type::Token>(lexeme.value) != "hide"_token &&
-							std::get<Type::Token>(lexeme.value) != "name"_token &&
-							std::get<Type::Token>(lexeme.value) != "rules"_token)
+							std::get<Type::Token>(lexeme.value) != "name"_token)
 							expression.lexemes.emplace_back(parseLexeme(lexeme));
 				}
 				return tokenTree;
@@ -153,23 +137,6 @@ namespace CppUtils::Language::Lexer
 				if (isHidden && hasDifferentName)
 					throw std::runtime_error{"A muted expression cannot have a name. Remove the '!' before the expression " + std::string{token.name}};
 				m_languageLexer.createExpression(token, std::move(name));
-				if (statement.exists("rules"_token))
-				{
-					auto& expression = m_languageLexer.getExpression(token);
-					const auto& rules = statement.at("rules"_token).childs;
-					for (const auto& rule : rules)
-					{
-						const auto& ruleType = std::get<Type::Token>(rule.value);
-						switch (ruleType.id)
-						{
-							case "exclusion"_token.id:
-								expression -= std::get<Type::Token>(rule.getChildValue());
-								break;
-							default:
-								throw std::runtime_error{"Unknown rule: " + std::string{ruleType.name}};
-						}
-					}
-				}
 			}
 		}
 
@@ -193,6 +160,8 @@ namespace CppUtils::Language::Lexer
 					return parseRecurrence(lexeme.childs);
 				case "alternative"_token.id:
 					return parseAlternative(lexeme.childs);
+				case "exclusion"_token.id:
+					return parseExclusion(lexeme.childs);
 				default:
 					throw std::runtime_error{"Unknown lexeme type: " + std::string{lexemeType.name}};
 			}
@@ -235,21 +204,24 @@ namespace CppUtils::Language::Lexer
 		[[nodiscard]] std::unique_ptr<Parser::ILexeme> parseRecurrence(const std::vector<GrammarLexerTreeNode>& attributes)
 		{
 			using namespace Type::Literals;
-			const auto& token = std::get<Type::Token>(attributes.at(0).getChildValue());
 			const auto& recurrenceOperator = std::get<Type::Token>(attributes.at(1).value);
 			const auto repetitions = std::get<unsigned int>(attributes.at(2).value);
-			const auto& tokenExpression = m_languageLexer.getExpression(token);
+			Parser::RecurrenceType recurrenceType;
 			switch (recurrenceOperator.id)
 			{
 				case "equalTo"_token.id:
-					return std::make_unique<Parser::RecurrentLexeme>(tokenExpression * repetitions);
+					recurrenceType = Parser::RecurrenceType::EqualTo;
+					break;
 				case "moreOrEqualTo"_token.id:
-					return std::make_unique<Parser::RecurrentLexeme>(tokenExpression >= repetitions);
+					recurrenceType = Parser::RecurrenceType::MoreOrEqualTo;
+					break;
 				case "moreThan"_token.id:
-					return std::make_unique<Parser::RecurrentLexeme>(tokenExpression > repetitions);
+					recurrenceType = Parser::RecurrenceType::MoreThan;
+					break;
 				default:
 					throw std::runtime_error{"Unknown operator type: " + std::string{recurrenceOperator.name}};
 			}
+			return std::make_unique<Parser::RecurrentLexeme>(Parser::Recurrence{parseLexeme(attributes.at(0)), recurrenceType, repetitions});
 		}
 
 		[[nodiscard]] std::unique_ptr<Parser::ILexeme> parseAlternative(const std::vector<GrammarLexerTreeNode>& attributes)
@@ -260,6 +232,12 @@ namespace CppUtils::Language::Lexer
 				return parseLexeme(lexeme);
 			});
 			return std::make_unique<Parser::AlternativeLexeme>(Parser::Alternative{std::move(lexemes)});
+		}
+
+		[[nodiscard]] std::unique_ptr<Parser::ILexeme> parseExclusion(const std::vector<GrammarLexerTreeNode>& attributes)
+		{
+			return std::make_unique<CppUtils::Language::Parser::ExcludeLexeme>(
+				CppUtils::Language::Parser::Exclusion{parseLexeme(attributes.at(0)), parseLexeme(attributes.at(1))});
 		}
 
 		std::unordered_map<Type::Token, Parser::ParsingFunction<Types...>, Type::Token::hash_fn> m_parsingFunctions;

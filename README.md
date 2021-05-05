@@ -9,10 +9,10 @@
 [![Discord](https://img.shields.io/discord/268838260153909249?label=Chat&logo=Discord&style=for-the-badge)](https://discord.gg/mxZvun4)
 
 ### Project Health
-[![GitHub Actions](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows?label=Windows&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows.yml)
-[![GitHub Actions](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows%20MSYS2?label=Windows%20MSYS2&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows-msys2.yml)
-[![GitHub Actions](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Linux?label=Linux&logo=linux&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-linux.yml)
-[![GitHub Actions](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20MacOS?label=MacOS&logo=macos&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-macos.yml)
+[![CI Windows](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows?label=Windows&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows.yml)
+[![CI Windows MSYS2](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows%20MSYS2?label=Windows%20MSYS2&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows-msys2.yml)
+[![CI Linux](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Linux?label=Linux&logo=linux&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-linux.yml)
+[![CI MacOS](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20MacOS?label=MacOS&logo=macos&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-macos.yml)
 
 [![Codacy](https://img.shields.io/codacy/grade/2fab3fcb24a34138a9e77f847da68b28?logo=Codacy&style=for-the-badge)](https://www.codacy.com/manual/MorganCaron/CppUtils)
 

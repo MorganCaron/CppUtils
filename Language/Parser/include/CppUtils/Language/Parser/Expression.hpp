@@ -4,7 +4,6 @@
 #include <string_view>
 
 #include <CppUtils/Language/Parser/Lexemes.hpp>
-#include <CppUtils/Language/Parser/Rules.hpp>
 
 namespace CppUtils::Language::Parser
 {
@@ -14,7 +13,6 @@ namespace CppUtils::Language::Parser
 		Type::Token token;
 		Type::Token name;
 		std::vector<std::unique_ptr<ILexeme>> lexemes;
-		std::vector<std::unique_ptr<IRule>> rules;
 
 		Expression() = default;
 		explicit Expression(Type::Token c_token, Type::Token c_name, std::vector<std::unique_ptr<ILexeme>> c_lexemes = {}):
@@ -80,17 +78,6 @@ namespace CppUtils::Language::Parser
 			return Recurrence{std::make_unique<TokenLexeme>(token), RecurrenceType::MoreOrEqualTo, repetitions};
 		}
 
-		Expression& operator-=(const Expression& rhs)
-		{
-			return *this -= rhs.token;
-		}
-
-		Expression& operator-=(Type::Token token)
-		{
-			rules.emplace_back(std::make_unique<ExclusionRule>(token));
-			return *this;
-		}
-
 		[[nodiscard]] Recurrence operator*(std::size_t repetitions) const
 		{
 			return Recurrence{std::make_unique<TokenLexeme>(token), RecurrenceType::EqualTo, repetitions};
@@ -102,6 +89,55 @@ namespace CppUtils::Language::Parser
 			mergedLexemes.emplace_back(std::make_unique<TokenLexeme>(token));
 			mergedLexemes.emplace_back(std::make_unique<TokenLexeme>(rhs.token));
 			return Alternative{std::move(mergedLexemes)};
+		}
+
+		[[nodiscard]] Exclusion operator!=(std::string string) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<StringLexeme>(std::move(string))};
+		}
+
+		[[nodiscard]] Exclusion operator!=(char c) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<StringLexeme>(std::string{c})};
+		}
+
+		[[nodiscard]] Exclusion operator!=(const Expression& expression) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<TokenLexeme>(expression.token)};
+		}
+
+		[[nodiscard]] Exclusion operator!=(ParsingFunction<Types...> function) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<ParserLexeme<Types...>>(std::move(function))};
+		}
+
+		[[nodiscard]] Exclusion operator!=(TagLexeme tagLexeme) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<TagLexeme>(std::move(tagLexeme))};
+		}
+
+		[[nodiscard]] Exclusion operator!=(Recurrence recurrence) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<RecurrentLexeme>(std::move(recurrence))};
+		}
+
+		[[nodiscard]] Exclusion operator!=(Alternative alternative) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<AlternativeLexeme>(std::move(alternative))};
 		}
 	};
 }

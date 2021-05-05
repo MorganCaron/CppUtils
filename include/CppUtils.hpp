@@ -15,7 +15,6 @@
 #include <CppUtils/Language/Parser/Lexemes.hpp>
 #include <CppUtils/Language/Parser/Modifiers.hpp>
 #include <CppUtils/Language/Parser/Parsers.hpp>
-#include <CppUtils/Language/Parser/Rules.hpp>
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
 #include <CppUtils/Language/Lexer/Lexer.hpp>
 #include <CppUtils/Language/IR/RegisterIRLexer.hpp>

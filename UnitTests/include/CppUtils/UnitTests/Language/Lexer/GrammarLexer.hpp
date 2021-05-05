@@ -99,28 +99,6 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			ASSERT(tokenTree.getChildValue() == "name"_token);
 		});
 
-		addTest("Exclusion", [] {
-			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token, std::string>{};
-			static constexpr auto grammarSrc = R"(
-			main: tags;
-			!tags: (tag1 || tag2 || tag3);
-			tag1(-tag1): "a" ~tags;
-			tag2: "b" ~tags;
-			tag3: "a" tag2 ~tags;
-			)"sv;
-			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
-			CppUtils::Graph::logTreeNode(grammarTree);
-			
-			static constexpr auto languageSrc = "aab"sv;
-			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
-			CppUtils::Graph::logTreeNode(tokenTree);
-
-			ASSERT(tokenTree.value == "main"_token);
-			ASSERT(tokenTree.exists("tag1"_token));
-			ASSERT(tokenTree.at("tag1"_token).exists("tag3"_token));
-			ASSERT(tokenTree.at("tag1"_token).at("tag3"_token).exists("tag2"_token));
-		});
-
 		addTest("Recurrence", [] {
 			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token>{};
 
@@ -140,6 +118,26 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 
 			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.size() == 4);
+		});
+
+		addTest("Exclusion", [] {
+			auto grammarLexer = CppUtils::Language::Lexer::GrammarLexer<CppUtils::Type::Token, std::string>{};
+			static constexpr auto grammarSrc = R"(
+			main: tags 'b';
+			!tags: ((a != 'b') >= 0);
+			a: 'a';
+			)"sv;
+			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
+			CppUtils::Graph::logTreeNode(grammarTree);
+			
+			static constexpr auto languageSrc = "aab"sv;
+			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
+			CppUtils::Graph::logTreeNode(tokenTree);
+
+			ASSERT(tokenTree.value == "main"_token);
+			ASSERT(tokenTree.childs.size() == 2);
+			for (const auto& child : tokenTree.childs)
+				ASSERT(child.value == "a"_token);
 		});
 
 		addTest("Avanced", [] {

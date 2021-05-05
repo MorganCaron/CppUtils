@@ -15,7 +15,7 @@ namespace CppUtils::Language::Ini
 			using namespace std::placeholders;
 
 			static const auto identifierParser = [](auto& context, std::string_view delimiter) -> bool {
-				auto& [cursor, expressionsStack, parentNode] = context;
+				auto& [cursor, parentNode] = context;
 				return (!cursor.isEndOfString() && cursor.getChar() != '[' &&
 					Parser::delimiterParser<Type::Token, bool, float, std::string>(context, delimiter, std::forward<Parser::ParsingFunction<Type::Token, bool, float, std::string>>(Parser::charParser<Type::Token, bool, float, std::string>), true, false) &&
 					Parser::Modifier::trimModifier<Type::Token, bool, float, std::string>(context) &&
@@ -23,7 +23,7 @@ namespace CppUtils::Language::Ini
 			};
 
 			static const auto valueParser = [](auto& context) -> bool {
-				auto& [cursor, expressionsStack, parentNode] = context;
+				auto& [cursor, parentNode] = context;
 				auto string = std::string{String::trimString(cursor.getStringAndSkipItIf([](char c) -> bool {
 					return c != '\n' && c != ';' && (std::isspace(c) || std::isgraph(c));
 				}))};
@@ -35,7 +35,7 @@ namespace CppUtils::Language::Ini
 
 			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, bool, float, std::string>);
 			m_grammarLexer.addParsingFunction("commentParser"_token, [](auto& context) {
-				auto& [cursor, expressionsStack, parentNode] = context;
+				auto& [cursor, parentNode] = context;
 				if (cursor.isEndOfString() || cursor.getChar() != ';')
 					return false;
 				++cursor.position;

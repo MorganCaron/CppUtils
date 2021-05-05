@@ -74,4 +74,13 @@ namespace CppUtils::Language::Parser
 
 	static constexpr auto AlternativeLexemeType = "alternative"_token;
 	using AlternativeLexeme = Lexeme<AlternativeLexemeType, Alternative>;
+
+	struct Exclusion final
+	{
+		std::unique_ptr<ILexeme> lexeme;
+		std::unique_ptr<ILexeme> excluded;
+	};
+
+	static constexpr auto ExcludeLexemeType = "exclusion"_token;
+	using ExcludeLexeme = Lexeme<ExcludeLexemeType, Exclusion>;
 }

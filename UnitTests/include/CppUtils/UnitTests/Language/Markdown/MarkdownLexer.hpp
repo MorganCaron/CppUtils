@@ -36,6 +36,8 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			CppUtils::Graph::logTreeNode(markdownTree);
 
 			ASSERT(markdownTree.childs.size() == 9);
+			ASSERT(markdownTree.childs.at(0).childs.size() == 1);
+			ASSERT(markdownTree.childs.at(0).getChildValue() == "italic"s);
 		});
 
 		addTest("Title", [] {
