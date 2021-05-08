@@ -1,83 +1,12 @@
 #pragma once
 
-#include <vector>
-#include <memory>
-#include <string>
 #include <variant>
 #include <string_view>
 
-#include <CppUtils/Type/Typed.hpp>
-#include <CppUtils/Type/Token.hpp>
-#include <CppUtils/Graph/TreeNode.hpp>
-#include <CppUtils/Language/Parser/Context.hpp>
+#include <CppUtils/Language/Parser/Lexemes.hpp>
 
 namespace CppUtils::Language::Parser
 {
-	using namespace Type::Literals;
-
-	using ILexeme = Type::ITyped;
-	template<const Type::Token& StorageToken, typename StorageType>
-	using Lexeme = Type::Typed<StorageToken, StorageType>;
-	
-	static constexpr auto StringLexemeType = "string"_token;
-	using StringLexeme = Lexeme<StringLexemeType, std::string>;
-
-	static constexpr auto ParserLexemeType = "parser"_token;
-	template<typename... Types>
-	using ParserLexeme = Lexeme<ParserLexemeType, ParsingFunction<Types...>>; 
-
-	static constexpr auto TokenLexemeType = "token"_token;
-	using TokenLexeme = Lexeme<TokenLexemeType, Type::Token>;
-
-	static constexpr auto TagLexemeType = "tag"_token;
-	using TagLexeme = Lexeme<TagLexemeType, std::unique_ptr<ILexeme>>;
-
-	static constexpr auto MutedLexemeType = "muted"_token;
-	using MutedLexeme = Lexeme<MutedLexemeType, std::unique_ptr<ILexeme>>;
-
-	template<typename... Types> struct Expression;
-	static constexpr auto ExpressionLexemeType = "expression"_token;
-	template<typename... Types>
-	using ExpressionLexeme = Lexeme<ExpressionLexemeType, Expression<Types...>>;
-
-	enum class RecurrenceType
-	{
-		Optional,
-		EqualTo,
-		MoreThan,
-		MoreOrEqualTo
-	};
-
-	struct Recurrence final
-	{
-		std::unique_ptr<ILexeme> lexeme;
-		RecurrenceType type;
-		std::size_t repetitions;
-	};
-
-	static constexpr auto RecurrentLexemeType = "recurrence"_token;
-	using RecurrentLexeme = Lexeme<RecurrentLexemeType, Recurrence>;
-
-	struct Alternative final
-	{
-		std::vector<std::unique_ptr<ILexeme>> lexemes;
-
-		explicit Alternative(std::vector<std::unique_ptr<ILexeme>> c_lexemes):
-			lexemes(std::move(c_lexemes))
-		{}
-
-		template<typename... Types>
-		[[nodiscard]] Alternative& operator||(const Expression<Types...>& rhs)
-		{
-			lexemes.emplace_back(std::make_unique<TokenLexeme>(rhs.token));
-			return *this;
-		}
-	};
-
-	static constexpr auto AlternativeLexemeType = "alternative"_token;
-	using AlternativeLexeme = Lexeme<AlternativeLexemeType, Alternative>;
-
-	struct Alternative;
 	template<typename... Types>
 	struct Expression final
 	{
@@ -160,6 +89,55 @@ namespace CppUtils::Language::Parser
 			mergedLexemes.emplace_back(std::make_unique<TokenLexeme>(token));
 			mergedLexemes.emplace_back(std::make_unique<TokenLexeme>(rhs.token));
 			return Alternative{std::move(mergedLexemes)};
+		}
+
+		[[nodiscard]] Exclusion operator!=(std::string string) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<StringLexeme>(std::move(string))};
+		}
+
+		[[nodiscard]] Exclusion operator!=(char c) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<StringLexeme>(std::string{c})};
+		}
+
+		[[nodiscard]] Exclusion operator!=(const Expression& expression) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<TokenLexeme>(expression.token)};
+		}
+
+		[[nodiscard]] Exclusion operator!=(ParsingFunction<Types...> function) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<ParserLexeme<Types...>>(std::move(function))};
+		}
+
+		[[nodiscard]] Exclusion operator!=(TagLexeme tagLexeme) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<TagLexeme>(std::move(tagLexeme))};
+		}
+
+		[[nodiscard]] Exclusion operator!=(Recurrence recurrence) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<RecurrentLexeme>(std::move(recurrence))};
+		}
+
+		[[nodiscard]] Exclusion operator!=(Alternative alternative) const
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<AlternativeLexeme>(std::move(alternative))};
 		}
 	};
 }

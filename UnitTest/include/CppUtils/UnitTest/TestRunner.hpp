@@ -65,7 +65,15 @@ namespace CppUtils::UnitTest
 					if (test.pass(settings))
 						++nbSuccess;
 					else
+					{
 						++nbFail;
+						if (settings.failFast)
+						{
+							if (settings.detail)
+								Log::Logger::logDetail("Stopping tests execution (failFast mode enabled)");
+							break;
+						}
+					}
 				}
 				
 				Log::Logger::logImportant(std::string(50, '_') + "\nTest results");

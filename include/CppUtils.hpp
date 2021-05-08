@@ -12,6 +12,8 @@
 #include <CppUtils/Hash/Hash.hpp>
 #include <CppUtils/Language/Parser/Cursor.hpp>
 #include <CppUtils/Language/Parser/Expression.hpp>
+#include <CppUtils/Language/Parser/Lexemes.hpp>
+#include <CppUtils/Language/Parser/Modifiers.hpp>
 #include <CppUtils/Language/Parser/Parsers.hpp>
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
 #include <CppUtils/Language/Lexer/Lexer.hpp>
@@ -35,7 +37,7 @@
 #include <CppUtils/Language/ASM/VirtualMachine/VirtualMachine.hpp>
 #include <CppUtils/Language/Ini/IniLexer.hpp>
 #include <CppUtils/Language/Json/JsonLexer.hpp>
-#include <CppUtils/Language/StringTree/StringTreeLexer.hpp>
+#include <CppUtils/Language/Markdown/MarkdownLexer.hpp>
 #include <CppUtils/Language/Xml/XmlLexer.hpp>
 #include <CppUtils/String/String.hpp>
 #include <CppUtils/Terminal/TextModifier/TextModifier.hpp>

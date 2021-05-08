@@ -6,30 +6,54 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 {
 	TEST_GROUP("Language/Ini/IniLexer")
 	{
-		addTest("minimalist", [] {
-			using namespace CppUtils::Language::Ini::Literals;
-			using namespace CppUtils::Language::StringTree::Literals;
+		using namespace CppUtils::Type::Literals;
+		using namespace CppUtils::Language::Ini::Literals;
+		using namespace CppUtils::Language::Json::Literals;
+
+		addTest("Minimalist", [] {
+			
 			const auto iniTree = R"(
 			[Section 1]
 			key=value
 			)"_ini;
 			CppUtils::Graph::logTreeNode(iniTree);
 
-			const auto stringTree = R"(
-			"section" {
-				"Section 1" {
-					"key" {
-						"string" { "value" }
+			const auto jsonTree = R"(
+			{
+				"section": {
+					"Section 1": {
+						"key": {
+							"string": "value"
+						}
 					}
 				}
 			}
-			)"_stringTree;
-			ASSERT(iniTree == stringTree);
+			)"_json;
+			ASSERT(iniTree == jsonTree);
 		});
 
-		addTest("comments", [] {
-			using namespace CppUtils::Language::Ini::Literals;
-			using namespace CppUtils::Language::StringTree::Literals;
+		addTest("Number", [] {
+			const auto iniTree = R"(
+			[Numbers]
+			pi=3.14
+			)"_ini;
+			CppUtils::Graph::logTreeNode(iniTree);
+
+			const auto jsonTree = R"(
+			{
+				"section": {
+					"Numbers": {
+						"pi": {
+							"float": 3.14
+						}
+					}
+				}
+			}
+			)"_json;
+			ASSERT(iniTree == jsonTree);
+		});
+
+		addTest("Comments", [] {
 			const auto iniTree = R"(
 			;comment
 			[Section 1];comment
@@ -38,21 +62,21 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			)"_ini;
 			CppUtils::Graph::logTreeNode(iniTree);
 
-			const auto stringTree = R"(
-			"section" {
-				"Section 1" {
-					"key" {
-						"string" { "value" }
+			const auto jsonTree = R"(
+			{
+				"section": {
+					"Section 1": {
+						"key": {
+							"string": "value"
+						}
 					}
 				}
 			}
-			)"_stringTree;
-			ASSERT(iniTree == stringTree);
+			)"_json;
+			ASSERT(iniTree == jsonTree);
 		});
 
-		addTest("full", [] {
-			using namespace CppUtils::Language::Ini::Literals;
-			using namespace CppUtils::Language::StringTree::Literals;
+		addTest("Full", [] {
 			const auto iniTree = R"(
 			[Section 1]
 			; comment
@@ -77,25 +101,24 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			)"_ini;
 			CppUtils::Graph::logTreeNode(iniTree);
 
-			const auto stringTree = R"(
-			"section" {
-				"Section 1" {
-					"Option 1" {
-						"string" { "value1" }
-					}
-					"oPtion 1" {
-						"string" { "value 2" }
+			const auto jsonTree = R"(
+			{
+				"section": {
+					"Section 1": {
+						"Option 1": {
+							"string": "value1"
+						},
+						"oPtion 1": {
+							"string": "value 2"
+						}
 					}
 				}
 			}
-			)"_stringTree;
-
+			)"_json;
 			ASSERT(iniTree.childs.size() == 3);
-			ASSERT(iniTree.childs.at(0) == stringTree.childs.at(0));
-			ASSERT(iniTree.childs.at(1).childs.size() == 1);
-			ASSERT(iniTree.childs.at(1).childs.at(0).childs.size() == 8);
-			ASSERT(iniTree.childs.at(2).childs.size() == 1);
-			ASSERT(iniTree.childs.at(2).childs.at(0).childs.size() == 2);
+			ASSERT(iniTree.childs.at(0) == jsonTree.childs.at(0));
+			ASSERT(iniTree.childs.at(1).at("Numbers"_token).childs.size() == 8);
+			ASSERT(iniTree.childs.at(2).at("Booleans"_token).childs.size() == 2);
 		});
 	}
 }

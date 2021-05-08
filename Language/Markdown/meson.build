@@ -10,10 +10,10 @@ sources = files([
 ])
 
 headers = files([
-	'include/CppUtils/Language/StringTree/StringTreeLexer.hpp'
+	'include/CppUtils/Language/Markdown/MarkdownLexer.hpp'
 ])
 
-cppUtils_language_stringtree_dep = declare_dependency(
+cppUtils_language_markdown_dep = declare_dependency(
 	include_directories: includeDir,
 	dependencies: public_dependencies
 )

@@ -51,8 +51,7 @@ namespace CppUtils::Graph
 			for (auto& child : childs)
 				if (key == child.value)
 					return child;
-			childs.emplace_back(TreeNode<Storage>{key});
-			return childs[childs.size() - 1];
+			return childs.emplace_back(TreeNode<Storage>{key});
 		}
 
 		[[nodiscard]] const TreeNode<Storage>& at(const Storage& key) const

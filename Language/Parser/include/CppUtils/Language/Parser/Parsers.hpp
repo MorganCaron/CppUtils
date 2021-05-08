@@ -16,7 +16,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool keywordParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, parentNode, firstChildPosition] = context;
 		const auto keyword = cursor.getKeywordAndSkipIt();
 		if (keyword.empty())
 			return false;
@@ -32,46 +32,102 @@ namespace CppUtils::Language::Parser
 		return true;
 	}
 
-	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
-	[[nodiscard]] inline bool quoteParser(Context<Types...>& context)
+	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
+	[[nodiscard]] inline bool charParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, parentNode, firstChildPosition] = context;
 		if (cursor.isEndOfString())
 			return false;
-		const auto quote = cursor.getChar();
-		if (quote != '\'' && quote != '"')
-			return false;
-		const auto startPosition = ++cursor.position;
-		while (!cursor.isEndOfString() && cursor.getChar() != quote)
-			++cursor.position;
-		if (cursor.getChar() != quote)
-			return false;
-		const auto content = cursor.src.substr(startPosition, cursor.position - startPosition);
-		if constexpr(Type::Traits::isPresent<std::string, Types...>)
-			parentNode.get().childs.emplace_back(ASTNode<Types...>{std::string{content}});
+		const auto c = cursor.getCharAndSkipIt();
+		if (parentNode.get().childs.empty() || !std::holds_alternative<std::string>(parentNode.get().childs.back().value))
+			parentNode.get().childs.emplace_back(Parser::ASTNode<Types...>{std::string{c}});
 		else
-		{
-			auto stringToken = Type::Token{content};
-			stringToken.saveTypename();
-			parentNode.get().childs.emplace_back(ASTNode<Types...>{std::move(stringToken)});
-		}
-		++cursor.position;
+			std::get<std::string>(parentNode.get().childs.back().value) += c;
 		return true;
 	}
 
-	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
+	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
+	[[nodiscard]] inline bool escapeCharParser(Context<Types...>& context)
+	{
+		auto& [cursor, parentNode, firstChildPosition] = context;
+		if (cursor.isEndOfString())
+			return false;
+		auto c = cursor.getCharAndSkipIt();
+		if (c == '\\')
+		{
+			if (cursor.isEndOfString())
+				throw std::runtime_error{"An escape character must be followed by another character."};
+			c = cursor.getCharAndSkipIt();
+			switch (c)
+			{
+				case '0': c = '\0'; break;
+				case 'a': c = '\a'; break;
+				case 'b': c = '\b'; break;
+				case 'f': c = '\f'; break;
+				case 'n': c = '\n'; break;
+				case 'r': c = '\r'; break;
+				case 't': c = '\t'; break;
+				case 'v': c = '\v'; break;
+			}
+		}
+		if (parentNode.get().childs.empty() || !std::holds_alternative<std::string>(parentNode.get().childs.back().value))
+			parentNode.get().childs.emplace_back(Parser::ASTNode<Types...>{std::string{c}});
+		else
+			std::get<std::string>(parentNode.get().childs.back().value) += c;
+		return true;
+	}
+
+	template<typename... Types>
+	[[nodiscard]] inline bool delimiterParser(Context<Types...>& context, std::string_view delimiter, ParsingFunction<Types...> contentParsingFunction, bool multipleContent, bool skipDelimiter)
+	{
+		using namespace std::literals;
+		auto& [cursor, parentNode, firstChildPosition] = context;
+		if (cursor.isEndOfString())
+			return false;
+		auto delimiterFound = (skipDelimiter ? cursor.isEqualSkipIt(delimiter) : cursor.isEqual(delimiter));
+		while (!delimiterFound)
+		{
+			if (cursor.isEndOfString() || !contentParsingFunction(context))
+				return false;
+			delimiterFound = (skipDelimiter ? cursor.isEqualSkipIt(delimiter) : cursor.isEqual(delimiter));
+			if (!multipleContent)
+				break;
+		}
+		return delimiterFound;
+	}
+
+	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
+	[[nodiscard]] inline bool stringParser(Context<Types...>& context, std::string_view delimiter, bool skipDelimiter)
+	{
+		return delimiterParser<Types...>(context, delimiter, std::forward<ParsingFunction<Types...>>(escapeCharParser<Types...>), true, skipDelimiter);
+	}
+
+	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
+	[[nodiscard]] inline bool quoteParser(Context<Types...>& context)
+	{
+		using namespace std::literals;
+		auto& [cursor, parentNode, firstChildPosition] = context;
+		if (cursor.isEndOfString())
+			return false;
+		const auto quote = cursor.getCharAndSkipIt();
+		if (quote != '\'' && quote != '"')
+			return false;
+		return stringParser<Types...>(context, std::string_view{&quote, 1}, true);
+	}
+
+	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool singleQuoteParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, parentNode, firstChildPosition] = context;
 		if (cursor.isEndOfString() || cursor.getChar() != '\'')
 			return false;
 		return quoteParser(context);
 	}
 
-	template<typename... Types> requires Type::Traits::isPresent<Type::Token, Types...> || Type::Traits::isPresent<std::string, Types...>
+	template<typename... Types> requires Type::Traits::isPresent<std::string, Types...>
 	[[nodiscard]] inline bool doubleQuoteParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, parentNode, firstChildPosition] = context;
 		if (cursor.isEndOfString() || cursor.getChar() != '"')
 			return false;
 		return quoteParser(context);
@@ -80,7 +136,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires ((std::is_integral_v<Types> && std::is_unsigned_v<Types> && sizeof(Types) >= 4) || ...)
 	[[nodiscard]] inline bool uintParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, parentNode, firstChildPosition] = context;
 		if (cursor.isEndOfString() || !std::isdigit(cursor.getChar()))
 			return false;
 		auto numberLength = std::size_t{};
@@ -95,7 +151,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires ((std::is_integral_v<Types> && std::is_signed_v<Types> && sizeof(Types) >= 4) || ...)
 	[[nodiscard]] inline bool intParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, parentNode, firstChildPosition] = context;
 		if (cursor.isEndOfString())
 			return false;
 		bool hasDigit = std::isdigit(cursor.getChar());
@@ -119,7 +175,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires ((std::is_integral_v<Types> && std::is_unsigned_v<Types> && sizeof(Types) >= 8) || ...)
 	[[nodiscard]] inline bool ulongParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, parentNode, firstChildPosition] = context;
 		if (cursor.isEndOfString() || !std::isdigit(cursor.getChar()))
 			return false;
 		auto numberLength = std::size_t{};
@@ -132,7 +188,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires ((std::is_integral_v<Types> && std::is_signed_v<Types> && sizeof(Types) >= 8) || ...)
 	[[nodiscard]] inline bool longParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, parentNode, firstChildPosition] = context;
 		if (cursor.isEndOfString())
 			return false;
 		bool hasDigit = std::isdigit(cursor.getChar());
@@ -156,7 +212,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires (std::is_floating_point_v<Types> || ...)
 	[[nodiscard]] inline bool floatParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, parentNode, firstChildPosition] = context;
 		if (cursor.isEndOfString())
 			return false;
 		bool hasDigit = std::isdigit(cursor.getChar());
@@ -182,7 +238,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types> requires Type::Traits::isPresent<bool, Types...>
 	[[nodiscard]] inline bool booleanParser(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, parentNode, firstChildPosition] = context;
 		if (cursor.isEqualSkipIt("true", false))
 		{
 			parentNode.get().childs.emplace_back(ASTNode<Types...>{true});
