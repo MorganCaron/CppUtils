@@ -30,7 +30,6 @@ if enable_documentation
 				'../Language/Json/include/',
 				'../Language/Lexer/include/',
 				'../Language/Parser/include/',
-				'../Language/StringTree/include/',
 				'../Language/VirtualMachine/include/',
 				'../Log/include/',
 				'../Parameters/include/',

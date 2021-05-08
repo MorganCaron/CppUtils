@@ -29,7 +29,6 @@ headers = files([
 	'include/CppUtils/UnitTests/Language/Lexer/GrammarLexer.hpp',
 	'include/CppUtils/UnitTests/Language/Lexer/Lexer.hpp',
 	'include/CppUtils/UnitTests/Language/Parser/Cursor.hpp',
-	'include/CppUtils/UnitTests/Language/StringTree/StringTreeLexer.hpp',
 	'include/CppUtils/UnitTests/Parameters/ParametersLexer.hpp',
 	'include/CppUtils/UnitTests/Log/ChronoLogger.hpp',
 	'include/CppUtils/UnitTests/Log/Logger.hpp',

@@ -99,9 +99,6 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			ASSERT(attributes.at("src"_token).getChildValue() == "url"s);
 		});
 
-		addTest("List", [] {});
-		addTest("Table", [] {});
-
 		addTest("Code", [] {
 			const auto markdownTree = R"(
 			`const variable = 42;`

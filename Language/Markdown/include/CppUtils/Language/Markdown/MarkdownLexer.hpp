@@ -13,25 +13,11 @@ namespace CppUtils::Language::Markdown
 			using namespace Type::Literals;
 			using namespace std::placeholders;
 
-			static const auto formatParser = [this](auto& context) -> bool {
-				return m_grammarLexer.parseSegment("_element"_token, context);
-			};
-
 			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("contentParser"_token, Parser::escapeCharParser<Type::Token, std::string>);
-			m_grammarLexer.addParsingFunction("headerContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "\n"sv, Parser::escapeCharParser<Type::Token, std::string>, true, false));
-			m_grammarLexer.addParsingFunction("altContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "]"sv, Parser::escapeCharParser<Type::Token, std::string>, true, false));
-			m_grammarLexer.addParsingFunction("srcContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, ")"sv, Parser::escapeCharParser<Type::Token, std::string>, true, false));
-			m_grammarLexer.addParsingFunction("blockcodeContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "```"sv, Parser::escapeCharParser<Type::Token, std::string>, true, false));
-			m_grammarLexer.addParsingFunction("codeContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "`"sv, Parser::escapeCharParser<Type::Token, std::string>, true, false));
 			m_grammarLexer.addParsingFunction("trimModifier"_token, Parser::Modifier::trimModifier<Type::Token, std::string>);
-			m_grammarLexer.addParsingFunction("bold1ContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "**"sv, formatParser, true, false));
-			m_grammarLexer.addParsingFunction("bold2ContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "__"sv, formatParser, true, false));
-			m_grammarLexer.addParsingFunction("italic1ContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "*"sv, formatParser, true, false));
-			m_grammarLexer.addParsingFunction("italic2ContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "_"sv, formatParser, true, false));
-			m_grammarLexer.addParsingFunction("boldAndItalicContentParser"_token, std::bind(Parser::delimiterParser<Type::Token, std::string>, _1, "___"sv, formatParser, true, false));
-
+			
 			static constexpr auto grammarSrc = R"(
 			main: _content spaceParser;
 			content: _content;
@@ -44,7 +30,7 @@ namespace CppUtils::Language::Markdown
 			h4: "###" spaceParser headerContent;
 			h5: "####" spaceParser headerContent;
 			h6: "#####" spaceParser headerContent;
-			headerContent[content]: headerContentParser;
+			headerContent[content]: ((_char != '\n') >= 0);
 			checkbox: (_emptyCheckbox || checkedCheckbox);
 			!_emptyCheckbox: "[ ]";
 			checkedCheckbox[attributes]: checked;
@@ -53,8 +39,8 @@ namespace CppUtils::Language::Markdown
 			imageAttributes[attributes]: "![" alt "](" src ')';
 			link: linkAttributes;
 			linkAttributes[attributes]: '[' alt "](" src ')';
-			alt: altContentParser;
-			src: srcContentParser;
+			alt: ((_char != ']') >= 0);
+			src: ((_char != ')') >= 0);
 			boldAndItalic[bold]: "___" boldAndItalic2 "___";
 			boldAndItalic2[italic]: ((_element != "___") >= 0);
 			bold: (_bold1 || _bold2);
@@ -66,9 +52,9 @@ namespace CppUtils::Language::Markdown
 			blockcode: "```" ~blockcodeAttributes blockcodeContent "```";
 			blockcodeAttributes[attributes]: blockcodeLang;
 			blockcodeLang[lang]: keywordParser;
-			blockcodeContent[content]: spaceParser blockcodeContentParser trimModifier;
+			blockcodeContent[content]: spaceParser ((_char != "```") >= 0) trimModifier;
 			code: '`' codeContent '`';
-			codeContent[content]: codeContentParser;
+			codeContent[content]: ((_char != '`') >= 0);
 			!_char: contentParser;
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);

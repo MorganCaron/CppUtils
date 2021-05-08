@@ -10,7 +10,7 @@ namespace CppUtils::Language::Parser::Modifier
 	requires Type::Traits::isPresent<std::string, Types...> || Type::Traits::isPresent<Type::Token, Types...>
 	inline bool stringToTokenModifier(Context<Types...>& context, bool saveTypename)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, parentNode, firstChildPosition] = context;
 		if (parentNode.get().childs.empty())
 			return false;
 		auto& lastChild = parentNode.get().childs.back();
@@ -28,7 +28,7 @@ namespace CppUtils::Language::Parser::Modifier
 	requires Type::Traits::isPresent<std::string, Types...>
 	inline bool trimModifier(Context<Types...>& context)
 	{
-		auto& [cursor, parentNode] = context;
+		auto& [cursor, parentNode, firstChildPosition] = context;
 		if (parentNode.get().childs.empty())
 			return false;
 		auto& lastChild = parentNode.get().childs.back();

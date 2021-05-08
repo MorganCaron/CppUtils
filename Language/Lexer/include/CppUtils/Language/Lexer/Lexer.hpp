@@ -52,10 +52,10 @@ namespace CppUtils::Language::Lexer
 			auto position = std::size_t{0};
 			const auto& expression = getExpression(token);
 			auto rootNode = Parser::ASTNode<Types...>{expression.name.isEmpty() ? token : expression.name};
-			auto context = Parser::Context<Types...>{Parser::Cursor<std::string>{src, position}, rootNode};
+			auto context = Parser::Context<Types...>{Parser::Cursor<std::string>{src, position}, rootNode, 0};
 			try
 			{
-				if (!parseSegment(token, context))
+				if (!parseExpression(expression, context))
 					throw std::runtime_error{"Syntax error in the \"" + std::string{token.name} + "\" expression."};
 				if (!context.cursor.isEndOfString())
 					throw std::runtime_error{"Syntax error: The string does not correspond to any known element."};
@@ -69,18 +69,18 @@ namespace CppUtils::Language::Lexer
 
 		[[nodiscard]] inline bool parseSegment(const Type::Token& token, Parser::Context<Types...>& context) const
 		{
-			return parseExpression(getExpression(token), context);
+			return parseNode(getExpression(token), context);
 		}
 
 	private:
 		[[nodiscard]] inline bool parseExpression(const Parser::Expression<Types...>& expression, Parser::Context<Types...>& context) const
 		{
 			using namespace Type::Literals;
-			auto& [cursor, parentNode] = context;
+			auto& [cursor, parentNode, firstChildPosition] = context;
 			if (expression.lexemes.empty())
 				throw std::runtime_error{'"' + std::string{expression.token.name} + "\" expression is empty."};
-			auto newParentNode = Parser::ASTNode<Types...>{parentNode.get().value};
-			auto newContext = Parser::Context<Types...>{cursor, newParentNode};
+			auto newParentNode = parentNode.get();
+			auto newContext = Parser::Context<Types...>{cursor, newParentNode, firstChildPosition};
 			auto partialMatch = false;
 			const auto startPosition = cursor.position;
 			for (const auto& lexeme : expression.lexemes)
@@ -94,24 +94,25 @@ namespace CppUtils::Language::Lexer
 				}
 				partialMatch |= lexeme->getType() == Parser::StringLexemeType || lexeme->getType() == Parser::TagLexemeType;
 			}
-			std::move(newParentNode.childs.begin(), newParentNode.childs.end(), std::back_inserter(parentNode.get().childs));
+			parentNode.get() = newParentNode;
 			return true;
 		}
 
 		inline bool parseNode(const Parser::Expression<Types...>& expression, Parser::Context<Types...>& context) const
 		{
-			auto& [cursor, parentNode] = context;
+			auto& [cursor, parentNode, firstChildPosition] = context;
 			if (expression.name.isEmpty())
 			{
 				auto& oldParentNode = parentNode.get();
-				if (!parseExpression(expression, context))
+				auto newContext = Parser::Context<Types...>{cursor, parentNode, oldParentNode.childs.size()};
+				if (!parseExpression(expression, newContext))
 					return false;
 				parentNode = oldParentNode;
 			}
 			else
 			{
 				auto newNode = Parser::ASTNode<Types...>{expression.name};
-				auto newContext = Parser::Context<Types...>{cursor, newNode};
+				auto newContext = Parser::Context<Types...>{cursor, newNode, 0};
 				if (!parseExpression(expression, newContext))
 					return false;
 				parentNode.get().childs.emplace_back(newNode);
@@ -154,7 +155,7 @@ namespace CppUtils::Language::Lexer
 		[[nodiscard]] inline bool parseParserLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			const auto& parser = Type::ensureType<Parser::ParserLexeme<Types...>>(lexeme).value;
-			auto& [cursor, parentNode] = context;
+			auto& [cursor, parentNode, firstChildPosition] = context;
 			const auto startPosition = cursor.position;
 			if (parser(context))
 				return true;
@@ -165,25 +166,28 @@ namespace CppUtils::Language::Lexer
 		[[nodiscard]] inline bool parseTokenLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			const auto& token = Type::ensureType<Parser::TokenLexeme>(lexeme).value;
-			const auto& expression = getExpression(token);
-			return parseNode(expression, context);
+			return parseSegment(token, context);
 		}
 
 		[[nodiscard]] inline bool parseTagLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
-			auto& [cursor, parentNode] = context;
+			auto& [cursor, parentNode, firstChildPosition] = context;
 			auto& parentChilds = parentNode.get().childs;
-			auto tagChildId = parentChilds.size();
+			auto tagPosition = parentChilds.size();
 			const auto& tagLexeme = Type::ensureType<Parser::TagLexeme>(lexeme).value;
-			if (!parseLexeme(tagLexeme, context) || parentChilds.size() <= tagChildId)
+			if (!parseLexeme(tagLexeme, context) || parentChilds.size() <= tagPosition)
 				return false;
-			auto tagNode = std::move(parentChilds.at(tagChildId));
-			parentChilds.erase(parentChilds.begin() + tagChildId);
-			auto tagChilds = std::move(tagNode.childs);
-			tagNode.childs = std::move(parentChilds);
-			std::move(tagChilds.begin(), tagChilds.end(), std::back_inserter(tagNode.childs));
-			parentChilds = std::vector<Parser::ASTNode<Types...>>{std::move(tagNode)};
-			parentNode = parentChilds.at(0);
+			auto tagNode = std::move(parentChilds.at(tagPosition));
+			auto newTagChilds = std::vector<Parser::ASTNode<Types...>>{};
+			newTagChilds.reserve(parentChilds.size() - firstChildPosition - 1 + tagNode.childs.size());
+			if (tagPosition > firstChildPosition)
+				std::move(parentChilds.begin() + firstChildPosition, parentChilds.begin() + tagPosition, std::back_inserter(newTagChilds));
+			std::move(tagNode.childs.begin(), tagNode.childs.end(), std::back_inserter(newTagChilds));
+			if (parentChilds.size() > tagPosition)
+				std::move(parentChilds.begin() + tagPosition + 1, parentChilds.end(), std::back_inserter(newTagChilds));
+			parentChilds.erase(parentChilds.begin() + firstChildPosition, parentChilds.end());
+			tagNode.childs = std::move(newTagChilds);
+			parentNode = parentChilds.emplace_back(tagNode);
 			return true;
 		}
 
@@ -191,7 +195,7 @@ namespace CppUtils::Language::Lexer
 		{
 			const auto& mutedLexeme = Type::ensureType<Parser::MutedLexeme>(lexeme).value;
 			auto newNode = context.parentNode.get();
-			auto newContext = Parser::Context<Types...>{context.cursor, newNode};
+			auto newContext = Parser::Context<Types...>{context.cursor, newNode, 0};
 			return parseLexeme(mutedLexeme, newContext);
 		}
 
@@ -233,7 +237,7 @@ namespace CppUtils::Language::Lexer
 		[[nodiscard]] inline bool parseAlternativeLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			const auto& alternative = Type::ensureType<Parser::AlternativeLexeme>(lexeme).value;
-			auto& [cursor, parentNode] = context;
+			auto& [cursor, parentNode, firstChildPosition] = context;
 			const auto startPosition = cursor.position;
 			for (const auto& alternativeLexeme : alternative.lexemes)
 			{
@@ -247,9 +251,9 @@ namespace CppUtils::Language::Lexer
 		[[nodiscard]] inline bool parseExcludeLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			const auto& exclusion = Type::ensureType<Parser::ExcludeLexeme>(lexeme).value;
-			auto& [cursor, parentNode] = context;
+			auto& [cursor, parentNode, firstChildPosition] = context;
 			auto newParentNode = Parser::ASTNode<Types...>{parentNode.get().value};
-			auto newContext = Parser::Context<Types...>{cursor, newParentNode};
+			auto newContext = Parser::Context<Types...>{cursor, newParentNode, firstChildPosition};
 			const auto startPosition = cursor.position;
 			if (parseLexeme(exclusion.excluded, newContext))
 			{

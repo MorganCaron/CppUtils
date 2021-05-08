@@ -16,6 +16,7 @@ namespace CppUtils::Language::Parser
 	{
 		Parser::Cursor<std::string> cursor;
 		std::reference_wrapper<ASTNode<Types...>> parentNode;
+		std::size_t firstChildPosition;
 	};
 
 	template<typename... Types>

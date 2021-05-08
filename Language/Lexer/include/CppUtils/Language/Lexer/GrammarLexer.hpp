@@ -58,7 +58,7 @@ namespace CppUtils::Language::Lexer
 			string >> Parser::quoteParser<Type::Token, unsigned int, std::string>;
 			tag
 				>> '['
-				>> identifier
+				>> lexeme
 				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ']';
 			muted >> '!' >> lexeme;
 			optional >> '~' >> lexeme;
@@ -183,10 +183,7 @@ namespace CppUtils::Language::Lexer
 
 		[[nodiscard]] std::unique_ptr<Parser::ILexeme> parseTag(const std::vector<GrammarLexerTreeNode>& attributes)
 		{
-			const auto& token = std::get<Type::Token>(attributes.at(0).value);
-			if (m_parsingFunctions.find(token) != m_parsingFunctions.end())
-				throw std::runtime_error{"Error in tag \"" + std::string{token.name} + "\": Tags only accept tokens, not parsing functions"};
-			return std::make_unique<Parser::TagLexeme>(std::make_unique<Parser::TokenLexeme>(token));
+			return std::make_unique<Parser::TagLexeme>(parseLexeme(attributes.at(0)));
 		}
 
 		[[nodiscard]] std::unique_ptr<Parser::ILexeme> parseMuted(const std::vector<GrammarLexerTreeNode>& attributes)
