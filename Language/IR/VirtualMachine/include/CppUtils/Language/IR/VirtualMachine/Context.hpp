@@ -39,18 +39,30 @@ namespace CppUtils::Language::IR::VirtualMachine
 			registerVariables.eip = destination;
 		}
 
-		inline void push(Address value)
+		void jump(const Type::Token& label)
 		{
-			if (registerVariables.esp + sizeof(Address) > stackSize)
-				throw std::runtime_error{"Stack overflow"};
-			programMemory[registerVariables.esp++] = value;
+			if (compilerOutput.functions.find(label) == compilerOutput.functions.end())
+				throw std::runtime_error{"Undefined label " + std::string{label.name}};
+			jump(reinterpret_cast<Address>(compilerOutput.functions.at(label).entryPoint));
 		}
 
-		inline Address pop()
+		template<typename T>
+		inline void push(T value)
 		{
-			if (registerVariables.esp <= registerVariables.ebp)
+			if (registerVariables.esp + sizeof(T) > stackSize)
+				throw std::runtime_error{"Stack overflow"};
+			programMemory[registerVariables.esp] = value;
+			registerVariables.esp += sizeof(T);
+		}
+
+		template<typename T>
+		inline T pop()
+		{
+			if (registerVariables.esp - sizeof(T) < registerVariables.ebp)
 				throw std::runtime_error{"Stack underflow"};
-			return programMemory.at(registerVariables.esp--);
+			T value = programMemory.at(registerVariables.esp);
+			registerVariables.esp -= sizeof(T);
+			return value;
 		}
 
 		[[nodiscard]] inline const Compiler::Bytecode::Instruction<Address>& getInstruction() const

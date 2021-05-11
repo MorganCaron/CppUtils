@@ -9,7 +9,7 @@ namespace CppUtils::UnitTests::Language::IR::Compiler
 		using namespace std::literals;
 
 		addTest("Operations", [] {
-			const auto compiler = CppUtils::Language::IR::Compiler::Compiler<std::int64_t>{};
+			const auto compiler = CppUtils::Language::IR::Compiler::Compiler<std::uint64_t>{};
 			const auto output = compiler.compile(R"(
 			int main()
 			{
@@ -22,7 +22,7 @@ namespace CppUtils::UnitTests::Language::IR::Compiler
 		});
 
 		addTest("Pointers", [] {
-			const auto compiler = CppUtils::Language::IR::Compiler::Compiler<std::int64_t>{};
+			const auto compiler = CppUtils::Language::IR::Compiler::Compiler<std::uint64_t>{};
 			const auto output = compiler.compile(R"(
 			address append(output, c)
 			{
@@ -41,7 +41,7 @@ namespace CppUtils::UnitTests::Language::IR::Compiler
 		});
 
 		addTest("Conditions", [] {
-			const auto compiler = CppUtils::Language::IR::Compiler::Compiler<std::int64_t>{};
+			const auto compiler = CppUtils::Language::IR::Compiler::Compiler<std::uint64_t>{};
 			const auto output = compiler.compile(R"(
 			int getLength(text)
 			{

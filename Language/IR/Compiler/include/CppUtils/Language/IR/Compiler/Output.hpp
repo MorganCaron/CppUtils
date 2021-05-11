@@ -21,8 +21,9 @@ namespace CppUtils::Language::IR::Compiler
 
 	template<typename Address>
 	requires Type::Traits::isAddress<Address>
-	struct Output final: public Language::Compiler::Output<Bytecode::Instruction<Address>>
+	struct Output final
 	{
+		std::vector<std::unique_ptr<Bytecode::Instruction<Address>>> instructions = {};
 		std::string stringConstants = "";
 		std::unordered_map<Type::Token, FunctionInformations<Address>, Type::Token::hash_fn> functions = {};
 
@@ -56,7 +57,7 @@ namespace CppUtils::Language::IR::Compiler
 				if (labels.find(instruction) == labels.end())
 					labels[instruction] = newLabel();
 			};
-			for (const auto& instruction : Language::Compiler::Output<Bytecode::Instruction<Address>>::instructions)
+			for (const auto& instruction : instructions)
 			{
 				if (const auto* next = instruction->nextInstruction; next != nullptr)
 				{

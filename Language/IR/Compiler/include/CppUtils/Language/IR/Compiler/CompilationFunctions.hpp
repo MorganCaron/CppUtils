@@ -1,7 +1,5 @@
 #pragma once
 
-#include <algorithm>
-#include <CppUtils/Language/Parser/Context.hpp>
 #include <CppUtils/Language/IR/Compiler/Context.hpp>
 
 namespace CppUtils::Language::IR::Compiler
@@ -13,45 +11,45 @@ namespace CppUtils::Language::IR::Compiler
 	public:
 		CompilationFunctions() = delete;
 
-		static void compileNop([[maybe_unused]] const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileNop([[maybe_unused]] const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			context.addInstruction(context.createInstruction());
 		}
 
-		static void compileComma(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
-		{
-			for (const auto& child : astNode.childs)
-				context.compiler.get().compile(child, context);
-		}
-
-		static void compileHalt([[maybe_unused]] const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileHalt([[maybe_unused]] const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
 			context.addInstruction(context.createInstruction("halt"_token, Address{0}));
 			context.returnRegister = Address{0};
 		}
 
-		static void compileIdent(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileComma(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
+		{
+			for (const auto& child : astNode.childs)
+				context.compiler.get().compile(child, context);
+		}
+
+		static void compileIdent(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			const auto ident = std::get<Type::Token>(astNode.childs.at(0).value);
 			context.returnRegister = context.getRegister(ident);
 		}
 
-		static void compileNumber(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileNumber(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			const auto number = std::get<Address>(astNode.childs.at(0).value);
 			context.returnRegister = context.newRegister();
 			context.addInstruction(context.createInstruction(context.returnRegister, "", number));
 		}
 
-		static void compileString(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileString(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			const auto string = std::get<std::string>(astNode.childs.at(0).value);
 			context.returnRegister = context.newRegister();
-			context.addInstruction(context.createInstruction(context.returnRegister, "$STR", context.output.stringConstants.find(string + '\0')));
+			context.addInstruction(context.createInstruction(context.returnRegister, "$STR", context.output.get().stringConstants.find(string + '\0')));
 		}
 
-		static void compileCopy(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileCopy(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
 			const auto lhsIsDeref = (astNode.childs.at(0).value == "deref"_token);
@@ -63,7 +61,7 @@ namespace CppUtils::Language::IR::Compiler
 			context.addInstruction(context.createInstruction(lhsIsDeref ? "write"_token : "copy"_token, lhs, rhs));
 		}
 
-		static void compileEq(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileEq(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
 			context.compiler.get().compile(astNode.childs.at(0), context);
@@ -74,7 +72,7 @@ namespace CppUtils::Language::IR::Compiler
 			context.addInstruction(context.createInstruction("eq"_token, lhs, rhs));
 		}
 
-		static void compileAdd(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileAdd(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
 			context.compiler.get().compile(astNode.childs.at(0), context);
@@ -85,7 +83,7 @@ namespace CppUtils::Language::IR::Compiler
 			context.addInstruction(context.createInstruction("add"_token, lhs, rhs));
 		}
 
-		static void compileSub(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileSub(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
 			context.compiler.get().compile(astNode.childs.at(0), context);
@@ -96,28 +94,28 @@ namespace CppUtils::Language::IR::Compiler
 			context.addInstruction(context.createInstruction("sub"_token, lhs, rhs));
 		}
 
-		static void compileLabel(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileLabel(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			const auto& label = std::get<Type::Token>(astNode.childs.at(1).value);
 			context.addFunction(label, 0);
 			context.compiler.get().compile(astNode.childs.at(2), context);
 		}
 
-		static void compileRet(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileRet(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
 			context.compiler.get().compile(astNode.childs.at(0), context);
 			context.addInstruction(context.createInstruction("ret"_token, context.returnRegister));
 		}
 
-		static void compileDeref(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileDeref(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
 			context.compiler.get().compile(astNode.childs.at(0), context);
 			context.addInstruction(context.createInstruction("read"_token, context.returnRegister));
 		}
 
-		static void compileCall(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileCall(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
 			const auto& functionName = std::get<Type::Token>(astNode.childs.at(0).value);
@@ -131,7 +129,7 @@ namespace CppUtils::Language::IR::Compiler
 			context.addInstruction(context.createInstruction("call"_token, std::move(parameters)));
 		}
 
-		static void compileIf(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileIf(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
 			context.compiler.get().compile(astNode.childs.at(0), context);
@@ -144,7 +142,7 @@ namespace CppUtils::Language::IR::Compiler
 			ifnz->nextInstruction = nop;
 		}
 
-		static void compileWhile(const Parser::ASTNode<Type::Token, Address, std::string>& astNode, Context<Address>& context)
+		static void compileWhile(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
 			context.compiler.get().compile(astNode.childs.at(0), context);

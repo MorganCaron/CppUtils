@@ -10,9 +10,9 @@ namespace CppUtils::UnitTests::Language::IR::VirtualMachine
 		using namespace CppUtils::Type::Literals;
 
 		addTest("Operations", [] {
-			const auto virtualMachine = CppUtils::Language::IR::VirtualMachine::VirtualMachine<std::int64_t, 1000>{};
-			auto context = CppUtils::Language::IR::VirtualMachine::Context<std::int64_t, 1000>{};
-			auto result = virtualMachine.run<std::int64_t>("main"_token, R"(
+			const auto virtualMachine = CppUtils::Language::IR::VirtualMachine::VirtualMachine<std::uint64_t, 1000>{};
+			auto context = CppUtils::Language::IR::VirtualMachine::Context<std::uint64_t, 1000>{};
+			auto result = virtualMachine.run<std::uint64_t>("main"_token, R"(
 			int main()
 			{
 				nop;
@@ -25,9 +25,9 @@ namespace CppUtils::UnitTests::Language::IR::VirtualMachine
 		});
 
 		addTest("Pointers", [] {
-			const auto virtualMachine = CppUtils::Language::IR::VirtualMachine::VirtualMachine<std::int64_t, 1000>{};
-			auto context = CppUtils::Language::IR::VirtualMachine::Context<std::int64_t, 1000>{};
-			auto result = virtualMachine.run<std::int64_t>("main"_token, R"(
+			const auto virtualMachine = CppUtils::Language::IR::VirtualMachine::VirtualMachine<std::uint64_t, 1000>{};
+			auto context = CppUtils::Language::IR::VirtualMachine::Context<std::uint64_t, 1000>{};
+			auto result = virtualMachine.run<std::uint64_t>("main"_token, R"(
 			address append(output, c)
 			{
 				*output = c;
@@ -46,9 +46,9 @@ namespace CppUtils::UnitTests::Language::IR::VirtualMachine
 		});
 
 		addTest("Conditions", [] {
-			const auto virtualMachine = CppUtils::Language::IR::VirtualMachine::VirtualMachine<std::int64_t, 1000>{};
-			auto context = CppUtils::Language::IR::VirtualMachine::Context<std::int64_t, 1000>{};
-			auto result = virtualMachine.run<std::int64_t>("main"_token, R"(
+			const auto virtualMachine = CppUtils::Language::IR::VirtualMachine::VirtualMachine<std::uint64_t, 1000>{};
+			auto context = CppUtils::Language::IR::VirtualMachine::Context<std::uint64_t, 1000>{};
+			auto result = virtualMachine.run<std::uint64_t>("main"_token, R"(
 			int getLength(text)
 			{
 				length = 0;

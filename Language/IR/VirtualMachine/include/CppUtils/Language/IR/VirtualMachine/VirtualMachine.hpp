@@ -14,6 +14,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 	using namespace Type::Literals;
 
 	template<typename Address, std::size_t stackSize>
+	requires Type::Traits::isAddress<Address>
 	class VirtualMachine final
 	{
 	public:
@@ -21,30 +22,32 @@ namespace CppUtils::Language::IR::VirtualMachine
 		using Context = Context<Address, stackSize>;
 
 		VirtualMachine(): m_virtualMachine{{
-				{ "nop"_token, Operations<Context>::runNop },
-				{ "halt"_token, Operations<Context>::runHalt },
-				{ "init"_token, Operations<Context>::runInit },
-				{ "read"_token, Operations<Context>::runRead },
-				{ "write"_token, Operations<Context>::runWrite },
-				{ "copy"_token, Operations<Context>::runCopy },
-				/*{ "eq"_token, Operations<Context>::runEq },*/
-				{ "add"_token, Operations<Context>::runAdd },
-				{ "sub"_token, Operations<Context>::runSub },
-				{ "ret"_token, Operations<Context>::runRet },
-				{ "call"_token, Operations<Context>::runCall }/*,
-				{ "ifnz"_token, Operations<Context>::runIf }*/
+				{ "nop"_token, Operations<Instruction, Context, Address>::runNop },
+				{ "halt"_token, Operations<Instruction, Context, Address>::runHalt },
+				{ "init"_token, Operations<Instruction, Context, Address>::runInit },
+				{ "read"_token, Operations<Instruction, Context, Address>::runRead },
+				{ "write"_token, Operations<Instruction, Context, Address>::runWrite },
+				{ "copy"_token, Operations<Instruction, Context, Address>::runCopy },
+				/*{ "eq"_token, Operations<Instruction, Context, Address>::runEq },*/
+				{ "add"_token, Operations<Instruction, Context, Address>::runAdd },
+				{ "sub"_token, Operations<Instruction, Context, Address>::runSub },
+				{ "ret"_token, Operations<Instruction, Context, Address>::runRet },
+				{ "call"_token, Operations<Instruction, Context, Address>::runCall }/*,
+				{ "ifnz"_token, Operations<Instruction, Context, Address>::runIf }*/
 			}}
 		{}
 
 		template<typename ReturnType> requires std::is_default_constructible_v<ReturnType>
-		[[nodiscard]] ReturnType run([[maybe_unused]] Context& context) const
+		[[nodiscard]] ReturnType run(const Type::Token& label, Context& context) const
 		{
-			/*
-			context.stack.push(ReturnType{});
-			m_virtualMachine.run(context);
-			return context.pop();
-			*/
-			return ReturnType{};
+			context.jump(label);
+			context.push(ReturnType{});
+			while (context.registerVariables.eip != 0)
+			{
+				const auto& instruction = *reinterpret_cast<const Instruction*>(context.registerVariables.eip);
+				m_virtualMachine.run(instruction.type, instruction, context);
+			}
+			return context.template pop<ReturnType>();
 		}
 
 		template<typename ReturnType> requires std::is_default_constructible_v<ReturnType>
@@ -52,10 +55,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 		{
 			static const auto compiler = Compiler::Compiler<Address>{};
 			context.compilerOutput = compiler.compile(src);
-			if (context.compilerOutput.functions.find(label) == context.compilerOutput.functions.end())
-				throw std::runtime_error{"Undefined label " + std::string{label.name}};
-			context.registerVariables.eip = reinterpret_cast<Address>(context.compilerOutput.functions.at(label).entryPoint);
-			return run<ReturnType>(context);
+			return run<ReturnType>(label, context);
 		}
 
 	private:

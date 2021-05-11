@@ -5,6 +5,7 @@
 #include <CppUtils/Language/IR/Compiler/Context.hpp>
 #include <CppUtils/Language/IR/Compiler/CompilationFunctions.hpp>
 #include <CppUtils/Language/Compiler/Compiler.hpp>
+#include <CppUtils/Language/VirtualMachine/VirtualMachine.hpp>
 
 namespace CppUtils::Language::IR::Compiler
 {
@@ -19,8 +20,8 @@ namespace CppUtils::Language::IR::Compiler
 
 		Compiler(): m_compiler{{
 			{ "nop"_token, CompilationFunctions<Address>::compileNop },
-			{ "comma"_token, CompilationFunctions<Address>::compileComma },
 			{ "halt"_token, CompilationFunctions<Address>::compileHalt },
+			{ "comma"_token, CompilationFunctions<Address>::compileComma },
 			{ "ident"_token, CompilationFunctions<Address>::compileIdent },
 			{ "number"_token, CompilationFunctions<Address>::compileNumber },
 			{ "string"_token, CompilationFunctions<Address>::compileString },
@@ -37,22 +38,19 @@ namespace CppUtils::Language::IR::Compiler
 		}}
 		{}
 
-		inline void compile(const ASTNode& astNode, Context<Address>& context) const
+		inline void compile(const Lexer::ASTNode<Address>& astNode, Context<Address>& context) const
 		{
 			m_compiler.compile(astNode, context);
 		}
 
-		[[nodiscard]] inline Output<Address> compile(const ASTNode& astNode) const
-		{
-			auto context = Context<Address>{std::cref(*this)};
-			buildStrings(astNode, context.output.stringConstants);
-			compile(astNode, context);
-			return std::move(context.output);
-		}
-
 		[[nodiscard]] inline Output<Address> compile(std::string_view src) const
 		{
-			return compile(Lexer::parse<Address>(src));
+			auto astNode = Lexer::parse<Address>(src);
+			auto output = Output<Address>{};
+			buildStrings(astNode, output.stringConstants);
+			auto context = Context<Address>{std::cref(*this), std::ref(output)};
+			m_compiler.compile(astNode.childs, context);
+			return std::move(output);
 		}
 
 		void buildStrings(const ASTNode& astNode, std::string& stringConstants) const
@@ -72,6 +70,6 @@ namespace CppUtils::Language::IR::Compiler
 		}
 
 	private:
-		Language::Compiler::Compiler<Context<Address>, Type::Token, Address, std::string> m_compiler;
+		Language::Compiler::Compiler<Lexer::ASTNode<Address>, Context<Address>> m_compiler;
 	};
 }

@@ -11,7 +11,7 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 		using namespace std::literals;
 
 		addTest("Nop", [] {
-			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
+			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::uint64_t>{};
 			const auto output = compiler.compile(R"(
 			nop
 			)"sv);
@@ -20,7 +20,7 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 		});
 
 		addTest("Halt", [] {
-			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
+			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::uint64_t>{};
 			const auto output = compiler.compile(R"(
 			hlt
 			)"sv);
@@ -29,7 +29,7 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 		});
 
 		addTest("Move", [] {
-			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
+			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::uint64_t>{};
 			const auto output = compiler.compile(R"(
 			mov r1, 42
 			)"sv);
@@ -38,7 +38,7 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 		});
 
 		addTest("Add", [] {
-			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
+			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::uint64_t>{};
 			const auto output = compiler.compile(R"(
 			mov r2, 20
 			add r2, 22
@@ -48,7 +48,7 @@ namespace CppUtils::UnitTests::Language::ASM::Compiler
 		});
 
 		addTest("Label", [] {
-			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::int64_t>{};
+			const auto compiler = CppUtils::Language::ASM::Compiler::Compiler<std::uint64_t>{};
 			const auto output = compiler.compile(R"(
 			main: mov r2, 20
 			add r2, 22

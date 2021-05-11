@@ -6,33 +6,31 @@
 
 namespace CppUtils::Language::IR::VirtualMachine
 {
-	template<typename Context>
+	template<typename Instruction, typename Context, typename Address>
 	class Operations final
 	{
 	public:
 		Operations() = delete;
 
-		static void runNop(Context& context)
+		static void runNop([[maybe_unused]] const Instruction& instruction, Context& context)
 		{
 			context.goToNextInstruction();
 		}
 
-		static void runHalt(Context& context)
+		static void runHalt([[maybe_unused]] const Instruction& instruction, Context& context)
 		{
 			context.halt();
 		}
 
-		static void runInit(Context& context)
+		static void runInit([[maybe_unused]] const Instruction& instruction, Context& context)
 		{
-			// const auto& instruction = context.getInstruction();
 			// context.push(instruction.name.empty() ? instruction.value : reinterpret_cast<Address>(&instruction.name));
 			// context.registerFile[instruction.parametersId.at(0)] = context.registerVariables.esp - 1;
 			context.goToNextInstruction();
 		}
 
-		static void runRead(Context& context)
+		static void runRead(const Instruction& instruction, Context& context)
 		{
-			const auto& instruction = context.getInstruction();
 			const auto& register0 = instruction.parametersId.at(0);
 			const auto& register1 = instruction.parametersId.at(1);
 			const auto source = context.registerFile.at(register1);
@@ -40,9 +38,8 @@ namespace CppUtils::Language::IR::VirtualMachine
 			context.goToNextInstruction();
 		}
 		
-		static void runWrite(Context& context)
+		static void runWrite(const Instruction& instruction, Context& context)
 		{
-			const auto& instruction = context.getInstruction();
 			const auto& register0 = instruction.parametersId.at(0);
 			const auto& register1 = instruction.parametersId.at(1);
 			const auto dest = context.registerFile.at(register0);
@@ -50,39 +47,36 @@ namespace CppUtils::Language::IR::VirtualMachine
 			context.goToNextInstruction();
 		}
 
-		static void runCopy(Context& context)
+		static void runCopy(const Instruction& instruction, Context& context)
 		{
-			const auto& instruction = context.getInstruction();
 			const auto& register0 = instruction.parametersId.at(0);
 			const auto& register1 = instruction.parametersId.at(1);
 			context.registerFile[register0] = context.registerFile.at(register1);
 			context.goToNextInstruction();
 		}
 
-		static void runAdd(Context& context)
+		static void runAdd(const Instruction& instruction, Context& context)
 		{
-			const auto& instruction = context.getInstruction();
 			const auto& register0 = instruction.parametersId.at(0);
 			const auto& register1 = instruction.parametersId.at(1);
 			context.registerFile[register0] += context.registerFile.at(register1);
 			context.goToNextInstruction();
 		}
 
-		static void runSub(Context& context)
+		static void runSub(const Instruction& instruction, Context& context)
 		{
-			const auto& instruction = context.getInstruction();
 			const auto& register0 = instruction.parametersId.at(0);
 			const auto& register1 = instruction.parametersId.at(1);
 			context.registerFile[register0] -= context.registerFile.at(register1);
 			context.goToNextInstruction();
 		}
 
-		static void runRet(Context& context)
+		static void runRet([[maybe_unused]] const Instruction& instruction, Context& context)
 		{
-			context.registerVariables.eip = context.pop();
+			context.jump(context.template pop<Address>());
 		}
 
-		static void runCall(Context& context)
+		static void runCall([[maybe_unused]] const Instruction& instruction, Context& context)
 		{
 			/*const auto& register0 = instruction->parametersId.at(0);
 			auto label = context.registerFile.at(register0);

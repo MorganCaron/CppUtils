@@ -1,9 +1,14 @@
 #pragma once
 
+#include <CppUtils/Type/Traits.hpp>
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
 
 namespace CppUtils::Language::IR::Lexer
 {
+	template<typename Address>
+	requires Type::Traits::isAddress<Address>
+	using ASTNode = Parser::ASTNode<Type::Token, Address, std::string>;
+
 	template<typename Address>
 	requires Type::Traits::isAddress<Address>
 	class Lexer final
@@ -90,7 +95,7 @@ namespace CppUtils::Language::IR::Lexer
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Parser::ASTNode<Type::Token, Address, std::string> parse(std::string_view src) const
+		[[nodiscard]] inline ASTNode<Address> parse(std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
@@ -102,7 +107,7 @@ namespace CppUtils::Language::IR::Lexer
 
 	template<typename Address>
 	requires Type::Traits::isAddress<Address>
-	[[nodiscard]] inline Parser::ASTNode<Type::Token, Address, std::string> parse(std::string_view src)
+	[[nodiscard]] inline ASTNode<Address> parse(std::string_view src)
 	{
 		static const auto irLexer = Lexer<Address>{};
 		return irLexer.parse(src);
