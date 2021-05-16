@@ -27,6 +27,13 @@ namespace CppUtils::Language::IR::Compiler
 		std::string stringConstants = "";
 		std::unordered_map<Type::Token, FunctionInformations<Address>, Type::Token::hash_fn> functions = {};
 
+		[[nodiscard]] Bytecode::Instruction<Address>* getFunctionEntryPoint(const Type::Token& label) const
+		{
+			if (functions.find(label) == functions.end())
+				throw std::runtime_error{"Undefined label \"" + std::string{label.name} + '"'};
+			return functions.at(label).entryPoint;
+		}
+
 		void log() const
 		{
 			if (!stringConstants.empty())

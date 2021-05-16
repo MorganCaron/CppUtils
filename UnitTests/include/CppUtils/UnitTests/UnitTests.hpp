@@ -10,8 +10,6 @@
 #include <CppUtils/UnitTests/Language/ASM/Lexer.hpp>
 #include <CppUtils/UnitTests/Language/ASM/Compiler.hpp>
 #include <CppUtils/UnitTests/Language/ASM/VirtualMachine.hpp>
-#include <CppUtils/UnitTests/Language/IR/RegisterIRLexer.hpp>
-#include <CppUtils/UnitTests/Language/IR/StackIRLexer.hpp>
 #include <CppUtils/UnitTests/Language/IR/Compiler/Compiler.hpp>
 #include <CppUtils/UnitTests/Language/IR/Lexer/Lexer.hpp>
 #include <CppUtils/UnitTests/Language/IR/VirtualMachine/VirtualMachine.hpp>

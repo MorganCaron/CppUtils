@@ -31,31 +31,29 @@ namespace CppUtils::Language::IR::VirtualMachine
 				/*{ "eq"_token, Operations<Instruction, Context, Address>::runEq },*/
 				{ "add"_token, Operations<Instruction, Context, Address>::runAdd },
 				{ "sub"_token, Operations<Instruction, Context, Address>::runSub },
-				{ "ret"_token, Operations<Instruction, Context, Address>::runRet },
-				{ "call"_token, Operations<Instruction, Context, Address>::runCall }/*,
+				{ "call"_token, Operations<Instruction, Context, Address>::runCall },
+				{ "ret"_token, Operations<Instruction, Context, Address>::runRet }/*,
 				{ "ifnz"_token, Operations<Instruction, Context, Address>::runIf }*/
 			}}
 		{}
 
-		template<typename ReturnType> requires std::is_default_constructible_v<ReturnType>
-		[[nodiscard]] ReturnType run(const Type::Token& label, Context& context) const
+		[[nodiscard]] Address run(const Type::Token& label, Context& context) const
 		{
-			context.jump(label);
-			context.push(ReturnType{});
-			while (context.registerVariables.eip != 0)
-			{
-				const auto& instruction = *reinterpret_cast<const Instruction*>(context.registerVariables.eip);
-				m_virtualMachine.run(instruction.type, instruction, context);
-			}
-			return context.template pop<ReturnType>();
+			auto& [compilerOutput, programMemory] = context;
+			programMemory.template push<Address>(0);
+			programMemory.registerFile[0] = programMemory.registerVariables.stackPointer;
+			programMemory.call(reinterpret_cast<Address>(compilerOutput.getFunctionEntryPoint(label)));
+			programMemory.enter(0);
+			while (programMemory.registerVariables.instructionPointer != 0)
+				m_virtualMachine.run(programMemory.getInstruction().type, programMemory.getInstruction(), context);
+			return programMemory.template pop<Address>();
 		}
 
-		template<typename ReturnType> requires std::is_default_constructible_v<ReturnType>
-		[[nodiscard]] ReturnType run(const Type::Token& label, std::string_view src, Context& context) const
+		[[nodiscard]] Address run(const Type::Token& label, std::string_view src, Context& context) const
 		{
 			static const auto compiler = Compiler::Compiler<Address>{};
 			context.compilerOutput = compiler.compile(src);
-			return run<ReturnType>(label, context);
+			return run(label, context);
 		}
 
 	private:

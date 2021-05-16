@@ -14,76 +14,90 @@ namespace CppUtils::Language::IR::VirtualMachine
 
 		static void runNop([[maybe_unused]] const Instruction& instruction, Context& context)
 		{
-			context.goToNextInstruction();
+			context.programMemory.goToNextInstruction();
 		}
 
 		static void runHalt([[maybe_unused]] const Instruction& instruction, Context& context)
 		{
-			context.halt();
+			context.programMemory.halt();
 		}
 
 		static void runInit([[maybe_unused]] const Instruction& instruction, Context& context)
 		{
-			// context.push(instruction.name.empty() ? instruction.value : reinterpret_cast<Address>(&instruction.name));
-			// context.registerFile[instruction.parametersId.at(0)] = context.registerVariables.esp - 1;
-			context.goToNextInstruction();
+			auto& [compilerOutput, programMemory] = context;
+			const auto isNumber = instruction.name.empty();
+			if (isNumber)
+				programMemory.push(instruction.value);
+			else if (instruction.name == "$STR")
+				programMemory.push(reinterpret_cast<Address>(compilerOutput.stringConstants.data() + instruction.value));
+			else
+				programMemory.push(reinterpret_cast<Address>(&instruction.name));
+			programMemory.registerFile[instruction.parametersId.at(0)] = isNumber ? instruction.value : programMemory.registerVariables.stackPointer;
+			programMemory.goToNextInstruction();
 		}
 
 		static void runRead(const Instruction& instruction, Context& context)
 		{
+			auto& [compilerOutput, programMemory] = context;
 			const auto& register0 = instruction.parametersId.at(0);
 			const auto& register1 = instruction.parametersId.at(1);
-			const auto source = context.registerFile.at(register1);
-			context.registerFile[register0] = context.registerFile.at(source);
-			context.goToNextInstruction();
+			const auto source = programMemory.registerFile.at(register1);
+			programMemory.registerFile[register0] = programMemory.registerFile.at(source);
+			programMemory.goToNextInstruction();
 		}
 		
 		static void runWrite(const Instruction& instruction, Context& context)
 		{
+			auto& [compilerOutput, programMemory] = context;
 			const auto& register0 = instruction.parametersId.at(0);
 			const auto& register1 = instruction.parametersId.at(1);
-			const auto dest = context.registerFile.at(register0);
-			context.registerFile[dest] = context.registerFile.at(register1);
-			context.goToNextInstruction();
+			const auto dest = programMemory.registerFile.at(register0);
+			programMemory.registerFile[dest] = programMemory.registerFile.at(register1);
+			programMemory.goToNextInstruction();
 		}
 
 		static void runCopy(const Instruction& instruction, Context& context)
 		{
+			auto& [compilerOutput, programMemory] = context;
 			const auto& register0 = instruction.parametersId.at(0);
 			const auto& register1 = instruction.parametersId.at(1);
-			context.registerFile[register0] = context.registerFile.at(register1);
-			context.goToNextInstruction();
+			programMemory.registerFile[register0] = programMemory.registerFile.at(register1);
+			programMemory.goToNextInstruction();
 		}
 
 		static void runAdd(const Instruction& instruction, Context& context)
 		{
+			auto& [compilerOutput, programMemory] = context;
 			const auto& register0 = instruction.parametersId.at(0);
 			const auto& register1 = instruction.parametersId.at(1);
-			context.registerFile[register0] += context.registerFile.at(register1);
-			context.goToNextInstruction();
+			programMemory.registerFile[register0] += programMemory.registerFile.at(register1);
+			programMemory.goToNextInstruction();
 		}
 
 		static void runSub(const Instruction& instruction, Context& context)
 		{
+			auto& [compilerOutput, programMemory] = context;
 			const auto& register0 = instruction.parametersId.at(0);
 			const auto& register1 = instruction.parametersId.at(1);
-			context.registerFile[register0] -= context.registerFile.at(register1);
-			context.goToNextInstruction();
+			programMemory.registerFile[register0] -= programMemory.registerFile.at(register1);
+			programMemory.goToNextInstruction();
 		}
 
-		static void runRet([[maybe_unused]] const Instruction& instruction, Context& context)
+		static void runCall(const Instruction& instruction, Context& context)
 		{
-			context.jump(context.template pop<Address>());
+			auto& [compilerOutput, programMemory] = context;
+			programMemory.push(programMemory.registerVariables.instructionPointer);
+			const auto& register0 = instruction.parametersId.at(0);
+			programMemory.call(register0);
+			programMemory.enter((instruction.parametersId.size() - 1) * programMemory.template countNecessaryMemoryCells<Address>());
 		}
 
-		static void runCall([[maybe_unused]] const Instruction& instruction, Context& context)
+		static void runRet(const Instruction& instruction, Context& context)
 		{
-			/*const auto& register0 = instruction->parametersId.at(0);
-			auto label = context.registerFile.at(register0);
-			const auto& functionInformations = context.compilerOutput.functions.at(Type::Token{label});
-			context.stack.push(reinterpret_cast<Address>(instruction));
-			instruction = functionInformations.entryPoint;*/
-			context.goToNextInstruction();
+			auto& [compilerOutput, programMemory] = context;
+			const auto& register0 = instruction.parametersId.at(0);
+			programMemory.leave();
+			programMemory.ret(programMemory.registerFile.at(register0));
 		}
 	};
 

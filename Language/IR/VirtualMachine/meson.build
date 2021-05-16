@@ -13,6 +13,7 @@ sources = files([
 headers = files([
 	'include/CppUtils/Language/IR/VirtualMachine/Context.hpp',
 	'include/CppUtils/Language/IR/VirtualMachine/Operations.hpp',
+	'include/CppUtils/Language/IR/VirtualMachine/ProgramMemory.hpp',
 	'include/CppUtils/Language/IR/VirtualMachine/VirtualMachine.hpp'
 ])
 

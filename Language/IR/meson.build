@@ -9,15 +9,14 @@ public_dependencies = [
 ]
 private_dependencies = []
 
-includeDir = include_directories(['include/', '.'])
+includeDir = include_directories(['.'])
 
 sources = files([
 
 ])
 
 headers = files([
-	'include/CppUtils/Language/IR/RegisterIRLexer.hpp',
-	'include/CppUtils/Language/IR/StackIRLexer.hpp'
+
 ])
 
 cppUtils_language_ir_dep = declare_dependency(

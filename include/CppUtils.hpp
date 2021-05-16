@@ -18,8 +18,6 @@
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
 #include <CppUtils/Language/Lexer/Lexer.hpp>
 #include <CppUtils/Language/Compiler/Compiler.hpp>
-#include <CppUtils/Language/IR/RegisterIRLexer.hpp>
-#include <CppUtils/Language/IR/StackIRLexer.hpp>
 #include <CppUtils/Language/IR/Compiler/Bytecode.hpp>
 #include <CppUtils/Language/IR/Compiler/CompilationFunctions.hpp>
 #include <CppUtils/Language/IR/Compiler/Compiler.hpp>
@@ -27,6 +25,7 @@
 #include <CppUtils/Language/IR/Lexer/Lexer.hpp>
 #include <CppUtils/Language/IR/VirtualMachine/Context.hpp>
 #include <CppUtils/Language/IR/VirtualMachine/Operations.hpp>
+#include <CppUtils/Language/IR/VirtualMachine/ProgramMemory.hpp>
 #include <CppUtils/Language/IR/VirtualMachine/VirtualMachine.hpp>
 #include <CppUtils/Language/VirtualMachine/Stack.hpp>
 #include <CppUtils/Language/VirtualMachine/VirtualMachine.hpp>
