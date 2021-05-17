@@ -38,7 +38,7 @@ namespace CppUtils::Language::ASM::Compiler
 			auto output = Output<Address>{};
 			auto context = Context<Address>{std::cref(*this), std::ref(output)};
 			m_compiler.compile(astNode.childs, context);
-			return std::move(output);
+			return output;
 		}
 
 	private:

@@ -50,7 +50,7 @@ namespace CppUtils::Language::IR::Compiler
 			buildStrings(astNode, output.stringConstants);
 			auto context = Context<Address>{std::cref(*this), std::ref(output)};
 			m_compiler.compile(astNode.childs, context);
-			return std::move(output);
+			return output;
 		}
 
 		void buildStrings(const ASTNode& astNode, std::string& stringConstants) const
