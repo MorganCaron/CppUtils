@@ -1,33 +1,38 @@
 #pragma once
 
 #include <memory>
+#include <functional>
 #include <unordered_map>
 
-#include <CppUtils/Language/Compiler/Context.hpp>
-#include <CppUtils/Language/ASM/Compiler/Bytecode.hpp>
+#include <CppUtils/Language/ASM/Lexer/Lexer.hpp>
+#include <CppUtils/Language/ASM/Compiler/Output.hpp>
 
 namespace CppUtils::Language::ASM::Compiler
 {
-	template<typename Address> requires std::is_integral_v<Address>
-	struct FunctionInformations final
-	{
-		Bytecode::Instruction<Address>* entryPoint = nullptr;
-		std::size_t nbParameters = 0;
-	};
-
-	template<typename Address> requires std::is_integral_v<Address>
+	template<typename Address>
+	requires Type::Traits::isAddress<Address>
 	class Compiler;
-	template<typename Address> requires std::is_integral_v<Address>
-	struct Context final: public Language::Compiler::Context<Compiler<Address>, Bytecode::Instruction<Address>>
+
+	template<typename Address>
+	requires Type::Traits::isAddress<Address>
+	struct Context final
 	{
-		std::unordered_map<Type::Token, FunctionInformations<Address>, Type::Token::hash_fn> functions = {};
+		std::reference_wrapper<const Compiler<Address>> compiler;
+		std::reference_wrapper<Output<Address>> output;
 		Bytecode::Instruction<Address>* lastInstruction = nullptr;
 		std::size_t registerCounter = 0;
 		Address returnRegister = 0;
 
-		explicit Context(std::reference_wrapper<const Compiler<Address>> compiler):
-			Language::Compiler::Context<Compiler<Address>, Bytecode::Instruction<Address>>{compiler}
+		explicit Context(const Compiler<Address>& c_compiler, Output<Address>& c_output):
+			compiler{c_compiler}, output{c_output}
 		{}
+
+		template<typename... Args>
+		inline Bytecode::Instruction<Address>* createInstruction(Args... args)
+		{
+			auto& output = Context::output.get();
+			return output.instructions.emplace_back(std::make_unique<Bytecode::Instruction<Address>>(std::forward<Args>(args)...)).get();
+		}
 
 		inline void addInstruction(Bytecode::Instruction<Address>* instruction)
 		{

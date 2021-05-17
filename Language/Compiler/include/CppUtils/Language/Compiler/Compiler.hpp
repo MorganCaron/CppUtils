@@ -1,33 +1,34 @@
 #pragma once
 
 #include <CppUtils/Type/Token.hpp>
-#include <CppUtils/Type/Traits.hpp>
-#include <CppUtils/Language/Parser/Context.hpp>
-#include <CppUtils/Language/Compiler/Context.hpp>
+#include <CppUtils/Language/VirtualMachine/VirtualMachine.hpp>
 
 namespace CppUtils::Language::Compiler
 {
-	template<typename Context, typename... Types>
-	requires Type::Traits::isPresent<Type::Token, Types...>
+	template<typename ASTNode, typename Context>
 	class Compiler final
 	{
 	public:
-		using CompilationFunction = std::function<void(const Parser::ASTNode<Types...>&, Context&)>;
+		using CompilationFunction = typename VirtualMachine::VirtualMachine<ASTNode, Context>::Operation;
 
 		explicit Compiler(std::unordered_map<Type::Token, CompilationFunction, Type::Token::hash_fn> compilationFunctions):
-			m_compilationFunctions{std::move(compilationFunctions)}
+			m_virtualMachine{std::move(compilationFunctions)}
 		{}
 
-		void compile(const Parser::ASTNode<Types...>& astNode, Context& context) const
+		inline void compile(std::span<const ASTNode> astNodes, Context& context) const
+		{
+			for (const auto& astNode : astNodes)
+				compile(astNode, context);
+		}
+
+		void compile(const ASTNode& astNode, Context& context) const
 		{
 			if (!std::holds_alternative<Type::Token>(astNode.value))
-				throw std::runtime_error{"The AST node to compile must be a token."};
+				throw std::runtime_error{"The AST node representing a compiler function must be a token."};
 			const auto& nodeType = std::get<Type::Token>(astNode.value);
-			if (m_compilationFunctions.find(nodeType) == m_compilationFunctions.end())
-				throw std::runtime_error{"No compile function for AST node \"" + std::string{nodeType.name} + '"'};
 			try
 			{
-				m_compilationFunctions.at(nodeType)(astNode, context);
+				m_virtualMachine.run(nodeType, astNode, context);
 			}
 			catch (const std::exception& exception)
 			{
@@ -36,6 +37,6 @@ namespace CppUtils::Language::Compiler
 		}
 
 	private:
-		std::unordered_map<Type::Token, CompilationFunction, Type::Token::hash_fn> m_compilationFunctions;
+		VirtualMachine::VirtualMachine<ASTNode, Context> m_virtualMachine;
 	};
 }

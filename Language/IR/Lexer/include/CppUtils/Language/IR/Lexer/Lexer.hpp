@@ -1,10 +1,16 @@
 #pragma once
 
+#include <CppUtils/Type/Traits.hpp>
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
 
 namespace CppUtils::Language::IR::Lexer
 {
-	template<typename Address> requires std::is_integral_v<Address>
+	template<typename Address>
+	requires Type::Traits::isAddress<Address>
+	using ASTNode = Parser::ASTNode<Type::Token, Address, std::string>;
+
+	template<typename Address>
+	requires Type::Traits::isAddress<Address>
 	class Lexer final
 	{
 	public:
@@ -30,11 +36,12 @@ namespace CppUtils::Language::IR::Lexer
 			static constexpr auto grammarSrc = R"(
 			main[comma]: (label >= 0) spaceParser;
 
-			!functionDeclaration: functionName ~parameters instructions;
+			!functionDeclaration: typeName functionName ~parameters instructions;
 			instructions[comma]: spaceParser '{' (instruction >= 0) spaceParser '}';
 			!token: spaceParser keywordParser;
 			!comma: spaceParser ',';
 			!variable: token;
+			!typeName: token;
 			!functionName: token;
 			!functionCall: functionName arguments;
 			!parenthesis: spaceParser '(' operand spaceParser ')';
@@ -79,7 +86,7 @@ namespace CppUtils::Language::IR::Lexer
 			!instruction: spaceParser (controlStructure || statement);
 			halt: "halt";
 			nop: "nop";
-			ret: "ret" rvalue;
+			ret: "return" rvalue;
 			if: "if" parenthesis (instructions || instruction);
 			while: "while" parenthesis (instructions || instruction);
 			call: functionCall;
@@ -88,7 +95,7 @@ namespace CppUtils::Language::IR::Lexer
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Parser::ASTNode<Type::Token, Address, std::string> parse(std::string_view src) const
+		[[nodiscard]] inline ASTNode<Address> parse(std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
@@ -98,8 +105,9 @@ namespace CppUtils::Language::IR::Lexer
 		Language::Lexer::GrammarLexer<Type::Token, Address, std::string> m_grammarLexer;
 	};
 
-	template<typename Address> requires std::is_integral_v<Address>
-	[[nodiscard]] inline Parser::ASTNode<Type::Token, Address, std::string> parse(std::string_view src)
+	template<typename Address>
+	requires Type::Traits::isAddress<Address>
+	[[nodiscard]] inline ASTNode<Address> parse(std::string_view src)
 	{
 		static const auto irLexer = Lexer<Address>{};
 		return irLexer.parse(src);

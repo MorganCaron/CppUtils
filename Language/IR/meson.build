@@ -1,23 +1,22 @@
-subdir('Compiler')
 subdir('Lexer')
+subdir('Compiler')
+subdir('VirtualMachine')
 
 public_dependencies = [
-	cppUtils_type_dep,
-	cppUtils_graph_dep,
+	cppUtils_language_ir_lexer_dep,
 	cppUtils_language_ir_compiler_dep,
-	cppUtils_language_ir_lexer_dep
+	cppUtils_language_ir_virtualMachine_dep
 ]
 private_dependencies = []
 
-includeDir = include_directories(['include/', '.'])
+includeDir = include_directories(['.'])
 
 sources = files([
 
 ])
 
 headers = files([
-	'include/CppUtils/Language/IR/RegisterIRLexer.hpp',
-	'include/CppUtils/Language/IR/StackIRLexer.hpp'
+
 ])
 
 cppUtils_language_ir_dep = declare_dependency(
