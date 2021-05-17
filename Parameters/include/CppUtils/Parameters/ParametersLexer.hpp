@@ -23,11 +23,12 @@ namespace CppUtils::Parameters
 			m_grammarLexer.addParsingFunction("spaceParser"_token, Language::Parser::spaceParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("keywordParser"_token, Language::Parser::keywordParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("contentParser"_token, Language::Parser::escapeCharParser<Type::Token, std::string>);
+			m_grammarLexer.addParsingFunction("trimModifier"_token, Language::Parser::Modifier::trimModifier<Type::Token, std::string>);
 
 			static constexpr auto grammarSrc = R"(
 			main: (command >= 0) spaceParser;
 			command: spaceParser keywordParser ~value;
-			!value: spaceParser '[' ((contentParser != ']') >= 0) ']';
+			!value: spaceParser '[' ((contentParser != ']') >= 0) ']' ~trimModifier;
 			)"sv;
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}

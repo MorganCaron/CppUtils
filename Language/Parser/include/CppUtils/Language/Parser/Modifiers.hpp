@@ -32,7 +32,6 @@ namespace CppUtils::Language::Parser::Modifier
 		if (parentNode.get().childs.empty())
 			return false;
 		auto& lastChild = parentNode.get().childs.back();
-		
 		if (!std::holds_alternative<std::string>(lastChild.value))
 			return false;
 		auto& string = std::get<std::string>(lastChild.value);
