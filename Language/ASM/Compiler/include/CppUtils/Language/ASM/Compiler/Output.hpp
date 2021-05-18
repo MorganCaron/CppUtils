@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Type/Traits.hpp>
 #include <CppUtils/Language/ASM/Compiler/Bytecode.hpp>
 
 namespace CppUtils::Language::ASM::Compiler

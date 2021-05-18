@@ -39,6 +39,10 @@ jobs:
         cd ../..
         sudo update-alternatives --install /usr/bin/standardese standardese ${{ runner.workspace }}/CppUtils/standardese/build/tool/standardese 10
         standardese --version
+    - name: Install MkDocs
+      run: |
+        pip3 install mkdocs
+        pip3 install mkdocs-material
     - name: Generate Documentation
       env:
         CC: clang

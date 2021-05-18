@@ -2,12 +2,12 @@ enable_documentation = get_option('enable_documentation')
 
 if enable_documentation
 
-	standardese = find_program('standardese', required: enable_documentation)
+	standardese = find_program('standardese', required: true)
 	if standardese.found()
 
 		documentation = custom_target(
-			'docs',
-			output: 'documentation',
+			'standardese',
+			output: 'doc-markdown',
 			command: [
 				standardese,
 				'--config=../resources/documentation/standardese.ini',
@@ -24,7 +24,6 @@ if enable_documentation
 				'../Language/ASM/VirtualMachine/include/',
 				'../Language/Compiler/include/',
 				'../Language/Ini/include/',
-				'../Language/IR/include/',
 				'../Language/IR/Compiler/include/',
 				'../Language/IR/Lexer/include/',
 				'../Language/Json/include/',
@@ -45,7 +44,24 @@ if enable_documentation
 			build_by_default: true
 		)
 
-	elif enable_documentation
+		mkdocs = find_program('mkdocs', required: true)
+		if mkdocs.found()
+			documentation = custom_target(
+				'mkdocs',
+				output: 'doc-html',
+				command: [
+					mkdocs,
+					'build',
+					'--config-file=../resources/documentation/mkdocs.yml'
+				],
+				install: false,
+				build_by_default: true
+			)
+		else
+			message('Standardese not found. The generation of the documentation is aborted.')
+		endif
+
+	else
 		message('Standardese not found. The generation of the documentation is aborted.')
 	endif
 endif

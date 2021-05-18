@@ -32,7 +32,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 		template<typename T>
 		[[nodiscard]] inline constexpr std::size_t countNecessaryMemoryCells() const noexcept
 		{
-			return std::ceil(sizeof(T) / sizeof(Address));
+			return static_cast<std::size_t>(std::ceil(sizeof(T) / sizeof(Address)));
 		}
 
 		template<typename T>

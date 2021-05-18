@@ -1,4 +1,5 @@
 public_dependencies = [
+	cppUtils_language_parser_dep,
 	cppUtils_language_lexer_dep
 ]
 private_dependencies = []

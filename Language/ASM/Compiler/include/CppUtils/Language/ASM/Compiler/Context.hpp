@@ -30,8 +30,7 @@ namespace CppUtils::Language::ASM::Compiler
 		template<typename... Args>
 		inline Bytecode::Instruction<Address>* createInstruction(Args... args)
 		{
-			auto& output = Context::output.get();
-			return output.instructions.emplace_back(std::make_unique<Bytecode::Instruction<Address>>(std::forward<Args>(args)...)).get();
+			return Context::output.get().instructions.emplace_back(std::make_unique<Bytecode::Instruction<Address>>(std::forward<Args>(args)...)).get();
 		}
 
 		inline void addInstruction(Bytecode::Instruction<Address>* instruction)

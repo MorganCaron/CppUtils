@@ -2,6 +2,7 @@
 
 #include <map>
 
+#include <CppUtils/Language/Parser/Modifiers.hpp>
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
 
 namespace CppUtils::Parameters

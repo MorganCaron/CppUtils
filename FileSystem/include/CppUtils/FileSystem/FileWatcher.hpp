@@ -11,10 +11,11 @@ namespace CppUtils::FileSystem
 	class FileWatcher final
 	{
 	public:
-		enum class FileStatus { created, modified, deleted };
+		enum class FileStatus { Created, Modified, Deleted };
 
 		FileWatcher() = delete;
 
+		template<typename Rep, typename Period>
 		explicit FileWatcher(const std::function<void(const std::filesystem::path& filePath, FileStatus)>& function, const std::chrono::duration<Rep, Period>& interval):
 			m_function{std::move(function)},
 			m_loopThread{std::bind(&FileWatcher::listener, this), interval}
@@ -30,6 +31,7 @@ namespace CppUtils::FileSystem
 			return m_loopThread.isRunning();
 		}
 
+		template<typename Rep, typename Period>
 		inline void start(const std::chrono::duration<Rep, Period>& interval)
 		{
 			m_loopThread.start(interval);
@@ -63,18 +65,18 @@ namespace CppUtils::FileSystem
 					auto fileStatusIt = m_fileStatus.find(filePath);
 					if (fileStatusIt == m_fileStatus.end())
 					{
-						m_function(filePath, created);
+						m_function(filePath, FileStatus::Created);
 						m_fileStatus[filePath] = lastWriteTime;
 					}
 					else if (fileStatusIt->second != lastWriteTime)
 					{
-						m_function(filePath, modified);
+						m_function(filePath, FileStatus::Modified);
 						m_fileStatus[filePath] = lastWriteTime;
 					}
 				}
 				else
 				{
-					m_function(filePath, deleted);
+					m_function(filePath, FileStatus::Deleted);
 					m_fileStatus.erase(filePath);
 				}
 			}

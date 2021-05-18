@@ -1,6 +1,7 @@
 public_dependencies = [
 	cppUtils_type_dep,
-	cppUtils_language_parser_dep
+	cppUtils_language_parser_dep,
+	cppUtils_language_virtualMachine_dep
 ]
 private_dependencies = []
 

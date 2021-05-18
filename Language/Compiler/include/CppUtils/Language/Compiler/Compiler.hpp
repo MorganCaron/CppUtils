@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Language/Parser/Context.hpp>
 #include <CppUtils/Language/VirtualMachine/VirtualMachine.hpp>
 
 namespace CppUtils::Language::Compiler
