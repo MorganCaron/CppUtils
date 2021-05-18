@@ -15,6 +15,7 @@ subdir('Platform')
 subdir('Chrono')
 subdir('Container')
 subdir('External')
+subdir('Thread')
 subdir('FileSystem')
 subdir('Functional')
 subdir('Hash')
@@ -23,7 +24,6 @@ subdir('Type')
 subdir('Log')
 subdir('Graph')
 subdir('String')
-subdir('Thread')
 subdir('Language')
 subdir('Parameters')
 subdir('UnitTest')
@@ -33,6 +33,7 @@ public_dependencies = [
 	cppUtils_chrono_dep,
 	cppUtils_container_dep,
 	cppUtils_external_dep,
+	cppUtils_thread_dep,
 	cppUtils_fileSystem_dep,
 	cppUtils_functional_dep,
 	cppUtils_hash_dep,
@@ -41,7 +42,6 @@ public_dependencies = [
 	cppUtils_log_dep,
 	cppUtils_graph_dep,
 	cppUtils_string_dep,
-	cppUtils_thread_dep,
 	cppUtils_language_dep,
 	cppUtils_parameters_dep,
 	cppUtils_unitTest_dep

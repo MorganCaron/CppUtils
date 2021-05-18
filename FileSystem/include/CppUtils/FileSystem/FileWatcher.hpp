@@ -1,0 +1,88 @@
+#pragma once
+
+#include <set>
+#include <filesystem>
+#include <unordered_map>
+
+#include <CppUtils/Thread/LoopThread.hpp>
+
+namespace CppUtils::FileSystem
+{
+	class FileWatcher final
+	{
+	public:
+		enum class FileStatus { created, modified, deleted };
+
+		FileWatcher() = delete;
+
+		explicit FileWatcher(const std::function<void(const std::filesystem::path& filePath, FileStatus)>& function, const std::chrono::duration<Rep, Period>& interval):
+			m_function{std::move(function)},
+			m_loopThread{std::bind(&FileWatcher::listener, this), interval}
+		{}
+
+		FileWatcher(const FileWatcher&) = delete;
+		FileWatcher(FileWatcher&&) noexcept = default;
+		FileWatcher& operator=(const FileWatcher&) = delete;
+		FileWatcher& operator=(FileWatcher&&) noexcept = default;
+
+		[[nodiscard]] inline bool isRunning() const noexcept
+		{
+			return m_loopThread.isRunning();
+		}
+
+		inline void start(const std::chrono::duration<Rep, Period>& interval)
+		{
+			m_loopThread.start(interval);
+		}
+
+		inline void stop()
+		{
+			m_loopThread.stop();
+		}
+
+		inline void watchPath(const std::filesystem::path& filePath)
+		{
+			m_watchedFiles.insert(filePath);
+			m_fileStatus[filePath] = std::filesystem::last_write_time(filePath);
+		}
+
+		inline void unwatchPath(const std::filesystem::path& filePath)
+		{
+			m_watchedFiles.erase(filePath);
+			m_fileStatus.erase(filePath);
+		}
+
+	private:
+		void listener()
+		{
+			for (const auto& filePath : m_watchedFiles)
+			{
+				if (std::filesystem::exists(filePath))
+				{
+					auto lastWriteTime = std::filesystem::last_write_time(filePath);
+					auto fileStatusIt = m_fileStatus.find(filePath);
+					if (fileStatusIt == m_fileStatus.end())
+					{
+						m_function(filePath, created);
+						m_fileStatus[filePath] = lastWriteTime;
+					}
+					else if (fileStatusIt->second != lastWriteTime)
+					{
+						m_function(filePath, modified);
+						m_fileStatus[filePath] = lastWriteTime;
+					}
+				}
+				else
+				{
+					m_function(filePath, deleted);
+					m_fileStatus.erase(filePath);
+				}
+			}
+		}
+
+		std::atomic<std::set<std::filesystem::path>> m_watchedFiles;
+		std::atomic<std::unordered_map<std::filesystem::path, std::filesystem::file_time_type>> m_fileStatus;
+		std::function<void(const std::filesystem::path& filePath, FileStatus)> m_function;
+		Thread::LoopThread m_loopThread;
+	};
+}
