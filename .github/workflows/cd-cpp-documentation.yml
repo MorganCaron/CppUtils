@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     name: "Documentation"
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     strategy:
       fail-fast: true
     steps:
@@ -15,16 +15,18 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.x'
-    - name: Install LLVM, clang/clang++ and libclang
+    - name: Install LLVM
       run: |
-        sudo apt-get install -y llvm-11 clang-11 libclang-11-dev
-        sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-11 11
-        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-11 11
-        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-11 11
+        wget -q https://gitlab.com/Arthapz/llvm13-macos/-/raw/master/LLVM13.7z?inline=false -O ${{ runner.workspace }}/LLVM13.7z
+        7z x ${{ runner.workspace }}/LLVM13.7z
     - name: Install Boost
-      run: sudo apt-get install -y libboost-all-dev
+      run: brew install boost
     - name: Install Meson and Ninja
       run: pip3 install meson ninja
+    - name: Configure native file
+      run: |
+        cp ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini.sample ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini
+        sed -i -e 's|%TOOLCHAIN_PATH%|${{ runner.workspace }}/CppUtils/LLVM13.0.0git.xctoolchain/usr|g' ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini
     - name: Build Standardese
       env:
         CC: clang
@@ -34,10 +36,10 @@ jobs:
         cd standardese
         mkdir build
         cd build
-        cmake ../ -DLLVM_CONFIG_BINARY=$LLVM_CONFIG_BINARY
+        cmake ../ -DLLVM_CONFIG_BINARY=${{ runner.workspace }}/CppUtils/LLVM13.0.0git.xctoolchain/usr/bin/llvm-config
         cmake --build . --target standardese_tool
         cd ../..
-        sudo update-alternatives --install /usr/bin/standardese standardese ${{ runner.workspace }}/CppUtils/standardese/build/tool/standardese 10
+        export PATH=${{ runner.workspace }}/CppUtils/standardese/build/tool:$PATH
         standardese --version
     - name: Install MkDocs
       run: |
