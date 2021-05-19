@@ -10,6 +10,9 @@ jobs:
     runs-on: macos-latest
     strategy:
       fail-fast: true
+    defaults:
+      run:
+        shell: bash -l {0}
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
@@ -19,32 +22,20 @@ jobs:
       run: |
         wget -q https://gitlab.com/Arthapz/llvm13-macos/-/raw/master/LLVM13.7z?inline=false -O ${{ runner.workspace }}/LLVM13.7z
         7z x ${{ runner.workspace }}/LLVM13.7z
-    - name: Install Boost
-      run: brew install boost
     - name: Install Meson and Ninja
       run: pip3 install meson ninja
     - name: Configure native file
       run: |
         cp ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini.sample ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini
         sed -i -e 's|%TOOLCHAIN_PATH%|${{ runner.workspace }}/CppUtils/LLVM13.0.0git.xctoolchain/usr|g' ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini
-    - name: Build Standardese
-      env:
-        CC: clang
-        CXX: clang++
-      run: |
-        git clone https://github.com/standardese/standardese
-        cd standardese
-        mkdir build
-        cd build
-        cmake ../ -DLLVM_CONFIG_BINARY=${{ runner.workspace }}/CppUtils/LLVM13.0.0git.xctoolchain/usr/bin/llvm-config
-        cmake --build . --target standardese_tool
-        cd ../..
-        export PATH=${{ runner.workspace }}/CppUtils/standardese/build/tool:$PATH
-        standardese --version
+    - uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: standardese
+    - name: Activate Standardese
+      run: conda activate standardese
     - name: Install MkDocs
       run: |
-        pip3 install mkdocs
-        pip3 install mkdocs-material
+        pip3 install mkdocs mkdocs-material
     - name: Generate Documentation
       env:
         CC: clang
