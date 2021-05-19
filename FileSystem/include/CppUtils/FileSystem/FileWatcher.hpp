@@ -1,6 +1,7 @@
 #pragma once
 
 #include <set>
+#include <mutex>
 #include <filesystem>
 #include <unordered_map>
 
@@ -44,12 +45,14 @@ namespace CppUtils::FileSystem
 
 		inline void watchPath(const std::filesystem::path& filePath)
 		{
+			auto lockGuard = std::lock_guard<std::mutex>{m_mutex};
 			m_watchedFiles.insert(filePath);
 			m_fileStatus[filePath] = std::filesystem::last_write_time(filePath);
 		}
 
 		inline void unwatchPath(const std::filesystem::path& filePath)
 		{
+			auto lockGuard = std::lock_guard<std::mutex>{m_mutex};
 			m_watchedFiles.erase(filePath);
 			m_fileStatus.erase(filePath);
 		}
@@ -57,6 +60,7 @@ namespace CppUtils::FileSystem
 	private:
 		void listener()
 		{
+			auto lockGuard = std::lock_guard<std::mutex>{m_mutex};
 			for (const auto& filePath : m_watchedFiles)
 			{
 				if (std::filesystem::exists(filePath))
@@ -82,8 +86,9 @@ namespace CppUtils::FileSystem
 			}
 		}
 
-		std::atomic<std::set<std::filesystem::path>> m_watchedFiles;
-		std::atomic<std::unordered_map<std::filesystem::path, std::filesystem::file_time_type>> m_fileStatus;
+		std::mutex m_mutex;
+		std::set<std::filesystem::path> m_watchedFiles;
+		std::unordered_map<std::filesystem::path, std::filesystem::file_time_type> m_fileStatus;
 		std::function<void(const std::filesystem::path& filePath, FileStatus)> m_function;
 		Thread::LoopThread m_loopThread;
 	};

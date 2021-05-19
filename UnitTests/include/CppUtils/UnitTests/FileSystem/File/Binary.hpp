@@ -8,12 +8,12 @@ namespace CppUtils::UnitTests::FileSystem::File::Binary
 	{
 		addTest("WriteRead", [] {
 			const auto filePath = std::filesystem::path{"test.tmp"};
-			const auto originalString = 12345;
-			CppUtils::FileSystem::File::Binary::write(filePath, originalString);
-			const auto fileContent = CppUtils::FileSystem::File::Binary::read<decltype(originalString)>(filePath);
+			const auto originalValue = 12345;
+			CppUtils::FileSystem::File::Binary::write(filePath, originalValue);
+			const auto fileContent = CppUtils::FileSystem::File::Binary::read<decltype(originalValue)>(filePath);
 			CppUtils::Log::Logger::logInformation(std::to_string(fileContent));
 			CppUtils::FileSystem::File::deleteFile(filePath);
-			ASSERT(fileContent == originalString);
+			ASSERT(fileContent == originalValue);
 		});
 
 		addTest("WriteReadVector", [] {
