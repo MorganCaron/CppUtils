@@ -18,11 +18,13 @@ namespace CppUtils::UnitTests::FileSystem::File::Binary
 
 		addTest("WriteReadVector", [] {
 			const auto filePath = std::filesystem::path{"test.tmp"};
-			const auto originalVector = std::vector<int>{ 1, 2, 3, 4, 5 };
+			auto originalVector = std::vector<int>{};
+			originalVector.resize(256);
+			std::iota(originalVector.begin(), originalVector.end(), 1);
 			CppUtils::FileSystem::File::Binary::writeVector(filePath, originalVector);
 			const auto vector = CppUtils::FileSystem::File::Binary::readVector<int>(filePath);
 			for (const auto& nb : vector)
-				CppUtils::Log::Logger::logInformation(std::to_string(nb), false);
+				CppUtils::Log::Logger::logInformation(std::to_string(nb) + ' ', false);
 			CppUtils::Log::Logger::logInformation("");
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			ASSERT(vector == originalVector);

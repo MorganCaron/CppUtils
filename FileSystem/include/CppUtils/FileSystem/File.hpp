@@ -49,7 +49,7 @@ namespace CppUtils::FileSystem::File
 			auto file = std::ofstream{filePath, std::ios::binary};
 			if (!file.is_open())
 				throw std::runtime_error("Failed to open " + filePath.string() + " file");
-			std::copy(vector.begin(), vector.end(), std::ostreambuf_iterator<char>(file));
+			file.write(reinterpret_cast<const char*>(vector.data()), vector.size() * sizeof(T));
 		}
 
 		template<typename T>
@@ -58,7 +58,11 @@ namespace CppUtils::FileSystem::File
 			auto file = std::ifstream{filePath, std::ios::binary};
 			if (!file.is_open())
 				throw std::runtime_error("Failed to open " + filePath.string() + " file");
-			return std::vector<T>{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
+			const auto nbElements = std::filesystem::file_size(filePath) / sizeof(T);
+			auto vector = std::vector<T>{};
+			vector.resize(nbElements);
+			file.read(reinterpret_cast<char*>(vector.data()), nbElements * sizeof(T));
+			return vector;
 		}
 	}
 	
