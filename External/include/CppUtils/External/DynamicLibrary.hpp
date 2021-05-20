@@ -6,13 +6,14 @@
 #include <iostream>
 #include <string_view>
 
+#include <CppUtils/Platform/OS.hpp>
+#include <CppUtils/External/DllExport.hpp>
+
 #if defined(OS_WINDOWS)
 # include <windows.h>
 #elif defined(OS_LINUX) || defined(OS_MACOS)
 # include <dlfcn.h>
 #endif
-
-#include <CppUtils/External/DllExport.hpp>
 
 namespace CppUtils::External
 {
