@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     name: "Documentation"
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash -l {0}
@@ -23,14 +23,14 @@ jobs:
         auto-update-conda: true
         channels: conda-forge
         channel-priority: true
-    - name: Install LLVM
-      run: |
-        wget -q https://gitlab.com/Arthapz/llvm13-macos/-/raw/master/LLVM13.7z?inline=false -O ${{ runner.workspace }}/LLVM13.7z
-        7z x ${{ runner.workspace }}/LLVM13.7z
-    - name: Configure native file
-      run: |
-        cp ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini.sample ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini
-        sed -i -e 's|%TOOLCHAIN_PATH%|${{ runner.workspace }}/CppUtils/LLVM13.0.0git.xctoolchain/usr|g' ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini
+#    - name: Install LLVM
+#      run: |
+#        wget -q https://gitlab.com/Arthapz/llvm13-macos/-/raw/master/LLVM13.7z?inline=false -O ${{ runner.workspace }}/LLVM13.7z
+#        7z x ${{ runner.workspace }}/LLVM13.7z
+#    - name: Configure native file
+#      run: |
+#        cp ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini.sample ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini
+#        sed -i -e 's|%TOOLCHAIN_PATH%|${{ runner.workspace }}/CppUtils/LLVM13.0.0git.xctoolchain/usr|g' ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini
     - name: Install Meson and Ninja
       run: pip3 install meson ninja
     - name: Install Standardese
@@ -46,5 +46,5 @@ jobs:
         CXX: clang++
         LDFLAGS: '-ldl'
       run: |
-        meson build -Ddefault_library=static -Denable_documentation=true --native-file ${{ runner.workspace }}/CppUtils/resources/native-files/macos-llvm13-clang.ini
+        meson build -Ddefault_library=static -Denable_documentation=true
         ninja -C build -j7

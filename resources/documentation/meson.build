@@ -44,22 +44,22 @@ if enable_documentation
 			build_by_default: true
 		)
 
-		mkdocs = find_program('mkdocs', required: true)
-		if mkdocs.found()
-			documentation = custom_target(
-				'mkdocs',
-				output: 'doc-html',
-				command: [
-					mkdocs,
-					'build',
-					'--config-file=../resources/documentation/mkdocs.yml'
-				],
-				install: false,
-				build_by_default: true
-			)
-		else
-			message('Standardese not found. The generation of the documentation is aborted.')
-		endif
+#		mkdocs = find_program('mkdocs', required: true)
+#		if mkdocs.found()
+#			documentation = custom_target(
+#				'mkdocs',
+#				output: 'doc-html',
+#				command: [
+#					mkdocs,
+#					'build',
+#					'--config-file=../resources/documentation/mkdocs.yml'
+#				],
+#				install: false,
+#				build_by_default: true
+#			)
+#		else
+#			message('Mkdocs not found. The generation of the documentation is aborted.')
+#		endif
 
 	else
 		message('Standardese not found. The generation of the documentation is aborted.')
