@@ -6,6 +6,7 @@
 #include <CppUtils/External/DynamicLibrary.hpp>
 #include <CppUtils/FileSystem/File.hpp>
 #include <CppUtils/Functional/Function.hpp>
+#include <CppUtils/Graph/MeshNetwork.hpp>
 #include <CppUtils/Graph/MeshNode.hpp>
 #include <CppUtils/Graph/TreeNode.hpp>
 #include <CppUtils/Graph/VariantTreeNode.hpp>

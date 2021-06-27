@@ -6,53 +6,63 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 {
 	TEST_GROUP("Graph/MeshNode")
 	{
-		using StringMeshNode = CppUtils::Graph::MeshNode<std::string, std::string>;
+		using StringMeshNetwork = CppUtils::Graph::MeshNetwork<std::string, std::string>;
+		using Node = StringMeshNetwork::Node;
 
 		addTest("One", [] {
-			auto banana = std::make_shared<StringMeshNode>("banana");
+			auto meshNetwork = StringMeshNetwork{};
+			auto banana = std::shared_ptr<Node>{meshNetwork.newNode("banana")};
 			CppUtils::Log::Logger::logInformation(banana->value);
 			ASSERT(banana->value == "banana");
 		});
 
 		addTest("Two", [] {
-			auto fruit = std::make_shared<StringMeshNode>("fruit");
-			auto banana = std::make_shared<StringMeshNode>("banana");
-			StringMeshNode::attach("Categories", fruit, "Elements", banana);
+			auto meshNetwork = StringMeshNetwork{};
+			auto fruit = std::shared_ptr<Node>{meshNetwork.newNode("fruit")};
+			auto banana = std::shared_ptr<Node>{meshNetwork.newNode("banana")};
+			Node::attach("Categories", fruit, "Elements", banana);
 
 			ASSERT(fruit->value == "fruit");
-			const auto fruitName = fruit->get("Elements")[0];
+			const auto fruitName = std::shared_ptr<Node>{fruit->get("Elements")[0]};
 			ASSERT(fruitName->value == "banana");
 
 			for (const auto& aFruit : fruit->get("Elements"))
-				CppUtils::Log::Logger::logInformation(aFruit->value + " is a " + aFruit->get("Categories")[0]->value);
+			{
+				auto sharedFruit = std::shared_ptr<Node>{aFruit};
+				CppUtils::Log::Logger::logInformation(sharedFruit->value + " is a " + std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value);
+			}
 		});
 
 		addTest("Many", [] {
-			auto fruit = std::make_shared<StringMeshNode>("fruit");
-			auto banana = std::make_shared<StringMeshNode>("banana");
-			auto lemon = std::make_shared<StringMeshNode>("lemon");
-			auto color = std::make_shared<StringMeshNode>("color");
-			auto yellow = std::make_shared<StringMeshNode>("yellow");
-			auto orangeFruit = std::make_shared<StringMeshNode>("orange");
-			auto orangeColor = std::make_shared<StringMeshNode>("orange");
+			auto meshNetwork = StringMeshNetwork{};
+			auto fruit = std::shared_ptr<Node>{meshNetwork.newNode("fruit")};
+			auto banana = std::shared_ptr<Node>{meshNetwork.newNode("banana")};
+			auto lemon = std::shared_ptr<Node>{meshNetwork.newNode("lemon")};
+			auto color = std::shared_ptr<Node>{meshNetwork.newNode("color")};
+			auto yellow = std::shared_ptr<Node>{meshNetwork.newNode("yellow")};
+			auto orangeFruit = std::shared_ptr<Node>{meshNetwork.newNode("orange")};
+			auto orangeColor = std::shared_ptr<Node>{meshNetwork.newNode("orange")};
 
-			StringMeshNode::attach("Colors", yellow, "Elements", banana);
-			StringMeshNode::attach("Colors", yellow, "Elements", lemon);
-			StringMeshNode::attach("Colors", orangeColor, "Elements", orangeFruit);
-			StringMeshNode::attach("Categories", color, "Elements", yellow);
-			StringMeshNode::attach("Categories", fruit, "Elements", banana);
-			StringMeshNode::attach("Categories", fruit, "Elements", lemon);
-			StringMeshNode::attach("Categories", color, "Elements", orangeColor);
-			StringMeshNode::attach("Categories", fruit, "Elements", orangeFruit);
+			Node::attach("Colors", yellow, "Elements", banana);
+			Node::attach("Colors", yellow, "Elements", lemon);
+			Node::attach("Colors", orangeColor, "Elements", orangeFruit);
+			Node::attach("Categories", color, "Elements", yellow);
+			Node::attach("Categories", fruit, "Elements", banana);
+			Node::attach("Categories", fruit, "Elements", lemon);
+			Node::attach("Categories", color, "Elements", orangeColor);
+			Node::attach("Categories", fruit, "Elements", orangeFruit);
 
 			ASSERT(fruit->value == "fruit");
-			const auto fruitName = fruit->get("Elements")[0];
+			const auto fruitName = std::shared_ptr<Node>{fruit->get("Elements")[0]};
 			ASSERT(fruitName->value == "banana");
-			const auto fruitColor = fruitName->get("Colors")[0];
+			const auto fruitColor = std::shared_ptr<Node>{fruitName->get("Colors")[0]};
 			ASSERT(fruitColor->value == "yellow");
 			
 			for (const auto& aFruit : fruit->get("Elements"))
-				CppUtils::Log::Logger::logInformation(aFruit->value + " is a " + aFruit->get("Colors")[0]->value + " " + aFruit->get("Categories")[0]->value);
+			{
+				auto sharedFruit = std::shared_ptr<Node>{aFruit};
+				CppUtils::Log::Logger::logInformation(sharedFruit->value + " is a " + std::shared_ptr<Node>{sharedFruit->get("Colors")[0]}->value + " " + std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value);
+			}
 		});
 	}
 }

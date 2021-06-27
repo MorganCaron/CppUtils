@@ -11,6 +11,7 @@ sources = files([
 ])
 
 headers = files([
+	'include/CppUtils/Graph/MeshNetwork.hpp',
 	'include/CppUtils/Graph/MeshNode.hpp',
 	'include/CppUtils/Graph/TreeNode.hpp',
 	'include/CppUtils/Graph/VariantTreeNode.hpp'
