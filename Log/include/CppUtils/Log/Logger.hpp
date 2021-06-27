@@ -55,7 +55,7 @@ namespace CppUtils::Log
 	class Logger final
 	{
 	public:
-		enum class OutputType
+		enum class OutputType: char
 		{
 			Cerr = 0,
 			Cout,

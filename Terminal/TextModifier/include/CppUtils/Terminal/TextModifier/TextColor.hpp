@@ -9,7 +9,7 @@ namespace CppUtils::Terminal::TextModifier::TextColor
 {
 	using namespace std::literals;
 	
-	enum class TextColorEnum
+	enum class TextColorEnum: char
 	{
 		Default,
 		Black,

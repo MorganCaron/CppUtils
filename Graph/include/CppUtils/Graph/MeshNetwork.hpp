@@ -19,7 +19,7 @@ namespace CppUtils::Graph
 		template<typename... Args>
 		[[nodiscard]] inline std::weak_ptr<Node> newNode(Args&&... params)
 		{
-			const auto lock = std::lock_guard(m_nodesMutex);
+			[[maybe_unused]] const auto lock = std::lock_guard(m_nodesMutex);
 			return m_nodes.emplace_back(std::make_shared<Node>(std::forward<Args>(params)...));
 		}
 

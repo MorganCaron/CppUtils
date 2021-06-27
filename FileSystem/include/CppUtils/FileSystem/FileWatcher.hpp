@@ -12,7 +12,7 @@ namespace CppUtils::FileSystem
 	class FileWatcher final
 	{
 	public:
-		enum class FileStatus { Created, Modified, Deleted };
+		enum class FileStatus: char { Created, Modified, Deleted };
 
 		FileWatcher() = delete;
 

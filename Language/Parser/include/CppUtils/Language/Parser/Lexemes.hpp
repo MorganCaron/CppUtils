@@ -38,7 +38,7 @@ namespace CppUtils::Language::Parser
 	template<typename... Types>
 	using ExpressionLexeme = Lexeme<ExpressionLexemeType, Expression<Types...>>;
 
-	enum class RecurrenceType
+	enum class RecurrenceType: char
 	{
 		Optional,
 		EqualTo,

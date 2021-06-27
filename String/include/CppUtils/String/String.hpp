@@ -60,4 +60,10 @@ namespace CppUtils::String
 	{
 		return rightTrimString(leftTrimString(stringView));
 	}
+
+	[[nodiscard]] inline std::string getPrintableChar(char c)
+	{
+		using namespace std::literals;
+		return std::isprint(c) ? ("'"s + c + '\'') : std::to_string(c);
+	}
 }

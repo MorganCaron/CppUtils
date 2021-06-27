@@ -8,7 +8,7 @@ namespace CppUtils::Terminal::TextModifier::TextStyle
 {
 	using namespace std::literals;
 	
-	enum class TextStyleEnum
+	enum class TextStyleEnum: char
 	{
 		Bolder,
 		Lighter,

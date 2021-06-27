@@ -46,5 +46,12 @@ namespace CppUtils::UnitTests::String
 			CppUtils::Log::Logger::logInformation('[' + std::string{trimString} + ']');
 			ASSERT(trimString == "Hello World!");
 		});
+
+		addTest("getPrintableChar", [] {
+			auto output = ""s;
+			for (char c = 0; c >= 0; ++c)
+				output += CppUtils::String::getPrintableChar(c) + ' ';
+			CppUtils::Log::Logger::logInformation(output);
+		});
 	}
 }
