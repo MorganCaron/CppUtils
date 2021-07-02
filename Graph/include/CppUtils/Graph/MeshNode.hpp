@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <vector>
-#include <algorithm>
 #include <stdexcept>
 #include <functional>
 #include <unordered_map>
@@ -13,71 +12,57 @@ namespace CppUtils::Graph
 	class MeshNode
 	{
 	public:
-		using Link = std::weak_ptr<MeshNode<Key, Value, Hash>>;
+		using Node = MeshNode<Key, Value, Hash>;
 
-		static inline void attach(const Key& branchName0, const Link& link0, const Key& branchName1, const Link& link1, bool unique = false)
+		static inline void attach(const Key& branchKey0, const std::shared_ptr<Node>& node0, const Key& branchKey1, const std::shared_ptr<Node>& node1)
 		{
-			if (auto node0 = link0.lock(), node1 = link1.lock(); node0 && node1)
-			{
-				node1->attach(branchName0, link0, unique);
-				node0->attach(branchName1, link1, unique);
-			}
+			node1->attach(branchKey0, node0);
+			node0->attach(branchKey1, node1);
 		}
 		
-		explicit MeshNode(Value c_value): value(std::move(c_value))
+		explicit MeshNode(Value c_value):
+			value(std::move(c_value))
 		{}
 
-		[[nodiscard]] inline bool exists(const Key& branchName) const
+		[[nodiscard]] inline bool exists(const Key& branchKey) const
 		{
-			return m_branchs.find(branchName) != m_branchs.end();
+			return m_branchs.find(branchKey) != m_branchs.end();
 		}
 
-		[[nodiscard]] const std::vector<Link>& get(const Key& branchName) const
+		[[nodiscard]] const std::vector<std::weak_ptr<Node>>& get(const Key& branchKey) const
 		{
-			if (!exists(branchName))
+			if (!exists(branchKey))
 				throw std::out_of_range("The branch does not exist in the MeshNode.");
-			return m_branchs.at(branchName);
+			return m_branchs.at(branchKey);
 		}
 
-		[[nodiscard]] std::vector<Link>& operator[](const Key& branchName)
+		[[nodiscard]] std::vector<std::weak_ptr<Node>>& operator[](const Key& branchKey)
 		{
-			if (!exists(branchName))
-				m_branchs[branchName] = std::vector<Link>{};
-			return m_branchs[branchName];
+			if (!exists(branchKey))
+				m_branchs[branchKey] = std::vector<std::weak_ptr<Node>>{};
+			return m_branchs[branchKey];
 		}
 
-		void attach(const Key& branchName, const Link& link, bool unique = false)
+		void attach(const Key& branchKey, const std::shared_ptr<Node>& node)
 		{
-			if (!exists(branchName))
-				m_branchs[branchName] = std::vector<Link>{};
-			if (unique)
-			{
-				const auto node = link.lock();
-				const auto& links = m_branchs.at(branchName);
-				if (!node || std::find_if(links.begin(), links.end(), [&node](const auto& storedLink) {
-					if (const auto storedNode = storedLink.lock())
-						return node->value == storedNode->value;
-					else
-						return false;
-				}) != links.end())
-					return;
-			}
-			m_branchs[branchName].push_back(link);
+			if (!exists(branchKey))
+				m_branchs[branchKey] = std::vector<std::weak_ptr<Node>>{};
+			m_branchs[branchKey].push_back(node);
 		}
 
-		inline void detach(const Key& branchName)
+		inline void detach(const Key& branchKey)
 		{
-			m_branchs.erase(branchName);
+			m_branchs.erase(branchKey);
 		}
 
-		[[nodiscard]] inline std::size_t count(const Key& branchName) const
+		[[nodiscard]] inline std::size_t count(const Key& branchKey) const
 		{
-			return exists(branchName) ? static_cast<std::size_t>(get(branchName).size()) : 0;
+			return exists(branchKey) ? static_cast<std::size_t>(get(branchKey).size()) : 0;
 		}
 
 		Value value;
 
 	protected:
-		std::unordered_map<Key, std::vector<Link>, Hash> m_branchs;
+		std::unordered_map<Key, std::vector<std::weak_ptr<Node>>, Hash> m_branchs;
 	};
 }
