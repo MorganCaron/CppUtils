@@ -19,7 +19,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
 			const auto tokenTree = lexer.parseString("print"_token, src);
-			CppUtils::Graph::logTreeNode(tokenTree);
+			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
 			ASSERT(tokenTree.value == "print"_token);
 			ASSERT(tokenTree.childs.size() == 1);
@@ -42,7 +42,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
 			const auto tokenTree = lexer.parseString("print"_token, src);
-			CppUtils::Graph::logTreeNode(tokenTree);
+			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
 			ASSERT(tokenTree.value == "print"_token);
 			ASSERT(tokenTree.childs.size() == 1);
@@ -75,7 +75,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 				print("Ok");
 			)"sv;
 			const auto tokenTree = lexer.parseString("main"_token, src);
-			CppUtils::Graph::logTreeNode(tokenTree);
+			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
 			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.size() == 3);
@@ -105,7 +105,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 				test "test" test "test"
 			)"sv;
 			const auto tokenTree = lexer.parseString("main"_token, src);
-			CppUtils::Graph::logTreeNode(tokenTree);
+			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
 			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.size() == 4);
@@ -129,7 +129,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 			static constexpr auto src = "aab"sv;
 			const auto tokenTree = lexer.parseString("main"_token, src);
-			CppUtils::Graph::logTreeNode(tokenTree);
+			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
 			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.size() == 2);

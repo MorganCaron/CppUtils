@@ -5,7 +5,7 @@
 
 #include <CppUtils/Platform/OS.hpp>
 
-namespace CppUtils::Terminal::TextModifier::TextColor
+namespace CppUtils::Terminal::TextColor
 {
 	using namespace std::literals;
 	
@@ -41,34 +41,24 @@ namespace CppUtils::Terminal::TextModifier::TextColor
 		{
 			case TextColorEnum::Default:
 				return Attribute::Default;
-				break;
 			case TextColorEnum::Black:
 				return Attribute::Black;
-				break;
 			case TextColorEnum::Red:
 				return Attribute::Red;
-				break;
 			case TextColorEnum::Green:
 				return Attribute::Green;
-				break;
 			case TextColorEnum::Yellow:
 				return Attribute::Yellow;
-				break;
 			case TextColorEnum::Blue:
 				return Attribute::Blue;
-				break;
 			case TextColorEnum::Magenta:
 				return Attribute::Magenta;
-				break;
 			case TextColorEnum::Cyan:
 				return Attribute::Cyan;
-				break;
 			case TextColorEnum::White:
 				return Attribute::White;
-				break;
 			default:
 				return Attribute::Default;
-				break;
 		}
 	}
 #elif defined(OS_LINUX) || defined(OS_MACOS)
@@ -91,34 +81,24 @@ namespace CppUtils::Terminal::TextModifier::TextColor
 		{
 			case TextColorEnum::Default:
 				return ANSIEscapeCode::Default;
-				break;
 			case TextColorEnum::Black:
 				return ANSIEscapeCode::Black;
-				break;
 			case TextColorEnum::Red:
 				return ANSIEscapeCode::Red;
-				break;
 			case TextColorEnum::Green:
 				return ANSIEscapeCode::Green;
-				break;
 			case TextColorEnum::Yellow:
 				return ANSIEscapeCode::Yellow;
-				break;
 			case TextColorEnum::Blue:
 				return ANSIEscapeCode::Blue;
-				break;
 			case TextColorEnum::Magenta:
 				return ANSIEscapeCode::Magenta;
-				break;
 			case TextColorEnum::Cyan:
 				return ANSIEscapeCode::Cyan;
-				break;
 			case TextColorEnum::White:
 				return ANSIEscapeCode::White;
-				break;
 			default:
 				return ANSIEscapeCode::Default;
-				break;
 		}
 	}
 #endif

@@ -119,14 +119,15 @@ namespace CppUtils::Language::IR::Compiler
 		{
 			using namespace Type::Literals;
 			const auto& functionName = std::get<Type::Token>(astNode.childs.at(0).value);
-			context.returnRegister = context.newRegister();
-			context.addInstruction(context.createInstruction(context.returnRegister, functionName.name));
-			auto parameters = std::vector<Address>{context.returnRegister};
+			const auto returnRegister = context.newRegister(), functionLabel = context.newRegister();
+			context.addInstruction(context.createInstruction(functionLabel, functionName.name));
+			auto parameters = std::vector<Address>{returnRegister, functionLabel};
 			std::transform(astNode.childs.begin() + 1, astNode.childs.end(), std::back_inserter(parameters), [&context](const auto& astNode) -> Address {
 				context.compiler.get().compile(astNode, context);
 				return context.returnRegister;
 			});
 			context.addInstruction(context.createInstruction("call"_token, std::move(parameters)));
+			context.returnRegister = returnRegister;
 		}
 
 		static void compileIf(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)

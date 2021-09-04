@@ -6,6 +6,8 @@ namespace CppUtils::UnitTests::Graph::TreeNode
 {
 	TEST_GROUP("Graph/TreeNode")
 	{
+		using namespace CppUtils::Language::Json::Literals;
+		
 		using StringTreeNode = CppUtils::Graph::TreeNode<std::string>;
 
 		addTest("", [] {
@@ -32,7 +34,30 @@ namespace CppUtils::UnitTests::Graph::TreeNode
 			subBranch0.childs.emplace_back(StringTreeNode{"SubSubBranch0"});
 			subBranch0.childs.emplace_back(StringTreeNode{"SubSubBranch1"});
 			root.childs.emplace_back(StringTreeNode{"Branch3"});
-			CppUtils::Graph::logTreeNode(root);
+			CppUtils::Log::TreeNodeLogger::log(root);
 		});
+
+		/*addTest("Differences", [] {
+			[[maybe_unused]] const auto jsonTree0 = R"(
+			{
+				"removed": "value",
+				"branch0": {
+					"key0": "value0",
+					"key1": "value1"
+				}
+			}
+			)"_json;
+			[[maybe_unused]] const auto jsonTree1 = R"(
+			{
+				"branch0": {
+					"key0": "value0",
+					"key1": "edited"
+				},
+				"added": "value"
+			}
+			)"_json;
+			// const auto differences = 
+			// ASSERT(jsonTree0 != jsonTree1);
+		});*/
 	}
 }

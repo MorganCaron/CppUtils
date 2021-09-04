@@ -106,7 +106,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 
 		inline void call(Address destination)
 		{
-			push<Address>(registerVariables.instructionPointer);
+			push<Address>(registerVariables.instructionPointer == 0 ? 0 : reinterpret_cast<Address>(getInstruction().nextInstruction));
 			jump(destination);
 		}
 

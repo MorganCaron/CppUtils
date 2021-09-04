@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CppUtils/Chrono/Chronometer.hpp>
+#include <CppUtils/Container/Sequence.hpp>
 #include <CppUtils/Container/Vector.hpp>
 #include <CppUtils/External/DllExport.hpp>
 #include <CppUtils/External/DynamicLibrary.hpp>
@@ -43,9 +44,14 @@
 #include <CppUtils/Language/Markdown/MarkdownLexer.hpp>
 #include <CppUtils/Language/Xml/XmlLexer.hpp>
 #include <CppUtils/String/String.hpp>
-#include <CppUtils/Terminal/TextModifier/TextModifier.hpp>
+#include <CppUtils/Terminal/Terminal.hpp>
+#include <CppUtils/Terminal/TextStyle.hpp>
+#include <CppUtils/Terminal/TextColor.hpp>
+#include <CppUtils/Terminal/BackgroundColor.hpp>
+#include <CppUtils/Terminal/TextModifier.hpp>
 #include <CppUtils/Log/ChronoLogger.hpp>
 #include <CppUtils/Log/Logger.hpp>
+#include <CppUtils/Log/TreeNodeLogger.hpp>
 #include <CppUtils/Parameters/ParametersLexer.hpp>
 #include <CppUtils/UnitTest/Test.hpp>
 #include <CppUtils/UnitTest/Testable.hpp>

@@ -14,7 +14,7 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 			const auto xmlTree = R"(
 			<h1>Title</h1>
 			)"_xml;
-			CppUtils::Graph::logTreeNode(xmlTree);
+			CppUtils::Log::TreeNodeLogger::log(xmlTree);
 
 			ASSERT(xmlTree.exists("h1"_token));
 			const auto& h1 = xmlTree.at("h1"_token);
@@ -29,7 +29,7 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 				<li>Third</li>
 			</ul>
 			)"_xml;
-			CppUtils::Graph::logTreeNode(xmlTree);
+			CppUtils::Log::TreeNodeLogger::log(xmlTree);
 
 			ASSERT(xmlTree.exists("ul"_token));
 			const auto& ul = xmlTree.at("ul"_token);
@@ -46,7 +46,7 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 			const auto xmlTree = R"(
 			<h1 color="red">Title</h1>
 			)"_xml;
-			CppUtils::Graph::logTreeNode(xmlTree);
+			CppUtils::Log::TreeNodeLogger::log(xmlTree);
 
 			ASSERT(xmlTree.exists("h1"_token));
 			const auto& h1 = xmlTree.at("h1"_token);

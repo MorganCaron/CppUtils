@@ -14,49 +14,45 @@ namespace CppUtils::Log
 		{ Logger::OutputType::Clog, &std::clog }
 	};
 
-	std::unordered_map<Type::Token, Terminal::TextModifier::TextColor::TextColorEnum, Type::Token::hash_fn> Logger::m_colors{
-		{ "Important"_token, Terminal::TextModifier::TextColor::TextColorEnum::Cyan },
-		{ "Success"_token, Terminal::TextModifier::TextColor::TextColorEnum::Green },
-		{ "Debug"_token, Terminal::TextModifier::TextColor::TextColorEnum::Magenta },
-		{ "Detail"_token, Terminal::TextModifier::TextColor::TextColorEnum::Blue },
-		{ "Warning"_token, Terminal::TextModifier::TextColor::TextColorEnum::Yellow },
-		{ "Error"_token, Terminal::TextModifier::TextColor::TextColorEnum::Red }
+	std::unordered_map<Type::Token, Logger::OutputType, Type::Token::hash_fn> Logger::m_loggerOutputs{
+		{ "Information"_token, Logger::OutputType::Cout },
+		{ "Important"_token, Logger::OutputType::Cout },
+		{ "Success"_token, Logger::OutputType::Cout },
+		{ "Debug"_token, Logger::OutputType::Cout },
+		{ "Detail"_token, Logger::OutputType::Cout },
+		{ "Warning"_token, Logger::OutputType::Cout },
+		{ "Error"_token, Logger::OutputType::Cerr }
 	};
 
-	void Logger::log(OutputType loggerOutput, Type::Token logType, std::string_view message, bool newLine)
+	std::unordered_map<Type::Token, Terminal::TextColor::TextColorEnum, Type::Token::hash_fn> Logger::m_colors{
+		{ "Information"_token, Terminal::TextColor::TextColorEnum::Default },
+		{ "Important"_token, Terminal::TextColor::TextColorEnum::Cyan },
+		{ "Success"_token, Terminal::TextColor::TextColorEnum::Green },
+		{ "Debug"_token, Terminal::TextColor::TextColorEnum::Magenta },
+		{ "Detail"_token, Terminal::TextColor::TextColorEnum::Blue },
+		{ "Warning"_token, Terminal::TextColor::TextColorEnum::Yellow },
+		{ "Error"_token, Terminal::TextColor::TextColorEnum::Red }
+	};
+
+	void Logger::log(Type::Token logType, std::string_view message, Terminal::TextColor::TextColorEnum textColor, bool newLine)
 	{
 		if (!state.get(logType))
 			return;
 		
-		if (m_outputs.find(loggerOutput) == m_outputs.end())
-			throw std::out_of_range{"An unknown output stream has been passed to the logger"};
-		auto& stream = *(m_outputs[loggerOutput]);
-
+		auto& stream = getLoggerOutputStream(logType);
 		if (message.empty())
 		{
 			if (newLine)
 				stream << std::endl;
 			return;
 		}
+		
+		if (textColor != Terminal::TextColor::TextColorEnum::Default)
+			Terminal::TextModifier::colorize(stream, textColor);
 
-		if (logType == "Information"_token)
-		{
-			stream << ((newLine) ? (std::string{message} + '\n') : message) << std::flush;
-			return;
-		}
-
-#if defined(OS_WINDOWS)
-		const auto attributes = Terminal::TextModifier::getTextColor(stream);
-#endif
-		if (m_colors.find(logType) != m_colors.end())
-			Terminal::TextModifier::colorize(stream, m_colors.at(logType));
-		else
-			Terminal::TextModifier::reset(stream);
 		stream << ((newLine) ? (std::string{message} + '\n') : message) << std::flush;
-#if defined(OS_WINDOWS)
-		SetConsoleTextAttribute(Terminal::getTerminalHandle(stream), attributes);
-#elif defined(OS_LINUX) || defined(OS_MACOS)
-		Terminal::TextModifier::reset(stream);
-#endif
+		
+		if (textColor != Terminal::TextColor::TextColorEnum::Default)
+			Terminal::TextModifier::reset(stream);
 	}
 }

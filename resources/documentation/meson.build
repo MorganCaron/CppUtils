@@ -35,7 +35,6 @@ if enable_documentation
 				'../Platform/include/',
 				'../String/include/',
 				'../Terminal/include/',
-				'../Terminal/TextModifier/include/',
 				'../Thread/include/',
 				'../Type/include/',
 				'../UnitTest/include/'

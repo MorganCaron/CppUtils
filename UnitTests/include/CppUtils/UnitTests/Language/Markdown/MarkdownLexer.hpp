@@ -14,7 +14,7 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			const auto markdownTree = R"(
 			# Hello World!
 			)"_markdown;
-			CppUtils::Graph::logTreeNode(markdownTree);
+			CppUtils::Log::TreeNodeLogger::log(markdownTree);
 
 			ASSERT(markdownTree.exists("h1"_token));
 			ASSERT(markdownTree.at("h1"_token).exists("content"_token));
@@ -33,7 +33,7 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			**_italic and bold_**
 			___italic and bold___
 			)"_markdown;
-			CppUtils::Graph::logTreeNode(markdownTree);
+			CppUtils::Log::TreeNodeLogger::log(markdownTree);
 
 			ASSERT(markdownTree.childs.size() == 9);
 			ASSERT(markdownTree.childs.at(0).childs.size() == 1);
@@ -49,7 +49,7 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			##### H5
 			###### H6
 			)"_markdown;
-			CppUtils::Graph::logTreeNode(markdownTree);
+			CppUtils::Log::TreeNodeLogger::log(markdownTree);
 
 			ASSERT(markdownTree.exists("h1"_token));
 			ASSERT(markdownTree.exists("h2"_token));
@@ -64,7 +64,7 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			[ ]
 			[x]
 			)"_markdown;
-			CppUtils::Graph::logTreeNode(markdownTree);
+			CppUtils::Log::TreeNodeLogger::log(markdownTree);
 
 			ASSERT(markdownTree.getChildValue(0) == "checkbox"_token);
 			ASSERT(markdownTree.getChildValue(1) == "checkbox"_token);
@@ -77,7 +77,7 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			const auto markdownTree = R"(
 			![title](url)
 			)"_markdown;
-			CppUtils::Graph::logTreeNode(markdownTree);
+			CppUtils::Log::TreeNodeLogger::log(markdownTree);
 
 			ASSERT(markdownTree.exists("image"_token));
 			ASSERT(markdownTree.at("image"_token).exists("attributes"_token));
@@ -90,7 +90,7 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			const auto markdownTree = R"(
 			[title](url)
 			)"_markdown;
-			CppUtils::Graph::logTreeNode(markdownTree);
+			CppUtils::Log::TreeNodeLogger::log(markdownTree);
 
 			ASSERT(markdownTree.exists("link"_token));
 			ASSERT(markdownTree.at("link"_token).exists("attributes"_token));
@@ -103,7 +103,7 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			const auto markdownTree = R"(
 			`const variable = 42;`
 			)"_markdown;
-			CppUtils::Graph::logTreeNode(markdownTree);
+			CppUtils::Log::TreeNodeLogger::log(markdownTree);
 
 			ASSERT(markdownTree.exists("code"_token));
 			ASSERT(markdownTree.at("code"_token).exists("content"_token));
@@ -116,7 +116,7 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			const variable = 42;
 			```
 			)"_markdown;
-			CppUtils::Graph::logTreeNode(markdownTree);
+			CppUtils::Log::TreeNodeLogger::log(markdownTree);
 
 			ASSERT(markdownTree.exists("blockcode"_token));
 			const auto& blockcode = markdownTree.at("blockcode"_token);

@@ -8,6 +8,7 @@ sources = files([
 ])
 
 headers = files([
+	'include/CppUtils/Container/Sequence.hpp',
 	'include/CppUtils/Container/Vector.hpp'
 ])
 

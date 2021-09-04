@@ -16,11 +16,11 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			main: "Test";
 			)"sv;
 			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
-			CppUtils::Graph::logTreeNode(grammarTree);
+			CppUtils::Log::TreeNodeLogger::log(grammarTree);
 			
 			static constexpr auto languageSrc = "Test"sv;
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
-			CppUtils::Graph::logTreeNode(tokenTree);
+			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
 			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.size() == 0);
@@ -41,13 +41,13 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			string: spaceParser quoteParser;
 			)"sv;
 			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
-			CppUtils::Graph::logTreeNode(grammarTree);
+			CppUtils::Log::TreeNodeLogger::log(grammarTree);
 			
 			static constexpr auto languageSrc = R"(
 				print("Hello World!");
 			)"sv;
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
-			CppUtils::Graph::logTreeNode(tokenTree);
+			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
 			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.size() == 1);
@@ -69,11 +69,11 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			!word: spaceParser 'hide';
 			)"sv;
 			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
-			CppUtils::Graph::logTreeNode(grammarTree);
+			CppUtils::Log::TreeNodeLogger::log(grammarTree);
 			
 			static constexpr auto languageSrc = "hide"sv;
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
-			CppUtils::Graph::logTreeNode(tokenTree);
+			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
 			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.empty());
@@ -89,11 +89,11 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			word[name]: spaceParser 'name';
 			)"sv;
 			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
-			CppUtils::Graph::logTreeNode(grammarTree);
+			CppUtils::Log::TreeNodeLogger::log(grammarTree);
 			
 			static constexpr auto languageSrc = "name"sv;
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
-			CppUtils::Graph::logTreeNode(tokenTree);
+			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
 			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.getChildValue() == "name"_token);
@@ -110,11 +110,11 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			!word: spaceParser keywordParser;
 			)"sv;
 			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
-			CppUtils::Graph::logTreeNode(grammarTree);
+			CppUtils::Log::TreeNodeLogger::log(grammarTree);
 			
 			static constexpr auto languageSrc = "This is a test"sv;
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
-			CppUtils::Graph::logTreeNode(tokenTree);
+			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
 			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.size() == 4);
@@ -128,11 +128,11 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			a: 'a';
 			)"sv;
 			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
-			CppUtils::Graph::logTreeNode(grammarTree);
+			CppUtils::Log::TreeNodeLogger::log(grammarTree);
 			
 			static constexpr auto languageSrc = "aab"sv;
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
-			CppUtils::Graph::logTreeNode(tokenTree);
+			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
 			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.size() == 2);
@@ -159,7 +159,7 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			variableCall: spaceParser keywordParser;
 			)"sv;
 			const auto grammarTree = grammarLexer.parseGrammar(grammarSrc);
-			CppUtils::Graph::logTreeNode(grammarTree);
+			CppUtils::Log::TreeNodeLogger::log(grammarTree);
 			
 			static constexpr auto languageSrc = R"(
 			print("Hello World!");
@@ -168,7 +168,7 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			print("Ok");
 			)"sv;
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
-			CppUtils::Graph::logTreeNode(tokenTree);
+			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
 			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.size() == 4);

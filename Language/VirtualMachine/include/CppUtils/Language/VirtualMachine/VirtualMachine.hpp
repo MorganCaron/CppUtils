@@ -30,7 +30,7 @@ namespace CppUtils::Language::VirtualMachine
 			}
 			catch (const std::exception& exception)
 			{
-				throw std::runtime_error{"In the " + std::string{token.name} + " instruction:\n" + exception.what()};
+				throw std::runtime_error{"In the virtual machine:\nIn the " + std::string{token.name} + " operation:\n" + exception.what()};
 			}
 		}
 

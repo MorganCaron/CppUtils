@@ -7,6 +7,7 @@
 #include <CppUtils/Type/Traits.hpp>
 #include <CppUtils/Type/Variant.hpp>
 #include <CppUtils/Log/Logger.hpp>
+#include <CppUtils/Container/Sequence.hpp>
 
 namespace CppUtils::Graph
 {
@@ -83,19 +84,4 @@ namespace CppUtils::Graph
 				child.forEach(key, function);
 		}
 	};
-
-	template<typename Storage>// requires Type::Traits::isPrintable<Storage> // Fonctionne sur GCC mais pas sur Clang https://godbolt.org/z/75cja8
-	void logTreeNode(const TreeNode<Storage>& treeNode, const std::string& prefix = " ") noexcept
-	{
-		auto os = std::ostringstream{};
-		os << " " << treeNode.value;
-		Log::Logger::logInformation(os.str());
-		const auto nbChilds = treeNode.childs.size();
-
-		for (auto i = 0u; i < nbChilds; ++i)
-		{
-			Log::Logger::logDetail(prefix + ((i != nbChilds - 1) ? "├" : "└") + "─", false);
-			logTreeNode(treeNode.childs.at(i), prefix + ((i != nbChilds - 1) ? "│" : " ") + "  ");
-		}
-	}
 }

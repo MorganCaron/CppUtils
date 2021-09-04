@@ -62,7 +62,7 @@ namespace CppUtils::Language::Lexer
 			}
 			catch (const std::exception& exception)
 			{
-				throw std::runtime_error{"At line " + std::to_string(context.cursor.getLineNumber()) + ", position " + std::to_string(context.cursor.getPositionInTheLine())+ ":\n" + std::string{String::rightTrimString(context.cursor.getNextNChar(20))} + "...\n" + exception.what()};
+				throw std::runtime_error{"In the parser/lexer:\nAt line " + std::to_string(context.cursor.getLineNumber()) + ", position " + std::to_string(context.cursor.getPositionInTheLine())+ ":\n" + std::string{String::rightTrimString(context.cursor.getNextNChar(20))} + "...\n" + exception.what()};
 			}
 			return rootNode;
 		}

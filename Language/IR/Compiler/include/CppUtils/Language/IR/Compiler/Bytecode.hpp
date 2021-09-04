@@ -49,7 +49,8 @@ namespace CppUtils::Language::IR::Compiler::Bytecode
 			if (type == "init"_token)
 				Log::Logger::logDebug(" \""s + name + "\" " + std::to_string(value), false);
 			if (newLine)
-				std::cout << std::endl;
+				std::cout << '\n';
+			std::cout << std::flush;
 		}
 	};
 }

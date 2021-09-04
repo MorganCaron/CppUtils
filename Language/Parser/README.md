@@ -54,7 +54,7 @@ int main()
 		throw std::runtime_error{"Quotes not found"};
 	
 	CppUtils::Terminal::setConsoleOutputUTF8();
-	CppUtils::Graph::logTreeNode(root);
+	CppUtils::Log::TreeNodeLogger::log(root);
 	
 	return 0;
 }

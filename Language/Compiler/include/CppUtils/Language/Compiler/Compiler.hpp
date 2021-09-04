@@ -33,7 +33,7 @@ namespace CppUtils::Language::Compiler
 			}
 			catch (const std::exception& exception)
 			{
-				throw std::runtime_error{"In the " + std::string{nodeType.name} + " compilation function:\n" + exception.what()};
+				throw std::runtime_error{"In the compiler:\nIn the " + std::string{nodeType.name} + " compilation function:\n" + exception.what()};
 			}
 		}
 

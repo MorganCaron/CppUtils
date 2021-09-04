@@ -18,7 +18,7 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 			}
 			)"sv);
 			
-			CppUtils::Graph::logTreeNode(irTree);
+			CppUtils::Log::TreeNodeLogger::log(irTree);
 			ASSERT(irTree.childs.size() == 1);
 			ASSERT(irTree.childs.at(0).childs.size() == 3);
 			ASSERT(irTree.childs.at(0).childs.at(2).childs.size() == 3);
@@ -39,7 +39,7 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 				return append("hello", '!');
 			}
 			)"sv);
-			CppUtils::Graph::logTreeNode(irTree);
+			CppUtils::Log::TreeNodeLogger::log(irTree);
 			ASSERT(irTree.childs.size() == 2);
 			ASSERT(irTree.childs.at(0).childs.size() == 3);
 			ASSERT(irTree.childs.at(0).childs.at(2).childs.size() == 4);
@@ -50,7 +50,7 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 			int getLength(text)
 			{
 				length = 0;
-				while ((text == 0) == 0)
+				while ((*text == 0) == 0)
 				{
 					length += 1;
 					text += 1;
@@ -64,7 +64,7 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 				return getLength(text);
 			}
 			)"sv);
-			CppUtils::Graph::logTreeNode(irTree);
+			CppUtils::Log::TreeNodeLogger::log(irTree);
 			ASSERT(irTree.childs.size() == 2);
 			ASSERT(irTree.childs.at(0).childs.size() == 3);
 			ASSERT(irTree.childs.at(0).childs.at(2).childs.size() == 3);

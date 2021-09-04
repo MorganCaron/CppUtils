@@ -29,7 +29,7 @@ namespace CppUtils::UnitTest
 
 			auto oldLoggerState = Log::Logger::state;
 			if (settings.verbose)
-				Log::Logger::logImportant(std::string(50, '_') + '\n' + getName().data() + ':');
+				Log::Logger::logImportant("──────────────────────────────────────────────────\n"s + getName().data() + ':');
 			Log::Logger::state.setAll(settings.verbose);
 			Log::Logger::state.set("Information"_token, settings.verbose && settings.detail);
 			Log::Logger::state.set("Detail"_token, settings.verbose && settings.detail);

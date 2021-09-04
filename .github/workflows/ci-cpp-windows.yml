@@ -44,6 +44,7 @@ jobs:
       if: ${{ matrix.library-type == 'shared' }}
       run: |
         cp ./build/External/libCppUtils-External.dll ./build/UnitTests
+        cp ./build/Terminal/libCppUtils-Terminal.dll ./build/UnitTests
         cp ./build/Log/libCppUtils-Log.dll ./build/UnitTests
         cp ./build/Type/libCppUtils-Type.dll ./build/UnitTests
     - name: Run tests

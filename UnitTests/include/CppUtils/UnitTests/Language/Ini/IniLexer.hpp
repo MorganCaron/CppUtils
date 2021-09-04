@@ -16,7 +16,7 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			[Section 1]
 			key=value
 			)"_ini;
-			CppUtils::Graph::logTreeNode(iniTree);
+			CppUtils::Log::TreeNodeLogger::log(iniTree);
 
 			const auto jsonTree = R"(
 			{
@@ -37,7 +37,7 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			[Numbers]
 			pi=3.14
 			)"_ini;
-			CppUtils::Graph::logTreeNode(iniTree);
+			CppUtils::Log::TreeNodeLogger::log(iniTree);
 
 			const auto jsonTree = R"(
 			{
@@ -60,7 +60,7 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			key=value     ;comment
 			;comment
 			)"_ini;
-			CppUtils::Graph::logTreeNode(iniTree);
+			CppUtils::Log::TreeNodeLogger::log(iniTree);
 
 			const auto jsonTree = R"(
 			{
@@ -99,7 +99,7 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			bool1 = true
 			bool2 = false
 			)"_ini;
-			CppUtils::Graph::logTreeNode(iniTree);
+			CppUtils::Log::TreeNodeLogger::log(iniTree);
 
 			const auto jsonTree = R"(
 			{

@@ -86,10 +86,12 @@ namespace CppUtils::Language::IR::VirtualMachine
 		static void runCall(const Instruction& instruction, Context& context)
 		{
 			auto& [compilerOutput, programMemory] = context;
-			programMemory.push(programMemory.registerVariables.instructionPointer);
-			const auto& register0 = instruction.parametersId.at(0);
-			programMemory.call(register0);
-			programMemory.enter((instruction.parametersId.size() - 1) * programMemory.template countNecessaryMemoryCells<Address>());
+			const auto& register1 = instruction.parametersId.at(1);
+			auto stackAddress = programMemory.registerFile.at(register1);
+			auto labelAddress = programMemory.template getStackAddress<Address>(stackAddress);
+			auto label = Type::Token{*reinterpret_cast<std::string*>(labelAddress)};
+			programMemory.call(reinterpret_cast<Address>(compilerOutput.getFunctionEntryPoint(label)));
+			programMemory.enter((instruction.parametersId.size() - 2) * programMemory.template countNecessaryMemoryCells<Address>());
 		}
 
 		static void runRet(const Instruction& instruction, Context& context)

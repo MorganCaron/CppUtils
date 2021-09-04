@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CppUtils/UnitTests/Chrono/Chronometer.hpp>
+#include <CppUtils/UnitTests/Container/Sequence.hpp>
 #include <CppUtils/UnitTests/Container/Vector.hpp>
 #include <CppUtils/UnitTests/FileSystem/File/Binary.hpp>
 #include <CppUtils/UnitTests/FileSystem/File/String.hpp>
@@ -10,8 +11,8 @@
 #include <CppUtils/UnitTests/Language/ASM/Lexer.hpp>
 #include <CppUtils/UnitTests/Language/ASM/Compiler.hpp>
 #include <CppUtils/UnitTests/Language/ASM/VirtualMachine.hpp>
-#include <CppUtils/UnitTests/Language/IR/Compiler/Compiler.hpp>
 #include <CppUtils/UnitTests/Language/IR/Lexer/Lexer.hpp>
+#include <CppUtils/UnitTests/Language/IR/Compiler/Compiler.hpp>
 #include <CppUtils/UnitTests/Language/IR/VirtualMachine/VirtualMachine.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/GrammarLexer.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Lexer.hpp>

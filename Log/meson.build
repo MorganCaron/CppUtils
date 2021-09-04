@@ -12,7 +12,8 @@ sources = files([
 
 headers = files([
 	'include/CppUtils/Log/ChronoLogger.hpp',
-	'include/CppUtils/Log/Logger.hpp'
+	'include/CppUtils/Log/Logger.hpp',
+	'include/CppUtils/Log/TreeNodeLogger.hpp'
 ])
 
 cppUtils_log_lib = library(

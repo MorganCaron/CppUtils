@@ -12,21 +12,21 @@ namespace CppUtils::UnitTests::Language::ASM::Lexer
 			const auto ast = CppUtils::Language::ASM::Lexer::parse<std::uint64_t>(R"(
 			nop
 			)"sv);
-			CppUtils::Graph::logTreeNode(ast);
+			CppUtils::Log::TreeNodeLogger::log(ast);
 		});
 		
 		addTest("Halt", [] {
 			const auto ast = CppUtils::Language::ASM::Lexer::parse<std::uint64_t>(R"(
 			hlt
 			)"sv);
-			CppUtils::Graph::logTreeNode(ast);
+			CppUtils::Log::TreeNodeLogger::log(ast);
 		});
 
 		addTest("Move", [] {
 			const auto ast = CppUtils::Language::ASM::Lexer::parse<std::uint64_t>(R"(
 			mov r1, 42
 			)"sv);
-			CppUtils::Graph::logTreeNode(ast);
+			CppUtils::Log::TreeNodeLogger::log(ast);
 		});
 		
 		addTest("Add", [] {
@@ -34,7 +34,7 @@ namespace CppUtils::UnitTests::Language::ASM::Lexer
 			mov r2, 20
 			add r2, 22
 			)"sv);
-			CppUtils::Graph::logTreeNode(ast);
+			CppUtils::Log::TreeNodeLogger::log(ast);
 		});
 
 		addTest("Label", [] {
@@ -42,7 +42,7 @@ namespace CppUtils::UnitTests::Language::ASM::Lexer
 			main: mov r2, 20
 			add r2, 22
 			)"sv);
-			CppUtils::Graph::logTreeNode(ast);
+			CppUtils::Log::TreeNodeLogger::log(ast);
 		});
 	}
 }

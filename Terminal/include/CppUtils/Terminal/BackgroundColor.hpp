@@ -5,7 +5,7 @@
 
 #include <CppUtils/Platform/OS.hpp>
 
-namespace CppUtils::Terminal::TextModifier::BackgroundColor
+namespace CppUtils::Terminal::BackgroundColor
 {
 	using namespace std::literals;
 	

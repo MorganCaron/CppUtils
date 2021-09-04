@@ -7,7 +7,7 @@
 #include <unordered_map>
 
 #include <CppUtils/Type/Token.hpp>
-#include <CppUtils/Terminal/TextModifier/TextModifier.hpp>
+#include <CppUtils/Terminal/TextModifier.hpp>
 
 namespace CppUtils::Log
 {
@@ -67,47 +67,73 @@ namespace CppUtils::Log
 			m_outputs[loggerOutput] = os;
 		}
 
-		static void log(OutputType loggerOutput, Type::Token logType, std::string_view message, bool newLine = true);
+		[[nodiscard]] static inline OutputType getLoggerOutputType(Type::Token logType)
+		{
+			if (m_loggerOutputs.find(logType) == m_loggerOutputs.end())
+				throw std::out_of_range{"getLoggerOutputType(): Unknown logger type " + std::string{logType.name}};
+			return m_loggerOutputs.at(logType);
+		}
+
+		[[nodiscard]] static inline std::ostream& getLoggerOutputStream(Type::Token logType)
+		{
+			const auto outputType = getLoggerOutputType(logType);
+			if (m_outputs.find(outputType) == m_outputs.end())
+				throw std::out_of_range{"getLoggerOutputStream(): Unknown output type"};
+			return *m_outputs.at(outputType);
+		}
+
+		[[nodiscard]] static inline Terminal::TextColor::TextColorEnum getLoggerColor(Type::Token logType)
+		{
+			return m_colors.at(logType);
+		}
+
+		static void log(Type::Token logType, std::string_view message, Terminal::TextColor::TextColorEnum textColor, bool newLine = true);
+		
+		static void log(Type::Token logType, std::string_view message, bool newLine = true)
+		{
+			log(logType, message, getLoggerColor(logType), newLine);
+		}
 
 		static inline void logInformation(std::string_view message, bool newLine = true)
 		{
-			log(OutputType::Cout, "Information"_token, message, newLine);
+			log("Information"_token, message, newLine);
 		}
 
 		static inline void logImportant(std::string_view message, bool newLine = true)
 		{
-			log(OutputType::Cout, "Important"_token, message, newLine);
+			log("Important"_token, message, newLine);
 		}
 
 		static inline void logSuccess(std::string_view message, bool newLine = true)
 		{
-			log(OutputType::Cout, "Success"_token, message, newLine);
+			log("Success"_token, message, newLine);
 		}
 
 		static inline void logDebug(std::string_view message, bool newLine = true)
 		{
-			log(OutputType::Cout, "Debug"_token, message, newLine);
+			log("Debug"_token, message, newLine);
 		}
 
 		static inline void logDetail(std::string_view message, bool newLine = true)
 		{
-			log(OutputType::Cout, "Detail"_token, message, newLine);
+			log("Detail"_token, message, newLine);
 		}
 
 		static inline void logWarning(std::string_view message, bool newLine = true)
 		{
-			log(OutputType::Cout, "Warning"_token, message, newLine);
+			log("Warning"_token, message, newLine);
 		}
 
 		static inline void logError(std::string_view message, bool newLine = true)
 		{
-			log(OutputType::Cerr, "Error"_token, message, newLine);
+			log("Error"_token, message, newLine);
 		}
 
 		static State state;
 
 	private:
 		static std::unordered_map<OutputType, std::ostream*> m_outputs;
-		static std::unordered_map<Type::Token, Terminal::TextModifier::TextColor::TextColorEnum, Type::Token::hash_fn> m_colors;
+		static std::unordered_map<Type::Token, OutputType, Type::Token::hash_fn> m_loggerOutputs;
+		static std::unordered_map<Type::Token, Terminal::TextColor::TextColorEnum, Type::Token::hash_fn> m_colors;
 	};
 }

@@ -90,7 +90,7 @@ int main()
 	branch0.childs[0].childs.emplace_back(StringTreeNode{"SubBranch0"});
 
 	CppUtils::Terminal::setConsoleOutputUTF8();
-	CppUtils::Graph::logTreeNode(root);
+	CppUtils::Log::TreeNodeLogger::log(root);
 	return 0;
 }
 ```

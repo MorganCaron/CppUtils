@@ -19,7 +19,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				"string": "Hello World!"
 			}
 			)"_json;
-			CppUtils::Graph::logTreeNode(jsonTree);
+			CppUtils::Log::TreeNodeLogger::log(jsonTree);
 
 			ASSERT(jsonTree.exists("null"_token));
 			ASSERT(jsonTree.exists("boolean"_token));
@@ -40,7 +40,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				}
 			}
 			)"_json;
-			CppUtils::Graph::logTreeNode(jsonTree);
+			CppUtils::Log::TreeNodeLogger::log(jsonTree);
 
 			ASSERT(jsonTree.exists("object"_token));
 			const auto& object = jsonTree.at("object"_token);
@@ -56,7 +56,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				"array": [0, 1, 2]
 			}
 			)"_json;
-			CppUtils::Graph::logTreeNode(jsonTree);
+			CppUtils::Log::TreeNodeLogger::log(jsonTree);
 
 			ASSERT(jsonTree.exists("array"_token));
 			const auto& array = jsonTree.at("array"_token);

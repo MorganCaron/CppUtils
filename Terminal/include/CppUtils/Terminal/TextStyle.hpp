@@ -4,7 +4,7 @@
 
 #include <CppUtils/Platform/OS.hpp>
 
-namespace CppUtils::Terminal::TextModifier::TextStyle
+namespace CppUtils::Terminal::TextStyle
 {
 	using namespace std::literals;
 	

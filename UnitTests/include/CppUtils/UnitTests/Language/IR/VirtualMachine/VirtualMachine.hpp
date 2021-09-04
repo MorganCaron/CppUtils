@@ -52,7 +52,7 @@ namespace CppUtils::UnitTests::Language::IR::VirtualMachine
 			int getLength(text)
 			{
 				length = 0;
-				while ((text == 0) == 0)
+				while ((*text == 0) == 0)
 				{
 					length += 1;
 					text += 1;
@@ -67,7 +67,7 @@ namespace CppUtils::UnitTests::Language::IR::VirtualMachine
 			}
 			)"sv, context);
 			CppUtils::Log::Logger::logInformation(std::to_string(result));
-			ASSERT(result == 42);
+			ASSERT(result == 12);
 		});*/
 	}
 }
