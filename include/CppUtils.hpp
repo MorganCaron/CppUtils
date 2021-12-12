@@ -42,6 +42,7 @@
 #include <CppUtils/Language/Ini/IniLexer.hpp>
 #include <CppUtils/Language/Json/JsonLexer.hpp>
 #include <CppUtils/Language/Markdown/MarkdownLexer.hpp>
+#include <CppUtils/Language/Note/NoteLexer.hpp>
 #include <CppUtils/Language/Xml/XmlLexer.hpp>
 #include <CppUtils/String/String.hpp>
 #include <CppUtils/Terminal/Terminal.hpp>

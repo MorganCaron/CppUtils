@@ -38,4 +38,18 @@ namespace CppUtils::Language::Parser::Modifier
 		string = String::trimString(string);
 		return true;
 	}
+
+	template<typename... Types>
+	requires Type::Traits::isPresent<std::string, Types...>
+	inline bool insertString(Context<Types...>& context, std::string_view string)
+	{
+		auto& [cursor, parentNode, firstChildPosition] = context;
+		if (!parentNode.get().childs.empty())
+			if (auto& lastValue = parentNode.get().childs.back().value; std::holds_alternative<std::string>(lastValue)) {
+				std::get<std::string>(lastValue) += ' ';
+				return true;
+			}
+		parentNode.get().childs.emplace_back(Parser::ASTNode<Types...>{std::string{string}});
+		return true;
+	}
 }
