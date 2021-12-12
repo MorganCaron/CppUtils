@@ -29,9 +29,9 @@ namespace CppUtils::Language::IR::Compiler
 
 		[[nodiscard]] Bytecode::Instruction<Address>* getFunctionEntryPoint(const Type::Token& label) const
 		{
-			if (functions.find(label) == functions.end())
-				throw std::runtime_error{"Undefined label \"" + std::string{label.name} + '"'};
-			return functions.at(label).entryPoint;
+			if (const auto functionIterator = functions.find(label); functionIterator != functions.end())
+				return functionIterator->second.entryPoint;
+			throw std::runtime_error{"Undefined label \"" + std::string{label.name} + '"'};
 		}
 
 		void log() const

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string_view>
 
+#include <CppUtils/Platform/OS.hpp>
 #include <CppUtils/Terminal/Terminal.hpp>
 #include <CppUtils/Terminal/TextStyle.hpp>
 #include <CppUtils/Terminal/TextColor.hpp>

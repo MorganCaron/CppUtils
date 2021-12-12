@@ -31,20 +31,20 @@ namespace CppUtils::Language::IR::Compiler
 
 		static void compileIdent(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
-			const auto ident = std::get<Type::Token>(astNode.childs.at(0).value);
+			const auto ident = std::get<Type::Token>(astNode.getChildValue());
 			context.returnRegister = context.getRegister(ident);
 		}
 
 		static void compileNumber(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
-			const auto number = std::get<Address>(astNode.childs.at(0).value);
+			const auto number = std::get<Address>(astNode.getChildValue());
 			context.returnRegister = context.newRegister();
 			context.addInstruction(context.createInstruction(context.returnRegister, "", number));
 		}
 
 		static void compileString(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
-			const auto string = std::get<std::string>(astNode.childs.at(0).value);
+			const auto string = std::get<std::string>(astNode.getChildValue());
 			context.returnRegister = context.newRegister();
 			context.addInstruction(context.createInstruction(context.returnRegister, "$STR", context.output.get().stringConstants.find(string + '\0')));
 		}
@@ -52,7 +52,7 @@ namespace CppUtils::Language::IR::Compiler
 		static void compileCopy(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
-			const auto lhsIsDeref = (astNode.childs.at(0).value == "deref"_token);
+			const auto lhsIsDeref = (astNode.getChildValue(0) == "deref"_token);
 			context.compiler.get().compile(lhsIsDeref ? astNode.childs.at(0).childs.at(0) : astNode.childs.at(0), context);
 			const auto lhs = context.returnRegister;
 			context.compiler.get().compile(astNode.childs.at(1), context);
@@ -118,7 +118,7 @@ namespace CppUtils::Language::IR::Compiler
 		static void compileCall(const Lexer::ASTNode<Address>& astNode, Context<Address>& context)
 		{
 			using namespace Type::Literals;
-			const auto& functionName = std::get<Type::Token>(astNode.childs.at(0).value);
+			const auto& functionName = std::get<Type::Token>(astNode.getChildValue(0));
 			const auto returnRegister = context.newRegister(), functionLabel = context.newRegister();
 			context.addInstruction(context.createInstruction(functionLabel, functionName.name));
 			auto parameters = std::vector<Address>{returnRegister, functionLabel};

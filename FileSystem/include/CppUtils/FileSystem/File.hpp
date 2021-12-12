@@ -28,7 +28,7 @@ namespace CppUtils::FileSystem::File
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
 			if (!file.is_open())
-				throw std::runtime_error("Failed to open " + filePath.string() + " file");
+				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			file.write(reinterpret_cast<const char*>(&buffer), sizeof(buffer));
 		}
 
@@ -37,7 +37,7 @@ namespace CppUtils::FileSystem::File
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
 			if (!file.is_open())
-				throw std::runtime_error("Failed to open " + filePath.string() + " file");
+				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			auto buffer = T{};
 			file.read(reinterpret_cast<char*>(&buffer), sizeof(buffer));
 			return buffer;
@@ -48,7 +48,7 @@ namespace CppUtils::FileSystem::File
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
 			if (!file.is_open())
-				throw std::runtime_error("Failed to open " + filePath.string() + " file");
+				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			file.write(reinterpret_cast<const char*>(vector.data()), vector.size() * sizeof(T));
 		}
 
@@ -57,7 +57,7 @@ namespace CppUtils::FileSystem::File
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
 			if (!file.is_open())
-				throw std::runtime_error("Failed to open " + filePath.string() + " file");
+				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			const auto nbElements = std::filesystem::file_size(filePath) / sizeof(T);
 			auto vector = std::vector<T>{};
 			vector.resize(nbElements);
@@ -72,7 +72,7 @@ namespace CppUtils::FileSystem::File
 		{
 			auto file = std::ofstream{filePath};
 			if (!file.is_open())
-				throw std::runtime_error("Failed to open " + filePath.string() + " file");
+				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			file << content;
 		}
 
@@ -80,7 +80,7 @@ namespace CppUtils::FileSystem::File
 		{
 			auto file = std::ofstream{filePath, std::ios::app};
 			if (!file.is_open())
-				throw std::runtime_error("Failed to open " + filePath.string() + " file");
+				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			file << content;
 		}
 		
@@ -88,7 +88,7 @@ namespace CppUtils::FileSystem::File
 		{
 			auto file = std::ifstream{filePath};
 			if (!file.is_open())
-				throw std::runtime_error("Failed to open " + filePath.string() + " file");
+				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			return std::string{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
 		}
 	}

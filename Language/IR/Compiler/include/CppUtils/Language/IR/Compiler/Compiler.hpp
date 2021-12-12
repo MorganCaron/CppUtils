@@ -58,15 +58,15 @@ namespace CppUtils::Language::IR::Compiler
 			using namespace Type::Literals;
 			auto strings = std::vector<std::string>{};
 			astNode.forEach("string"_token, [&strings](const ASTNode& stringNode) {
-				const auto& string = std::get<std::string>(stringNode.childs.at(0).value);
-				strings.push_back(string + '\0');
+				const auto& string = std::get<std::string>(stringNode.getChildValue());
+				strings.push_back(string);
 			});
 			std::sort(strings.begin(), strings.end(), [](const auto& lhs, const auto& rhs) {
 				return (lhs.size() == rhs.size()) ? (lhs < rhs) : (lhs.size() > rhs.size());
 			});
 			for (const auto& string : strings)
 				if (stringConstants.find(string) == std::string::npos)
-					stringConstants += string;
+					stringConstants += string + '\0';
 		}
 
 	private:

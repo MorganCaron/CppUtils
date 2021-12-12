@@ -51,12 +51,12 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 
 			ASSERT(tokenTree.value == "main"_token);
 			ASSERT(tokenTree.childs.size() == 1);
-			ASSERT(tokenTree.childs.at(0).value == "function"_token);
-			ASSERT(tokenTree.childs.at(0).childs.size() == 2);
-			ASSERT(tokenTree.childs.at(0).childs.at(0).value == "print"_token);
-			ASSERT(tokenTree.childs.at(0).childs.at(1).value == "string"_token);
-			ASSERT(tokenTree.childs.at(0).childs.at(1).childs.size() == 1);
-			ASSERT(tokenTree.childs.at(0).childs.at(1).childs.at(0).value == "Hello World!"s);
+			ASSERT(tokenTree.getChildValue(0) == "function"_token);
+			ASSERT(tokenTree.childs[0].childs.size() == 2);
+			ASSERT(tokenTree.childs[0].getChildValue(0) == "print"_token);
+			ASSERT(tokenTree.childs[0].getChildValue(1) == "string"_token);
+			ASSERT(tokenTree.childs[0].childs[1].childs.size() == 1);
+			ASSERT(tokenTree.childs[0].childs[1].getChildValue(0) == "Hello World!"s);
 		});
 
 		addTest("Hide", [] {

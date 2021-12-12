@@ -1,18 +1,13 @@
 #pragma once
 
 #include <map>
+#include <unordered_map>
 
 #include <CppUtils/Language/Parser/Modifiers.hpp>
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
 
 namespace CppUtils::Parameters
 {
-	struct Command final
-	{
-		std::string_view name;
-		std::function<bool(std::string_view)> function;
-	};
-
 	class ParametersLexer final
 	{
 	public:
@@ -37,27 +32,27 @@ namespace CppUtils::Parameters
 		[[nodiscard]] inline std::map<std::string, std::string> parseParameters(const std::size_t argc, const char *argv[]) const
 		{
 			using namespace Type::Literals;
-			const auto parameters = String::cstringArrayToVectorOfStrings<std::string_view>(argv + 1, argc - 1);
-			const auto src = String::concatenateStringsWithDelimiter(parameters, " ");
+			const auto argumentVector = String::cstringArrayToVectorOfStrings<std::string_view>(argv + 1, argc - 1);
+			const auto src = String::concatenateStringsWithDelimiter(argumentVector, " ");
 			const auto commandTree = m_grammarLexer.parseLanguage("main"_token, src);
-			auto map = std::map<std::string, std::string>{};
+			auto parameters = std::map<std::string, std::string>{};
 			for (const auto& command : commandTree.childs)
-				map[std::string{std::get<Type::Token>(command.childs.at(0).value).name}] = (command.childs.size() == 2 ? std::get<std::string>(command.childs.at(1).value) : "");
-			return map;
+				parameters[std::string{std::get<Type::Token>(command.getChildValue(0)).name}] = (command.childs.size() == 2 ? std::get<std::string>(command.getChildValue(1)) : "");
+			return parameters;
 		}
 
-		[[nodiscard]] inline bool executeCommands(const std::size_t argc, const char *argv[], const std::vector<Command>& commands) const
+		[[nodiscard]] inline bool executeCommands(const std::size_t argc, const char *argv[], const std::unordered_map<std::string_view, std::function<bool(std::string_view)>>& commands) const
 		{
 			const auto parameters = parseParameters(argc, argv);
 			for (const auto& [parameterName, parameterValue] : parameters)
 			{
-				const auto& commandIt = std::find_if(commands.begin(), commands.end(), [&parameterName = parameterName](const Command& command) -> bool {
-					return parameterName == command.name;
-				});
-				if (commandIt == commands.end())
+				if (const auto& commandIt = commands.find(parameterName); commandIt != commands.end())
+				{
+					if (commandIt->second(parameterValue))
+						return true;
+				}
+				else
 					Log::Logger::logWarning("Unknown command: " + parameterName);
-				else if (commandIt->function(parameterValue))
-					return true;
 			}
 			return false;
 		}

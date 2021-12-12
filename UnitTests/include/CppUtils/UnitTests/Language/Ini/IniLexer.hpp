@@ -116,9 +116,9 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			}
 			)"_json;
 			ASSERT(iniTree.childs.size() == 3);
-			ASSERT(iniTree.childs.at(0) == jsonTree.childs.at(0));
-			ASSERT(iniTree.childs.at(1).at("Numbers"_token).childs.size() == 8);
-			ASSERT(iniTree.childs.at(2).at("Booleans"_token).childs.size() == 2);
+			ASSERT(iniTree.childs[0] == jsonTree.childs.at(0));
+			ASSERT(iniTree.childs[1].at("Numbers"_token).childs.size() == 8);
+			ASSERT(iniTree.childs[2].at("Booleans"_token).childs.size() == 2);
 		});
 	}
 }

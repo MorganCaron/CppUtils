@@ -17,8 +17,8 @@ namespace CppUtils::UnitTests::Graph::TreeNode
 			
 			root.childs.emplace_back(StringTreeNode{"Branch0"});
 			root.childs.emplace_back(StringTreeNode{"Branch1"});
-			CppUtils::Log::Logger::logInformation(root.childs.at(1).value);
-			ASSERT(root.childs.at(1).value == "Branch1");
+			CppUtils::Log::Logger::logInformation(root.getChildValue(1));
+			ASSERT(root.getChildValue(1) == "Branch1");
 
 			auto& branch0 = root.childs[0];
 			branch0.childs.emplace_back(StringTreeNode{"SubBranch0"});
