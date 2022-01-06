@@ -26,10 +26,10 @@ namespace CppUtils::Type
 	private:
 		std::string m_name;
 	};
-}
 
-inline std::ostream& operator<<(std::ostream& os, const CppUtils::Type::Named& named) noexcept
-{
-	os << named.getName();
-	return os;
+	inline std::ostream& operator<<(std::ostream& os, const Named& named) noexcept
+	{
+		os << named.getName();
+		return os;
+	}
 }

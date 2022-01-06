@@ -24,11 +24,6 @@ namespace CppUtils::String
 			});
 	}
 
-	[[nodiscard]] inline constexpr std::string_view cStringToStringView(const char* cString) 
-	{
-		return std::string_view{cString, std::char_traits<char>::length(cString)};
-	}
-
 	template<typename String>
 	[[nodiscard]] inline std::vector<String> cstringArrayToVectorOfStrings(const char** cstringArray, std::size_t length)
 	{

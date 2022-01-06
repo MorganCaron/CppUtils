@@ -33,7 +33,7 @@ namespace CppUtils::Graph
 				if (value != rhs.value || nbChilds != rhs.childs.size())
 					return false;
 				for (auto i = std::size_t{0}; i < nbChilds; ++i)
-					if (childs.at(i) != rhs.childs.at(i))
+					if (childs[i] != rhs.childs[i])
 						return false;
 				return true;
 			}
