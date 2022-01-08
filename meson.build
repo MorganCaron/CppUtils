@@ -11,6 +11,7 @@ project('CppUtils',
 	]
 )
 
+subdir('Memory')
 subdir('Platform')
 subdir('Chrono')
 subdir('Container')
@@ -29,6 +30,7 @@ subdir('Parameters')
 subdir('UnitTest')
 
 public_dependencies = [
+	cppUtils_memory_dep,
 	cppUtils_platform_dep,
 	cppUtils_chrono_dep,
 	cppUtils_container_dep,

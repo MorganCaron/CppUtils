@@ -1,5 +1,6 @@
 #pragma once
 
+#include <CppUtils/Memory/UniquePtr.hpp>
 #include <CppUtils/Chrono/Chronometer.hpp>
 #include <CppUtils/Container/Sequence.hpp>
 #include <CppUtils/Container/Vector.hpp>
