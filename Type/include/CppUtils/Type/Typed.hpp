@@ -1,9 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <sstream>
 #include <iostream>
 #include <stdexcept>
+#include <string_view>
 
 #include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Type/Traits.hpp>
@@ -42,7 +44,9 @@ namespace CppUtils::Type
 		{
 			auto ss = std::stringstream{};
 			ss << storageToken.name;
-			if constexpr(Traits::isDereferenceable<StorageType>)
+			if constexpr(std::same_as<StorageType, std::string> || std::same_as<StorageType, std::string_view>)
+					ss << ": \"" << value << '"';
+			else if constexpr(Traits::isDereferenceable<StorageType>)
 			{
 				if constexpr(Traits::isPrintable<decltype(*value)>)
 					ss << ": " << *value;
@@ -53,6 +57,25 @@ namespace CppUtils::Type
 		}
 
 		Storage value;
+	};
+
+	template<const Token& storageToken>
+	struct DLL_PUBLIC Typed<storageToken, void> final: public ITyped
+	{
+		static constexpr auto Type = storageToken;
+		using Storage = void;
+
+		[[nodiscard]] const Token& getType() const noexcept override final
+		{
+			return Type;
+		}
+
+		[[nodiscard]] std::string getPrintable() const noexcept override final
+		{
+			auto ss = std::stringstream{};
+			ss << storageToken.name;
+			return ss.str();
+		}
 	};
 
 	template <typename TargetType>
