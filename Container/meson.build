@@ -8,7 +8,11 @@ sources = files([
 ])
 
 headers = files([
+	'include/CppUtils/Container/Point2d.hpp',
+	'include/CppUtils/Container/Point3d.hpp',
 	'include/CppUtils/Container/Sequence.hpp',
+	'include/CppUtils/Container/Size2d.hpp',
+	'include/CppUtils/Container/Size3d.hpp',
 	'include/CppUtils/Container/Vector.hpp'
 ])
 

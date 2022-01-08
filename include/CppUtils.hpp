@@ -2,7 +2,11 @@
 
 #include <CppUtils/Memory/UniquePtr.hpp>
 #include <CppUtils/Chrono/Chronometer.hpp>
+#include <CppUtils/Container/Point2d.hpp>
+#include <CppUtils/Container/Point3d.hpp>
 #include <CppUtils/Container/Sequence.hpp>
+#include <CppUtils/Container/Size2d.hpp>
+#include <CppUtils/Container/Size3d.hpp>
 #include <CppUtils/Container/Vector.hpp>
 #include <CppUtils/External/DllExport.hpp>
 #include <CppUtils/External/DynamicLibrary.hpp>
