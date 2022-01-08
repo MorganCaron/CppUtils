@@ -1,5 +1,7 @@
 #pragma once
 
+#include <CppUtils/Platform/OS.hpp>
+
 #if defined(OS_WINDOWS)
 #	ifdef STATIC_LIB
 #		define DLL_PUBLIC

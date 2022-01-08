@@ -18,6 +18,7 @@ namespace CppUtils::UnitTests::Language::Note::NoteLexer
 			CppUtils::Log::TreeNodeLogger::log(noteTree);
 
 			ASSERT(noteTree.exists("Label"_token));
+			ASSERT(noteTree.at("Label"_token).childs.size() == 1);
 			ASSERT(noteTree.at("Label"_token).getChildValue() == "Text"s);
 		});
 
@@ -31,6 +32,7 @@ namespace CppUtils::UnitTests::Language::Note::NoteLexer
 			CppUtils::Log::TreeNodeLogger::log(noteTree);
 
 			ASSERT(noteTree.exists("Category"_token));
+			ASSERT(noteTree.at("Category"_token).childs.size() == 2);
 			ASSERT(noteTree.at("Category"_token).getChildValue(0) == "Title"_token);
 			ASSERT(noteTree.at("Category"_token).at("Title"_token).getChildValue() == "Label"s);
 			ASSERT(noteTree.at("Category"_token).getChildValue(1) == "Description"_token);
@@ -51,6 +53,7 @@ namespace CppUtils::UnitTests::Language::Note::NoteLexer
 			CppUtils::Log::TreeNodeLogger::log(noteTree);
 
 			ASSERT(noteTree.exists("Category"_token));
+			ASSERT(noteTree.at("Category"_token).childs.size() == 2);
 			ASSERT(noteTree.at("Category"_token).getChildValue(0) == "Title"_token);
 			ASSERT(noteTree.at("Category"_token).at("Title"_token).getChildValue() == "Label"s);
 			ASSERT(noteTree.at("Category"_token).getChildValue(1) == "Description"_token);
