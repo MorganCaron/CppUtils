@@ -1,0 +1,17 @@
+export module CppUtils.UnitTests.Window;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Window
+{
+	inline auto _ = TestSuite{"Window", [](auto& suite) {
+		using namespace std::literals;
+
+		suite.addTest("Opening a window", [&] {
+			auto window = CppUtils::Window::Window{"Title", {1920, 1080}};
+			std::this_thread::sleep_for(5s);
+			suite.expectEqual(window.getTitle(), "Title"sv);
+		});
+	}};
+}

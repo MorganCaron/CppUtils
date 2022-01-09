@@ -35,10 +35,15 @@ if is_mode("debug") then
 	set_policy("build.sanitizer.undefined", true)
 end
 
+add_requires("wayland")
+add_requires("wayland-protocols")
+
 option("enable_tests")
 
 target("CppUtils", function()
 	set_kind("moduleonly")
+	add_packages("wayland", "wayland-protocols", { public = false })
+	-- Ajouter "wayland-cursor"
 
 	add_files("modules/**.mpp", { public = true })
 	add_includedirs("include", { public = true })
