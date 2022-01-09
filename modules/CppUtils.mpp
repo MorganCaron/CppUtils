@@ -21,3 +21,4 @@ export import CppUtils.Terminal;
 export import CppUtils.Thread;
 export import CppUtils.Type;
 export import CppUtils.UnitTest;
+export import CppUtils.Window;

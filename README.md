@@ -54,19 +54,26 @@ add_repositories("xmake-repo git@github.com:MorganCaron/xmake-repo.git")
 add_requires("CppUtils")
 
 target("YourProject", function()
-	add_packages("CppUtils", {public = true})
+	add_packages("CppUtils", { public = true })
 end)
 ```
 
 ### Contribute
 
+### Dependencies
+
+- wayland
+- wayland-protocol
+
 ### Build command
+
 ```console
 xmake f [--toolchain=llvm] --runtimes="c++_shared" [--sdk=/opt/llvm-git] [--enable_tests=y] --yes
 xmake [b|build] [-vD]
 ```
 
 ### Run tests
+
 ```console
 xmake [r|run]
 ```
