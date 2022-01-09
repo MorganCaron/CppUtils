@@ -139,7 +139,7 @@ add_repositories("xmake-repo git@github.com:MorganCaron/xmake-repo.git")
 add_requires("CppUtils")
 
 target("YourProject", function()
-	add_packages("CppUtils", {public = true})
+	add_packages("CppUtils", { public = true })
 end)
 ```
 
@@ -153,7 +153,13 @@ xmake f [--toolchain=llvm] --runtimes="c++_shared" [--sdk=/opt/llvm-git] --menu
 xmake f [--toolchain=llvm] --runtimes="c++_shared" [--sdk=/opt/llvm-git] [-y|--yes] [--enable_tests=y] [--sanitize_memory=y] [--sanitize_thread=y]
 ```
 
+### Dependencies
+
+- wayland
+- wayland-protocol
+
 ### Build command
+
 ```console
 xmake [b|build] [-vD]
 ```

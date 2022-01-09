@@ -30,6 +30,8 @@ add_rules(
 	"mode.coverage",
 	"mode.valgrind")
 
+add_requires("wayland", "wayland-protocols")
+
 option("compiler_verbose", {default = false, category = "Build CppUtils", description = "Verbose the compiler output"})
 option("enable_moduleonly", {default = true, category = "Build CppUtils", description = "Module only"})
 option("sanitize_memory", {default = false, category = "Build CppUtils/Sanitizer", description = "Enable ASan + LSan + UBSan"})
@@ -42,6 +44,9 @@ target("CppUtils", function()
 	else
 	  set_kind("$(kind)")
 	end
+	
+	add_packages("wayland", "wayland-protocols", { public = false })
+	-- Ajouter "wayland-cursor"
 
 	add_files("modules/**.mpp", { public = true })
 	add_includedirs("include", { public = true })

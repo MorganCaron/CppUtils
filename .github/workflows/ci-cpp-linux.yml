@@ -52,6 +52,10 @@ jobs:
     - name: Update xmake repository
       run: xmake repo --update
 
+    - name: Install Wayland
+      run: |
+        sudo apt install libwayland-dev wayland-protocols
+
     - name: Configure & Install dependencies
       run: |
         xmake f ${{ matrix.compiler.xmake-toolchain }} --runtimes="c++_shared" --enable_tests=y -v --yes
