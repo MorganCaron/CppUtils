@@ -31,14 +31,15 @@ namespace CppUtils::UnitTests::Language::Lexer
 			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token, std::string>{};
 			auto& printExpression = lexer.newExpression("print"_token);
 			auto& stringExpression = lexer.newExpression("string"_token);
-
+			auto spaceParser = CppUtils::Language::Parser::NamedParser{"space parser"s, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>};
+			
 			printExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string> >> "print("
+				>> spaceParser >> "print("
 				>> stringExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string> >> ");";
+				>> spaceParser >> ");";
 			stringExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>
-				>> CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token, std::string>;
+				>> spaceParser
+				>> CppUtils::Language::Parser::NamedParser{"quote parser"s, CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token, std::string>};
 
 			static constexpr auto src = "print(\"Hello World!\");"sv;
 			const auto tokenTree = lexer.parseString("print"_token, src);
@@ -57,17 +58,18 @@ namespace CppUtils::UnitTests::Language::Lexer
 			auto& mainExpression = lexer.newExpression("main"_token);
 			auto& printExpression = lexer.newExpression("print"_token);
 			auto& stringExpression = lexer.newExpression("string"_token);
+			auto spaceParser = CppUtils::Language::Parser::NamedParser{"space parser"s, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>};
 
 			mainExpression
 				>> (printExpression >= 0)
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>;
+				>> spaceParser;
 			printExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string> >> "print("
+				>> spaceParser >> "print("
 				>> stringExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string> >> ");";
+				>> spaceParser >> ");";
 			stringExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>
-				>> CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token, std::string>;
+				>> spaceParser
+				>> CppUtils::Language::Parser::NamedParser{"quote parser"s, CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token, std::string>};
 
 			static constexpr auto src = R"(
 				print("Hello World!");
@@ -89,17 +91,18 @@ namespace CppUtils::UnitTests::Language::Lexer
 			auto& valueExpression = lexer.newExpression("value"_token);
 			auto& keywordExpression = lexer.newExpression("keyword"_token);
 			auto& stringExpression = lexer.newExpression("string"_token);
+			auto spaceParser = CppUtils::Language::Parser::NamedParser{"space parser"s, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>};
 
 			mainExpression
 				>> (valueExpression >= 0)
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>;
+				>> spaceParser;
 			valueExpression
-				>> CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>
+				>> spaceParser
 				>> (keywordExpression || stringExpression);
 			keywordExpression
-				>> CppUtils::Language::Parser::keywordParser<CppUtils::Type::Token, std::string>;
+				>> CppUtils::Language::Parser::NamedParser{"keyword parser"s, CppUtils::Language::Parser::keywordParser<CppUtils::Type::Token, std::string>};
 			stringExpression
-				>> CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token, std::string>;
+				>> CppUtils::Language::Parser::NamedParser{"quote parser"s, CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token, std::string>};
 
 			static constexpr auto src = R"(
 				test "test" test "test"

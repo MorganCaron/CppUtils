@@ -15,6 +15,7 @@ namespace CppUtils::Language::Lexer
 	public:
 		GrammarLexer()
 		{
+			using namespace std::literals;
 			using namespace Type::Literals;
 			auto& main = m_grammarLexer.newExpression("main"_token, "root"_token);
 			auto& identifier = m_grammarLexer.newExpression("identifier"_token, false);
@@ -24,6 +25,8 @@ namespace CppUtils::Language::Lexer
 			auto& name = m_grammarLexer.newExpression("name"_token);
 			auto& lexemes = m_grammarLexer.newExpression("lexemes"_token, false);
 			auto& lexeme = m_grammarLexer.newExpression("lexeme"_token, false);
+			auto& comma = m_grammarLexer.newExpression("comma"_token);
+			auto& breakPoint = m_grammarLexer.newExpression("breakPoint"_token);
 			auto& string = m_grammarLexer.newExpression("string"_token);
 			auto& tag = m_grammarLexer.newExpression("tag"_token);
 			auto& muted = m_grammarLexer.newExpression("muted"_token);
@@ -37,52 +40,64 @@ namespace CppUtils::Language::Lexer
 			auto& alternative = m_grammarLexer.newExpression("alternative"_token);
 			auto& alternativeArgument = m_grammarLexer.newExpression("alternativeArgument"_token, false);
 			auto& exclusion = m_grammarLexer.newExpression("exclusion"_token);
+			auto& spaces = m_grammarLexer.newExpression("spaces"_token, false);
+			auto& spaceChar = m_grammarLexer.newExpression("spaceChar"_token, false);
+			auto& space = m_grammarLexer.newExpression("space"_token, false);
+			auto& tab = m_grammarLexer.newExpression("tab"_token, false);
+			auto& newLine = m_grammarLexer.newExpression("newLine"_token, false);
 			
-			main >> (statement >= 0) >> Parser::spaceParser<Type::Token, unsigned int, std::string>;
-			identifier >> Parser::spaceParser<Type::Token, unsigned int, std::string> >> Parser::keywordParser<Type::Token, unsigned int, std::string>;
+			main >> (statement >= 0) >> ~spaces;
+			identifier >> ~spaces >> Parser::NamedParser{"keyword parser"s, Parser::keywordParser<Type::Token, unsigned int, std::string>};
 			token >> identifier;
 			statement
 				>> ~hide
 				>> Parser::TagLexeme{std::make_unique<Parser::TokenLexeme>(identifier.token)}
 				>> ~name
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ':'
+				>> ~spaces >> ':'
 				>> lexemes
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ';';
-			hide >> Parser::spaceParser<Type::Token, unsigned int, std::string> >> '!';
+				>> ~spaces >> ';';
+			hide >> ~spaces >> '!';
 			name
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> '['
+				>> ~spaces >> '['
 				>> identifier
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ']';
+				>> ~spaces >> ']';
 			lexemes	>> (lexeme >= 1);
-			lexeme >> Parser::spaceParser<Type::Token, unsigned int, std::string> >> std::move(string || token || tag || muted || optional || parenthesis);
-			string >> Parser::quoteParser<Type::Token, unsigned int, std::string>;
+			lexeme >> ~spaces >> std::move(comma || breakPoint || string || token || tag || muted || optional || parenthesis);
+			comma >> ',';
+			breakPoint >> '.';
+			string >> Parser::NamedParser{"quote parser"s, Parser::quoteParser<Type::Token, unsigned int, std::string>};
 			tag
 				>> '['
 				>> lexeme
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ']';
+				>> ~spaces >> ']';
 			muted >> '!' >> lexeme;
 			optional >> '~' >> lexeme;
 			parenthesis
 				>> '('
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> std::move(recurrence || alternative || exclusion || lexemes)
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> ')';
+				>> ~spaces >> std::move(recurrence || alternative || exclusion || lexemes)
+				>> ~spaces >> ')';
 			recurrence
 				>> lexeme
 				>> recurrenceOperator
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> Parser::uintParser<Type::Token, unsigned int, std::string>;
+				>> ~spaces >> Parser::NamedParser{"uint parser"s, Parser::uintParser<Type::Token, unsigned int, std::string>};
 			recurrenceOperator
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> std::move(equalTo || moreOrEqualTo || moreThan);
+				>> ~spaces >> std::move(equalTo || moreOrEqualTo || moreThan);
 			equalTo >> "*";
 			moreOrEqualTo >> ">=";
 			moreThan >> '>';
 			alternative >> lexeme >> (alternativeArgument >= 1);
 			alternativeArgument
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> "||"
+				>> ~spaces >> "||"
 				>> lexeme;
 			exclusion
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> lexeme
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> "!="
-				>> Parser::spaceParser<Type::Token, unsigned int, std::string> >> lexeme;
+				>> ~spaces >> lexeme
+				>> ~spaces >> "!="
+				>> ~spaces >> lexeme;
+			spaces >> (spaceChar >= 1);
+			spaceChar >> std::move(space || tab || newLine);
+			space >> " ";
+			tab >> "\t";
+			newLine >> "\n";
 		}
 
 		inline void addParsingFunction(const Type::Token& token, Parser::ParsingFunction<Types...> parsingFunction)
@@ -124,6 +139,11 @@ namespace CppUtils::Language::Lexer
 			return m_languageLexer.parseSegment(token, context);
 		}
 
+		inline void parseContext(const Type::Token& token, Parser::Context<Types...>& context) const
+		{
+			return m_languageLexer.parseContext(token, context);
+		}
+
 	private:
 		void createStatements(const GrammarLexerTreeNode& tokenTree)
 		{
@@ -148,6 +168,10 @@ namespace CppUtils::Language::Lexer
 			{
 				case "token"_token.id:
 					return parseToken(lexeme.childs);
+				case "comma"_token.id:
+					return std::make_unique<Parser::CommaLexeme>();
+				case "breakPoint"_token.id:
+					return std::make_unique<Parser::BreakPointLexeme>();
 				case "string"_token.id:
 					return parseString(lexeme.childs);
 				case "tag"_token.id:
@@ -171,11 +195,11 @@ namespace CppUtils::Language::Lexer
 		{
 			const auto& token = std::get<Type::Token>(attributes.at(0).value);
 			if (m_parsingFunctions.find(token) != m_parsingFunctions.end())
-				return std::make_unique<Parser::ParserLexeme<Types...>>(m_parsingFunctions.at(token));
+				return std::make_unique<Parser::ParserLexeme<Types...>>(Parser::NamedParser{std::string{token.name}, m_parsingFunctions.at(token)});
 			else
 				return std::make_unique<Parser::TokenLexeme>(m_languageLexer.getExpression(token).token);
 		}
-
+		
 		[[nodiscard]] std::unique_ptr<Parser::ILexeme> parseString(const std::vector<GrammarLexerTreeNode>& attributes)
 		{
 			return std::make_unique<Parser::StringLexeme>(std::get<std::string>(attributes.at(0).value));

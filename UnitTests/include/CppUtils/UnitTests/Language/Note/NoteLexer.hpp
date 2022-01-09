@@ -59,5 +59,27 @@ namespace CppUtils::UnitTests::Language::Note::NoteLexer
 			ASSERT(noteTree.at("Category"_token).getChildValue(1) == "Description"_token);
 			ASSERT(noteTree.at("Category"_token).at("Description"_token).getChildValue() == "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."s);
 		});
+
+		addTest("Multiple categories", [] {
+			const auto noteTree = R"(
+				Category1:
+					Title: Label
+					Description:
+						Text
+				Category2:
+					Empty: _
+					Content: Text
+			)"_note;
+			CppUtils::Log::TreeNodeLogger::log(noteTree);
+
+			ASSERT(noteTree.childs.size() == 2);
+			ASSERT(noteTree.exists("Category1"_token));
+			ASSERT(noteTree.exists("Category2"_token));
+			ASSERT(noteTree.at("Category2"_token).childs.size() == 2);
+			ASSERT(noteTree.at("Category2"_token).getChildValue(0) == "Empty"_token);
+			ASSERT(noteTree.at("Category2"_token).at("Empty"_token).childs.empty());
+			ASSERT(noteTree.at("Category2"_token).getChildValue(1) == "Content"_token);
+			ASSERT(noteTree.at("Category2"_token).at("Content"_token).getChildValue() == "Text"s);
+		});
 	}
 }

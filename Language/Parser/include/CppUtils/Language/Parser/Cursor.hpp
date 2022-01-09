@@ -87,13 +87,19 @@ namespace CppUtils::Language::Parser
 
 		inline void skipStringIf(const std::function<bool(char)>& validator)
 		{
+			if (!isEndOfString() && validator(getChar()))
+				++position;
+		}
+
+		inline void skipStringWhile(const std::function<bool(char)>& validator)
+		{
 			while (!isEndOfString() && validator(getChar()))
 				++position;
 		}
 
 		inline void skipSpaces()
 		{
-			skipStringIf([](const char c) -> bool {
+			skipStringWhile([](const char c) -> bool {
 				return std::isspace(static_cast<unsigned char>(c));
 			});
 		}

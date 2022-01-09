@@ -13,7 +13,7 @@ namespace CppUtils::Language::Xml
 			using namespace Type::Literals;
 
 			static const auto textParser = [](auto& context) -> bool {
-				auto& [cursor, parentNode, firstChildPosition] = context;
+				auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
 				const auto string = std::string{String::trimString(cursor.getStringAndSkipItIf([](char c) -> bool {
 					return c != '<';
 				}))};
@@ -24,7 +24,7 @@ namespace CppUtils::Language::Xml
 			};
 
 			static const auto openingTagParser = [](auto& context) -> bool {
-				auto& [cursor, parentNode, firstChildPosition] = context;
+				auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
 				return (!cursor.isEndOfString() && cursor.getCharAndSkipIt() == '<' && !cursor.isEndOfString() && cursor.getChar() != '/');
 			};
 

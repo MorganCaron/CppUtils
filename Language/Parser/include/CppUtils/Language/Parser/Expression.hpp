@@ -21,6 +21,12 @@ namespace CppUtils::Language::Parser
 			lexemes{std::move(c_lexemes)}
 		{};
 
+		Expression& operator>>(std::unique_ptr<ILexeme>&& lexeme)
+		{
+			lexemes.push_back(std::move(lexeme));
+			return *this;
+		}
+
 		Expression& operator>>(std::string string)
 		{
 			lexemes.emplace_back(std::make_unique<StringLexeme>(std::move(string)));
@@ -39,9 +45,9 @@ namespace CppUtils::Language::Parser
 			return *this;
 		}
 		
-		Expression& operator>>(ParsingFunction<Types...> function)
+		Expression& operator>>(NamedParser<Types...> namedParser)
 		{
-			lexemes.emplace_back(std::make_unique<ParserLexeme<Types...>>(std::move(function)));
+			lexemes.emplace_back(std::make_unique<ParserLexeme<Types...>>(std::move(namedParser)));
 			return *this;
 		}
 
