@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CppUtils/Memory/UniquePtr.hpp>
+#include <CppUtils/System/System.hpp>
 #include <CppUtils/Chrono/Chronometer.hpp>
 #include <CppUtils/Container/Point2d.hpp>
 #include <CppUtils/Container/Point3d.hpp>
