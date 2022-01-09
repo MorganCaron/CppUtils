@@ -43,16 +43,22 @@ A C++23 compliant compiler with std module support and XMake is needed to build 
 This library is used in my C++ projects, but you can also use it in your projects.
 Just follow the installation steps and consult the documentation for each feature you need.
 
-[![Install](https://img.shields.io/badge/-Install-blue?style=for-the-badge)](INSTALL.md)
 [![Contribute](https://img.shields.io/badge/-Contribute-blue?style=for-the-badge)](CONTRIBUTING.md)
 
+### Dependencies
+
+- wayland
+- wayland-protocol
+
 ### Build command
+
 ```console
 xmake f --toolchain=llvm --runtimes="c++_shared" [--enable_tests=y] --yes
 xmake [b|build] [-vD]
 ```
 
 ### Run tests
+
 ```console
 xmake [r|run]
 ```

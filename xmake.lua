@@ -27,6 +27,9 @@ add_rules(
 	"mode.lsan",
 	"mode.ubsan")
 
+add_requires("wayland")
+add_requires("wayland-protocols")
+
 option("enable_tests")
 
 target("CppUtils", function()
