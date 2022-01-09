@@ -49,6 +49,10 @@ jobs:
       if: ${{ matrix.compiler.name == 'Latest Clang' }}
       uses: MorganCaron/latest-clang-action@master
 
+    - name: Install Wayland
+      run: |
+        sudo apt install libwayland-dev wayland-protocols
+
     - name: Compile
       run: |
         xmake f ${{ matrix.compiler.xmake-toolchain }} --runtimes="c++_shared" --enable_tests=y --yes

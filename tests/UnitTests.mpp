@@ -25,3 +25,4 @@ export import CppUtils.UnitTests.Thread.ThreadPool;
 export import CppUtils.UnitTests.Thread.UniqueLocker;
 export import CppUtils.UnitTests.Type.Concept;
 export import CppUtils.UnitTests.UnitTest;
+export import CppUtils.UnitTests.Window;

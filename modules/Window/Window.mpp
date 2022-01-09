@@ -1,0 +1,242 @@
+module;
+
+#include <CppUtils/System/OS.hpp>
+
+#if defined(OS_WINDOWS)
+#	include <Windows.h>
+#elif defined(OS_LINUX)
+#	include <unistd.h>
+#	include <wayland-client.h>
+// #	include <wayland-cursor.h>
+// #	include <wayland-xdg-shell-client-protocol.h>
+#	include <wayland-client-protocol.h>
+#endif
+
+export module CppUtils.Window;
+
+import std;
+
+import CppUtils.Container.Size2d;
+import CppUtils.Logger;
+import CppUtils.Memory;
+import CppUtils.String;
+import CppUtils.System;
+
+// Todo: Appliquer le trailing return type
+// Todo: Nettoyer le code
+
+namespace CppUtils::Window
+{
+	using Logger = CppUtils::Logger<"CppUtils">;
+
+#if defined(OS_LINUX)
+	namespace Wayland
+	{
+		using Display = Memory::UniquePtrWithDestructor<wl_display>;
+		using Registry = Memory::UniquePtrWithDestructor<wl_registry>;
+		using Compositor = Memory::UniquePtrWithDestructor<wl_compositor>;
+		using Surface = Memory::UniquePtrWithDestructor<wl_surface>;
+		using Shell = Memory::UniquePtrWithDestructor<wl_shell>;
+		using ShellSurface = Memory::UniquePtrWithDestructor<wl_shell_surface>;
+		using SharedMemory = Memory::UniquePtrWithDestructor<wl_shm>;
+		using SharedMemoryPool = Memory::UniquePtrWithDestructor<wl_shm_pool>;
+		using Buffer = Memory::UniquePtrWithDestructor<wl_buffer>;
+		// using WmBase = Memory::UniquePtrWithDestructor<xdg_wm_base>;
+
+		struct Globals final
+		{
+			Display display = {nullptr, wl_display_disconnect};
+			Registry registry = {nullptr, wl_registry_destroy};
+			Compositor compositor = {nullptr, wl_compositor_destroy};
+			Shell shell = {nullptr, wl_shell_destroy};
+			SharedMemory sharedMemory = {nullptr, wl_shm_destroy};
+			// WmBase wmBase = {nullptr, xdg_wm_base_destroy};
+		};
+		inline auto globals = Wayland::Globals{};
+
+		using RegisterHandler = std::function<void(wl_registry*, std::uint32_t, std::uint32_t)>;
+
+		inline constexpr const auto bytesPerPixel = std::size_t{4};
+	}
+
+	template<typename T>
+	inline auto makeHandlerPair(const wl_interface& interface, Memory::UniquePtrWithDestructor<T>& registerContainer) -> std::pair<std::string_view, Wayland::RegisterHandler>
+	{
+		return {
+			std::string_view{interface.name},
+			[&registerContainer, &interface](auto* registry, auto id, auto version) -> void {
+			registerContainer.reset(static_cast<T*>(wl_registry_bind(registry, id, &interface, version)));
+		}};
+	}
+
+	inline auto global_registry_handler(void* data, wl_registry* registry, std::uint32_t id, const char* interface, std::uint32_t version) noexcept -> void
+	{
+		auto& waylandGlobals = *static_cast<Wayland::Globals*>(data);
+		static const auto waylandRegistryHandlers = std::unordered_map<std::string_view, Wayland::RegisterHandler>{
+			makeHandlerPair(wl_compositor_interface, waylandGlobals.compositor),
+			makeHandlerPair(wl_shell_interface, waylandGlobals.shell),
+			makeHandlerPair(wl_shm_interface, waylandGlobals.sharedMemory),
+			// makeHandlerPair(xdg_wm_base, waylandGlobals.wmBase)
+		};
+		auto interfaceName = std::string_view{interface};
+		if (const auto& iterator = waylandRegistryHandlers.find(interfaceName); iterator != waylandRegistryHandlers.end())
+		{
+			iterator->second(registry, id, version);
+			Logger::print<"success">("{}", interfaceName);
+		}
+		else
+			Logger::print<"warning">("{}", interfaceName);
+	}
+
+	inline auto global_registry_remover([[maybe_unused]] void* data, [[maybe_unused]] wl_registry* registry, [[maybe_unused]] std::uint32_t id) noexcept -> void
+	{}
+
+	inline const auto registry_listener = wl_registry_listener{
+		.global = global_registry_handler,
+		.global_remove = global_registry_remover};
+#endif
+
+	export class Window final
+	{
+	public:
+		enum Style : uint8_t
+		{
+			None = 0,
+			HasBorder = 0b1,
+			HasTitleBar = HasBorder | 0b10,
+			IsMinimizable = HasTitleBar | 0b100,
+			IsResizeable = HasBorder | 0b1000,
+			IsCloseable = HasTitleBar | 0b1'0000
+		};
+
+	private:
+#if defined(OS_WINDOWS)
+		[[nodiscard]] static inline DWORD generateStyle(Style style) const noexcept
+		{
+			return DWORD{
+				(bool{style & Style::HasBorder} & WS_BORDER) |
+				(bool{style & Style::HasTitle} & WS_CAPTION) |
+				(bool{style & Style::IsMinimizable} & WS_MINIMIZEBOX) |
+				(bool{style & Style::IsResizeable} & (WS_MAXIMIZEBOX | WS_THICKFRAME)) |
+				(bool{style & Style::IsCloseable} & WS_SYSMENU)};
+		}
+#endif
+
+	public:
+		inline Window(std::string title, Container::Size2d<std::size_t> size, Style style = Style{Style::IsMinimizable | Style::IsCloseable}):
+			m_title{std::move(title)},
+			m_size{std::move(size)},
+			m_style{style}
+		{
+			initWindowManager();
+			openWindow();
+		}
+
+		inline Window(const Window&) = delete;
+		inline Window& operator=(const Window&) = delete;
+
+	private:
+		inline void initWindowManager() const
+		{
+#if defined(OS_LINUX)
+			if (Wayland::globals.display)
+				return;
+			Wayland::globals.display.reset(wl_display_connect(nullptr));
+			if (!Wayland::globals.display)
+				throw std::runtime_error{"Failed to connect to Wayland display"};
+			auto* display = Wayland::globals.display.get();
+			Wayland::globals.registry.reset(wl_display_get_registry(display));
+			wl_registry_add_listener(Wayland::globals.registry.get(), &registry_listener, &Wayland::globals);
+			wl_display_dispatch(display);
+			wl_display_roundtrip(display);
+			if (!Wayland::globals.compositor)
+				throw std::runtime_error{"Failed to find a Wayland compositor"};
+#endif
+		}
+
+		inline void openWindow()
+		{
+#if defined(OS_WINDOWS)
+			auto hInstance = GetModuleHandleA(nullptr);
+			m_window = CreateWindowEx(
+				0, windowClassName, m_title.c_str(), generateStyle(m_style), CW_USEDEFAULT, CW_USEDEFAULT, size.width, size.height, nullptr, nullptr, hInstance, nullptr);
+			if (m_window == nullptr)
+				throw std::runtime_error{"Window creation failed."};
+#elif defined(OS_LINUX)
+			waylandSurface.reset(wl_compositor_create_surface(Wayland::globals.compositor.get()));
+			if (!waylandSurface)
+				throw std::runtime_error{"Failed to create a Wayland surface"};
+			waylandShellSurface.reset(wl_shell_get_shell_surface(Wayland::globals.shell.get(), waylandSurface.get()));
+			if (!waylandShellSurface)
+				throw std::runtime_error{"Failed to create a Wayland shell surface"};
+			wl_shell_surface_set_toplevel(waylandShellSurface.get());
+
+			auto fileDescriptor = System::createAnonymousFile("waylandBuffer");
+
+			const std::size_t strideSize = m_size.width * Wayland::bytesPerPixel;
+			const std::size_t screenBufferSize = strideSize * m_size.height;
+			const std::size_t bufferSize = screenBufferSize * 2;
+			ftruncate(fileDescriptor.get(), bufferSize);
+
+			auto* data = static_cast<std::uint8_t*>(mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fileDescriptor.get(), 0));
+			if (data == MAP_FAILED)
+				throw std::runtime_error{"Failed to mmap"};
+
+			std::memset(data, 255, bufferSize);
+
+			// damier
+			uint32_t* pixels = (uint32_t*)&data[0];
+			for (std::size_t y = 0; y < m_size.height; ++y)
+			{
+				for (std::size_t x = 0; x < m_size.width; ++x)
+					if ((x + y / 8 * 8) % 16 < 8)
+						pixels[y * m_size.width + x] = 0xFF'66'66'66;
+					else
+						pixels[y * m_size.width + x] = 0xFF'EE'EE'EE;
+			}
+
+			waylandSharedMemoryPool.reset(wl_shm_create_pool(Wayland::globals.sharedMemory.get(), fileDescriptor.get(), bufferSize));
+			waylandBuffer.reset(wl_shm_pool_create_buffer(waylandSharedMemoryPool.get(), screenBufferSize * 0, m_size.width, m_size.height, strideSize, WL_SHM_FORMAT_ARGB8888));
+
+			wl_surface_attach(waylandSurface.get(), waylandBuffer.get(), 0, 0);
+			wl_surface_damage(waylandSurface.get(), 0, 0, UINT32_MAX, UINT32_MAX);
+			wl_surface_commit(waylandSurface.get());
+#endif
+		}
+
+	public:
+		inline void setTitle(std::string title) noexcept
+		{
+			m_title = std::move(title);
+		}
+
+		[[nodiscard]] inline std::string_view getTitle() const noexcept
+		{
+			return m_title;
+		}
+
+		inline void setSize(Container::Size2d<std::size_t> size) noexcept
+		{
+			m_size = std::move(size);
+		}
+
+		[[nodiscard]] inline const Container::Size2d<std::size_t>& getSize() const noexcept
+		{
+			return m_size;
+		}
+
+	private:
+		std::string m_title;
+		Container::Size2d<std::size_t> m_size;
+		[[maybe_unused]] Style m_style;
+#if defined(OS_WINDOWS)
+		static inline constexpr const auto windowClassName = L"Window";
+		HWND m_window;
+#elif defined(OS_LINUX)
+		Wayland::Surface waylandSurface = {nullptr, wl_surface_destroy};
+		Wayland::ShellSurface waylandShellSurface = {nullptr, wl_shell_surface_destroy};
+		Wayland::SharedMemoryPool waylandSharedMemoryPool = {nullptr, wl_shm_pool_destroy};
+		Wayland::Buffer waylandBuffer = {nullptr, wl_buffer_destroy};
+#endif
+	};
+}
