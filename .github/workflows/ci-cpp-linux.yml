@@ -55,4 +55,4 @@ jobs:
         xmake
     - name: Run tests
       run: |
-        ./build/linux/x86_64/release/CppUtils-UnitTests
+        xmake run CppUtils-UnitTests

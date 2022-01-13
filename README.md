@@ -29,13 +29,12 @@ Just follow the installation steps and consult the documentation for each featur
 
 ### Build command
 ```console
-meson build -Ddefault_library=static
-ninja -C build
+xmake
 ```
 
-### Test command
+### Run tests
 ```console
-ninja -C build test
+xmake run CppUtils-UnitTests
 ```
 
 ---

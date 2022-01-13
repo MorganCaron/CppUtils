@@ -4,6 +4,7 @@
 #include <functional>
 
 #include <CppUtils/Type/Typed.hpp>
+#include <CppUtils/Type/Traits.hpp>
 #include <CppUtils/Graph/VariantTreeNode.hpp>
 #include <CppUtils/Language/Parser/Cursor.hpp>
 
@@ -21,6 +22,7 @@ namespace CppUtils::Language::Parser
 	};
 
 	template<typename... Types>
+	requires Type::Traits::containAtLeastNType<1, Types...>
 	struct Context final
 	{
 		Parser::Cursor<std::string> cursor;
