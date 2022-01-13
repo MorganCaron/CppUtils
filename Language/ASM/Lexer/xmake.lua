@@ -1,4 +1,4 @@
-target("CppUtils-Language-ASM-Lexer")
+target("CppUtils-Language-Asm-Lexer")
 	set_kind("static")
 	set_policy("build.merge_archive", true)
 	add_deps("CppUtils-Language-Lexer")

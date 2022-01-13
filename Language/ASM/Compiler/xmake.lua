@@ -1,4 +1,4 @@
-target("CppUtils-Language-ASM-Compiler")
+target("CppUtils-Language-Asm-Compiler")
 	set_kind("static")
 	set_policy("build.merge_archive", true)
 	add_deps(
@@ -6,7 +6,7 @@ target("CppUtils-Language-ASM-Compiler")
 		"CppUtils-Language-Parser",
 		"CppUtils-Language-Lexer",
 		"CppUtils-Language-Compiler",
-		"CppUtils-Language-ASM-Lexer"
+		"CppUtils-Language-Asm-Lexer"
 	)
 	add_includedirs("include", { public = true })
 	add_headerfiles("include/**.hpp")

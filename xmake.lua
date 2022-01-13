@@ -2,7 +2,7 @@ set_project("CppUtils")
 set_version("0.0.0")
 set_license("LGPL3")
 set_languages("clatest", "cxxlatest")
-set_warnings("everything", "error")
+set_warnings("allextra", "error")
 set_optimize("fastest")
 
 add_rules(
