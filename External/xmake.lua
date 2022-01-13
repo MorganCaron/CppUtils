@@ -1,0 +1,8 @@
+target("CppUtils-External")
+	set_kind("static")
+	set_policy("build.merge_archive", true)
+	add_deps("CppUtils-Platform")
+	add_defines("STATIC_LIB")
+	add_includedirs("include", { public = true })
+	add_headerfiles("include/**.hpp")
+	add_files("src/*.cpp")

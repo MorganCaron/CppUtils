@@ -1,4 +1,6 @@
-public_dependencies = []
+public_dependencies = [
+	cppUtils_language_lexer_dep
+]
 private_dependencies = []
 
 includeDir = include_directories(['include/', '.'])

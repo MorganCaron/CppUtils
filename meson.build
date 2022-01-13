@@ -4,7 +4,7 @@ project('CppUtils',
 	license: 'LGPL3',
 	default_options: [
 		'c_std=c2x',
-		'cpp_std=c++2a',
+		'cpp_std=c++20',
 		'warning_level=3',
 		'optimization=3',
 		'werror=true'
