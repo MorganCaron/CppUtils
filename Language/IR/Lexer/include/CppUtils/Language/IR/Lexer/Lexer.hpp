@@ -37,7 +37,7 @@ namespace CppUtils::Language::IR::Lexer
 			main[comma]: (label >= 0) spaceParser;
 
 			!functionDeclaration: typeName functionName ~parameters instructions;
-			instructions[comma]: spaceParser '{' (instruction >= 0) spaceParser '}';
+			instructions[comma]: spaceParser '{' , (instruction >= 0) spaceParser '}';
 			!token: spaceParser keywordParser;
 			!comma: spaceParser ',';
 			!variable: token;
@@ -46,17 +46,17 @@ namespace CppUtils::Language::IR::Lexer
 			!functionCall: functionName arguments;
 			!parenthesis: spaceParser '(' operand spaceParser ')';
 
-			!argumentsDeclaration: spaceParser '(' ~argumentDeclaration spaceParser ')';
+			!argumentsDeclaration: spaceParser '(' , ~argumentDeclaration spaceParser ')';
 			!argumentDeclaration: variable ~secondArgumentDeclaration;
-			!secondArgumentDeclaration: comma argumentDeclaration;
+			!secondArgumentDeclaration: comma , argumentDeclaration;
 
-			!arguments: '(' ~argument spaceParser ')';
+			!arguments: '(' , ~argument spaceParser ')';
 			!argument: rvalue ~secondArgument;
-			!secondArgument: comma argument;
+			!secondArgument: comma , argument;
 			
-			!assignment: lvalue [assignmentOperator] operand;
+			!assignment: lvalue [assignmentOperator] , operand;
 			!operand: rvalue ~[secondOperand];
-			!secondOperand: [operator] operand;
+			!secondOperand: [operator] , operand;
 
 			label: functionDeclaration;
 			!parameters: !argumentsDeclaration;
@@ -65,8 +65,8 @@ namespace CppUtils::Language::IR::Lexer
 			string: quoteParser;
 
 			!literal: spaceParser (number || string);
-			ref: spaceParser '&' spaceParser rvalue;
-			deref: spaceParser '*' spaceParser rvalue;
+			ref: spaceParser '&' , spaceParser rvalue;
+			deref: spaceParser '*' , spaceParser rvalue;
 			!lvalue: (deref || ident);
 			!rvalue: (parenthesis || ref || deref || call || literal || ident);
 
@@ -82,13 +82,13 @@ namespace CppUtils::Language::IR::Lexer
 			subOperator[sub]: '-';
 
 			!controlStructure: (if || while);
-			!statement: (halt || nop || ret || call || copy) spaceParser ';';
+			!statement: (halt || nop || ret || call || copy) , spaceParser ';';
 			!instruction: spaceParser (controlStructure || statement);
 			halt: "halt";
 			nop: "nop";
-			ret: "return" rvalue;
-			if: "if" parenthesis (instructions || instruction);
-			while: "while" parenthesis (instructions || instruction);
+			ret: "return" , rvalue;
+			if: "if" , parenthesis , (instructions || instruction);
+			while: "while" , parenthesis , (instructions || instruction);
 			call: functionCall;
 			!copy: assignment;
 			)"sv;
