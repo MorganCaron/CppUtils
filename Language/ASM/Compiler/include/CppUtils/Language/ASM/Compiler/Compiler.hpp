@@ -27,12 +27,12 @@ namespace CppUtils::Language::ASM::Compiler
 		}}
 		{}
 
-		inline void compile(const Lexer::ASTNode<Address>& astNode, Context<Address>& context) const
+		void compile(const Lexer::ASTNode<Address>& astNode, Context<Address>& context) const
 		{
 			m_compiler.compile(astNode, context);
 		}
 
-		[[nodiscard]] inline Output<Address> compile(std::string_view src) const
+		[[nodiscard]] Output<Address> compile(std::string_view src) const
 		{
 			auto astNode = Lexer::parse<Address>(src);
 			auto output = Output<Address>{};

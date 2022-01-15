@@ -28,12 +28,12 @@ namespace CppUtils::Language::ASM::Compiler
 		{}
 
 		template<typename... Args>
-		inline Bytecode::Instruction<Address>* createInstruction(Args... args)
+		Bytecode::Instruction<Address>* createInstruction(Args... args)
 		{
 			return Context::output.get().instructions.emplace_back(std::make_unique<Bytecode::Instruction<Address>>(std::forward<Args>(args)...)).get();
 		}
 
-		inline void addInstruction(Bytecode::Instruction<Address>* instruction)
+		void addInstruction(Bytecode::Instruction<Address>* instruction)
 		{
 			if (lastInstruction == nullptr)
 				lastInstruction = instruction;
@@ -41,7 +41,7 @@ namespace CppUtils::Language::ASM::Compiler
 				lastInstruction = lastInstruction->nextInstruction;
 		}
 
-		[[nodiscard]] inline Address newRegister() noexcept
+		[[nodiscard]] Address newRegister() noexcept
 		{
 			return registerCounter++;
 		}

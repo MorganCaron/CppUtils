@@ -13,12 +13,12 @@ namespace CppUtils::Type
 		explicit Named(std::string name): m_name{std::move(name)}
 		{}
 
-		inline void setName(std::string name)
+		void setName(std::string name)
 		{
 			m_name = std::move(name);
 		}
 		
-		[[nodiscard]] inline std::string_view getName() const noexcept
+		[[nodiscard]] std::string_view getName() const noexcept
 		{
 			return m_name;
 		}

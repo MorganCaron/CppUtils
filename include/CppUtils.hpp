@@ -1,5 +1,7 @@
 #pragma once
 
+#include <CppUtils/Platform/OS.hpp>
+#include <CppUtils/Platform/Compiler.hpp>
 #include <CppUtils/Memory/UniquePtr.hpp>
 #include <CppUtils/System/System.hpp>
 #include <CppUtils/Chrono/Chronometer.hpp>
@@ -10,7 +12,7 @@
 #include <CppUtils/Container/Size3d.hpp>
 #include <CppUtils/Container/Vector.hpp>
 #include <CppUtils/External/DllExport.hpp>
-#include <CppUtils/External/DynamicLibrary.hpp>
+#include <CppUtils/External/SharedLibrary.hpp>
 #include <CppUtils/FileSystem/File.hpp>
 #include <CppUtils/Functional/Function.hpp>
 #include <CppUtils/Graph/MeshNetwork.hpp>

@@ -1,10 +1,10 @@
-#include <CppUtils/External/DynamicLibrary.hpp>
+#include <CppUtils/External/SharedLibrary.hpp>
 
 namespace CppUtils::External
 {
-	#if defined(OS_WINDOWS)
+#if defined(OS_WINDOWS)
 
-	void DynamicLibrary::open(std::string_view path)
+	void SharedLibrary::open(std::string_view path)
 	{
 		m_library = ::LoadLibraryA(path.data());
 		if (!m_library)
@@ -16,7 +16,7 @@ namespace CppUtils::External
 		}
 	}
 
-	void DynamicLibrary::close() noexcept
+	void SharedLibrary::close() noexcept
 	{
 		if (!m_library)
 			return;
@@ -34,9 +34,9 @@ namespace CppUtils::External
 		m_library = nullptr;
 	}
 
-	#elif defined(OS_LINUX) || defined(OS_MACOS)
+#elif defined(OS_LINUX) || defined(OS_MACOS)
 
-	void DynamicLibrary::open(std::string_view path)
+	void SharedLibrary::open(std::string_view path)
 	{
 		m_library = dlopen(path.data(), RTLD_LAZY);
 
@@ -49,7 +49,7 @@ namespace CppUtils::External
 		}
 	}
 
-	void DynamicLibrary::close() noexcept
+	void SharedLibrary::close() noexcept
 	{
 		try
 		{
@@ -61,5 +61,5 @@ namespace CppUtils::External
 		}
 	}
 
-	#endif
+#endif
 }

@@ -11,7 +11,7 @@ includes("ASM")
 includes("Xml")
 
 target("CppUtils-Language")
-	set_kind("static")
+	set_kind("$(kind)")
 	set_policy("build.merge_archive", true)
 	add_deps(
 		"CppUtils-Language-Parser",

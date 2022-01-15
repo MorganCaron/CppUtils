@@ -1,5 +1,5 @@
 target("CppUtils-Language-Xml")
-	set_kind("static")
+	set_kind("$(kind)")
 	set_policy("build.merge_archive", true)
 	add_deps(
 		"CppUtils-Language-Lexer"

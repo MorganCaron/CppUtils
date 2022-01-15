@@ -1,10 +1,6 @@
 name: "CI C++: Windows"
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [ push, pull_request ]
 
 jobs:
   build:
@@ -27,27 +23,17 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
-    - uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-    - name: Install Meson ans Ninja
-      run: pip3 install meson ninja
+    - uses: MinoruSekine/setup-scoop@v1
+    - name: Install XMake
+      run: |
+        scoop install xmake
     - name: Compile
       env:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}
-        LDFLAGS: '-ldl'
       run: |
-        meson build -Ddefault_library=${{ matrix.library-type }} -Dcpp_std=vc++latest -Dcpp_args='/DNOMINMAX'
-        ninja -C build -j7
-    - name: Move DLLs
-      if: ${{ matrix.library-type == 'shared' }}
-      run: |
-        cp ./build/External/libCppUtils-External.dll ./build/UnitTests
-        cp ./build/Terminal/libCppUtils-Terminal.dll ./build/UnitTests
-        cp ./build/Log/libCppUtils-Log.dll ./build/UnitTests
-        cp ./build/Type/libCppUtils-Type.dll ./build/UnitTests
+        xmake f -p windows -k ${{ matrix.library-type }}
+        xmake -v
     - name: Run tests
       run: |
-        ./build/UnitTests/UnitTests
-        ninja -C build test
+        xmake run

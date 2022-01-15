@@ -1,10 +1,6 @@
 name: "CI C++: Windows MSYS2"
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [ push, pull_request ]
 
 jobs:
   build:
@@ -21,11 +17,13 @@ jobs:
         compiler:
         - {
           cc: "gcc",
-          cxx: "g++"
+          cxx: "g++",
+          install: "mingw-w64-x86_64-gcc"
         }
         - {
           cc: "clang",
-          cxx: "clang++"
+          cxx: "clang++",
+          install: "mingw-w64-x86_64-clang"
         }
         library-type: [static, shared]
     steps:
@@ -33,28 +31,17 @@ jobs:
     - uses: msys2/setup-msys2@v2
       with:
         install: >-
-          mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-clang
-          mingw-w64-x86_64-meson
-          mingw-w64-x86_64-ninja
+          ${{ matrix.compiler.install }}
+          mingw-w64-x86_64-xmake
     - name: Compile
       shell: msys2 {0}
       env:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}
       run: |
-        meson build -Ddefault_library=${{ matrix.library-type }}
-        ninja -C build -j7
-    - name: Move DLLs
-      if: ${{ matrix.library-type == 'shared' }}
-      shell: msys2 {0}
-      run: |
-        cp ./build/External/libCppUtils-External.dll ./build/UnitTests
-        cp ./build/Terminal/libCppUtils-Terminal.dll ./build/UnitTests
-        cp ./build/Log/libCppUtils-Log.dll ./build/UnitTests
-        cp ./build/Type/libCppUtils-Type.dll ./build/UnitTests
+        xmake f -p mingw -k ${{ matrix.library-type }}
+        xmake -v
     - name: Run tests
       shell: msys2 {0}
       run: |
-        ./build/UnitTests/UnitTests
-        ninja -C build test
+        xmake run

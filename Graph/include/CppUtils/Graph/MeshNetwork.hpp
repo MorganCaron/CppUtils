@@ -17,7 +17,7 @@ namespace CppUtils::Graph
 		using Node = MeshNode<Key, Value, Hash>;
 
 		template<typename... Args>
-		[[nodiscard]] inline std::shared_ptr<Node> newNode(Args&&... params)
+		[[nodiscard]] std::shared_ptr<Node> newNode(Args&&... params)
 		{
 			[[maybe_unused]] const auto lock = std::lock_guard(m_nodesMutex);
 			return m_nodes.emplace_back(std::make_shared<Node>(std::forward<Args>(params)...));

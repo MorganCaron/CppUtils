@@ -29,7 +29,7 @@ namespace CppUtils::Language::IR::Compiler
 		{}
 
 		template<typename... Args>
-		inline Bytecode::Instruction<Address>* createInstruction(Args... args)
+		Bytecode::Instruction<Address>* createInstruction(Args... args)
 		{
 			return output.get().instructions.emplace_back(std::make_unique<Bytecode::Instruction<Address>>(std::forward<Args>(args)...)).get();
 		}
@@ -52,12 +52,12 @@ namespace CppUtils::Language::IR::Compiler
 			Context::output.get().functions[label] = FunctionInformations<Address>{lastInstruction, nbParameters};
 		}
 
-		[[nodiscard]] inline Address newRegister() noexcept
+		[[nodiscard]] Address newRegister() noexcept
 		{
 			return registerCounter++;
 		}
 
-		[[nodiscard]] inline Address getRegister(const Type::Token& variable)
+		[[nodiscard]] Address getRegister(const Type::Token& variable)
 		{
 			if (variablesToRegisters.find(variable) == variablesToRegisters.end())
 				variablesToRegisters[variable] = newRegister();

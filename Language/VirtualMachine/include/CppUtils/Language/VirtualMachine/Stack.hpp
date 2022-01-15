@@ -45,12 +45,12 @@ namespace CppUtils::Language::VirtualMachine
 			return *reinterpret_cast<Type*>(m_stack.data() + m_top - sizeof(Type));
 		}
 
-		[[nodiscard]] inline constexpr std::size_t size() const noexcept
+		[[nodiscard]] constexpr std::size_t size() const noexcept
 		{
 			return stackSize;
 		}
 
-		[[nodiscard]] inline constexpr bool empty() const noexcept
+		[[nodiscard]] constexpr bool empty() const noexcept
 		{
 			return size() == 0;
 		}

@@ -28,12 +28,12 @@ namespace CppUtils::Language::ASM::VirtualMachine
 			}}
 		{}
 
-		inline void run(std::span<const std::unique_ptr<Instruction>> instructions, Context<Address>& context) const
+		void run(std::span<const std::unique_ptr<Instruction>> instructions, Context<Address>& context) const
 		{
 			m_virtualMachine.run(instructions, context);
 		}
 
-		inline void run(std::string_view src, Context<Address>& context) const
+		void run(std::string_view src, Context<Address>& context) const
 		{
 			static const auto compiler = Compiler::Compiler<Address>{};
 			run(compiler.compile(src).instructions, context);

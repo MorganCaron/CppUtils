@@ -100,7 +100,7 @@ namespace CppUtils::Language::Lexer
 			newLine >> "\n";
 		}
 
-		inline void addParsingFunction(const Type::Token& token, Parser::ParsingFunction<Types...> parsingFunction)
+		void addParsingFunction(const Type::Token& token, Parser::ParsingFunction<Types...> parsingFunction)
 		{
 			m_parsingFunctions[token] = std::move(parsingFunction);
 		}
@@ -129,17 +129,17 @@ namespace CppUtils::Language::Lexer
 			}
 		}
 
-		[[nodiscard]] inline Parser::ASTNode<Types...> parseLanguage(const Type::Token& token, std::string_view src) const
+		[[nodiscard]] Parser::ASTNode<Types...> parseLanguage(const Type::Token& token, std::string_view src) const
 		{
 			return m_languageLexer.parseString(token, src);
 		}
 
-		[[nodiscard]] inline bool parseSegment(const Type::Token& token, Parser::Context<Types...>& context) const
+		[[nodiscard]] bool parseSegment(const Type::Token& token, Parser::Context<Types...>& context) const
 		{
 			return m_languageLexer.parseSegment(token, context);
 		}
 
-		inline void parseContext(const Type::Token& token, Parser::Context<Types...>& context) const
+		void parseContext(const Type::Token& token, Parser::Context<Types...>& context) const
 		{
 			return m_languageLexer.parseContext(token, context);
 		}

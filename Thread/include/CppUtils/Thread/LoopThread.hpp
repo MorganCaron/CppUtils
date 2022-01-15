@@ -46,7 +46,7 @@ namespace CppUtils::Thread
 			stop();
 		}
 
-		[[nodiscard]] inline bool isRunning() const noexcept
+		[[nodiscard]] bool isRunning() const noexcept
 		{
 			return m_running.load();
 		}

@@ -34,7 +34,7 @@ xmake
 
 ### Run tests
 ```console
-xmake run CppUtils-UnitTests
+xmake run
 ```
 
 ---
@@ -51,7 +51,7 @@ xmake run CppUtils-UnitTests
 	- [Vector](Container/README.md#Vector)
 - **External**
 	- DllExport
-	- DynamicLibrary
+	- SharedLibrary
 - **[FileSystem](FileSystem/README.md)**
 	- [File](FileSystem/README.md#File)
 - **[Functional](Functional/README.md)**

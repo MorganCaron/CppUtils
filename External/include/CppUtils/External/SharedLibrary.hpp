@@ -7,19 +7,18 @@
 #include <string_view>
 
 #include <CppUtils/Platform/OS.hpp>
+#include <CppUtils/Platform/Windows.hpp>
 #include <CppUtils/External/DllExport.hpp>
 
-#if defined(OS_WINDOWS)
-# include <windows.h>
-#elif defined(OS_LINUX) || defined(OS_MACOS)
-# include <dlfcn.h>
+#if defined(OS_LINUX) || defined(OS_MACOS)
+#	include <dlfcn.h>
 #endif
 
 namespace CppUtils::External
 {
 	using namespace std::literals;
 	
-	class DLL_PUBLIC DynamicLibrary final
+	class DLL_PUBLIC SharedLibrary final
 	{
 	public:
 	#if defined(OS_WINDOWS)
@@ -30,23 +29,23 @@ namespace CppUtils::External
 		static constexpr auto ext = ".dylib"sv;
 	#endif
 
-		DynamicLibrary() = default;
-		DynamicLibrary(const DynamicLibrary&) = delete;
-		DynamicLibrary(DynamicLibrary&& src) noexcept:
+		SharedLibrary() = default;
+		SharedLibrary(const SharedLibrary&) = delete;
+		SharedLibrary(SharedLibrary&& src) noexcept:
 			m_library(std::exchange(src.m_library, nullptr))
 		{}
-		DynamicLibrary& operator=(const DynamicLibrary&) = delete;
-		DynamicLibrary& operator=(DynamicLibrary&& rhs) noexcept
+		SharedLibrary& operator=(const SharedLibrary&) = delete;
+		SharedLibrary& operator=(SharedLibrary&& rhs) noexcept
 		{
 			m_library = std::exchange(rhs.m_library, nullptr);
 			return *this;
 		}
 
-		explicit DynamicLibrary(std::string_view path)
+		explicit SharedLibrary(std::string_view path)
 		{
 			open(path);
 		}
-		~DynamicLibrary() noexcept
+		~SharedLibrary() noexcept
 		{
 			close();
 		}

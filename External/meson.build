@@ -6,12 +6,12 @@ private_dependencies = []
 includeDir = include_directories(['include/', '.'])
 
 sources = files([
-	'src/DynamicLibrary.cpp'
+	'src/SharedLibrary.cpp'
 ])
 
 headers = files([
 	'include/CppUtils/External/DllExport.hpp',
-	'include/CppUtils/External/DynamicLibrary.hpp'
+	'include/CppUtils/External/SharedLibrary.hpp'
 ])
 
 cppUtils_external_lib = library(
