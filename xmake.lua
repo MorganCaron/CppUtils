@@ -52,7 +52,6 @@ includes("UnitTest")
 
 target("CppUtils")
 	set_kind("$(kind)")
-	set_policy("build.merge_archive", true)
 	add_deps(
 		"CppUtils-Platform",
 		"CppUtils-Memory",
@@ -73,7 +72,7 @@ target("CppUtils")
 		"CppUtils-Parameters",
 		"CppUtils-UnitTest"
 	)
-	add_defines("DLL_EXPORT")
+	set_policy("build.merge_archive", true)
 	add_includedirs("include", { public = true })
 	add_headerfiles("include/**.hpp")
 

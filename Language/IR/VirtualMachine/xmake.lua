@@ -1,6 +1,5 @@
 target("CppUtils-Language-IR-VirtualMachine")
-	set_kind("$(kind)")
-	set_policy("build.merge_archive", true)
+	set_kind("headeronly")
 	add_deps(
 		"CppUtils-Type",
 		"CppUtils-Language-IR-Compiler"

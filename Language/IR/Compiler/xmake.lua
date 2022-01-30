@@ -1,6 +1,5 @@
 target("CppUtils-Language-IR-Compiler")
-	set_kind("$(kind)")
-	set_policy("build.merge_archive", true)
+	set_kind("headeronly")
 	add_deps(
 		"CppUtils-Log",
 		"CppUtils-Language-Parser",

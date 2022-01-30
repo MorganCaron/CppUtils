@@ -39,8 +39,8 @@ jobs:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}
       run: |
-        xmake f -p macosx -k ${{ matrix.library-type }}
-        xmake -v
+        xmake f -p macosx -k ${{ matrix.library-type }} -v
+        xmake -vD
     - name: Run tests
       run: |
         xmake run

@@ -1,6 +1,5 @@
 target("CppUtils-Language-Asm-Lexer")
-	set_kind("$(kind)")
-	set_policy("build.merge_archive", true)
+	set_kind("headeronly")
 	add_deps("CppUtils-Language-Lexer")
 	add_includedirs("include", { public = true })
 	add_headerfiles("include/**.hpp")

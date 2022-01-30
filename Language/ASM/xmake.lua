@@ -3,8 +3,7 @@ includes("Compiler")
 includes("VirtualMachine")
 
 target("CppUtils-Language-Asm")
-	set_kind("$(kind)")
-	set_policy("build.merge_archive", true)
+	set_kind("headeronly")
 	add_deps(
 		"CppUtils-Language-Asm-Lexer",
 		"CppUtils-Language-Asm-Compiler",
