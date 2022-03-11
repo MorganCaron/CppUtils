@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <unordered_map>
 
+#include <CppUtils/External/DllExport.hpp>
 #include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Terminal/TextModifier.hpp>
 
@@ -27,22 +28,22 @@ namespace CppUtils::Log
 			}
 		{}
 
-		[[nodiscard]] inline bool exists(Type::Token logType) const noexcept
+		[[nodiscard]] bool exists(Type::Token logType) const noexcept
 		{
 			return (m_loggerStates.find(logType) != m_loggerStates.end());
 		}
 
-		inline void set(Type::Token logType, bool value)
+		void set(Type::Token logType, bool value)
 		{
 			m_loggerStates[logType] = value;
 		}
 
-		[[nodiscard]] inline bool get(Type::Token logType) const noexcept
+		[[nodiscard]] bool get(Type::Token logType) const noexcept
 		{
 			return exists(logType) ? m_loggerStates.at(logType) : false;
 		}
 
-		inline void setAll(bool value) noexcept
+		void setAll(bool value) noexcept
 		{
 			for (auto& pair : m_loggerStates)
 				pair.second = value;
@@ -52,7 +53,7 @@ namespace CppUtils::Log
 		std::unordered_map<Type::Token, bool, Type::Token::hash_fn> m_loggerStates;
 	};
 
-	class Logger final
+	class DLL_PUBLIC Logger final
 	{
 	public:
 		enum class OutputType: char
@@ -62,19 +63,19 @@ namespace CppUtils::Log
 			Clog
 		};
 
-		inline void addLogger(OutputType loggerOutput, std::ostream* os)
+		void addLogger(OutputType loggerOutput, std::ostream* os)
 		{
 			m_outputs[loggerOutput] = os;
 		}
 
-		[[nodiscard]] static inline OutputType getLoggerOutputType(Type::Token logType)
+		[[nodiscard]] static OutputType getLoggerOutputType(Type::Token logType)
 		{
 			if (m_loggerOutputs.find(logType) == m_loggerOutputs.end())
 				throw std::out_of_range{"getLoggerOutputType(): Unknown logger type " + std::string{logType.name}};
 			return m_loggerOutputs.at(logType);
 		}
 
-		[[nodiscard]] static inline std::ostream& getLoggerOutputStream(Type::Token logType)
+		[[nodiscard]] static std::ostream& getLoggerOutputStream(Type::Token logType)
 		{
 			const auto outputType = getLoggerOutputType(logType);
 			if (m_outputs.find(outputType) == m_outputs.end())
@@ -82,7 +83,7 @@ namespace CppUtils::Log
 			return *m_outputs.at(outputType);
 		}
 
-		[[nodiscard]] static inline Terminal::TextColor::TextColorEnum getLoggerColor(Type::Token logType)
+		[[nodiscard]] static Terminal::TextColor::TextColorEnum getLoggerColor(Type::Token logType)
 		{
 			return m_colors.at(logType);
 		}
@@ -94,37 +95,37 @@ namespace CppUtils::Log
 			log(logType, message, getLoggerColor(logType), newLine);
 		}
 
-		static inline void logInformation(std::string_view message, bool newLine = true)
+		static void logInformation(std::string_view message, bool newLine = true)
 		{
 			log("Information"_token, message, newLine);
 		}
 
-		static inline void logImportant(std::string_view message, bool newLine = true)
+		static void logImportant(std::string_view message, bool newLine = true)
 		{
 			log("Important"_token, message, newLine);
 		}
 
-		static inline void logSuccess(std::string_view message, bool newLine = true)
+		static void logSuccess(std::string_view message, bool newLine = true)
 		{
 			log("Success"_token, message, newLine);
 		}
 
-		static inline void logDebug(std::string_view message, bool newLine = true)
+		static void logDebug(std::string_view message, bool newLine = true)
 		{
 			log("Debug"_token, message, newLine);
 		}
 
-		static inline void logDetail(std::string_view message, bool newLine = true)
+		static void logDetail(std::string_view message, bool newLine = true)
 		{
 			log("Detail"_token, message, newLine);
 		}
 
-		static inline void logWarning(std::string_view message, bool newLine = true)
+		static void logWarning(std::string_view message, bool newLine = true)
 		{
 			log("Warning"_token, message, newLine);
 		}
 
-		static inline void logError(std::string_view message, bool newLine = true)
+		static void logError(std::string_view message, bool newLine = true)
 		{
 			log("Error"_token, message, newLine);
 		}

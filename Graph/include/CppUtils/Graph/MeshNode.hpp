@@ -14,7 +14,7 @@ namespace CppUtils::Graph
 	public:
 		using Node = MeshNode<Key, Value, Hash>;
 
-		static inline void attach(const Key& branchKey0, const std::shared_ptr<Node>& node0, const Key& branchKey1, const std::shared_ptr<Node>& node1)
+		static void attach(const Key& branchKey0, const std::shared_ptr<Node>& node0, const Key& branchKey1, const std::shared_ptr<Node>& node1)
 		{
 			node1->attach(branchKey0, node0);
 			node0->attach(branchKey1, node1);
@@ -24,7 +24,7 @@ namespace CppUtils::Graph
 			value(std::move(c_value))
 		{}
 
-		[[nodiscard]] inline bool exists(const Key& branchKey) const
+		[[nodiscard]] bool exists(const Key& branchKey) const
 		{
 			return m_branchs.find(branchKey) != m_branchs.end();
 		}
@@ -50,12 +50,12 @@ namespace CppUtils::Graph
 			m_branchs[branchKey].push_back(node);
 		}
 
-		inline void detach(const Key& branchKey)
+		void detach(const Key& branchKey)
 		{
 			m_branchs.erase(branchKey);
 		}
 
-		[[nodiscard]] inline std::size_t count(const Key& branchKey) const
+		[[nodiscard]] std::size_t count(const Key& branchKey) const
 		{
 			return exists(branchKey) ? static_cast<std::size_t>(get(branchKey).size()) : 0;
 		}

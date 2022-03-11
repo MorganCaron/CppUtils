@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string_view>
 
+#include <CppUtils/External/DllExport.hpp>
 #include <CppUtils/Platform/OS.hpp>
 #include <CppUtils/Terminal/Terminal.hpp>
 #include <CppUtils/Terminal/TextStyle.hpp>
@@ -21,11 +22,11 @@ namespace CppUtils::Terminal
 	}
 #endif
 
-	class TextModifier final
+	class DLL_PUBLIC TextModifier final
 	{
 	public:
 #if defined(OS_WINDOWS)
-		[[nodiscard]] static inline WORD getTextColor(std::ostream& stream)
+		[[nodiscard]] static WORD getTextColor(std::ostream& stream)
 		{
 			CONSOLE_SCREEN_BUFFER_INFO info;
 			if (!GetConsoleScreenBufferInfo(getTerminalHandle(stream), &info))
@@ -34,7 +35,7 @@ namespace CppUtils::Terminal
 		}
 #endif
 
-		static inline void colorize(
+		static void colorize(
 			std::ostream& stream,
 			TextColor::TextColorEnum textColor = TextColor::TextColorEnum::Default,
 			BackgroundColor::BackgroundColorEnum backgroundColor = BackgroundColor::BackgroundColorEnum::Default)
@@ -49,7 +50,7 @@ namespace CppUtils::Terminal
 #endif
 		}
 
-		static inline void stylize(
+		static void stylize(
 			[[maybe_unused]] std::ostream& stream,
 			[[maybe_unused]] TextStyle::TextStyleEnum textStyle)
 		{
@@ -58,7 +59,7 @@ namespace CppUtils::Terminal
 #endif
 		}
 
-		static inline void reset(std::ostream& stream)
+		static void reset(std::ostream& stream)
 		{
 #if defined(OS_WINDOWS)
 			SetConsoleTextAttribute(Terminal::getTerminalHandle(stream), m_attributes);
@@ -67,7 +68,7 @@ namespace CppUtils::Terminal
 #endif
 		}
 
-		static inline void eraseCurrentLine([[maybe_unused]]std::ostream& stream)
+		static void eraseCurrentLine([[maybe_unused]]std::ostream& stream)
 		{
 #if defined(OS_LINUX) || defined(OS_MACOS)
 			stream << ANSIEscapeCode::EraseCurrentLine;

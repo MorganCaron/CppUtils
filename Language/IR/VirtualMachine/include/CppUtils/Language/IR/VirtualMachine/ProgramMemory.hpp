@@ -30,29 +30,29 @@ namespace CppUtils::Language::IR::VirtualMachine
 		std::unordered_map<std::size_t, Address> registerFile;
 
 		template<typename T>
-		[[nodiscard]] inline constexpr std::size_t countNecessaryMemoryCells() const noexcept
+		[[nodiscard]] constexpr std::size_t countNecessaryMemoryCells() const noexcept
 		{
 			return static_cast<std::size_t>(std::ceil(sizeof(T) / sizeof(Address)));
 		}
 
 		template<typename T>
-		[[nodiscard]] inline const T& getStackAddress(Address address) const noexcept
+		[[nodiscard]] const T& getStackAddress(Address address) const noexcept
 		{
 			return *reinterpret_cast<const T*>(programMemory.data() + address);
 		}
 
 		template<typename T>
-		[[nodiscard]] inline T& getStackAddress(Address address) noexcept
+		[[nodiscard]] T& getStackAddress(Address address) noexcept
 		{
 			return *reinterpret_cast<T*>(programMemory.data() + address);
 		}
 
-		inline void halt() noexcept
+		void halt() noexcept
 		{
 			jump(0);
 		}
 
-		inline void jump(Address destination) noexcept
+		void jump(Address destination) noexcept
 		{
 			registerVariables.instructionPointer = destination;
 		}
@@ -77,7 +77,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 		}
 
 		template<typename T>
-		[[nodiscard]] inline bool isWrongMemoryAddress(Address address) const noexcept
+		[[nodiscard]] bool isWrongMemoryAddress(Address address) const noexcept
 		{
 			return (address < registerVariables.stackPointer || address + countNecessaryMemoryCells<T>() > stackSize);
 		}
@@ -99,19 +99,19 @@ namespace CppUtils::Language::IR::VirtualMachine
 		}
 
 		template<typename T>
-		[[nodiscard]] inline const T& top() const
+		[[nodiscard]] const T& top() const
 		{
 			return get<T>(registerVariables.stackPointer);
 		}
 
-		inline void call(Address destination)
+		void call(Address destination)
 		{
 			push<Address>(registerVariables.instructionPointer == 0 ? 0 : reinterpret_cast<Address>(getInstruction().nextInstruction));
 			jump(destination);
 		}
 
 		// Function prologue
-		inline void enter(std::size_t argumentsStorage)
+		void enter(std::size_t argumentsStorage)
 		{
 			push<Address>(registerVariables.basePointer);
 			registerVariables.basePointer = registerVariables.stackPointer;
@@ -119,32 +119,32 @@ namespace CppUtils::Language::IR::VirtualMachine
 		}
 
 		// Function epilogue
-		inline void leave()
+		void leave()
 		{
 			registerVariables.stackPointer = registerVariables.basePointer;
 			registerVariables.basePointer = pop<Address>();
 		}
 
-		inline void ret()
+		void ret()
 		{
 			jump(pop<Address>());
 		}
 
 		template<typename T>
-		inline void ret(T result)
+		void ret(T result)
 		{
 			ret();
 			set<T>(registerVariables.stackPointer, std::move(result));
 		}
 
-		[[nodiscard]] inline const Compiler::Bytecode::Instruction<Address>& getInstruction() const
+		[[nodiscard]] const Compiler::Bytecode::Instruction<Address>& getInstruction() const
 		{
 			if (registerVariables.instructionPointer == 0)
 				throw std::runtime_error{"Instruction not found"};
 			return *reinterpret_cast<Compiler::Bytecode::Instruction<Address>*>(registerVariables.instructionPointer);
 		}
 
-		inline void goToNextInstruction()
+		void goToNextInstruction()
 		{
 			jump(reinterpret_cast<Address>(getInstruction().nextInstruction));
 		}

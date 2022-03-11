@@ -69,7 +69,7 @@ namespace CppUtils::Language::Ini
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Parser::ASTNode<Type::Token, bool, float, std::string> parse(std::string_view src) const
+		[[nodiscard]] Parser::ASTNode<Type::Token, bool, float, std::string> parse(std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);

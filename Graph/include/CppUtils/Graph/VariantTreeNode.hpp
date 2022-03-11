@@ -9,6 +9,7 @@
 
 namespace CppUtils::Graph
 {
-	template<typename... Types> requires std::is_default_constructible_v<VariadicTemplate::NthType<0, Types...>>
+	template<typename... Types>
+	requires std::is_default_constructible_v<VariadicTemplate::NthType<0, Types...>>
 	using VariantTreeNode = TreeNode<std::variant<Types...>>;
 }

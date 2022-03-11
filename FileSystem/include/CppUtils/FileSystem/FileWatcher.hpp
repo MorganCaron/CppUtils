@@ -27,30 +27,30 @@ namespace CppUtils::FileSystem
 		FileWatcher& operator=(const FileWatcher&) = delete;
 		FileWatcher& operator=(FileWatcher&&) noexcept = default;
 
-		[[nodiscard]] inline bool isRunning() const noexcept
+		[[nodiscard]] bool isRunning() const noexcept
 		{
 			return m_loopThread.isRunning();
 		}
 
 		template<typename Rep, typename Period>
-		inline void start(const std::chrono::duration<Rep, Period>& interval)
+		void start(const std::chrono::duration<Rep, Period>& interval)
 		{
 			m_loopThread.start(interval);
 		}
 
-		inline void stop()
+		void stop()
 		{
 			m_loopThread.stop();
 		}
 
-		inline void watchPath(const std::filesystem::path& filePath)
+		void watchPath(const std::filesystem::path& filePath)
 		{
 			[[maybe_unused]] auto lockGuard = std::lock_guard<std::mutex>{m_mutex};
 			m_watchedFiles.insert(filePath);
 			m_fileStatus[filePath] = std::filesystem::last_write_time(filePath);
 		}
 
-		inline void unwatchPath(const std::filesystem::path& filePath)
+		void unwatchPath(const std::filesystem::path& filePath)
 		{
 			[[maybe_unused]] auto lockGuard = std::lock_guard<std::mutex>{m_mutex};
 			m_watchedFiles.erase(filePath);

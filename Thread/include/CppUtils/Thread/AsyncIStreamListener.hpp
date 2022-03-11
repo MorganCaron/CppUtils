@@ -27,17 +27,17 @@ namespace CppUtils::Thread
 		AsyncIStreamListener& operator=(const AsyncIStreamListener&) = delete;
 		AsyncIStreamListener& operator=(AsyncIStreamListener&&) noexcept = default;
 
-		[[nodiscard]] inline bool isRunning() const noexcept
+		[[nodiscard]] bool isRunning() const noexcept
 		{
 			return m_loopThread.isRunning();
 		}
 
-		inline void start()
+		void start()
 		{
 			m_loopThread.start(0s);
 		}
 
-		inline void stop()
+		void stop()
 		{
 			m_loopThread.stop();
 		}
