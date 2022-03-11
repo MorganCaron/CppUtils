@@ -9,8 +9,9 @@ namespace CppUtils::UnitTests::Chrono::Chronometer
 		addTest("", [] {
 			auto chrono = CppUtils::Chrono::Chronometer{};
 			chrono.stop();
-			ASSERT(!chrono.getText().empty());
-			CppUtils::Log::Logger::logInformation(chrono.getText());
+			auto string = CppUtils::Chrono::durationToString(chrono.getDuration());
+			ASSERT(!string.empty());
+			CppUtils::Log::Logger::logInformation(string);
 		});
 	}
 }

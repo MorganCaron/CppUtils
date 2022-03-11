@@ -10,7 +10,8 @@ namespace CppUtils::Log
 	public:
 		explicit ChronoLogger(std::string name, bool enabled = true):
 			m_name{std::move(name)},
-			m_enabled{enabled}
+			m_enabled{enabled},
+			m_chrono{}
 		{}
 
 		inline void start()
@@ -25,7 +26,7 @@ namespace CppUtils::Log
 			if (!m_enabled)
 				return;
 			m_chrono.stop();
-			Logger::logDebug(m_name + " duration: " + m_chrono.getText());
+			Logger::logDebug(m_name + " duration: " + CppUtils::Chrono::durationToString(m_chrono.getDuration()));
 		}
 
 		inline void enable() noexcept
@@ -41,6 +42,6 @@ namespace CppUtils::Log
 	private:
 		std::string m_name;
 		bool m_enabled;
-		Chrono::Chronometer m_chrono;
+		Chrono::Chronometer<> m_chrono;
 	};
 }
