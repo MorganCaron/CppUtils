@@ -29,13 +29,12 @@ Just follow the installation steps and consult the documentation for each featur
 
 ### Build command
 ```console
-meson build -Ddefault_library=static
-ninja -C build
+xmake
 ```
 
-### Test command
+### Run tests
 ```console
-ninja -C build test
+xmake run
 ```
 
 ---
@@ -52,7 +51,7 @@ ninja -C build test
 	- [Vector](Container/README.md#Vector)
 - **External**
 	- DllExport
-	- DynamicLibrary
+	- SharedLibrary
 - **[FileSystem](FileSystem/README.md)**
 	- [File](FileSystem/README.md#File)
 - **[Functional](Functional/README.md)**

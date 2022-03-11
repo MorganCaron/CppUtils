@@ -27,7 +27,7 @@ namespace CppUtils::UnitTest
 			return testRunner;
 		}
 
-		inline void addTests(std::vector<Test> tests)
+		void addTests(std::vector<Test> tests)
 		{
 			std::move(tests.begin(), tests.end(), std::back_inserter(m_tests));
 		}

@@ -10,45 +10,45 @@ namespace CppUtils::Language::Lexer
 	class Lexer final
 	{
 	public:
-		[[nodiscard]] inline bool expressionExists(const Type::Token& token) const noexcept
+		[[nodiscard]] bool expressionExists(const Type::Token& token) const noexcept
 		{
 			return m_expressions.find(token) != m_expressions.end();
 		}
 
-		inline void createExpression(const Type::Token& token, bool isNode = true)
+		void createExpression(const Type::Token& token, bool isNode = true)
 		{
 			using namespace Type::Literals;
 			m_expressions[token] = Parser::Expression<Types...>{token, isNode ? token : ""_token};
 		}
 
-		inline void createExpression(const Type::Token& token, Type::Token name)
+		void createExpression(const Type::Token& token, Type::Token name)
 		{
 			m_expressions[token] = Parser::Expression<Types...>{token, std::move(name)};
 		}
 
 		template<typename... Args>
-		[[nodiscard]] inline Parser::Expression<Types...>& newExpression(const Type::Token& token, Args&&... args)
+		[[nodiscard]] Parser::Expression<Types...>& newExpression(const Type::Token& token, Args&&... args)
 		{
 			if (!expressionExists(token))
 				createExpression(token, std::forward<Args>(args)...);
 			return getExpression(token);
 		}
 
-		[[nodiscard]] inline Parser::Expression<Types...>& getExpression(const Type::Token& token)
+		[[nodiscard]] Parser::Expression<Types...>& getExpression(const Type::Token& token)
 		{
 			if (!expressionExists(token))
 				throw std::runtime_error{"Undefined expression: " + std::string{token.name}};
 			return m_expressions[token];
 		}
 
-		[[nodiscard]] inline const Parser::Expression<Types...>& getExpression(const Type::Token& token) const
+		[[nodiscard]] const Parser::Expression<Types...>& getExpression(const Type::Token& token) const
 		{
 			if (!expressionExists(token))
 				throw std::runtime_error{"Undefined expression: " + std::string{token.name}};
 			return m_expressions.at(token);
 		}
 
-		[[nodiscard]] inline bool parseSegment(const Type::Token& token, Parser::Context<Types...>& context) const
+		[[nodiscard]] bool parseSegment(const Type::Token& token, Parser::Context<Types...>& context) const
 		{
 			return parseNode(getExpression(token), context);
 		}
@@ -189,7 +189,7 @@ namespace CppUtils::Language::Lexer
 			return false;
 		}
 
-		[[nodiscard]] inline bool parseBreakPointLexeme(const Parser::Context<Types...>& context) const
+		[[nodiscard]] bool parseBreakPointLexeme(const Parser::Context<Types...>& context) const
 		{
 			using namespace std::literals;
 			const auto& cursor = context.cursor;
@@ -197,7 +197,7 @@ namespace CppUtils::Language::Lexer
 			return true;
 		}
 
-		[[nodiscard]] inline bool parseStringLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
+		[[nodiscard]] bool parseStringLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			const auto& string = Type::ensureType<Parser::StringLexeme>(lexeme).value;
 			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
@@ -212,7 +212,7 @@ namespace CppUtils::Language::Lexer
 			return true;
 		}
 
-		[[nodiscard]] inline bool parseParserLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
+		[[nodiscard]] bool parseParserLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			const auto& namedParser = Type::ensureType<Parser::ParserLexeme<Types...>>(lexeme).value;
 			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
@@ -227,13 +227,13 @@ namespace CppUtils::Language::Lexer
 			return false;
 		}
 
-		[[nodiscard]] inline bool parseTokenLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
+		[[nodiscard]] bool parseTokenLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			const auto& token = Type::ensureType<Parser::TokenLexeme>(lexeme).value;
 			return parseSegment(token, context);
 		}
 
-		[[nodiscard]] inline bool parseTagLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
+		[[nodiscard]] bool parseTagLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
 			auto& parentChilds = parentNode.get().childs;
@@ -261,7 +261,7 @@ namespace CppUtils::Language::Lexer
 			return true;
 		}
 
-		[[nodiscard]] inline bool parseMutedLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
+		[[nodiscard]] bool parseMutedLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			const auto& mutedLexeme = Type::ensureType<Parser::MutedLexeme>(lexeme).value;
 			auto newNode = context.parentNode.get();
@@ -275,7 +275,7 @@ namespace CppUtils::Language::Lexer
 			return true;
 		}
 
-		[[nodiscard]] inline bool parseRecurrentLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
+		[[nodiscard]] bool parseRecurrentLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			const auto& recurrence = Type::ensureType<Parser::RecurrentLexeme>(lexeme).value;
 			const auto& [recurrenceLexeme, recurrenceType, repetitions] = recurrence;
@@ -317,7 +317,7 @@ namespace CppUtils::Language::Lexer
 			return true;
 		}
 
-		[[nodiscard]] inline bool parseAlternativeLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
+		[[nodiscard]] bool parseAlternativeLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			const auto& alternative = Type::ensureType<Parser::AlternativeLexeme>(lexeme).value;
 			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
@@ -337,7 +337,7 @@ namespace CppUtils::Language::Lexer
 			return false;
 		}
 
-		[[nodiscard]] inline bool parseExcludeLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
+		[[nodiscard]] bool parseExcludeLexeme(const std::unique_ptr<Parser::ILexeme>& lexeme, Parser::Context<Types...>& context) const
 		{
 			const auto& exclusion = Type::ensureType<Parser::ExcludeLexeme>(lexeme).value;
 			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;

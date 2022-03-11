@@ -3,10 +3,7 @@
 #include <iostream>
 
 #include <CppUtils/Platform/OS.hpp>
-
-#if defined(OS_WINDOWS)
-#	include <Windows.h>
-#endif
+#include <CppUtils/Platform/Windows.hpp>
 
 namespace CppUtils::Terminal
 {

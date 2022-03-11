@@ -7,12 +7,13 @@
 #include <unordered_map>
 
 #include <CppUtils/Hash/Hash.hpp>
+#include <CppUtils/External/DllExport.hpp>
 
 namespace CppUtils::Type
 {
 	/// \brief The `Token` struct allows you to create identifiers from a character string.
 	/// These identifiers can be used as key for ``std::map`` or ``std::unordered_map`` to have better performance than with ``std::string`` as key.
-	struct Token final
+	struct DLL_PUBLIC Token final
 	{
 	public:
 		using Index = std::size_t;
@@ -37,29 +38,29 @@ namespace CppUtils::Type
 		Token& operator=(const Token&) = default;
 		Token& operator=(Token&&) noexcept = default;
 
-		[[nodiscard]] inline constexpr bool operator==(const Token& rhs) const noexcept
+		[[nodiscard]] constexpr bool operator==(const Token& rhs) const noexcept
 		{
 			return id == rhs.id;
 		}
-		[[nodiscard]] inline constexpr bool operator!=(const Token& rhs) const noexcept
+		[[nodiscard]] constexpr bool operator!=(const Token& rhs) const noexcept
 		{
 			return id != rhs.id;
 		}
 
-		[[nodiscard]] inline constexpr bool isEmpty() const noexcept
+		[[nodiscard]] constexpr bool isEmpty() const noexcept
 		{
 			return id == CppUtils::Hash::constexprHash("");
 		}
 
 		struct hash_fn final
 		{
-			[[nodiscard]] inline constexpr std::size_t operator()(const Token& type) const noexcept
+			[[nodiscard]] constexpr std::size_t operator()(const Token& type) const noexcept
 			{
 				return type.id;
 			}
 		};
 
-		inline void saveTypename()
+		void saveTypename()
 		{
 			if (name.empty() && id != CppUtils::Hash::constexprHash(""))
 				return;

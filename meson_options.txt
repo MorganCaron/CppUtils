@@ -1,1 +1,0 @@
-option('enable_documentation', type: 'boolean', value: false, description: 'Generate documentation')

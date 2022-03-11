@@ -10,22 +10,22 @@ namespace CppUtils::Language::Parser
 	template<typename Element>
 	struct Cursor final
 	{
-		[[nodiscard]] inline bool isEnd() const noexcept
+		[[nodiscard]] bool isEnd() const noexcept
 		{
 			return (position >= elements.size());
 		}
 
-		[[nodiscard]] inline const Element& getElement() const
+		[[nodiscard]] const Element& getElement() const
 		{
 			return elements[position];
 		}
 
-		[[nodiscard]] inline const Element& getElementAndSkipIt()
+		[[nodiscard]] const Element& getElementAndSkipIt()
 		{
 			return elements[position++];
 		}
 
-		[[nodiscard]] inline std::size_t size() const noexcept
+		[[nodiscard]] std::size_t size() const noexcept
 		{
 			return elements.size();
 		}
@@ -42,34 +42,34 @@ namespace CppUtils::Language::Parser
 			position{c_position}
 		{}
 
-		[[nodiscard]] inline std::size_t getLineNumber() const noexcept
+		[[nodiscard]] std::size_t getLineNumber() const noexcept
 		{
 			const auto subString = src.substr(0, position);
 			return std::count(subString.begin(), subString.end(), '\n') + 1;
 		}
 
-		[[nodiscard]] inline std::size_t getPositionInTheLine() const noexcept
+		[[nodiscard]] std::size_t getPositionInTheLine() const noexcept
 		{
 			const auto startingLinePosition = src.find_last_of('\n', position);
 			return (startingLinePosition == std::string::npos) ? position : (position - startingLinePosition);
 		}
 
-		[[nodiscard]] inline bool isEndOfString() const noexcept
+		[[nodiscard]] bool isEndOfString() const noexcept
 		{
 			return (position >= src.length());
 		}
 		
-		[[nodiscard]] inline char getChar() const
+		[[nodiscard]] char getChar() const
 		{
 			return src.at(position);
 		}
 
-		[[nodiscard]] inline char getCharAndSkipIt()
+		[[nodiscard]] char getCharAndSkipIt()
 		{
 			return src.at(position++);
 		}
 
-		[[nodiscard]] inline std::string_view getStringIf(const std::function<bool(char)>& validator) const
+		[[nodiscard]] std::string_view getStringIf(const std::function<bool(char)>& validator) const
 		{
 			const auto length = src.length();
 			auto nbChars = std::size_t{0};
@@ -78,33 +78,33 @@ namespace CppUtils::Language::Parser
 			return src.substr(position, nbChars);
 		}
 
-		[[nodiscard]] inline std::string_view getStringAndSkipItIf(const std::function<bool(char)>& validator)
+		[[nodiscard]] std::string_view getStringAndSkipItIf(const std::function<bool(char)>& validator)
 		{
 			const auto string = getStringIf(validator);
 			position += string.length();
 			return string;
 		}
 
-		inline void skipStringIf(const std::function<bool(char)>& validator)
+		void skipStringIf(const std::function<bool(char)>& validator)
 		{
 			if (!isEndOfString() && validator(getChar()))
 				++position;
 		}
 
-		inline void skipStringWhile(const std::function<bool(char)>& validator)
+		void skipStringWhile(const std::function<bool(char)>& validator)
 		{
 			while (!isEndOfString() && validator(getChar()))
 				++position;
 		}
 
-		inline void skipSpaces()
+		void skipSpaces()
 		{
 			skipStringWhile([](const char c) -> bool {
 				return std::isspace(static_cast<unsigned char>(c));
 			});
 		}
 
-		[[nodiscard]] inline std::string_view getNextNChar(std::size_t size) const
+		[[nodiscard]] std::string_view getNextNChar(std::size_t size) const
 		{
 			return src.substr(position, std::min(size, src.length() - position));
 		}
@@ -152,7 +152,7 @@ namespace CppUtils::Language::Parser
 			return keyword;
 		}
 
-		bool isEqual(std::string_view str, bool caseSensitive = true)
+		[[nodiscard]] bool isEqual(std::string_view str, bool caseSensitive = true)
 		{
 			const auto length = str.length();
 			const auto nextNChar = getNextNChar(length);

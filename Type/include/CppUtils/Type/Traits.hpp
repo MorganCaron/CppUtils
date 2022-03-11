@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tuple>
 #include <iostream>
 #include <concepts>
 
@@ -20,4 +21,7 @@ namespace CppUtils::Type::Traits
 	concept isDereferenceable = requires(T value) {
 		*value;
 	};
+
+	template<std::size_t N, typename... Types>
+	concept containAtLeastNType = (std::tuple_size<std::tuple<Types...>>{} >= N);
 }

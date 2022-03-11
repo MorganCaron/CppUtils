@@ -63,7 +63,7 @@ namespace CppUtils::Graph
 			throw std::out_of_range{"The TreeNode does not contain the requested child."};
 		}
 
-		[[nodiscard]] inline const Storage& getChildValue(std::size_t nb = 0) const
+		[[nodiscard]] const Storage& getChildValue(std::size_t nb = 0) const
 		{
 			return childs.at(nb).value;
 		}

@@ -65,7 +65,7 @@ namespace CppUtils::Language::Note
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline Parser::ASTNode<Type::Token, std::string> parse(std::string_view src)
+		[[nodiscard]] Parser::ASTNode<Type::Token, std::string> parse(std::string_view src)
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);

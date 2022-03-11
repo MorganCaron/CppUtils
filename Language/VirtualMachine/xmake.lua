@@ -1,0 +1,5 @@
+target("CppUtils-Language-VirtualMachine")
+	set_kind("headeronly")
+	add_deps("CppUtils-Type")
+	add_includedirs("include", { public = true })
+	add_headerfiles("include/**.hpp")

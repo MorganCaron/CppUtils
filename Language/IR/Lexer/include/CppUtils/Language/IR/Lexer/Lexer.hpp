@@ -95,7 +95,7 @@ namespace CppUtils::Language::IR::Lexer
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline ASTNode<Address> parse(std::string_view src) const
+		[[nodiscard]] ASTNode<Address> parse(std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
