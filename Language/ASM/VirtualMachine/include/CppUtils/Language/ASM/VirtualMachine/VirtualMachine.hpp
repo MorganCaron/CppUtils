@@ -12,34 +12,38 @@
 namespace CppUtils::Language::ASM::VirtualMachine
 {
 	using namespace Type::Literals;
-
-	template<typename Address>
+	
 	class VirtualMachine final
 	{
 	public:
-		using Instruction = Compiler::Bytecode::Instruction<Address>;
+		using Instruction = Compiler::Bytecode::Instruction;
 
 		VirtualMachine(): m_virtualMachine{{
-				{ "move"_token, Operations<Instruction, Address>::move },
-				{ "add"_token, Operations<Instruction, Address>::add }/*,
-				{ "jump"_token, Operations<Types...>::jump },
-				{ "push"_token, Operations<Types...>::push },
-				{ "pop"_token, Operations<Types...>::pop }*/
+				{ "nop"_token, Operations::nop },
+				{ "halt"_token, Operations::halt },
+				{ "move"_token, Operations::move },
+				{ "add"_token, Operations::add }/*,
+				{ "jump"_token, Operations::jump },
+				{ "push"_token, Operations::push },
+				{ "pop"_token, Operations::pop }*/
 			}}
 		{}
 
-		void run(std::span<const std::unique_ptr<Instruction>> instructions, Context<Address>& context) const
+		void run(std::span<const std::unique_ptr<Instruction>> instructions, Context& context) const
 		{
-			m_virtualMachine.run(instructions, context);
+			if (instructions.empty())
+				return;
+			auto* instruction = instructions[0].get();
+			m_virtualMachine.run(instruction->type, instruction, context);
 		}
 
-		void run(std::string_view src, Context<Address>& context) const
+		void run(std::string_view src, Context& context) const
 		{
-			static const auto compiler = Compiler::Compiler<Address>{};
+			static const auto compiler = Compiler::Compiler{};
 			run(compiler.compile(src).instructions, context);
 		}
 
 	private:
-		Language::VirtualMachine::VirtualMachine<Instruction, Context<Address>> m_virtualMachine;
+		Language::VirtualMachine::VirtualMachine<Instruction*, Context> m_virtualMachine;
 	};
 }

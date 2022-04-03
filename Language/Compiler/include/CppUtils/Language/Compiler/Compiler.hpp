@@ -16,7 +16,7 @@ namespace CppUtils::Language::Compiler
 			m_virtualMachine{std::move(compilationFunctions)}
 		{}
 
-		inline void compile(std::span<const ASTNode> astNodes, Context& context) const
+		void compile(std::span<const ASTNode> astNodes, Context& context) const
 		{
 			for (const auto& astNode : astNodes)
 				compile(astNode, context);

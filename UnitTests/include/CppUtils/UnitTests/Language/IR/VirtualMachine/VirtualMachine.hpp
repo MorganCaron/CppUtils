@@ -10,8 +10,8 @@ namespace CppUtils::UnitTests::Language::IR::VirtualMachine
 		using namespace CppUtils::Type::Literals;
 
 		addTest("Operations", [] {
-			const auto virtualMachine = CppUtils::Language::IR::VirtualMachine::VirtualMachine<std::uint64_t, 1000>{};
-			auto context = CppUtils::Language::IR::VirtualMachine::Context<std::uint64_t, 1000>{};
+			const auto virtualMachine = CppUtils::Language::IR::VirtualMachine::VirtualMachine<1000>{};
+			auto context = CppUtils::Language::IR::VirtualMachine::Context<1000>{};
 			auto result = virtualMachine.run("main"_token, R"(
 			int main()
 			{

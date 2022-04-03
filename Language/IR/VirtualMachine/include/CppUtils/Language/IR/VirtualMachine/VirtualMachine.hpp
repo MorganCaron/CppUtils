@@ -13,49 +13,48 @@ namespace CppUtils::Language::IR::VirtualMachine
 {
 	using namespace Type::Literals;
 
-	template<typename Address, std::size_t stackSize>
-	requires Type::Traits::isAddress<Address>
+	template<std::size_t stackSize>
 	class VirtualMachine final
 	{
 	public:
-		using Instruction = Compiler::Bytecode::Instruction<Address>;
+		using Instruction = Compiler::Bytecode::Instruction;
 
 		VirtualMachine(): m_virtualMachine{{
-				{ "nop"_token, Operations<Instruction, Context<Address, stackSize>, Address>::runNop },
-				{ "halt"_token, Operations<Instruction, Context<Address, stackSize>, Address>::runHalt },
-				{ "init"_token, Operations<Instruction, Context<Address, stackSize>, Address>::runInit },
-				{ "read"_token, Operations<Instruction, Context<Address, stackSize>, Address>::runRead },
-				{ "write"_token, Operations<Instruction, Context<Address, stackSize>, Address>::runWrite },
-				{ "copy"_token, Operations<Instruction, Context<Address, stackSize>, Address>::runCopy },
-				/*{ "eq"_token, Operations<Instruction, Context<Address, stackSize>, Address>::runEq },*/
-				{ "add"_token, Operations<Instruction, Context<Address, stackSize>, Address>::runAdd },
-				{ "sub"_token, Operations<Instruction, Context<Address, stackSize>, Address>::runSub },
-				{ "call"_token, Operations<Instruction, Context<Address, stackSize>, Address>::runCall },
-				{ "ret"_token, Operations<Instruction, Context<Address, stackSize>, Address>::runRet }/*,
-				{ "ifnz"_token, Operations<Instruction, Context<Address, stackSize>, Address>::runIf }*/
+				{ "nop"_token, Operations<Context<stackSize>>::runNop },
+				{ "halt"_token, Operations<Context<stackSize>>::runHalt },
+				{ "init"_token, Operations<Context<stackSize>>::runInit },
+				{ "read"_token, Operations<Context<stackSize>>::runRead },
+				{ "write"_token, Operations<Context<stackSize>>::runWrite },
+				{ "copy"_token, Operations<Context<stackSize>>::runCopy },
+				/*{ "eq"_token, Operations<Context<stackSize>>::runEq },*/
+				{ "add"_token, Operations<Context<stackSize>>::runAdd },
+				{ "sub"_token, Operations<Context<stackSize>>::runSub },
+				{ "call"_token, Operations<Context<stackSize>>::runCall },
+				{ "ret"_token, Operations<Context<stackSize>>::runRet }/*,
+				{ "ifnz"_token, Operations<Context<stackSize>>::runIf }*/
 			}}
 		{}
 
-		[[nodiscard]] Address run(const Type::Token& label, Context<Address, stackSize>& context) const
+		[[nodiscard]] std::uintptr_t run(const Type::Token& label, Context<stackSize>& context) const
 		{
 			auto& [compilerOutput, programMemory] = context;
-			programMemory.template push<Address>(0);
+			programMemory.template push<std::uintptr_t>(0);
 			programMemory.registerFile[0] = programMemory.registerVariables.stackPointer;
-			programMemory.call(reinterpret_cast<Address>(compilerOutput.getFunctionEntryPoint(label)));
+			programMemory.call(reinterpret_cast<std::uintptr_t>(compilerOutput.getFunctionEntryPoint(label)));
 			programMemory.enter(0);
 			while (programMemory.registerVariables.instructionPointer != 0)
 				m_virtualMachine.run(programMemory.getInstruction().type, programMemory.getInstruction(), context);
-			return programMemory.template pop<Address>();
+			return programMemory.template pop<std::uintptr_t>();
 		}
 
-		[[nodiscard]] Address run(const Type::Token& label, std::string_view src, Context<Address, stackSize>& context) const
+		[[nodiscard]] std::uintptr_t run(const Type::Token& label, std::string_view src, Context<stackSize>& context) const
 		{
-			static const auto compiler = Compiler::Compiler<Address>{};
+			static const auto compiler = Compiler::Compiler{};
 			context.compilerOutput = compiler.compile(src);
 			return run(label, context);
 		}
 
 	private:
-		Language::VirtualMachine::VirtualMachine<Instruction, Context<Address, stackSize>> m_virtualMachine;
+		Language::VirtualMachine::VirtualMachine<Instruction, Context<stackSize>> m_virtualMachine;
 	};
 }

@@ -11,44 +11,37 @@ namespace CppUtils::Language::IR::Compiler
 {
 	using namespace Type::Literals;
 
-	template<typename Address>
-	requires Type::Traits::isAddress<Address>
 	class Compiler final
 	{
 	public:
-		using ASTNode = Parser::ASTNode<Type::Token, Address, std::string>;
+		using ASTNode = Parser::ASTNode<Type::Token, std::uintptr_t, std::string>;
 
 		Compiler(): m_compiler{{
-			{ "nop"_token, CompilationFunctions<Address>::compileNop },
-			{ "halt"_token, CompilationFunctions<Address>::compileHalt },
-			{ "comma"_token, CompilationFunctions<Address>::compileComma },
-			{ "ident"_token, CompilationFunctions<Address>::compileIdent },
-			{ "number"_token, CompilationFunctions<Address>::compileNumber },
-			{ "string"_token, CompilationFunctions<Address>::compileString },
-			{ "copy"_token, CompilationFunctions<Address>::compileCopy },
-			{ "eq"_token, CompilationFunctions<Address>::compileEq },
-			{ "add"_token, CompilationFunctions<Address>::compileAdd },
-			{ "sub"_token, CompilationFunctions<Address>::compileSub },
-			{ "label"_token, CompilationFunctions<Address>::compileLabel },
-			{ "ret"_token, CompilationFunctions<Address>::compileRet },
-			{ "deref"_token, CompilationFunctions<Address>::compileDeref },
-			{ "call"_token, CompilationFunctions<Address>::compileCall },
-			{ "if"_token, CompilationFunctions<Address>::compileIf },
-			{ "while"_token, CompilationFunctions<Address>::compileWhile }
+			{ "nop"_token, CompilationFunctions::compileNop },
+			{ "halt"_token, CompilationFunctions::compileHalt },
+			{ "comma"_token, CompilationFunctions::compileComma },
+			{ "ident"_token, CompilationFunctions::compileIdent },
+			{ "number"_token, CompilationFunctions::compileNumber },
+			{ "string"_token, CompilationFunctions::compileString },
+			{ "copy"_token, CompilationFunctions::compileCopy },
+			{ "eq"_token, CompilationFunctions::compileEq },
+			{ "add"_token, CompilationFunctions::compileAdd },
+			{ "sub"_token, CompilationFunctions::compileSub },
+			{ "label"_token, CompilationFunctions::compileLabel },
+			{ "ret"_token, CompilationFunctions::compileRet },
+			{ "deref"_token, CompilationFunctions::compileDeref },
+			{ "call"_token, CompilationFunctions::compileCall },
+			{ "if"_token, CompilationFunctions::compileIf },
+			{ "while"_token, CompilationFunctions::compileWhile }
 		}}
 		{}
 
-		void compile(const Lexer::ASTNode<Address>& astNode, Context<Address>& context) const
+		[[nodiscard]] Output compile(std::string_view src) const
 		{
-			m_compiler.compile(astNode, context);
-		}
-
-		[[nodiscard]] Output<Address> compile(std::string_view src) const
-		{
-			auto astNode = Lexer::parse<Address>(src);
-			auto output = Output<Address>{};
+			auto astNode = Lexer::parse(src);
+			auto output = Output{};
 			buildStrings(astNode, output.stringConstants);
-			auto context = Context<Address>{std::cref(*this), std::ref(output)};
+			auto context = Context{m_compiler, std::ref(output)};
 			m_compiler.compile(astNode.childs, context);
 			return output;
 		}
@@ -70,6 +63,6 @@ namespace CppUtils::Language::IR::Compiler
 		}
 
 	private:
-		Language::Compiler::Compiler<Lexer::ASTNode<Address>, Context<Address>> m_compiler;
+		Context::Compiler m_compiler;
 	};
 }

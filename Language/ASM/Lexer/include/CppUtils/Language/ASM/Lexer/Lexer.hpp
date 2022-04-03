@@ -5,12 +5,8 @@
 
 namespace CppUtils::Language::ASM::Lexer
 {
-	template<typename Address>
-	requires Type::Traits::isAddress<Address>
-	using ASTNode = Parser::ASTNode<Type::Token, Address>;
+	using ASTNode = Parser::ASTNode<Type::Token, std::uintptr_t>;
 
-	template<typename Address>
-	requires Type::Traits::isAddress<Address>
 	class Lexer final
 	{
 	public:
@@ -19,18 +15,9 @@ namespace CppUtils::Language::ASM::Lexer
 			using namespace std::literals;
 			using namespace Type::Literals;
 
-			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, Address>);
-			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Type::Token, Address>);
-			auto addressParser = []() -> Parser::ParsingFunction<Type::Token, Address> {
-				if constexpr(sizeof(Address) >= 8) {
-					if constexpr(std::is_signed_v<Address>)	return Parser::longParser<Type::Token, Address>;
-					else									return Parser::ulongParser<Type::Token, Address>;
-				} else {
-					if constexpr(std::is_signed_v<Address>)	return Parser::intParser<Type::Token, Address>;
-					else									return Parser::uintParser<Type::Token, Address>;
-				}
-			}();
-			m_grammarLexer.addParsingFunction("addressParser"_token, std::move(addressParser));
+			m_grammarLexer.addParsingFunction("spaceParser"_token, Parser::spaceParser<Type::Token, std::uintptr_t>);
+			m_grammarLexer.addParsingFunction("keywordParser"_token, Parser::keywordParser<Type::Token, std::uintptr_t>);
+			m_grammarLexer.addParsingFunction("addressParser"_token, Parser::ulongParser<Type::Token, std::uintptr_t>);
 
 			static constexpr auto grammarSrc = R"(
 			main: (instruction >= 0) spaceParser;
@@ -54,21 +41,19 @@ namespace CppUtils::Language::ASM::Lexer
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] ASTNode<Address> parse(std::string_view src) const
+		[[nodiscard]] ASTNode parse(std::string_view src) const
 		{
 			using namespace Type::Literals;
 			return m_grammarLexer.parseLanguage("main"_token, src);
 		}
 
 	private:
-		Language::Lexer::GrammarLexer<Type::Token, Address> m_grammarLexer;
+		Language::Lexer::GrammarLexer<Type::Token, std::uintptr_t> m_grammarLexer;
 	};
 
-	template<typename Address>
-	requires Type::Traits::isAddress<Address>
-	[[nodiscard]] inline ASTNode<Address> parse(std::string_view src)
+	[[nodiscard]] ASTNode parse(std::string_view src)
 	{
-		static const auto asmLexer = Lexer<Address>{};
+		static const auto asmLexer = Lexer{};
 		return asmLexer.parse(src);
 	}
 }

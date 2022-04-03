@@ -6,34 +6,31 @@
 
 #include <CppUtils/Language/ASM/Lexer/Lexer.hpp>
 #include <CppUtils/Language/ASM/Compiler/Output.hpp>
+#include <CppUtils/Language/Compiler/Compiler.hpp>
 
 namespace CppUtils::Language::ASM::Compiler
 {
-	template<typename Address>
-	requires Type::Traits::isAddress<Address>
-	class Compiler;
-
-	template<typename Address>
-	requires Type::Traits::isAddress<Address>
 	struct Context final
 	{
-		std::reference_wrapper<const Compiler<Address>> compiler;
-		std::reference_wrapper<Output<Address>> output;
-		Bytecode::Instruction<Address>* lastInstruction = nullptr;
+		using Compiler = Language::Compiler::Compiler<Lexer::ASTNode, Context>;
+		
+		std::reference_wrapper<const Compiler> compiler;
+		std::reference_wrapper<Output> output;
+		Bytecode::Instruction* lastInstruction = nullptr;
 		std::size_t registerCounter = 0;
-		Address returnRegister = 0;
+		std::uintptr_t returnRegister = 0;
 
-		explicit Context(const Compiler<Address>& c_compiler, Output<Address>& c_output):
+		explicit Context(const Compiler& c_compiler, Output& c_output):
 			compiler{c_compiler}, output{c_output}
 		{}
 
 		template<typename... Args>
-		Bytecode::Instruction<Address>* createInstruction(Args... args)
+		Bytecode::Instruction* createInstruction(Args... args)
 		{
-			return Context::output.get().instructions.emplace_back(std::make_unique<Bytecode::Instruction<Address>>(std::forward<Args>(args)...)).get();
+			return Context::output.get().instructions.emplace_back(std::make_unique<Bytecode::Instruction>(std::forward<Args>(args)...)).get();
 		}
 
-		void addInstruction(Bytecode::Instruction<Address>* instruction)
+		void addInstruction(Bytecode::Instruction* instruction)
 		{
 			if (lastInstruction == nullptr)
 				lastInstruction = instruction;
@@ -41,7 +38,7 @@ namespace CppUtils::Language::ASM::Compiler
 				lastInstruction = lastInstruction->nextInstruction;
 		}
 
-		[[nodiscard]] Address newRegister() noexcept
+		[[nodiscard]] std::uintptr_t newRegister() noexcept
 		{
 			return registerCounter++;
 		}

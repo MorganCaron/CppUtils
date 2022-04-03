@@ -14,7 +14,8 @@ namespace CppUtils::Language::VirtualMachine
 		Stack(): m_top{0}, m_stack{}
 		{}
 
-		template<typename Type> requires std::is_default_constructible_v<Type>
+		template<typename Type>
+		requires std::is_default_constructible_v<Type>
 		Type& push(Type value)
 		{
 			if (m_top + sizeof(Type) >= stackSize)
@@ -24,7 +25,8 @@ namespace CppUtils::Language::VirtualMachine
 			return top<Type>();
 		}
 
-		template<typename Type> requires std::is_default_constructible_v<Type>
+		template<typename Type>
+		requires std::is_default_constructible_v<Type>
 		Type pop()
 		{
 			if (m_top < sizeof(Type))

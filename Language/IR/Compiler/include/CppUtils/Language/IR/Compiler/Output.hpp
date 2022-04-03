@@ -11,23 +11,19 @@
 
 namespace CppUtils::Language::IR::Compiler
 {
-	template<typename Address>
-	requires Type::Traits::isAddress<Address>
 	struct FunctionInformations final
 	{
-		Bytecode::Instruction<Address>* entryPoint = nullptr;
+		Bytecode::Instruction* entryPoint = nullptr;
 		std::size_t nbParameters = 0;
 	};
 
-	template<typename Address>
-	requires Type::Traits::isAddress<Address>
 	struct Output final
 	{
-		std::vector<std::unique_ptr<Bytecode::Instruction<Address>>> instructions = {};
+		std::vector<std::unique_ptr<Bytecode::Instruction>> instructions = {};
 		std::string stringConstants = "";
-		std::unordered_map<Type::Token, FunctionInformations<Address>, Type::Token::hash_fn> functions = {};
+		std::unordered_map<Type::Token, FunctionInformations, Type::Token::hash_fn> functions = {};
 
-		[[nodiscard]] Bytecode::Instruction<Address>* getFunctionEntryPoint(const Type::Token& label) const
+		[[nodiscard]] Bytecode::Instruction* getFunctionEntryPoint(const Type::Token& label) const
 		{
 			if (const auto functionIterator = functions.find(label); functionIterator != functions.end())
 				return functionIterator->second.entryPoint;
@@ -47,11 +43,11 @@ namespace CppUtils::Language::IR::Compiler
 				bool referred = false;
 				bool done = false;
 			};
-			auto statistics = std::unordered_map<const Bytecode::Instruction<Address>*, InstructionStatistics>{};
+			auto statistics = std::unordered_map<const Bytecode::Instruction*, InstructionStatistics>{};
 
 			// Define labels for functions
-			auto remainingInstructions = std::list<const Bytecode::Instruction<Address>*>{};
-			auto labels = std::unordered_map<const Bytecode::Instruction<Address>*, std::string>{};
+			auto remainingInstructions = std::list<const Bytecode::Instruction*>{};
+			auto labels = std::unordered_map<const Bytecode::Instruction*, std::string>{};
 			for (const auto& [functionToken, functionInformations] : functions)
 			{
 				remainingInstructions.push_back(functionInformations.entryPoint);
@@ -60,7 +56,7 @@ namespace CppUtils::Language::IR::Compiler
 
 			// Define labels for jumps
 			auto newLabel = [nbLabels = std::size_t{0}]() mutable -> std::string { return 'L' + std::to_string(nbLabels++); };
-			const auto addUniqueLabel = [&labels, &newLabel](const Bytecode::Instruction<Address>* instruction) -> void {
+			const auto addUniqueLabel = [&labels, &newLabel](const Bytecode::Instruction* instruction) -> void {
 				if (labels.find(instruction) == labels.end())
 					labels[instruction] = newLabel();
 			};

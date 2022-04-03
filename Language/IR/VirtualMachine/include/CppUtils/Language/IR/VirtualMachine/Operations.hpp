@@ -6,10 +6,12 @@
 
 namespace CppUtils::Language::IR::VirtualMachine
 {
-	template<typename Instruction, typename Context, typename Address>
+	template<typename Context>
 	class Operations final
 	{
 	public:
+		using Instruction = Compiler::Bytecode::Instruction;
+
 		Operations() = delete;
 
 		static void runNop([[maybe_unused]] const Instruction& instruction, Context& context)
@@ -29,9 +31,9 @@ namespace CppUtils::Language::IR::VirtualMachine
 			if (isNumber)
 				programMemory.push(instruction.value);
 			else if (instruction.name == "$STR")
-				programMemory.push(reinterpret_cast<Address>(compilerOutput.stringConstants.data() + instruction.value));
+				programMemory.push(reinterpret_cast<std::uintptr_t>(compilerOutput.stringConstants.data() + instruction.value));
 			else
-				programMemory.push(reinterpret_cast<Address>(&instruction.name));
+				programMemory.push(reinterpret_cast<std::uintptr_t>(&instruction.name));
 			programMemory.registerFile[instruction.parametersId.at(0)] = isNumber ? instruction.value : programMemory.registerVariables.stackPointer;
 			programMemory.goToNextInstruction();
 		}
@@ -88,10 +90,10 @@ namespace CppUtils::Language::IR::VirtualMachine
 			auto& [compilerOutput, programMemory] = context;
 			const auto& register1 = instruction.parametersId.at(1);
 			auto stackAddress = programMemory.registerFile.at(register1);
-			auto labelAddress = programMemory.template getStackAddress<Address>(stackAddress);
+			auto labelAddress = programMemory.template getStackAddress<std::uintptr_t>(stackAddress);
 			auto label = Type::Token{*reinterpret_cast<std::string*>(labelAddress)};
-			programMemory.call(reinterpret_cast<Address>(compilerOutput.getFunctionEntryPoint(label)));
-			programMemory.enter((instruction.parametersId.size() - 2) * programMemory.template countNecessaryMemoryCells<Address>());
+			programMemory.call(reinterpret_cast<std::uintptr_t>(compilerOutput.getFunctionEntryPoint(label)));
+			programMemory.enter((instruction.parametersId.size() - 2) * programMemory.template countNecessaryMemoryCells<std::uintptr_t>());
 		}
 
 		static void runRet(const Instruction& instruction, Context& context)

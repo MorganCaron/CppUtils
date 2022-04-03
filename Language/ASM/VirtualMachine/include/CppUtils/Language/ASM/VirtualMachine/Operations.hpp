@@ -5,13 +5,24 @@
 
 namespace CppUtils::Language::ASM::VirtualMachine
 {
-	template<typename Instruction, typename Type>
 	class Operations final
 	{
 	public:
+		using Instruction = Compiler::Bytecode::Instruction;
+
 		Operations() = delete;
 
-		static void move(Instruction* instruction, Context<Type>& context)
+		static void nop(Instruction* instruction, [[maybe_unused]] Context& context)
+		{
+			instruction = instruction->nextInstruction;
+		}
+
+		static void halt([[maybe_unused]] Instruction* instruction, [[maybe_unused]] Context& context)
+		{
+			instruction = nullptr;
+		}
+
+		static void move(Instruction* instruction, Context& context)
 		{
 			auto& [registerFile, stack] = context;
 			const auto& register0 = instruction->parametersId.at(0);
@@ -20,7 +31,7 @@ namespace CppUtils::Language::ASM::VirtualMachine
 			instruction = instruction->nextInstruction;
 		}
 
-		static void add(Instruction* instruction, Context<Type>& context)
+		static void add(Instruction* instruction, Context& context)
 		{
 			auto& [registerFile, stack] = context;
 			const auto& register0 = instruction->parametersId.at(0);

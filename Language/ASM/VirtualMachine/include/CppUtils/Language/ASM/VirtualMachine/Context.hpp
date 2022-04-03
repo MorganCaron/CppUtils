@@ -5,10 +5,9 @@
 
 namespace CppUtils::Language::ASM::VirtualMachine
 {
-	template<typename Type>
 	struct Context final
 	{
-		std::unordered_map<std::size_t, Type> registerFile;
-		std::stack<Type> stack;
+		std::unordered_map<std::size_t, std::uintptr_t> registerFile;
+		std::stack<std::uintptr_t> stack;
 	};
 }

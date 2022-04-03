@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <concepts>
 
 #include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Log/Logger.hpp>
@@ -11,30 +12,30 @@ namespace CppUtils::Language::ASM::Compiler::Bytecode
 	using namespace std::literals;
 	using namespace Type::Literals;
 	
-	template<typename Address>
 	struct Instruction final
 	{
 		Type::Token type;
 		std::string name;
-		Address value;
-		std::vector<Address> parametersId = {};
-		Instruction<Address>* nextInstruction = nullptr;
-		Instruction<Address>* conditionInstruction = nullptr;
+		std::uintptr_t value;
+		std::vector<std::uintptr_t> parametersId = {};
+		Instruction* nextInstruction = nullptr;
+		Instruction* conditionInstruction = nullptr;
 		
 		explicit Instruction(Type::Token c_type = "nop"_token):
 			type{c_type}
 		{}
 		
-		explicit Instruction(Address registerId, std::string_view c_name = ""sv, Address c_value = Address{}):
+		explicit Instruction(std::uintptr_t registerId, std::string_view c_name = ""sv, std::uintptr_t c_value = 0):
 			type{"init"_token}, name{c_name}, value{c_value}, parametersId{registerId}
 		{}
 		
-		template<typename... Parameters> requires (std::same_as<Address, Parameters> && ...)
+		template<typename... Parameters>
+		requires (std::same_as<std::uintptr_t, Parameters> && ...)
 		Instruction(Type::Token c_type, Parameters... c_parametersId):
 			type{c_type}, parametersId{std::forward<Parameters>(c_parametersId)...}
 		{}
 
-		Instruction(Type::Token c_type, std::vector<Address> c_parametersId):
+		Instruction(Type::Token c_type, std::vector<std::uintptr_t> c_parametersId):
 			type{c_type}, parametersId{std::move(c_parametersId)}
 		{}
 

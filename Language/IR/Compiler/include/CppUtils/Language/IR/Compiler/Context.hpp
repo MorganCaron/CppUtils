@@ -6,35 +6,32 @@
 
 #include <CppUtils/Language/IR/Lexer/Lexer.hpp>
 #include <CppUtils/Language/IR/Compiler/Output.hpp>
+#include <CppUtils/Language/Compiler/Compiler.hpp>
 
 namespace CppUtils::Language::IR::Compiler
 {
-	template<typename Address>
-	requires Type::Traits::isAddress<Address>
-	class Compiler;
-	
-	template<typename Address>
-	requires Type::Traits::isAddress<Address>
 	struct Context final
 	{
-		std::reference_wrapper<const Compiler<Address>> compiler;
-		std::reference_wrapper<Output<Address>> output;
-		std::unordered_map<Type::Token, Address, Type::Token::hash_fn> variablesToRegisters = {};
-		Bytecode::Instruction<Address>* lastInstruction = nullptr;
-		Address registerCounter = 0;
-		Address returnRegister = 0;
+		using Compiler = Language::Compiler::Compiler<Lexer::ASTNode, Context>;
 
-		explicit Context(const Compiler<Address>& c_compiler, Output<Address>& c_output):
+		std::reference_wrapper<const Compiler> compiler;
+		std::reference_wrapper<Output> output;
+		std::unordered_map<Type::Token, std::uintptr_t, Type::Token::hash_fn> variablesToRegisters = {};
+		Bytecode::Instruction* lastInstruction = nullptr;
+		std::uintptr_t registerCounter = 0;
+		std::uintptr_t returnRegister = 0;
+
+		explicit Context(const Compiler& c_compiler, Output& c_output):
 			compiler{c_compiler}, output{c_output}
 		{}
 
 		template<typename... Args>
-		Bytecode::Instruction<Address>* createInstruction(Args... args)
+		Bytecode::Instruction* createInstruction(Args... args)
 		{
-			return output.get().instructions.emplace_back(std::make_unique<Bytecode::Instruction<Address>>(std::forward<Args>(args)...)).get();
+			return output.get().instructions.emplace_back(std::make_unique<Bytecode::Instruction>(std::forward<Args>(args)...)).get();
 		}
 
-		void addInstruction(Bytecode::Instruction<Address>* instruction) noexcept
+		void addInstruction(Bytecode::Instruction* instruction) noexcept
 		{
 			if (lastInstruction == nullptr)
 				lastInstruction = instruction;
@@ -49,15 +46,15 @@ namespace CppUtils::Language::IR::Compiler
 			if (Context::output.get().functions.find(label) != Context::output.get().functions.end())
 				throw std::runtime_error{"Function " + std::string{label.name} + " is already defined."};
 			addInstruction(createInstruction());
-			Context::output.get().functions[label] = FunctionInformations<Address>{lastInstruction, nbParameters};
+			Context::output.get().functions[label] = FunctionInformations{lastInstruction, nbParameters};
 		}
 
-		[[nodiscard]] Address newRegister() noexcept
+		[[nodiscard]] std::uintptr_t newRegister() noexcept
 		{
 			return registerCounter++;
 		}
 
-		[[nodiscard]] Address getRegister(const Type::Token& variable)
+		[[nodiscard]] std::uintptr_t getRegister(const Type::Token& variable)
 		{
 			if (variablesToRegisters.find(variable) == variablesToRegisters.end())
 				variablesToRegisters[variable] = newRegister();

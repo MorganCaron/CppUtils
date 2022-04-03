@@ -9,7 +9,7 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 		using namespace std::literals;
 
 		addTest("Operations", [] {
-			const auto irTree = CppUtils::Language::IR::Lexer::parse<std::uint64_t>(R"(
+			const auto irTree = CppUtils::Language::IR::Lexer::parse(R"(
 			int main()
 			{
 				nop;
@@ -25,7 +25,7 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 		});
 
 		addTest("Pointers", [] {
-			const auto irTree = CppUtils::Language::IR::Lexer::parse<std::uint64_t>(R"(
+			const auto irTree = CppUtils::Language::IR::Lexer::parse(R"(
 			address append(output, c)
 			{
 				*output = c;
@@ -46,7 +46,7 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 		});
 
 		addTest("Conditions", [] {
-			const auto irTree = CppUtils::Language::IR::Lexer::parse<std::uint64_t>(R"(
+			const auto irTree = CppUtils::Language::IR::Lexer::parse(R"(
 			int getLength(text)
 			{
 				length = 0;
