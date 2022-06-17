@@ -2,7 +2,7 @@
 
 namespace CppUtils::Container
 {
-	template<typename T>
+	template<class T>
 	struct Size2d
 	{
 		Size2d(T c_width, T c_height):

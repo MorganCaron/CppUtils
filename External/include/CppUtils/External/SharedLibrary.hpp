@@ -52,7 +52,7 @@ namespace CppUtils::External
 
 	#if defined(OS_WINDOWS)
 
-		template<typename Signature>
+		template<class Signature>
 		Signature getSymbol(std::string_view name)
 		{
 			auto oldMode = ::SetErrorMode(SEM_FAILCRITICALERRORS);
@@ -72,7 +72,7 @@ namespace CppUtils::External
 
 	#elif defined(OS_LINUX) || defined(OS_MACOS)
 
-		template<typename Signature>
+		template<class Signature>
 		Signature getSymbol(std::string_view name)
 		{
 			dlerror();

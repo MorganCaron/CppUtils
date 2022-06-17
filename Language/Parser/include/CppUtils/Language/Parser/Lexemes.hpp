@@ -13,7 +13,7 @@ namespace CppUtils::Language::Parser
 {
 	using namespace Type::Literals;
 	
-	template<const Type::Token& StorageToken, typename StorageType>
+	template<const Type::Token& StorageToken, class StorageType>
 	using Lexeme = Type::Typed<StorageToken, StorageType>;
 
 	static constexpr auto CommaLexemeType = "comma"_token;
@@ -25,7 +25,7 @@ namespace CppUtils::Language::Parser
 	static constexpr auto StringLexemeType = "string"_token;
 	using StringLexeme = Lexeme<StringLexemeType, std::string>;
 
-	template<typename... Types>
+	template<class... Types>
 	struct NamedParser final: public Type::Named
 	{
 		NamedParser(std::string name, ParsingFunction<Types...> c_parsingFunction):
@@ -36,14 +36,14 @@ namespace CppUtils::Language::Parser
 		ParsingFunction<Types...> parsingFunction;
 	};
 
-	template<typename... Types>
+	template<class... Types>
 	NamedParser(std::string, ParsingFunction<Types...>) -> NamedParser<Types...>;
 
-	template<typename... Types>
+	template<class... Types>
 	NamedParser(std::string, bool(Context<Types...>&)) -> NamedParser<Types...>;
 
 	static constexpr auto ParserLexemeType = "parser"_token;
-	template<typename... Types>
+	template<class... Types>
 	using ParserLexeme = Lexeme<ParserLexemeType, NamedParser<Types...>>; 
 
 	static constexpr auto TokenLexemeType = "token"_token;
@@ -55,10 +55,10 @@ namespace CppUtils::Language::Parser
 	static constexpr auto MutedLexemeType = "muted"_token;
 	using MutedLexeme = Lexeme<MutedLexemeType, std::unique_ptr<ILexeme>>;
 
-	template<typename... Types>
+	template<class... Types>
 	struct Expression;
 	static constexpr auto ExpressionLexemeType = "expression"_token;
-	template<typename... Types>
+	template<class... Types>
 	using ExpressionLexeme = Lexeme<ExpressionLexemeType, Expression<Types...>>;
 
 	enum class RecurrenceType: char
@@ -111,7 +111,7 @@ namespace CppUtils::Language::Parser
 			lexemes(std::move(c_lexemes))
 		{}
 
-		template<typename... Types>
+		template<class... Types>
 		[[nodiscard]] Alternative& operator||(const Expression<Types...>& rhs)
 		{
 			lexemes.emplace_back(std::make_unique<TokenLexeme>(rhs.token));

@@ -4,7 +4,7 @@
 
 namespace CppUtils::Container
 {
-	template<typename T>
+	template<class T>
 	struct Size3d: public Size2d<T>
 	{
 		Size3d(T c_width, T c_height, T c_depth):

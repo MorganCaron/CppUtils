@@ -8,7 +8,7 @@
 #include <string_view>
 
 #include <CppUtils/Type/Token.hpp>
-#include <CppUtils/Type/Traits.hpp>
+#include <CppUtils/Type/Concept.hpp>
 #include <CppUtils/External/DllExport.hpp>
 
 namespace CppUtils::Type
@@ -25,7 +25,7 @@ namespace CppUtils::Type
 		return os << typed.getPrintable();
 	}
 
-	template<const Token& storageToken, typename StorageType>
+	template<const Token& storageToken, class StorageType>
 	struct Typed final: public ITyped
 	{
 		static constexpr auto Type = storageToken;
@@ -46,12 +46,12 @@ namespace CppUtils::Type
 			ss << storageToken.name;
 			if constexpr(std::same_as<StorageType, std::string> || std::same_as<StorageType, std::string_view>)
 					ss << ": \"" << value << '"';
-			else if constexpr(Traits::isDereferenceable<StorageType>)
+			else if constexpr(Concept::Dereferenceable<StorageType>)
 			{
-				if constexpr(Traits::isPrintable<decltype(*value)>)
+				if constexpr(Concept::Printable<decltype(*value)>)
 					ss << ": " << *value;
 			}
-			else if constexpr(Traits::isPrintable<StorageType>)
+			else if constexpr(Concept::Printable<StorageType>)
 				ss << ": " << value;
 			return ss.str();
 		}

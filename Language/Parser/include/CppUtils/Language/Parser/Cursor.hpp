@@ -7,7 +7,7 @@
 
 namespace CppUtils::Language::Parser
 {
-	template<typename Element>
+	template<std::ranges::range Element>
 	struct Cursor final
 	{
 		[[nodiscard]] bool isEnd() const noexcept

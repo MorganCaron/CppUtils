@@ -20,11 +20,11 @@ namespace CppUtils::Type
 
 		constexpr Token():
 			name{""},
-			id{CppUtils::Hash::constexprHash("")}
+			id{CppUtils::Hash::hash("")}
 		{};
 		explicit constexpr Token(std::string_view c_name):
 			name{c_name},
-			id{CppUtils::Hash::constexprHash(name)}
+			id{CppUtils::Hash::hash(name)}
 		{}
 		explicit Token(Index c_id):
 			name{""},
@@ -49,7 +49,7 @@ namespace CppUtils::Type
 
 		[[nodiscard]] constexpr bool isEmpty() const noexcept
 		{
-			return id == CppUtils::Hash::constexprHash("");
+			return id == CppUtils::Hash::hash("");
 		}
 
 		struct hash_fn final
@@ -62,7 +62,7 @@ namespace CppUtils::Type
 
 		void saveTypename()
 		{
-			if (name.empty() && id != CppUtils::Hash::constexprHash(""))
+			if (name.empty() && id != CppUtils::Hash::hash(""))
 				return;
 			if (m_typeNames.find(id) == m_typeNames.end())
 				m_typeNames[id] = name;

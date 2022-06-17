@@ -6,7 +6,7 @@
 
 namespace CppUtils::Language::IR::VirtualMachine
 {
-	template<typename Context>
+	template<class Context>
 	class Operations final
 	{
 	public:
@@ -105,16 +105,16 @@ namespace CppUtils::Language::IR::VirtualMachine
 		}
 	};
 
-	/*template<typename... Types>
-	inline void jump(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, [[maybe_unused]] Context<Types...>& context)
+	/*template<class... Types>
+	void jump(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, [[maybe_unused]] Context<Types...>& context)
 	{
 		[[maybe_unused]] const auto& parameters = cursor.getElement().parameters;
 
 		// cursor.position = parameters.at(0).id;
 	}
 
-	template<typename... Types>
-	inline void move(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
+	template<class... Types>
+	void move(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
 	{
 		const auto& parameters = cursor.getElement().parameters;
 		const auto register0 = std::get<Type::Token>(parameters.at(0));
@@ -125,8 +125,8 @@ namespace CppUtils::Language::IR::VirtualMachine
 	}*/
 
 	/*
-	template<typename... Types>
-	inline void add(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
+	template<class... Types>
+	void add(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
 	{
 		const auto& parameters = cursor.getElement().parameters;
 		const auto register0 = parameters.at(0);
@@ -137,8 +137,8 @@ namespace CppUtils::Language::IR::VirtualMachine
 		++cursor.position;
 	}
 
-	template<typename... Types>
-	inline void sub(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
+	template<class... Types>
+	void sub(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
 	{
 		const auto& parameters = cursor.getElement().parameters;
 		const auto register0 = parameters.at(0);
@@ -149,8 +149,8 @@ namespace CppUtils::Language::IR::VirtualMachine
 	}
 	*/
 	
-	/*template<typename... Types>
-	inline void push(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
+	/*template<class... Types>
+	void push(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
 	{
 		const auto& parameters = cursor.getElement().parameters;
 		const auto register0 = std::get<Type::Token>(parameters.at(0));
@@ -159,8 +159,8 @@ namespace CppUtils::Language::IR::VirtualMachine
 		++cursor.position;
 	}
 
-	template<typename... Types>
-	inline void pop(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
+	template<class... Types>
+	void pop(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
 	{
 		const auto& parameters = cursor.getElement().parameters;
 		const auto register0 = std::get<Type::Token>(parameters.at(0));

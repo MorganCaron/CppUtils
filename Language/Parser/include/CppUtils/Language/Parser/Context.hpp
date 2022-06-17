@@ -4,13 +4,13 @@
 #include <functional>
 
 #include <CppUtils/Type/Typed.hpp>
-#include <CppUtils/Type/Traits.hpp>
+#include <CppUtils/Type/Concept.hpp>
 #include <CppUtils/Graph/VariantTreeNode.hpp>
 #include <CppUtils/Language/Parser/Cursor.hpp>
 
 namespace CppUtils::Language::Parser
 {
-	template<typename... Types>
+	template<class... Types>
 	using ASTNode = Graph::VariantTreeNode<Types...>;
 
 	using ILexeme = Type::ITyped;
@@ -21,8 +21,8 @@ namespace CppUtils::Language::Parser
 		Parser::ILexeme* lexeme;
 	};
 
-	template<typename... Types>
-	requires Type::Traits::containAtLeastNType<1, Types...>
+	template<class... Types>
+	requires Type::Concept::AtLeastNType<1, Types...>
 	struct Context final
 	{
 		Parser::Cursor<std::string> cursor;
@@ -31,6 +31,6 @@ namespace CppUtils::Language::Parser
 		std::vector<ParsingError> parsingErrors = {};
 	};
 
-	template<typename... Types>
+	template<class... Types>
 	using ParsingFunction = std::function<bool (Context<Types...>&)>;
 }

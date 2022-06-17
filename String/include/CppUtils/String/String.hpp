@@ -6,9 +6,11 @@
 #include <numeric>
 #include <string_view>
 
+#include <CppUtils/Type/Concept.hpp>
+
 namespace CppUtils::String
 {
-	[[nodiscard]] inline std::string concatenateStringsWithDelimiter(const std::vector<std::string>& strings, std::string_view delimiter)
+	[[nodiscard]] inline auto concatenateStringsWithDelimiter(const std::vector<std::string>& strings, std::string_view delimiter) -> std::string
 	{
 		return std::accumulate(strings.begin(), strings.end(), std::string{},
 			[delimiter](const std::string& lhs, const std::string& rhs) {
@@ -16,7 +18,7 @@ namespace CppUtils::String
 			});
 	}
 	
-	[[nodiscard]] inline std::string concatenateStringsWithDelimiter(const std::vector<std::string_view>& strings, std::string_view delimiter)
+	[[nodiscard]] inline auto concatenateStringsWithDelimiter(const std::vector<std::string_view>& strings, std::string_view delimiter) -> std::string
 	{
 		return std::accumulate(strings.begin(), strings.end(), std::string{},
 			[delimiter](std::string_view lhs, std::string_view rhs) {
@@ -24,15 +26,15 @@ namespace CppUtils::String
 			});
 	}
 
-	template<typename String>
-	[[nodiscard]] inline std::vector<String> cstringArrayToVectorOfStrings(const char** cstringArray, std::size_t length)
+	template<Type::Concept::String String>
+	[[nodiscard]] auto cstringArrayToVectorOfStrings(const char** cstringArray, std::size_t length) -> std::vector<String>
 	{
 		if (length == 0)
 			return {};
 		return std::vector<String>{cstringArray, cstringArray + length};
 	}
 
-	[[nodiscard]] inline std::string_view leftTrimString(std::string_view stringView)
+	[[nodiscard]] inline auto leftTrimString(std::string_view stringView) -> std::string_view
 	{
 		stringView.remove_prefix(std::distance(stringView.cbegin(),
 			std::find_if(stringView.cbegin(), stringView.cend(),
@@ -44,7 +46,7 @@ namespace CppUtils::String
 		return stringView;
 	}
 
-	[[nodiscard]] inline std::string_view rightTrimString(std::string_view stringView)
+	[[nodiscard]] inline auto rightTrimString(std::string_view stringView) -> std::string_view
 	{
 		stringView.remove_suffix(std::distance(stringView.crbegin(),
 			std::find_if(stringView.crbegin(), stringView.crend(),
@@ -56,14 +58,30 @@ namespace CppUtils::String
 		return stringView;
 	}
 
-	[[nodiscard]] inline std::string_view trimString(std::string_view stringView)
+	[[nodiscard]] inline auto trimString(std::string_view stringView) -> std::string_view
 	{
 		return rightTrimString(leftTrimString(stringView));
 	}
 
-	[[nodiscard]] inline std::string getPrintableChar(char c)
+	[[nodiscard]] inline auto getPrintableChar(char c) -> std::string
 	{
 		using namespace std::literals;
 		return std::isprint(c) ? ("'"s + c + '\'') : std::to_string(c);
+	}
+
+	[[nodiscard]] inline auto toLower(std::string_view originalString) -> std::string
+	{
+		auto result = std::string{originalString};
+		for (auto& c : result)
+			c = std::tolower(c);
+		return result;
+	}
+
+	[[nodiscard]] inline auto toUpper(std::string_view originalString) -> std::string
+	{
+		auto result = std::string{originalString};
+		for (auto& c : result)
+			c = std::toupper(c);
+		return result;
 	}
 }

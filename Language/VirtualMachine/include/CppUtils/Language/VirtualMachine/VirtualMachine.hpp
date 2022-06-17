@@ -9,7 +9,7 @@
 
 namespace CppUtils::Language::VirtualMachine
 {
-	template<typename Instruction, typename Context>
+	template<class Instruction, class Context>
 	class VirtualMachine
 	{
 	public:

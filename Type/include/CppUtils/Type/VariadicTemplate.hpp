@@ -1,10 +1,10 @@
 #pragma once
 
-#include <CppUtils/Type/Traits.hpp>
+#include <CppUtils/Type/Concept.hpp>
 
-namespace CppUtils::VariadicTemplate
+namespace CppUtils::Type::VariadicTemplate
 {
-	template<std::size_t i, typename...Types>
-	requires Type::Traits::containAtLeastNType<1, Types...>
+	template<std::size_t i, class... Types>
+	requires Concept::AtLeastNType<i, Types...>
 	using NthType = typename std::tuple_element<i, std::tuple<Types...>>::type;
 }

@@ -3,22 +3,23 @@
 #include <variant>
 #include <iostream>
 
-#include <CppUtils/Type/Traits.hpp>
+#include <CppUtils/Type/Concept.hpp>
 
 namespace CppUtils::Type::Variant::Operators
 {
-	template<typename Type, typename... Types> requires Traits::isPrintable<Type> && (Traits::isPrintable<Types> && ...)
-	inline std::ostream& operator<<(std::ostream& os, const std::variant<Type, Types...>& variant)
+	template<Concept::Printable... Types>
+	requires Concept::AtLeastNType<1, Types...>
+	auto operator<<(std::ostream& os, const std::variant<Types...>& variant) -> std::ostream&
 	{
 		return std::visit([&os](auto&& value) -> std::ostream& {
 			return os << value;
 		}, variant);
 	}
 
-	template<typename LhsType, typename... RhsTypes>
-	inline bool operator==(const LhsType& lhs, const std::variant<RhsTypes...>& rhs)
+	template<class LhsType, class... RhsTypes>
+	auto operator==(const LhsType& lhs, const std::variant<RhsTypes...>& rhs) -> bool
 	{
-		if constexpr(!Traits::isPresent<LhsType, RhsTypes...>)
+		if constexpr(!Concept::Present<LhsType, RhsTypes...>)
 			return false;
 		else if (!std::holds_alternative<LhsType>(rhs))
 			return false;
@@ -26,11 +27,12 @@ namespace CppUtils::Type::Variant::Operators
 			return lhs == std::get<LhsType>(rhs);
 	}
 
-	template<typename... LhsTypes, typename... RhsTypes> requires (!Traits::isPresent<LhsTypes, RhsTypes...> || ...)
-	inline bool operator==(const std::variant<LhsTypes...>& lhs, const std::variant<RhsTypes...>& rhs)
+	template<class... LhsTypes, class... RhsTypes>
+	requires (!Concept::Present<LhsTypes, RhsTypes...> || ...)
+	auto operator==(const std::variant<LhsTypes...>& lhs, const std::variant<RhsTypes...>& rhs) -> bool
 	{
 		return std::visit([&rhs](auto&& lhsValue) -> bool {
-			if constexpr(!Traits::isPresent<decltype(lhsValue), RhsTypes...>)
+			if constexpr(!Concept::Present<decltype(lhsValue), RhsTypes...>)
 				return lhsValue == rhs;
 			else
 				return false;

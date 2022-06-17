@@ -30,7 +30,7 @@ namespace CppUtils::Parameters
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] inline std::map<std::string, std::string> parseParameters(const std::size_t argc, const char *argv[]) const
+		[[nodiscard]] std::map<std::string, std::string> parseParameters(const std::size_t argc, const char *argv[]) const
 		{
 			using namespace Type::Literals;
 			const auto argumentVector = String::cstringArrayToVectorOfStrings<std::string_view>(argv + 1, argc - 1);
@@ -42,7 +42,7 @@ namespace CppUtils::Parameters
 			return parameters;
 		}
 
-		[[nodiscard]] inline bool executeCommands(const std::size_t argc, const char *argv[], const std::unordered_map<std::string_view, std::function<bool(std::string_view)>>& commands) const
+		[[nodiscard]] bool executeCommands(const std::size_t argc, const char *argv[], const std::unordered_map<std::string_view, std::function<bool(std::string_view)>>& commands) const
 		{
 			const auto parameters = parseParameters(argc, argv);
 			for (const auto& [parameterName, parameterValue] : parameters)

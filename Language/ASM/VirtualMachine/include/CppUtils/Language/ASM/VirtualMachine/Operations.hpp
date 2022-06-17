@@ -41,7 +41,7 @@ namespace CppUtils::Language::ASM::VirtualMachine
 		}
 	};
 
-	/*template<typename... Types>
+	/*template<class... Types>
 	inline void jump(Parser::Cursor<Bytecode::Instruction<Types...>>& cursor, [[maybe_unused]] Context<Types...>& context)
 	{
 		[[maybe_unused]] const auto& parameters = cursor.getElement().parameters;
@@ -49,7 +49,7 @@ namespace CppUtils::Language::ASM::VirtualMachine
 		// cursor.position = parameters.at(0).id;
 	}
 
-	template<typename... Types>
+	template<class... Types>
 	inline void move(Parser::Cursor<Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
 	{
 		const auto& parameters = cursor.getElement().parameters;
@@ -61,7 +61,7 @@ namespace CppUtils::Language::ASM::VirtualMachine
 	}*/
 
 	/*
-	template<typename... Types>
+	template<class... Types>
 	inline void add(Parser::Cursor<Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
 	{
 		const auto& parameters = cursor.getElement().parameters;
@@ -73,7 +73,7 @@ namespace CppUtils::Language::ASM::VirtualMachine
 		++cursor.position;
 	}
 
-	template<typename... Types>
+	template<class... Types>
 	inline void sub(Parser::Cursor<Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
 	{
 		const auto& parameters = cursor.getElement().parameters;
@@ -85,7 +85,7 @@ namespace CppUtils::Language::ASM::VirtualMachine
 	}
 	*/
 	
-	/*template<typename... Types>
+	/*template<class... Types>
 	inline void push(Parser::Cursor<Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
 	{
 		const auto& parameters = cursor.getElement().parameters;
@@ -95,7 +95,7 @@ namespace CppUtils::Language::ASM::VirtualMachine
 		++cursor.position;
 	}
 
-	template<typename... Types>
+	template<class... Types>
 	inline void pop(Parser::Cursor<Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
 	{
 		const auto& parameters = cursor.getElement().parameters;

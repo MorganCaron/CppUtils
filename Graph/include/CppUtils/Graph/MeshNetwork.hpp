@@ -10,13 +10,13 @@
 
 namespace CppUtils::Graph
 {
-	template<typename Key, typename Value, typename Hash = std::hash<Key>>
+	template<class Key, class Value, class Hash = std::hash<Key>>
 	class MeshNetwork
 	{
 	public:
 		using Node = MeshNode<Key, Value, Hash>;
 
-		template<typename... Args>
+		template<class... Args>
 		[[nodiscard]] std::shared_ptr<Node> newNode(Args&&... params)
 		{
 			[[maybe_unused]] const auto lock = std::lock_guard(m_nodesMutex);
@@ -28,7 +28,7 @@ namespace CppUtils::Graph
 		std::vector<std::shared_ptr<Node>> m_nodes;
 	};
 
-	template<bool doubleLinked, typename Key, typename Value, typename Hash = std::hash<Key>>
+	template<bool doubleLinked, class Key, class Value, class Hash = std::hash<Key>>
 	requires std::is_integral_v<Key>
 	class FragmentedMeshNetwork: public MeshNetwork<Key, Value, Hash>
 	{
@@ -41,7 +41,7 @@ namespace CppUtils::Graph
 			Next
 		};
 
-		template<typename Type>
+		template<class Type>
 		[[nodiscard]] std::shared_ptr<Node> newChain(Type data)
 		{
 			static_assert(sizeof(Type) >= sizeof(Value));
@@ -56,7 +56,7 @@ namespace CppUtils::Graph
 			return firstNode;
 		}
 
-		template<typename Type>
+		template<class Type>
 		[[nodiscard]] std::shared_ptr<Node> getBranchOrDefault(const std::shared_ptr<Node>& baseNode, Key branchKey, Type&& defaultValue)
 		{
 			if (!baseNode->exists(branchKey))
@@ -64,7 +64,7 @@ namespace CppUtils::Graph
 			return std::shared_ptr<Node>{(*baseNode)[branchKey][0]};
 		}
 
-		template<typename Type>
+		template<class Type>
 		[[nodiscard]] std::shared_ptr<Node> getBranchOrDefault(Key baseKey, const std::shared_ptr<Node>& baseNode, Key branchKey, Type&& defaultValue)
 		{
 			if (!baseNode->exists(branchKey))

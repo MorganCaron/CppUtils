@@ -4,14 +4,14 @@
 #include <vector>
 #include <sstream>
 
-#include <CppUtils/Type/Traits.hpp>
+#include <CppUtils/Type/Concept.hpp>
 #include <CppUtils/Type/Variant.hpp>
 #include <CppUtils/Log/Logger.hpp>
 #include <CppUtils/Container/Sequence.hpp>
 
 namespace CppUtils::Graph
 {
-	template<typename Storage>
+	template<class Storage>
 	struct TreeNode
 	{
 		Storage value;
@@ -22,7 +22,7 @@ namespace CppUtils::Graph
 			childs{std::move(c_childs)}
 		{}
 
-		template<typename RhsStorage>
+		template<class RhsStorage>
 		[[nodiscard]] bool operator==(const TreeNode<RhsStorage>& rhs) const
 		{
 			if constexpr(std::same_as<Storage, RhsStorage>)

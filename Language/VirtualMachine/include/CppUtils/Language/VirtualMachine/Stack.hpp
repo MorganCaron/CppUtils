@@ -2,8 +2,8 @@
 
 #include <array>
 #include <cstring>
+#include <concepts>
 #include <stdexcept>
-#include <type_traits>
 
 namespace CppUtils::Language::VirtualMachine
 {
@@ -14,8 +14,7 @@ namespace CppUtils::Language::VirtualMachine
 		Stack(): m_top{0}, m_stack{}
 		{}
 
-		template<typename Type>
-		requires std::is_default_constructible_v<Type>
+		template<std::default_initializable Type>
 		Type& push(Type value)
 		{
 			if (m_top + sizeof(Type) >= stackSize)
@@ -25,8 +24,7 @@ namespace CppUtils::Language::VirtualMachine
 			return top<Type>();
 		}
 
-		template<typename Type>
-		requires std::is_default_constructible_v<Type>
+		template<std::default_initializable Type>
 		Type pop()
 		{
 			if (m_top < sizeof(Type))
@@ -37,7 +35,7 @@ namespace CppUtils::Language::VirtualMachine
 			return std::move(value);
 		}
 
-		template<typename Type>
+		template<class Type>
 		[[nodiscard]] Type& top()
 		{
 			if (m_top == 0)

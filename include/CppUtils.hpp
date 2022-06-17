@@ -2,6 +2,7 @@
 
 #include <CppUtils/Platform/OS.hpp>
 #include <CppUtils/Platform/Compiler.hpp>
+#include <CppUtils/Random/Random.hpp>
 #include <CppUtils/Memory/UniquePtr.hpp>
 #include <CppUtils/System/System.hpp>
 #include <CppUtils/Chrono/Chronometer.hpp>
@@ -75,7 +76,7 @@
 #include <CppUtils/Type/NonCopyable.hpp>
 #include <CppUtils/Type/NonInstantiable.hpp>
 #include <CppUtils/Type/NonMovable.hpp>
-#include <CppUtils/Type/Traits.hpp>
+#include <CppUtils/Type/Concept.hpp>
 #include <CppUtils/Type/Typed.hpp>
 #include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Type/VariadicTemplate.hpp>

@@ -6,7 +6,7 @@
 
 namespace CppUtils::Language::Compiler
 {
-	template<typename ASTNode, typename Context>
+	template<class ASTNode, class Context>
 	class Compiler final
 	{
 	public:

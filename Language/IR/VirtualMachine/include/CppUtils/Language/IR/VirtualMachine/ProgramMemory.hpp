@@ -27,19 +27,19 @@ namespace CppUtils::Language::IR::VirtualMachine
 		std::array<std::uintptr_t, stackSize> programMemory;
 		std::unordered_map<std::size_t, std::uintptr_t> registerFile;
 
-		template<typename T>
+		template<class T>
 		[[nodiscard]] constexpr std::size_t countNecessaryMemoryCells() const noexcept
 		{
 			return static_cast<std::size_t>(std::ceil(sizeof(T) / sizeof(std::uintptr_t)));
 		}
 
-		template<typename T>
+		template<class T>
 		[[nodiscard]] const T& getStackAddress(std::uintptr_t address) const noexcept
 		{
 			return *reinterpret_cast<const T*>(programMemory.data() + address);
 		}
 
-		template<typename T>
+		template<class T>
 		[[nodiscard]] T& getStackAddress(std::uintptr_t address) noexcept
 		{
 			return *reinterpret_cast<T*>(programMemory.data() + address);
@@ -55,7 +55,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 			registerVariables.instructionPointer = destination;
 		}
 
-		template<typename T>
+		template<class T>
 		void push(T value)
 		{
 			if (registerVariables.stackPointer < countNecessaryMemoryCells<T>())
@@ -64,7 +64,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 			getStackAddress<T>(registerVariables.stackPointer) = std::move(value);
 		}
 
-		template<typename T>
+		template<class T>
 		T pop()
 		{
 			if (registerVariables.stackPointer + countNecessaryMemoryCells<T>() > stackSize)
@@ -74,13 +74,13 @@ namespace CppUtils::Language::IR::VirtualMachine
 			return value;
 		}
 
-		template<typename T>
+		template<class T>
 		[[nodiscard]] bool isWrongMemoryAddress(std::uintptr_t address) const noexcept
 		{
 			return (address < registerVariables.stackPointer || address + countNecessaryMemoryCells<T>() > stackSize);
 		}
 
-		template<typename T>
+		template<class T>
 		[[nodiscard]] const T& get(std::uintptr_t address) const
 		{
 			if (isWrongMemoryAddress<T>(address))
@@ -88,7 +88,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 			return getStackAddress<T>(address);
 		}
 
-		template<typename T>
+		template<class T>
 		void set(std::uintptr_t address, T value)
 		{
 			if (isWrongMemoryAddress<T>(address))
@@ -96,7 +96,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 			getStackAddress<T>(address) = std::move(value);
 		}
 
-		template<typename T>
+		template<class T>
 		[[nodiscard]] const T& top() const
 		{
 			return get<T>(registerVariables.stackPointer);
@@ -128,7 +128,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 			jump(pop<std::uintptr_t>());
 		}
 
-		template<typename T>
+		template<class T>
 		void ret(T result)
 		{
 			ret();

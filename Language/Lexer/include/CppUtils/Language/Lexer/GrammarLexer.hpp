@@ -6,7 +6,7 @@
 
 namespace CppUtils::Language::Lexer
 {
-	template<typename... Types>
+	template<class... Types>
 	class GrammarLexer final
 	{
 	private:

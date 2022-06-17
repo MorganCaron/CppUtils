@@ -25,7 +25,7 @@ namespace CppUtils::Language::IR::Compiler
 			compiler{c_compiler}, output{c_output}
 		{}
 
-		template<typename... Args>
+		template<class... Args>
 		Bytecode::Instruction* createInstruction(Args... args)
 		{
 			return output.get().instructions.emplace_back(std::make_unique<Bytecode::Instruction>(std::forward<Args>(args)...)).get();

@@ -14,14 +14,14 @@ namespace CppUtils::Log
 			m_chrono{}
 		{}
 
-		inline void start()
+		void start()
 		{
 			if (!m_enabled)
 				return;
 			m_chrono.start();
 		}
 
-		inline void stop()
+		void stop()
 		{
 			if (!m_enabled)
 				return;
@@ -29,12 +29,12 @@ namespace CppUtils::Log
 			Logger::logDebug(m_name + " duration: " + CppUtils::Chrono::durationToString(m_chrono.getDuration()));
 		}
 
-		inline void enable() noexcept
+		void enable() noexcept
 		{
 			m_enabled = true;
 		}
 
-		inline void disable() noexcept
+		void disable() noexcept
 		{
 			m_enabled = false;
 		}

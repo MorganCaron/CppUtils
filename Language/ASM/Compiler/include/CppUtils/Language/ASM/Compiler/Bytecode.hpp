@@ -16,7 +16,7 @@ namespace CppUtils::Language::ASM::Compiler::Bytecode
 	{
 		Type::Token type;
 		std::string name;
-		std::uintptr_t value;
+		std::uintptr_t value = 0;
 		std::vector<std::uintptr_t> parametersId = {};
 		Instruction* nextInstruction = nullptr;
 		Instruction* conditionInstruction = nullptr;
@@ -29,7 +29,7 @@ namespace CppUtils::Language::ASM::Compiler::Bytecode
 			type{"init"_token}, name{c_name}, value{c_value}, parametersId{registerId}
 		{}
 		
-		template<typename... Parameters>
+		template<class... Parameters>
 		requires (std::same_as<std::uintptr_t, Parameters> && ...)
 		Instruction(Type::Token c_type, Parameters... c_parametersId):
 			type{c_type}, parametersId{std::forward<Parameters>(c_parametersId)...}

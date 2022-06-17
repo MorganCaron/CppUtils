@@ -9,7 +9,7 @@
 
 namespace CppUtils::Thread
 {
-	template<typename Type>
+	template<class Type>
 	class AsyncIStreamListener
 	{
 	public:
@@ -27,23 +27,23 @@ namespace CppUtils::Thread
 		AsyncIStreamListener& operator=(const AsyncIStreamListener&) = delete;
 		AsyncIStreamListener& operator=(AsyncIStreamListener&&) noexcept = default;
 
-		[[nodiscard]] bool isRunning() const noexcept
+		[[nodiscard]] auto isRunning() const noexcept -> bool
 		{
 			return m_loopThread.isRunning();
 		}
 
-		void start()
+		auto start() -> void
 		{
 			m_loopThread.start(0s);
 		}
 
-		void stop()
+		auto stop() -> void
 		{
 			m_loopThread.stop();
 		}
 
 	private:
-		void listener()
+		auto listener() -> void
 		{
 			Type value;
 			m_istream.get() >> value;

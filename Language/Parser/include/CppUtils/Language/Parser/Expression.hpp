@@ -7,7 +7,7 @@
 
 namespace CppUtils::Language::Parser
 {
-	template<typename... Types>
+	template<class... Types>
 	struct Expression final
 	{
 		Type::Token token;

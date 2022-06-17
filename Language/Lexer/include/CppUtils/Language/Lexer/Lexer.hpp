@@ -6,7 +6,7 @@
 
 namespace CppUtils::Language::Lexer
 {
-	template<typename... Types>
+	template<class... Types>
 	class Lexer final
 	{
 	public:
@@ -26,7 +26,7 @@ namespace CppUtils::Language::Lexer
 			m_expressions[token] = Parser::Expression<Types...>{token, std::move(name)};
 		}
 
-		template<typename... Args>
+		template<class... Args>
 		[[nodiscard]] Parser::Expression<Types...>& newExpression(const Type::Token& token, Args&&... args)
 		{
 			if (!expressionExists(token))

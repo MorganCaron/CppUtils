@@ -3,10 +3,12 @@
 #include <chrono>
 #include <string>
 
+#include <CppUtils/Type/Concept.hpp>
+
 namespace CppUtils::Chrono
 {
-	template <typename Rep, typename Period>
-	[[nodiscard]] std::string durationToString(std::chrono::duration<Rep, Period> duration)
+	template <class Rep, class Period>
+	[[nodiscard]] auto durationToString(std::chrono::duration<Rep, Period> duration) -> std::string
 	{
 		const auto hour = std::chrono::duration_cast<std::chrono::hours>(duration);
 		duration -= hour;
@@ -36,8 +38,7 @@ namespace CppUtils::Chrono
 		return !str.empty() ? str.substr(1) : "0ns";
 	}
 
-	template<typename Clock = std::chrono::high_resolution_clock>
-	requires std::chrono::is_clock_v<Clock>
+	template<Type::Concept::Clock Clock = std::chrono::high_resolution_clock>
 	class Chronometer final
 	{
 	public:
@@ -46,12 +47,12 @@ namespace CppUtils::Chrono
 			start();
 		}
 
-		void start()
+		auto start() -> void
 		{
 			m_start = Clock::now();
 		}
 
-		void stop()
+		auto stop() -> void
 		{
 			m_end = Clock::now();
 		}

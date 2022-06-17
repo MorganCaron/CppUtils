@@ -9,22 +9,22 @@
 namespace CppUtils::FileSystem::File
 {
 	template <typename FuncType>
-	inline void forFilesWithExtension(const std::string& path, const std::string& ext, FuncType&& function)
+	auto forFilesWithExtension(const std::string& path, const std::string& ext, FuncType&& function) -> void
 	{
 		for (const auto& file : std::filesystem::directory_iterator(path))
 			if (file.path().extension() == ext)
 				function(file.path().string());
 	}
 
-	inline void deleteFile(const std::filesystem::path& filePath)
+	inline auto deleteFile(const std::filesystem::path& filePath) -> void
 	{
 		std::remove(filePath.string().c_str());
 	}
 	
 	namespace Binary
 	{
-		template<typename T>
-		inline void write(const std::filesystem::path& filePath, const T& buffer)
+		template<class T>
+		auto write(const std::filesystem::path& filePath, const T& buffer) -> void
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
 			if (!file.is_open())
@@ -32,8 +32,8 @@ namespace CppUtils::FileSystem::File
 			file.write(reinterpret_cast<const char*>(&buffer), sizeof(buffer));
 		}
 
-		template<typename T>
-		[[nodiscard]] inline T read(const std::filesystem::path& filePath)
+		template<class T>
+		[[nodiscard]] auto read(const std::filesystem::path& filePath) -> T
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
 			if (!file.is_open())
@@ -43,8 +43,8 @@ namespace CppUtils::FileSystem::File
 			return buffer;
 		}
 
-		template<typename T>
-		inline void writeVector(const std::filesystem::path& filePath, const std::vector<T>& vector)
+		template<class T>
+		auto writeVector(const std::filesystem::path& filePath, const std::vector<T>& vector) -> void
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
 			if (!file.is_open())
@@ -52,8 +52,8 @@ namespace CppUtils::FileSystem::File
 			file.write(reinterpret_cast<const char*>(vector.data()), vector.size() * sizeof(T));
 		}
 
-		template<typename T>
-		[[nodiscard]] inline std::vector<T> readVector(const std::filesystem::path& filePath)
+		template<class T>
+		[[nodiscard]] auto readVector(const std::filesystem::path& filePath) -> std::vector<T>
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
 			if (!file.is_open())
@@ -68,7 +68,7 @@ namespace CppUtils::FileSystem::File
 	
 	namespace String
 	{
-		inline void write(const std::filesystem::path& filePath, std::string_view content)
+		inline auto write(const std::filesystem::path& filePath, std::string_view content) -> void
 		{
 			auto file = std::ofstream{filePath};
 			if (!file.is_open())
@@ -76,7 +76,7 @@ namespace CppUtils::FileSystem::File
 			file << content;
 		}
 
-		inline void append(const std::filesystem::path& filePath, std::string_view content)
+		inline auto append(const std::filesystem::path& filePath, std::string_view content) -> void
 		{
 			auto file = std::ofstream{filePath, std::ios::app};
 			if (!file.is_open())
@@ -84,7 +84,7 @@ namespace CppUtils::FileSystem::File
 			file << content;
 		}
 		
-		[[nodiscard]] inline std::string read(const std::filesystem::path& filePath)
+		[[nodiscard]] inline auto read(const std::filesystem::path& filePath) -> std::string
 		{
 			auto file = std::ifstream{filePath};
 			if (!file.is_open())

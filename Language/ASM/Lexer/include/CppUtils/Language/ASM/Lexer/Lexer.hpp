@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CppUtils/Type/Traits.hpp>
+#include <CppUtils/Type/Concept.hpp>
 #include <CppUtils/Language/Lexer/GrammarLexer.hpp>
 
 namespace CppUtils::Language::ASM::Lexer

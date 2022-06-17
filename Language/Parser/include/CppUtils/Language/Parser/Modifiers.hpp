@@ -1,14 +1,14 @@
 #pragma once
 
-#include <CppUtils/Type/Traits.hpp>
+#include <CppUtils/Type/Concept.hpp>
 #include <CppUtils/String/String.hpp>
 #include <CppUtils/Language/Parser/Context.hpp>
 
 namespace CppUtils::Language::Parser::Modifier
 {
-	template<typename... Types>
-	requires Type::Traits::isPresent<std::string, Types...> || Type::Traits::isPresent<Type::Token, Types...>
-	inline bool stringToTokenModifier(Context<Types...>& context, bool saveTypename)
+	template<class... Types>
+	requires Type::Concept::Present<std::string, Types...> || Type::Concept::Present<Type::Token, Types...>
+	bool stringToTokenModifier(Context<Types...>& context, bool saveTypename)
 	{
 		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
 		if (parentNode.get().childs.empty())
@@ -24,9 +24,9 @@ namespace CppUtils::Language::Parser::Modifier
 		return true;
 	}
 
-	template<typename... Types>
-	requires Type::Traits::isPresent<std::string, Types...>
-	inline bool trimModifier(Context<Types...>& context)
+	template<class... Types>
+	requires Type::Concept::Present<std::string, Types...>
+	bool trimModifier(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
 		if (parentNode.get().childs.empty())
@@ -39,9 +39,9 @@ namespace CppUtils::Language::Parser::Modifier
 		return true;
 	}
 
-	template<typename... Types>
-	requires Type::Traits::isPresent<std::string, Types...>
-	inline bool insertEmptyString(Context<Types...>& context)
+	template<class... Types>
+	requires Type::Concept::Present<std::string, Types...>
+	bool insertEmptyString(Context<Types...>& context)
 	{
 		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
 		using namespace std::literals;
@@ -49,9 +49,9 @@ namespace CppUtils::Language::Parser::Modifier
 		return true;
 	}
 
-	template<typename... Types>
-	requires Type::Traits::isPresent<std::string, Types...>
-	inline bool insertString(Context<Types...>& context, std::string_view string)
+	template<class... Types>
+	requires Type::Concept::Present<std::string, Types...>
+	bool insertString(Context<Types...>& context, std::string_view string)
 	{
 		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
 		if (!parentNode.get().childs.empty())

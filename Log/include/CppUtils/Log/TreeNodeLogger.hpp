@@ -40,7 +40,7 @@ namespace CppUtils::Log
 			}
 		}
 
-		template<typename Storage>// requires Type::Traits::isPrintable<Storage> // Fonctionne sur GCC mais pas sur Clang https://godbolt.org/z/75cja8
+		template<class Storage>// requires Type::Concept::Printable<Storage> // Fonctionne sur GCC mais pas sur Clang https://godbolt.org/z/75cja8
 		static void log(const Graph::TreeNode<Storage>& treeNode, const std::string& prefix = "") noexcept
 		{
 			auto os = std::ostringstream{};
@@ -54,7 +54,7 @@ namespace CppUtils::Log
 			}
 		}
 
-		template<typename Storage>// requires Type::Traits::isPrintable<Storage> // Fonctionne sur GCC mais pas sur Clang https://godbolt.org/z/75cja8
+		template<class Storage>// requires Type::Concept::Printable<Storage> // Fonctionne sur GCC mais pas sur Clang https://godbolt.org/z/75cja8
 		static void logDifferences(const Graph::TreeNode<Storage>& treeNode, const Graph::TreeNode<Container::Sequence::Difference>& differences, const std::string& prefix = "")
 		{
 			const auto& difference = differences.value;

@@ -16,7 +16,7 @@ namespace CppUtils::FileSystem
 
 		FileWatcher() = delete;
 
-		template<typename Rep, typename Period>
+		template<class Rep, class Period>
 		explicit FileWatcher(const std::function<void(const std::filesystem::path& filePath, FileStatus)>& function, const std::chrono::duration<Rep, Period>& interval):
 			m_function{std::move(function)},
 			m_loopThread{std::bind(&FileWatcher::listener, this), interval}
@@ -27,30 +27,30 @@ namespace CppUtils::FileSystem
 		FileWatcher& operator=(const FileWatcher&) = delete;
 		FileWatcher& operator=(FileWatcher&&) noexcept = default;
 
-		[[nodiscard]] bool isRunning() const noexcept
+		[[nodiscard]] auto isRunning() const noexcept -> bool
 		{
 			return m_loopThread.isRunning();
 		}
 
-		template<typename Rep, typename Period>
-		void start(const std::chrono::duration<Rep, Period>& interval)
+		template<class Rep, class Period>
+		auto start(const std::chrono::duration<Rep, Period>& interval) -> void
 		{
 			m_loopThread.start(interval);
 		}
 
-		void stop()
+		auto stop() -> void
 		{
 			m_loopThread.stop();
 		}
 
-		void watchPath(const std::filesystem::path& filePath)
+		auto watchPath(const std::filesystem::path& filePath) -> void
 		{
 			[[maybe_unused]] auto lockGuard = std::lock_guard<std::mutex>{m_mutex};
 			m_watchedFiles.insert(filePath);
 			m_fileStatus[filePath] = std::filesystem::last_write_time(filePath);
 		}
 
-		void unwatchPath(const std::filesystem::path& filePath)
+		auto unwatchPath(const std::filesystem::path& filePath) -> void
 		{
 			[[maybe_unused]] auto lockGuard = std::lock_guard<std::mutex>{m_mutex};
 			m_watchedFiles.erase(filePath);
@@ -58,7 +58,7 @@ namespace CppUtils::FileSystem
 		}
 
 	private:
-		void listener()
+		auto listener() -> void
 		{
 			[[maybe_unused]] auto lockGuard = std::lock_guard<std::mutex>{m_mutex};
 			for (const auto& filePath : m_watchedFiles)

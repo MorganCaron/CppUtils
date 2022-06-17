@@ -24,7 +24,7 @@ namespace CppUtils::Language::ASM::Compiler
 			compiler{c_compiler}, output{c_output}
 		{}
 
-		template<typename... Args>
+		template<class... Args>
 		Bytecode::Instruction* createInstruction(Args... args)
 		{
 			return Context::output.get().instructions.emplace_back(std::make_unique<Bytecode::Instruction>(std::forward<Args>(args)...)).get();

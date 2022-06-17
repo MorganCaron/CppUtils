@@ -4,7 +4,7 @@
 
 namespace CppUtils::Container
 {
-	template<typename T>
+	template<class T>
 	struct Point3d: public Point2d<T>
 	{
 		Point3d(T c_x, T c_y, T c_z):

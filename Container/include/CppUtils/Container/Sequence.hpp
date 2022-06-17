@@ -16,8 +16,8 @@ namespace CppUtils::Container::Sequence
 		Edited
 	};
 
-	template<typename T>
-	[[nodiscard]] std::vector<Difference> getDifferences(std::span<const T> list0, std::span<const T> list1)
+	template<class T>
+	[[nodiscard]] auto getDifferences(std::span<const T> list0, std::span<const T> list1) -> std::vector<Difference>
 	{
 		auto differences = std::vector<Difference>{};
 		differences.reserve(std::max(list0.size(), list1.size()));

@@ -2,7 +2,7 @@
 
 namespace CppUtils::Container
 {
-	template<typename T>
+	template<class T>
 	struct Point2d
 	{
 		Point2d(T c_x, T c_y):

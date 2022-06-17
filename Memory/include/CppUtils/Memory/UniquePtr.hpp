@@ -5,6 +5,6 @@
 
 namespace CppUtils::Memory
 {
-	template<typename T>
+	template<class T>
 	using UniquePtrWithDestructor = std::unique_ptr<T, std::function<void(T*)>>;
 }

@@ -8,7 +8,7 @@
 
 namespace CppUtils::Graph
 {
-	template<typename Key, typename Value, typename Hash = std::hash<Key>>
+	template<class Key, class Value, class Hash = std::hash<Key>>
 	class MeshNode
 	{
 	public:

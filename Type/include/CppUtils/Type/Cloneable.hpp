@@ -11,7 +11,7 @@ namespace CppUtils::Type
 		[[nodiscard]] virtual std::unique_ptr<ICloneable> clone() const = 0;
 	};
 
-	template<typename Derived>
+	template<class Derived>
 	class Cloneable: public virtual ICloneable
 	{
 	public:
