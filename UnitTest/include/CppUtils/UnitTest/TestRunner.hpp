@@ -76,7 +76,7 @@ namespace CppUtils::UnitTest
 					}
 				}
 				
-				Log::Logger::logImportant(std::string(50, '_') + "\nTest results");
+				Log::Logger::logImportant(std::string(settings.terminalSize.width, '-') + "\nTest results");
 				if (nbFail == 0)
 				{
 					Log::Logger::logSuccess("All tests passed successfully");
