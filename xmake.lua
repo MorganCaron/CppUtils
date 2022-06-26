@@ -3,6 +3,7 @@ set_version("0.0.0")
 set_license("LGPL3")
 set_languages("clatest", "cxxlatest")
 set_warnings("allextra", "error")
+add_cxflags("-Wno-error=deprecated-declarations")
 set_optimize("fastest")
 set_symbols("hidden")
 
@@ -48,10 +49,10 @@ package("CppUtils")
 	includes("Functional")
 	includes("Hash")
 	includes("Terminal")
+	includes("String")
 	includes("Type")
 	includes("Log")
 	includes("Graph")
-	includes("String")
 	includes("Language")
 	includes("Parameters")
 	includes("UnitTest")
@@ -71,10 +72,10 @@ package("CppUtils")
 			"CppUtils-Functional",
 			"CppUtils-Hash",
 			"CppUtils-Terminal",
+			"CppUtils-String",
 			"CppUtils-Type",
 			"CppUtils-Log",
 			"CppUtils-Graph",
-			"CppUtils-String",
 			"CppUtils-Language",
 			"CppUtils-Parameters",
 			"CppUtils-UnitTest"

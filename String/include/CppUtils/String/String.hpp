@@ -5,11 +5,23 @@
 #include <string>
 #include <numeric>
 #include <string_view>
+#include <unordered_map>
 
 #include <CppUtils/Type/Concept.hpp>
 
 namespace CppUtils::String
 {
+	const auto escapedChars = std::unordered_map<char, char>{
+		{ '0', '\0' },
+		{ 'a', '\a' },
+		{ 'b', '\b' },
+		{ 'f', '\f' },
+		{ 'n', '\n' },
+		{ 'r', '\r' },
+		{ 't', '\t' },
+		{ 'v', '\v' }
+	};
+
 	[[nodiscard]] inline auto concatenateStringsWithDelimiter(const std::vector<std::string>& strings, std::string_view delimiter) -> std::string
 	{
 		return std::accumulate(strings.begin(), strings.end(), std::string{},
