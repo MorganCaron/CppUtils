@@ -7,7 +7,7 @@ namespace CppUtils::UnitTests::UnitTest
 	TEST_GROUP("UnitTest")
 	{
 		addTest("Test", [] {
-			ASSERT(true);
+			TEST_ASSERT(true);
 		});
 	}
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Hash/Token.hpp>
 #include <CppUtils/Language/Parser/Context.hpp>
 #include <CppUtils/Language/VirtualMachine/VirtualMachine.hpp>
 
@@ -33,7 +33,7 @@ namespace CppUtils::Language::Compiler
 			}
 			catch (const std::exception& exception)
 			{
-				throw std::runtime_error{"In the compiler:\nIn the " + std::string{nodeType.name} + " compilation function:\n" + exception.what()};
+				std::throw_with_nested(std::runtime_error{"In the compiler:\nIn the " + std::string{nodeType.name} + " compilation function:"});
 			}
 		}
 

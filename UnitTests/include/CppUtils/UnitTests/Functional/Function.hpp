@@ -13,7 +13,7 @@ namespace CppUtils::UnitTests::Functional::Function
 			const auto vec = std::vector<int>{10, 15, 17};
 			const auto result = CppUtils::Functional::callFunction<3>(sum, vec);
 			CppUtils::Log::Logger::logInformation(std::to_string(result));
-			ASSERT(result == 42);
+			TEST_ASSERT(result == 42);
 		});
 	}
 }

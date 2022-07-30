@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Hash/Token.hpp>
 #include <CppUtils/Language/IR/Compiler/Bytecode.hpp>
 #include <CppUtils/Language/IR/VirtualMachine/Context.hpp>
 

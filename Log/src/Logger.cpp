@@ -4,7 +4,7 @@
 
 namespace CppUtils::Log
 {
-	using namespace Type::Literals;
+	using namespace Hash::Literals;
 
 	State Logger::state{};
 	
@@ -14,7 +14,7 @@ namespace CppUtils::Log
 		{ Logger::OutputType::Clog, &std::clog }
 	};
 
-	std::unordered_map<Type::Token, Logger::OutputType, Type::Token::hash_fn> Logger::m_loggerOutputs{
+	std::unordered_map<Hash::Token, Logger::OutputType> Logger::m_loggerOutputs{
 		{ "Information"_token, Logger::OutputType::Cout },
 		{ "Important"_token, Logger::OutputType::Cout },
 		{ "Success"_token, Logger::OutputType::Cout },
@@ -24,7 +24,7 @@ namespace CppUtils::Log
 		{ "Error"_token, Logger::OutputType::Cerr }
 	};
 
-	std::unordered_map<Type::Token, Terminal::TextColor::TextColorEnum, Type::Token::hash_fn> Logger::m_colors{
+	std::unordered_map<Hash::Token, Terminal::TextColor::TextColorEnum> Logger::m_colors{
 		{ "Information"_token, Terminal::TextColor::TextColorEnum::Default },
 		{ "Important"_token, Terminal::TextColor::TextColorEnum::Cyan },
 		{ "Success"_token, Terminal::TextColor::TextColorEnum::Green },
@@ -34,7 +34,7 @@ namespace CppUtils::Log
 		{ "Error"_token, Terminal::TextColor::TextColorEnum::Red }
 	};
 
-	void Logger::log(Type::Token logType, std::string_view message, Terminal::TextColor::TextColorEnum textColor, bool newLine)
+	void Logger::log(Hash::Token logType, std::string_view message, Terminal::TextColor::TextColorEnum textColor, bool newLine)
 	{
 		if (!state.get(logType))
 			return;

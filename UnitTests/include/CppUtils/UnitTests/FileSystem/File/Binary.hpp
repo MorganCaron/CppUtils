@@ -13,7 +13,7 @@ namespace CppUtils::UnitTests::FileSystem::File::Binary
 			const auto fileContent = CppUtils::FileSystem::File::Binary::read<decltype(originalValue)>(filePath);
 			CppUtils::Log::Logger::logInformation(std::to_string(fileContent));
 			CppUtils::FileSystem::File::deleteFile(filePath);
-			ASSERT(fileContent == originalValue);
+			TEST_ASSERT(fileContent == originalValue);
 		});
 
 		addTest("WriteReadVector", [] {
@@ -27,7 +27,7 @@ namespace CppUtils::UnitTests::FileSystem::File::Binary
 				CppUtils::Log::Logger::logInformation(std::to_string(nb) + ' ', false);
 			CppUtils::Log::Logger::logInformation("");
 			CppUtils::FileSystem::File::deleteFile(filePath);
-			ASSERT(vector == originalVector);
+			TEST_ASSERT(vector == originalVector);
 		});
 	}
 }

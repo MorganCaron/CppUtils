@@ -86,8 +86,6 @@ xmake run
 	- [NonCopyable](Type/README.md#NonCopyable)
 	- [NonInstantiable](Type/README.md#NonInstantiable)
 	- [NonMovable](Type/README.md#NonMovable)
-	- [Typed](Type/README.md#Typed)
-	- [Token](Type/README.md#Token)
 
 ---
 

@@ -29,8 +29,9 @@ package("CppUtils")
 	set_description("C++ Utilities Library for compilers or various projects")
 	set_license("LGPL3")
 
-	if is_plat("windows") and is_config("cxx", "cl") then
+	if is_plat("windows") and is_config("cxx", "cl") and not is_plat("mingw") then
 		set_runtimes(is_mode("debug") and "MDd" or "MD")
+		add_defines("NOMINMAX", "VC_EXTRALEAN", "WIN32_LEAN_AND_MEAN", { public = true })
 		add_cxflags("/wd4251", {force = true}) -- ‘identifier’ : class ‘type’ needs to have dll-interface to be used by clients of class ‘type2’
 		add_syslinks("pthread", "dl")
 	elseif is_plat("linux") then

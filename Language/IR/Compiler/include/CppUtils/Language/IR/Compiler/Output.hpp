@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-#include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Hash/Token.hpp>
 #include <CppUtils/Language/IR/Compiler/Bytecode.hpp>
 #include <CppUtils/Log/Logger.hpp>
 

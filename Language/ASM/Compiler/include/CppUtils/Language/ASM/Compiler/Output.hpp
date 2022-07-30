@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 
-#include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Hash/Token.hpp>
 #include <CppUtils/Language/ASM/Compiler/Bytecode.hpp>
 
 namespace CppUtils::Language::ASM::Compiler
@@ -19,6 +19,6 @@ namespace CppUtils::Language::ASM::Compiler
 	{
 		std::vector<std::unique_ptr<Bytecode::Instruction>> instructions = {};
 		std::string stringConstants = "";
-		std::unordered_map<Type::Token, FunctionInformations, Type::Token::hash_fn> functions = {};
+		std::unordered_map<Hash::Token, FunctionInformations> functions = {};
 	};
 }

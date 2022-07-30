@@ -22,8 +22,8 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
 			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
-			ASSERT(tokenTree.value == "main"_token);
-			ASSERT(tokenTree.childs.size() == 0);
+			TEST_ASSERT(tokenTree.value == "main"_token);
+			TEST_ASSERT(tokenTree.childs.size() == 0);
 		});
 
 		addTest("Expressions", [] {
@@ -49,14 +49,14 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
 			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
-			ASSERT(tokenTree.value == "main"_token);
-			ASSERT(tokenTree.childs.size() == 1);
-			ASSERT(tokenTree.getChildValue(0) == "function"_token);
-			ASSERT(tokenTree.childs[0].childs.size() == 2);
-			ASSERT(tokenTree.childs[0].getChildValue(0) == "print"_token);
-			ASSERT(tokenTree.childs[0].getChildValue(1) == "string"_token);
-			ASSERT(tokenTree.childs[0].childs[1].childs.size() == 1);
-			ASSERT(tokenTree.childs[0].childs[1].getChildValue(0) == "Hello World!"s);
+			TEST_ASSERT(tokenTree.value == "main"_token);
+			TEST_ASSERT(tokenTree.childs.size() == 1);
+			TEST_ASSERT(tokenTree.getChildValue(0) == "function"_token);
+			TEST_ASSERT(tokenTree.childs[0].childs.size() == 2);
+			TEST_ASSERT(tokenTree.childs[0].getChildValue(0) == "print"_token);
+			TEST_ASSERT(tokenTree.childs[0].getChildValue(1) == "string"_token);
+			TEST_ASSERT(tokenTree.childs[0].childs[1].childs.size() == 1);
+			TEST_ASSERT(tokenTree.childs[0].childs[1].getChildValue(0) == "Hello World!"s);
 		});
 
 		addTest("Hide", [] {
@@ -75,8 +75,8 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
 			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
-			ASSERT(tokenTree.value == "main"_token);
-			ASSERT(tokenTree.childs.empty());
+			TEST_ASSERT(tokenTree.value == "main"_token);
+			TEST_ASSERT(tokenTree.childs.empty());
 		});
 
 		addTest("Name", [] {
@@ -95,8 +95,8 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
 			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
-			ASSERT(tokenTree.value == "main"_token);
-			ASSERT(tokenTree.getChildValue() == "name"_token);
+			TEST_ASSERT(tokenTree.value == "main"_token);
+			TEST_ASSERT(tokenTree.getChildValue() == "name"_token);
 		});
 
 		addTest("Recurrence", [] {
@@ -116,8 +116,8 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
 			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
-			ASSERT(tokenTree.value == "main"_token);
-			ASSERT(tokenTree.childs.size() == 4);
+			TEST_ASSERT(tokenTree.value == "main"_token);
+			TEST_ASSERT(tokenTree.childs.size() == 4);
 		});
 
 		addTest("Exclusion", [] {
@@ -134,10 +134,10 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
 			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
-			ASSERT(tokenTree.value == "main"_token);
-			ASSERT(tokenTree.childs.size() == 2);
+			TEST_ASSERT(tokenTree.value == "main"_token);
+			TEST_ASSERT(tokenTree.childs.size() == 2);
 			for (const auto& child : tokenTree.childs)
-				ASSERT(child.value == "a"_token);
+				TEST_ASSERT(child.value == "a"_token);
 		});
 
 		addTest("Avanced", [] {
@@ -170,8 +170,8 @@ namespace CppUtils::UnitTests::Language::Lexer::GrammarLexer
 			const auto tokenTree = grammarLexer.parseLanguage("main"_token, languageSrc);
 			CppUtils::Log::TreeNodeLogger::log(tokenTree);
 
-			ASSERT(tokenTree.value == "main"_token);
-			ASSERT(tokenTree.childs.size() == 4);
+			TEST_ASSERT(tokenTree.value == "main"_token);
+			TEST_ASSERT(tokenTree.childs.size() == 4);
 		});
 	}
 }

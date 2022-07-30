@@ -7,137 +7,139 @@ namespace CppUtils::UnitTests::Language::Lexer
 	TEST_GROUP("Language/Lexer")
 	{
 		using namespace std::literals;
-		using namespace CppUtils::Type::Literals;
-		
-		addTest("Expression", [] {
-			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
-			auto& printExpression = lexer.newExpression("print"_token);
-			auto& stringExpression = lexer.newExpression("string"_token);
+		using namespace CppUtils::Hash::Literals;
 
-			printExpression >> "print(" >> stringExpression >> ");";
-			stringExpression >> "\"Hello World!\"";
-
-			static constexpr auto src = "print(\"Hello World!\");"sv;
-			const auto tokenTree = lexer.parseString("print"_token, src);
-			CppUtils::Log::TreeNodeLogger::log(tokenTree);
-
-			ASSERT(tokenTree.value == "print"_token);
-			ASSERT(tokenTree.childs.size() == 1);
-			ASSERT(tokenTree.getChildValue() == "string"_token);
-			ASSERT(tokenTree.at("string"_token).childs.size() == 0);
+		addTest("base", [] {
+			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
+				main_{}
+			)"sv);
+			grammar.log();
+			const auto outputAst = CppUtils::Language::Lexer::parse(""sv, grammar);
+			outputAst.log();
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
 		});
 
-		addTest("Parsers", [] {
-			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token, std::string>{};
-			auto& printExpression = lexer.newExpression("print"_token);
-			auto& stringExpression = lexer.newExpression("string"_token);
-			auto spaceParser = CppUtils::Language::Parser::NamedParser{"space parser"s, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>};
-			
-			printExpression
-				>> spaceParser >> "print("
-				>> stringExpression
-				>> spaceParser >> ");";
-			stringExpression
-				>> spaceParser
-				>> CppUtils::Language::Parser::NamedParser{"quote parser"s, CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token, std::string>};
-
-			static constexpr auto src = "print(\"Hello World!\");"sv;
-			const auto tokenTree = lexer.parseString("print"_token, src);
-			CppUtils::Log::TreeNodeLogger::log(tokenTree);
-
-			ASSERT(tokenTree.value == "print"_token);
-			ASSERT(tokenTree.childs.size() == 1);
-			ASSERT(tokenTree.getChildValue() == "string"_token);
-			ASSERT(tokenTree.at("string"_token).childs.size() == 1);
-			ASSERT(tokenTree.at("string"_token).getChildValue() == "Hello World!"s);
-			ASSERT(tokenTree.at("string"_token).at("Hello World!"s).childs.size() == 0);
+		addTest("string", [] {
+			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
+				main_{ token_{word_} }
+				word_{ string_{Hello\ World!} }
+			)"sv);
+			grammar.log();
+			const auto outputAst = CppUtils::Language::Lexer::parse("Hello World!"sv, grammar);
+			outputAst.log();
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
 		});
 
-		addTest("Recurrence", [] {
-			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token, std::string>{};
-			auto& mainExpression = lexer.newExpression("main"_token);
-			auto& printExpression = lexer.newExpression("print"_token);
-			auto& stringExpression = lexer.newExpression("string"_token);
-			auto spaceParser = CppUtils::Language::Parser::NamedParser{"space parser"s, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>};
-
-			mainExpression
-				>> (printExpression >= 0)
-				>> spaceParser;
-			printExpression
-				>> spaceParser >> "print("
-				>> stringExpression
-				>> spaceParser >> ");";
-			stringExpression
-				>> spaceParser
-				>> CppUtils::Language::Parser::NamedParser{"quote parser"s, CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token, std::string>};
-
-			static constexpr auto src = R"(
-				print("Hello World!");
-				print("Test");
-				print("Ok");
-			)"sv;
-			const auto tokenTree = lexer.parseString("main"_token, src);
-			CppUtils::Log::TreeNodeLogger::log(tokenTree);
-
-			ASSERT(tokenTree.value == "main"_token);
-			ASSERT(tokenTree.childs.size() == 3);
-			for (const auto& child : tokenTree.childs)
-				ASSERT(child.value == "print"_token);
+		addTest("recurrence", [] {
+			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
+				main_{ token_{chars_} }
+				chars_{ token_{char_} token_{chars_} } chars_{ token_{char_} }
+				char_{ string_{A} }
+			)"sv);
+			grammar.log();
+			const auto outputAst = CppUtils::Language::Lexer::parse("AAAAA"sv, grammar);
+			outputAst.log();
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
 		});
 
-		addTest("Alternative", [] {
-			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token, std::string>{};
-			auto& mainExpression = lexer.newExpression("main"_token);
-			auto& valueExpression = lexer.newExpression("value"_token);
-			auto& keywordExpression = lexer.newExpression("keyword"_token);
-			auto& stringExpression = lexer.newExpression("string"_token);
-			auto spaceParser = CppUtils::Language::Parser::NamedParser{"space parser"s, CppUtils::Language::Parser::spaceParser<CppUtils::Type::Token, std::string>};
-
-			mainExpression
-				>> (valueExpression >= 0)
-				>> spaceParser;
-			valueExpression
-				>> spaceParser
-				>> (keywordExpression || stringExpression);
-			keywordExpression
-				>> CppUtils::Language::Parser::NamedParser{"keyword parser"s, CppUtils::Language::Parser::keywordParser<CppUtils::Type::Token, std::string>};
-			stringExpression
-				>> CppUtils::Language::Parser::NamedParser{"quote parser"s, CppUtils::Language::Parser::quoteParser<CppUtils::Type::Token, std::string>};
-
-			static constexpr auto src = R"(
-				test "test" test "test"
-			)"sv;
-			const auto tokenTree = lexer.parseString("main"_token, src);
-			CppUtils::Log::TreeNodeLogger::log(tokenTree);
-
-			ASSERT(tokenTree.value == "main"_token);
-			ASSERT(tokenTree.childs.size() == 4);
-			for (const auto& child : tokenTree.childs)
-				ASSERT(child.value == "value"_token);
+		addTest("optional", [] {
+			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
+				main_{ token_{word_} optional_{token_{spaces_}} }
+				word_{ optional_{token_{spaces_}} string_{Hello\ World!} }
+				spaces_{ token_{space_} optional_{token_{spaces_}} }
+				space_{ string_{\ } } space_{ string_{\n} } space_{ string_{\t} } space_{ string_{\r} }
+			)"sv);
+			grammar.log();
+			const auto outputAst = CppUtils::Language::Lexer::parse(R"(
+				Hello World!
+			)"sv, grammar);
+			outputAst.log();
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
 		});
 
-		addTest("Exclusion", [] {
-			auto lexer = CppUtils::Language::Lexer::Lexer<CppUtils::Type::Token>{};
-			auto& mainExpression = lexer.newExpression("main"_token);
-			auto& aExpression = lexer.newExpression("a"_token);
-			auto& tagsExpression = lexer.newExpression("tags"_token, false);
+		addTest("comparison", [] {
+			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
+				main_{ optional_{token_{spaces_}} token_{keyword_} optional_{token_{spaces_}} }
+				keyword_{ token_{char_} optional_{token_{keyword_}} }
+				char_{ >=_{a} <=_{z} + } char_{ >=_{A} <=_{Z} + }
+				spaces_{ token_{space_} optional_{token_{spaces_}} }
+				space_{ string_{\ } } space_{ string_{\n} } space_{ string_{\t} } space_{ string_{\r} }
+			)"sv);
+			grammar.log();
+			const auto outputAst = CppUtils::Language::Lexer::parse(R"(
+				Hello
+			)"sv, grammar);
+			outputAst.log();
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
+		});
 
-			mainExpression >> tagsExpression >> 'b';
-			aExpression >> 'a';
-			tagsExpression >> CppUtils::Language::Parser::Recurrence{
-					std::make_unique<CppUtils::Language::Parser::ExcludeLexeme>(CppUtils::Language::Parser::Exclusion{
-						std::make_unique<CppUtils::Language::Parser::TokenLexeme>(aExpression.token),
-						std::make_unique<CppUtils::Language::Parser::StringLexeme>("b")}),
-				CppUtils::Language::Parser::RecurrenceType::MoreOrEqualTo, 0};
+		addTest("read", [] {
+			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
+				main_{ optional_{token_{spaces_}} token_{keyword_} optional_{token_{spaces_}} }
+				keyword_{ token_{char_} optional_{token_{keyword_}} }
+				char_{ >=_{a} <=_{z} read_+ } char_{ >=_{A} <=_{Z} read_+ }
+				spaces_{ token_{space_} optional_{token_{spaces_}} }
+				space_{ string_{\ } } space_{ string_{\n} } space_{ string_{\t} } space_{ string_{\r} }
+			)"sv);
+			grammar.log();
+			const auto outputAst = CppUtils::Language::Lexer::parse(R"(
+				Hello
+			)"sv, grammar);
+			outputAst.log();
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 5);
+			TEST_ASSERT(outputAst.root.nodes[0].value == 'H');
+			TEST_ASSERT(outputAst.root.nodes[1].value == 'e');
+			TEST_ASSERT(outputAst.root.nodes[2].value == 'l');
+			TEST_ASSERT(outputAst.root.nodes[3].value == 'l');
+			TEST_ASSERT(outputAst.root.nodes[4].value == 'o');
+		});
 
-			static constexpr auto src = "aab"sv;
-			const auto tokenTree = lexer.parseString("main"_token, src);
-			CppUtils::Log::TreeNodeLogger::log(tokenTree);
+		addTest("add", [] {
+			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
+				main_{ add_{token_{char}} }
+			)"sv);
+			const auto outputAst = CppUtils::Language::Lexer::parse(""sv, grammar);
+			outputAst.log();
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
+			TEST_ASSERT(outputAst.root.nodes[0].value == "char"_token);
+		});
 
-			ASSERT(tokenTree.value == "main"_token);
-			ASSERT(tokenTree.childs.size() == 2);
-			for (const auto& child : tokenTree.childs)
-				ASSERT(child.value == "a"_token);
+		addTest("hash", [] {
+			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
+				main_{ optional_{token_{spaces_}} hash_{token_{keyword_}} optional_{token_{spaces_}} }
+				keyword_{ token_{char_} optional_{token_{keyword_}} }
+				char_{ >=_{a} <=_{z} read_+ } char_{ >=_{A} <=_{Z} read_+ }
+				spaces_{ token_{space_} optional_{token_{spaces_}} }
+				space_{ string_{\ } } space_{ string_{\n} } space_{ string_{\t} } space_{ string_{\r} }
+			)"sv);
+			grammar.log();
+			const auto outputAst = CppUtils::Language::Lexer::parse(R"(
+				variable
+			)"sv, grammar);
+			outputAst.log();
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
+			TEST_ASSERT(outputAst.root.nodes[0].value == "variable"_token);
+		});
+
+		addTest("not", [] {
+			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
+				main_{ optional_{token_{spaces_}} token_{quote_} optional_{token_{spaces_}} }
+				quote_{ string_{"} optional_{token_{quoteContent_}} string_{"} }
+				quoteContent_{ not_{string_{"}} read_+ optional_{token_{quoteContent_}} }
+				spaces_{ token_{space_} optional_{token_{spaces_}} }
+				space_{ string_{\ } } space_{ string_{\n} } space_{ string_{\t} } space_{ string_{\r} }
+			)"sv);
+			grammar.log();
+			const auto outputAst = CppUtils::Language::Lexer::parse(R"(
+				"Hello"
+			)"sv, grammar);
+			outputAst.log();
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 5);
+			TEST_ASSERT(outputAst.root.nodes[0].value == 'H');
+			TEST_ASSERT(outputAst.root.nodes[1].value == 'e');
+			TEST_ASSERT(outputAst.root.nodes[2].value == 'l');
+			TEST_ASSERT(outputAst.root.nodes[3].value == 'l');
+			TEST_ASSERT(outputAst.root.nodes[4].value == 'o');
 		});
 	}
 }

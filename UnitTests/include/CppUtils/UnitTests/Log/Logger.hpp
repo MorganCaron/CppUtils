@@ -14,7 +14,7 @@ namespace CppUtils::UnitTests::Log::Logger
 			CppUtils::Log::Logger::logDetail("Detail message");
 			CppUtils::Log::Logger::logWarning("Warning message");
 			CppUtils::Log::Logger::logError("Error message");
-			ASSERT(true);
+			TEST_ASSERT(true);
 		});
 	}
 }

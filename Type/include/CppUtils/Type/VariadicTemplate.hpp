@@ -5,6 +5,6 @@
 namespace CppUtils::Type::VariadicTemplate
 {
 	template<std::size_t i, class... Types>
-	requires Concept::AtLeastNType<i, Types...>
+	requires Concept::AtLeastNType<i + 1, Types...>
 	using NthType = typename std::tuple_element<i, std::tuple<Types...>>::type;
 }

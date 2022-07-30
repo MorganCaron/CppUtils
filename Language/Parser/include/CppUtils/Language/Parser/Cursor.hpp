@@ -1,182 +1,69 @@
 #pragma once
 
 #include <span>
-#include <cctype>
-#include <algorithm>
+#include <cstddef>
+#include <concepts>
 #include <string_view>
 
 namespace CppUtils::Language::Parser
 {
-	template<std::ranges::range Element>
+	template<typename Element = char>
 	struct Cursor final
 	{
-		[[nodiscard]] bool isEnd() const noexcept
-		{
-			return (position >= elements.size());
-		}
-
-		[[nodiscard]] const Element& getElement() const
-		{
-			return elements[position];
-		}
-
-		[[nodiscard]] const Element& getElementAndSkipIt()
-		{
-			return elements[position++];
-		}
-
-		[[nodiscard]] std::size_t size() const noexcept
-		{
-			return elements.size();
-		}
-
-		std::span<const Element> elements;
-		std::size_t& position;
-	};
-
-	template<>
-	struct Cursor<std::string> final
-	{
-		Cursor(std::string_view c_src, std::size_t& c_position):
-			src{c_src},
-			position{c_position}
-		{}
-
-		[[nodiscard]] std::size_t getLineNumber() const noexcept
-		{
-			const auto subString = src.substr(0, position);
-			return std::count(subString.begin(), subString.end(), '\n') + 1;
-		}
-
-		[[nodiscard]] std::size_t getPositionInTheLine() const noexcept
-		{
-			const auto startingLinePosition = src.find_last_of('\n', position);
-			return (startingLinePosition == std::string::npos) ? position : (position - startingLinePosition);
-		}
-
-		[[nodiscard]] bool isEndOfString() const noexcept
-		{
-			return (position >= src.length());
-		}
+		std::span<const Element> data;
+		std::size_t pos = 0;
 		
-		[[nodiscard]] char getChar() const
+		[[nodiscard]] constexpr bool isEnd() const
 		{
-			return src.at(position);
+			return pos >= data.size();
 		}
-
-		[[nodiscard]] char getCharAndSkipIt()
+		[[nodiscard]] constexpr auto operator[](std::size_t position) const -> const Element&
 		{
-			return src.at(position++);
+			return data[position];
 		}
-
-		[[nodiscard]] std::string_view getStringIf(const std::function<bool(char)>& validator) const
+		[[nodiscard]] constexpr auto current() const -> const Element&
 		{
-			const auto length = src.length();
-			auto nbChars = std::size_t{0};
-			while ((position + nbChars) < length && validator(src.at(position + nbChars)))
-				++nbChars;
-			return src.substr(position, nbChars);
+			return data[pos];
 		}
-
-		[[nodiscard]] std::string_view getStringAndSkipItIf(const std::function<bool(char)>& validator)
+		[[nodiscard]] constexpr auto read() -> const Element&
 		{
-			const auto string = getStringIf(validator);
-			position += string.length();
-			return string;
+			return data[pos++];
 		}
-
-		void skipStringIf(const std::function<bool(char)>& validator)
+		[[nodiscard]] constexpr auto is(const Element& value) const -> bool
 		{
-			if (!isEndOfString() && validator(getChar()))
-				++position;
+			return !isEnd() && current() == value;
 		}
-
-		void skipStringWhile(const std::function<bool(char)>& validator)
-		{
-			while (!isEndOfString() && validator(getChar()))
-				++position;
-		}
-
-		void skipSpaces()
-		{
-			skipStringWhile([](const char c) -> bool {
-				return std::isspace(static_cast<unsigned char>(c));
-			});
-		}
-
-		[[nodiscard]] std::string_view getNextNChar(std::size_t size) const
-		{
-			return src.substr(position, std::min(size, src.length() - position));
-		}
-
-		[[nodiscard]] std::string_view getWord() const
-		{
-			return getStringIf([](const char c) -> bool {
-				return std::isalpha(static_cast<unsigned char>(c));
-			});
-		}
-
-		[[nodiscard]] std::string_view getWordAndSkipIt()
-		{
-			auto word = getWord();
-			position += word.length();
-			return word;
-		}
-
-		[[nodiscard]] std::string_view getKeyword() const
-		{
-			const auto srcLength = src.length();
-			auto subPosition = position;
-
-			if (subPosition < srcLength && (std::isalpha(src.at(subPosition)) || src.at(subPosition) == '_'))
-			{
-				do
-					++subPosition;
-				while (subPosition < srcLength && (std::isalnum(src.at(subPosition)) || src.at(subPosition) == '_'));
-			}
-			return src.substr(position, subPosition - position);
-		}
-
-		[[nodiscard]] std::string_view getKeywordAndSkipIt()
-		{
-			auto keyword = getKeyword();
-			position += keyword.length();
-			return keyword;
-		}
-
-		[[nodiscard]] std::string_view getKeywordRequired(std::string_view errorMessage)
-		{
-			auto keyword = getKeywordAndSkipIt();
-			if (keyword.empty())
-				throw std::runtime_error{errorMessage.data()};
-			return keyword;
-		}
-
-		[[nodiscard]] bool isEqual(std::string_view str, bool caseSensitive = true)
-		{
-			const auto length = str.length();
-			const auto nextNChar = getNextNChar(length);
-			if (nextNChar.length() != length)
-				return false;
-			if (caseSensitive)
-				return (str == nextNChar);
-			else
-				return std::equal(nextNChar.begin(), nextNChar.end(), str.begin(), [](char lhs, char rhs) -> bool {
-					return (std::tolower(lhs) == std::tolower(rhs));
-				});
-		}
-
-		bool isEqualSkipIt(std::string_view str, bool caseSensitive = true)
-		{
-			if (isEqual(str, caseSensitive))
-			{
-				position += str.length();
-				return true;
-			}
-			return false;
-		}
-
-		std::string_view src;
-		std::size_t& position;
 	};
+
+	Cursor(std::string_view data, std::size_t pos = 0) -> Cursor<char>;
+	Cursor(std::wstring_view data, std::size_t pos = 0) -> Cursor<wchar_t>;
+	Cursor(std::u8string_view data, std::size_t pos = 0) -> Cursor<char8_t>;
+	Cursor(std::u16string_view data, std::size_t pos = 0) -> Cursor<char16_t>;
+	Cursor(std::u32string_view data, std::size_t pos = 0) -> Cursor<char32_t>;
+
+	template<std::integral Char>
+	[[nodiscard]] std::size_t getLineNumber(const Cursor<Char>& cursor)
+	{
+		const auto subSpan = cursor.data.subspan(0, cursor.pos);
+		return std::count(std::cbegin(subSpan), std::cend(subSpan), '\n') + 1;
+	}
+
+	template<std::integral Char>
+	[[nodiscard]] std::size_t getPositionInTheLine(const Cursor<Char>& cursor) noexcept
+	{
+		auto pos = std::size(cursor.data);
+		while (pos > 0 && cursor.data[pos] != '\n')
+			--pos;
+		return std::size(cursor.data) - pos;
+	}
+
+	template<class Element>
+	[[nodiscard]] auto getPositionInformation(const CppUtils::Language::Parser::Cursor<Element>& cursor) -> std::string
+	{
+		if constexpr (std::integral<Element>)
+			return "\nAt line " + std::to_string(getLineNumber(cursor)) +
+				", position " + std::to_string(getPositionInTheLine(cursor));
+		else
+			return "\nAt position " + std::to_string(cursor.pos);
+	}
 }

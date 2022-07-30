@@ -16,9 +16,9 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 			)"_xml;
 			CppUtils::Log::TreeNodeLogger::log(xmlTree);
 
-			ASSERT(xmlTree.exists("h1"_token));
+			TEST_ASSERT(xmlTree.exists("h1"_token));
 			const auto& h1 = xmlTree.at("h1"_token);
-			ASSERT(h1.getChildValue() == "Title"s);
+			TEST_ASSERT(h1.getChildValue() == "Title"s);
 		});
 
 		addTest("Nested tags", [] {
@@ -31,15 +31,15 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 			)"_xml;
 			CppUtils::Log::TreeNodeLogger::log(xmlTree);
 
-			ASSERT(xmlTree.exists("ul"_token));
+			TEST_ASSERT(xmlTree.exists("ul"_token));
 			const auto& ul = xmlTree.at("ul"_token);
-			ASSERT(ul.childs.size() == 3);
+			TEST_ASSERT(ul.childs.size() == 3);
 			for (const auto& li : ul.childs)
-				ASSERT(li.value == "li"_token);
-			ASSERT(ul.childs.at(0).childs.size() == 1);
-			ASSERT(ul.childs.at(0).getChildValue() == "First"s);
-			ASSERT(ul.childs.at(1).getChildValue() == "Second"s);
-			ASSERT(ul.childs.at(2).getChildValue() == "Third"s);
+				TEST_ASSERT(li.value == "li"_token);
+			TEST_ASSERT(ul.childs.at(0).childs.size() == 1);
+			TEST_ASSERT(ul.childs.at(0).getChildValue() == "First"s);
+			TEST_ASSERT(ul.childs.at(1).getChildValue() == "Second"s);
+			TEST_ASSERT(ul.childs.at(2).getChildValue() == "Third"s);
 		});
 
 		addTest("Attributes", [] {
@@ -48,10 +48,10 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 			)"_xml;
 			CppUtils::Log::TreeNodeLogger::log(xmlTree);
 
-			ASSERT(xmlTree.exists("h1"_token));
+			TEST_ASSERT(xmlTree.exists("h1"_token));
 			const auto& h1 = xmlTree.at("h1"_token);
-			ASSERT(h1.at("attributes"_token).at("color"_token).getChildValue() == "red"s);
-			ASSERT(h1.getChildValue(1) == "Title"s);
+			TEST_ASSERT(h1.at("attributes"_token).at("color"_token).getChildValue() == "red"s);
+			TEST_ASSERT(h1.getChildValue(1) == "Title"s);
 		});
 	}
 }

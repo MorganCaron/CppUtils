@@ -31,7 +31,7 @@ namespace CppUtils::UnitTests::Container::Sequence
 			const auto s1 = "000azWXYZerty123uiopHELLO"sv;
 			const auto differences = generateDifferenceVector("+++  ----++++  ---  +++  -- - +++++"sv);
 			const auto result = CppUtils::Container::Sequence::getDifferences<char>(s0, s1);
-			ASSERT(result == differences);
+			TEST_ASSERT(result == differences);
 		});
 
 		addTest("vector", [] {
@@ -41,7 +41,7 @@ namespace CppUtils::UnitTests::Container::Sequence
 			const auto vec1 = std::vector<char>{s1.begin(), s1.end()};
 			const auto differences = generateDifferenceVector("+++  ----++++  ---  +++  -- - +++++"sv);
 			const auto result = CppUtils::Container::Sequence::getDifferences<char>(vec0, vec1);
-			ASSERT(result == differences);
+			TEST_ASSERT(result == differences);
 		});
 	}
 }

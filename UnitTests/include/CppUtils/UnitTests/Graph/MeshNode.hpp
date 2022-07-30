@@ -13,7 +13,7 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 			auto meshNetwork = StringMeshNetwork{};
 			auto banana = std::shared_ptr<Node>{meshNetwork.newNode("banana")};
 			CppUtils::Log::Logger::logInformation(banana->value);
-			ASSERT(banana->value == "banana");
+			TEST_ASSERT(banana->value == "banana");
 		});
 
 		addTest("Two", [] {
@@ -22,9 +22,9 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 			auto banana = std::shared_ptr<Node>{meshNetwork.newNode("banana")};
 			Node::attach("Categories", fruit, "Elements", banana);
 
-			ASSERT(fruit->value == "fruit");
+			TEST_ASSERT(fruit->value == "fruit");
 			const auto fruitName = std::shared_ptr<Node>{fruit->get("Elements")[0]};
-			ASSERT(fruitName->value == "banana");
+			TEST_ASSERT(fruitName->value == "banana");
 
 			for (const auto& aFruit : fruit->get("Elements"))
 			{
@@ -52,11 +52,11 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 			Node::attach("Categories", color, "Elements", orangeColor);
 			Node::attach("Categories", fruit, "Elements", orangeFruit);
 
-			ASSERT(fruit->value == "fruit");
+			TEST_ASSERT(fruit->value == "fruit");
 			const auto fruitName = std::shared_ptr<Node>{fruit->get("Elements")[0]};
-			ASSERT(fruitName->value == "banana");
+			TEST_ASSERT(fruitName->value == "banana");
 			const auto fruitColor = std::shared_ptr<Node>{fruitName->get("Colors")[0]};
-			ASSERT(fruitColor->value == "yellow");
+			TEST_ASSERT(fruitColor->value == "yellow");
 			
 			for (const auto& aFruit : fruit->get("Elements"))
 			{

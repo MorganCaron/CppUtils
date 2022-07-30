@@ -19,9 +19,9 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 			)"sv);
 			
 			CppUtils::Log::TreeNodeLogger::log(irTree);
-			ASSERT(irTree.childs.size() == 1);
-			ASSERT(irTree.childs[0].childs.size() == 3);
-			ASSERT(irTree.childs[0].childs[2].childs.size() == 3);
+			TEST_ASSERT(irTree.childs.size() == 1);
+			TEST_ASSERT(irTree.childs[0].childs.size() == 3);
+			TEST_ASSERT(irTree.childs[0].childs[2].childs.size() == 3);
 		});
 
 		addTest("Pointers", [] {
@@ -40,9 +40,9 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 			}
 			)"sv);
 			CppUtils::Log::TreeNodeLogger::log(irTree);
-			ASSERT(irTree.childs.size() == 2);
-			ASSERT(irTree.childs[0].childs.size() == 3);
-			ASSERT(irTree.childs[0].childs.at(2).childs.size() == 4);
+			TEST_ASSERT(irTree.childs.size() == 2);
+			TEST_ASSERT(irTree.childs[0].childs.size() == 3);
+			TEST_ASSERT(irTree.childs[0].childs.at(2).childs.size() == 4);
 		});
 
 		addTest("Conditions", [] {
@@ -65,9 +65,9 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 			}
 			)"sv);
 			CppUtils::Log::TreeNodeLogger::log(irTree);
-			ASSERT(irTree.childs.size() == 2);
-			ASSERT(irTree.childs[0].childs.size() == 3);
-			ASSERT(irTree.childs[0].childs[2].childs.size() == 3);
+			TEST_ASSERT(irTree.childs.size() == 2);
+			TEST_ASSERT(irTree.childs[0].childs.size() == 3);
+			TEST_ASSERT(irTree.childs[0].childs[2].childs.size() == 3);
 		});
 	}
 }

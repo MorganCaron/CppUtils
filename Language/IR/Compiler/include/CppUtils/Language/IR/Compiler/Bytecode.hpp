@@ -4,24 +4,24 @@
 #include <vector>
 #include <concepts>
 
-#include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Hash/Token.hpp>
 #include <CppUtils/Log/Logger.hpp>
 
 namespace CppUtils::Language::IR::Compiler::Bytecode
 {
 	using namespace std::literals;
-	using namespace Type::Literals;
+	using namespace Hash::Literals;
 
 	struct Instruction final
 	{
-		Type::Token type;
+		Hash::Token type;
 		std::string name;
 		std::uintptr_t value = 0;
 		std::vector<std::uintptr_t> parametersId = {};
 		Instruction* nextInstruction = nullptr;
 		Instruction* conditionInstruction = nullptr;
 
-		explicit Instruction(Type::Token c_type = "nop"_token):
+		explicit Instruction(Hash::Token c_type = "nop"_token):
 			type{c_type}
 		{}
 		
@@ -31,11 +31,11 @@ namespace CppUtils::Language::IR::Compiler::Bytecode
 		
 		template<class... Parameters>
 		requires (std::same_as<std::uintptr_t, Parameters> && ...)
-		Instruction(Type::Token c_type, Parameters... c_parametersId):
+		Instruction(Hash::Token c_type, Parameters... c_parametersId):
 			type{c_type}, parametersId{std::forward<Parameters>(c_parametersId)...}
 		{}
 
-		Instruction(Type::Token c_type, std::vector<std::uintptr_t> c_parametersId):
+		Instruction(Hash::Token c_type, std::vector<std::uintptr_t> c_parametersId):
 			type{c_type}, parametersId{std::move(c_parametersId)}
 		{}
 

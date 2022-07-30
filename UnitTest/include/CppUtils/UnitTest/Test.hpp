@@ -6,6 +6,7 @@
 #include <iostream>
 #include <functional>
 
+#include <CppUtils/Hash/Token.hpp>
 #include <CppUtils/Type/Named.hpp>
 #include <CppUtils/Log/ChronoLogger.hpp>
 #include <CppUtils/Parameters/ParametersLexer.hpp>
@@ -25,7 +26,7 @@ namespace CppUtils::UnitTest
 		bool pass(const TestSettings& settings) const
 		{
 			using namespace std::string_literals;
-			using namespace Type::Literals;
+			using namespace Hash::Literals;
 
 			auto oldLoggerState = Log::Logger::state;
 			if (settings.verbose)
@@ -42,13 +43,15 @@ namespace CppUtils::UnitTest
 			catch (const TestException& exception)
 			{
 				Log::Logger::state = oldLoggerState;
-				Log::Logger::logError("The following test didn't pass:\n"s + getName().data() + "\n" + exception.what());
+				CppUtils::Log::Logger::logError("The following test didn't pass:\n"s + getName().data());
+				Log::Logger::logException(exception);
 				return false;
 			}
 			catch (const std::exception& exception)
 			{
 				Log::Logger::state = oldLoggerState;
-				Log::Logger::logError("An exception occurred during tests:\n"s + getName().data() + "\n" + exception.what());
+				CppUtils::Log::Logger::logError("An exception occurred during tests:\n"s + getName().data());
+				Log::Logger::logException(exception);
 				return false;
 			}
 			Log::Logger::state = oldLoggerState;

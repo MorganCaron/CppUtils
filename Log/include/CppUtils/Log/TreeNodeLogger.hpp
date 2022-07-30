@@ -1,12 +1,9 @@
 #pragma once
 
-#include <CppUtils/Log/Logger.hpp>
 #include <CppUtils/Container/Sequence.hpp>
 
 namespace CppUtils::Log
 {
-	using namespace Type::Literals;
-
 	class TreeNodeLogger final
 	{
 	public:
@@ -37,38 +34,6 @@ namespace CppUtils::Log
 					return Terminal::TextColor::TextColorEnum::Cyan;
 				default:
 					return Terminal::TextColor::TextColorEnum::Default;
-			}
-		}
-
-		template<class Storage>// requires Type::Concept::Printable<Storage> // Fonctionne sur GCC mais pas sur Clang https://godbolt.org/z/75cja8
-		static void log(const Graph::TreeNode<Storage>& treeNode, const std::string& prefix = "") noexcept
-		{
-			auto os = std::ostringstream{};
-			os << treeNode.value;
-			Log::Logger::logInformation(os.str());
-			const auto nbChilds = treeNode.childs.size();
-			for (auto i = 0u; i < nbChilds; ++i)
-			{
-				Log::Logger::log("Information"_token, prefix + ((i != nbChilds - 1) ? "├" : "└") + "─ ", Terminal::TextColor::TextColorEnum::Blue, false);
-				log(treeNode.childs.at(i), prefix + ((i != nbChilds - 1) ? "│" : " ") + "  ");
-			}
-		}
-
-		template<class Storage>// requires Type::Concept::Printable<Storage> // Fonctionne sur GCC mais pas sur Clang https://godbolt.org/z/75cja8
-		static void logDifferences(const Graph::TreeNode<Storage>& treeNode, const Graph::TreeNode<Container::Sequence::Difference>& differences, const std::string& prefix = "")
-		{
-			const auto& difference = differences.value;
-			Log::Logger::log("Information"_token, std::string{getDifferenceChar(difference)}, getDifferenceColor(difference), false);
-			auto os = std::ostringstream{};
-			os << treeNode.value;
-			Log::Logger::log("Information"_token, os.str(), getDifferenceColor(difference));
-			const auto nbChilds = treeNode.childs.size();
-			if (nbChilds != differences.childs.size())
-				throw std::out_of_range{"CppUtils::Log::TreeNodeLogger::logDifferences(): the difference tree must have as many branches as the displayed tree"};
-			for (auto i = 0u; i < nbChilds; ++i)
-			{
-				Log::Logger::log("Information"_token, prefix + ((i != nbChilds - 1) ? "├" : "└") + "─ ", Terminal::TextColor::TextColorEnum::Blue, false);
-				logDifferences(treeNode.childs.at(i), prefix + ((i != nbChilds - 1) ? "│" : " ") + "  ", differences.childs.at(i));
 			}
 		}
 	};

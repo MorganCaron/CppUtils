@@ -13,7 +13,7 @@ namespace CppUtils::UnitTests::FileSystem::File::String
 			const auto fileContent = CppUtils::FileSystem::File::String::read(filePath);
 			CppUtils::Log::Logger::logInformation(fileContent);
 			CppUtils::FileSystem::File::deleteFile(filePath);
-			ASSERT(fileContent == originalString);
+			TEST_ASSERT(fileContent == originalString);
 		});
 
 		addTest("Append", [] {
@@ -25,7 +25,7 @@ namespace CppUtils::UnitTests::FileSystem::File::String
 			const auto fileContent = CppUtils::FileSystem::File::String::read(filePath);
 			CppUtils::Log::Logger::logInformation(fileContent);
 			CppUtils::FileSystem::File::deleteFile(filePath);
-			ASSERT(fileContent == std::string{firstString} + secondString);
+			TEST_ASSERT(fileContent == std::string{firstString} + secondString);
 		});
 	}
 }

@@ -3,8 +3,8 @@
 #include <stdexcept>
 #include <string_view>
 
-#define ASSERT(condition) \
-	void((condition) ? 0 : throw CppUtils::UnitTest::TestException("ASSERT(" #condition ")", __FILE__, __LINE__))
+#define TEST_ASSERT(condition) \
+	void((condition) ? 0 : throw CppUtils::UnitTest::TestException("TEST_ASSERT(" #condition ")", __FILE__, __LINE__))
 
 namespace CppUtils::UnitTest
 {

@@ -13,19 +13,19 @@ namespace CppUtils::UnitTests::String
 			const auto string = CppUtils::String::concatenateStringsWithDelimiter(strings, ", ");
 
 			CppUtils::Log::Logger::logInformation(string);
-			ASSERT(string == "A, B, C");
+			TEST_ASSERT(string == "A, B, C");
 		});
 
 		addTest("cstringArrayToVectorOfStrings", [] {
 			const char* cstringArray[] = {"A", "B", "C"};
 			const auto strings = CppUtils::String::cstringArrayToVectorOfStrings<std::string_view>(cstringArray, 3);
 
-			ASSERT(strings.size() == 3);
+			TEST_ASSERT(strings.size() == 3);
 
 			for (auto i = 0u; i < 3; ++i)
 			{
 				const auto& string = strings.at(i);
-				ASSERT(std::string{cstringArray[i]} == string);
+				TEST_ASSERT(std::string{cstringArray[i]} == string);
 				CppUtils::Log::Logger::logInformation(string, false);
 			}
 			CppUtils::Log::Logger::logInformation("");
@@ -38,13 +38,13 @@ namespace CppUtils::UnitTests::String
 			const auto trimString = CppUtils::String::trimString(string);
 			
 			CppUtils::Log::Logger::logInformation('[' + std::string{leftTrimString} + ']');
-			ASSERT(leftTrimString == "Hello World!\n \t ");
+			TEST_ASSERT(leftTrimString == "Hello World!\n \t ");
 
 			CppUtils::Log::Logger::logInformation('[' + std::string{rightTrimString} + ']');
-			ASSERT(rightTrimString == "\n \t Hello World!");
+			TEST_ASSERT(rightTrimString == "\n \t Hello World!");
 
 			CppUtils::Log::Logger::logInformation('[' + std::string{trimString} + ']');
-			ASSERT(trimString == "Hello World!");
+			TEST_ASSERT(trimString == "Hello World!");
 		});
 
 		addTest("getPrintableChar", [] {

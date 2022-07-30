@@ -12,8 +12,8 @@ int main(const int argc, const char *argv[])
 	}
 	catch (const std::exception& exception)
 	{
-		using namespace std::literals;
-		CppUtils::Log::Logger::logError("An exception occurred:\n"s + exception.what());
+		CppUtils::Log::Logger::logError("An exception occurred:");
+		CppUtils::Log::Logger::logException(exception);
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

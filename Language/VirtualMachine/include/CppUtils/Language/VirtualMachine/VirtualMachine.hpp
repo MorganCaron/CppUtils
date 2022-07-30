@@ -5,7 +5,7 @@
 #include <memory>
 #include <functional>
 
-#include <CppUtils/Type/Token.hpp>
+#include <CppUtils/Hash/Token.hpp>
 
 namespace CppUtils::Language::VirtualMachine
 {
@@ -15,11 +15,11 @@ namespace CppUtils::Language::VirtualMachine
 	public:
 		using Operation = std::function<void(const Instruction&, Context&)>;
 
-		explicit VirtualMachine(std::unordered_map<Type::Token, Operation, Type::Token::hash_fn> operations):
+		explicit VirtualMachine(std::unordered_map<Hash::Token, Operation> operations):
 			m_operations{std::move(operations)}
 		{}
 
-		void run(const Type::Token& token, const Instruction& instruction, Context& context) const
+		void run(const Hash::Token& token, const Instruction& instruction, Context& context) const
 		{
 			try
 			{
@@ -35,6 +35,6 @@ namespace CppUtils::Language::VirtualMachine
 		}
 
 	private:
-		std::unordered_map<Type::Token, Operation, Type::Token::hash_fn> m_operations;
+		std::unordered_map<Hash::Token, Operation> m_operations;
 	};
 }

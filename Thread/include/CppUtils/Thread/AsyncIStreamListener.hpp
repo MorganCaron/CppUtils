@@ -24,8 +24,8 @@ namespace CppUtils::Thread
 
 		AsyncIStreamListener(const AsyncIStreamListener&) = delete;
 		AsyncIStreamListener(AsyncIStreamListener&&) noexcept = default;
-		AsyncIStreamListener& operator=(const AsyncIStreamListener&) = delete;
-		AsyncIStreamListener& operator=(AsyncIStreamListener&&) noexcept = default;
+		auto operator=(const AsyncIStreamListener&) -> AsyncIStreamListener& = delete;
+		auto operator=(AsyncIStreamListener&&) noexcept -> AsyncIStreamListener& = default;
 
 		[[nodiscard]] auto isRunning() const noexcept -> bool
 		{

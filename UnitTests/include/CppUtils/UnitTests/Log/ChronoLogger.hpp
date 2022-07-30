@@ -9,7 +9,7 @@ namespace CppUtils::UnitTests::Log::ChronoLogger
 		addTest("", [] {
 			auto chronoLogger = CppUtils::Log::ChronoLogger{"Test"};
 			chronoLogger.stop();
-			ASSERT(true);
+			TEST_ASSERT(true);
 		});
 	}
 }

@@ -21,7 +21,7 @@ namespace CppUtils::UnitTests::Language::IR::VirtualMachine
 			}
 			)"sv, context);
 			CppUtils::Log::Logger::logInformation(std::to_string(result));
-			ASSERT(result == 42);
+			TEST_ASSERT(result == 42);
 		});
 
 		/*addTest("Pointers", [] {
@@ -42,7 +42,7 @@ namespace CppUtils::UnitTests::Language::IR::VirtualMachine
 			}
 			)"sv, context);
 			CppUtils::Log::Logger::logInformation(std::to_string(result));
-			ASSERT(result == 42);
+			TEST_ASSERT(result == 42);
 		});*/
 
 		/*addTest("Conditions", [] {
@@ -67,7 +67,7 @@ namespace CppUtils::UnitTests::Language::IR::VirtualMachine
 			}
 			)"sv, context);
 			CppUtils::Log::Logger::logInformation(std::to_string(result));
-			ASSERT(result == 12);
-		});*/
+			TEST_ASSERT(result == 12);
+		});
 	}
 }

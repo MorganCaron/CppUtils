@@ -4,15 +4,16 @@
 #include <ostream>
 #include <iostream>
 #include <algorithm>
+#include <exception>
 #include <unordered_map>
 
+#include <CppUtils/Hash/Token.hpp>
 #include <CppUtils/External/DllExport.hpp>
-#include <CppUtils/Type/Token.hpp>
 #include <CppUtils/Terminal/TextModifier.hpp>
 
 namespace CppUtils::Log
 {
-	using namespace Type::Literals;
+	using namespace Hash::Literals;
 
 	class State final
 	{
@@ -28,17 +29,17 @@ namespace CppUtils::Log
 			}
 		{}
 
-		[[nodiscard]] bool exists(Type::Token logType) const noexcept
+		[[nodiscard]] bool exists(Hash::Token logType) const noexcept
 		{
 			return (m_loggerStates.find(logType) != m_loggerStates.end());
 		}
 
-		void set(Type::Token logType, bool value)
+		void set(Hash::Token logType, bool value)
 		{
 			m_loggerStates[logType] = value;
 		}
 
-		[[nodiscard]] bool get(Type::Token logType) const noexcept
+		[[nodiscard]] bool get(Hash::Token logType) const noexcept
 		{
 			return exists(logType) ? m_loggerStates.at(logType) : false;
 		}
@@ -50,7 +51,7 @@ namespace CppUtils::Log
 		}
 
 	private:
-		std::unordered_map<Type::Token, bool, Type::Token::hash_fn> m_loggerStates;
+		std::unordered_map<Hash::Token, bool> m_loggerStates;
 	};
 
 	class DLL_PUBLIC Logger final
@@ -68,29 +69,29 @@ namespace CppUtils::Log
 			m_outputs[loggerOutput] = os;
 		}
 
-		[[nodiscard]] static OutputType getLoggerOutputType(Type::Token logType)
+		[[nodiscard]] static OutputType getLoggerOutputType(Hash::Token logType)
 		{
 			if (m_loggerOutputs.find(logType) == m_loggerOutputs.end())
-				throw std::out_of_range{"getLoggerOutputType(): Unknown logger type " + std::string{logType.name}};
+				throw Hash::TokenException{"getLoggerOutputType(): Unknown logger type", logType};
 			return m_loggerOutputs.at(logType);
 		}
 
-		[[nodiscard]] static std::ostream& getLoggerOutputStream(Type::Token logType)
+		[[nodiscard]] static std::ostream& getLoggerOutputStream(Hash::Token logType)
 		{
 			const auto outputType = getLoggerOutputType(logType);
 			if (m_outputs.find(outputType) == m_outputs.end())
-				throw std::out_of_range{"getLoggerOutputStream(): Unknown output type"};
+				throw Hash::TokenException{"getLoggerOutputStream(): Unknown output type", logType};
 			return *m_outputs.at(outputType);
 		}
 
-		[[nodiscard]] static Terminal::TextColor::TextColorEnum getLoggerColor(Type::Token logType)
+		[[nodiscard]] static Terminal::TextColor::TextColorEnum getLoggerColor(Hash::Token logType)
 		{
 			return m_colors.at(logType);
 		}
 
-		static void log(Type::Token logType, std::string_view message, Terminal::TextColor::TextColorEnum textColor, bool newLine = true);
+		static void log(Hash::Token logType, std::string_view message, Terminal::TextColor::TextColorEnum textColor, bool newLine = true);
 		
-		static void log(Type::Token logType, std::string_view message, bool newLine = true)
+		static void log(Hash::Token logType, std::string_view message, bool newLine = true)
 		{
 			log(logType, message, getLoggerColor(logType), newLine);
 		}
@@ -130,11 +131,26 @@ namespace CppUtils::Log
 			log("Error"_token, message, newLine);
 		}
 
+		static void logException(const std::exception& exception, std::size_t depth = 0)
+		{
+			CppUtils::Log::Logger::logError(std::string(depth, ' ') + exception.what());
+			try
+			{
+				std::rethrow_if_nested(exception);
+			}
+			catch (const std::exception& nestedException)
+			{
+				logException(nestedException, depth + 1);
+			}
+			catch (...)
+			{}
+		}
+
 		static State state;
 
 	private:
 		static std::unordered_map<OutputType, std::ostream*> m_outputs;
-		static std::unordered_map<Type::Token, OutputType, Type::Token::hash_fn> m_loggerOutputs;
-		static std::unordered_map<Type::Token, Terminal::TextColor::TextColorEnum, Type::Token::hash_fn> m_colors;
+		static std::unordered_map<Hash::Token, OutputType> m_loggerOutputs;
+		static std::unordered_map<Hash::Token, Terminal::TextColor::TextColorEnum> m_colors;
 	};
 }
