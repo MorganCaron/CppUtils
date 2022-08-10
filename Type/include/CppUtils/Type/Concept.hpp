@@ -23,9 +23,12 @@ namespace CppUtils::Type::Concept
 	template<std::size_t N, class... Types>
 	concept AtLeastNType = (sizeof...(Types) >= N);
 
-	template<class T>
-	concept String = std::is_convertible_v<T, std::string_view>;
+	template<class T, template<class...> class IncompleteType>
+	inline constexpr bool isSpecializationOf = false;
 
-	template<class T>
-	concept Clock = std::chrono::is_clock_v<T>;
+	template<template<class...> class IncompleteType, class... Args>
+	inline constexpr bool isSpecializationOf<IncompleteType<Args...>, IncompleteType> = true;
+
+	template<class T, template<class...> class IncompleteType>
+	concept Specializes = isSpecializationOf<T, IncompleteType>;
 }

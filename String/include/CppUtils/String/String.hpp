@@ -7,7 +7,7 @@
 #include <string_view>
 #include <unordered_map>
 
-#include <CppUtils/Type/Concept.hpp>
+#include <CppUtils/String/Concept.hpp>
 
 namespace CppUtils::String
 {
@@ -24,7 +24,7 @@ namespace CppUtils::String
 
 	[[nodiscard]] inline auto concatenateStringsWithDelimiter(const std::vector<std::string>& strings, std::string_view delimiter) -> std::string
 	{
-		return std::accumulate(strings.begin(), strings.end(), std::string{},
+		return std::accumulate(strings.cbegin(), strings.cend(), std::string{},
 			[delimiter](const std::string& lhs, const std::string& rhs) {
 				return lhs.empty() ? rhs : (lhs + delimiter.data() + rhs);
 			});
@@ -32,18 +32,18 @@ namespace CppUtils::String
 	
 	[[nodiscard]] inline auto concatenateStringsWithDelimiter(const std::vector<std::string_view>& strings, std::string_view delimiter) -> std::string
 	{
-		return std::accumulate(strings.begin(), strings.end(), std::string{},
+		return std::accumulate(strings.cbegin(), strings.cend(), std::string{},
 			[delimiter](std::string_view lhs, std::string_view rhs) {
 				return lhs.empty() ? std::string{rhs} : (std::string{lhs} + std::string{delimiter} + std::string{rhs});
 			});
 	}
 
-	template<Type::Concept::String String>
-	[[nodiscard]] auto cstringArrayToVectorOfStrings(const char** cstringArray, std::size_t length) -> std::vector<String>
+	template<Concept::Text Text>
+	[[nodiscard]] auto cstringArrayToVectorOfStrings(const char** cstringArray, std::size_t length) -> std::vector<Text>
 	{
 		if (length == 0)
 			return {};
-		return std::vector<String>{cstringArray, cstringArray + length};
+		return std::vector<Text>{cstringArray, cstringArray + length};
 	}
 
 	[[nodiscard]] inline auto leftTrimString(std::string_view stringView) -> std::string_view
