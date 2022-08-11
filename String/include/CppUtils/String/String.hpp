@@ -81,19 +81,41 @@ namespace CppUtils::String
 		return std::isprint(c) ? ("'"s + c + '\'') : std::to_string(c);
 	}
 
-	[[nodiscard]] inline auto toLower(std::string_view originalString) -> std::string
+	[[nodiscard]] constexpr auto isUppercase(auto c) noexcept -> bool
 	{
-		auto result = std::string{originalString};
+		return (c >= 'A' && c <= 'Z');
+	}
+
+	[[nodiscard]] constexpr auto isLowercase(auto c) noexcept -> bool
+	{
+		return (c >= 'a' && c <= 'z');
+	}
+
+	[[nodiscard]] constexpr auto toLowercase(auto c) noexcept
+	{
+		return isUppercase(c) ? c + ('a' - 'A') : c;
+	}
+
+	[[nodiscard]] constexpr auto toUppercase(auto c) noexcept
+	{
+		return isLowercase(c) ? c - ('a' - 'A') : c;
+	}
+
+	template<class CharT>
+	[[nodiscard]] constexpr auto toLowercase(std::basic_string_view<CharT> originalString) -> std::basic_string<CharT>
+	{
+		auto result = std::basic_string<CharT>{originalString};
 		for (auto& c : result)
-			c = std::tolower(c);
+			c = toLowercase(c);
 		return result;
 	}
 
-	[[nodiscard]] inline auto toUpper(std::string_view originalString) -> std::string
+	template<class CharT>
+	[[nodiscard]] constexpr auto toUppercase(std::basic_string_view<CharT> originalString) -> std::basic_string<CharT>
 	{
-		auto result = std::string{originalString};
+		auto result = std::basic_string<CharT>{originalString};
 		for (auto& c : result)
-			c = std::toupper(c);
+			c = toUppercase(c);
 		return result;
 	}
 }

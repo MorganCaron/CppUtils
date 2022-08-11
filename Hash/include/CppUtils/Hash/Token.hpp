@@ -6,23 +6,25 @@
 #include <stdexcept>
 #include <string_view>
 
+#include <CppUtils/String/Concept.hpp>
+
 namespace CppUtils::Hash
 {
 	using Token = std::uintptr_t;
 	using TokenNames = std::unordered_map<Token, std::string>;
-
-	template<class T = char>
-	[[nodiscard]] constexpr auto hash(std::span<const T> span) noexcept -> Token
+	
+	[[nodiscard]] constexpr auto hash(String::Concept::StringView auto stringView) noexcept -> Token
 	{
 		auto result = 0xcbf29ce484222325u;
-		for (const auto& value : span)
-			result = (static_cast<Token>(value) ^ result) * 0x100000001b3u;
+		for (const auto& c : stringView)
+			result = (static_cast<Token>(c) ^ result) * 0x100000001b3u;
 		return result;
 	}
 
-	[[nodiscard]] constexpr auto hash(std::string_view string) noexcept -> Token
+	template<class CharT>
+	[[nodiscard]] constexpr auto hash(const std::basic_string<CharT>& string) noexcept -> Token
 	{
-		return hash<char>(string);
+		return hash(std::basic_string_view<CharT>{string});
 	}
 
 	[[nodiscard]] inline auto getTokenNameOrValue(Token token, const TokenNames& tokenNames) -> std::string
@@ -58,9 +60,9 @@ namespace CppUtils::Hash
 
 	namespace Literals
 	{
-		[[nodiscard]] constexpr auto operator"" _token(const char* cstring, std::size_t) noexcept -> Token
+		[[nodiscard]] inline constexpr auto operator"" _token(const char* cString, std::size_t size) noexcept -> Token
 		{
-			return hash(cstring);
+			return hash(std::string_view{cString, size});
 		}
 	}
 }

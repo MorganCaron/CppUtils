@@ -59,10 +59,11 @@ namespace CppUtils::Language::Parser
 		}
 	}
 
-	[[nodiscard]] Ast parseAst(std::string_view src)
+	template<class CharT>
+	[[nodiscard]] inline Ast parseAst(std::basic_string_view<CharT> src)
 	{
 		auto ast = Ast{};
-		auto context = Context<char>{
+		auto context = Context<CharT>{
 			.cursor = Cursor{src},
 			.parentNode = ast.root,
 			.ast = Parser::ReadableAstNode{ast}

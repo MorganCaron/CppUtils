@@ -35,11 +35,8 @@ namespace CppUtils::Language::Parser
 		}
 	};
 
-	Cursor(std::string_view data, std::size_t pos = 0) -> Cursor<char>;
-	Cursor(std::wstring_view data, std::size_t pos = 0) -> Cursor<wchar_t>;
-	Cursor(std::u8string_view data, std::size_t pos = 0) -> Cursor<char8_t>;
-	Cursor(std::u16string_view data, std::size_t pos = 0) -> Cursor<char16_t>;
-	Cursor(std::u32string_view data, std::size_t pos = 0) -> Cursor<char32_t>;
+	template<class CharT>
+	Cursor(std::basic_string_view<CharT>, std::size_t pos = 0) -> Cursor<CharT>;
 
 	template<std::integral Char>
 	[[nodiscard]] std::size_t getLineNumber(const Cursor<Char>& cursor)
