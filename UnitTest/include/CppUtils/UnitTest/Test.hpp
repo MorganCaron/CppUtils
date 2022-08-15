@@ -23,40 +23,45 @@ namespace CppUtils::UnitTest
 			m_function{std::move(function)}
 		{}
 
-		bool pass(const TestSettings& settings) const
+		auto pass(const TestSettings& settings) const -> bool
 		{
-			using namespace std::string_literals;
+			using namespace std::literals;
 			using namespace Hash::Literals;
 
-			auto oldLoggerState = Log::Logger::state;
+			auto logger = Log::Logger{std::cout};
 			if (settings.verbose)
-				Log::Logger::logImportant(std::string(settings.terminalSize.width, '-') + '\n' + getName().data() + ':');
-			Log::Logger::state.setAll(settings.verbose);
-			Log::Logger::state.set("Information"_token, settings.verbose && settings.detail);
-			Log::Logger::state.set("Detail"_token, settings.verbose && settings.detail);
+				logger
+					<< Terminal::TextColor::TextColorEnum::Blue
+					<< std::string(settings.terminalSize.width, '-') + '\n' + std::data(getName()) + ":\n";
 			try
 			{
-				auto chronoLogger = Log::ChronoLogger{"Test", settings.verbose && settings.chrono};
-				m_function();
-				chronoLogger.stop();
-			}
-			catch (const TestException& exception)
-			{
-				Log::Logger::state = oldLoggerState;
-				CppUtils::Log::Logger::logError("The following test didn't pass:\n"s + getName().data());
-				Log::Logger::logException(exception);
-				return false;
+				try
+				{
+					auto chronoLogger = Log::ChronoLogger{"Test", settings.verbose && settings.chrono};
+					m_function();
+					chronoLogger.stop();
+				}
+				catch (const TestException& exception)
+				{
+					std::throw_with_nested(std::runtime_error{"The following test didn't pass: "s + std::data(getName())});
+				}
+				catch (const std::exception& exception)
+				{
+					std::throw_with_nested(std::runtime_error{"An exception occurred during the test: "s + std::data(getName())});
+				}
 			}
 			catch (const std::exception& exception)
 			{
-				Log::Logger::state = oldLoggerState;
-				CppUtils::Log::Logger::logError("An exception occurred during tests:\n"s + getName().data());
-				Log::Logger::logException(exception);
+				Log::logException(exception, std::cout);
 				return false;
 			}
-			Log::Logger::state = oldLoggerState;
 			if (settings.verbose)
-				Log::Logger::logSuccess(std::string{getName()} + " passed");
+			{
+				auto logger = Log::Logger{std::cout};
+				logger
+					<< Terminal::TextColor::TextColorEnum::Green
+					<< std::string{getName()} + " passed\n";
+			}
 			return true;
 		}
 

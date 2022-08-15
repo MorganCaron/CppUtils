@@ -11,7 +11,7 @@ namespace CppUtils::UnitTests::Chrono::Chronometer
 			chrono.stop();
 			auto string = CppUtils::Chrono::durationToString(chrono.getDuration());
 			TEST_ASSERT(!string.empty());
-			CppUtils::Log::Logger::logInformation(string);
+			CppUtils::Log::Logger{std::cout} << string << '\n';
 		});
 	}
 }

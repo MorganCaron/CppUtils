@@ -13,10 +13,9 @@ namespace CppUtils::Language::Lexer
 	[[nodiscard]] constexpr bool parseDeclaration(Context<Element>& context)
 	{
 		auto& [parserContext, declaration, grammar] = context;
-		auto& [cursor, parentNode, ast] = parserContext;
 		auto commaPosition = std::size_t{0};
 		const auto& lexemes = declaration.get().nodes;
-		auto nbLexemes = lexemes.size();
+		auto nbLexemes = std::size(lexemes);
 		for (auto i = 0u; i < nbLexemes; ++i)
 		{
 			const auto& lexeme = lexemes[i];
@@ -38,7 +37,7 @@ namespace CppUtils::Language::Lexer
 		auto& [parserContext, declarationLexeme, grammar] = context;
 		auto& [cursor, parentNode, ast] = parserContext;
 		auto declarationToken = declarationLexeme.get().value;
-		for (const auto& declaration : grammar.get().root.getChildsWithValue(declarationToken))
+		for (const auto& declaration : grammar.get().root.getNodesWithValue(declarationToken))
 		{
 			auto newContext = context;
 			newContext.lexeme = declaration;
@@ -78,11 +77,13 @@ namespace CppUtils::Language::Lexer
 			}
 			case "string"_token:
 			{
-				auto size = lexeme.get().nodes.size();
+				auto size = std::size(lexeme.get().nodes);
 				if (size == 0)
 					throw std::logic_error{"Missing element in 'string' token"};
+				if (cursor.pos + size > std::size(cursor.data))
+					return false;
 				for (auto i = 0u; i < size; ++i)
-					if (cursor.pos != cursor.data.size() && lexeme.get().nodes[i].value == '\\')
+					if (lexeme.get().nodes[i].value == '\\')
 					{
 						if (i + 1 == size)
 							throw std::logic_error{"Missing character after '\\'"};
@@ -100,6 +101,8 @@ namespace CppUtils::Language::Lexer
 			}
 			case "read"_token:
 			{
+				if (cursor.pos == std::size(cursor.data))
+					throw std::logic_error{"Can't read character, the cursor has reached the end of the string"};
 				parentNode.get().nodes.push_back(Parser::AstNode{static_cast<std::uintptr_t>(cursor.current())});
 				return true;
 			}
@@ -118,6 +121,17 @@ namespace CppUtils::Language::Lexer
 				else
 					parentNode.get().nodes.push_back(nodeToAdd);
 				return true;
+			}
+			case "or"_token:
+			{
+				for (const auto& node : lexeme.get().nodes)
+				{
+					context.lexeme = node;
+					if (parseLexeme(context))
+						return true;
+				}
+				cursor.pos = startPos;
+				return false;
 			}
 			case "hash"_token:
 			{
@@ -138,6 +152,8 @@ namespace CppUtils::Language::Lexer
 			case "<="_token: return cursor[cursor.pos] <= static_cast<char>(lexeme.get().nodes[0].value);
 			case '+':
 			{
+				if (cursor.pos == std::size(cursor.data))
+					throw std::logic_error{"Can't increment the cursor, it has reached the end of the string"};
 				++cursor.pos;
 				return true;
 			}
@@ -152,12 +168,13 @@ namespace CppUtils::Language::Lexer
 				return !result;
 			}
 			default:
-				throw std::logic_error{"Unknown node " + Hash::getTokenNameOrValue(lexeme.get().value, context.grammar.get().tokenNames)};
+				throw std::logic_error{"Unknown node " + Hash::getTokenNameOrValue(lexeme.get().value, grammar.get().tokenNames)};
 		}
+		throw std::logic_error{"Unknown lexeme"};
 		return false;
 	}
 
-	[[nodiscard]] Parser::Ast parse(std::string_view src, const Parser::Ast& grammar)
+	[[nodiscard]] inline Parser::Ast parse(std::string_view src, const Parser::Ast& grammar)
 	{
 		if (grammar.root.nodes.empty())
 			throw std::logic_error{"Empty grammar"};

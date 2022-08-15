@@ -26,7 +26,7 @@ namespace CppUtils::Language::Json
 		null: "null";
 	)"sv;
 
-	[[nodiscard]] auto parse(std::string_view src) -> Parser::Ast
+	[[nodiscard]] inline auto parse(std::string_view src) -> Parser::Ast
 	{
 		static auto grammarManager = Lexer::GrammarManager{};
 		grammarManager.addGrammar("jsonGrammar"sv, jsonGrammar);
@@ -35,7 +35,7 @@ namespace CppUtils::Language::Json
 
 	namespace Literals
 	{
-		[[nodiscard]] auto operator"" _json(const char* cString, std::size_t) -> Parser::Ast
+		[[nodiscard]] inline auto operator"" _json(const char* cString, std::size_t) -> Parser::Ast
 		{
 			return parse(cString);
 		}

@@ -11,12 +11,12 @@ namespace CppUtils::UnitTests::Graph::Tree
 		addTest("", [] {
 			auto root = StringTreeNode{"Root"};
 			CppUtils::Graph::Tree::log(root);
-			CppUtils::Log::Logger::logInformation(root.value);
+			CppUtils::Log::Logger{std::cout} << root.value << '\n';
 			TEST_ASSERT(root.value == "Root");
 			
 			root.nodes.emplace_back(StringTreeNode{"Branch0"});
 			root.nodes.emplace_back(StringTreeNode{"Branch1"});
-			CppUtils::Log::Logger::logInformation(root.nodes[1].value);
+			CppUtils::Log::Logger{std::cout} << root.nodes[1].value << '\n';
 			TEST_ASSERT(root.nodes[1].value == "Branch1");
 
 			auto& branch0 = root.nodes[0];

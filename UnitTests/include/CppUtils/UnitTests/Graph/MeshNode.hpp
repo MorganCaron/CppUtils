@@ -12,7 +12,7 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 		addTest("One", [] {
 			auto meshNetwork = StringMeshNetwork{};
 			auto banana = std::shared_ptr<Node>{meshNetwork.newNode("banana")};
-			CppUtils::Log::Logger::logInformation(banana->value);
+			CppUtils::Log::Logger{std::cout} << banana->value << '\n';
 			TEST_ASSERT(banana->value == "banana");
 		});
 
@@ -29,7 +29,8 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 			for (const auto& aFruit : fruit->get("Elements"))
 			{
 				auto sharedFruit = std::shared_ptr<Node>{aFruit};
-				CppUtils::Log::Logger::logInformation(sharedFruit->value + " is a " + std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value);
+				CppUtils::Log::Logger{std::cout}
+					<< sharedFruit->value + " is a " + std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value << '\n';
 			}
 		});
 
@@ -61,7 +62,8 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 			for (const auto& aFruit : fruit->get("Elements"))
 			{
 				auto sharedFruit = std::shared_ptr<Node>{aFruit};
-				CppUtils::Log::Logger::logInformation(sharedFruit->value + " is a " + std::shared_ptr<Node>{sharedFruit->get("Colors")[0]}->value + " " + std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value);
+				CppUtils::Log::Logger{std::cout}
+					<< sharedFruit->value + " is a " + std::shared_ptr<Node>{sharedFruit->get("Colors")[0]}->value + " " + std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value + '\n';
 			}
 		});
 	}

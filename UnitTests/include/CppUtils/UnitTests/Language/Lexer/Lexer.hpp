@@ -104,6 +104,15 @@ namespace CppUtils::UnitTests::Language::Lexer
 			TEST_ASSERT(outputAst.root.nodes[0].value == "char"_token);
 		});
 
+		addTest("or", [] {
+			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
+				main_{ or_{ string_{A} string_{B} } string_{C} }
+			)"sv);
+			const auto outputAst = CppUtils::Language::Lexer::parse("BC"sv, grammar);
+			outputAst.log();
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
+		});
+
 		addTest("hash", [] {
 			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
 				main_{ optional_{token_{spaces_}} hash_{token_{keyword_}} optional_{token_{spaces_}} }

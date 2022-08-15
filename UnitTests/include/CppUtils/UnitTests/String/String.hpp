@@ -12,7 +12,7 @@ namespace CppUtils::UnitTests::String
 			const auto strings = std::vector{"A"sv, "B"sv, "C"sv};
 			const auto string = CppUtils::String::concatenateStringsWithDelimiter(strings, ", ");
 
-			CppUtils::Log::Logger::logInformation(string);
+			CppUtils::Log::Logger{std::cout} << string << '\n';
 			TEST_ASSERT(string == "A, B, C");
 		});
 
@@ -22,13 +22,14 @@ namespace CppUtils::UnitTests::String
 
 			TEST_ASSERT(strings.size() == 3);
 
+			auto logger = CppUtils::Log::Logger{std::cout};
 			for (auto i = 0u; i < 3; ++i)
 			{
 				const auto& string = strings.at(i);
 				TEST_ASSERT(std::string{cstringArray[i]} == string);
-				CppUtils::Log::Logger::logInformation(string, false);
+				logger << string;
 			}
-			CppUtils::Log::Logger::logInformation("");
+			logger << '\n';
 		});
 
 		addTest("trimString", [] {
@@ -36,14 +37,15 @@ namespace CppUtils::UnitTests::String
 			const auto leftTrimString = CppUtils::String::leftTrimString(string);
 			const auto rightTrimString = CppUtils::String::rightTrimString(string);
 			const auto trimString = CppUtils::String::trimString(string);
-			
-			CppUtils::Log::Logger::logInformation('[' + std::string{leftTrimString} + ']');
+			auto logger = CppUtils::Log::Logger{std::cout};
+
+			logger << '[' + std::string{leftTrimString} + "]\n";
 			TEST_ASSERT(leftTrimString == "Hello World!\n \t ");
 
-			CppUtils::Log::Logger::logInformation('[' + std::string{rightTrimString} + ']');
+			logger << '[' + std::string{rightTrimString} + "]\n";
 			TEST_ASSERT(rightTrimString == "\n \t Hello World!");
 
-			CppUtils::Log::Logger::logInformation('[' + std::string{trimString} + ']');
+			logger << '[' + std::string{trimString} + "]\n";
 			TEST_ASSERT(trimString == "Hello World!");
 		});
 
@@ -51,7 +53,7 @@ namespace CppUtils::UnitTests::String
 			auto output = ""s;
 			for (char c = 0; c >= 0; ++c)
 				output += CppUtils::String::getPrintableChar(c) + ' ';
-			CppUtils::Log::Logger::logInformation(output);
+			CppUtils::Log::Logger{std::cout} << output << '\n';
 		});
 	}
 }

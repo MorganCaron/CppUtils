@@ -14,27 +14,30 @@ namespace CppUtils::Log
 			m_chrono{}
 		{}
 
-		void start()
+		auto start() -> void
 		{
 			if (!m_enabled)
 				return;
 			m_chrono.start();
 		}
 
-		void stop()
+		auto stop() -> void
 		{
 			if (!m_enabled)
 				return;
 			m_chrono.stop();
-			Logger::logDebug(m_name + " duration: " + CppUtils::Chrono::durationToString(m_chrono.getDuration()));
+			auto logger = Logger{std::cout};
+			logger
+				<< Terminal::TextColor::TextColorEnum::Magenta
+				<< m_name + " duration: " + CppUtils::Chrono::durationToString(m_chrono.getDuration()) << '\n';
 		}
 
-		void enable() noexcept
+		auto enable() noexcept -> void
 		{
 			m_enabled = true;
 		}
 
-		void disable() noexcept
+		auto disable() noexcept -> void
 		{
 			m_enabled = false;
 		}

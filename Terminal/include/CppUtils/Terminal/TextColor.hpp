@@ -24,18 +24,21 @@ namespace CppUtils::Terminal::TextColor
 #if defined(OS_WINDOWS)
 	namespace Attribute
 	{
-		[[maybe_unused]] static constexpr uint8_t Black = 0;
-		[[maybe_unused]] static constexpr uint8_t Red = FOREGROUND_RED;
-		[[maybe_unused]] static constexpr uint8_t Green = FOREGROUND_GREEN;
-		[[maybe_unused]] static constexpr uint8_t Yellow = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-		[[maybe_unused]] static constexpr uint8_t Blue = FOREGROUND_BLUE;
-		[[maybe_unused]] static constexpr uint8_t Magenta = 13;
-		[[maybe_unused]] static constexpr uint8_t Cyan = 11;
-		[[maybe_unused]] static constexpr uint8_t White = 15;
-		[[maybe_unused]] static constexpr uint8_t Default = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+		namespace
+		{
+			[[maybe_unused]] constexpr uint8_t Black = 0;
+			[[maybe_unused]] constexpr uint8_t Red = FOREGROUND_RED;
+			[[maybe_unused]] constexpr uint8_t Green = FOREGROUND_GREEN;
+			[[maybe_unused]] constexpr uint8_t Yellow = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+			[[maybe_unused]] constexpr uint8_t Blue = FOREGROUND_BLUE;
+			[[maybe_unused]] constexpr uint8_t Magenta = 13;
+			[[maybe_unused]] constexpr uint8_t Cyan = 11;
+			[[maybe_unused]] constexpr uint8_t White = 15;
+			[[maybe_unused]] constexpr uint8_t Default = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+		}
 	}
 
-	[[nodiscard]] inline uint8_t getTextColorCode(TextColorEnum textColor)
+	[[nodiscard]] inline constexpr uint8_t getTextColorCode(TextColorEnum textColor)
 	{
 		switch (textColor)
 		{
@@ -64,18 +67,21 @@ namespace CppUtils::Terminal::TextColor
 #elif defined(OS_LINUX) || defined(OS_MACOS)
 	namespace ANSIEscapeCode
 	{
-		[[maybe_unused]] static constexpr auto Black = "\x1B[30m"sv;
-		[[maybe_unused]] static constexpr auto Red = "\x1B[31m"sv;
-		[[maybe_unused]] static constexpr auto Green = "\x1B[32m"sv;
-		[[maybe_unused]] static constexpr auto Yellow = "\x1B[33m"sv;
-		[[maybe_unused]] static constexpr auto Blue = "\x1B[34m"sv;
-		[[maybe_unused]] static constexpr auto Magenta = "\x1B[35m"sv;
-		[[maybe_unused]] static constexpr auto Cyan = "\x1B[36m"sv;
-		[[maybe_unused]] static constexpr auto White = "\x1B[37m"sv;
-		[[maybe_unused]] static constexpr auto Default = "\x1B[39m"sv;
+		namespace
+		{
+			[[maybe_unused]] constexpr auto Black = "\x1B[30m"sv;
+			[[maybe_unused]] constexpr auto Red = "\x1B[31m"sv;
+			[[maybe_unused]] constexpr auto Green = "\x1B[32m"sv;
+			[[maybe_unused]] constexpr auto Yellow = "\x1B[33m"sv;
+			[[maybe_unused]] constexpr auto Blue = "\x1B[34m"sv;
+			[[maybe_unused]] constexpr auto Magenta = "\x1B[35m"sv;
+			[[maybe_unused]] constexpr auto Cyan = "\x1B[36m"sv;
+			[[maybe_unused]] constexpr auto White = "\x1B[37m"sv;
+			[[maybe_unused]] constexpr auto Default = "\x1B[39m"sv;
+		}
 	}
 
-	[[nodiscard]] inline std::string_view getTextColorCode(TextColorEnum textColor)
+	[[nodiscard]] inline constexpr std::string_view getTextColorCode(TextColorEnum textColor)
 	{
 		switch (textColor)
 		{

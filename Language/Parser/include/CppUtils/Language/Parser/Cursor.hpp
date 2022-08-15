@@ -38,15 +38,15 @@ namespace CppUtils::Language::Parser
 	template<class CharT>
 	Cursor(std::basic_string_view<CharT>, std::size_t pos = 0) -> Cursor<CharT>;
 
-	template<std::integral Char>
-	[[nodiscard]] std::size_t getLineNumber(const Cursor<Char>& cursor)
+	template<String::Concept::Char CharT>
+	[[nodiscard]] auto getLineNumber(const Cursor<CharT>& cursor) -> std::size_t
 	{
 		const auto subSpan = cursor.data.subspan(0, cursor.pos);
 		return std::count(std::cbegin(subSpan), std::cend(subSpan), '\n') + 1;
 	}
 
-	template<std::integral Char>
-	[[nodiscard]] std::size_t getPositionInTheLine(const Cursor<Char>& cursor) noexcept
+	template<String::Concept::Char CharT>
+	[[nodiscard]] auto getPositionInTheLine(const Cursor<CharT>& cursor) noexcept -> std::size_t
 	{
 		auto pos = std::size(cursor.data);
 		while (pos > 0 && cursor.data[pos] != '\n')
@@ -57,8 +57,8 @@ namespace CppUtils::Language::Parser
 	template<class Element>
 	[[nodiscard]] auto getPositionInformation(const CppUtils::Language::Parser::Cursor<Element>& cursor) -> std::string
 	{
-		if constexpr (std::integral<Element>)
-			return "\nAt line " + std::to_string(getLineNumber(cursor)) +
+		if constexpr (String::Concept::Char<Element>)
+			return "At line " + std::to_string(getLineNumber(cursor)) +
 				", position " + std::to_string(getPositionInTheLine(cursor));
 		else
 			return "\nAt position " + std::to_string(cursor.pos);

@@ -52,30 +52,34 @@ namespace CppUtils::Graph::Tree
 
 	template<class T>
 	requires Type::Concept::Printable<T> // Fonctionne sur GCC mais pas sur Clang https://godbolt.org/z/75cja8
-	void log(const Node<T>& node, const std::string& prefix = "") noexcept
+	auto log(const Node<T>& node, const std::string& prefix = "") noexcept -> void
 	{
 		using namespace Hash::Literals;
-		auto os = std::ostringstream{};
-		os << node.value;
-		Log::Logger::logInformation(os.str());
+		auto logger = Log::Logger{std::cout};
+		logger
+			<< node.value << '\n';
 		const auto nbNodes = node.nodes.size();
 		for (auto i = 0u; i < nbNodes; ++i)
 		{
-			Log::Logger::log("Information"_token, prefix + ((i != nbNodes - 1) ? "├" : "└") + "─ ", Terminal::TextColor::TextColorEnum::Blue, false);
+			logger
+				<< Terminal::TextColor::TextColorEnum::Blue
+				<< prefix + ((i != nbNodes - 1) ? "├" : "└") + "─ ";
 			log(node.nodes.at(i), prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
 		}
 	}
 
-	void log(const Node<Hash::Token>& node, const Hash::TokenNames& tokenNames, const std::string& prefix = "") noexcept
+	auto log(const Node<Hash::Token>& node, const Hash::TokenNames& tokenNames, const std::string& prefix = "") noexcept -> void
 	{
 		using namespace Hash::Literals;
-		auto os = std::ostringstream{};
-		os << Hash::getTokenNameOrValue(node.value, tokenNames);
-		Log::Logger::logInformation(os.str());
+		auto logger = Log::Logger{std::cout};
+		logger
+			<< Hash::getTokenNameOrValue(node.value, tokenNames) << '\n';
 		const auto nbNodes = node.nodes.size();
 		for (auto i = 0u; i < nbNodes; ++i)
 		{
-			Log::Logger::log("Information"_token, prefix + ((i != nbNodes - 1) ? "├" : "└") + "─ ", Terminal::TextColor::TextColorEnum::Blue, false);
+			logger
+				<< Terminal::TextColor::TextColorEnum::Blue
+				<< prefix + ((i != nbNodes - 1) ? "├" : "└") + "─ ";
 			log(node.nodes.at(i), tokenNames, prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
 		}
 	}
