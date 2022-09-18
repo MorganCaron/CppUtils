@@ -30,9 +30,11 @@ namespace CppUtils::UnitTest
 
 			auto logger = Log::Logger{std::cout};
 			if (settings.verbose)
+			{
 				logger
 					<< Terminal::TextColor::TextColorEnum::Blue
-					<< std::string(settings.terminalSize.width, '-') + '\n' + std::data(getName()) + ":\n";
+					<< Log::getSeparatorLine() << '\n' << getName() << ":\n";
+			}
 			try
 			{
 				try
@@ -60,7 +62,7 @@ namespace CppUtils::UnitTest
 				auto logger = Log::Logger{std::cout};
 				logger
 					<< Terminal::TextColor::TextColorEnum::Green
-					<< std::string{getName()} + " passed\n";
+					<< getName() << " passed\n";
 			}
 			return true;
 		}

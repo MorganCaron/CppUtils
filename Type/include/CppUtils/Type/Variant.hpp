@@ -19,7 +19,7 @@ namespace CppUtils::Type::Variant::Operators
 	template<class LhsType, class... RhsTypes>
 	auto operator==(const LhsType& lhs, const std::variant<RhsTypes...>& rhs) -> bool
 	{
-		if constexpr(!Concept::Present<LhsType, RhsTypes...>)
+		if constexpr (!Concept::Present<LhsType, RhsTypes...>)
 			return false;
 		else if (!std::holds_alternative<LhsType>(rhs))
 			return false;
@@ -32,7 +32,7 @@ namespace CppUtils::Type::Variant::Operators
 	auto operator==(const std::variant<LhsTypes...>& lhs, const std::variant<RhsTypes...>& rhs) -> bool
 	{
 		return std::visit([&rhs](auto&& lhsValue) -> bool {
-			if constexpr(!Concept::Present<decltype(lhsValue), RhsTypes...>)
+			if constexpr (!Concept::Present<decltype(lhsValue), RhsTypes...>)
 				return lhsValue == rhs;
 			else
 				return false;

@@ -84,8 +84,8 @@ namespace CppUtils::UnitTest
 					}
 				}
 				logger
-					<< Terminal::TextColor::TextColorEnum::Default
-					<< std::string(settings.terminalSize.width, '-') + "\nTest results\n";
+					<< Terminal::TextColor::TextColorEnum::Blue
+					<< Log::getSeparatorLine() << "\nTest results\n";
 				if (nbFail == 0)
 				{
 					logger
@@ -99,14 +99,14 @@ namespace CppUtils::UnitTest
 				if (nbSuccess > 0)
 					logger
 						<< Terminal::TextColor::TextColorEnum::Green
-						<< "- " + std::to_string(nbSuccess) + " successful tests\n";
+						<< "- " << nbSuccess << " successful tests\n";
 				else
 					logger
 						<< Terminal::TextColor::TextColorEnum::Red
 						<< "- 0 successful tests\n";
 				logger
 					<< Terminal::TextColor::TextColorEnum::Red
-					<< "- " + std::to_string(nbFail) + " failed tests\n";
+					<< "- " << nbFail << " failed tests\n";
 			}
 			
 			return EXIT_FAILURE;

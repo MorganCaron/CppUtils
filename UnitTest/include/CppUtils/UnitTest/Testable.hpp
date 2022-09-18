@@ -15,7 +15,7 @@
 			tests(); \
 			CppUtils::UnitTest::TestRunner::instance().addTests(std::move(m_tests)); \
 		} \
-		void tests() override final; \
+		void tests() final; \
 	}; \
 	namespace { auto testGroup = TestGroup{}; } \
 	void TestGroup::tests()

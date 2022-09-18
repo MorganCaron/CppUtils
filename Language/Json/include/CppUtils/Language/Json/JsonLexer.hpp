@@ -28,7 +28,7 @@ namespace CppUtils::Language::Json
 
 	[[nodiscard]] inline auto parse(std::string_view src) -> Parser::Ast
 	{
-		static auto grammarManager = Lexer::GrammarManager{};
+		static auto grammarManager = Lexer::Grammar::GrammarManager{};
 		grammarManager.addGrammar("jsonGrammar"sv, jsonGrammar);
 		return grammarManager.parseLanguage(src, "jsonGrammar"sv);
 	}

@@ -3,6 +3,7 @@ target("CppUtils-Log")
 	add_deps(
 		"CppUtils-External",
 		"CppUtils-Type",
+		"CppUtils-String",
 		"CppUtils-Terminal"
 	)
 	set_policy("build.merge_archive", true)

@@ -48,7 +48,7 @@ namespace CppUtils::Language::Markdown
 	
 	[[nodiscard]] auto parse(std::string_view src) -> Parser::Ast
 	{
-		static auto grammarManager = Lexer::GrammarManager{};
+		static auto grammarManager = Lexer::Grammar::GrammarManager{};
 		grammarManager.addGrammar("markdownGrammar"sv, markdownGrammar);
 		return grammarManager.parseLanguage(src, "markdownGrammar"sv);
 	}

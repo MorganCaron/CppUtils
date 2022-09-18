@@ -16,9 +16,9 @@ namespace CppUtils::UnitTests::String
 			TEST_ASSERT(string == "A, B, C");
 		});
 
-		addTest("cstringArrayToVectorOfStrings", [] {
+		addTest("cStringArrayToVectorOfStrings", [] {
 			const char* cstringArray[] = {"A", "B", "C"};
-			const auto strings = CppUtils::String::cstringArrayToVectorOfStrings<std::string_view>(cstringArray, 3);
+			const auto strings = CppUtils::String::cStringArrayToVectorOfStrings<std::string_view>(cstringArray, 3);
 
 			TEST_ASSERT(strings.size() == 3);
 
@@ -39,13 +39,13 @@ namespace CppUtils::UnitTests::String
 			const auto trimString = CppUtils::String::trimString(string);
 			auto logger = CppUtils::Log::Logger{std::cout};
 
-			logger << '[' + std::string{leftTrimString} + "]\n";
+			logger << '"' << leftTrimString << "\"\n";
 			TEST_ASSERT(leftTrimString == "Hello World!\n \t ");
 
-			logger << '[' + std::string{rightTrimString} + "]\n";
+			logger << '"' << rightTrimString << "\"\n";
 			TEST_ASSERT(rightTrimString == "\n \t Hello World!");
 
-			logger << '[' + std::string{trimString} + "]\n";
+			logger << '"' << trimString << "\"\n";
 			TEST_ASSERT(trimString == "Hello World!");
 		});
 

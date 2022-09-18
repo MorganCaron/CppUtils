@@ -30,7 +30,7 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 			{
 				auto sharedFruit = std::shared_ptr<Node>{aFruit};
 				CppUtils::Log::Logger{std::cout}
-					<< sharedFruit->value + " is a " + std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value << '\n';
+					<< sharedFruit->value << " is a " << std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value << '\n';
 			}
 		});
 
@@ -63,7 +63,7 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 			{
 				auto sharedFruit = std::shared_ptr<Node>{aFruit};
 				CppUtils::Log::Logger{std::cout}
-					<< sharedFruit->value + " is a " + std::shared_ptr<Node>{sharedFruit->get("Colors")[0]}->value + " " + std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value + '\n';
+					<< sharedFruit->value << " is a " << std::shared_ptr<Node>{sharedFruit->get("Colors")[0]}->value << " " << std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value << '\n';
 			}
 		});
 	}

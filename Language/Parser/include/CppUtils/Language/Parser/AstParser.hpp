@@ -48,8 +48,8 @@ namespace CppUtils::Language::Parser
 					if (cursor.isEnd())
 						throw std::logic_error{"Missing character after '\\'"};
 					value = cursor.read();
-					if (String::escapedChars.contains(value))
-						value = String::escapedChars.at(value);
+					if (auto it = String::escapedChars.find(value); it != std::cend(String::escapedChars))
+						value = it->second;
 					[[fallthrough]];
 				}
 				default:
@@ -60,7 +60,7 @@ namespace CppUtils::Language::Parser
 	}
 
 	template<class CharT>
-	[[nodiscard]] inline Ast parseAst(std::basic_string_view<CharT> src)
+	[[nodiscard]] Ast parseAst(std::basic_string_view<CharT> src)
 	{
 		auto ast = Ast{};
 		auto context = Context<CharT>{

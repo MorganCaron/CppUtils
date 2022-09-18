@@ -3,6 +3,8 @@
 #include <iostream>
 #include <exception>
 
+#include <CppUtils/String/Concept.hpp>
+#include <CppUtils/Terminal/Terminal.hpp>
 #include <CppUtils/Terminal/TextModifier.hpp>
 
 namespace CppUtils::Log
@@ -48,6 +50,16 @@ namespace CppUtils::Log
 		Terminal::TextColor::TextColorEnum m_textColor;
 		Terminal::BackgroundColor::BackgroundColorEnum m_backgroundColor;
 	};
+
+	template<String::Concept::Char CharT = char>
+	constexpr auto getSeparatorLine() -> std::basic_string<CharT>
+	{
+		auto line = std::basic_string<CharT>{};
+		auto terminalWidth = Terminal::getTerminalSize().width;
+		for (auto i = std::size_t{0}; i < terminalWidth; ++i)
+			line += "─";
+		return line;
+	}
 
 	auto logException(const std::exception& exception, std::ostream& outputStream = std::ref(std::cerr), std::size_t depth = 0) -> void
 	{

@@ -29,7 +29,7 @@ namespace CppUtils::Log
 			auto logger = Logger{std::cout};
 			logger
 				<< Terminal::TextColor::TextColorEnum::Magenta
-				<< m_name + " duration: " + CppUtils::Chrono::durationToString(m_chrono.getDuration()) << '\n';
+				<< m_name << " duration: " << CppUtils::Chrono::durationToString(m_chrono.getDuration()) << '\n';
 		}
 
 		auto enable() noexcept -> void

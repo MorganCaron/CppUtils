@@ -22,6 +22,15 @@ namespace CppUtils::String
 		{ 'v', '\v' }
 	};
 
+	template<Concept::Char CharT>
+	[[nodiscard]] auto reverseEscapedChar(CharT c) noexcept -> std::basic_string<CharT>
+	{
+		for (const auto& [readableChar, escapedChar] : String::escapedChars)
+			if (escapedChar == c)
+				return std::basic_string<CharT>{"\\"} + readableChar;
+		return std::basic_string<CharT>{c};
+	}
+
 	[[nodiscard]] inline auto concatenateStringsWithDelimiter(const std::vector<std::string>& strings, std::string_view delimiter) -> std::string
 	{
 		return std::accumulate(strings.cbegin(), strings.cend(), std::string{},
@@ -39,7 +48,7 @@ namespace CppUtils::String
 	}
 
 	template<Concept::Text Text>
-	[[nodiscard]] auto cstringArrayToVectorOfStrings(const char** cstringArray, std::size_t length) -> std::vector<Text>
+	[[nodiscard]] auto cStringArrayToVectorOfStrings(const char** cstringArray, std::size_t length) -> std::vector<Text>
 	{
 		if (length == 0)
 			return {};

@@ -5,6 +5,8 @@
 #include <concepts>
 #include <string_view>
 
+#include <CppUtils/String/Concept.hpp>
+
 namespace CppUtils::Language::Parser
 {
 	template<typename Element = char>

@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string_view>
 
-#include <CppUtils/String/Concept.hpp>
+#include <CppUtils/String/String.hpp>
 
 namespace CppUtils::Hash
 {
@@ -29,16 +29,21 @@ namespace CppUtils::Hash
 
 	[[nodiscard]] inline auto getTokenNameOrValue(Token token, const TokenNames& tokenNames) -> std::string
 	{
+		using namespace std::literals;
 		if (tokenNames.contains(token))
 			return tokenNames.at(token);
-		else if (token <= WCHAR_MAX && std::isprint(static_cast<char>(token)))
-			return std::string(1, static_cast<char>(token));
-		else
+		else if (token <= WCHAR_MAX)
 		{
-			auto os = std::ostringstream{};
-			os << "0x" << std::hex << token;
-			return os.str();
+			auto c = static_cast<char>(token);
+			if (std::isprint(static_cast<char>(token)))
+				return std::string{"'"s + c + '\''};
+			for (const auto& [readableChar, escapedChar] : String::escapedChars)
+				if (escapedChar == c)
+					return "'\\"s + readableChar + '\'';
 		}
+		auto os = std::ostringstream{};
+		os << "0x" << std::hex << token;
+		return os.str();
 	}
 
 	class TokenException: public std::runtime_error

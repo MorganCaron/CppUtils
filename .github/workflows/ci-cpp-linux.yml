@@ -25,9 +25,9 @@ jobs:
         - {
           cc: "clang",
           cxx: "clang++",
-          install: "sudo wget https://apt.llvm.org/llvm.sh && sudo chmod +x llvm.sh && sudo ./llvm.sh 13 ''",
-          alternative-cc: "sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-13 13",
-          alternative-cxx: "sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-13 13"
+          install: "sudo wget https://apt.llvm.org/llvm.sh && sudo chmod +x llvm.sh && sudo ./llvm.sh 16 ''",
+          alternative-cc: "sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-16 16",
+          alternative-cxx: "sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-16 16"
         }
         library-type: [static, shared]
     steps:

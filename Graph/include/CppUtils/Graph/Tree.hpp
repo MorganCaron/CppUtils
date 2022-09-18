@@ -63,7 +63,7 @@ namespace CppUtils::Graph::Tree
 		{
 			logger
 				<< Terminal::TextColor::TextColorEnum::Blue
-				<< prefix + ((i != nbNodes - 1) ? "├" : "└") + "─ ";
+				<< prefix << ((i != nbNodes - 1) ? "├" : "└") << "─ ";
 			log(node.nodes.at(i), prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
 		}
 	}
@@ -79,7 +79,7 @@ namespace CppUtils::Graph::Tree
 		{
 			logger
 				<< Terminal::TextColor::TextColorEnum::Blue
-				<< prefix + ((i != nbNodes - 1) ? "├" : "└") + "─ ";
+				<< prefix << ((i != nbNodes - 1) ? "├" : "└") << "─ ";
 			log(node.nodes.at(i), tokenNames, prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
 		}
 	}

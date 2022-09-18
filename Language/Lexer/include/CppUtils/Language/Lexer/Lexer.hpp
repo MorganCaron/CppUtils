@@ -10,9 +10,23 @@ namespace CppUtils::Language::Lexer
 	bool parseLexeme(Context<Element>& context);
 
 	template<class Element>
+	bool parseLexemes(Context<Element>& context)
+	{
+		for (const auto& node : context.lexeme.get().nodes)
+		{
+			context.lexeme = node;
+			if (!parseLexeme(context))
+				return false;
+		}
+		return true;
+	}
+
+	template<class Element>
 	[[nodiscard]] constexpr bool parseDeclaration(Context<Element>& context)
 	{
 		auto& [parserContext, declaration, grammar] = context;
+		auto& [cursor, parentNode, ast] = parserContext;
+		auto newParentNode = parentNode.get();
 		auto commaPosition = std::size_t{0};
 		const auto& lexemes = declaration.get().nodes;
 		auto nbLexemes = std::size(lexemes);
@@ -25,6 +39,7 @@ namespace CppUtils::Language::Lexer
 			{
 				if (commaPosition != 0)
 					throw std::logic_error{"Unknown element"};
+				parentNode.get() = newParentNode;
 				return false;
 			}
 		}
@@ -83,26 +98,18 @@ namespace CppUtils::Language::Lexer
 				if (cursor.pos + size > std::size(cursor.data))
 					return false;
 				for (auto i = 0u; i < size; ++i)
-					if (lexeme.get().nodes[i].value == '\\')
-					{
-						if (i + 1 == size)
-							throw std::logic_error{"Missing character after '\\'"};
-						auto c = static_cast<Element>(lexeme.get().nodes[i + 1].value);
-						if (!cursor.is(c))
-							return false;
-						++cursor.pos;
-						++i;
-					}
-					else if (cursor.is(static_cast<Element>(lexeme.get().nodes[i].value)))
+				{
+					if (auto c = lexeme.get().nodes[i].value; cursor.is(static_cast<Element>(c)))
 						++cursor.pos;
 					else
 						return false;
+				}
 				return true;
 			}
 			case "read"_token:
 			{
 				if (cursor.pos == std::size(cursor.data))
-					throw std::logic_error{"Can't read character, the cursor has reached the end of the string"};
+					return false;
 				parentNode.get().nodes.push_back(Parser::AstNode{static_cast<std::uintptr_t>(cursor.current())});
 				return true;
 			}
@@ -144,9 +151,21 @@ namespace CppUtils::Language::Lexer
 				auto string = ""s;
 				for (const auto& node: tempParentNode.nodes)
 					string += static_cast<char>(node.value);
-				parentNode.get().nodes.push_back(Parser::AstNode{Hash::hash(string)});
+				auto token = Hash::hash(string);
+				ast.tokenNames.get()[token] = std::move(string);
+				parentNode.get().nodes.push_back(Parser::AstNode{token});
 				cursor.pos = newContext.parserContext.cursor.pos;
 				return true;
+			}
+			case "sub"_token:
+			{
+				if (lexeme.get().nodes.empty())
+					throw std::logic_error{"Missing element in 'sub' token"};
+				auto oldParentNode = parentNode;
+				parentNode = parentNode.get().nodes[std::size(parentNode.get().nodes) - 1];
+				auto result = parseLexemes(context);
+				parentNode = oldParentNode;
+				return result;
 			}
 			case ">="_token: return cursor[cursor.pos] >= static_cast<char>(lexeme.get().nodes[0].value);
 			case "<="_token: return cursor[cursor.pos] <= static_cast<char>(lexeme.get().nodes[0].value);
@@ -167,18 +186,19 @@ namespace CppUtils::Language::Lexer
 				cursor.pos = startPos;
 				return !result;
 			}
-			default:
-				throw std::logic_error{"Unknown node " + Hash::getTokenNameOrValue(lexeme.get().value, grammar.get().tokenNames)};
+			case "()"_token:
+				return parseLexemes(context);
 		}
-		throw std::logic_error{"Unknown lexeme"};
+		throw std::logic_error{"Unknown lexeme " + Hash::getTokenNameOrValue(lexeme.get().value, grammar.get().tokenNames)};
 		return false;
 	}
 
-	[[nodiscard]] inline Parser::Ast parse(std::string_view src, const Parser::Ast& grammar)
+	template<class CharT>
+	[[nodiscard]] Parser::Ast parse(std::basic_string_view<CharT> src, const Parser::Ast& grammar)
 	{
 		if (grammar.root.nodes.empty())
 			throw std::logic_error{"Empty grammar"};
-		auto ast = Parser::Ast{};
+		auto ast = Parser::Ast{grammar.tokenNames};
 		auto declarationIt = std::find_if(grammar.root.nodes.cbegin(), grammar.root.nodes.cend(), [](const auto& declaration) -> bool {
 			using namespace Hash::Literals;
 			return declaration.value == "main"_token;
@@ -186,8 +206,8 @@ namespace CppUtils::Language::Lexer
 		if (declarationIt == grammar.root.nodes.cend())
 			throw std::logic_error{"Entry point \"main\" not found"};
 		auto mainLexeme = *declarationIt;
-		auto context = Context<char>{
-			.parserContext = Parser::Context<char>{
+		auto context = Context<CharT>{
+			.parserContext = Parser::Context<CharT>{
 				.cursor = Parser::Cursor{src},
 				.parentNode = ast.root,
 				.ast = Parser::ReadableAstNode{ast}
@@ -203,7 +223,7 @@ namespace CppUtils::Language::Lexer
 		catch (const std::exception& exception)
 		{
 			const auto& cursor = context.parserContext.cursor;
-			std::throw_with_nested(std::runtime_error{getPositionInformation(cursor) + ": '" + cursor.current() + '\''});
+			std::throw_with_nested(std::runtime_error{getPositionInformation(cursor) + ": '" + String::reverseEscapedChar(cursor.current()) + '\''});
 		}
 		return ast;
 	}

@@ -38,6 +38,7 @@ package("CppUtils")
 		add_syslinks("pthread", "dl")
 	end
 
+	includes("Stl")
 	includes("Platform")
 	includes("Random")
 	includes("Memory")
@@ -61,6 +62,7 @@ package("CppUtils")
 	target("CppUtils")
 		set_kind("$(kind)")
 		add_deps(
+			"CppUtils-Stl",
 			"CppUtils-Platform",
 			"CppUtils-Random",
 			"CppUtils-Memory",
