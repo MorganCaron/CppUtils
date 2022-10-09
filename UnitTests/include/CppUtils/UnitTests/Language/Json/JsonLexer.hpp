@@ -10,7 +10,13 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 		using namespace CppUtils::Hash::Literals;
 		using namespace CppUtils::Language::Json::Literals;
 
-		addTest("minimalist", [] {
+		addTest("empty json", [] {
+			const auto jsonAst = "{}"_json;
+			jsonAst.log();
+
+			TEST_ASSERT(std::size(jsonAst.root.nodes) == 0);
+		});
+
 			const auto jsonAst = R"(
 			{
 				"null": null,

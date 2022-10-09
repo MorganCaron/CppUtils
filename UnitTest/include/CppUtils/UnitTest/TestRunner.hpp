@@ -29,7 +29,7 @@ namespace CppUtils::UnitTest
 
 		void addTests(std::vector<Test> tests)
 		{
-			std::move(tests.begin(), tests.end(), std::back_inserter(m_tests));
+			std::move(std::begin(tests), std::end(tests), std::back_inserter(m_tests));
 		}
 
 		int executeTests(TestSettings settings)
@@ -39,11 +39,11 @@ namespace CppUtils::UnitTest
 			{
 				auto allTests = std::move(m_tests);
 				m_tests = allTests;
-				m_tests.erase(std::remove_if(m_tests.begin(), m_tests.end(),
+				m_tests.erase(std::remove_if(std::begin(m_tests), std::end(m_tests),
 					[&settings](const Test& test) -> bool {
 						return test.getName().substr(0, settings.filter.size()) != settings.filter;
 					}
-				), m_tests.end());
+				), std::end(m_tests));
 				auto newSettings = settings;
 				newSettings.filter = "";
 				const auto result = executeTests(newSettings);
@@ -63,7 +63,7 @@ namespace CppUtils::UnitTest
 			{
 				logger
 					<< Terminal::TextColor::TextColorEnum::Default
-					<< std::to_string(m_tests.size()) + " tests found. Execution:\n";
+					<< std::to_string(std::size(m_tests)) + " tests found. Execution:\n";
 				auto nbSuccess = std::size_t{0};
 				auto nbFail = std::size_t{0};
 				for (const auto& test : m_tests)

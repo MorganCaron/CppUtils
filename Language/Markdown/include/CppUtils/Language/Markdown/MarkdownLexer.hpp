@@ -1,12 +1,12 @@
 #pragma once
 
-#include <CppUtils/Language/Lexer/GrammarManager.hpp>
+#include <CppUtils/Language/Lexer/Grammar.hpp>
 
 namespace CppUtils::Language::Markdown
 {
 	using namespace std::literals;
 
-	constexpr auto markdownGrammar = R"(
+	constexpr auto markdownGrammarSrc = R"(
 		main: _content spaceParser;
 		content: _content;
 		!_content: (_element >= 0);
@@ -48,9 +48,10 @@ namespace CppUtils::Language::Markdown
 	
 	[[nodiscard]] auto parse(std::string_view src) -> Parser::Ast
 	{
-		static auto grammarManager = Lexer::Grammar::GrammarManager{};
-		grammarManager.addGrammar("markdownGrammar"sv, markdownGrammar);
-		return grammarManager.parseLanguage(src, "markdownGrammar"sv);
+		const auto lowLevelGrammarAst = Parser::parseAst(Lexer::Grammar::lowLevelGrammarSrc);
+		const auto highLevelGrammarAst = Lexer::parse(Lexer::Grammar::highLevelGrammarSrc, lowLevelGrammarAst);
+		const auto markdownGrammarAst = Lexer::parse(markdownGrammarSrc, highLevelGrammarAst);
+		return Lexer::parse(src, markdownGrammarAst);
 	}
 
 	namespace Literals

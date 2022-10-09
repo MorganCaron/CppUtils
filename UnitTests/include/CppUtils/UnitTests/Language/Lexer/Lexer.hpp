@@ -126,7 +126,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 
 		addTest("parenthesis", [] {
 			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
-				main_{ ()_{ string_{A} string_{B} } read_+ }
+				main_{ parenthesis_{ string_{A} string_{B} } read_+ }
 			)"sv);
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammar);

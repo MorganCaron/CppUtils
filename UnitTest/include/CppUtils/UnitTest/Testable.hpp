@@ -17,7 +17,7 @@
 		} \
 		void tests() final; \
 	}; \
-	namespace { auto testGroup = TestGroup{}; } \
+	inline auto testGroup = TestGroup{}; \
 	void TestGroup::tests()
 
 namespace CppUtils::UnitTest

@@ -11,7 +11,7 @@
 #include <CppUtils/UnitTests/Language/Parser/AstParser.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Lexer.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Grammar/LowLevelGrammar.hpp>
-#include <CppUtils/UnitTests/Language/Lexer/GrammarManager.hpp>
+#include <CppUtils/UnitTests/Language/Lexer/Grammar/HighLevelGrammar.hpp>
 #include <CppUtils/UnitTests/Language/ASM/Lexer.hpp>
 #include <CppUtils/UnitTests/Language/ASM/Compiler.hpp>
 #include <CppUtils/UnitTests/Language/ASM/VirtualMachine.hpp>

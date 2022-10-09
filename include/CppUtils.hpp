@@ -27,7 +27,6 @@
 #include <CppUtils/Language/Parser/Cursor.hpp>
 #include <CppUtils/Language/Lexer/Lexer.hpp>
 #include <CppUtils/Language/Lexer/Context.hpp>
-#include <CppUtils/Language/Lexer/GrammarManager.hpp>
 #include <CppUtils/Language/IR/Compiler/Bytecode.hpp>
 #include <CppUtils/Language/IR/Compiler/CompilationFunctions.hpp>
 #include <CppUtils/Language/IR/Compiler/Compiler.hpp>

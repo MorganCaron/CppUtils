@@ -167,8 +167,8 @@ namespace CppUtils::Language::Lexer
 				parentNode = oldParentNode;
 				return result;
 			}
-			case ">="_token: return cursor[cursor.pos] >= static_cast<char>(lexeme.get().nodes[0].value);
-			case "<="_token: return cursor[cursor.pos] <= static_cast<char>(lexeme.get().nodes[0].value);
+			case ">="_token: return cursor.pos < std::size(cursor.data) && cursor[cursor.pos] >= static_cast<char>(lexeme.get().nodes[0].value);
+			case "<="_token: return cursor.pos < std::size(cursor.data) && cursor[cursor.pos] <= static_cast<char>(lexeme.get().nodes[0].value);
 			case '+':
 			{
 				if (cursor.pos == std::size(cursor.data))
@@ -186,8 +186,10 @@ namespace CppUtils::Language::Lexer
 				cursor.pos = startPos;
 				return !result;
 			}
-			case "()"_token:
+			case "parenthesis"_token:
 				return parseLexemes(context);
+			case "end"_token:
+				return cursor.pos == std::size(cursor.data);
 		}
 		throw std::logic_error{"Unknown lexeme " + Hash::getTokenNameOrValue(lexeme.get().value, grammar.get().tokenNames)};
 		return false;

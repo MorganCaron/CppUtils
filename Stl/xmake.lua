@@ -1,9 +1,13 @@
 includes("chrono")
+includes("expected")
 includes("format")
+includes("print")
 
 target("CppUtils-Stl")
 	set_kind("headeronly")
 	add_deps(
 		"CppUtils-Stl-chrono",
-		"CppUtils-Stl-format"
+		"CppUtils-Stl-expected",
+		"CppUtils-Stl-format",
+		"CppUtils-Stl-print"
 	)

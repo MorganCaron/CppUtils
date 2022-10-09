@@ -1,10 +1,38 @@
 #pragma once
 
-#include <CppUtils/Language/Lexer/GrammarManager.hpp>
+#include <CppUtils/Language/Lexer/Grammar.hpp>
 
 namespace CppUtils::Language::Json
 {
 	using namespace std::literals;
+
+	constexpr auto jsonGrammarSrc = R"(
+		main: object ~spaces;
+		object: ~spaces '{' ~pairs ~spaces '}';
+		pairs: pair ~nextPair;
+		nextPair: ~spaces ',' pairs;
+		pair: ~spaces key ~spaces ':' value;
+		value: ~spaces or(string, number, object, array, boolean, null);
+
+		string: quote;
+		number: (digit >= 1) ~decimalPart;
+		decimalPart: '.' (digit >= 1);
+		array: '[' values ~spaces ']';
+		values: value ~nextValue;
+		nextValue: ~spaces ',' values;
+		boolean: or(true, false);
+		true: or('true', '1');
+		false: or('false', '0');
+
+		quote: or(quote1, quote2);
+		quote1: '\'' nonQuote1 '\'';
+		quote2: '"' nonQuote2 '"';
+		nonQuote1: !'\'' read+ ~nonQuote1;
+		nonQuote2: !'"' read+ ~nonQuote2;
+
+		spaces: space ~spaces;
+		space: or(' ', '\n', '\t', '\r');
+	)"sv;
 
 	constexpr auto jsonGrammar = R"(
 		main: _object spaceParser;
@@ -28,9 +56,10 @@ namespace CppUtils::Language::Json
 
 	[[nodiscard]] inline auto parse(std::string_view src) -> Parser::Ast
 	{
-		static auto grammarManager = Lexer::Grammar::GrammarManager{};
-		grammarManager.addGrammar("jsonGrammar"sv, jsonGrammar);
-		return grammarManager.parseLanguage(src, "jsonGrammar"sv);
+		const auto lowLevelGrammarAst = Parser::parseAst(Lexer::Grammar::lowLevelGrammarSrc);
+		const auto highLevelGrammarAst = Lexer::parse(Lexer::Grammar::highLevelGrammarSrc, lowLevelGrammarAst);
+		const auto jsonGrammarAst = Lexer::parse(jsonGrammarSrc, highLevelGrammarAst);
+		return Lexer::parse(src, jsonGrammarAst);
 	}
 
 	namespace Literals
