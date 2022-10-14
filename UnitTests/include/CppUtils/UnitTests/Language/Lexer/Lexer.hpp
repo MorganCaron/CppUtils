@@ -16,6 +16,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(""sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
 		});
 
@@ -26,6 +27,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
 		});
 
@@ -36,6 +38,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(" \n\t\r"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
 		});
 
@@ -46,6 +49,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
 			TEST_ASSERT(outputAst.root.nodes[0].value == 'c');
 		});
@@ -57,6 +61,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
 			TEST_ASSERT(outputAst.root.nodes[0].value == 'c');
 		});
@@ -69,6 +74,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
 		});
 
@@ -80,6 +86,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("Hello World!"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
 		});
 
@@ -92,6 +99,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAA"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 3);
 			TEST_ASSERT(outputAst.root.nodes[0].value == 'A');
 			TEST_ASSERT(outputAst.root.nodes[1].value == 'A');
@@ -107,6 +115,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAA"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 3);
 			TEST_ASSERT(outputAst.root.nodes[0].value == 'A');
 			TEST_ASSERT(outputAst.root.nodes[1].value == 'A');
@@ -120,6 +129,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("BC"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
 			TEST_ASSERT(outputAst.root.nodes[0].value == 'C');
 		});
@@ -131,6 +141,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
 			TEST_ASSERT(outputAst.root.nodes[0].value == 'C');
 		});
@@ -145,6 +156,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("C"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
 			TEST_ASSERT(outputAst.root.nodes[0].value == "maj"_token);
 		});
@@ -157,6 +169,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("variable"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
 			TEST_ASSERT(outputAst.root.nodes[0].value == "variable"_token);
 		});
@@ -170,6 +183,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(R"("Hello")"sv, grammar);
 			outputAst.log();
+
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 5);
 			TEST_ASSERT(outputAst.root.nodes[0].value == 'H');
 			TEST_ASSERT(outputAst.root.nodes[1].value == 'e');
@@ -186,6 +200,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammar);
 			outputAst.log();
+			
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 2);
 			auto aNode = outputAst.root.nodes[0];
 			TEST_ASSERT(aNode.value == 'A');

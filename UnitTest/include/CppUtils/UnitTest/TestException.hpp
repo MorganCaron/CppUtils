@@ -11,7 +11,7 @@ namespace CppUtils::UnitTest
 	class TestException: public std::runtime_error
 	{
 	public:
-		explicit TestException(std::string_view message, std::string filename, int line) noexcept:
+		explicit TestException(std::string_view message, std::string filename, std::size_t line) noexcept:
 			std::runtime_error{std::string{message} + "\nat line " + std::to_string(line) + " in " + filename},
 			m_filename{std::move(filename)},
 			m_line{line}
@@ -19,6 +19,6 @@ namespace CppUtils::UnitTest
 
 	protected:
 		std::string m_filename;
-		int m_line;
+		std::size_t m_line;
 	};
 }

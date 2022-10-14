@@ -77,7 +77,7 @@ namespace CppUtils::Language::Lexer
 		{
 			case "optional"_token:
 			{
-				if (lexeme.get().nodes.empty())
+				if (std::empty(lexeme.get().nodes))
 					throw std::logic_error{"Missing element in 'optional' token"};
 				context.lexeme = lexeme.get().nodes[0];
 				parseLexeme(context);
@@ -85,7 +85,7 @@ namespace CppUtils::Language::Lexer
 			}
 			case "token"_token:
 			{
-				if (lexeme.get().nodes.empty())
+				if (std::empty(lexeme.get().nodes))
 					throw std::logic_error{"Missing element in 'token' token"};
 				context.lexeme = lexeme.get().nodes[0];
 				return parseMultipleDeclaration(context);
@@ -102,7 +102,10 @@ namespace CppUtils::Language::Lexer
 					if (auto c = lexeme.get().nodes[i].value; cursor.is(static_cast<Element>(c)))
 						++cursor.pos;
 					else
+					{
+						cursor.pos = startPos;
 						return false;
+					}
 				}
 				return true;
 			}
@@ -115,10 +118,10 @@ namespace CppUtils::Language::Lexer
 			}
 			case "add"_token:
 			{
-				if (lexeme.get().nodes.empty())
+				if (std::empty(lexeme.get().nodes))
 					throw std::logic_error{"Missing element in 'add' token"};
 				const auto& nodeToAdd = lexeme.get().nodes[0];
-				if (nodeToAdd.value == "token"_token && !nodeToAdd.nodes.empty())
+				if (nodeToAdd.value == "token"_token && !std::empty(nodeToAdd.nodes))
 				{
 					auto tokenName = ""s;
 					for (const auto& charNode : nodeToAdd.nodes)
@@ -137,7 +140,6 @@ namespace CppUtils::Language::Lexer
 					if (parseLexeme(context))
 						return true;
 				}
-				cursor.pos = startPos;
 				return false;
 			}
 			case "hash"_token:
@@ -159,7 +161,7 @@ namespace CppUtils::Language::Lexer
 			}
 			case "sub"_token:
 			{
-				if (lexeme.get().nodes.empty())
+				if (std::empty(lexeme.get().nodes))
 					throw std::logic_error{"Missing element in 'sub' token"};
 				auto oldParentNode = parentNode;
 				parentNode = parentNode.get().nodes[std::size(parentNode.get().nodes) - 1];
@@ -178,18 +180,42 @@ namespace CppUtils::Language::Lexer
 			}
 			case "not"_token:
 			{
-				if (lexeme.get().nodes.empty())
+				if (std::empty(lexeme.get().nodes))
 					throw std::logic_error{"Missing element in 'not' token"};
 				auto newContext = context;
 				newContext.lexeme = lexeme.get().nodes[0];
 				auto result = parseLexeme(newContext);
-				cursor.pos = startPos;
 				return !result;
 			}
 			case "parenthesis"_token:
 				return parseLexemes(context);
 			case "end"_token:
 				return cursor.pos == std::size(cursor.data);
+			case "repeat"_token:
+			{
+				const auto nbLexemes = std::size(lexeme.get().nodes);
+				if (nbLexemes == 0)
+					throw std::logic_error{"Missing element in 'repeat' token"};
+				const auto& repeatedLexeme = lexeme.get().nodes[0];
+				const auto& separatorLexeme = lexeme.get().nodes[1];
+				context.lexeme = repeatedLexeme;
+				if (!parseLexeme(context))
+					return false;
+				if (nbLexemes == 1)
+				{
+					do
+						context.lexeme = repeatedLexeme;
+					while (parseLexeme(context));
+					return true;
+				}
+				while ((context.lexeme = separatorLexeme, parseLexeme(context)))
+				{
+					context.lexeme = repeatedLexeme;
+					if (!parseLexeme(context))
+						return false;
+				}
+				return true;
+			}
 		}
 		throw std::logic_error{"Unknown lexeme " + Hash::getTokenNameOrValue(lexeme.get().value, grammar.get().tokenNames)};
 		return false;
@@ -198,7 +224,7 @@ namespace CppUtils::Language::Lexer
 	template<class CharT>
 	[[nodiscard]] Parser::Ast parse(std::basic_string_view<CharT> src, const Parser::Ast& grammar)
 	{
-		if (grammar.root.nodes.empty())
+		if (std::empty(grammar.root.nodes))
 			throw std::logic_error{"Empty grammar"};
 		auto ast = Parser::Ast{grammar.tokenNames};
 		auto declarationIt = std::find_if(grammar.root.nodes.cbegin(), grammar.root.nodes.cend(), [](const auto& declaration) -> bool {
