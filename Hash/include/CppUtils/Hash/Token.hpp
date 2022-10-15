@@ -27,7 +27,7 @@ namespace CppUtils::Hash
 		return hash(std::basic_string_view<CharT>{string});
 	}
 
-	[[nodiscard]] inline auto getTokenNameOrValue(Token token, const TokenNames& tokenNames) -> std::string
+	[[nodiscard]] auto getTokenNameOrValue(Token token, const TokenNames& tokenNames) -> std::string
 	{
 		using namespace std::literals;
 		if (tokenNames.contains(token))
@@ -46,26 +46,9 @@ namespace CppUtils::Hash
 		return os.str();
 	}
 
-	class TokenException: public std::runtime_error
-	{
-	public:
-		TokenException(std::string message, Token token):
-			std::runtime_error{message},
-			m_token{token}
-		{}
-
-		[[nodiscard]] auto getToken() const noexcept -> Token
-		{
-			return m_token;
-		}
-
-	private:
-		Token m_token;
-	};
-
 	namespace Literals
 	{
-		[[nodiscard]] inline constexpr auto operator"" _token(const char* cString, std::size_t size) noexcept -> Token
+		[[nodiscard]] constexpr auto operator"" _token(const char* cString, std::size_t size) noexcept -> Token
 		{
 			return hash(std::string_view{cString, size});
 		}

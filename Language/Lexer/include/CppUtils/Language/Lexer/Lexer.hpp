@@ -126,7 +126,9 @@ namespace CppUtils::Language::Lexer
 					auto tokenName = ""s;
 					for (const auto& charNode : nodeToAdd.nodes)
 						tokenName += charNode.value;
-					parentNode.get().nodes.push_back(Parser::AstNode{Hash::hash(tokenName)});
+					auto token = Hash::hash(tokenName);
+					ast.tokenNames.get()[token] = std::move(tokenName);
+					parentNode.get().nodes.push_back(Parser::AstNode{token});
 				}
 				else
 					parentNode.get().nodes.push_back(nodeToAdd);

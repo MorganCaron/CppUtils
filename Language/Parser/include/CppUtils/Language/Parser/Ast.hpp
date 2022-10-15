@@ -7,6 +7,14 @@ namespace CppUtils::Language::Parser
 {
 	using AstNode = Graph::Tree::Node<Hash::Token>;
 
+	[[nodiscard]] auto getString(const AstNode& astNode) -> std::string
+	{
+		auto string = std::string{};
+		for (const auto& charNode : astNode.nodes)
+			string += charNode.value;
+		return string;
+	}
+
 	struct Ast final
 	{
 		AstNode root;

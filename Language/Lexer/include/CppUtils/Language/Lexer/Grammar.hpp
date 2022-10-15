@@ -162,4 +162,19 @@ namespace CppUtils::Language::Lexer::Grammar
 		spaces: repeat(space);
 		space: or(' ', '\n', '\t', '\r');
 	)"sv;
+
+	[[nodiscard]] auto parse(std::string_view src) -> Parser::Ast
+	{
+		const auto lowLevelGrammarAst = Parser::parseAst(lowLevelGrammarSrc);
+		const auto highLevelGrammarAst = Lexer::parse(highLevelGrammarSrc, lowLevelGrammarAst);
+		return Lexer::parse(src, highLevelGrammarAst);
+	}
+
+	namespace Literals
+	{
+		[[nodiscard]] auto operator"" _grammar(const char* cString, std::size_t) -> Parser::Ast
+		{
+			return parse(cString);
+		}
+	}
 }

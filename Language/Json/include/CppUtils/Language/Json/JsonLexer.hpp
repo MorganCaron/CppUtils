@@ -45,7 +45,7 @@ namespace CppUtils::Language::Json
 		space: or(' ', '\n', '\t', '\r');
 	)"sv;
 
-	[[nodiscard]] inline auto parse(std::string_view src) -> Parser::Ast
+	[[nodiscard]] auto parse(std::string_view src) -> Parser::Ast
 	{
 		const auto lowLevelGrammarAst = Parser::parseAst(Lexer::Grammar::lowLevelGrammarSrc);
 		const auto highLevelGrammarAst = Lexer::parse(Lexer::Grammar::highLevelGrammarSrc, lowLevelGrammarAst);
@@ -55,7 +55,7 @@ namespace CppUtils::Language::Json
 
 	namespace Literals
 	{
-		[[nodiscard]] inline auto operator"" _json(const char* cString, std::size_t) -> Parser::Ast
+		[[nodiscard]] auto operator"" _json(const char* cString, std::size_t) -> Parser::Ast
 		{
 			return parse(cString);
 		}

@@ -25,15 +25,11 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 		});
 
 		addTest("null", [] {
-			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			const auto highLevelGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Lexer::Grammar::highLevelGrammarSrc, lowLevelGrammarAst);
-			const auto jsonGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Json::jsonGrammarSrc, highLevelGrammarAst);
-			
-			const auto jsonAst = CppUtils::Language::Lexer::parse(R"(
+			const auto jsonAst = R"(
 				{
 					"null": null
 				}
-			)"sv, jsonGrammarAst);
+			)"_json;
 			jsonAst.log();
 			
 			TEST_ASSERT(std::size(jsonAst.root.nodes) == 1);
@@ -45,16 +41,12 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 		});
 
 		addTest("boolean", [] {
-			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			const auto highLevelGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Lexer::Grammar::highLevelGrammarSrc, lowLevelGrammarAst);
-			const auto jsonGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Json::jsonGrammarSrc, highLevelGrammarAst);
-			
-			const auto jsonAst = CppUtils::Language::Lexer::parse(R"(
+			const auto jsonAst = R"(
 				{
 					"true": true,
 					"false": false
 				}
-			)"sv, jsonGrammarAst);
+			)"_json;
 			jsonAst.log();
 			
 			TEST_ASSERT(std::size(jsonAst.root.nodes) == 2);
@@ -73,85 +65,55 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 		});
 
 		addTest("number", [] {
-			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			const auto highLevelGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Lexer::Grammar::highLevelGrammarSrc, lowLevelGrammarAst);
-			const auto jsonGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Json::jsonGrammarSrc, highLevelGrammarAst);
-			
-			const auto jsonAst = CppUtils::Language::Lexer::parse(R"(
+			const auto jsonAst = R"(
 				{
 					"number0": 42,
 					"number1": -21,
 					"number2": 3.141592
 				}
-			)"sv, jsonGrammarAst);
+			)"_json;
 			jsonAst.log();
 			
 			TEST_ASSERT(std::size(jsonAst.root.nodes) == 3);
 			{
 				const auto& number0Node = jsonAst.root.nodes[0];
 				TEST_ASSERT(number0Node.value == "number0"_token);
-				TEST_ASSERT(std::size(number0Node.nodes) == 2);
-				TEST_ASSERT(number0Node.nodes[0].value == '4');
-				TEST_ASSERT(number0Node.nodes[1].value == '2');
+				TEST_ASSERT(CppUtils::Language::Parser::getString(number0Node) == "42");
 			}
 			{
 				const auto& number1Node = jsonAst.root.nodes[1];
 				TEST_ASSERT(number1Node.value == "number1"_token);
-				TEST_ASSERT(std::size(number1Node.nodes) == 3);
-				TEST_ASSERT(number1Node.nodes[0].value == '-');
-				TEST_ASSERT(number1Node.nodes[1].value == '2');
-				TEST_ASSERT(number1Node.nodes[2].value == '1');
+				TEST_ASSERT(CppUtils::Language::Parser::getString(number1Node) == "-21");
 			}
 			{
 				const auto& number2Node = jsonAst.root.nodes[2];
 				TEST_ASSERT(number2Node.value == "number2"_token);
-				TEST_ASSERT(std::size(number2Node.nodes) == 8);
-				TEST_ASSERT(number2Node.nodes[0].value == '3');
-				TEST_ASSERT(number2Node.nodes[1].value == '.');
-				TEST_ASSERT(number2Node.nodes[2].value == '1');
-				TEST_ASSERT(number2Node.nodes[3].value == '4');
-				TEST_ASSERT(number2Node.nodes[4].value == '1');
-				TEST_ASSERT(number2Node.nodes[5].value == '5');
-				TEST_ASSERT(number2Node.nodes[6].value == '9');
-				TEST_ASSERT(number2Node.nodes[7].value == '2');
+				TEST_ASSERT(CppUtils::Language::Parser::getString(number2Node) == "3.141592");
 			}
 		});
 
 		addTest("string", [] {
-			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			const auto highLevelGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Lexer::Grammar::highLevelGrammarSrc, lowLevelGrammarAst);
-			const auto jsonGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Json::jsonGrammarSrc, highLevelGrammarAst);
-			
-			const auto jsonAst = CppUtils::Language::Lexer::parse(R"(
+			const auto jsonAst = R"(
 				{
 					"string": "hello"
 				}
-			)"sv, jsonGrammarAst);
+			)"_json;
 			jsonAst.log();
 			
 			TEST_ASSERT(std::size(jsonAst.root.nodes) == 1);
 			{
 				const auto& stringNode = jsonAst.root.nodes[0];
 				TEST_ASSERT(stringNode.value == "string"_token);
-				TEST_ASSERT(std::size(stringNode.nodes) == 5);
-				TEST_ASSERT(stringNode.nodes[0].value == 'h');
-				TEST_ASSERT(stringNode.nodes[1].value == 'e');
-				TEST_ASSERT(stringNode.nodes[2].value == 'l');
-				TEST_ASSERT(stringNode.nodes[3].value == 'l');
-				TEST_ASSERT(stringNode.nodes[4].value == 'o');
+				TEST_ASSERT(CppUtils::Language::Parser::getString(stringNode) == "hello");
 			}
 		});
 
 		addTest("array", [] {
-			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			const auto highLevelGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Lexer::Grammar::highLevelGrammarSrc, lowLevelGrammarAst);
-			const auto jsonGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Json::jsonGrammarSrc, highLevelGrammarAst);
-			
-			const auto jsonAst = CppUtils::Language::Lexer::parse(R"(
+			const auto jsonAst = R"(
 				{
 					"array": [1, 'a', true]
 				}
-			)"sv, jsonGrammarAst);
+			)"_json;
 			jsonAst.log();
 			
 			TEST_ASSERT(std::size(jsonAst.root.nodes) == 1);
@@ -166,18 +128,14 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 		});
 
 		addTest("object", [] {
-			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			const auto highLevelGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Lexer::Grammar::highLevelGrammarSrc, lowLevelGrammarAst);
-			const auto jsonGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Json::jsonGrammarSrc, highLevelGrammarAst);
-			
-			const auto jsonAst = CppUtils::Language::Lexer::parse(R"(
+			const auto jsonAst = R"(
 				{
 					"object": {
 						"key0": 0,
 						"key1": 1
 					}
 				}
-			)"sv, jsonGrammarAst);
+			)"_json;
 			jsonAst.log();
 			
 			TEST_ASSERT(std::size(jsonAst.root.nodes) == 1);
