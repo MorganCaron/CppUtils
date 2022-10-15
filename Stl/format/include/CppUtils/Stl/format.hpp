@@ -4,7 +4,7 @@
 #include <string_view>
 #include <type_traits>
 
-namespace Stl
+namespace CppUtils::Stl
 {
     // https://en.cppreference.com/w/cpp/utility/format/format_error
     class format_error: public std::runtime_error

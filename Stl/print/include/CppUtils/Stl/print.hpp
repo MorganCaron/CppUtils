@@ -5,7 +5,7 @@
 #include <Stl/print.hpp>
 
 // https://en.cppreference.com/w/cpp/header/print
-namespace Stl
+namespace CppUtils::Stl
 {
 	// https://en.cppreference.com/w/cpp/io/print
 	template<class CharT, class... Args>

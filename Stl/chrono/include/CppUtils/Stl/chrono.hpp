@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-namespace Stl
+namespace CppUtils::Stl
 {
 	// https://en.cppreference.com/w/cpp/chrono/is_clock
 	template<class>

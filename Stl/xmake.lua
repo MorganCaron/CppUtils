@@ -11,3 +11,5 @@ target("CppUtils-Stl")
 		"CppUtils-Stl-format",
 		"CppUtils-Stl-print"
 	)
+	add_includedirs("include", { public = true })
+	add_headerfiles("include/**.hpp")
