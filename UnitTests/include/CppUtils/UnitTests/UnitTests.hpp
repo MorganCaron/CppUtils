@@ -1,12 +1,16 @@
 #pragma once
 
-#include <CppUtils/UnitTests/Chrono/Chronometer.hpp>
 #include <CppUtils/UnitTests/Container/Sequence.hpp>
 #include <CppUtils/UnitTests/Container/Vector.hpp>
+#include <CppUtils/UnitTests/String/String.hpp>
+#include <CppUtils/UnitTests/Chrono/Chronometer.hpp>
+#include <CppUtils/UnitTests/Log/Logger.hpp>
+#include <CppUtils/UnitTests/Log/ChronoLogger.hpp>
 #include <CppUtils/UnitTests/FileSystem/File/Binary.hpp>
 #include <CppUtils/UnitTests/FileSystem/File/String.hpp>
 #include <CppUtils/UnitTests/Functional/Function.hpp>
 #include <CppUtils/UnitTests/Graph/MeshNode.hpp>
+#include <CppUtils/UnitTests/Hash/Token.hpp>
 #include <CppUtils/UnitTests/Graph/Tree.hpp>
 #include <CppUtils/UnitTests/Language/Parser/AstParser.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Lexer.hpp>
@@ -24,8 +28,4 @@
 #include <CppUtils/UnitTests/Language/Note/NoteLexer.hpp>
 #include <CppUtils/UnitTests/Language/Xml/XmlLexer.hpp>
 #include <CppUtils/UnitTests/Parameters/ParametersLexer.hpp>
-#include <CppUtils/UnitTests/Log/ChronoLogger.hpp>
-#include <CppUtils/UnitTests/Log/Logger.hpp>
-#include <CppUtils/UnitTests/String/String.hpp>
 #include <CppUtils/UnitTests/UnitTest/UnitTest.hpp>
-#include <CppUtils/UnitTests/Hash/Token.hpp>

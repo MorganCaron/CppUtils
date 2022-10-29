@@ -7,7 +7,7 @@ namespace CppUtils::UnitTests::Language::Parser
 	TEST_GROUP("Language/AstParser")
 	{
 		using namespace std::literals;
-		using namespace Hash::Literals;
+		using namespace CppUtils::Hash::Literals;
 
 		addTest("parseAst", [] {
 			const auto ast = CppUtils::Language::Parser::parseAst(R"(
