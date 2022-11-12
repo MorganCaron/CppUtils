@@ -31,6 +31,17 @@ namespace CppUtils::UnitTests::Language::Lexer
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
 		});
 
+		addTest("is char", [] {
+			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
+				main_{ ==_{c} string_{c} }
+			)"sv);
+			grammar.log();
+			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammar);
+			outputAst.log();
+
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 0);
+		});
+
 		addTest("escaped chars", [] {
 			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
 				main_{ string_{\ } string_{\n} string_{\t} string_{\r} }

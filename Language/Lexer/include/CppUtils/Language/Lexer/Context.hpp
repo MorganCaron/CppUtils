@@ -10,5 +10,6 @@ namespace CppUtils::Language::Lexer
 		Parser::Context<Element> parserContext;
 		std::reference_wrapper<const Parser::AstNode> lexeme;
 		std::reference_wrapper<const Parser::Ast> grammar;
+		Parser::ReadableAstNode memory;
 	};
 }

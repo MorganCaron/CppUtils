@@ -8,7 +8,7 @@ namespace CppUtils::UnitTest
 	{
 		bool verbose = true;
 		bool detail = true;
-		bool failFast = false;
+		bool failFast = true;
 		bool chrono = false;
 		bool abort = false;
 		std::string filter;

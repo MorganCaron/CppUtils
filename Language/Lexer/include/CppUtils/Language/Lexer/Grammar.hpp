@@ -16,37 +16,43 @@ namespace CppUtils::Language::Lexer::Grammar
 		lexemes_{ repeat_{token_{lexeme_}} }
 		lexemesWithSeparator_{ token_{lexeme_} optional_{token_{spaces_}} optional_{parenthesis_{ string_{,} token_{lexemesWithSeparator_} }} }
 		lexeme_{ optional_{token_{spaces_}} or_{
+			token_{comma_}
 			token_{quote_}
 			token_{not_}
 			token_{optional_}
 			token_{range_}
+			token_{is_}
 			token_{increment_}
-			token_{comma_}
 			token_{read_}
 			token_{add_}
 			token_{hash_}
 			token_{or_}
 			token_{sub_}
 			token_{repeat_}
+			token_{push_}
+			token_{pop_}
 			token_{end_}
 			token_{parenthesis_}
 			token_{tokenLexeme_}
 		}}
 		tokenLexeme_{ add_{token_} sub_{token_{token_}} }
 
+		comma_{ string_{,} add_{comma_} }
 		not_{ string_{!} add_{not_} sub_{token_{lexeme_}} }
 		optional_{ string_{~} add_{optional_} sub_{token_{lexeme_}} }
 		range_{ string_{[} optional_{token_{spaces_}} add_{parenthesis_} sub_{ add_{>=_} sub_{token_{char_}} optional_{token_{spaces_}} string_{,} optional_{token_{spaces_}} add_{<=_} sub_{token_{char_}} } optional_{token_{spaces_}} string_{]} }
+		is_{ string_{is(} add_{==_} token_{rawQuote_} token_{closingParenthesis_} }
 		increment_{ string_{+} add_{+} }
-		comma_{ string_{,} add_{,} }
-		read_{ string_{read} not_{token_{alphaNumChar_}} add_{read_} }
-		parenthesis_{ string_{(} add_{parenthesis_} sub_{token_{lexemes_}} optional_{token_{spaces_}} string_{)} }
-		add_{ string_{add(} add_{add_} or_{ token_{rawQuote_} sub_{token_{token_}} } optional_{token_{spaces_}} string_{)} }
-		hash_{ string_{hash(} add_{hash_} sub_{token_{lexeme_}} optional_{token_{spaces_}} string_{)} }
-		or_{ string_{or(} add_{or_} sub_{token_{lexemesWithSeparator_}} optional_{token_{spaces_}} string_{)} }
-		sub_{ string_{sub(} add_{sub_} sub_{token_{lexemes_}} optional_{token_{spaces_}} string_{)} }
-		repeat_{ string_{repeat(} add_{repeat_} sub_{token_{lexeme_} optional_{parenthesis_{optional_{token_{spaces_}} string_{,} token_{lexeme_}}}} optional_{token_{spaces_}} string_{)} }
-		end_{ string_{end} not_{token_{alphaNumChar_}} add_{end_} }
+		read_{ string_{read(} add_{read_} token_{closingParenthesis_} }
+		parenthesis_{ string_{(} add_{parenthesis_} sub_{token_{lexemes_}} token_{closingParenthesis_} }
+		add_{ string_{add(} add_{add_} or_{ token_{rawQuote_} sub_{token_{token_}} } token_{closingParenthesis_} }
+		hash_{ string_{hash(} add_{hash_} sub_{token_{lexeme_}} token_{closingParenthesis_} }
+		or_{ string_{or(} add_{or_} sub_{token_{lexemesWithSeparator_}} token_{closingParenthesis_} }
+		sub_{ string_{sub(} add_{sub_} sub_{token_{lexemes_}} token_{closingParenthesis_} }
+		repeat_{ string_{repeat(} add_{repeat_} sub_{token_{lexeme_} optional_{parenthesis_{optional_{token_{spaces_}} string_{,} token_{lexeme_}}}} token_{closingParenthesis_} }
+		push_{ string_{push(} add_{push_} sub_{token_{lexeme_}} token_{closingParenthesis_} }
+		pop_{ string_{pop(} add_{pop_} token_{closingParenthesis_} }
+		end_{ string_{end(} add_{end_} token_{closingParenthesis_} }
 
 		quote_{ or_{ token_{quote1_} token_{quote2_} } }
 		quote1_{ string_{'} add_{string_} sub_{ optional_{token_{nonQuote1_}} } string_{'} }
@@ -67,6 +73,7 @@ namespace CppUtils::Language::Lexer::Grammar
 		min_{ >=_{a} <=_{z} read_+ }
 		maj_{ >=_{A} <=_{Z} read_+ }
 		digit_{ >=_{0} <=_{9} read_+ }
+		closingParenthesis_{ optional_{token_{spaces_}} string_{)} }
 
 		char_{ token_{escapeChar_} } char_{ read_+ }
 		escapeChar_{ string_{\\} or_{
@@ -91,23 +98,26 @@ namespace CppUtils::Language::Lexer::Grammar
 		decl: token ~spaces ':' sub(~lexemes) ~spaces ';';
 
 		comment: '#' commentContent ~'\n';
-		commentContent: !or(end, '\n')+ ~commentContent;
+		commentContent: !or(end(), '\n')+ ~commentContent;
 
 		lexemes: repeat(lexeme);
 		lexemesWithSeparator: lexeme ~spaces ~(',' lexemesWithSeparator);
 		lexeme: ~spaces or(
+			comma,
 			quote,
 			not,
 			optional,
 			range,
+			is,
 			increment,
-			comma,
 			readLexeme,
 			addLexeme,
 			hash,
 			or,
 			sub,
 			repeat,
+			push,
+			pop,
 			endLexeme,
 			recurrence,
 			parenthesis,
@@ -115,19 +125,22 @@ namespace CppUtils::Language::Lexer::Grammar
 		);
 		tokenLexeme: add(token) sub(token);
 
+		comma: ',' add(comma);
 		not: '!' add(not) sub(lexeme);
 		optional: '~' add(optional) sub(lexeme);
 		range: '[' ~spaces add(parenthesis) sub( add(\>\=) sub(char) ~spaces ',' ~spaces add(\<\=) sub(char) ) ~spaces ']';
+		is: "is(" add(\=\=) rawQuote ~spaces ')';
 		increment: '+' add('+');
-		# comma: ',' add(',');
-		readLexeme: "read" !alphaNumChar add(read);
+		readLexeme: "read(" add(read) ~spaces ')';
 		parenthesis: '(' add(parenthesis) sub(lexemes) ~spaces ')';
 		addLexeme: "add(" add(add) or(rawQuote, sub(token)) ~spaces ')';
 		hash: "hash(" add(hash) sub(lexeme) ~spaces ')';
 		or: "or(" add(or) sub(lexemesWithSeparator) ~spaces ')';
 		sub: "sub(" add(sub) sub(lexemes) ~spaces ')';
 		repeat: "repeat(" add(repeat) sub(lexeme ~(~spaces ',' lexeme)) ~spaces ')';
-		endLexeme: "end" !alphaNumChar add(end);
+		push: "push(" add(push) sub(lexeme) ~spaces ')';
+		pop: "pop(" add(pop) ~spaces ')';
+		endLexeme: "end(" add(end) ~spaces ')';
 
 		quote: or(quote1, quote2);
 		quote1: '\'' add(string) sub(~nonQuote1) '\'';
@@ -143,10 +156,10 @@ namespace CppUtils::Language::Lexer::Grammar
 		keywordContinuation: keywordChar ~keywordContinuation;
 		firstKeywordChar: alphaChar;
 		keywordChar: alphaNumChar;
-		alphaChar: or(escapeChar, (or([a, z], [A, Z]) read+));
-		alphaNumChar: or(alphaChar, ([0, 9] read+));
+		alphaChar: or(escapeChar, (or([a, z], [A, Z]) read()+));
+		alphaNumChar: or(alphaChar, ([0, 9] read()+));
 
-		char: or(escapeChar, (read+));
+		char: or(escapeChar, (read()+));
 		escapeChar: '\\' or(
 			('0' add('\0')),
 			('a' add('\a')),
@@ -156,7 +169,7 @@ namespace CppUtils::Language::Lexer::Grammar
 			('r' add('\r')),
 			('t' add('\t')),
 			('v' add('\v')),
-			(read+)
+			(read()+)
 		);
 
 		spaces: repeat(space);

@@ -10,21 +10,33 @@ namespace CppUtils::Language::Lexer
 	bool parseLexeme(Context<Element>& context);
 
 	template<class Element>
-	bool parseLexemes(Context<Element>& context)
+	auto parseLexemes(Context<Element>& context) -> bool
 	{
+		using namespace Hash::Literals;
+		auto partialMatch = false;
 		for (const auto& node : context.lexeme.get().nodes)
 		{
+			if (node.value == "comma"_token)
+			{
+				partialMatch = true;
+				continue;
+			}
 			context.lexeme = node;
 			if (!parseLexeme(context))
+			{
+				if (partialMatch)
+					throw std::runtime_error{"Syntax error, expected element: " + Hash::getTokenNameOrValue(node.value, context.grammar.get().tokenNames)};
 				return false;
+			}
+			partialMatch |= (node.value == "string"_token || node.value == "add"_token);
 		}
 		return true;
 	}
 
 	template<class Element>
-	[[nodiscard]] constexpr bool parseDeclaration(Context<Element>& context)
+	[[nodiscard]] constexpr auto parseDeclaration(Context<Element>& context) -> bool
 	{
-		auto& [parserContext, declaration, grammar] = context;
+		auto& [parserContext, declaration, grammar, memory] = context;
 		auto& [cursor, parentNode, ast] = parserContext;
 		auto newParentNode = parentNode.get();
 		auto commaPosition = std::size_t{0};
@@ -47,9 +59,9 @@ namespace CppUtils::Language::Lexer
 	}
 	
 	template<class Element>
-	[[nodiscard]] constexpr bool parseMultipleDeclaration(Context<Element>& context)
+	[[nodiscard]] constexpr auto parseMultipleDeclaration(Context<Element>& context) -> bool
 	{
-		auto& [parserContext, declarationLexeme, grammar] = context;
+		auto& [parserContext, declarationLexeme, grammar, memory] = context;
 		auto& [cursor, parentNode, ast] = parserContext;
 		auto declarationToken = declarationLexeme.get().value;
 		for (const auto& declaration : grammar.get().root.getNodesWithValue(declarationToken))
@@ -66,11 +78,11 @@ namespace CppUtils::Language::Lexer
 	}
 
 	template<class Element>
-	bool parseLexeme(Context<Element>& context)
+	auto parseLexeme(Context<Element>& context) -> bool
 	{
 		using namespace std::literals;
 		using namespace Hash::Literals;
-		auto& [parserContext, lexeme, grammar] = context;
+		auto& [parserContext, lexeme, grammar, memory] = context;
 		auto& [cursor, parentNode, ast] = parserContext;
 		auto startPos = cursor.pos;
 		switch (lexeme.get().value)
@@ -171,6 +183,7 @@ namespace CppUtils::Language::Lexer
 				parentNode = oldParentNode;
 				return result;
 			}
+			case "=="_token: return cursor.pos < std::size(cursor.data) && cursor[cursor.pos] == static_cast<char>(lexeme.get().nodes[0].value);
 			case ">="_token: return cursor.pos < std::size(cursor.data) && cursor[cursor.pos] >= static_cast<char>(lexeme.get().nodes[0].value);
 			case "<="_token: return cursor.pos < std::size(cursor.data) && cursor[cursor.pos] <= static_cast<char>(lexeme.get().nodes[0].value);
 			case '+':
@@ -218,22 +231,45 @@ namespace CppUtils::Language::Lexer
 				}
 				return true;
 			}
+			case "push"_token:
+			{
+				auto newContext = context;
+				newContext.lexeme = lexeme.get().nodes[0];
+				auto tempParentNode = Parser::AstNode{parentNode.get().value};
+				newContext.parserContext.parentNode = tempParentNode;
+				if (!parseLexeme(newContext))
+					return false;
+				auto& memoryNode = memory.node.get();
+				memoryNode.nodes.insert(std::cend(memoryNode.nodes), std::cbegin(tempParentNode.nodes), std::cend(tempParentNode.nodes));
+				cursor.pos = newContext.parserContext.cursor.pos;
+				return true;
+			}
+			case "pop"_token:
+			{
+				auto& memoryNode = memory.node.get();
+				auto stackSize = std::size(memoryNode.nodes);
+				if (!stackSize)
+					return false;
+				parentNode.get().nodes.push_back(memoryNode.nodes[stackSize - 1]);
+				memoryNode.nodes.pop_back();
+				return true;
+			}
 		}
 		throw std::logic_error{"Unknown lexeme " + Hash::getTokenNameOrValue(lexeme.get().value, grammar.get().tokenNames)};
 		return false;
 	}
 
 	template<class CharT>
-	[[nodiscard]] Parser::Ast parse(std::basic_string_view<CharT> src, const Parser::Ast& grammar)
+	[[nodiscard]] auto parse(std::basic_string_view<CharT> src, const Parser::Ast& grammar) -> Parser::Ast
 	{
+		using namespace Hash::Literals;
 		if (std::empty(grammar.root.nodes))
 			throw std::logic_error{"Empty grammar"};
 		auto ast = Parser::Ast{grammar.tokenNames};
-		auto declarationIt = std::find_if(grammar.root.nodes.cbegin(), grammar.root.nodes.cend(), [](const auto& declaration) -> bool {
-			using namespace Hash::Literals;
-			return declaration.value == "main"_token;
-		});
-		if (declarationIt == grammar.root.nodes.cend())
+		auto memoryRoot = Parser::AstNode{"root"_token};
+		auto memory = Parser::ReadableAstNode{memoryRoot, ast.tokenNames};
+		auto declarationIt = grammar.find("main"_token);
+		if (declarationIt == std::cend(grammar.root.nodes))
 			throw std::logic_error{"Entry point \"main\" not found"};
 		auto mainLexeme = *declarationIt;
 		auto context = Context<CharT>{
@@ -243,7 +279,8 @@ namespace CppUtils::Language::Lexer
 				.ast = Parser::ReadableAstNode{ast}
 			},
 			.lexeme = mainLexeme,
-			.grammar = grammar
+			.grammar = grammar,
+			.memory = memory
 		};
 		try
 		{

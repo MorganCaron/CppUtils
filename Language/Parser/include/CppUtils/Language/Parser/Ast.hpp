@@ -32,6 +32,13 @@ namespace CppUtils::Language::Parser
 		{
 			Graph::Tree::log(root, tokenNames);
 		}
+
+		[[nodiscard]] auto find(Hash::Token token) const noexcept
+		{
+			return std::find_if(std::cbegin(root.nodes), std::cend(root.nodes), [token](const auto& node) -> bool {
+				return node.value == token;
+			});
+		}
 	};
 	
 	struct ReadableAstNode final

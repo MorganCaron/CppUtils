@@ -9,7 +9,7 @@ namespace CppUtils::Stl
 {
 	// https://en.cppreference.com/w/cpp/utility/expected/unexpected
 	template<class E>
-	requires !std::is_void_v<E>
+	requires (!std::is_void_v<E>)
 	class unexpected
 	{
 		static_assert(!std::is_same_v<E, unexpected<E>>, "E must not be unexpected<E>");
@@ -21,9 +21,9 @@ namespace CppUtils::Stl
 
 		template<class Err = E>
 		requires
-			!std::is_same_v<std::remove_cvref_t<Err>, unexpected> &&
+			(!std::is_same_v<std::remove_cvref_t<Err>, unexpected> &&
 			!std::is_same_v<std::remove_cvref_t<Err>, std::in_place_t> &&
-			std::is_constructible_v<E, Err>
+			std::is_constructible_v<E, Err>)
 		constexpr explicit unexpected(Err&& e):
 			unex{std::forward<Err>(e)}
 		{}
@@ -67,16 +67,16 @@ namespace CppUtils::Stl
 			swap(error(), other.error());
 		}
 
-		requires std::is_swappable_v<E>
+		// requires std::is_swappable_v<E>
 		friend constexpr void swap(unexpected& x, unexpected& y) noexcept(noexcept(x.swap(y)))
 		{
 			x.swap(y);
 		}
 
 		template<class E2>
-		friend constexpr bool operator==(const unexpected&, const unexpected<E2>&)
+		friend constexpr bool operator==(const unexpected& x, const unexpected<E2>& y)
 		{
-			return x.error() == y.error()
+			return x.error() == y.error();
 		}
 
 	private:
@@ -300,7 +300,71 @@ namespace CppUtils::Stl
 			has_val = true;
 		}
 
-		constexpr void swap(expected&) noexcept(/* see description */);
+		constexpr void swap(expected& other) noexcept(
+			std::is_nothrow_move_constructible_v<T> && std::is_nothrow_swappable_v<T> &&
+			std::is_nothrow_move_constructible_v<E> && std::is_nothrow_swappable_v<E>)
+		{
+			if (has_value() && other.has_value())
+			{
+				if constexpr (!std::is_void_v<T>)
+				{
+					using std::swap;
+					swap(**this, *other);
+				}
+			}
+			else if (!has_value() && !other.has_value())
+			{
+				using std::swap;
+				swap(error(), other.error());
+			}
+			else if (!has_value())
+			{
+				other.swap(*this);
+			}
+			else
+			{
+				if constexpr (std::is_void_v<T>)
+				{
+					std::construct_at(std::addressof(unex), std::move(other.unex));
+					std::destroy_at(std::addressof(other.unex));
+				}
+				else
+				{
+					if constexpr (std::is_nothrow_move_constructible_v<E>)
+					{
+						auto temp = E{std::move(other.unex)};
+						std::destroy_at(std::addressof(other.unex));
+						try
+						{
+							std::construct_at(std::addressof(other.val), std::move(val));
+							std::destroy_at(std::addressof(val));
+							std::construct_at(std::addressof(unex), std::move(temp));
+						}
+						catch(...)
+						{
+							std::construct_at(std::addressof(other.unex), std::move(temp));
+							throw;
+						}
+					}
+					else
+					{
+						auto temp = T{std::move(val)};
+						std::destroy_at(std::addressof(val));
+						try
+						{
+							std::construct_at(std::addressof(unex), std::move(other.unex));
+							std::destroy_at(std::addressof(other.unex));
+							std::construct_at(std::addressof(other.val), std::move(temp));
+						}
+						catch(...)
+						{
+							std::construct_at(std::addressof(val), std::move(temp));
+							throw;
+						}
+					}
+				}
+			}
+		}
 		friend constexpr void swap(expected& lhs, expected& rhs) noexcept(noexcept(lhs.swap(rhs)))
 		{
 			lhs.swap(rhs);
@@ -516,7 +580,11 @@ namespace CppUtils::Stl
 			has_val = true;
 		}
 
-		constexpr void swap(expected&) noexcept(/* see description */);
+		constexpr void swap(expected& other) noexcept(
+			std::is_nothrow_move_constructible_v<E> && std::is_nothrow_swappable_v<E>)
+		{
+
+		}
 		friend constexpr void swap(expected& lhs, expected& rhs) noexcept(noexcept(lhs.swap(rhs)))
 		{
 			lhs.swap(rhs);

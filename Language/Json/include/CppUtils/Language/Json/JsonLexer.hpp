@@ -5,33 +5,37 @@
 namespace CppUtils::Language::Json
 {
 	using namespace std::literals;
+	using namespace CppUtils::Language::Lexer::Grammar::Literals;
 
-	constexpr auto jsonGrammarSrc = R"(
-		main: object ~spaces;
+	const auto jsonGrammarAst = R"(
+		main: ~spaces object ~spaces;
 
 		# TYPES
-		value: ~spaces or(object, string, number, array, boolean, null);
+		value: ~spaces or(objectValue, stringValue, number, array, boolean, null);
 		
 		# OBJECT
-		object: ~spaces '{' ~repeat(pair, (~spaces ',')) ~spaces '}';
-		pair:  hash(key) ~spaces ':' sub(value);
+		object: '{' ~repeat(pair, (~spaces ',')) ~spaces '}';
+		objectValue: '{' add(object) sub(~repeat(pair, (~spaces ','))) ~spaces '}';
+		pair:  ~spaces hash(key) ~spaces ':' sub(value);
 		key: string;
 
 		# STRING
-		string: ~spaces or(quote1, quote2);
-		quote1: '\'' ~repeat(nonQuote1) '\'';
-		quote2: '"' ~repeat(nonQuote2) '"';
-		nonQuote1: !'\'' read+;
-		nonQuote2: !'"' read+;
+		string: '"' ~repeat(nonQuote) '"';
+		stringValue: '"' add(string) sub(~repeat(nonQuote)) '"';
+		nonQuote: !'"' read()+;
 
 		# NUMBER
-		number: ~sign repeat(digit) ~decimalPart;
-		sign: or(('-' add('-')), ('+' add('+')));
+		number: or(is('-'), [0, 9]) add(number) sub(~minus or(zero, repeat(digit)) ~decimalPart ~exponentPart);
+		sign: or(plus, minus);
+		plus: '+' add('+');
+		minus: '-' add('-');
+		digit: [0, 9] read()+;
+		zero: '0' add('0');
 		decimalPart: '.' add('.') repeat(digit);
-		digit: [0, 9] read+;
+		exponentPart: or('e', 'E') add('e') ~sign repeat(digit);
 		
 		# ARRAY
-		array: '[' values ~spaces ']';
+		array: '[' add(array) sub(values) ~spaces ']';
 		values: repeat(value, (~spaces ','));
 
 		# CONSTANTS
@@ -43,13 +47,10 @@ namespace CppUtils::Language::Json
 		# SPACES
 		spaces: repeat(space);
 		space: or(' ', '\n', '\t', '\r');
-	)"sv;
+	)"_grammar;
 
 	[[nodiscard]] auto parse(std::string_view src) -> Parser::Ast
 	{
-		const auto lowLevelGrammarAst = Parser::parseAst(Lexer::Grammar::lowLevelGrammarSrc);
-		const auto highLevelGrammarAst = Lexer::parse(Lexer::Grammar::highLevelGrammarSrc, lowLevelGrammarAst);
-		const auto jsonGrammarAst = Lexer::parse(jsonGrammarSrc, highLevelGrammarAst);
 		return Lexer::parse(src, jsonGrammarAst);
 	}
 
