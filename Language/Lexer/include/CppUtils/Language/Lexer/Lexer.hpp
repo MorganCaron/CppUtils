@@ -36,6 +36,7 @@ namespace CppUtils::Language::Lexer
 	template<class Element>
 	[[nodiscard]] constexpr auto parseDeclaration(Context<Element>& context) -> bool
 	{
+		using namespace Hash::Literals;
 		auto& [parserContext, declaration, grammar, memory] = context;
 		auto& [cursor, parentNode, ast] = parserContext;
 		auto newParentNode = parentNode.get();
@@ -45,7 +46,7 @@ namespace CppUtils::Language::Lexer
 		for (auto i = 0u; i < nbLexemes; ++i)
 		{
 			const auto& lexeme = lexemes[i];
-			if (lexeme.value == ',')
+			if (lexeme.value == "comma"_token)
 				commaPosition = i;
 			else if (context.lexeme = lexeme; !parseLexeme(context))
 			{
@@ -57,7 +58,7 @@ namespace CppUtils::Language::Lexer
 		}
 		return true;
 	}
-	
+
 	template<class Element>
 	[[nodiscard]] constexpr auto parseMultipleDeclaration(Context<Element>& context) -> bool
 	{
@@ -89,10 +90,7 @@ namespace CppUtils::Language::Lexer
 		{
 			case "optional"_token:
 			{
-				if (std::empty(lexeme.get().nodes))
-					throw std::logic_error{"Missing element in 'optional' token"};
-				context.lexeme = lexeme.get().nodes[0];
-				parseLexeme(context);
+				parseLexemes(context);
 				return true;
 			}
 			case "token"_token:
@@ -159,10 +157,9 @@ namespace CppUtils::Language::Lexer
 			case "hash"_token:
 			{
 				auto newContext = context;
-				newContext.lexeme = lexeme.get().nodes[0];
 				auto tempParentNode = Parser::AstNode{parentNode.get().value};
 				newContext.parserContext.parentNode = tempParentNode;
-				if (!parseLexeme(newContext))
+				if (!parseLexemes(newContext))
 					return false;
 				auto string = ""s;
 				for (const auto& node: tempParentNode.nodes)
@@ -284,13 +281,13 @@ namespace CppUtils::Language::Lexer
 		};
 		try
 		{
-			if (!parseDeclaration(context) || !context.parserContext.cursor.isEnd())
+			if (!parseLexemes(context) || !context.parserContext.cursor.isEnd())
 				throw std::logic_error{"Unknown element"};
 		}
 		catch (const std::exception& exception)
 		{
 			const auto& cursor = context.parserContext.cursor;
-			std::throw_with_nested(std::runtime_error{getPositionInformation(cursor) + ": '" + String::reverseEscapedChar(cursor.current()) + '\''});
+			std::throw_with_nested(std::runtime_error{getPositionInformation(cursor) + exception.what()});
 		}
 		return ast;
 	}

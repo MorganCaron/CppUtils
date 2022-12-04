@@ -21,11 +21,11 @@ namespace CppUtils::Language::Json
 
 		# STRING
 		string: '"' ~repeat(nonQuote) '"';
-		stringValue: '"' add(string) sub(~repeat(nonQuote)) '"';
+		stringValue: '"' add(string) sub(~hash(repeat(nonQuote))) '"';
 		nonQuote: !'"' read()+;
 
 		# NUMBER
-		number: or(is('-'), [0, 9]) add(number) sub(~minus or(zero, repeat(digit)) ~decimalPart ~exponentPart);
+		number: or(is('-'), [0, 9]) add(number) sub(hash(~minus or(zero, repeat(digit)) ~decimalPart ~exponentPart));
 		sign: or(plus, minus);
 		plus: '+' add('+');
 		minus: '-' add('-');

@@ -5,19 +5,20 @@ namespace CppUtils::Language::Lexer::Grammar
 	using namespace std::literals;
 
 	constexpr auto lowLevelGrammarSrc = R"(
-		main_{ token_{decls_} optional_{token_{spaces_}} }
+		main_{ token_{decls_} token_{spaces_} }
 
-		decls_{ optional_{token_{spaces_}} or_{ token_{comment_} token_{decl_} } optional_{token_{decls_}} }
-		decl_{ token_{token_} optional_{token_{spaces_}} string_{:} optional_{sub_{token_{lexemes_}}} optional_{token_{spaces_}} string_{;} }
+		decls_{ token_{spaces_} or_{ token_{comment_} token_{decl_} } optional_{token_{decls_}} }
+		decl_{ token_{token_} token_{spaces_} string_{:} optional_{sub_{token_{lexemes_}}} token_{spaces_} comma_ string_{;} }
 
 		comment_{ string_{#} token_{commentContent_} optional_{string_{\n}} }
 		commentContent_{ not_{or_{ end_ string_{\n} }}+ optional_{token_{commentContent_}} }
 
 		lexemes_{ repeat_{token_{lexeme_}} }
-		lexemesWithSeparator_{ token_{lexeme_} optional_{token_{spaces_}} optional_{parenthesis_{ string_{,} token_{lexemesWithSeparator_} }} }
-		lexeme_{ optional_{token_{spaces_}} or_{
+		lexemesWithSeparator_{ token_{lexeme_} token_{spaces_} optional_{parenthesis_{ string_{,} token_{lexemesWithSeparator_} }} }
+		lexeme_{ token_{spaces_} or_{
 			token_{comma_}
-			token_{quote_}
+			token_{charLiteral_}
+			token_{stringLiteral_}
 			token_{not_}
 			token_{optional_}
 			token_{range_}
@@ -40,28 +41,27 @@ namespace CppUtils::Language::Lexer::Grammar
 		comma_{ string_{,} add_{comma_} }
 		not_{ string_{!} add_{not_} sub_{token_{lexeme_}} }
 		optional_{ string_{~} add_{optional_} sub_{token_{lexeme_}} }
-		range_{ string_{[} optional_{token_{spaces_}} add_{parenthesis_} sub_{ add_{>=_} sub_{token_{char_}} optional_{token_{spaces_}} string_{,} optional_{token_{spaces_}} add_{<=_} sub_{token_{char_}} } optional_{token_{spaces_}} string_{]} }
-		is_{ string_{is(} add_{==_} token_{rawQuote_} token_{closingParenthesis_} }
+		range_{ string_{[} token_{spaces_} add_{parenthesis_} sub_{ add_{>=_} token_{rawCharLiteral_} token_{spaces_} string_{,} token_{spaces_} add_{<=_} token_{rawCharLiteral_} } token_{spaces_} string_{]} }
+		is_{ string_{is(} add_{==_} token_{rawCharLiteral_} token_{spaces_} string_{)} }
 		increment_{ string_{+} add_{+} }
-		read_{ string_{read(} add_{read_} token_{closingParenthesis_} }
-		parenthesis_{ string_{(} add_{parenthesis_} sub_{token_{lexemes_}} token_{closingParenthesis_} }
-		add_{ string_{add(} add_{add_} or_{ token_{rawQuote_} sub_{token_{token_}} } token_{closingParenthesis_} }
-		hash_{ string_{hash(} add_{hash_} sub_{token_{lexeme_}} token_{closingParenthesis_} }
-		or_{ string_{or(} add_{or_} sub_{token_{lexemesWithSeparator_}} token_{closingParenthesis_} }
-		sub_{ string_{sub(} add_{sub_} sub_{token_{lexemes_}} token_{closingParenthesis_} }
-		repeat_{ string_{repeat(} add_{repeat_} sub_{token_{lexeme_} optional_{parenthesis_{optional_{token_{spaces_}} string_{,} token_{lexeme_}}}} token_{closingParenthesis_} }
-		push_{ string_{push(} add_{push_} sub_{token_{lexeme_}} token_{closingParenthesis_} }
-		pop_{ string_{pop(} add_{pop_} token_{closingParenthesis_} }
-		end_{ string_{end(} add_{end_} token_{closingParenthesis_} }
+		read_{ string_{read(} add_{read_} token_{spaces_} string_{)} }
+		parenthesis_{ string_{(} add_{parenthesis_} sub_{token_{lexemes_}} token_{spaces_} string_{)} }
+		add_{ string_{add(} add_{add_} or_{ token_{rawCharLiteral_} token_{rawStringLiteral_} sub_{token_{token_}} } token_{spaces_} string_{)} }
+		hash_{ string_{hash(} add_{hash_} sub_{token_{lexemes_}} token_{spaces_} string_{)} }
+		or_{ string_{or(} add_{or_} sub_{token_{lexemesWithSeparator_}} token_{spaces_} string_{)} }
+		sub_{ string_{sub(} add_{sub_} sub_{token_{lexemes_}} token_{spaces_} string_{)} }
+		repeat_{ string_{repeat(} add_{repeat_} sub_{token_{lexeme_} optional_{parenthesis_{token_{spaces_} string_{,} token_{lexeme_}}}} token_{spaces_} string_{)} }
+		push_{ string_{push(} add_{push_} sub_{token_{lexeme_}} token_{spaces_} string_{)} }
+		pop_{ string_{pop(} add_{pop_} token_{spaces_} string_{)} }
+		end_{ string_{end(} add_{end_} token_{spaces_} string_{)} }
 
-		quote_{ or_{ token_{quote1_} token_{quote2_} } }
-		quote1_{ string_{'} add_{string_} sub_{ optional_{token_{nonQuote1_}} } string_{'} }
-		quote2_{ string_{"} add_{string_} sub_{ optional_{token_{nonQuote2_}} } string_{"} }
-		rawQuote_{ or_{ token_{rawQuote1_} token_{rawQuote2_} } }
-		rawQuote1_{ string_{'} sub_{ optional_{token_{nonQuote1_}} } string_{'} }
-		rawQuote2_{ string_{"} sub_{ optional_{token_{nonQuote2_}} } string_{"} }
-		nonQuote1_{ not_{string_{'}} token_{char_} optional_{token_{nonQuote1_}} }
-		nonQuote2_{ not_{string_{"}} token_{char_} optional_{token_{nonQuote2_}} }
+		charLiteral_{ string_{'} add_{string_} sub_{token_{charLiteralContent_}} string_{'} }
+		rawCharLiteral_{ string_{'} sub_{token_{charLiteralContent_}} string_{'} }
+		charLiteralContent_{ not_{string_{'}} token_{char_} }
+		
+		stringLiteral_{ string_{"} add_{string_} sub_{token_{stringLiteralContent_}} string_{"} }
+		rawStringLiteral_{ string_{"} sub_{token_{stringLiteralContent_}} string_{"} }
+		stringLiteralContent_{ optional_{repeat_{ parenthesis_{ not_{string_{"}} token_{char_} } }} }
 
 		token_{ hash_{token_{keyword_}} }
 		keyword_{ token_{firstKeywordChar_} optional_{token_{keywordContinuation_}} }
@@ -73,7 +73,6 @@ namespace CppUtils::Language::Lexer::Grammar
 		min_{ >=_{a} <=_{z} read_+ }
 		maj_{ >=_{A} <=_{Z} read_+ }
 		digit_{ >=_{0} <=_{9} read_+ }
-		closingParenthesis_{ optional_{token_{spaces_}} string_{)} }
 
 		char_{ token_{escapeChar_} } char_{ read_+ }
 		escapeChar_{ string_{\\} or_{
@@ -88,7 +87,7 @@ namespace CppUtils::Language::Lexer::Grammar
 			parenthesis_{read_+}
 		}}
 
-		spaces_{ repeat_{token_{space_}} }
+		spaces_{ optional_{repeat_{token_{space_}}} }
 		space_{ or_{ string_{\ } string_{\n} string_{\t} string_{\r} } }
 	)"sv;
 	
@@ -104,7 +103,8 @@ namespace CppUtils::Language::Lexer::Grammar
 		lexemesWithSeparator: lexeme ~spaces ~(',' lexemesWithSeparator);
 		lexeme: ~spaces or(
 			comma,
-			quote,
+			charLiteral,
+			stringLiteral,
 			not,
 			optional,
 			range,
@@ -128,36 +128,35 @@ namespace CppUtils::Language::Lexer::Grammar
 		comma: ',' add(comma);
 		not: '!' add(not) sub(lexeme);
 		optional: '~' add(optional) sub(lexeme);
-		range: '[' ~spaces add(parenthesis) sub( add(\>\=) sub(char) ~spaces ',' ~spaces add(\<\=) sub(char) ) ~spaces ']';
-		is: "is(" add(\=\=) rawQuote ~spaces ')';
+		range: '[' spaces add(parenthesis) sub( add(\>\=) rawCharLiteral spaces ',' spaces add(\<\=) rawCharLiteral ) spaces ']';
+		is: "is(" add(\=\=) rawCharLiteral spaces ')';
 		increment: '+' add('+');
-		readLexeme: "read(" add(read) ~spaces ')';
-		parenthesis: '(' add(parenthesis) sub(lexemes) ~spaces ')';
-		addLexeme: "add(" add(add) or(rawQuote, sub(token)) ~spaces ')';
-		hash: "hash(" add(hash) sub(lexeme) ~spaces ')';
-		or: "or(" add(or) sub(lexemesWithSeparator) ~spaces ')';
-		sub: "sub(" add(sub) sub(lexemes) ~spaces ')';
-		repeat: "repeat(" add(repeat) sub(lexeme ~(~spaces ',' lexeme)) ~spaces ')';
-		push: "push(" add(push) sub(lexeme) ~spaces ')';
-		pop: "pop(" add(pop) ~spaces ')';
-		endLexeme: "end(" add(end) ~spaces ')';
+		readLexeme: "read(" add(read) spaces ')';
+		parenthesis: '(' add(parenthesis) sub(lexemes) spaces ')';
+		addLexeme: "add(" add(add) or(rawCharLiteral, rawStringLiteral, sub(token)) spaces ')';
+		hash: "hash(" add(hash) sub(lexemes) spaces ')';
+		or: "or(" add(or) sub(lexemesWithSeparator) spaces ')';
+		sub: "sub(" add(sub) sub(lexemes) spaces ')';
+		repeat: "repeat(" add(repeat) sub(lexeme ~(~spaces ',' lexeme)) spaces ')';
+		push: "push(" add(push) sub(lexeme) spaces ')';
+		pop: "pop(" add(pop) spaces ')';
+		endLexeme: "end(" add(end) spaces ')';
 
-		quote: or(quote1, quote2);
-		quote1: '\'' add(string) sub(~nonQuote1) '\'';
-		quote2: '"' add(string) sub(~nonQuote2) '"';
-		rawQuote: or(rawQuote1, rawQuote2);
-		rawQuote1: '\'' sub(~nonQuote1) '\'';
-		rawQuote2: '"' sub(~nonQuote2) '"';
-		nonQuote1: !'\'' char ~nonQuote1;
-		nonQuote2: !'"' char ~nonQuote2;
+		charLiteral: '\'' add(string) sub(charLiteralContent) '\'';
+		rawCharLiteral: '\'' sub(charLiteralContent) '\'';
+		charLiteralContent: !'\'' char;
+
+		stringLiteral: '"' add(string) sub(stringLiteralContent) '"';
+		rawStringLiteral: '"' sub(stringLiteralContent) '"';
+		stringLiteralContent: ~repeat((!'"' char));
 
 		token: hash(keyword);
 		keyword: firstKeywordChar ~keywordContinuation;
 		keywordContinuation: keywordChar ~keywordContinuation;
 		firstKeywordChar: alphaChar;
 		keywordChar: alphaNumChar;
-		alphaChar: or(escapeChar, (or([a, z], [A, Z]) read()+));
-		alphaNumChar: or(alphaChar, ([0, 9] read()+));
+		alphaChar: or(escapeChar, (or(['a', 'z'], ['A', 'Z']) read()+));
+		alphaNumChar: or(alphaChar, (['0', '9'] read()+));
 
 		char: or(escapeChar, (read()+));
 		escapeChar: '\\' or(
@@ -172,7 +171,7 @@ namespace CppUtils::Language::Lexer::Grammar
 			(read()+)
 		);
 
-		spaces: repeat(space);
+		spaces: ~repeat(space);
 		space: or(' ', '\n', '\t', '\r');
 	)"sv;
 

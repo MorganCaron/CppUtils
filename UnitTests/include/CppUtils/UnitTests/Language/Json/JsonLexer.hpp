@@ -79,7 +79,11 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				{
 					const auto& number0Node = key0Node.nodes[0];
 					TEST_ASSERT(number0Node.value == "number"_token);
-					TEST_ASSERT(CppUtils::Language::Parser::getString(number0Node) == "42");
+					TEST_ASSERT(std::size(number0Node.nodes) == 1);
+					{
+						const auto& valueNode = number0Node.nodes[0];
+						TEST_ASSERT(valueNode.value == "42"_token);
+					}
 				}
 			}
 			{
@@ -89,7 +93,11 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				{
 					const auto& number1Node = key1Node.nodes[0];
 					TEST_ASSERT(number1Node.value == "number"_token);
-					TEST_ASSERT(CppUtils::Language::Parser::getString(number1Node) == "-21");
+					TEST_ASSERT(std::size(number1Node.nodes) == 1);
+					{
+						const auto& valueNode = number1Node.nodes[0];
+						TEST_ASSERT(valueNode.value == "-21"_token);
+					}
 				}
 			}
 			{
@@ -99,7 +107,11 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				{
 					const auto& number2Node = key2Node.nodes[0];
 					TEST_ASSERT(number2Node.value == "number"_token);
-					TEST_ASSERT(CppUtils::Language::Parser::getString(number2Node) == "3.141592");
+					TEST_ASSERT(std::size(number2Node.nodes) == 1);
+					{
+						const auto& valueNode = number2Node.nodes[0];
+						TEST_ASSERT(valueNode.value == "3.141592"_token);
+					}
 				}
 			}
 		});
@@ -120,7 +132,11 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				{
 					const auto& stringNode = keyNode.nodes[0];
 					TEST_ASSERT(stringNode.value == "string"_token);
-					TEST_ASSERT(CppUtils::Language::Parser::getString(stringNode) == "hello");
+					TEST_ASSERT(std::size(stringNode.nodes) == 1);
+					{
+						const auto& valueNode = stringNode.nodes[0];
+						TEST_ASSERT(valueNode.value == "hello"_token);
+					}
 				}
 			}
 		});
@@ -144,12 +160,13 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 					TEST_ASSERT(std::size(arrayNode.nodes) == 3);
 					{
 						const auto& numberNode = arrayNode.nodes[0];
-						TEST_ASSERT(numberNode.nodes[0].value == '1');
+						TEST_ASSERT(numberNode.nodes[0].value == "1"_token);
 					}
 					{
 						const auto& stringNode = arrayNode.nodes[1];
 						TEST_ASSERT(stringNode.value == "string"_token);
-						TEST_ASSERT(CppUtils::Language::Parser::getString(stringNode) == "abc");
+						TEST_ASSERT(std::size(stringNode.nodes) == 1);
+						TEST_ASSERT(stringNode.nodes[0].value == "abc"_token);
 					}
 					TEST_ASSERT(arrayNode.nodes[2].value == "true"_token);
 				}
@@ -184,7 +201,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 							const auto& numberNode = key0Node.nodes[0];
 							TEST_ASSERT(numberNode.value == "number"_token);
 							TEST_ASSERT(std::size(numberNode.nodes) == 1);
-							TEST_ASSERT(numberNode.nodes[0].value == '0');
+							TEST_ASSERT(numberNode.nodes[0].value == "0"_token);
 						}
 					}
 					{
@@ -195,7 +212,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 							const auto& numberNode = key1Node.nodes[0];
 							TEST_ASSERT(numberNode.value == "number"_token);
 							TEST_ASSERT(std::size(numberNode.nodes) == 1);
-							TEST_ASSERT(numberNode.nodes[0].value == '1');
+							TEST_ASSERT(numberNode.nodes[0].value == "1"_token);
 						}
 					}
 				}

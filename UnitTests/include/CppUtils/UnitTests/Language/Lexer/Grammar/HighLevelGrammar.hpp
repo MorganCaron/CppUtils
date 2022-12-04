@@ -84,7 +84,8 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
 			outputAst.log();
 			
-			TEST_ASSERT(CppUtils::Language::Parser::getString(outputAst.root) == "c");
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
+			TEST_ASSERT(outputAst.root.nodes[0].value == 'c');
 		});
 
 		addTest("read char", [] {
@@ -95,7 +96,8 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
 			outputAst.log();
 			
-			TEST_ASSERT(CppUtils::Language::Parser::getString(outputAst.root) == "c");
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
+			TEST_ASSERT(outputAst.root.nodes[0].value == 'c');
 		});
 
 		addTest("token", [] {
@@ -132,7 +134,9 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAA"sv, grammarAst);
 			outputAst.log();
 			
-			TEST_ASSERT(CppUtils::Language::Parser::getString(outputAst.root) == "AAA");
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 3);
+			for (auto i = std::size_t{0}; i < 3; ++i)
+				TEST_ASSERT(outputAst.root.nodes[i].value == 'A');
 		});
 
 		addTest("optional", [] {
@@ -145,7 +149,9 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAA"sv, grammarAst);
 			outputAst.log();
 			
-			TEST_ASSERT(CppUtils::Language::Parser::getString(outputAst.root) == "AAA");
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 3);
+			for (auto i = std::size_t{0}; i < 3; ++i)
+				TEST_ASSERT(outputAst.root.nodes[i].value == 'A');
 		});
 
 		addTest("or", [] {
@@ -156,7 +162,8 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			const auto outputAst = CppUtils::Language::Lexer::parse("BC"sv, grammarAst);
 			outputAst.log();
 			
-			TEST_ASSERT(CppUtils::Language::Parser::getString(outputAst.root) == "C");
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
+			TEST_ASSERT(outputAst.root.nodes[0].value == 'C');
 		});
 
 		addTest("parenthesis", [] {
@@ -167,15 +174,16 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammarAst);
 			outputAst.log();
 			
-			TEST_ASSERT(CppUtils::Language::Parser::getString(outputAst.root) == "C");
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
+			TEST_ASSERT(outputAst.root.nodes[0].value == 'C');
 		});
 
 		addTest("comparison", [] {
 			const auto grammarAst = R"(
 				main: char;
 				char: or(min, maj);
-				min: [a, z]+ add(min);
-				maj: [A, Z]+ add(maj);
+				min: ['a', 'z']+ add(min);
+				maj: ['A', 'Z']+ add(maj);
 			)"_grammar;
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("C"sv, grammarAst);
@@ -208,7 +216,12 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			const auto outputAst = CppUtils::Language::Lexer::parse(R"("Hello")"sv, grammarAst);
 			outputAst.log();
 			
-			TEST_ASSERT(CppUtils::Language::Parser::getString(outputAst.root) == "Hello");
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 5);
+			TEST_ASSERT(outputAst.root.nodes[0].value == 'H');
+			TEST_ASSERT(outputAst.root.nodes[1].value == 'e');
+			TEST_ASSERT(outputAst.root.nodes[2].value == 'l');
+			TEST_ASSERT(outputAst.root.nodes[3].value == 'l');
+			TEST_ASSERT(outputAst.root.nodes[4].value == 'o');
 		});
 
 		addTest("sub", [] {
@@ -241,7 +254,8 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAAB,B,BC"sv, grammarAst);
 			outputAst.log();
 			
-			TEST_ASSERT(CppUtils::Language::Parser::getString(outputAst.root) == "C");
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
+			TEST_ASSERT(outputAst.root.nodes[0].value == 'C');
 		});
 
 		addTest("push-pop", [] {

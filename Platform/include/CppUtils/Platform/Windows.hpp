@@ -1,4 +1,7 @@
+// Ne pas importer dans un header pour ne pas tirer tout windows.h
 #pragma once
+
+#include <CppUtils/Platform/OS.hpp>
 
 #if defined(OS_WINDOWS)
 #	ifndef NOMINMAX

@@ -60,7 +60,7 @@ namespace CppUtils::Language::Parser
 	}
 
 	template<class CharT>
-	[[nodiscard]] Ast parseAst(std::basic_string_view<CharT> src)
+	[[nodiscard]] constexpr Ast parseAst(std::basic_string_view<CharT> src)
 	{
 		auto ast = Ast{};
 		auto context = Context<CharT>{
@@ -79,5 +79,13 @@ namespace CppUtils::Language::Parser
 			std::throw_with_nested(std::runtime_error{getPositionInformation(context.cursor) + ": '" + context.cursor.current() + '\''});
 		}
 		return ast;
+	}
+	
+	namespace Literals
+	{
+		[[nodiscard]] auto operator"" _ast(const char* cString) -> Ast
+		{
+			return parseAst<char>(cString);
+		}
 	}
 }
