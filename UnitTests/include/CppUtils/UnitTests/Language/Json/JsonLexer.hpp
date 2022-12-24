@@ -11,7 +11,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 		using namespace CppUtils::Language::Json::Literals;
 
 		addTest("empty json", [] {
-			CppUtils::Language::Json::jsonGrammarAst.log();
+			CppUtils::Language::Json::getJsonGrammarAst().log();
 			
 			const auto jsonAst = R"(
 				{}

@@ -3,6 +3,8 @@
 #include <CppUtils/Hash/Token.hpp>
 #include <CppUtils/String/String.hpp>
 #include <CppUtils/Language/Lexer/Context.hpp>
+#include <CppUtils/Language/Parser/Context.hpp>
+#include <CppUtils/Language/VirtualMachine/VirtualMachine.hpp>
 
 namespace CppUtils::Language::Lexer
 {
@@ -71,7 +73,7 @@ namespace CppUtils::Language::Lexer
 			newContext.lexeme = declaration;
 			if (parseDeclaration(newContext))
 			{
-				cursor.pos = newContext.parserContext.cursor.pos;
+				cursor.position = newContext.parserContext.cursor.position;
 				return true;
 			}
 		}
@@ -85,7 +87,7 @@ namespace CppUtils::Language::Lexer
 		using namespace Hash::Literals;
 		auto& [parserContext, lexeme, grammar, memory] = context;
 		auto& [cursor, parentNode, ast] = parserContext;
-		auto startPos = cursor.pos;
+		auto startPos = cursor.position;
 		switch (lexeme.get().value)
 		{
 			case "optional"_token:
@@ -105,15 +107,15 @@ namespace CppUtils::Language::Lexer
 				auto size = std::size(lexeme.get().nodes);
 				if (size == 0)
 					throw std::logic_error{"Missing element in 'string' token"};
-				if (cursor.pos + size > std::size(cursor.data))
+				if (cursor.position + size > std::size(cursor.data))
 					return false;
 				for (auto i = 0u; i < size; ++i)
 				{
 					if (auto c = lexeme.get().nodes[i].value; cursor.is(static_cast<Element>(c)))
-						++cursor.pos;
+						++cursor.position;
 					else
 					{
-						cursor.pos = startPos;
+						cursor.position = startPos;
 						return false;
 					}
 				}
@@ -121,7 +123,7 @@ namespace CppUtils::Language::Lexer
 			}
 			case "read"_token:
 			{
-				if (cursor.pos == std::size(cursor.data))
+				if (cursor.position == std::size(cursor.data))
 					return false;
 				parentNode.get().nodes.push_back(Parser::AstNode{static_cast<std::uintptr_t>(cursor.current())});
 				return true;
@@ -167,7 +169,7 @@ namespace CppUtils::Language::Lexer
 				auto token = Hash::hash(string);
 				ast.tokenNames.get()[token] = std::move(string);
 				parentNode.get().nodes.push_back(Parser::AstNode{token});
-				cursor.pos = newContext.parserContext.cursor.pos;
+				cursor.position = newContext.parserContext.cursor.position;
 				return true;
 			}
 			case "sub"_token:
@@ -180,14 +182,14 @@ namespace CppUtils::Language::Lexer
 				parentNode = oldParentNode;
 				return result;
 			}
-			case "=="_token: return cursor.pos < std::size(cursor.data) && cursor[cursor.pos] == static_cast<char>(lexeme.get().nodes[0].value);
-			case ">="_token: return cursor.pos < std::size(cursor.data) && cursor[cursor.pos] >= static_cast<char>(lexeme.get().nodes[0].value);
-			case "<="_token: return cursor.pos < std::size(cursor.data) && cursor[cursor.pos] <= static_cast<char>(lexeme.get().nodes[0].value);
+			case "=="_token: return cursor.position < std::size(cursor.data) && cursor[cursor.position] == static_cast<char>(lexeme.get().nodes[0].value);
+			case ">="_token: return cursor.position < std::size(cursor.data) && cursor[cursor.position] >= static_cast<char>(lexeme.get().nodes[0].value);
+			case "<="_token: return cursor.position < std::size(cursor.data) && cursor[cursor.position] <= static_cast<char>(lexeme.get().nodes[0].value);
 			case '+':
 			{
-				if (cursor.pos == std::size(cursor.data))
+				if (cursor.position == std::size(cursor.data))
 					throw std::logic_error{"Can't increment the cursor, it has reached the end of the string"};
-				++cursor.pos;
+				++cursor.position;
 				return true;
 			}
 			case "not"_token:
@@ -202,7 +204,7 @@ namespace CppUtils::Language::Lexer
 			case "parenthesis"_token:
 				return parseLexemes(context);
 			case "end"_token:
-				return cursor.pos == std::size(cursor.data);
+				return cursor.position == std::size(cursor.data);
 			case "repeat"_token:
 			{
 				const auto nbLexemes = std::size(lexeme.get().nodes);
@@ -238,7 +240,7 @@ namespace CppUtils::Language::Lexer
 					return false;
 				auto& memoryNode = memory.node.get();
 				memoryNode.nodes.insert(std::cend(memoryNode.nodes), std::cbegin(tempParentNode.nodes), std::cend(tempParentNode.nodes));
-				cursor.pos = newContext.parserContext.cursor.pos;
+				cursor.position = newContext.parserContext.cursor.position;
 				return true;
 			}
 			case "pop"_token:
@@ -262,9 +264,9 @@ namespace CppUtils::Language::Lexer
 		using namespace Hash::Literals;
 		if (std::empty(grammar.root.nodes))
 			throw std::logic_error{"Empty grammar"};
-		auto ast = Parser::Ast{grammar.tokenNames};
+		auto ast = Parser::Ast{"root", {}, grammar.tokenNames};
 		auto memoryRoot = Parser::AstNode{"root"_token};
-		auto memory = Parser::ReadableAstNode{memoryRoot, ast.tokenNames};
+		auto memory = Parser::AstRef{memoryRoot, ast.tokenNames};
 		auto declarationIt = grammar.find("main"_token);
 		if (declarationIt == std::cend(grammar.root.nodes))
 			throw std::logic_error{"Entry point \"main\" not found"};
@@ -273,7 +275,7 @@ namespace CppUtils::Language::Lexer
 			.parserContext = Parser::Context<CharT>{
 				.cursor = Parser::Cursor{src},
 				.parentNode = ast.root,
-				.ast = Parser::ReadableAstNode{ast}
+				.ast = Parser::AstRef{ast}
 			},
 			.lexeme = mainLexeme,
 			.grammar = grammar,

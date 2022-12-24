@@ -13,6 +13,7 @@
 #include <CppUtils/UnitTests/Hash/Token.hpp>
 #include <CppUtils/UnitTests/Graph/Tree.hpp>
 #include <CppUtils/UnitTests/Language/Parser/AstParser.hpp>
+#include <CppUtils/UnitTests/Language/Parser/AstGrammar.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Lexer.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Grammar/LowLevelGrammar.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Grammar/HighLevelGrammar.hpp>

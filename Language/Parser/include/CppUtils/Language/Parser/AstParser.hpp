@@ -14,7 +14,7 @@ namespace CppUtils::Language::Parser
 		auto tokenNameBuffer = std::string{};
 		for (char value; !cursor.isEnd() && (value = cursor.current()) != '}'; )
 		{
-			++cursor.pos;
+			++cursor.position;
 			switch (value)
 			{
 				case ' ': case '\n': case '\t': case '\r':
@@ -25,21 +25,21 @@ namespace CppUtils::Language::Parser
 					tokenNameBuffer.clear();
 					auto newContext = Context<Element>{cursor, parentNode.get().nodes.back(), ast};
 					parseAst(newContext);
-					cursor.pos = newContext.cursor.pos;
+					cursor.position = newContext.cursor.position;
 					if (!cursor.is('}'))
 						throw std::logic_error{"Missing '}'"};
-					++cursor.pos;
+					++cursor.position;
 					break;
 				}
 				case '_':
 				{
-					auto nbLetters = tokenNameBuffer.size();
+					auto nbLetters = std::size(tokenNameBuffer);
 					if (nbLetters == 0)
 						throw std::logic_error{"Token name missing before '_' char"};
 					auto token = Hash::hash(tokenNameBuffer);
 					ast.tokenNames.get()[token] = std::move(tokenNameBuffer);
 					tokenNameBuffer.clear();
-					parentNode.get().nodes.erase(parentNode.get().nodes.cend() - nbLetters, parentNode.get().nodes.cend());
+					parentNode.get().nodes.erase(std::cend(parentNode.get().nodes) - nbLetters, std::cend(parentNode.get().nodes));
 					parentNode.get().nodes.push_back(Graph::Tree::Node{token});
 					break;
 				}
@@ -62,11 +62,11 @@ namespace CppUtils::Language::Parser
 	template<class CharT>
 	[[nodiscard]] constexpr Ast parseAst(std::basic_string_view<CharT> src)
 	{
-		auto ast = Ast{};
+		auto ast = Ast{"root"};
 		auto context = Context<CharT>{
 			.cursor = Cursor{src},
 			.parentNode = ast.root,
-			.ast = Parser::ReadableAstNode{ast}
+			.ast = Parser::AstRef{ast}
 		};
 		try
 		{

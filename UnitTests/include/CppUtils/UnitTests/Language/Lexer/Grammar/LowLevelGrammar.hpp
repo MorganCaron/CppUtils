@@ -306,5 +306,21 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
 			TEST_ASSERT(outputAst.root.nodes[0].value == "ABC"_token);
 		});
+
+		addTest("unsigned int", [] {
+			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
+			
+			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
+				main: uint;
+				uint: add('\0') repeat(digit);
+				digit: ['0', '9'] read()+;
+			)"sv, lowLevelGrammarAst);
+			grammarAst.log();
+			const auto outputAst = CppUtils::Language::Lexer::parse("42"sv, grammarAst);
+			outputAst.log();
+
+			TEST_ASSERT(std::size(outputAst.root.nodes) == 1);
+			TEST_ASSERT(outputAst.root.nodes[0].value == 42);
+		});
 	}
 }

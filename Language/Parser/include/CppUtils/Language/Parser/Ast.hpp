@@ -7,17 +7,19 @@ namespace CppUtils::Language::Parser
 {
 	using AstNode = Graph::Tree::Node<Hash::Token>;
 	
+	struct AstRef;
 	struct Ast final
 	{
 		AstNode root;
 		Hash::TokenNames tokenNames;
 
-		explicit Ast(Hash::TokenNames c_tokenNames = {})
+		explicit Ast(std::string astName, std::vector<AstNode> declarations = {}, Hash::TokenNames c_tokenNames = {})
 		{
 			using namespace Hash::Literals;
-			root = AstNode{"root"_token};
+			const auto token = Hash::hash(astName);
+			root = AstNode{token, std::move(declarations)};
 			tokenNames = std::move(c_tokenNames);
-			tokenNames["root"_token] = "root";
+			tokenNames[token] = std::move(astName);
 		}
 
 		auto log() const -> void
@@ -33,17 +35,17 @@ namespace CppUtils::Language::Parser
 		}
 	};
 	
-	struct ReadableAstNode final
+	struct AstRef final
 	{
 		std::reference_wrapper<AstNode> node;
 		std::reference_wrapper<Hash::TokenNames> tokenNames;
 
-		explicit ReadableAstNode(Ast& ast):
+		explicit AstRef(Ast& ast):
 			node{ast.root},
 			tokenNames{ast.tokenNames}
 		{}
 
-		ReadableAstNode(AstNode& astNode, Hash::TokenNames& tokenNames):
+		explicit AstRef(AstNode& astNode, Hash::TokenNames& tokenNames):
 			node{astNode},
 			tokenNames{tokenNames}
 		{}
@@ -58,5 +60,11 @@ namespace CppUtils::Language::Parser
 		{
 			Graph::Tree::log(node.get(), tokenNames.get());
 		}
+	};
+
+	struct AstCursor final
+	{
+		std::reference_wrapper<Ast> root;
+		std::reference_wrapper<AstNode> currentNode;
 	};
 }

@@ -12,6 +12,6 @@ namespace CppUtils::Language::Parser
 	{
 		Cursor<Element> cursor;
 		std::reference_wrapper<AstNode> parentNode;
-		ReadableAstNode ast;
+		AstRef ast;
 	};
 }

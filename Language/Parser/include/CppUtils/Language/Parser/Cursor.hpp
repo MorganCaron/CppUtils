@@ -14,11 +14,11 @@ namespace CppUtils::Language::Parser
 	struct Cursor final
 	{
 		std::span<const Element> data;
-		std::size_t pos = 0;
+		std::size_t position = 0;
 		
 		[[nodiscard]] constexpr bool isEnd() const
 		{
-			return pos >= data.size();
+			return position >= data.size();
 		}
 		[[nodiscard]] constexpr auto operator[](std::size_t position) const -> const Element&
 		{
@@ -26,11 +26,11 @@ namespace CppUtils::Language::Parser
 		}
 		[[nodiscard]] constexpr auto current() const -> const Element&
 		{
-			return data[pos];
+			return data[position];
 		}
 		[[nodiscard]] constexpr auto read() -> const Element&
 		{
-			return data[pos++];
+			return data[position++];
 		}
 		[[nodiscard]] constexpr auto is(const Element& value) const -> bool
 		{
@@ -39,12 +39,12 @@ namespace CppUtils::Language::Parser
 	};
 
 	template<class CharT>
-	Cursor(std::basic_string_view<CharT>, std::size_t pos = 0) -> Cursor<CharT>;
+	Cursor(std::basic_string_view<CharT>, std::size_t position = 0) -> Cursor<CharT>;
 
 	template<String::Concept::Char CharT>
 	[[nodiscard]] constexpr auto getLineNumber(const Cursor<CharT>& cursor) -> std::size_t
 	{
-		const auto subSpan = cursor.data.subspan(0, cursor.pos);
+		const auto subSpan = cursor.data.subspan(0, cursor.position);
 		return std::count(std::cbegin(subSpan), std::cend(subSpan), '\n') + 1;
 	}
 
@@ -52,7 +52,7 @@ namespace CppUtils::Language::Parser
 	[[nodiscard]] constexpr auto getPositionInTheLine(const Cursor<CharT>& cursor) noexcept -> std::size_t
 	{
 		auto lineLength = 0u;
-		while (cursor.pos - lineLength >= 0 && cursor.data[cursor.pos - lineLength] != '\n')
+		while (cursor.position - lineLength >= 0 && cursor.data[cursor.position - lineLength] != '\n')
 			++lineLength;
 		return lineLength;
 	}
@@ -63,16 +63,16 @@ namespace CppUtils::Language::Parser
 		if constexpr (!String::Concept::Char<CharT>)
 			return std::basic_string<CharT>{};
 		
-		auto startPosition = cursor.pos - std::min(getPositionInTheLine(cursor), length);
+		auto startPosition = cursor.position - std::min(getPositionInTheLine(cursor), length);
 
-		auto endPosition = cursor.pos;
+		auto endPosition = cursor.position;
 		while (endPosition < std::size(cursor.data) && endPosition < startPosition + length && cursor.data[endPosition] != '\n')
 			++endPosition;
 		
 		auto sample = std::basic_string<CharT>{std::cbegin(cursor.data) + startPosition, std::cbegin(cursor.data) + endPosition};
 		std::replace(std::begin(sample), std::end(sample), '\t', ' ');
 
-		auto arrowOffset = cursor.pos - startPosition;
+		auto arrowOffset = cursor.position - startPosition;
 		auto charOffset = arrowOffset == 0 ? arrowOffset : (arrowOffset == length * 2 + 1 ? arrowOffset - 2 : arrowOffset - 1);
 		
 		if (!empty(sample))
@@ -89,6 +89,6 @@ namespace CppUtils::Language::Parser
 				" position " + std::to_string(getPositionInTheLine(cursor)) + ":\n" +
 				getSample(cursor, Terminal::getTerminalSize().width);
 		else
-			return "\nAt position " + std::to_string(cursor.pos);
+			return "\nAt position " + std::to_string(cursor.position);
 	}
 }

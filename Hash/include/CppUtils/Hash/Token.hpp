@@ -27,6 +27,11 @@ namespace CppUtils::Hash
 		return hash(std::basic_string_view<CharT>{string});
 	}
 
+	auto addTokenName(TokenNames& tokenNames, std::string newName) -> void
+	{
+		tokenNames[Hash::hash(newName)] = std::move(newName);
+	}
+
 	[[nodiscard]] auto getTokenNameOrValue(Token token, const TokenNames& tokenNames) -> std::string
 	{
 		using namespace std::literals;

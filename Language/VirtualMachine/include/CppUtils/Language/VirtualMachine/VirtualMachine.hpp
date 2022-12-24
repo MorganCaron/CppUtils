@@ -9,32 +9,39 @@
 
 namespace CppUtils::Language::VirtualMachine
 {
-	template<class Instruction, class Context>
-	class VirtualMachine
+	/*
+	template<class... Args>
+	class VirtualMachine final
 	{
 	public:
-		using Operation = std::function<void(const Instruction&, Context&)>;
+		using Operation = std::function<bool(Args&&...)>;
 
-		explicit VirtualMachine(std::unordered_map<Hash::Token, Operation> operations):
-			m_operations{std::move(operations)}
-		{}
+		auto addOperation(std::string_view tokenName, Operation operation) -> void
+		{
+			auto token = Hash::hash(tokenName);
+			m_operations[token] = std::move(operation);
+			m_tokenNames[token] = tokenName;
+		}
 
-		void run(const Hash::Token& token, const Instruction& instruction, Context& context) const
+		auto run(const Hash::Token& token, Args&&... args) const -> bool
 		{
 			try
 			{
 				const auto& operation = m_operations.find(token);
-				if (operation == m_operations.end())
-					throw std::runtime_error{"Unknown instruction:\n" + std::string{token.name}};
-				operation->second(instruction, context);
+				if (operation == std::cend(m_operations))
+					throw std::runtime_error{"Unknown instruction:\n" + Hash::getTokenNameOrValue(token, m_tokenNames)};
+				return operation->second(std::forward<Args>(args)...);
 			}
 			catch (const std::exception& exception)
 			{
-				throw std::runtime_error{"In the virtual machine:\nIn the " + std::string{token.name} + " operation:\n" + exception.what()};
+				throw std::runtime_error{"In the virtual machine:\nIn the " + Hash::getTokenNameOrValue(token, m_tokenNames) + " operation:\n" + exception.what()};
 			}
+			return false;
 		}
 
 	private:
 		std::unordered_map<Hash::Token, Operation> m_operations;
+		Hash::TokenNames m_tokenNames;
 	};
+	*/
 }

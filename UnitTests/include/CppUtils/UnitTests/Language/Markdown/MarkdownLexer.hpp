@@ -11,14 +11,28 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 		using namespace CppUtils::Language::Markdown::Literals;
 		
 		addTest("Minimalist", [] {
+			CppUtils::Language::Markdown::getMarkdownGrammarAst().log();
+
 			const auto markdownAst = R"(
 			# Hello World!
 			)"_markdown;
 			markdownAst.log();
 
-			TEST_ASSERT(markdownAst.root.exists("h1"_token));
-			TEST_ASSERT(markdownAst.root.at("h1"_token).exists("content"_token));
-			TEST_ASSERT(markdownAst.root.at("h1"_token).at("content"_token).getChildValue() == "Hello World!"s);
+			TEST_ASSERT(std::size(markdownAst.root.nodes) == 1);
+			{
+				const auto& h1Node = markdownAst.root.nodes[0];
+				TEST_ASSERT(h1Node.value == "h1"_token);
+				TEST_ASSERT(std::size(h1Node.nodes) == 1);
+				{
+					const auto& contentNode = h1Node.nodes[0];
+					TEST_ASSERT(contentNode.value == "content"_token);
+					TEST_ASSERT(std::size(contentNode.nodes) == 1);
+					{
+						const auto& valueNode = contentNode.nodes[0];
+						TEST_ASSERT(valueNode.value == "Hello World!"_token);
+					}
+				}
+			}
 		});
 
 		addTest("Format", [] {
@@ -35,9 +49,9 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			)"_markdown;
 			markdownAst.log();
 
-			TEST_ASSERT(markdownAst.nodes.size() == 9);
-			TEST_ASSERT(markdownAst.nodes[0].nodes.size() == 1);
-			TEST_ASSERT(markdownAst.nodes[0].getChildValue() == "italic"s);
+			TEST_ASSERT(std::size(markdownAst.root.nodes) == 9);
+			TEST_ASSERT(std::size(markdownAst.root.nodes[0].nodes) == 1);
+			TEST_ASSERT(markdownAst.root.nodes[0].value == "italic"_token);
 		});
 
 		addTest("Title", [] {
@@ -51,12 +65,12 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			)"_markdown;
 			markdownAst.log();
 
-			TEST_ASSERT(markdownAst.exists("h1"_token));
-			TEST_ASSERT(markdownAst.exists("h2"_token));
-			TEST_ASSERT(markdownAst.exists("h3"_token));
-			TEST_ASSERT(markdownAst.exists("h4"_token));
-			TEST_ASSERT(markdownAst.exists("h5"_token));
-			TEST_ASSERT(markdownAst.exists("h6"_token));
+			TEST_ASSERT(markdownAst.root.exists("h1"_token));
+			TEST_ASSERT(markdownAst.root.exists("h2"_token));
+			TEST_ASSERT(markdownAst.root.exists("h3"_token));
+			TEST_ASSERT(markdownAst.root.exists("h4"_token));
+			TEST_ASSERT(markdownAst.root.exists("h5"_token));
+			TEST_ASSERT(markdownAst.root.exists("h6"_token));
 		});
 
 		addTest("Checkbox", [] {
@@ -66,11 +80,11 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			)"_markdown;
 			markdownAst.log();
 
-			TEST_ASSERT(markdownAst.getChildValue(0) == "checkbox"_token);
-			TEST_ASSERT(markdownAst.getChildValue(1) == "checkbox"_token);
-			TEST_ASSERT(markdownAst.nodes.at(0).nodes.empty());
-			TEST_ASSERT(markdownAst.nodes.at(1).exists("attributes"_token));
-			TEST_ASSERT(markdownAst.nodes.at(1).at("attributes"_token).getChildValue() == "checked"_token);
+			TEST_ASSERT(markdownAst.root.nodes[0].value == "checkbox"_token);
+			TEST_ASSERT(markdownAst.root.nodes[1].value == "checkbox"_token);
+			TEST_ASSERT(markdownAst.root.nodes.at(0).nodes.empty());
+			TEST_ASSERT(markdownAst.root.nodes.at(1).exists("attributes"_token));
+			TEST_ASSERT(markdownAst.root.nodes.at(1).nodes.at("attributes"_token).nodes[0].value == "checked"_token);
 		});
 
 		addTest("Image", [] {
@@ -79,11 +93,11 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			)"_markdown;
 			markdownAst.log();
 
-			TEST_ASSERT(markdownAst.exists("image"_token));
-			TEST_ASSERT(markdownAst.at("image"_token).exists("attributes"_token));
-			const auto& attributes = markdownAst.at("image"_token).at("attributes"_token);
-			TEST_ASSERT(attributes.at("alt"_token).getChildValue() == "title"s);
-			TEST_ASSERT(attributes.at("src"_token).getChildValue() == "url"s);
+			TEST_ASSERT(markdownAst.root.exists("image"_token));
+			TEST_ASSERT(markdownAst.root.nodes.at("image"_token).exists("attributes"_token));
+			const auto& attributes = markdownAst.root.at("image"_token).at("attributes"_token);
+			TEST_ASSERT(attributes.at("alt"_token).nodes[0].value == "title"s);
+			TEST_ASSERT(attributes.at("src"_token).nodes[0].value == "url"s);
 		});
 
 		addTest("Link", [] {
@@ -92,11 +106,11 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			)"_markdown;
 			markdownAst.log();
 
-			TEST_ASSERT(markdownAst.exists("link"_token));
-			TEST_ASSERT(markdownAst.at("link"_token).exists("attributes"_token));
-			const auto& attributes = markdownAst.at("link"_token).at("attributes"_token);
-			TEST_ASSERT(attributes.at("alt"_token).getChildValue() == "title"s);
-			TEST_ASSERT(attributes.at("src"_token).getChildValue() == "url"s);
+			TEST_ASSERT(markdownAst.root.exists("link"_token));
+			TEST_ASSERT(markdownAst.root.at("link"_token).exists("attributes"_token));
+			const auto& attributes = markdownAst.root.at("link"_token).at("attributes"_token);
+			TEST_ASSERT(attributes.at("alt"_token).nodes[0].value == "title"s);
+			TEST_ASSERT(attributes.at("src"_token).nodes[0].value == "url"s);
 		});
 
 		addTest("Code", [] {
@@ -105,9 +119,9 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			)"_markdown;
 			markdownAst.log();
 
-			TEST_ASSERT(markdownAst.exists("code"_token));
-			TEST_ASSERT(markdownAst.at("code"_token).exists("content"_token));
-			TEST_ASSERT(markdownAst.at("code"_token).at("content"_token).getChildValue() == "const variable = 42;"s);
+			TEST_ASSERT(markdownAst.root.exists("code"_token));
+			TEST_ASSERT(markdownAst.root.at("code"_token).exists("content"_token));
+			TEST_ASSERT(markdownAst.root.at("code"_token).at("content"_token).nodes[0].value == "const variable = 42;"s);
 		});
 
 		addTest("Blockcode", [] {
@@ -118,13 +132,13 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 			)"_markdown;
 			markdownAst.log();
 
-			TEST_ASSERT(markdownAst.exists("blockcode"_token));
-			const auto& blockcode = markdownAst.at("blockcode"_token);
+			TEST_ASSERT(markdownAst.root.exists("blockcode"_token));
+			const auto& blockcode = markdownAst.root.at("blockcode"_token);
 			TEST_ASSERT(blockcode.exists("attributes"_token));
 			TEST_ASSERT(blockcode.at("attributes"_token).exists("lang"_token));
-			TEST_ASSERT(blockcode.at("attributes"_token).at("lang"_token).getChildValue() == "js"_token);
+			TEST_ASSERT(blockcode.at("attributes"_token).at("lang"_token).nodes[0].value == "js"_token);
 			TEST_ASSERT(blockcode.exists("content"_token));
-			TEST_ASSERT(blockcode.at("content"_token).getChildValue() == "const variable = 42;"s);
+			TEST_ASSERT(blockcode.at("content"_token).nodes[0].value == "const variable = 42;"s);
 		});
 	}
 }

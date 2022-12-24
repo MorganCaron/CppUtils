@@ -25,6 +25,7 @@
 #include <CppUtils/Language/Parser/AstParser.hpp>
 #include <CppUtils/Language/Parser/Context.hpp>
 #include <CppUtils/Language/Parser/Cursor.hpp>
+#include <CppUtils/Language/Parser/Parser.hpp>
 #include <CppUtils/Language/Lexer/Lexer.hpp>
 #include <CppUtils/Language/Lexer/Context.hpp>
 #include <CppUtils/Language/IR/Compiler/Bytecode.hpp>
