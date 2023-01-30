@@ -21,13 +21,10 @@
 #include <CppUtils/Graph/Tree.hpp>
 #include <CppUtils/Graph/VariantTree.hpp>
 #include <CppUtils/Hash/Token.hpp>
-#include <CppUtils/Language/Parser/Ast.hpp>
-#include <CppUtils/Language/Parser/AstParser.hpp>
-#include <CppUtils/Language/Parser/Context.hpp>
 #include <CppUtils/Language/Parser/Cursor.hpp>
-#include <CppUtils/Language/Parser/Parser.hpp>
-#include <CppUtils/Language/Lexer/Lexer.hpp>
-#include <CppUtils/Language/Lexer/Context.hpp>
+#include <CppUtils/Language/Ast.hpp>
+#include <CppUtils/Language/AstGrammar.hpp>
+#include <CppUtils/Language/VirtualMachine.hpp>
 #include <CppUtils/Language/IR/Compiler/Bytecode.hpp>
 #include <CppUtils/Language/IR/Compiler/CompilationFunctions.hpp>
 #include <CppUtils/Language/IR/Compiler/Compiler.hpp>
@@ -37,8 +34,6 @@
 #include <CppUtils/Language/IR/VirtualMachine/Operations.hpp>
 #include <CppUtils/Language/IR/VirtualMachine/ProgramMemory.hpp>
 #include <CppUtils/Language/IR/VirtualMachine/VirtualMachine.hpp>
-#include <CppUtils/Language/VirtualMachine/Stack.hpp>
-#include <CppUtils/Language/VirtualMachine/VirtualMachine.hpp>
 #include <CppUtils/Language/ASM/Compiler/Bytecode.hpp>
 #include <CppUtils/Language/ASM/Compiler/CompilationFunctions.hpp>
 #include <CppUtils/Language/ASM/Compiler/Compiler.hpp>
@@ -46,7 +41,6 @@
 #include <CppUtils/Language/ASM/Lexer/Lexer.hpp>
 #include <CppUtils/Language/ASM/VirtualMachine/Context.hpp>
 #include <CppUtils/Language/ASM/VirtualMachine/Operations.hpp>
-#include <CppUtils/Language/ASM/VirtualMachine/VirtualMachine.hpp>
 #include <CppUtils/Language/Ini/IniLexer.hpp>
 #include <CppUtils/Language/Json/JsonLexer.hpp>
 #include <CppUtils/Language/Markdown/MarkdownLexer.hpp>

@@ -17,15 +17,26 @@ namespace CppUtils::Graph::Tree
 		T value;
 		std::vector<Node<T>> nodes = {};
 
-		[[nodiscard]] auto exists(const T& key) const noexcept -> bool
+		[[nodiscard]] constexpr auto find(const T& key) const noexcept -> const auto
 		{
-			for (const auto& node : nodes)
-				if (key == node.value)
-					return true;
-			return false;
+			return std::find_if(std::cbegin(nodes), std::cend(nodes), [key](const auto& node) -> bool {
+				return node.value == key;
+			});
 		}
 
-		[[nodiscard]] auto operator[](const T& key) -> Node<T>&
+		[[nodiscard]] constexpr auto find(const T& key) noexcept -> auto
+		{
+			return std::find_if(std::cbegin(nodes), std::cend(nodes), [key](const auto& node) -> bool {
+				return node.value == key;
+			});
+		}
+
+		[[nodiscard]] constexpr auto exists(const T& key) const noexcept -> bool
+		{
+			return find(key) != std::cend(nodes);
+		}
+
+		[[nodiscard]] constexpr auto operator[](const T& key) -> Node<T>&
 		{
 			for (auto& node : nodes)
 				if (key == node.value)
@@ -33,7 +44,7 @@ namespace CppUtils::Graph::Tree
 			return nodes.emplace_back(Node<T>{key});
 		}
 
-		[[nodiscard]] auto operator[](const T& key) const -> const Node<T>&
+		[[nodiscard]] constexpr auto operator[](const T& key) const -> const Node<T>&
 		{
 			for (const auto& node : nodes)
 				if (key == node.value)
@@ -41,7 +52,7 @@ namespace CppUtils::Graph::Tree
 			throw std::out_of_range{"The Node does not contain the requested child."};
 		}
 		
-		[[nodiscard]] auto getNodesWithValue(const T& filterValue) const
+		[[nodiscard]] constexpr auto getNodesWithValue(const T& filterValue) const
 		{
 			return nodes | std::views::filter([&filterValue](const auto& node) { return node.value == filterValue; });
 		}
@@ -49,6 +60,12 @@ namespace CppUtils::Graph::Tree
 
 	template<class T>
 	Node(T value, std::vector<Node<T>> nodes = {}) -> Node<T>;
+
+	template<class T>
+	[[nodiscard]] auto operator==(const Node<T>& lhs, const Node<T>& rhs) -> bool
+	{
+		return lhs.value == rhs.value && lhs.nodes == rhs.nodes;
+	}
 
 	template<class T>
 	requires Type::Concept::Printable<T> // Fonctionne sur GCC mais pas sur Clang https://godbolt.org/z/75cja8

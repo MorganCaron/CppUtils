@@ -3,7 +3,6 @@ target("CppUtils-Language-Asm-Compiler")
 	add_deps(
 		"CppUtils-Log",
 		"CppUtils-Language-Parser",
-		"CppUtils-Language-Lexer",
 		"CppUtils-Language-Compiler",
 		"CppUtils-Language-Asm-Lexer"
 	)

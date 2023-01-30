@@ -47,14 +47,6 @@ namespace CppUtils::String
 			});
 	}
 
-	template<Concept::Text Text>
-	[[nodiscard]] auto cStringArrayToVectorOfStrings(const char** cstringArray, std::size_t length) -> std::vector<Text>
-	{
-		if (length == 0)
-			return {};
-		return std::vector<Text>{cstringArray, cstringArray + length};
-	}
-
 	[[nodiscard]] inline auto leftTrimString(std::string_view stringView) -> std::string_view
 	{
 		stringView.remove_prefix(std::distance(stringView.cbegin(),

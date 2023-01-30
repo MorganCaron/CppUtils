@@ -1,5 +1,6 @@
 #pragma once
 
+#include <CppUtils/UnitTests/UnitTest/UnitTest.hpp>
 #include <CppUtils/UnitTests/Container/Sequence.hpp>
 #include <CppUtils/UnitTests/Container/Vector.hpp>
 #include <CppUtils/UnitTests/String/String.hpp>
@@ -12,7 +13,7 @@
 #include <CppUtils/UnitTests/Graph/MeshNode.hpp>
 #include <CppUtils/UnitTests/Hash/Token.hpp>
 #include <CppUtils/UnitTests/Graph/Tree.hpp>
-#include <CppUtils/UnitTests/Language/Parser/AstParser.hpp>
+#include <CppUtils/UnitTests/Language/VirtualMachine/VirtualMachine.hpp>
 #include <CppUtils/UnitTests/Language/Parser/AstGrammar.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Lexer.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Grammar/LowLevelGrammar.hpp>

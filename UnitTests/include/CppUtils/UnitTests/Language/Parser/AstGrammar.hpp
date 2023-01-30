@@ -4,76 +4,162 @@
 
 namespace CppUtils::UnitTests::Language::Parser::Grammar::AstGrammar
 {
-	TEST_GROUP("Language/Parser/Grammar/astGrammar")
+	TEST_GROUP("Language/Parser/Grammar/AstGrammar")
 	{
 		using namespace std::literals;
 		using namespace CppUtils::Hash::Literals;
 
+		using CppUtils::Language::Ast;
+		using CppUtils::Language::AstNode;
+
 		addTest("empty grammar", [] {
-			using CppUtils::Language::Parser::AstNode;
-			const auto astGrammar = CppUtils::Language::Parser::Ast{"Grammar", {
-				AstNode{"main"_token, {
-					AstNode{"eof"_token},
-					AstNode{"return"_token}
-				}}
-			}, CppUtils::Language::Parser::getGrammarNames()};
-			astGrammar.log();
+			constexpr auto source = ""sv;
 
-			auto cursor = CppUtils::Language::Parser::Cursor{""sv};
-            const auto result = CppUtils::Language::Parser::parse(astGrammar, cursor);
-			result.log();
-			
-			TEST_ASSERT(std::empty(result.root.nodes));
-		});
-
-		addTest("read char", [] {
-			using CppUtils::Language::Parser::AstNode;
-			const auto astGrammar = CppUtils::Language::Parser::Ast{"Grammar", {
-				AstNode{"main"_token, {
-					AstNode{"read"_token},
-					AstNode{"push"_token},
-					AstNode{"increment"_token},
-					AstNode{"eof"_token},
-					AstNode{"return"_token}
-				}}
-			}, CppUtils::Language::Parser::getGrammarNames()};
-			astGrammar.log();
-
-			auto cursor = CppUtils::Language::Parser::Cursor{"A"sv};
-            const auto result = CppUtils::Language::Parser::parse(astGrammar, cursor);
-			result.log();
-			
-			TEST_ASSERT(std::size(result.root.nodes) == 1);
-			TEST_ASSERT(result.root.nodes[0].value == 'A');
-		});
-
-		addTest("compare chars", [] {
-			using CppUtils::Language::Parser::AstNode;
-			const auto astGrammar = CppUtils::Language::Parser::Ast{"Grammar", {
-				AstNode{"main"_token, {
-					AstNode{"set"_token, { AstNode{"read"_token} }},
-					AstNode{"call"_token},
-					AstNode{"push"_token},
-					AstNode{"set"_token, { AstNode{"read"_token} }},
-					AstNode{"call"_token},
-					AstNode{"compare"_token},
-					AstNode{"drop"_token},
-					AstNode{"eof"_token},
-					AstNode{"return"_token}
+			auto context = Ast{"context", {
+				AstNode{"source"_token, {
+					AstNode{"main"_token, {
+						AstNode{"move"_token, {
+							AstNode{"token"_token, {
+								AstNode{"register"_token, {
+									AstNode{"token"_token, {
+										AstNode{"R0"_token}
+									}}
+								}}
+							}},
+							AstNode{"token"_token, {
+								AstNode{"rodata"_token, {
+									AstNode{"index"_token, {
+										AstNode{0}
+									}}
+								}}
+							}}
+						}},
+						AstNode{"cmp"_token, {
+							AstNode{"deref"_token, {
+								AstNode{"token"_token, {
+									AstNode{"register"_token, {
+										AstNode{"token"_token, {
+											AstNode{"R0"_token, {
+												AstNode{"index"_token, {
+													AstNode{0}
+												}}
+											}}
+										}}
+									}}
+								}}
+							}},
+							AstNode{"value"_token, {
+								AstNode{0}
+							}}
+						}},
+						AstNode{"sete"_token, {
+							AstNode{"token"_token, {
+								AstNode{"register"_token, {
+									AstNode{"token"_token, {
+										AstNode{"R0"_token}
+									}}
+								}}
+							}}
+						}},
+						AstNode{"xor"_token, {
+							AstNode{"token"_token, {
+								AstNode{"register"_token, {
+									AstNode{"token"_token, {
+										AstNode{"R0"_token}
+									}}
+								}}
+							}},
+							AstNode{"value"_token, {
+								AstNode{1}
+							}}
+						}},
+						AstNode{"return"_token}
+					}}
 				}},
-				AstNode{"read"_token, {
-					AstNode{"read"_token},
-					AstNode{"increment"_token},
-					AstNode{"return"_token}
+				AstNode{"rodata"_token, {
+					AstNode{reinterpret_cast<std::uintptr_t>(std::data(source))}
 				}}
-			}, CppUtils::Language::Parser::getGrammarNames()};
-			astGrammar.log();
+			}, CppUtils::Language::VirtualMachine::getTokenNames()};
 
-			auto cursor = CppUtils::Language::Parser::Cursor{"AA"sv};
-            const auto result = CppUtils::Language::Parser::parse(astGrammar, cursor);
-			result.log();
-			
-			TEST_ASSERT(std::empty(result.root.nodes));
+            const auto result = CppUtils::Language::VirtualMachine::run(context);
+			context.log();
+
+			TEST_ASSERT(result == AstNode{0});
+		});
+
+		addTest("char", [] {
+			constexpr auto source = "c"sv;
+
+			auto context = Ast{"context", {
+				AstNode{"source"_token, {
+					AstNode{"main"_token, {
+						AstNode{"move"_token, {
+							AstNode{"token"_token, {
+								AstNode{"register"_token, {
+									AstNode{"token"_token, {
+										AstNode{"R0"_token}
+									}}
+								}}
+							}},
+							AstNode{"token"_token, {
+								AstNode{"rodata"_token, {
+									AstNode{"index"_token, {
+										AstNode{0}
+									}}
+								}}
+							}}
+						}},
+						AstNode{"cmp"_token, {
+							AstNode{"deref"_token, {
+								AstNode{"token"_token, {
+									AstNode{"register"_token, {
+										AstNode{"token"_token, {
+											AstNode{"R0"_token, {
+												AstNode{"index"_token, {
+													AstNode{0}
+												}}
+											}}
+										}}
+									}}
+								}}
+							}},
+							AstNode{"value"_token, {
+								AstNode{'c'}
+							}}
+						}},
+						AstNode{"sete"_token, {
+							AstNode{"token"_token, {
+								AstNode{"register"_token, {
+									AstNode{"token"_token, {
+										AstNode{"R0"_token}
+									}}
+								}}
+							}}
+						}},
+						AstNode{"xor"_token, {
+							AstNode{"token"_token, {
+								AstNode{"register"_token, {
+									AstNode{"token"_token, {
+										AstNode{"R0"_token}
+									}}
+								}}
+							}},
+							AstNode{"value"_token, {
+								AstNode{1}
+							}}
+						}},
+						AstNode{"return"_token}
+					}}
+				}},
+				AstNode{"rodata"_token, {
+					AstNode{reinterpret_cast<std::uintptr_t>(std::data(source))}
+				}}
+			}, CppUtils::Language::VirtualMachine::getTokenNames()};
+
+            const auto result = CppUtils::Language::VirtualMachine::run(context);
+			context.log();
+
+			TEST_ASSERT(result == AstNode{0});
 		});
 	}
 }

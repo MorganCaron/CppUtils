@@ -2,7 +2,6 @@
 
 #include <span>
 #include <string>
-#include <sstream>
 #include <stdexcept>
 #include <string_view>
 
@@ -27,28 +26,34 @@ namespace CppUtils::Hash
 		return hash(std::basic_string_view<CharT>{string});
 	}
 
-	auto addTokenName(TokenNames& tokenNames, std::string newName) -> void
+	auto addTokenName(TokenNames& tokenNames, std::string newName) -> Token
 	{
-		tokenNames[Hash::hash(newName)] = std::move(newName);
+		auto token = Hash::hash(newName);
+		tokenNames[token] = std::move(newName);
+		return token;
 	}
 
 	[[nodiscard]] auto getTokenNameOrValue(Token token, const TokenNames& tokenNames) -> std::string
 	{
 		using namespace std::literals;
+
 		if (tokenNames.contains(token))
-			return tokenNames.at(token);
-		else if (token <= WCHAR_MAX)
+		{
+			if (const auto& name = tokenNames.at(token); !std::empty(name))
+				return name;
+			else
+				return "\"\"";
+		}
+		if (token <= WCHAR_MAX)
 		{
 			auto c = static_cast<char>(token);
 			if (std::isprint(static_cast<char>(token)))
-				return std::string{"'"s + c + '\''};
+				return std::string{std::to_string(token) + " '"s + c + '\''};
 			for (const auto& [readableChar, escapedChar] : String::escapedChars)
 				if (escapedChar == c)
-					return "'\\"s + readableChar + '\'';
+					return std::to_string(token) + " '\\"s + readableChar + '\'';
 		}
-		auto os = std::ostringstream{};
-		os << "0x" << std::hex << token;
-		return os.str();
+		return std::to_string(token);
 	}
 
 	namespace Literals
