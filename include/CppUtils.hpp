@@ -12,6 +12,7 @@
 #include <CppUtils/Container/Size2d.hpp>
 #include <CppUtils/Container/Size3d.hpp>
 #include <CppUtils/Container/Vector.hpp>
+#include <CppUtils/Symbol/Symbol.hpp>
 #include <CppUtils/External/DllExport.hpp>
 #include <CppUtils/External/SharedLibrary.hpp>
 #include <CppUtils/FileSystem/File.hpp>
