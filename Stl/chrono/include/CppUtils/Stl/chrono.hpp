@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-namespace CppUtils::Stl
+namespace CppUtils::Stl::chrono
 {
 	// https://en.cppreference.com/w/cpp/chrono/is_clock
 	template<class>
@@ -22,6 +22,7 @@ namespace CppUtils::Stl
 	struct is_clock<T>: std::true_type
 	{};
 
+	// Not yet supported by libc++
 	template<class T>
-	inline constexpr bool is_clock_v = is_clock<T>::value;
+	constexpr auto is_clock_v = is_clock<T>::value;
 }
