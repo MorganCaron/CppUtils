@@ -29,7 +29,8 @@ Just follow the installation steps and consult the documentation for each featur
 
 ### Build command
 ```console
-xmake
+xmake f [-k static|shared] [--toolchain=llvm --libc++=y] [--sdk=~/path/to/llvm/install] [--libc++_static=y]|[--libc++_shared=y]
+xmake [-vD]
 ```
 
 ### Run tests

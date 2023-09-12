@@ -1,0 +1,11 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"command": "xmake && xmake run",
+			"name": "Compile & Run Tests",
+			"request": "launch",
+			"type": "node-terminal"
+		}
+	]
+}
