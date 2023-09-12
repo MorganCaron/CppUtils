@@ -13,7 +13,7 @@ namespace CppUtils::UnitTests::String
 			const auto string = CppUtils::String::concatenateStringsWithDelimiter(strings, ", ");
 
 			CppUtils::Log::Logger{std::cout} << string << '\n';
-			TEST_ASSERT(string == "A, B, C");
+			EXPECT(string == "A, B, C");
 		});
 
 		addTest("trimString", [] {
@@ -24,13 +24,13 @@ namespace CppUtils::UnitTests::String
 			auto logger = CppUtils::Log::Logger{std::cout};
 
 			logger << '"' << leftTrimString << "\"\n";
-			TEST_ASSERT(leftTrimString == "Hello World!\n \t ");
+			EXPECT(leftTrimString == "Hello World!\n \t ");
 
 			logger << '"' << rightTrimString << "\"\n";
-			TEST_ASSERT(rightTrimString == "\n \t Hello World!");
+			EXPECT(rightTrimString == "\n \t Hello World!");
 
 			logger << '"' << trimString << "\"\n";
-			TEST_ASSERT(trimString == "Hello World!");
+			EXPECT(trimString == "Hello World!");
 		});
 
 		addTest("getPrintableChar", [] {

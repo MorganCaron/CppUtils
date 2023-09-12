@@ -12,19 +12,19 @@ namespace CppUtils::UnitTests::Graph::Tree
 			auto root = StringTreeNode{"Root"};
 			CppUtils::Graph::Tree::log(root);
 			CppUtils::Log::Logger{std::cout} << root.value << '\n';
-			TEST_ASSERT(root.value == "Root");
+			EXPECT(root.value == "Root");
 			
 			root.nodes.emplace_back(StringTreeNode{"Branch0"});
 			root.nodes.emplace_back(StringTreeNode{"Branch1"});
 			CppUtils::Log::Logger{std::cout} << root.nodes[1].value << '\n';
-			TEST_ASSERT(root.nodes[1].value == "Branch1");
+			EXPECT(root.nodes[1].value == "Branch1");
 
 			auto& branch0 = root.nodes[0];
 			branch0.nodes.emplace_back(StringTreeNode{"SubBranch0"});
 			branch0.nodes[0].nodes.emplace_back(StringTreeNode{"SubSubBranch0"});
 			branch0.nodes.emplace_back(StringTreeNode{"SubBranch1"});
 			branch0.nodes.emplace_back(StringTreeNode{"SubBranch2"});
-			TEST_ASSERT(branch0.nodes.size() == 3);
+			EXPECT(branch0.nodes.size() == 3);
 
 			root.nodes.emplace_back(StringTreeNode{"Branch2"});
 			auto& branch2 = root.nodes[2];
@@ -56,7 +56,7 @@ namespace CppUtils::UnitTests::Graph::Tree
 			}
 			)"_json;
 			// const auto differences = 
-			// TEST_ASSERT(jsonTree0 != jsonTree1);
+			// EXPECT(jsonTree0 != jsonTree1);
 		});*/
 	}
 }

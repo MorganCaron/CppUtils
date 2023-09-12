@@ -15,7 +15,7 @@ namespace CppUtils::UnitTests::Log::Logger
 				<< Terminal::TextColor::TextColorEnum::Blue << "Detail message\n"
 				<< Terminal::TextColor::TextColorEnum::Yellow << "Warning message\n"
 				<< Terminal::TextColor::TextColorEnum::Red << "Error message\n";
-			TEST_ASSERT(true);
+			EXPECT(true);
 		});
 	}
 }

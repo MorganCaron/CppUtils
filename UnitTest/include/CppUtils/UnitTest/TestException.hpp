@@ -4,7 +4,8 @@
 #include <string_view>
 #include <source_location>
 
-#define TEST_ASSERT(condition) CppUtils::UnitTest::assert(condition, "TEST_ASSERT(" #condition ")");
+#define EXPECT(condition) CppUtils::UnitTest::assert(condition, "EXPECT(" #condition ")");
+#define EXPECT_EQUAL(lhs, rhs) CppUtils::UnitTest::assert(lhs == rhs, "EXPECT_EQUAL(" #lhs ", " #rhs ") with:\n\t" #lhs " = " + std::to_string(lhs) + "\n\t" #rhs " = " + std::to_string(rhs) + '\n');
 
 namespace CppUtils::UnitTest
 {

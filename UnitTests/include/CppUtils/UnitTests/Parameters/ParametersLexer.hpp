@@ -21,12 +21,12 @@ namespace CppUtils::UnitTests::Parameters::ParametersLexer
 			const auto parameters = parametersLexer.parseParameters(argc, argv);
 			for (const auto& [command, value] : parameters)
 				CppUtils::Log::Logger::logInformation(command + "["s + value + "]");	
-			TEST_ASSERT(parameters.size() == 5);
-			TEST_ASSERT(parameters.at("A") == "aaa");
-			TEST_ASSERT(parameters.at("B") == "0");
-			TEST_ASSERT(parameters.at("C") == "");
-			TEST_ASSERT(parameters.at("DDD") == "");
-			TEST_ASSERT(parameters.at("E") == "e e e");
+			EXPECT(parameters.size() == 5);
+			EXPECT(parameters.at("A") == "aaa");
+			EXPECT(parameters.at("B") == "0");
+			EXPECT(parameters.at("C") == "");
+			EXPECT(parameters.at("DDD") == "");
+			EXPECT(parameters.at("E") == "e e e");
 		});
 
 		addTest("executeCommands", [] {
@@ -57,11 +57,11 @@ namespace CppUtils::UnitTests::Parameters::ParametersLexer
 					}
 				}
 			});
-			TEST_ASSERT(abort == false);
+			EXPECT(abort == false);
 			CppUtils::Log::Logger::logInformation("settings.verbose = "s + std::to_string(settings.verbose));
 			CppUtils::Log::Logger::logInformation("settings.parameter = "s + settings.parameter);
-			TEST_ASSERT(settings.verbose == true);
-			TEST_ASSERT(settings.parameter == "value");
+			EXPECT(settings.verbose == true);
+			EXPECT(settings.parameter == "value");
 		});
 	}
 }

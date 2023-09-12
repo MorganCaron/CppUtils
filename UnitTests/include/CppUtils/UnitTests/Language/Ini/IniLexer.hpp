@@ -29,7 +29,7 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 				}
 			}
 			)"_json;
-			TEST_ASSERT(iniTree == jsonTree);
+			EXPECT(iniTree == jsonTree);
 		});
 
 		addTest("Number", [] {
@@ -50,7 +50,7 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 				}
 			}
 			)"_json;
-			TEST_ASSERT(iniTree == jsonTree);
+			EXPECT(iniTree == jsonTree);
 		});
 
 		addTest("Comments", [] {
@@ -73,7 +73,7 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 				}
 			}
 			)"_json;
-			TEST_ASSERT(iniTree == jsonTree);
+			EXPECT(iniTree == jsonTree);
 		});
 
 		addTest("Full", [] {
@@ -115,10 +115,10 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 				}
 			}
 			)"_json;
-			TEST_ASSERT(iniTree.childs.size() == 3);
-			TEST_ASSERT(iniTree.childs[0] == jsonTree.childs.at(0));
-			TEST_ASSERT(iniTree.childs[1].at("Numbers"_token).childs.size() == 8);
-			TEST_ASSERT(iniTree.childs[2].at("Booleans"_token).childs.size() == 2);
+			EXPECT(iniTree.childs.size() == 3);
+			EXPECT(iniTree.childs[0] == jsonTree.childs.at(0));
+			EXPECT(iniTree.childs[1].at("Numbers"_token).childs.size() == 8);
+			EXPECT(iniTree.childs[2].at("Booleans"_token).childs.size() == 2);
 		});
 	}
 }

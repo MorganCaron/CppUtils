@@ -12,8 +12,8 @@ namespace CppUtils::UnitTests::Hash::Token
 			const auto numberType0 = "Number"_token;
 			const auto numberType1 = "Number"_token;
 			const auto stringType = "String"_token;
-			TEST_ASSERT(numberType0 == numberType1);
-			TEST_ASSERT(numberType0 != stringType);
+			EXPECT(numberType0 == numberType1);
+			EXPECT(numberType0 != stringType);
 		});
 	}
 }
