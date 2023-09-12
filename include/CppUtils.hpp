@@ -2,6 +2,7 @@
 
 #include <CppUtils/Platform/OS.hpp>
 #include <CppUtils/Platform/Compiler.hpp>
+#include <CppUtils/Platform/Library.hpp>
 #include <CppUtils/Random/Random.hpp>
 #include <CppUtils/Memory/UniquePtr.hpp>
 #include <CppUtils/System/System.hpp>
