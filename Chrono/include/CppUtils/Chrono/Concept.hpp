@@ -11,5 +11,5 @@ namespace CppUtils::Chrono::Concept
 	concept Duration = Type::Concept::Specializes<T, std::chrono::duration>;
 
 	template<class T>
-	concept Clock = Stl::chrono::is_clock_v<T>; // Not yet supported by libc++
+	concept Clock = std::chrono::is_clock_v<T>;
 }
