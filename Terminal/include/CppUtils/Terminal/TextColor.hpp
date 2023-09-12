@@ -38,7 +38,7 @@ namespace CppUtils::Terminal::TextColor
 		}
 	}
 
-	[[nodiscard]] inline constexpr uint8_t getTextColorCode(TextColorEnum textColor)
+	[[nodiscard]] constexpr uint8_t getTextColorCode(TextColorEnum textColor)
 	{
 		switch (textColor)
 		{
@@ -81,7 +81,7 @@ namespace CppUtils::Terminal::TextColor
 		}
 	}
 
-	[[nodiscard]] inline constexpr std::string_view getTextColorCode(TextColorEnum textColor)
+	[[nodiscard]] constexpr std::string_view getTextColorCode(TextColorEnum textColor)
 	{
 		switch (textColor)
 		{

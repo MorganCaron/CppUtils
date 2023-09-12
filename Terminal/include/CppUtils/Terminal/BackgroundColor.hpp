@@ -38,40 +38,30 @@ namespace CppUtils::Terminal::BackgroundColor
 		}
 	}
 
-	[[nodiscard]] inline constexpr uint8_t getBackgroundColorCode(BackgroundColorEnum backgroundColor)
+	[[nodiscard]] constexpr uint8_t getBackgroundColorCode(BackgroundColorEnum backgroundColor)
 	{
 		switch (backgroundColor)
 		{
 			case BackgroundColorEnum::Default:
 				return Attribute::Default;
-				break;
 			case BackgroundColorEnum::Black:
 				return Attribute::Black;
-				break;
 			case BackgroundColorEnum::Red:
 				return Attribute::Red;
-				break;
 			case BackgroundColorEnum::Green:
 				return Attribute::Green;
-				break;
 			case BackgroundColorEnum::Yellow:
 				return Attribute::Yellow;
-				break;
 			case BackgroundColorEnum::Blue:
 				return Attribute::Blue;
-				break;
 			case BackgroundColorEnum::Magenta:
 				return Attribute::Magenta;
-				break;
 			case BackgroundColorEnum::Cyan:
 				return Attribute::Cyan;
-				break;
 			case BackgroundColorEnum::White:
 				return Attribute::White;
-				break;
 			default:
 				return Attribute::Default;
-				break;
 		}
 	}
 #elif defined(OS_LINUX) || defined(OS_MACOS)
@@ -91,40 +81,30 @@ namespace CppUtils::Terminal::BackgroundColor
 		}
 	}
 
-	[[nodiscard]] inline constexpr std::string_view getBackgroundColorCode(BackgroundColorEnum backgroundColor)
+	[[nodiscard]] constexpr std::string_view getBackgroundColorCode(BackgroundColorEnum backgroundColor)
 	{
 		switch (backgroundColor)
 		{
 			case BackgroundColorEnum::Default:
 				return ANSIEscapeCode::Default;
-				break;
 			case BackgroundColorEnum::Black:
 				return ANSIEscapeCode::Black;
-				break;
 			case BackgroundColorEnum::Red:
 				return ANSIEscapeCode::Red;
-				break;
 			case BackgroundColorEnum::Green:
 				return ANSIEscapeCode::Green;
-				break;
 			case BackgroundColorEnum::Yellow:
 				return ANSIEscapeCode::Yellow;
-				break;
 			case BackgroundColorEnum::Blue:
 				return ANSIEscapeCode::Blue;
-				break;
 			case BackgroundColorEnum::Magenta:
 				return ANSIEscapeCode::Magenta;
-				break;
 			case BackgroundColorEnum::Cyan:
 				return ANSIEscapeCode::Cyan;
-				break;
 			case BackgroundColorEnum::White:
 				return ANSIEscapeCode::White;
-				break;
 			default:
 				return ANSIEscapeCode::Default;
-				break;
 		}
 	}
 #endif

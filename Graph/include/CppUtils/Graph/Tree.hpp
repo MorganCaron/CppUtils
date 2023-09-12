@@ -17,16 +17,16 @@ namespace CppUtils::Graph::Tree
 		T value;
 		std::vector<Node<T>> nodes = {};
 
-		[[nodiscard]] constexpr auto find(const T& key) const noexcept -> const auto
+		[[nodiscard]] constexpr auto find(const T& key) const noexcept -> auto
 		{
-			return std::find_if(std::cbegin(nodes), std::cend(nodes), [key](const auto& node) -> bool {
+			return std::ranges::find_if(nodes, [&key](const auto& node) -> bool {
 				return node.value == key;
 			});
 		}
 
 		[[nodiscard]] constexpr auto find(const T& key) noexcept -> auto
 		{
-			return std::find_if(std::cbegin(nodes), std::cend(nodes), [key](const auto& node) -> bool {
+			return std::ranges::find_if(nodes, [&key](const auto& node) -> bool {
 				return node.value == key;
 			});
 		}
@@ -46,10 +46,10 @@ namespace CppUtils::Graph::Tree
 
 		[[nodiscard]] constexpr auto operator[](const T& key) const -> const Node<T>&
 		{
-			for (const auto& node : nodes)
-				if (key == node.value)
-					return node;
-			throw std::out_of_range{"The Node does not contain the requested child."};
+			const auto value = find(key);
+			if (value == std::cend(nodes))
+				throw std::out_of_range{"The Node does not contain the requested child."};
+			return *value;
 		}
 		
 		[[nodiscard]] constexpr auto getNodesWithValue(const T& filterValue) const

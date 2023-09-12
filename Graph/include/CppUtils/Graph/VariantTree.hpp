@@ -9,6 +9,6 @@
 namespace CppUtils::Graph::Tree
 {
 	template<class... Types>
-	requires std::default_initializable<Type::VariadicTemplate::NthType<0, Types...>>
+	requires std::default_initializable<Type::NthType<0, Types...>>
 	using VariantNode = Node<std::variant<Types...>>;
 }

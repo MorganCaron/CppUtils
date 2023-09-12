@@ -8,7 +8,7 @@
 namespace CppUtils::Type::Variant::Operators
 {
 	template<Concept::Printable... Types>
-	requires Concept::AtLeastNType<1, Types...>
+	requires (sizeof...(Types) > 0)
 	auto operator<<(std::ostream& os, const std::variant<Types...>& variant) -> std::ostream&
 	{
 		return std::visit([&os](auto&& value) -> std::ostream& {

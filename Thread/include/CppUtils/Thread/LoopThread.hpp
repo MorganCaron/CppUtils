@@ -1,13 +1,10 @@
 #pragma once
 
 #include <atomic>
-#include <chrono>
 #include <memory>
 #include <thread>
 #include <utility>
 #include <functional>
-
-using namespace std::chrono_literals;
 
 namespace CppUtils::Thread
 {
@@ -16,14 +13,11 @@ namespace CppUtils::Thread
 	public:
 		LoopThread() = delete;
 
-		explicit LoopThread(const std::function<void()>& function): m_function{function}, m_running{false}
-		{}
-
-		template<class Rep, class Period>
-		explicit LoopThread(const std::function<void()>& function,
-			const std::chrono::duration<Rep, Period>& interval): m_function{function}, m_running{false}
+		explicit LoopThread(std::function<void()> function, std::function<void()> interruptFunction = nullptr):
+			m_function{std::move(function)},
+			m_interruptFunction{std::move(interruptFunction)}
 		{
-			start(interval);
+			start();
 		}
 		
 		LoopThread(const LoopThread&) = delete;
@@ -51,12 +45,11 @@ namespace CppUtils::Thread
 			return m_running.load();
 		}
 
-		template<class Rep, class Period>
-		auto start(const std::chrono::duration<Rep, Period>& interval) -> void
+		auto start() -> void
 		{
 			if (isRunning())
 				stop();
-			m_thread = std::thread{&LoopThread::run<Rep, Period>, this, interval};
+			m_thread = std::jthread{&LoopThread::run, this};
 		}
 
 		auto stop() -> void
@@ -64,23 +57,22 @@ namespace CppUtils::Thread
 			if (!isRunning())
 				return;
 			m_running = false;
+			if (m_interruptFunction)
+				m_interruptFunction();
 			m_thread.join();
 		}
 
 	private:
-		template<class Rep, class Period>
-		auto run(const std::chrono::duration<Rep, Period>& interval) -> void
+		auto run() -> void
 		{
 			m_running = true;
 			while (isRunning())
-			{
 				m_function();
-				std::this_thread::sleep_for(interval);
-			}
 		}
 
 		std::function<void()> m_function;
-		std::atomic<bool> m_running;
-		std::thread m_thread;
+		std::function<void()> m_interruptFunction;
+		std::atomic_bool m_running = false;
+		std::jthread m_thread;
 	};
 }

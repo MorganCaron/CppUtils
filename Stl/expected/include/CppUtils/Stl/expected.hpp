@@ -125,7 +125,7 @@ namespace CppUtils::Stl
 	{
 		explicit unexpect_t() = default;
 	};
-	inline constexpr unexpect_t unexpect{};
+	constexpr unexpect_t unexpect{};
 
 	// https://en.cppreference.com/w/cpp/utility/expected
 	template<class T, class E>

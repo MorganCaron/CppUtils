@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <concepts>
+#include <type_traits>
 
 namespace CppUtils::Type::Concept
 {
@@ -12,7 +13,7 @@ namespace CppUtils::Type::Concept
 
 	template<class Type, class... Types>
 	concept Present = (std::same_as<Type, Types> || ...);
-	
+
 	template<class T>
 	concept Dereferenceable = requires(T value) {
 		*value;
@@ -22,10 +23,10 @@ namespace CppUtils::Type::Concept
 	concept AtLeastNType = (sizeof...(Types) >= N);
 
 	template<class T, template<class...> class IncompleteType>
-	inline constexpr bool isSpecializationOf = false;
+	constexpr bool isSpecializationOf = false;
 
 	template<template<class...> class IncompleteType, class... Args>
-	inline constexpr bool isSpecializationOf<IncompleteType<Args...>, IncompleteType> = true;
+	constexpr bool isSpecializationOf<IncompleteType<Args...>, IncompleteType> = true;
 
 	template<class T, template<class...> class IncompleteType>
 	concept Specializes = isSpecializationOf<T, IncompleteType>;

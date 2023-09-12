@@ -16,10 +16,10 @@ namespace CppUtils::Thread
 		AsyncIStreamListener() = delete;
 
 		explicit AsyncIStreamListener(std::basic_istream<Type>& istream,
-			const std::function<void(Type data)>& function):
+			const std::function<void(Type)>& function):
 			m_istream{std::ref(istream)},
 			m_function{std::move(function)},
-			m_loopThread{std::bind(&AsyncIStreamListener::listener, this), 0s}
+			m_loopThread{std::bind(&AsyncIStreamListener::listener, this)}
 		{}
 
 		AsyncIStreamListener(const AsyncIStreamListener&) = delete;
@@ -34,7 +34,7 @@ namespace CppUtils::Thread
 
 		auto start() -> void
 		{
-			m_loopThread.start(0s);
+			m_loopThread.start();
 		}
 
 		auto stop() -> void
@@ -51,7 +51,7 @@ namespace CppUtils::Thread
 		}
 
 		std::reference_wrapper<std::istream> m_istream;
-		std::function<void(Type data)> m_function;
+		std::function<void(Type)> m_function;
 		LoopThread m_loopThread;
 	};
 }

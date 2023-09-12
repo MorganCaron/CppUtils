@@ -33,7 +33,7 @@ namespace CppUtils::String
 
 	[[nodiscard]] inline auto concatenateStringsWithDelimiter(const std::vector<std::string>& strings, std::string_view delimiter) -> std::string
 	{
-		return std::accumulate(strings.cbegin(), strings.cend(), std::string{},
+		return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{},
 			[delimiter](const std::string& lhs, const std::string& rhs) {
 				return lhs.empty() ? rhs : (lhs + delimiter.data() + rhs);
 			});
@@ -41,7 +41,7 @@ namespace CppUtils::String
 	
 	[[nodiscard]] inline auto concatenateStringsWithDelimiter(const std::vector<std::string_view>& strings, std::string_view delimiter) -> std::string
 	{
-		return std::accumulate(strings.cbegin(), strings.cend(), std::string{},
+		return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{},
 			[delimiter](std::string_view lhs, std::string_view rhs) {
 				return lhs.empty() ? std::string{rhs} : (std::string{lhs} + std::string{delimiter} + std::string{rhs});
 			});
@@ -49,25 +49,27 @@ namespace CppUtils::String
 
 	[[nodiscard]] inline auto leftTrimString(std::string_view stringView) -> std::string_view
 	{
-		stringView.remove_prefix(std::distance(stringView.cbegin(),
-			std::find_if(stringView.cbegin(), stringView.cend(),
-        		[](char c) {
+		auto prefixLength = static_cast<std::size_t>(std::distance(std::cbegin(stringView),
+			std::find_if(std::cbegin(stringView), std::cend(stringView),
+				[](char c) {
 					return !std::isspace(c);
 				}
 			)
 		));
+		stringView.remove_prefix(prefixLength);
 		return stringView;
 	}
 
 	[[nodiscard]] inline auto rightTrimString(std::string_view stringView) -> std::string_view
 	{
-		stringView.remove_suffix(std::distance(stringView.crbegin(),
-			std::find_if(stringView.crbegin(), stringView.crend(),
-        		[](char c) {
+		auto suffixLength = static_cast<std::size_t>(std::distance(std::crbegin(stringView),
+			std::find_if(std::crbegin(stringView), std::crend(stringView),
+				[](char c) {
 					return !std::isspace(c);
 				}
 			)
 		));
+		stringView.remove_suffix(suffixLength);
 		return stringView;
 	}
 
