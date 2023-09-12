@@ -18,10 +18,6 @@ namespace CppUtils::Type::Concept
 	concept Dereferenceable = requires(T value) {
 		*value;
 	};
-
-	template<std::size_t N, class... Types>
-	concept AtLeastNType = (sizeof...(Types) >= N);
-
 	template<class T, template<class...> class IncompleteType>
 	constexpr bool isSpecializationOf = false;
 
@@ -30,4 +26,19 @@ namespace CppUtils::Type::Concept
 
 	template<class T, template<class...> class IncompleteType>
 	concept Specializes = isSpecializationOf<T, IncompleteType>;
+
+	template<class T>
+	concept Function = std::is_function_v<T>;
+
+	template<class T>
+	constexpr bool isFunctionPointer = std::is_pointer_v<T> && std::is_function_v<std::remove_pointer_t<T>>;
+
+	template<class T>
+	concept FunctionPointer = isFunctionPointer<T>;
+
+	template<class T>
+	concept TriviallyConstructible = std::is_trivially_constructible_v<T>;
+
+	template<class T>
+	concept TriviallyCopyable = std::is_trivially_copyable_v<T>;
 }
