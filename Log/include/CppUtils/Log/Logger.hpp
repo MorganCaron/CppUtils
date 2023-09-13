@@ -25,6 +25,11 @@ namespace CppUtils::Log
 			Terminal::TextModifier::reset(m_outputStream.get());
 		}
 
+		auto setOutputStream(std::ostream& outputStream) -> void
+		{
+			m_outputStream = outputStream;
+		}
+
 		auto operator<<(const Type::Concept::Printable auto& value) -> Logger&
 		{
 			m_outputStream.get() << value;
