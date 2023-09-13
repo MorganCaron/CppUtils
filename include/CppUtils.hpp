@@ -26,6 +26,7 @@
 #include <CppUtils/Language/Parser/Cursor.hpp>
 #include <CppUtils/Language/Ast.hpp>
 #include <CppUtils/Language/AstGrammar.hpp>
+#include <CppUtils/Language/LibSystem.hpp>
 #include <CppUtils/Language/VirtualMachine.hpp>
 #include <CppUtils/Language/IR/Compiler/Bytecode.hpp>
 #include <CppUtils/Language/IR/Compiler/CompilationFunctions.hpp>
