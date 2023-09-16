@@ -43,14 +43,22 @@ namespace CppUtils::Language::VirtualMachine
 	}
 
 	template<Type::Concept::TriviallyCopyable... Args>
-	constexpr auto pop(std::vector<std::byte>& stack) -> void
+	constexpr auto drop(std::vector<std::byte>& stack) -> void
 	{
-		if constexpr (sizeof...(Args) > 0)
-		{
-			if (std::size(stack) < (sizeof(Args) + ...))
-				throw std::logic_error{"Stack underflow"};
-			stack.resize(std::size(stack) - (sizeof(Args) + ...));
-		}
+		static_assert(sizeof...(Args) > 0);
+		if (std::size(stack) < (sizeof(Args) + ...))
+			throw std::logic_error{"Stack underflow"};
+		stack.resize(std::size(stack) - (sizeof(Args) + ...));
+	}
+
+	template<Type::Concept::TriviallyCopyable T>
+	[[nodiscard]] constexpr auto pop(std::vector<std::byte>& stack) -> decltype(auto)
+	{
+		if (std::size(stack) < sizeof(T))
+			throw std::logic_error{"Stack underflow"};
+		auto value = get<T>(stack);
+		drop<T>(stack);
+		return value;
 	}
 
 	template<std::size_t N, Type::Concept::TriviallyCopyable T, Type::Concept::TriviallyCopyable... Args>
@@ -138,31 +146,29 @@ namespace CppUtils::Language::VirtualMachine
 			{
 			case ',': [[fallthrough]];
 			case '(': push(stack, std::intptr_t{0}); break;
-			case ')': pop<std::intptr_t>(stack); break;
+			case ')': drop<std::intptr_t>(stack); break;
 			case '_': set(stack, std::intptr_t{0}); break;
 			case 'C':
 			{
 				auto value = get<std::intptr_t>(stack, (get<std::size_t>(stack, sizeof(std::intptr_t)) + 2) * sizeof(std::size_t));
 				set(stack, value, (get<std::size_t>(stack) + 2) * sizeof(std::size_t));
-				pop<std::intptr_t, std::intptr_t>(stack);
+				drop<std::intptr_t, std::intptr_t>(stack);
 				break;
 			}
 			// case 'D': set(stack, &get<std::intptr_t>(stack)); break;
 			case 'R': set(stack, *get<std::intptr_t*>(stack)); break;
-			case 'J': ip = get<std::size_t>(stack); pop<std::size_t>(stack); break;
+			case 'J': ip = pop<std::size_t>(stack); break;
 			case 'P': push(stack, ip); break;
 			case ':':
 			{
-				auto id = get<std::size_t>(stack);
-				pop<std::size_t>(stack);
+				auto id = pop<std::size_t>(stack);
 				externalTypes.at(id)(stack);
 				break;
 			}
 			case ';':
 				if constexpr (sizeof...(data) > 0)
 				{
-					auto& data = externalData[get<std::size_t>(stack)];
-					pop<std::size_t>(stack);
+					auto& data = externalData[pop<std::size_t>(stack)];
 					std::visit([&stack](auto&& data) -> void {
 						using T = std::remove_reference_t<decltype(data)>;
 						if constexpr (Type::Concept::isFunctionPointer<T> || std::is_member_function_pointer_v<T>)
@@ -172,18 +178,18 @@ namespace CppUtils::Language::VirtualMachine
 					}, data);
 				}
 				break;
-			case '?': if (!get<std::intptr_t>(stack, sizeof(std::size_t))) ip += get<std::size_t>(stack); pop<std::size_t>(stack); break;
+			case '?': if (!get<std::intptr_t>(stack, sizeof(std::size_t))) ip += get<std::size_t>(stack); drop<std::size_t>(stack); break;
 			case '!': set(stack, std::intptr_t{!get<std::intptr_t>(stack)}); break;
-			case '=': set(stack, std::intptr_t{get<std::intptr_t>(stack, sizeof(std::intptr_t)) == get<std::intptr_t>(stack)}, sizeof(std::intptr_t)); pop<std::intptr_t>(stack); break;
-			case '<': set(stack, std::intptr_t{get<std::intptr_t>(stack, sizeof(std::intptr_t)) < get<std::intptr_t>(stack)}, sizeof(std::intptr_t)); pop<std::intptr_t>(stack); break;
-			case '>': set(stack, std::intptr_t{get<std::intptr_t>(stack, sizeof(std::intptr_t)) > get<std::intptr_t>(stack)}, sizeof(std::intptr_t)); pop<std::intptr_t>(stack); break;
-			case '&': set(stack, std::intptr_t{get<std::intptr_t>(stack, sizeof(std::intptr_t)) & get<std::intptr_t>(stack)}, sizeof(std::intptr_t)); pop<std::intptr_t>(stack); break;
-			case '|': set(stack, std::intptr_t{get<std::intptr_t>(stack, sizeof(std::intptr_t)) | get<std::intptr_t>(stack)}, sizeof(std::intptr_t)); pop<std::intptr_t>(stack); break;
-			case '^': set(stack, std::intptr_t{get<std::intptr_t>(stack, sizeof(std::intptr_t)) ^ get<std::intptr_t>(stack)}, sizeof(std::intptr_t)); pop<std::intptr_t>(stack); break;
-			case '+': set(stack, get<std::intptr_t>(stack, sizeof(std::intptr_t)) + get<std::intptr_t>(stack), sizeof(std::intptr_t)); pop<std::intptr_t>(stack); break;
-			case '-': set(stack, get<std::intptr_t>(stack, sizeof(std::intptr_t)) - get<std::intptr_t>(stack), sizeof(std::intptr_t)); pop<std::intptr_t>(stack); break;
-			case '*': set(stack, get<std::intptr_t>(stack, sizeof(std::intptr_t)) * get<std::intptr_t>(stack), sizeof(std::intptr_t)); pop<std::intptr_t>(stack); break;
-			case '/': set(stack, get<std::intptr_t>(stack, sizeof(std::intptr_t)) / get<std::intptr_t>(stack), sizeof(std::intptr_t)); pop<std::intptr_t>(stack); break;
+			case '=': { auto rhs = pop<std::intptr_t>(stack); push(stack, std::intptr_t{pop<std::intptr_t>(stack) == rhs}); break; }
+			case '<': { auto rhs = pop<std::intptr_t>(stack); push(stack, std::intptr_t{pop<std::intptr_t>(stack) < rhs}); break; }
+			case '>': { auto rhs = pop<std::intptr_t>(stack); push(stack, std::intptr_t{pop<std::intptr_t>(stack) > rhs}); break; }
+			case '&': { auto rhs = pop<std::intptr_t>(stack); push(stack, std::intptr_t{pop<std::intptr_t>(stack) & rhs}); break; }
+			case '|': { auto rhs = pop<std::intptr_t>(stack); push(stack, std::intptr_t{pop<std::intptr_t>(stack) | rhs}); break; }
+			case '^': { auto rhs = pop<std::intptr_t>(stack); push(stack, std::intptr_t{pop<std::intptr_t>(stack) ^ rhs}); break; }
+			case '+': { auto rhs = pop<std::intptr_t>(stack); push(stack, pop<std::intptr_t>(stack) + rhs); break; }
+			case '-': { auto rhs = pop<std::intptr_t>(stack); push(stack, pop<std::intptr_t>(stack) - rhs); break; }
+			case '*': { auto rhs = pop<std::intptr_t>(stack); push(stack, pop<std::intptr_t>(stack) * rhs); break; }
+			case '/': { auto rhs = pop<std::intptr_t>(stack); push(stack, pop<std::intptr_t>(stack) / rhs); break; }
 			case '\\': push(stack, src[ip + 1]); break;
 			case 'X': return get<std::intptr_t>(stack);
 			default: if (c >= '0' && c <= '9') set(stack, get<std::intptr_t>(stack) * 10 + c - '0'); break;
