@@ -19,10 +19,10 @@ namespace CppUtils::Type::Concept
 		*value;
 	};
 	template<class T, template<class...> class IncompleteType>
-	constexpr bool isSpecializationOf = false;
+	inline constexpr bool isSpecializationOf = false;
 
 	template<template<class...> class IncompleteType, class... Args>
-	constexpr bool isSpecializationOf<IncompleteType<Args...>, IncompleteType> = true;
+	inline constexpr bool isSpecializationOf<IncompleteType<Args...>, IncompleteType> = true;
 
 	template<class T, template<class...> class IncompleteType>
 	concept Specializes = isSpecializationOf<T, IncompleteType>;
@@ -31,7 +31,7 @@ namespace CppUtils::Type::Concept
 	concept Function = std::is_function_v<T>;
 
 	template<class T>
-	constexpr bool isFunctionPointer = std::is_pointer_v<T> && std::is_function_v<std::remove_pointer_t<T>>;
+	inline constexpr bool isFunctionPointer = std::is_pointer_v<T> && std::is_function_v<std::remove_pointer_t<T>>;
 
 	template<class T>
 	concept FunctionPointer = isFunctionPointer<T>;

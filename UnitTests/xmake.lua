@@ -1,5 +1,6 @@
 target("CppUtils-UnitTests")
 	set_kind("binary")
+	add_options("libc++_static", "libc++_shared")
 	add_deps("CppUtils")
 	add_includedirs("include", { public = true })
 	add_headerfiles("include/**.hpp")

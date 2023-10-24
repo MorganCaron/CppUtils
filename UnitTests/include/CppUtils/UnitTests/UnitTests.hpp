@@ -13,8 +13,7 @@
 #include <CppUtils/UnitTests/Graph/MeshNode.hpp>
 #include <CppUtils/UnitTests/Hash/Token.hpp>
 #include <CppUtils/UnitTests/Graph/Tree.hpp>
-#include <CppUtils/UnitTests/Language/VirtualMachine/VirtualMachine.hpp>
-#include <CppUtils/UnitTests/Language/Parser/AstGrammar.hpp>
+#include <CppUtils/UnitTests/Language/VirtualMachine.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Lexer.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Grammar/LowLevelGrammar.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Grammar/HighLevelGrammar.hpp>

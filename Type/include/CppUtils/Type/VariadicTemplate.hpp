@@ -10,6 +10,15 @@ namespace CppUtils::Type
 	template<std::size_t I, class... Types> requires (I < sizeof...(Types))
 	using NthType = std::tuple_element_t<I, std::tuple<Types...>>;
 
+	template<class T, class... Types>
+	requires Concept::Present<T, Types...>
+	consteval auto getPosition() -> std::size_t
+	{
+		auto i = 0u; // C++23: 0u -> 0z
+		static_cast<void>(((++i, std::same_as<T, Types>) || ...));
+		return --i;
+	}
+
 
 
 	template<class T, class... Types>

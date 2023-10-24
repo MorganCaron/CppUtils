@@ -22,6 +22,7 @@ namespace CppUtils::Stl::chrono
 	struct is_clock<T>: std::true_type
 	{};
 	
+	// Not yet supported on Clang
 	template<class T>
 	constexpr auto is_clock_v = is_clock<T>::value;
 }
