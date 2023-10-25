@@ -165,23 +165,25 @@ namespace CppUtils::Language::VirtualMachine
 	// Todo: Ajouter la gestion des casts
 	// Todo: Ajouter une stack pour les types
 	template<Type::Concept::TriviallyCopyable ReturnType, Type::Concept::TriviallyCopyable... SupportedTypes>
-	requires Type::Concept::Present<bool, ReturnType, SupportedTypes...>
-	and Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>
 	constexpr auto execute(const auto& source, auto... data) -> ReturnType
 	{
-		static_assert(Type::Concept::Present<std::remove_cvref_t<decltype(source[0])>, ReturnType, SupportedTypes...>);
 		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{ &source, data... };
-		static constinit auto pushTypes = std::array<void(*)(Stack&), sizeof...(SupportedTypes)>{
+		static constinit auto pushTypes = std::array<void(*)(Stack&), 1 + sizeof...(SupportedTypes)>{
+			+[](Stack& stack) -> void { push<ReturnType, ReturnType, SupportedTypes...>(stack, ReturnType{}); },
 			+[](Stack& stack) -> void { push<SupportedTypes, ReturnType, SupportedTypes...>(stack, SupportedTypes{}); }...
 		};
 		auto stack = Stack{};
-		if constexpr (!std::same_as<ReturnType, void>)
-			push<ReturnType, ReturnType, SupportedTypes...>(stack, ReturnType{});
-		constexpr auto executeInstructionFunction = []<class ValueType>(Stack& stack, decltype(source) source, decltype(externalData) externalData, std::size_t& instructionPointer) static -> void {
+		push<ReturnType, ReturnType, SupportedTypes...>(stack, ReturnType{});
+		static constinit auto executeInstructionFunction = []<class ValueType>(Stack& stack, decltype(source) source, decltype(externalData) externalData, std::size_t& instructionPointer) static -> void {
 			switch (auto instruction = source[instructionPointer]; instruction)
 			{
 			case ',': [[fallthrough]];
-			case '(': push<ValueType, ReturnType, SupportedTypes...>(stack, ValueType{}); break;
+			case '(':
+				if constexpr(Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
+					push<std::size_t, ReturnType, SupportedTypes...>(stack, std::size_t{});
+				else
+					throw std::invalid_argument{"Type std::size_t missing in template parameters"}; // C++23: return std::unexpected{...};
+				break;
 			case ')': drop<ValueType>(stack); break;
 			case '_': set(stack, ValueType{}); break;
 			case 'C':
@@ -194,42 +196,98 @@ namespace CppUtils::Language::VirtualMachine
 			// Todo: case 'D': set(stack, &get<ValueType>(stack)); break;
 			case 'R': set(stack, *get<ValueType*>(stack)); break;
 			case 'J': instructionPointer = pop<std::size_t>(stack); break;
-			case 'P': push<std::size_t, ReturnType, SupportedTypes...>(stack, instructionPointer); break;
+			case 'P':
+				if constexpr(Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
+					push<std::size_t, ReturnType, SupportedTypes...>(stack, instructionPointer);
+				else
+					throw std::invalid_argument{"Type std::size_t missing in template parameters"}; // C++23: return std::unexpected{...};
+				break;
 			case ':':
 			{
 				auto id = pop<std::size_t>(stack);
+				if (id >= std::size(pushTypes))
+					throw std::invalid_argument{"Type id " + std::to_string(id) + " out of range"}; // C++23: return std::unexpected{...};
 				pushTypes.at(id)(stack);
 				break;
 			}
 			case ';':
-				if constexpr (sizeof...(data) > 0)
-				{
-					auto& data = externalData[pop<std::size_t>(stack)];
-					std::visit([&stack](auto&& data) -> void {
-						using T = std::remove_reference_t<decltype(data)>;
-						if constexpr (Type::Concept::isFunctionPointer<T> || std::is_member_function_pointer_v<T>)
-							call(stack, data);
-						else
-							push<T, ReturnType, SupportedTypes...>(stack, data);
-					}, data);
-				}
+			{
+				auto dataId = pop<std::size_t>(stack);
+				auto& data = externalData[dataId];
+				std::visit([&stack, dataId](auto&& data) -> void {
+					using T = std::remove_reference_t<decltype(data)>;
+					if constexpr (Type::Concept::isFunctionPointer<T> || std::is_member_function_pointer_v<T>)
+						call(stack, data);
+					else if constexpr (!Type::Concept::Present<T, ReturnType, SupportedTypes...>)
+						throw std::invalid_argument{"Type " + std::to_string(dataId) + " missing in template parameters"}; // C++23: return std::unexpected{...};
+					else
+						push<T, ReturnType, SupportedTypes...>(stack, data);
+				}, data);
 				break;
-			case '?': if constexpr (std::is_constructible_v<bool, ValueType>) if (!get<ValueType>(stack, sizeof(std::size_t))) instructionPointer += get<std::size_t>(stack); drop<std::size_t>(stack); break;
-			case '!': if constexpr (std::is_constructible_v<bool, ValueType>) push<bool, ReturnType, SupportedTypes...>(stack, bool{!pop<ValueType>(stack)}); else drop<ValueType>(stack); break;
-			case '=': { auto rhs = pop<ValueType>(stack); push<bool, ReturnType, SupportedTypes...>(stack, bool{pop<ValueType>(stack) == rhs}); break; }
-			case '<': { auto rhs = pop<ValueType>(stack); push<bool, ReturnType, SupportedTypes...>(stack, bool{pop<ValueType>(stack) < rhs}); break; }
-			case '>': { auto rhs = pop<ValueType>(stack); push<bool, ReturnType, SupportedTypes...>(stack, bool{pop<ValueType>(stack) > rhs}); break; }
-			case '&': { auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) & rhs)); break; }
-			case '|': { auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) | rhs)); break; }
-			case '^': { auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) ^ rhs)); break; }
-			case '+': { auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) + rhs); break; }
-			case '-': { auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) - rhs); break; }
-			case '*': { auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) * rhs); break; }
-			case '/': { auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) / rhs); break; }
-			case '\\': push<decltype(instruction), ReturnType, SupportedTypes...>(stack, source[instructionPointer + 1]); break;
+			}
+			case '?':
+				if constexpr (std::is_constructible_v<bool, ValueType>)
+					if (!get<ValueType>(stack, sizeof(std::size_t)))
+						instructionPointer += get<std::size_t>(stack);
+				drop<std::size_t>(stack);
+				break;
+			case '!':
+				if constexpr (Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+				{
+					if constexpr (std::is_constructible_v<bool, ValueType>)
+						push<bool, ReturnType, SupportedTypes...>(stack, !static_cast<bool>(pop<ValueType>(stack)));
+					else
+						drop<ValueType>(stack); // C++23: return std::unexpected{...};
+				}
+				else
+					throw std::invalid_argument{"Type bool missing in template parameters"}; // C++23: return std::unexpected{...};
+				break;
+			case '=':
+				if constexpr (Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+				{
+					[[maybe_unused]] auto rhs = pop<ValueType>(stack);
+					if constexpr (std::equality_comparable<ValueType>)
+						push<bool, ReturnType, SupportedTypes...>(stack, static_cast<bool>(pop<ValueType>(stack) == rhs));
+				}
+				else
+					throw std::invalid_argument{"Type bool missing in template parameters"}; // C++23: return std::unexpected{...};
+				break;
+			case '<':
+				if constexpr (Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+				{
+					[[maybe_unused]] auto rhs = pop<ValueType>(stack);
+					if constexpr (std::totally_ordered<ValueType>)
+						push<bool, ReturnType, SupportedTypes...>(stack, static_cast<bool>(pop<ValueType>(stack) < rhs));
+				}
+				else
+					throw std::invalid_argument{"Type bool missing in template parameters"}; // C++23: return std::unexpected{...};
+				break;
+			case '>':
+				if constexpr (Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+				{
+					[[maybe_unused]] auto rhs = pop<ValueType>(stack);
+					if constexpr (std::totally_ordered<ValueType>)
+						push<bool, ReturnType, SupportedTypes...>(stack, static_cast<bool>(pop<ValueType>(stack) > rhs));
+				}
+				else
+					throw std::invalid_argument{"Type bool missing in template parameters"}; // C++23: return std::unexpected{...};
+				break;
+			case '&': { [[maybe_unused]] auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) & rhs)); break; }
+			case '|': { [[maybe_unused]] auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) | rhs)); break; }
+			case '^': { [[maybe_unused]] auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) ^ rhs)); break; }
+			case '+': { [[maybe_unused]] auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) + rhs); break; }
+			case '-': { [[maybe_unused]] auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) - rhs); break; }
+			case '*': { [[maybe_unused]] auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) * rhs); break; }
+			case '/': { [[maybe_unused]] auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) / rhs); break; }
+			case '\\':
+				if constexpr (Type::Concept::Present<decltype(instruction), ReturnType, SupportedTypes...>)
+					push<decltype(instruction), ReturnType, SupportedTypes...>(stack, source[instructionPointer + 1]);
+				else
+					throw std::invalid_argument{"Type decltype(source)::value_type missing in template parameters"}; // C++23: return std::unexpected{...};
+				break;
 			case 'X': instructionPointer = std::size(source); break;
 			default:
-			if constexpr (std::is_arithmetic_v<ValueType> && !std::same_as<bool, ValueType>)
+			if constexpr (std::is_arithmetic_v<ValueType>)
 				{ if (auto c = instruction; c >= '0' && c <= '9') set(stack, static_cast<ValueType>(get<ValueType>(stack) * 10 + c - '0')); } break;
 			}
 		};
