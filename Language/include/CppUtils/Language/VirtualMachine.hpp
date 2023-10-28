@@ -20,7 +20,7 @@ namespace CppUtils::Language::VirtualMachine
 	struct Stack final
 	{
 		std::vector<std::byte> data = {};
-		std::stack<std::size_t> types = {};
+		std::vector<std::size_t> types = {};
 	};
 
 	namespace
@@ -52,7 +52,7 @@ namespace CppUtils::Language::VirtualMachine
 		{
 			stack.data.resize(std::size(stack.data) + sizeof(T), std::byte{0});
 			set(stack, std::move(value));
-			stack.types.push(Type::getPosition<T, SupportedTypes...>());
+			stack.types.push_back(Type::getPosition<T, SupportedTypes...>());
 		}
 
 		constexpr auto drop(Stack& stack, std::size_t size) -> void
@@ -60,7 +60,7 @@ namespace CppUtils::Language::VirtualMachine
 			if (std::size(stack.data) < size)
 				throw std::logic_error{"Stack underflow"}; // C++23: return std::unexpected{...};
 			stack.data.resize(std::size(stack.data) - size);
-			stack.types.pop();
+			stack.types.pop_back();
 		}
 
 		template<Type::Concept::TriviallyCopyable... Args>
@@ -168,12 +168,27 @@ namespace CppUtils::Language::VirtualMachine
 	constexpr auto execute(const auto& source, auto... data) -> ReturnType
 	{
 		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{ &source, data... };
+		[[maybe_unused]] static constinit auto typesSize = std::array<std::size_t, 1 + sizeof...(SupportedTypes)>{ sizeof(ReturnType), sizeof(SupportedTypes)... };
 		static constinit auto pushTypes = std::array<void(*)(Stack&), 1 + sizeof...(SupportedTypes)>{
 			+[](Stack& stack) -> void { push<ReturnType, ReturnType, SupportedTypes...>(stack, ReturnType{}); },
 			+[](Stack& stack) -> void { push<SupportedTypes, ReturnType, SupportedTypes...>(stack, SupportedTypes{}); }...
 		};
-		auto stack = Stack{};
-		push<ReturnType, ReturnType, SupportedTypes...>(stack, ReturnType{});
+		static constinit auto getTypeOffset = [](Stack& stack, std::size_t position) -> std::size_t {
+			auto offset = std::size_t{}; // C++23: std::size_t{} -> 0z
+			while (position > 0)
+				offset += typesSize[stack.types[std::size(stack.types) - position--]];
+			return offset;
+		};
+		static constinit auto conditionalJumpTypes = std::array<void(*)(Stack&, std::size_t&, std::size_t), 1 + sizeof...(SupportedTypes)>{
+			+[](Stack& stack, std::size_t& instructionPointer, std::size_t jumpDistance) -> void {
+				if constexpr (std::is_constructible_v<bool, ReturnType>) if (!get<ReturnType>(stack)) instructionPointer += jumpDistance; },
+			+[](Stack& stack, std::size_t& instructionPointer, std::size_t jumpDistance) -> void {
+				if constexpr (std::is_constructible_v<bool, SupportedTypes>) if (!get<SupportedTypes>(stack)) instructionPointer += jumpDistance; }...
+		};
+		[[maybe_unused]] static constinit auto copyTypes = std::array<void(*)(Stack&, std::size_t, std::size_t), 1 + sizeof...(SupportedTypes)>{
+			+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { copy<ReturnType>(stack, sourcePosition, destinationPosition); },
+			+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { copy<SupportedTypes>(stack, sourcePosition, destinationPosition); }...
+		};
 		static constinit auto executeInstructionFunction = []<class ValueType>(Stack& stack, decltype(source) source, decltype(externalData) externalData, std::size_t& instructionPointer) static -> void {
 			switch (auto instruction = source[instructionPointer]; instruction)
 			{
@@ -188,13 +203,17 @@ namespace CppUtils::Language::VirtualMachine
 			case '_': set(stack, ValueType{}); break;
 			case 'C':
 			{
-				auto destinationPosition = pop<std::size_t>(stack) * sizeof(std::size_t);
-				auto sourcePosition = pop<std::size_t>(stack) * sizeof(std::size_t);
-				copy<ValueType>(stack, sourcePosition, destinationPosition);
+				auto destinationPosition = pop<std::size_t>(stack);
+				auto sourcePosition = pop<std::size_t>(stack);
+				auto sourceType = stack.types[std::size(stack.types) - 1 - sourcePosition];
+				auto destinationType = stack.types[std::size(stack.types) - 1 - destinationPosition];
+				if (sourceType != destinationType)
+					throw std::invalid_argument{"Type mismatch in copy instruction"}; // C++23: return std::unexpected{...};
+				copyTypes[sourceType](stack, getTypeOffset(stack, sourcePosition), getTypeOffset(stack, destinationPosition));
 				break;
 			}
 			// Todo: case 'D': set(stack, &get<ValueType>(stack)); break;
-			case 'R': set(stack, *get<ValueType*>(stack)); break;
+			case 'R': if constexpr (std::is_pointer_v<ValueType> && Type::Concept::TriviallyCopyable<std::remove_pointer_t<ValueType>>) set(stack, *get<ValueType>(stack)); break;
 			case 'J': instructionPointer = pop<std::size_t>(stack); break;
 			case 'P':
 				if constexpr(Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
@@ -226,11 +245,11 @@ namespace CppUtils::Language::VirtualMachine
 				break;
 			}
 			case '?':
-				if constexpr (std::is_constructible_v<bool, ValueType>)
-					if (!get<ValueType>(stack, sizeof(std::size_t)))
-						instructionPointer += get<std::size_t>(stack);
-				drop<std::size_t>(stack);
+			{
+				auto jump = pop<std::size_t>(stack);
+				conditionalJumpTypes[stack.types.back()](stack, instructionPointer, jump);
 				break;
+			}
 			case '!':
 				if constexpr (Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
 				{
@@ -279,27 +298,22 @@ namespace CppUtils::Language::VirtualMachine
 			case '-': { [[maybe_unused]] auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) - rhs); break; }
 			case '*': { [[maybe_unused]] auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) * rhs); break; }
 			case '/': { [[maybe_unused]] auto rhs = pop<ValueType>(stack); if constexpr (std::is_arithmetic_v<ValueType>) push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) / rhs); break; }
-			case '\\':
-				if constexpr (Type::Concept::Present<decltype(instruction), ReturnType, SupportedTypes...>)
-					push<decltype(instruction), ReturnType, SupportedTypes...>(stack, source[instructionPointer + 1]);
-				else
-					throw std::invalid_argument{"Type decltype(source)::value_type missing in template parameters"}; // C++23: return std::unexpected{...};
-				break;
-			case 'X': instructionPointer = std::size(source); break;
-			default:
-			if constexpr (std::is_arithmetic_v<ValueType>)
-				{ if (auto c = instruction; c >= '0' && c <= '9') set(stack, static_cast<ValueType>(get<ValueType>(stack) * 10 + c - '0')); } break;
+			case '\\': if constexpr (std::is_constructible_v<ValueType, decltype(source[0])>) set(stack, static_cast<ValueType>(get<ValueType>(stack) + static_cast<ValueType>(source[instructionPointer + 1]))); break;
+			case 'X': instructionPointer = std::size(source) - 1; break;
+			default: if constexpr (std::is_arithmetic_v<ValueType>) if (auto c = instruction; c >= '0' && c <= '9') set(stack, static_cast<ValueType>(get<ValueType>(stack) * 10 + c - '0')); break;
 			}
 		};
 		static constinit auto executeInstruction = std::array<void(*)(Stack&, decltype(source), decltype(externalData), std::size_t&), 1 + sizeof...(SupportedTypes)>{
 			executeInstructionFunction.template operator()<ReturnType>,
 			executeInstructionFunction.template operator()<SupportedTypes>...
 		};
+		auto stack = Stack{};
+		push<ReturnType, ReturnType, SupportedTypes...>(stack, ReturnType{});
 		for (auto instructionPointer = std::size_t{0}; instructionPointer < std::size(source); ++instructionPointer) // C++23: std::size_t{0} -> 0z
 		{
 			if (std::empty(stack.types))
-				throw std::logic_error{"Stack underflow"}; // C++23: return std::unexpected{...};
-			executeInstruction.at(stack.types.top())(stack, source, externalData, instructionPointer);
+				throw std::logic_error{"Stack empty"}; // C++23: return std::unexpected{...};
+			executeInstruction[stack.types.back()](stack, source, externalData, instructionPointer);
 		}
 		return get<ReturnType>(stack);
 	}
