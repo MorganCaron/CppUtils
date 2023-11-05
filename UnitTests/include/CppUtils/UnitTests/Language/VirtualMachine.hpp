@@ -34,6 +34,19 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 			EXPECT_EQUAL(result, 0);
 		});
 
+		addTest("write stack info", [] {
+			constexpr auto src = u8"42, 0W"sv;
+			auto result = VM::execute<int, std::size_t>(src);
+			EXPECT_EQUAL(result, 42);
+		});
+
+		addTest("inspect stack", [] {
+			constexpr auto src = u8"42, 1, 1;, 2; I)))"sv;
+			constexpr auto input = "Hello World!"sv;
+			auto result = VM::execute<int, std::size_t, std::string_view, const std::string_view*>(src, input, &input);
+			EXPECT_EQUAL(result, 42);
+		});
+
 		addTest("exit with error code", [] {
 			constexpr auto src = u8"0, 0:21X_"sv;
 			auto result = VM::execute<int, std::size_t>(src);
@@ -198,12 +211,12 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 
 		addTest("condition", [] {
 			{
-				constexpr auto src = u8"1, 4?_42X_21"sv;
+				constexpr auto src = u8"0, 1, 4? 42X 21"sv;
 				auto result = VM::execute<int, std::size_t>(src);
 				EXPECT_EQUAL(result, 42);
 			}
 			{
-				constexpr auto src = u8"0, 4?_21X_42"sv;
+				constexpr auto src = u8"0, 0, 4? 21X 42"sv;
 				auto result = VM::execute<int, std::size_t>(src);
 				EXPECT_EQUAL(result, 42);
 			}
@@ -225,7 +238,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		});
 
 		addTest("jump", [] {
-			constexpr auto src = u8"0, 5JX 42"sv;
+			constexpr auto src = u8"0, 5JX) 42"sv;
 			auto result = VM::execute<int, std::size_t>(src);
 			EXPECT_EQUAL(result, 42);
 		});
@@ -237,7 +250,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		});
 
 		addTest("return string.at", [] {
-			constexpr auto src = u8R"(0, 1;, 1:6, 2;)"sv;
+			constexpr auto src = u8"0, 1;, 6, 2;"sv;
 			constexpr auto input = u8"Hello World!"sv;
 			auto result = VM::execute<char8_t, std::size_t, const std::u8string_view*>(src, &input, &std::u8string_view::at);
 			EXPECT_EQUAL(result, 'W');
@@ -250,13 +263,19 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 			EXPECT(result);
 		});
 
-		addTest("compile labels", [] {
+		addTest("print string_view", [] {
 			constexpr auto src = u8R"(
-				
+				0, 1;, 2;
 			)"sv;
-			constexpr auto input = u8R"(Hello World!)"sv;
-			auto output = ""s;
-			auto result = VM::execute<std::size_t, std::u8string_view, std::string*>(src, input, &output, std::size<decltype(input)>, &std::u8string_view::at);
+
+			constexpr auto input = "Hello World!\n"sv;
+
+			constexpr auto print = [](std::string_view text) -> void {
+				CppUtils::Log::Logger{std::cout} << text;
+			};
+
+			auto result = VM::execute<std::size_t, std::string_view>(src, input, +print);
+
 			EXPECT_EQUAL(result, 0);
 		});
 
@@ -270,32 +289,35 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 
 		addTest("test loops", [] {
 			constexpr auto src = u8R"(
-				1;, P,
-				0, 0, 2C,
-				0=, 4? (0X),
-
-
-
-				3 P,
+				1;, 1+ P,
 				0, 2, 0C,
-				0=, 4? (0X),
-				0, 2, 0C, 1-, 0, 2C),
-				0, 1;, 4;
-				0, 1, 0C J
-			)"sv;
-
-			constexpr auto input = u8R"(
-				Hello World!
+				1-,
+				0, 2C,
+				0=, 4? (0X,
+				2;, 3;
+				J
 			)"sv;
 
 			constexpr auto nb = std::size_t{3};
 
+			constexpr auto input = "Hello World!\n"sv;
+
 			constexpr auto print = [](std::string_view text) -> void {
-				CppUtils::Log::Logger{std::cout} << text << '\n';
+				CppUtils::Log::Logger{std::cout} << text;
 			};
 
-			auto result = VM::execute<std::size_t, bool, std::u8string_view>(src, nb, input, +print);
+			auto result = VM::execute<std::size_t, bool, std::string_view>(src, nb, input, +print);
 
+			EXPECT_EQUAL(result, 0);
+		});
+
+		addTest("compile labels", [] {
+			constexpr auto src = u8R"(
+				
+			)"sv;
+			constexpr auto input = u8R"(Hello World!)"sv;
+			auto output = ""s;
+			auto result = VM::execute<std::size_t, std::u8string_view, std::string*>(src, input, &output, std::size<decltype(input)>, &std::u8string_view::at);
 			EXPECT_EQUAL(result, 0);
 		});
 
