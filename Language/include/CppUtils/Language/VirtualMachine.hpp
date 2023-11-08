@@ -74,10 +74,13 @@ namespace CppUtils::Language::VirtualMachine
 			return value;
 		}
 
-		template<Type::Concept::TriviallyCopyable T>
+		template<Type::Concept::TriviallyCopyable SourceType, Type::Concept::TriviallyCopyable DestinationType = SourceType>
 		constexpr auto copy(Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void
 		{
-			set(stack, get<T>(stack, sourcePosition), destinationPosition);
+			if constexpr (std::is_same_v<SourceType, DestinationType>)
+				set(stack, get<SourceType>(stack, sourcePosition), destinationPosition);
+			else
+				set(stack, static_cast<DestinationType>(get<SourceType>(stack, sourcePosition)), destinationPosition);
 		}
 
 		template<Type::Concept::TriviallyCopyable... Args>
@@ -173,9 +176,15 @@ namespace CppUtils::Language::VirtualMachine
 			+[](Stack& stack, std::size_t& instructionPointer, std::size_t jumpDistance) -> void {
 				if constexpr (std::is_constructible_v<bool, SupportedTypes>) if (!pop<SupportedTypes>(stack)) instructionPointer += jumpDistance; }...
 		};
-		static constinit auto copyTypes = std::array<void(*)(Stack&, std::size_t, std::size_t), 1 + sizeof...(SupportedTypes)>{
-			+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { copy<ReturnType>(stack, sourcePosition, destinationPosition); },
-			+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { copy<SupportedTypes>(stack, sourcePosition, destinationPosition); }...
+		static constinit auto copyTypesBuilder = []<class SourceType>() consteval -> auto {
+			return std::array<void(*)(Stack&, std::size_t, std::size_t), 1 + sizeof...(SupportedTypes)>{
+				+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { if constexpr (std::is_convertible_v<SourceType, ReturnType>) copy<SourceType, ReturnType>(stack, sourcePosition, destinationPosition); },
+				+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { if constexpr (std::is_convertible_v<SourceType, SupportedTypes>) copy<SourceType, SupportedTypes>(stack, sourcePosition, destinationPosition); }...
+			};
+		};
+		static constinit auto copyTypes = std::array<std::array<void(*)(Stack&, std::size_t, std::size_t), 1 + sizeof...(SupportedTypes)>, 1 + sizeof...(SupportedTypes)>{
+			copyTypesBuilder.template operator()<ReturnType>(),
+			copyTypesBuilder.template operator()<SupportedTypes>()...
 		};
 		static constinit auto printType = []<class ValueType>(Stack& stack, std::size_t position) static -> void {
 			std::cout << "Position: " << position << " Type: " << stack.types[std::size(stack.types) - 1 - position] << " Value: " << std::flush; // C++23: std::cout -> std::print
@@ -207,9 +216,7 @@ namespace CppUtils::Language::VirtualMachine
 				auto sourcePosition = pop<std::size_t>(stack);
 				auto sourceType = stack.types[std::size(stack.types) - 1 - sourcePosition];
 				auto destinationType = stack.types[std::size(stack.types) - 1 - destinationPosition];
-				if (sourceType != destinationType)
-					throw std::invalid_argument{"Type mismatch in copy instruction"}; // C++23: return std::unexpected{...};
-				copyTypes[sourceType](stack, getTypeOffset(stack, sourcePosition), getTypeOffset(stack, destinationPosition));
+				copyTypes[sourceType][destinationType](stack, getTypeOffset(stack, sourcePosition), getTypeOffset(stack, destinationPosition));
 				break;
 			}
 			// Todo: case 'D': set(stack, &get<ValueType>(stack)); break;

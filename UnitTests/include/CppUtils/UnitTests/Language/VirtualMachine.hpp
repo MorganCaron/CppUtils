@@ -249,6 +249,12 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 			EXPECT_EQUAL(result, 42);
 		});
 
+		addTest("cast", [] {
+			constexpr auto src = u8"0, 1:42, 0, 1C)"sv;
+			auto result = VM::execute<bool, std::size_t>(src);
+			EXPECT_EQUAL(result, 1);
+		});
+
 		addTest("return string.at", [] {
 			constexpr auto src = u8"0, 1;, 6, 2;"sv;
 			constexpr auto input = u8"Hello World!"sv;
