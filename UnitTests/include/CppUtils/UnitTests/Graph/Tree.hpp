@@ -6,17 +6,18 @@ namespace CppUtils::UnitTests::Graph::Tree
 {
 	TEST_GROUP("Graph/Tree")
 	{
+		using Logger = CppUtils::Logger<"CppUtils">;
 		using StringTreeNode = CppUtils::Graph::Tree::Node<std::string>;
 
 		addTest("", [] {
 			auto root = StringTreeNode{"Root"};
 			CppUtils::Graph::Tree::log(root);
-			CppUtils::Log::Logger{std::cout} << root.value << '\n';
+			Logger::print(root.value);
 			EXPECT(root.value == "Root");
 			
 			root.nodes.emplace_back(StringTreeNode{"Branch0"});
 			root.nodes.emplace_back(StringTreeNode{"Branch1"});
-			CppUtils::Log::Logger{std::cout} << root.nodes[1].value << '\n';
+			Logger::print(root.nodes[1].value);
 			EXPECT(root.nodes[1].value == "Branch1");
 
 			auto& branch0 = root.nodes[0];

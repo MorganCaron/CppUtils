@@ -34,7 +34,8 @@ namespace CppUtils::UnitTest
 
 		int executeTests(TestSettings settings)
 		{
-			auto logger = Log::Logger{std::cout};
+			using Logger = Logger<"CppUtils">;
+
 			if (!settings.filter.empty())
 			{
 				auto allTests = std::move(m_tests);
@@ -53,17 +54,12 @@ namespace CppUtils::UnitTest
 
 			if (m_tests.empty())
 			{
-				logger
-					<< Terminal::TextColor::TextColorEnum::Yellow
-					<< "No tests found.\n"
-					<< Terminal::TextColor::TextColorEnum::Blue
-					<< "Create a unit test or adjust the filter.\n";
+				Logger::print<"warning">("No tests found.");
+				Logger::print<"detail">("Create a unit test or adjust the filter.");
 			}
 			else
 			{
-				logger
-					<< Terminal::TextColor::TextColorEnum::Default
-					<< std::to_string(std::size(m_tests)) + " tests found. Execution:\n";
+				Logger::print<"info">("{} tests found. Execution:", std::size(m_tests));
 				auto nbSuccess = std::size_t{0};
 				auto nbFail = std::size_t{0};
 				for (const auto& test : m_tests)
@@ -76,37 +72,24 @@ namespace CppUtils::UnitTest
 						if (settings.failFast)
 						{
 							if (settings.detail)
-								logger
-									<< Terminal::TextColor::TextColorEnum::Blue
-									<< "Stopping tests execution (failFast mode enabled)\n";
+								Logger::print<"detail">("Stopping tests execution (failFast mode enabled)");
 							break;
 						}
 					}
 				}
-				logger
-					<< Terminal::TextColor::TextColorEnum::Blue
-					<< Log::getSeparatorLine() << "\nTest results\n";
+				Logger::printSeparator<"detail">();
+				Logger::print<"detail">("Test results");
 				if (nbFail == 0)
 				{
-					logger
-						<< Terminal::TextColor::TextColorEnum::Green
-						<< "All tests passed successfully\n";
+					Logger::print<"success">("All tests passed successfully");
 					return EXIT_SUCCESS;
 				}
-				logger
-					<< Terminal::TextColor::TextColorEnum::Red
-					<< "The tests failed:\n";
+				Logger::print<"error">("The tests failed:");
 				if (nbSuccess > 0)
-					logger
-						<< Terminal::TextColor::TextColorEnum::Green
-						<< "- " << nbSuccess << " successful tests\n";
+					Logger::print<"success">("- {} successful tests\n", nbSuccess);
 				else
-					logger
-						<< Terminal::TextColor::TextColorEnum::Red
-						<< "- 0 successful tests\n";
-				logger
-					<< Terminal::TextColor::TextColorEnum::Red
-					<< "- " << nbFail << " failed tests\n";
+					Logger::print<"error">("- 0 successful tests\n");
+				Logger::print<"error">("- {} failed tests\n", nbFail);
 			}
 			
 			return EXIT_FAILURE;

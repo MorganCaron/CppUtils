@@ -7,29 +7,29 @@ namespace CppUtils::UnitTests::String
 	TEST_GROUP("String")
 	{
 		using namespace std::literals;
+		using Logger = CppUtils::Logger<"CppUtils">;
 
 		addTest("concatenateStringsWithDelimiter", [] {
-			const auto strings = std::vector{"A"sv, "B"sv, "C"sv};
-			const auto string = CppUtils::String::concatenateStringsWithDelimiter(strings, ", ");
+			auto strings = std::vector{"A"sv, "B"sv, "C"sv};
+			auto string = CppUtils::String::concatenateStringsWithDelimiter(strings, ", ");
 
-			CppUtils::Log::Logger{std::cout} << string << '\n';
+			Logger::print(string);
 			EXPECT(string == "A, B, C");
 		});
 
 		addTest("trimString", [] {
-			const auto string = "\n \t Hello World!\n \t ";
-			const auto leftTrimString = CppUtils::String::leftTrimString(string);
-			const auto rightTrimString = CppUtils::String::rightTrimString(string);
-			const auto trimString = CppUtils::String::trimString(string);
-			auto logger = CppUtils::Log::Logger{std::cout};
+			auto string = "\n \t Hello World!\n \t ";
+			auto leftTrimString = CppUtils::String::leftTrimString(string);
+			auto rightTrimString = CppUtils::String::rightTrimString(string);
+			auto trimString = CppUtils::String::trimString(string);
 
-			logger << '"' << leftTrimString << "\"\n";
+			Logger::print(R"("{}")", leftTrimString);
 			EXPECT(leftTrimString == "Hello World!\n \t ");
 
-			logger << '"' << rightTrimString << "\"\n";
+			Logger::print(R"("{}")", rightTrimString);
 			EXPECT(rightTrimString == "\n \t Hello World!");
 
-			logger << '"' << trimString << "\"\n";
+			Logger::print(R"("{}")", trimString);
 			EXPECT(trimString == "Hello World!");
 		});
 
@@ -37,7 +37,7 @@ namespace CppUtils::UnitTests::String
 			auto output = ""s;
 			for (char c = 0; c >= 0; ++c)
 				output += CppUtils::String::getPrintableChar(c) + ' ';
-			CppUtils::Log::Logger{std::cout} << output << '\n';
+			Logger::print(output);
 		});
 	}
 }

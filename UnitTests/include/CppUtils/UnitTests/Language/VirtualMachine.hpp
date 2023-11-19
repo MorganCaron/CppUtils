@@ -7,7 +7,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 	TEST_GROUP("Language/VirtualMachine")
 	{
 		using namespace std::literals;
-
+		using Logger = CppUtils::Logger<"CppUtils">;
 		namespace VM = CppUtils::Language::VirtualMachine;
 
 		addTest("empty source", [] {
@@ -277,7 +277,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 			constexpr auto input = "Hello World!\n"sv;
 
 			constexpr auto print = [](std::string_view text) -> void {
-				CppUtils::Log::Logger{std::cout} << text;
+				Logger::print(text);
 			};
 
 			auto result = VM::execute<std::size_t, std::string_view>(src, input, +print);
@@ -309,7 +309,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 			constexpr auto input = "Hello World!\n"sv;
 
 			constexpr auto print = [](std::string_view text) -> void {
-				CppUtils::Log::Logger{std::cout} << text;
+				Logger::print(text);
 			};
 
 			auto result = VM::execute<std::size_t, bool, std::string_view>(src, nb, input, +print);

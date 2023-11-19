@@ -6,12 +6,14 @@ namespace CppUtils::UnitTests::FileSystem::File::String
 {
 	TEST_GROUP("FileSystem/File/String")
 	{
+		using Logger = CppUtils::Logger<"CppUtils">;
+		
 		addTest("WriteRead", [] {
 			const auto filePath = std::filesystem::path{"test.tmp"};
 			const auto originalString = "Hello world!";
 			CppUtils::FileSystem::File::String::write(filePath, originalString);
 			const auto fileContent = CppUtils::FileSystem::File::String::read(filePath);
-			CppUtils::Log::Logger{std::cout} << fileContent << '\n';
+			Logger::print(fileContent);
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			EXPECT(fileContent == originalString);
 		});
@@ -23,7 +25,7 @@ namespace CppUtils::UnitTests::FileSystem::File::String
 			CppUtils::FileSystem::File::String::append(filePath, firstString);
 			CppUtils::FileSystem::File::String::append(filePath, secondString);
 			const auto fileContent = CppUtils::FileSystem::File::String::read(filePath);
-			CppUtils::Log::Logger{std::cout} << fileContent << '\n';
+			Logger::print(fileContent);
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			EXPECT(fileContent == std::string{firstString} + secondString);
 		});

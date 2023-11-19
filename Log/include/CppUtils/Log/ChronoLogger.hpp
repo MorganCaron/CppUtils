@@ -23,13 +23,11 @@ namespace CppUtils::Log
 
 		auto stop() -> void
 		{
+			using Logger = Logger<"CppUtils">;
 			if (!m_enabled)
 				return;
 			m_chrono.stop();
-			auto logger = Logger{std::cout};
-			logger
-				<< Terminal::TextColor::TextColorEnum::Magenta
-				<< m_name << " duration: " << CppUtils::Chrono::durationToString(m_chrono.getDuration()) << '\n';
+			Logger::print<"detail">("{} duration: {}", m_name, CppUtils::Chrono::durationToString(m_chrono.getDuration()));
 		}
 
 		auto enable() noexcept -> void

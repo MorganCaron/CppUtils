@@ -11,6 +11,11 @@
 
 namespace CppUtils
 {
+	namespace
+	{
+		inline std::mutex loggerMutex;
+	}
+
 	template<Hash::Hasher loggerName = Hash::Hash{}>
 	struct Logger final
 	{
@@ -29,82 +34,146 @@ namespace CppUtils
 			};
 		}
 
+		template<Hash::Hasher logType = Hash::Hash{}>
+		static inline auto print(std::ostream& ostream, std::string_view string) -> void
+		{
+			auto lock = std::unique_lock{loggerMutex};
+			auto [textModifier, message] = format<logType>(string);
+			// Todo C++23: std::print(ostream, "{}", std::move(message));
+			ostream << message;
+		}
+	
+		template<Hash::Hasher logType = Hash::Hash{}>
+		static inline auto print(std::string_view string) -> void
+		{
+			using namespace Hash::Literals;
+			auto lock = std::unique_lock{loggerMutex};
+			auto [textModifier, message] = format<logType>(string);
+			if constexpr (logType == "error"_hash)
+				std::print(stderr,"{}", std::move(message));
+			else
+				std::print("{}", std::move(message));
+		}
+
 		template<Hash::Hasher logType = Hash::Hash{}, class... Args>
+		requires (sizeof...(Args) > 0)
 		static inline auto print(std::ostream& ostream, std::format_string<Args...> fmt, Args&&... args) -> void
 		{
+			auto lock = std::unique_lock{loggerMutex};
 			auto [textModifier, message] = format<logType>(std::format(fmt, std::forward<Args>(args)...));
 			// Todo C++23: std::print(ostream, "{}", std::move(message));
 			ostream << message;
 		}
 	
 		template<Hash::Hasher logType = Hash::Hash{}, class... Args>
+		requires (sizeof...(Args) > 0)
 		static inline auto print(std::format_string<Args...> fmt, Args&&... args) -> void
 		{
 			using namespace Hash::Literals;
+			auto lock = std::unique_lock{loggerMutex};
 			auto [textModifier, message] = format<logType>(std::format(fmt, std::forward<Args>(args)...));
 			if constexpr (logType == "error"_hash)
 				std::print(stderr,"{}", std::move(message));
 			else
 				std::print("{}", std::move(message));
 		}
-	};
-}
 
-	class Logger final
-	{
-	public:
-		Logger(std::ostream& outputStream):
-			m_outputStream{outputStream},
-			m_textColor{Terminal::TextColor::TextColorEnum::Default},
-			m_backgroundColor{Terminal::BackgroundColor::BackgroundColorEnum::Default}
+		template<Hash::Hasher logType = Hash::Hash{}>
+		static inline auto printSeparator(std::ostream& ostream) -> void
 		{
-			Terminal::TextModifier::reset(m_outputStream.get());
+			using namespace std::literals;
+			auto line = ""s;
+			auto terminalWidth = Terminal::getTerminalSize().width;
+			for (auto i = std::size_t{0}; i < terminalWidth; ++i)
+				line += "─";
+			auto lock = std::unique_lock{loggerMutex};
+			auto [textModifier, message] = format<logType>("");
+			// Todo C++23: std::print(ostream, "{}", std::move(line));
+			ostream << line;
 		}
 
-		~Logger()
+		template<Hash::Hasher logType = Hash::Hash{}>
+		static inline auto printSeparator() -> void
 		{
-			Terminal::TextModifier::reset(m_outputStream.get());
+			using namespace std::literals;
+			auto line = ""s;
+			auto terminalWidth = Terminal::getTerminalSize().width;
+			for (auto i = std::size_t{0}; i < terminalWidth; ++i)
+				line += "─";
+			auto lock = std::unique_lock{loggerMutex};
+			auto [textModifier, message] = format<logType>("");
+			std::print("{}", std::move(line));
 		}
-
-		auto setOutputStream(std::ostream& outputStream) -> void
-		{
-			m_outputStream = outputStream;
-		}
-
-		auto operator<<(const Type::Concept::Printable auto& value) -> Logger&
-		{
-			m_outputStream.get() << value;
-			return *this;
-		}
-		
-		auto operator<<(Terminal::TextColor::TextColorEnum textColor) -> Logger&
-		{
-			m_textColor = textColor;
-			Terminal::TextModifier::colorize(m_outputStream.get(), m_textColor, m_backgroundColor);
-			return *this;
-		}
-
-		auto operator<<(Terminal::BackgroundColor::BackgroundColorEnum backgroundColor) -> Logger&
-		{
-			m_backgroundColor = backgroundColor;
-			Terminal::TextModifier::colorize(m_outputStream.get(), m_textColor, m_backgroundColor);
-			return *this;
-		}
-
-	private:
-		std::reference_wrapper<std::ostream> m_outputStream;
-		Terminal::TextColor::TextColorEnum m_textColor;
-		Terminal::BackgroundColor::BackgroundColorEnum m_backgroundColor;
 	};
 
-	template<String::Concept::Char CharT = char>
-	constexpr auto getSeparatorLine() -> std::basic_string<CharT>
+	template<>
+	template<>
+	auto Logger<"CppUtils">::format<"info">(std::string_view message) -> Formatter
 	{
-		auto line = std::basic_string<CharT>{};
-		auto terminalWidth = Terminal::getTerminalSize().width;
-		for (auto i = std::size_t{0}; i < terminalWidth; ++i)
-			line += "─";
-		return line;
+		return {
+			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Default},
+			std::format("INFO: {}\n", message)
+		};
+	}
+
+	template<>
+	template<>
+	auto Logger<"CppUtils">::format<"important">(std::string_view message) -> Formatter
+	{
+		return {
+			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Cyan},
+			std::format("{}\n", message)
+		};
+	}
+
+	template<>
+	template<>
+	auto Logger<"CppUtils">::format<"success">(std::string_view message) -> Formatter
+	{
+		return {
+			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Green},
+			std::format("{}\n", message)
+		};
+	}
+
+	template<>
+	template<>
+	auto Logger<"CppUtils">::format<"debug">(std::string_view message) -> Formatter
+	{
+		return {
+			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Magenta},
+			std::format("DEBUG: {}\n", message)
+		};
+	}
+
+	template<>
+	template<>
+	auto Logger<"CppUtils">::format<"detail">(std::string_view message) -> Formatter
+	{
+		return {
+			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Blue},
+			std::format("{}\n", message)
+		};
+	}
+
+	template<>
+	template<>
+	auto Logger<"CppUtils">::format<"warning">(std::string_view message) -> Formatter
+	{
+		return {
+			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Yellow},
+			std::format("WARNING: {}\n", message)
+		};
+	}
+
+	template<>
+	template<>
+	auto Logger<"CppUtils">::format<"error">(std::string_view message) -> Formatter
+	{
+		return {
+			Terminal::TextModifier{stderr, Terminal::TextColor::TextColorEnum::Red},
+			std::format("ERROR: {}\n", message)
+		};
 	}
 
 	auto logException(const std::exception& exception, std::ostream& outputStream = std::ref(std::cerr), std::size_t depth = 0) -> void

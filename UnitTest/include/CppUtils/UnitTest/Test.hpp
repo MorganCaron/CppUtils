@@ -6,7 +6,8 @@
 #include <iostream>
 #include <functional>
 
-#include <CppUtils/Hash/Token.hpp>
+#include <CppUtils/Hash.hpp>
+#include <CppUtils/Log/Logger.hpp>
 #include <CppUtils/Type/Named.hpp>
 #include <CppUtils/Log/ChronoLogger.hpp>
 #include <CppUtils/Parameters/ParametersLexer.hpp>
@@ -27,13 +28,12 @@ namespace CppUtils::UnitTest
 		{
 			using namespace std::literals;
 			using namespace Hash::Literals;
-
-			auto logger = Log::Logger{std::cout};
+			using Logger = Logger<"CppUtils">;
+			
 			if (settings.verbose)
 			{
-				logger
-					<< Terminal::TextColor::TextColorEnum::Blue
-					<< Log::getSeparatorLine() << '\n' << getName() << ":\n";
+				Logger::printSeparator<"detail">();
+				Logger::print<"detail">("{}:", getName());
 			}
 			try
 			{
@@ -58,12 +58,7 @@ namespace CppUtils::UnitTest
 				return false;
 			}
 			if (settings.verbose)
-			{
-				auto logger = Log::Logger{std::cout};
-				logger
-					<< Terminal::TextColor::TextColorEnum::Green
-					<< getName() << " passed\n";
-			}
+				Logger::print<"success">("{} passed", getName());
 			return true;
 		}
 
