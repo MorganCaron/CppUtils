@@ -11,7 +11,6 @@
 #include <CppUtils/UnitTests/FileSystem/File/String.hpp>
 #include <CppUtils/UnitTests/Functional/Function.hpp>
 #include <CppUtils/UnitTests/Graph/MeshNode.hpp>
-#include <CppUtils/UnitTests/Hash/Token.hpp>
 #include <CppUtils/UnitTests/Graph/Tree.hpp>
 #include <CppUtils/UnitTests/Language/VirtualMachine.hpp>
 #include <CppUtils/UnitTests/Language/Lexer/Lexer.hpp>

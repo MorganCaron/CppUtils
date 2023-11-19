@@ -19,10 +19,10 @@ namespace CppUtils::Language::LibSystem
 
 	inline auto allocateMemory(Ast& context) -> void
 	{
-		using namespace Hash::Literals;
+		using namespace Hashing::Literals;
 		auto size = static_cast<std::size_t>(context.getStackNode(0).value);
 		auto* address = Implementation::allocateMemory(size);
-		Ast::getFirstNode(context.root["register"_token][0]).value = reinterpret_cast<Hash::Token>(address);
+		Ast::getFirstNode(context.root["register"_token][0]).value = reinterpret_cast<Token>(address);
 	}
 
 	inline auto freeMemory(Ast& context) -> void

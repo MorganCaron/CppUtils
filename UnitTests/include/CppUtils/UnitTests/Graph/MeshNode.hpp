@@ -13,7 +13,7 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 		addTest("One", [] {
 			auto meshNetwork = StringMeshNetwork{};
 			auto banana = std::shared_ptr<Node>{meshNetwork.newNode("banana")};
-			Logger::print(banana->value);
+			Logger::print("{}", banana->value);
 			EXPECT(banana->value == "banana");
 		});
 

@@ -89,7 +89,7 @@ namespace CppUtils::Terminal
 
 	private:
 		bool m_modify = false;
-		std::FILE* m_file;
+		std::FILE* m_file = nullptr;
 #if defined(OS_WINDOWS)
 		WORD m_attributes;
 #endif

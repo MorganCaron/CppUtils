@@ -3,6 +3,7 @@
 #include <CppUtils/Platform/OS.hpp>
 #include <CppUtils/Platform/Compiler.hpp>
 #include <CppUtils/Platform/Library.hpp>
+#include <CppUtils/Platform/Windows.hpp>
 #include <CppUtils/Random/Random.hpp>
 #include <CppUtils/Memory/UniquePtr.hpp>
 #include <CppUtils/System/System.hpp>
@@ -23,6 +24,7 @@
 #include <CppUtils/Graph/Tree.hpp>
 #include <CppUtils/Graph/VariantTree.hpp>
 #include <CppUtils/Hash.hpp>
+#include <CppUtils/HashTable.hpp>
 #include <CppUtils/Language/Parser/Cursor.hpp>
 #include <CppUtils/Language/Ast.hpp>
 #include <CppUtils/Language/AstGrammar.hpp>

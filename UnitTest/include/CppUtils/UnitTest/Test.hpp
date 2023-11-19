@@ -27,7 +27,7 @@ namespace CppUtils::UnitTest
 		auto pass(const TestSettings& settings) const -> bool
 		{
 			using namespace std::literals;
-			using namespace Hash::Literals;
+			using namespace Hashing::Literals;
 			using Logger = Logger<"CppUtils">;
 			
 			if (settings.verbose)

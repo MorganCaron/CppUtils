@@ -13,7 +13,7 @@ namespace CppUtils::UnitTests::String
 			auto strings = std::vector{"A"sv, "B"sv, "C"sv};
 			auto string = CppUtils::String::concatenateStringsWithDelimiter(strings, ", ");
 
-			Logger::print(string);
+			Logger::print("{}", string);
 			EXPECT(string == "A, B, C");
 		});
 
@@ -37,7 +37,7 @@ namespace CppUtils::UnitTests::String
 			auto output = ""s;
 			for (char c = 0; c >= 0; ++c)
 				output += CppUtils::String::getPrintableChar(c) + ' ';
-			Logger::print(output);
+			Logger::print("{}", output);
 		});
 	}
 }

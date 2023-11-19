@@ -16,7 +16,7 @@ namespace CppUtils
 		inline std::mutex loggerMutex;
 	}
 
-	template<Hash::Hasher loggerName = Hash::Hash{}>
+	template<Hasher loggerName = Hash{}>
 	struct Logger final
 	{
 		struct Formatter final
@@ -25,7 +25,7 @@ namespace CppUtils
 			std::string message;
 		};
 
-		template<Hash::Hasher logType = Hash::Hash{}>
+		template<Hasher logType = Hash{}>
 		static inline auto format(std::string_view message) -> Formatter
 		{
 			return {
@@ -34,29 +34,7 @@ namespace CppUtils
 			};
 		}
 
-		template<Hash::Hasher logType = Hash::Hash{}>
-		static inline auto print(std::ostream& ostream, std::string_view string) -> void
-		{
-			auto lock = std::unique_lock{loggerMutex};
-			auto [textModifier, message] = format<logType>(string);
-			// Todo C++23: std::print(ostream, "{}", std::move(message));
-			ostream << message;
-		}
-	
-		template<Hash::Hasher logType = Hash::Hash{}>
-		static inline auto print(std::string_view string) -> void
-		{
-			using namespace Hash::Literals;
-			auto lock = std::unique_lock{loggerMutex};
-			auto [textModifier, message] = format<logType>(string);
-			if constexpr (logType == "error"_hash)
-				std::print(stderr,"{}", std::move(message));
-			else
-				std::print("{}", std::move(message));
-		}
-
-		template<Hash::Hasher logType = Hash::Hash{}, class... Args>
-		requires (sizeof...(Args) > 0)
+		template<Hasher logType = Hash{}, class... Args>
 		static inline auto print(std::ostream& ostream, std::format_string<Args...> fmt, Args&&... args) -> void
 		{
 			auto lock = std::unique_lock{loggerMutex};
@@ -65,11 +43,10 @@ namespace CppUtils
 			ostream << message;
 		}
 	
-		template<Hash::Hasher logType = Hash::Hash{}, class... Args>
-		requires (sizeof...(Args) > 0)
+		template<Hasher logType = Hash{}, class... Args>
 		static inline auto print(std::format_string<Args...> fmt, Args&&... args) -> void
 		{
-			using namespace Hash::Literals;
+			using namespace Hashing::Literals;
 			auto lock = std::unique_lock{loggerMutex};
 			auto [textModifier, message] = format<logType>(std::format(fmt, std::forward<Args>(args)...));
 			if constexpr (logType == "error"_hash)
@@ -78,7 +55,7 @@ namespace CppUtils
 				std::print("{}", std::move(message));
 		}
 
-		template<Hash::Hasher logType = Hash::Hash{}>
+		template<Hasher logType = Hash{}>
 		static inline auto printSeparator(std::ostream& ostream) -> void
 		{
 			using namespace std::literals;
@@ -92,7 +69,7 @@ namespace CppUtils
 			ostream << line;
 		}
 
-		template<Hash::Hasher logType = Hash::Hash{}>
+		template<Hasher logType = Hash{}>
 		static inline auto printSeparator() -> void
 		{
 			using namespace std::literals;
