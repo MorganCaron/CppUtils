@@ -9,26 +9,39 @@
 
 namespace CppUtils::Hash
 {
-	using Token = std::uintptr_t;
+	using Hash = std::uint64_t;
+	using Token = Hash;
 	using TokenNames = std::unordered_map<Token, std::string>;
 	
-	[[nodiscard]] constexpr auto hash(String::Concept::StringView auto stringView) noexcept -> Token
+	[[nodiscard]] constexpr auto hash(std::string_view string) noexcept -> Hash
 	{
 		auto result = 0xcbf29ce484222325u;
-		for (const auto& c : stringView)
-			result = (static_cast<Token>(c) ^ result) * 0x100000001b3u;
+		for (const auto& c : string)
+			result = (static_cast<Hash>(c) ^ result) * 0x100000001b3u;
 		return result;
 	}
 
-	template<class CharT>
-	[[nodiscard]] constexpr auto hash(const std::basic_string<CharT>& string) noexcept -> Token
+	struct Hasher final
 	{
-		return hash(std::basic_string_view<CharT>{string});
-	}
+		constexpr Hasher(Hash hash):
+			hash{hash}
+		{}
 
+		constexpr Hasher(const char* cString):
+			hash{CppUtils::Hash::hash(cString)}
+		{}
+
+		[[nodiscard]] constexpr auto operator==(Hash otherHash) const noexcept -> bool
+		{
+			return hash == otherHash;
+		}
+
+		const Hash hash;
+	};
+	
 	auto addTokenName(TokenNames& tokenNames, std::string newName) -> Token
 	{
-		auto token = Hash::hash(newName);
+		auto token = hash(newName);
 		tokenNames[token] = std::move(newName);
 		return token;
 	}
@@ -58,6 +71,11 @@ namespace CppUtils::Hash
 
 	namespace Literals
 	{
+		[[nodiscard]] constexpr auto operator"" _hash(const char* cString, std::size_t size) noexcept -> Hash
+		{
+			return hash(std::string_view{cString, size});
+		}
+
 		[[nodiscard]] constexpr auto operator"" _token(const char* cString, std::size_t size) noexcept -> Token
 		{
 			return hash(std::string_view{cString, size});

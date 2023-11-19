@@ -77,10 +77,7 @@ namespace CppUtils::Language::VirtualMachine
 		template<Type::Concept::TriviallyCopyable SourceType, Type::Concept::TriviallyCopyable DestinationType = SourceType>
 		constexpr auto copy(Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void
 		{
-			if constexpr (std::is_same_v<SourceType, DestinationType>)
-				set(stack, get<SourceType>(stack, sourcePosition), destinationPosition);
-			else
-				set(stack, static_cast<DestinationType>(get<SourceType>(stack, sourcePosition)), destinationPosition);
+			set(stack, static_cast<DestinationType>(get<SourceType>(stack, sourcePosition)), destinationPosition);
 		}
 
 		template<Type::Concept::TriviallyCopyable... Args>
@@ -153,40 +150,39 @@ namespace CppUtils::Language::VirtualMachine
 			(..., drop<std::remove_reference_t<Args>>(stack));
 		}
 	}
-
-	// Todo: Ajouter la gestion des casts
+	
 	template<Type::Concept::TriviallyCopyable ReturnType, Type::Concept::TriviallyCopyable... SupportedTypes>
 	constexpr auto execute(const auto& source, auto... data) -> ReturnType
 	{
 		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{ &source, data... };
-		static constinit auto typesSize = std::array<std::size_t, 1 + sizeof...(SupportedTypes)>{ sizeof(ReturnType), sizeof(SupportedTypes)... };
-		static constinit auto pushTypes = std::array<void(*)(Stack&), 1 + sizeof...(SupportedTypes)>{
+		static constexpr auto typesSize = std::array<std::size_t, 1 + sizeof...(SupportedTypes)>{ sizeof(ReturnType), sizeof(SupportedTypes)... };
+		static constexpr auto pushTypes = std::array<void(*)(Stack&), 1 + sizeof...(SupportedTypes)>{
 			+[](Stack& stack) -> void { push<ReturnType, ReturnType, SupportedTypes...>(stack, ReturnType{}); },
 			+[](Stack& stack) -> void { push<SupportedTypes, ReturnType, SupportedTypes...>(stack, SupportedTypes{}); }...
 		};
-		static constinit auto getTypeOffset = [](Stack& stack, std::size_t position) -> std::size_t {
+		static constexpr auto getTypeOffset = [](Stack& stack, std::size_t position) -> std::size_t {
 			auto offset = std::size_t{}; // C++23: std::size_t{} -> 0z
 			while (position > 0)
 				offset += typesSize[stack.types[std::size(stack.types) - position--]];
 			return offset;
 		};
-		static constinit auto conditionalJumpTypes = std::array<void(*)(Stack&, std::size_t&, std::size_t), 1 + sizeof...(SupportedTypes)>{
+		static constexpr auto conditionalJumpTypes = std::array<void(*)(Stack&, std::size_t&, std::size_t), 1 + sizeof...(SupportedTypes)>{
 			+[](Stack& stack, std::size_t& instructionPointer, std::size_t jumpDistance) -> void {
 				if constexpr (std::is_constructible_v<bool, ReturnType>) if (!pop<ReturnType>(stack)) instructionPointer += jumpDistance; },
 			+[](Stack& stack, std::size_t& instructionPointer, std::size_t jumpDistance) -> void {
 				if constexpr (std::is_constructible_v<bool, SupportedTypes>) if (!pop<SupportedTypes>(stack)) instructionPointer += jumpDistance; }...
 		};
-		static constinit auto copyTypesBuilder = []<class SourceType>() consteval -> auto {
+		static constexpr auto copyTypesBuilder = []<class SourceType>() consteval -> auto {
 			return std::array<void(*)(Stack&, std::size_t, std::size_t), 1 + sizeof...(SupportedTypes)>{
 				+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { if constexpr (std::is_convertible_v<SourceType, ReturnType>) copy<SourceType, ReturnType>(stack, sourcePosition, destinationPosition); },
 				+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { if constexpr (std::is_convertible_v<SourceType, SupportedTypes>) copy<SourceType, SupportedTypes>(stack, sourcePosition, destinationPosition); }...
 			};
 		};
-		static constinit auto copyTypes = std::array<std::array<void(*)(Stack&, std::size_t, std::size_t), 1 + sizeof...(SupportedTypes)>, 1 + sizeof...(SupportedTypes)>{
+		static constexpr auto copyTypes = std::array<std::array<void(*)(Stack&, std::size_t, std::size_t), 1 + sizeof...(SupportedTypes)>, 1 + sizeof...(SupportedTypes)>{
 			copyTypesBuilder.template operator()<ReturnType>(),
 			copyTypesBuilder.template operator()<SupportedTypes>()...
 		};
-		static constinit auto printType = []<class ValueType>(Stack& stack, std::size_t position) static -> void {
+		static constexpr auto printType = []<class ValueType>(Stack& stack, std::size_t position) static -> void {
 			std::cout << "Position: " << position << " Type: " << stack.types[std::size(stack.types) - 1 - position] << " Value: " << std::flush; // C++23: std::cout -> std::print
 			if constexpr (Type::Concept::Printable<ValueType>)
 				std::cout << get<ValueType>(stack, getTypeOffset(stack, position));
@@ -194,11 +190,11 @@ namespace CppUtils::Language::VirtualMachine
 				std::cout << "<?>";
 			std::cout << '\n';
 		};
-		static constinit auto printTypes = std::array<void(*)(Stack&, std::size_t), 1 + sizeof...(SupportedTypes)>{
+		static constexpr auto printTypes = std::array<void(*)(Stack&, std::size_t), 1 + sizeof...(SupportedTypes)>{
 			printType.template operator()<ReturnType>,
 			printType.template operator()<SupportedTypes>...
 		};
-		static constinit auto executeInstructionFunction = []<class ValueType>(Stack& stack, decltype(source) source, decltype(externalData) externalData, std::size_t& instructionPointer) static -> void {
+		static constexpr auto executeInstructionFunction = []<class ValueType>(Stack& stack, decltype(source) source, decltype(externalData) externalData, std::size_t& instructionPointer) static -> void {
 			switch (auto instruction = source[instructionPointer]; instruction)
 			{
 			case ',': [[fallthrough]];
@@ -322,7 +318,7 @@ namespace CppUtils::Language::VirtualMachine
 			default: if constexpr (std::is_arithmetic_v<ValueType>) if (auto c = instruction; c >= '0' && c <= '9') set(stack, static_cast<ValueType>(get<ValueType>(stack) * 10 + static_cast<ValueType>(c - '0'))); break;
 			}
 		};
-		static constinit auto executeInstruction = std::array<void(*)(Stack&, decltype(source), decltype(externalData), std::size_t&), 1 + sizeof...(SupportedTypes)>{
+		static constexpr auto executeInstruction = std::array<void(*)(Stack&, decltype(source), decltype(externalData), std::size_t&), 1 + sizeof...(SupportedTypes)>{
 			executeInstructionFunction.template operator()<ReturnType>,
 			executeInstructionFunction.template operator()<SupportedTypes>...
 		};

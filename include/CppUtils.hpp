@@ -22,7 +22,7 @@
 #include <CppUtils/Graph/MeshNode.hpp>
 #include <CppUtils/Graph/Tree.hpp>
 #include <CppUtils/Graph/VariantTree.hpp>
-#include <CppUtils/Hash/Token.hpp>
+#include <CppUtils/Hash.hpp>
 #include <CppUtils/Language/Parser/Cursor.hpp>
 #include <CppUtils/Language/Ast.hpp>
 #include <CppUtils/Language/AstGrammar.hpp>

@@ -24,6 +24,7 @@ namespace CppUtils::Terminal
 #endif
 
 	auto setConsoleOutputUTF8() -> void;
+	[[nodiscard]] auto getTerminalHandle(std::FILE* file) -> Handle;
 	[[nodiscard]] auto getTerminalHandle(std::ostream& stream) -> Handle;
 	[[nodiscard]] auto getTerminalSize() -> Container::Size2d<>;
 }

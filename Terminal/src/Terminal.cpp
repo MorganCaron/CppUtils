@@ -20,6 +20,16 @@ namespace CppUtils::Terminal
 	}
 
 #if defined(OS_WINDOWS)
+	[[nodiscard]] auto getTerminalHandle(std::FILE* file) -> Handle
+	{
+		auto terminalHandle = InvalidHandle;
+		if (file == stdout)
+			terminalHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+		else if (file == stderr)
+			terminalHandle = GetStdHandle(STD_ERROR_HANDLE);
+		return terminalHandle;
+	}
+
 	[[nodiscard]] auto getTerminalHandle(std::ostream& stream) -> Handle
 	{
 		auto terminalHandle = InvalidHandle;
@@ -30,6 +40,11 @@ namespace CppUtils::Terminal
 		return terminalHandle;
 	}
 #else
+	[[nodiscard]] auto getTerminalHandle([[maybe_unused]] std::FILE* file) -> Handle
+	{
+		return InvalidHandle;
+	}
+
 	[[nodiscard]] auto getTerminalHandle([[maybe_unused]] std::ostream& stream) -> Handle
 	{
 		return InvalidHandle;

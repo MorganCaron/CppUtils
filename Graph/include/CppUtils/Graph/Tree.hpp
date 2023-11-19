@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include <CppUtils/Log/Logger.hpp>
-#include <CppUtils/Hash/Token.hpp>
+#include <CppUtils/Hash.hpp>
 #include <CppUtils/Type/Concept.hpp>
 
 namespace CppUtils::Graph::Tree

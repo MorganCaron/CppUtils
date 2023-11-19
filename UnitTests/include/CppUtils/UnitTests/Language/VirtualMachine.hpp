@@ -12,25 +12,25 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 
 		addTest("empty source", [] {
 			constexpr auto src = u8""sv;
-			auto result = VM::execute<int>(src);
+			constexpr auto result = VM::execute<int>(src);
 			EXPECT_EQUAL(result, 0);
 		});
 
 		addTest("return value (int)", [] {
 			constexpr auto src = u8"42"sv;
-			auto result = VM::execute<int>(src);
+			constexpr auto result = VM::execute<int>(src);
 			EXPECT_EQUAL(result, 42);
 		});
 
 		addTest("return value (char8_t)", [] {
 			constexpr auto src = u8R"(\A)"sv;
-			auto result = VM::execute<char8_t>(src);
+			constexpr auto result = VM::execute<char8_t>(src);
 			EXPECT_EQUAL(result, 'A');
 		});
 
 		addTest("reset value", [] {
 			constexpr auto src = u8"42_"sv;
-			auto result = VM::execute<int>(src);
+			constexpr auto result = VM::execute<int>(src);
 			EXPECT_EQUAL(result, 0);
 		});
 
@@ -49,43 +49,43 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 
 		addTest("exit with error code", [] {
 			constexpr auto src = u8"0, 0:21X_"sv;
-			auto result = VM::execute<int, std::size_t>(src);
+			constexpr auto result = VM::execute<int, std::size_t>(src);
 			EXPECT_EQUAL(result, 21);
 		});
 
 		addTest("addition", [] {
 			constexpr auto src = u8"40, 0:2+"sv;
-			auto result = VM::execute<int, std::size_t>(src);
+			constexpr auto result = VM::execute<int, std::size_t>(src);
 			EXPECT_EQUAL(result, 42);
 		});
 
 		addTest("substraction", [] {
 			constexpr auto src = u8"44, 0:2-"sv;
-			auto result = VM::execute<int, std::size_t>(src);
+			constexpr auto result = VM::execute<int, std::size_t>(src);
 			EXPECT_EQUAL(result, 42);
 		});
 
 		addTest("multiplication", [] {
 			constexpr auto src = u8"21, 0:2*"sv;
-			auto result = VM::execute<int, std::size_t>(src);
+			constexpr auto result = VM::execute<int, std::size_t>(src);
 			EXPECT_EQUAL(result, 42);
 		});
 
 		addTest("division", [] {
 			constexpr auto src = u8"84, 0:2/"sv;
-			auto result = VM::execute<int, std::size_t>(src);
+			constexpr auto result = VM::execute<int, std::size_t>(src);
 			EXPECT_EQUAL(result, 42);
 		});
 
 		addTest("not", [] {
 			{
 				constexpr auto src = u8"0!"sv;
-				auto result = VM::execute<bool>(src);
+				constexpr auto result = VM::execute<bool>(src);
 				EXPECT_EQUAL(result, 1);
 			}
 			{
 				constexpr auto src = u8"1!"sv;
-				auto result = VM::execute<bool>(src);
+				constexpr auto result = VM::execute<bool>(src);
 				EXPECT_EQUAL(result, 0);
 			}
 		});
@@ -93,12 +93,12 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		addTest("equal", [] {
 			{
 				constexpr auto src = u8"(2:40, 2:2+, 2:42="sv;
-				auto result = VM::execute<bool, std::size_t, int>(src);
+				constexpr auto result = VM::execute<bool, std::size_t, int>(src);
 				EXPECT(result);
 			}
 			{
 				constexpr auto src = u8"(2:0, 2:42="sv;
-				auto result = VM::execute<bool, std::size_t, int>(src);
+				constexpr auto result = VM::execute<bool, std::size_t, int>(src);
 				EXPECT(!result);
 			}
 		});
@@ -106,12 +106,12 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		addTest("inferior", [] {
 			{
 				constexpr auto src = u8"(2:21, 2:42<"sv;
-				auto result = VM::execute<bool, std::size_t, int>(src);
+				constexpr auto result = VM::execute<bool, std::size_t, int>(src);
 				EXPECT(result);
 			}
 			{
 				constexpr auto src = u8"(2:42, 2:21<"sv;
-				auto result = VM::execute<bool, std::size_t, int>(src);
+				constexpr auto result = VM::execute<bool, std::size_t, int>(src);
 				EXPECT(!result);
 			}
 		});
@@ -119,12 +119,12 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		addTest("superior", [] {
 			{
 				constexpr auto src = u8"(2:21, 2:42>"sv;
-				auto result = VM::execute<bool, std::size_t, int>(src);
+				constexpr auto result = VM::execute<bool, std::size_t, int>(src);
 				EXPECT(!result);
 			}
 			{
 				constexpr auto src = u8"(2:42, 2:21>"sv;
-				auto result = VM::execute<bool, std::size_t, int>(src);
+				constexpr auto result = VM::execute<bool, std::size_t, int>(src);
 				EXPECT(result);
 			}
 		});
@@ -132,12 +132,12 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		addTest("and", [] {
 			{
 				constexpr auto src = u8"1, 0:1&"sv;
-				auto result = VM::execute<bool, std::size_t>(src);
+				constexpr auto result = VM::execute<bool, std::size_t>(src);
 				EXPECT(result);
 			}
 			{
 				constexpr auto src = u8"0, 0:1&"sv;
-				auto result = VM::execute<bool, std::size_t>(src);
+				constexpr auto result = VM::execute<bool, std::size_t>(src);
 				EXPECT(!result);
 			}
 		});
@@ -145,12 +145,12 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		addTest("or", [] {
 			{
 				constexpr auto src = u8"0, 0:1|"sv;
-				auto result = VM::execute<bool, std::size_t>(src);
+				constexpr auto result = VM::execute<bool, std::size_t>(src);
 				EXPECT(result);
 			}
 			{
 				constexpr auto src = u8"0, 0:0|"sv;
-				auto result = VM::execute<bool, std::size_t>(src);
+				constexpr auto result = VM::execute<bool, std::size_t>(src);
 				EXPECT(!result);
 			}
 		});
@@ -158,26 +158,26 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		addTest("xor", [] {
 			{
 				constexpr auto src = u8"0, 0:1^"sv;
-				auto result = VM::execute<bool, std::size_t>(src);
+				constexpr auto result = VM::execute<bool, std::size_t>(src);
 				EXPECT(result);
 			}
 			{
 				constexpr auto src = u8"1, 0:1^"sv;
-				auto result = VM::execute<bool, std::size_t>(src);
+				constexpr auto result = VM::execute<bool, std::size_t>(src);
 				EXPECT(!result);
 			}
 		});
 
 		addTest("external prvalue", [] {
 			constexpr auto src = u8"0, 1;"sv;
-			auto result = VM::execute<int, std::size_t>(src, 42);
+			constexpr auto result = VM::execute<int, std::size_t>(src, 42);
 			EXPECT_EQUAL(result, 42);
 		});
 
 		addTest("external lvalue", [] {
 			constexpr auto src = u8"0, 1;"sv;
 			constexpr auto number = 42;
-			auto result = VM::execute<int, std::size_t>(src, number);
+			constexpr auto result = VM::execute<int, std::size_t>(src, number);
 			EXPECT_EQUAL(result, number);
 		});
 
@@ -191,7 +191,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		addTest("external lambda", [] {
 			constexpr auto src = u8"0, 1;"sv;
 			constexpr auto function = []() -> int { return 42; };
-			auto result = VM::execute<int, std::size_t>(src, +function);
+			constexpr auto result = VM::execute<int, std::size_t>(src, +function);
 			EXPECT_EQUAL(result, function());
 		});
 
@@ -212,12 +212,12 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		addTest("condition", [] {
 			{
 				constexpr auto src = u8"0, 1, 4? 42X 21"sv;
-				auto result = VM::execute<int, std::size_t>(src);
+				constexpr auto result = VM::execute<int, std::size_t>(src);
 				EXPECT_EQUAL(result, 42);
 			}
 			{
 				constexpr auto src = u8"0, 0, 4? 21X 42"sv;
-				auto result = VM::execute<int, std::size_t>(src);
+				constexpr auto result = VM::execute<int, std::size_t>(src);
 				EXPECT_EQUAL(result, 42);
 			}
 		});
@@ -227,31 +227,31 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 			constexpr auto function = [](char8_t c) -> bool {
 				return c == 'A';
 			};
-			auto result = VM::execute<bool, std::size_t, char8_t>(src, +function);
+			constexpr auto result = VM::execute<bool, std::size_t, char8_t>(src, +function);
 			EXPECT(result);
 		});
 
 		addTest("position", [] {
 			constexpr auto src = u8"   P   "sv;
-			auto result = VM::execute<std::size_t>(src);
+			constexpr auto result = VM::execute<std::size_t>(src);
 			EXPECT_EQUAL(result, 3);
 		});
 
 		addTest("jump", [] {
 			constexpr auto src = u8"0, 5JX) 42"sv;
-			auto result = VM::execute<int, std::size_t>(src);
+			constexpr auto result = VM::execute<int, std::size_t>(src);
 			EXPECT_EQUAL(result, 42);
 		});
 
 		addTest("copy", [] {
 			constexpr auto src = u8"21, 0:0, 1, 0C+"sv;
-			auto result = VM::execute<int, std::size_t>(src);
+			constexpr auto result = VM::execute<int, std::size_t>(src);
 			EXPECT_EQUAL(result, 42);
 		});
 
 		addTest("cast", [] {
 			constexpr auto src = u8"0, 1:42, 0, 1C)"sv;
-			auto result = VM::execute<bool, std::size_t>(src);
+			constexpr auto result = VM::execute<bool, std::size_t>(src);
 			EXPECT_EQUAL(result, 1);
 		});
 
