@@ -60,8 +60,8 @@ namespace CppUtils::UnitTest
 			else
 			{
 				Logger::print<"info">("{} tests found. Execution:", std::size(m_tests));
-				auto nbSuccess = std::size_t{0};
-				auto nbFail = std::size_t{0};
+				auto nbSuccess = 0uz;
+				auto nbFail = 0uz;
 				for (const auto& test : m_tests)
 				{
 					if (test.pass(settings))
@@ -86,10 +86,11 @@ namespace CppUtils::UnitTest
 				}
 				Logger::print<"error">("The tests failed:");
 				if (nbSuccess > 0)
-					Logger::print<"success">("- {} successful tests\n", nbSuccess);
-				else
-					Logger::print<"error">("- 0 successful tests\n");
-				Logger::print<"error">("- {} failed tests\n", nbFail);
+					Logger::print<"success">("- {} successful tests", nbSuccess);
+				[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
+				if (nbSuccess == 0)
+					Logger::print("- 0 successful tests");
+				Logger::print("- {} failed tests", nbFail);
 			}
 			
 			return EXIT_FAILURE;

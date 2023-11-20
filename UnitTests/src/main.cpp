@@ -12,7 +12,7 @@ int main(const int argc, const char *argv[])
 	}
 	catch (const std::exception& exception)
 	{
-		CppUtils::Log::logException(exception);
+		CppUtils::logException(exception);
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

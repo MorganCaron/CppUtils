@@ -54,7 +54,7 @@ namespace CppUtils::UnitTest
 			}
 			catch (const std::exception& exception)
 			{
-				Log::logException(exception, std::cout);
+				logException(exception);
 				return false;
 			}
 			if (settings.verbose)

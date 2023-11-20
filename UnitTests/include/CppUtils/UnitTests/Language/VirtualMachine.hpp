@@ -274,7 +274,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 				0, 1;, 2;
 			)"sv;
 
-			constexpr auto input = "Hello World!\n"sv;
+			constexpr auto input = "Hello World!"sv;
 
 			constexpr auto print = [](std::string_view text) -> void {
 				Logger::print("{}", text);
@@ -306,7 +306,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 
 			constexpr auto nb = std::size_t{3};
 
-			constexpr auto input = "Hello World!\n"sv;
+			constexpr auto input = "Hello World!"sv;
 
 			constexpr auto print = [](std::string_view text) -> void {
 				Logger::print("{}", text);

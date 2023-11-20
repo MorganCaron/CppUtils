@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <functional>
 
+#include <CppUtils/Log/Logger.hpp>
 #include <CppUtils/Type/Functional.hpp>
 #include <CppUtils/Type/VariadicTemplate.hpp>
 
@@ -26,23 +27,23 @@ namespace CppUtils::Language::VirtualMachine
 	namespace
 	{
 		template<Type::Concept::TriviallyCopyable T>
-		[[nodiscard]] constexpr auto get(Stack& stack, std::size_t offset = 0u) -> T // C++23: 0u -> 0z
+		[[nodiscard]] constexpr auto get(Stack& stack, std::size_t offset = 0) -> T
 		{
 			if (std::size(stack.data) < sizeof(T) + offset)
 				throw std::logic_error{"Stack underflow"}; // C++23: return std::unexpected{...};
 			auto buffer = std::array<std::byte, sizeof(T)>{};
-			for (auto i = 0u; i < sizeof(T); ++i) // C++23: 0u -> 0z
+			for (auto i = 0uz; i < sizeof(T); ++i)
 				buffer[i] = stack.data[std::size(stack.data) - sizeof(T) - offset + i];
 			return std::bit_cast<T>(buffer);
 		}
 
 		template<Type::Concept::TriviallyCopyable T>
-		constexpr auto set(Stack& stack, T newValue, std::size_t offset = 0u) -> void // C++23: 0u -> 0z
+		constexpr auto set(Stack& stack, T newValue, std::size_t offset = 0) -> void
 		{
 			if (std::size(stack.data) < sizeof(T) + offset)
 				throw std::logic_error{"Stack underflow"}; // C++23: return std::unexpected{...};
 			auto buffer = std::bit_cast<std::array<std::byte, sizeof(T)>>(newValue);
-			for (auto i = 0u; i < sizeof(T); ++i) // C++23: 0u -> 0z
+			for (auto i = 0uz; i < sizeof(T); ++i)
 				stack.data[std::size(stack.data) - sizeof(T) - offset + i] = buffer[i];
 		}
 
@@ -81,7 +82,7 @@ namespace CppUtils::Language::VirtualMachine
 		}
 
 		template<Type::Concept::TriviallyCopyable... Args>
-		constexpr auto paddingAfter = (0u + ... + sizeof(Args)); // C++23: 0u -> 0z
+		constexpr auto paddingAfter = (0z + ... + sizeof(Args));
 
 		template<std::size_t N, Type::Concept::TriviallyCopyable T, Type::Concept::TriviallyCopyable... Args>
 		[[nodiscard]] constexpr auto getPaddingAfterT() -> std::size_t
@@ -154,6 +155,7 @@ namespace CppUtils::Language::VirtualMachine
 	template<Type::Concept::TriviallyCopyable ReturnType, Type::Concept::TriviallyCopyable... SupportedTypes>
 	constexpr auto execute(const auto& source, auto... data) -> ReturnType
 	{
+		using Logger = Logger<"CppUtils">;
 		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{ &source, data... };
 		static constexpr auto typesSize = std::array<std::size_t, 1 + sizeof...(SupportedTypes)>{ sizeof(ReturnType), sizeof(SupportedTypes)... };
 		static constexpr auto pushTypes = std::array<void(*)(Stack&), 1 + sizeof...(SupportedTypes)>{
@@ -161,7 +163,7 @@ namespace CppUtils::Language::VirtualMachine
 			+[](Stack& stack) -> void { push<SupportedTypes, ReturnType, SupportedTypes...>(stack, SupportedTypes{}); }...
 		};
 		static constexpr auto getTypeOffset = [](Stack& stack, std::size_t position) -> std::size_t {
-			auto offset = std::size_t{}; // C++23: std::size_t{} -> 0z
+			auto offset = 0uz;
 			while (position > 0)
 				offset += typesSize[stack.types[std::size(stack.types) - position--]];
 			return offset;
@@ -183,12 +185,13 @@ namespace CppUtils::Language::VirtualMachine
 			copyTypesBuilder.template operator()<SupportedTypes>()...
 		};
 		static constexpr auto printType = []<class ValueType>(Stack& stack, std::size_t position) static -> void {
-			std::cout << "Position: " << position << " Type: " << stack.types[std::size(stack.types) - 1 - position] << " Value: " << std::flush; // C++23: std::cout -> std::print
+			auto type = stack.types[std::size(stack.types) - 1 - position];
+			Logger::print<"debug">("Position: {} Type: {} Value:", position, type);
+			[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Magenta};
 			if constexpr (Type::Concept::Printable<ValueType>)
-				std::cout << get<ValueType>(stack, getTypeOffset(stack, position));
+				std::cout << get<ValueType>(stack, getTypeOffset(stack, position)) << std::endl;
 			else
-				std::cout << "<?>";
-			std::cout << '\n';
+				Logger::print("<?>\n");
 		};
 		static constexpr auto printTypes = std::array<void(*)(Stack&, std::size_t), 1 + sizeof...(SupportedTypes)>{
 			printType.template operator()<ReturnType>,
@@ -200,7 +203,7 @@ namespace CppUtils::Language::VirtualMachine
 			case ',': [[fallthrough]];
 			case '(':
 				if constexpr(Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
-					push<std::size_t, ReturnType, SupportedTypes...>(stack, std::size_t{});
+					push<std::size_t, ReturnType, SupportedTypes...>(stack, 0uz);
 				else
 					throw std::invalid_argument{"Type std::size_t missing in template parameters"}; // C++23: return std::unexpected{...};
 				break;
@@ -218,8 +221,8 @@ namespace CppUtils::Language::VirtualMachine
 			// Todo: case 'D': set(stack, &get<ValueType>(stack)); break;
 			case 'R': if constexpr (std::is_pointer_v<ValueType> && Type::Concept::TriviallyCopyable<std::remove_pointer_t<ValueType>>) set(stack, *get<ValueType>(stack)); break;
 			case 'I':
-				std::cout << "Stack size: " << std::size(stack.types) << " elements; " << std::size(stack.data) << " bytes\n"; // C++23: std::cout -> std::print
-				for (auto i = std::size_t{0}; i < std::size(stack.types); ++i) // C++23: std::size_t{0} -> 0z
+				Logger::print<"debug">("Stack size: {} elements; {} bytes", std::size(stack.types), std::size(stack.data));
+				for (auto i = 0uz; i < std::size(stack.types); ++i)
 					printTypes[stack.types[std::size(stack.types) - 1 - i]](stack, i);
 				break;
 			case 'J': instructionPointer = get<std::size_t>(stack); break;
@@ -324,7 +327,7 @@ namespace CppUtils::Language::VirtualMachine
 		};
 		auto stack = Stack{};
 		push<ReturnType, ReturnType, SupportedTypes...>(stack, ReturnType{});
-		for (auto instructionPointer = std::size_t{0}; instructionPointer < std::size(source); ++instructionPointer) // C++23: std::size_t{0} -> 0z
+		for (auto instructionPointer = 0uz; instructionPointer < std::size(source); ++instructionPointer)
 		{
 			if (std::empty(stack.types))
 				throw std::logic_error{"Stack empty"}; // C++23: return std::unexpected{...};

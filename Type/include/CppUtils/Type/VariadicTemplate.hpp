@@ -14,7 +14,7 @@ namespace CppUtils::Type
 	requires Concept::Present<T, Types...>
 	consteval auto getPosition() -> std::size_t
 	{
-		auto i = 0u; // C++23: 0u -> 0z
+		auto i = 0uz;
 		static_cast<void>(((++i, std::same_as<T, Types>) || ...));
 		return --i;
 	}

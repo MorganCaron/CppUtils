@@ -11,11 +11,6 @@
 
 namespace CppUtils
 {
-	namespace
-	{
-		inline std::mutex loggerMutex;
-	}
-
 	template<Hasher loggerName = Hash{}>
 	struct Logger final
 	{
@@ -37,7 +32,6 @@ namespace CppUtils
 		template<Hasher logType = Hash{}, class... Args>
 		static inline auto print(std::ostream& ostream, std::format_string<Args...> fmt, Args&&... args) -> void
 		{
-			auto lock = std::unique_lock{loggerMutex};
 			auto [textModifier, message] = format<logType>(std::format(fmt, std::forward<Args>(args)...));
 			// Todo C++23: std::print(ostream, "{}", std::move(message));
 			ostream << message;
@@ -47,10 +41,9 @@ namespace CppUtils
 		static inline auto print(std::format_string<Args...> fmt, Args&&... args) -> void
 		{
 			using namespace Hashing::Literals;
-			auto lock = std::unique_lock{loggerMutex};
 			auto [textModifier, message] = format<logType>(std::format(fmt, std::forward<Args>(args)...));
 			if constexpr (logType == "error"_hash)
-				std::print(stderr,"{}", std::move(message));
+				std::print(stderr, "{}", std::move(message));
 			else
 				std::print("{}", std::move(message));
 		}
@@ -61,9 +54,8 @@ namespace CppUtils
 			using namespace std::literals;
 			auto line = ""s;
 			auto terminalWidth = Terminal::getTerminalSize().width;
-			for (auto i = std::size_t{0}; i < terminalWidth; ++i)
+			for (auto i = 0uz; i < terminalWidth; ++i)
 				line += "─";
-			auto lock = std::unique_lock{loggerMutex};
 			auto [textModifier, message] = format<logType>("");
 			// Todo C++23: std::print(ostream, "{}", std::move(line));
 			ostream << line;
@@ -75,9 +67,8 @@ namespace CppUtils
 			using namespace std::literals;
 			auto line = ""s;
 			auto terminalWidth = Terminal::getTerminalSize().width;
-			for (auto i = std::size_t{0}; i < terminalWidth; ++i)
+			for (auto i = 0uz; i < terminalWidth; ++i)
 				line += "─";
-			auto lock = std::unique_lock{loggerMutex};
 			auto [textModifier, message] = format<logType>("");
 			std::print("{}", std::move(line));
 		}
@@ -153,23 +144,21 @@ namespace CppUtils
 		};
 	}
 
-	auto logException(const std::exception& exception, std::ostream& outputStream = std::ref(std::cerr), std::size_t depth = 0) -> void
+	auto logException(const std::exception& exception, std::size_t depth = 0) -> void
 	{
-		auto logger = Logger{outputStream};
+		using Logger = Logger<"CppUtils">;
 		if (depth == 0)
-			logger
-				<< Terminal::TextColor::TextColorEnum::Red << "[Error]"
-				<< Terminal::TextColor::TextColorEnum::Default << ": ";
-		else
-			logger << std::string(depth * 2, ' ');
-		logger << exception.what() << '\n';
+			Logger::print<"error">("{}", exception.what());
+		[[maybe_unused]] auto textModifier = (depth == 0) ? Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red} : Terminal::TextModifier{};
+		if (depth > 0)
+			Logger::print("{}{}", std::string(depth * 2, ' '), exception.what());
 		try
 		{
 			std::rethrow_if_nested(exception);
 		}
 		catch (const std::exception& nestedException)
 		{
-			logException(nestedException, outputStream, depth + 1);
+			logException(nestedException, depth + 1);
 		}
 		catch (...)
 		{}

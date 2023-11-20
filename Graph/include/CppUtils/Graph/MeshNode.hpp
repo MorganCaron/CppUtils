@@ -57,7 +57,7 @@ namespace CppUtils::Graph
 
 		[[nodiscard]] std::size_t count(const Key& branchKey) const
 		{
-			return exists(branchKey) ? static_cast<std::size_t>(get(branchKey).size()) : 0;
+			return exists(branchKey) ? static_cast<std::size_t>(get(branchKey).size()) : 0uz;
 		}
 
 		Value value;

@@ -21,7 +21,7 @@ namespace CppUtils::Container::Sequence
 	{
 		auto differences = std::vector<Difference>{};
 		differences.reserve(std::max(list0.size(), list1.size()));
-		auto i = std::size_t{0}, j = std::size_t{0}, diffLength = std::size_t{0};
+		auto i = 0uz, j = 0uz, diffLength = 0uz;
 		while (i < list0.size() && j < list1.size())
 		{
 			const auto& lhs = list0[i];
@@ -30,7 +30,7 @@ namespace CppUtils::Container::Sequence
 			{
 				if (diffLength > 0)
 				{
-					for (auto k = std::size_t{0}; k < diffLength; ++k)
+					for (auto k = 0uz; k < diffLength; ++k)
 						differences.emplace_back(Difference::Removed);
 					for (; diffLength; --diffLength)
 						differences.emplace_back(Difference::Added);
