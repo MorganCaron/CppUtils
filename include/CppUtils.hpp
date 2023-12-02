@@ -63,16 +63,11 @@
 #include <CppUtils/Log/Logger.hpp>
 #include <CppUtils/Log/TreeNodeLogger.hpp>
 #include <CppUtils/Parameters/ParametersLexer.hpp>
-#include <CppUtils/UnitTest/Test.hpp>
-#include <CppUtils/UnitTest/Testable.hpp>
-#include <CppUtils/UnitTest/TestException.hpp>
 #include <CppUtils/UnitTest/TestRunner.hpp>
 #include <CppUtils/UnitTest/TestSettingsLexer.hpp>
-#include <CppUtils/UnitTest/TestSettings.hpp>
 #include <CppUtils/Thread/AsyncIStreamListener.hpp>
 #include <CppUtils/Thread/LoopThread.hpp>
 #include <CppUtils/Type/Cloneable.hpp>
-#include <CppUtils/Type/Named.hpp>
 #include <CppUtils/Type/NonCopyable.hpp>
 #include <CppUtils/Type/NonInstantiable.hpp>
 #include <CppUtils/Type/NonMovable.hpp>

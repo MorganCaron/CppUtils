@@ -2,274 +2,273 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTests::Language::VirtualMachine
+namespace CppUtils::UnitTest::Language::VirtualMachine
 {
-	TEST_GROUP("Language/VirtualMachine")
-	{
+	auto _ = TestSuite{"Language/VirtualMachine", [](auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 		namespace VM = CppUtils::Language::VirtualMachine;
 
-		addTest("empty source", [] {
+		suite.addTest("empty source", [&] {
 			constexpr auto src = u8""sv;
 			constexpr auto result = VM::execute<int>(src);
-			EXPECT_EQUAL(result, 0);
+			suite.expectEqual(result, 0);
 		});
 
-		addTest("return value (int)", [] {
+		suite.addTest("return value (int)", [&] {
 			constexpr auto src = u8"42"sv;
 			constexpr auto result = VM::execute<int>(src);
-			EXPECT_EQUAL(result, 42);
+			suite.expectEqual(result, 42);
 		});
 
-		addTest("return value (char8_t)", [] {
+		suite.addTest("return value (char8_t)", [&] {
 			constexpr auto src = u8R"(\A)"sv;
 			constexpr auto result = VM::execute<char8_t>(src);
-			EXPECT_EQUAL(result, 'A');
+			suite.expectEqual(result, 'A');
 		});
 
-		addTest("reset value", [] {
+		suite.addTest("reset value", [&] {
 			constexpr auto src = u8"42_"sv;
 			constexpr auto result = VM::execute<int>(src);
-			EXPECT_EQUAL(result, 0);
+			suite.expectEqual(result, 0);
 		});
 
-		addTest("write stack info", [] {
+		suite.addTest("write stack info", [&] {
 			constexpr auto src = u8"42, 0W"sv;
 			auto result = VM::execute<int, std::size_t>(src);
-			EXPECT_EQUAL(result, 42);
+			suite.expectEqual(result, 42);
 		});
 
-		addTest("inspect stack", [] {
+		suite.addTest("inspect stack", [&] {
 			constexpr auto src = u8"42, 1, 1;, 2; I)))"sv;
 			constexpr auto input = "Hello World!"sv;
 			auto result = VM::execute<int, std::size_t, std::string_view, const std::string_view*>(src, input, &input);
-			EXPECT_EQUAL(result, 42);
+			suite.expectEqual(result, 42);
 		});
 
-		addTest("exit with error code", [] {
+		suite.addTest("exit with error code", [&] {
 			constexpr auto src = u8"0, 0:21X_"sv;
 			constexpr auto result = VM::execute<int, std::size_t>(src);
-			EXPECT_EQUAL(result, 21);
+			suite.expectEqual(result, 21);
 		});
 
-		addTest("addition", [] {
+		suite.addTest("addition", [&] {
 			constexpr auto src = u8"40, 0:2+"sv;
 			constexpr auto result = VM::execute<int, std::size_t>(src);
-			EXPECT_EQUAL(result, 42);
+			suite.expectEqual(result, 42);
 		});
 
-		addTest("substraction", [] {
+		suite.addTest("substraction", [&] {
 			constexpr auto src = u8"44, 0:2-"sv;
 			constexpr auto result = VM::execute<int, std::size_t>(src);
-			EXPECT_EQUAL(result, 42);
+			suite.expectEqual(result, 42);
 		});
 
-		addTest("multiplication", [] {
+		suite.addTest("multiplication", [&] {
 			constexpr auto src = u8"21, 0:2*"sv;
 			constexpr auto result = VM::execute<int, std::size_t>(src);
-			EXPECT_EQUAL(result, 42);
+			suite.expectEqual(result, 42);
 		});
 
-		addTest("division", [] {
+		suite.addTest("division", [&] {
 			constexpr auto src = u8"84, 0:2/"sv;
 			constexpr auto result = VM::execute<int, std::size_t>(src);
-			EXPECT_EQUAL(result, 42);
+			suite.expectEqual(result, 42);
 		});
 
-		addTest("not", [] {
+		suite.addTest("not", [&] {
 			{
 				constexpr auto src = u8"0!"sv;
 				constexpr auto result = VM::execute<bool>(src);
-				EXPECT_EQUAL(result, 1);
+				suite.expectEqual(result, 1);
 			}
 			{
 				constexpr auto src = u8"1!"sv;
 				constexpr auto result = VM::execute<bool>(src);
-				EXPECT_EQUAL(result, 0);
+				suite.expectEqual(result, 0);
 			}
 		});
 
-		addTest("equal", [] {
+		suite.addTest("equal", [&] {
 			{
 				constexpr auto src = u8"(2:40, 2:2+, 2:42="sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(src);
-				EXPECT(result);
+				suite.expect(result);
 			}
 			{
 				constexpr auto src = u8"(2:0, 2:42="sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(src);
-				EXPECT(!result);
+				suite.expect(!result);
 			}
 		});
 
-		addTest("inferior", [] {
+		suite.addTest("inferior", [&] {
 			{
 				constexpr auto src = u8"(2:21, 2:42<"sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(src);
-				EXPECT(result);
+				suite.expect(result);
 			}
 			{
 				constexpr auto src = u8"(2:42, 2:21<"sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(src);
-				EXPECT(!result);
+				suite.expect(!result);
 			}
 		});
 
-		addTest("superior", [] {
+		suite.addTest("superior", [&] {
 			{
 				constexpr auto src = u8"(2:21, 2:42>"sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(src);
-				EXPECT(!result);
+				suite.expect(!result);
 			}
 			{
 				constexpr auto src = u8"(2:42, 2:21>"sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(src);
-				EXPECT(result);
+				suite.expect(result);
 			}
 		});
 
-		addTest("and", [] {
+		suite.addTest("and", [&] {
 			{
 				constexpr auto src = u8"1, 0:1&"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(src);
-				EXPECT(result);
+				suite.expect(result);
 			}
 			{
 				constexpr auto src = u8"0, 0:1&"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(src);
-				EXPECT(!result);
+				suite.expect(!result);
 			}
 		});
 
-		addTest("or", [] {
+		suite.addTest("or", [&] {
 			{
 				constexpr auto src = u8"0, 0:1|"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(src);
-				EXPECT(result);
+				suite.expect(result);
 			}
 			{
 				constexpr auto src = u8"0, 0:0|"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(src);
-				EXPECT(!result);
+				suite.expect(!result);
 			}
 		});
 
-		addTest("xor", [] {
+		suite.addTest("xor", [&] {
 			{
 				constexpr auto src = u8"0, 0:1^"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(src);
-				EXPECT(result);
+				suite.expect(result);
 			}
 			{
 				constexpr auto src = u8"1, 0:1^"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(src);
-				EXPECT(!result);
+				suite.expect(!result);
 			}
 		});
 
-		addTest("external prvalue", [] {
+		suite.addTest("external prvalue", [&] {
 			constexpr auto src = u8"0, 1;"sv;
 			constexpr auto result = VM::execute<int, std::size_t>(src, 42);
-			EXPECT_EQUAL(result, 42);
+			suite.expectEqual(result, 42);
 		});
 
-		addTest("external lvalue", [] {
+		suite.addTest("external lvalue", [&] {
 			constexpr auto src = u8"0, 1;"sv;
 			constexpr auto number = 42;
 			constexpr auto result = VM::execute<int, std::size_t>(src, number);
-			EXPECT_EQUAL(result, number);
+			suite.expectEqual(result, number);
 		});
 
-		addTest("external pointer", [] {
+		suite.addTest("external pointer", [&] {
 			constexpr auto src = u8"0, 1;R"sv;
 			constexpr auto number = 42;
 			auto result = VM::execute<int, std::size_t, const int*>(src, &number);
-			EXPECT_EQUAL(result, number);
+			suite.expectEqual(result, number);
 		});
 
-		addTest("external lambda", [] {
+		suite.addTest("external lambda", [&] {
 			constexpr auto src = u8"0, 1;"sv;
 			constexpr auto function = []() -> int { return 42; };
 			constexpr auto result = VM::execute<int, std::size_t>(src, +function);
-			EXPECT_EQUAL(result, function());
+			suite.expectEqual(result, function());
 		});
 
-		addTest("external function", [] {
+		suite.addTest("external function", [&] {
 			constexpr auto src = u8"0, 1;, 2;"sv;
 			constexpr auto input = u8"Hello World!"sv;
 			auto result = VM::execute<std::size_t, std::u8string_view>(src, input, std::size<decltype(input)>);
-			EXPECT_EQUAL(result, std::size(input));
+			suite.expectEqual(result, std::size(input));
 		});
 
-		addTest("external member function", [] {
+		suite.addTest("external member function", [&] {
 			constexpr auto src = u8"0, 1;, 2;"sv;
 			constexpr auto input = u8"Hello World!"sv;
 			auto result = VM::execute<std::size_t, const std::u8string_view*>(src, &input, &std::u8string_view::size);
-			EXPECT_EQUAL(result, std::size(input));
+			suite.expectEqual(result, std::size(input));
 		});
 
-		addTest("condition", [] {
+		suite.addTest("condition", [&] {
 			{
 				constexpr auto src = u8"0, 1, 4? 42X 21"sv;
 				constexpr auto result = VM::execute<int, std::size_t>(src);
-				EXPECT_EQUAL(result, 42);
+				suite.expectEqual(result, 42);
 			}
 			{
 				constexpr auto src = u8"0, 0, 4? 21X 42"sv;
 				constexpr auto result = VM::execute<int, std::size_t>(src);
-				EXPECT_EQUAL(result, 42);
+				suite.expectEqual(result, 42);
 			}
 		});
 
-		addTest("char", [] {
+		suite.addTest("char", [&] {
 			constexpr auto src = u8R"(0, 2:\A, 1;)"sv;
 			constexpr auto function = [](char8_t c) -> bool {
 				return c == 'A';
 			};
 			constexpr auto result = VM::execute<bool, std::size_t, char8_t>(src, +function);
-			EXPECT(result);
+			suite.expect(result);
 		});
 
-		addTest("position", [] {
+		suite.addTest("position", [&] {
 			constexpr auto src = u8"   P   "sv;
 			constexpr auto result = VM::execute<std::size_t>(src);
-			EXPECT_EQUAL(result, 3);
+			suite.expectEqual(result, 3uz);
 		});
 
-		addTest("jump", [] {
+		suite.addTest("jump", [&] {
 			constexpr auto src = u8"0, 5JX) 42"sv;
 			constexpr auto result = VM::execute<int, std::size_t>(src);
-			EXPECT_EQUAL(result, 42);
+			suite.expectEqual(result, 42);
 		});
 
-		addTest("copy", [] {
+		suite.addTest("copy", [&] {
 			constexpr auto src = u8"21, 0:0, 1, 0C+"sv;
 			constexpr auto result = VM::execute<int, std::size_t>(src);
-			EXPECT_EQUAL(result, 42);
+			suite.expectEqual(result, 42);
 		});
 
-		addTest("cast", [] {
+		suite.addTest("cast", [&] {
 			constexpr auto src = u8"0, 1:42, 0, 1C)"sv;
 			constexpr auto result = VM::execute<bool, std::size_t>(src);
-			EXPECT_EQUAL(result, 1);
+			suite.expectEqual(result, 1);
 		});
 
-		addTest("return string.at", [] {
+		suite.addTest("return string.at", [&] {
 			constexpr auto src = u8"0, 1;, 6, 2;"sv;
 			constexpr auto input = u8"Hello World!"sv;
 			auto result = VM::execute<char8_t, std::size_t, const std::u8string_view*>(src, &input, &std::u8string_view::at);
-			EXPECT_EQUAL(result, 'W');
+			suite.expectEqual(result, 'W');
 		});
 
-		addTest("compare string.at", [] {
+		suite.addTest("compare string.at", [&] {
 			constexpr auto src = u8R"(0, 2:0, 1;, 1:6, 2;, 2:\W =)"sv;
 			constexpr auto input = u8"Hello World!"sv;
 			auto result = VM::execute<bool, std::size_t, char8_t, const std::u8string_view*>(src, &input, &std::u8string_view::at);
-			EXPECT(result);
+			suite.expect(result);
 		});
 
-		addTest("print string_view", [] {
+		suite.addTest("print string_view", [&] {
 			constexpr auto src = u8R"(
 				0, 1;, 2;
 			)"sv;
@@ -282,7 +281,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 
 			auto result = VM::execute<std::size_t, std::string_view>(src, input, +print);
 
-			EXPECT_EQUAL(result, 0);
+			suite.expectEqual(result, 0uz);
 		});
 
 		/*
@@ -293,7 +292,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 			_3<_1J _<1B
 		*/
 
-		addTest("test loops", [] {
+		suite.addTest("test loops", [&] {
 			constexpr auto src = u8R"(
 				1;, 1+ P,
 				0, 2, 0C,
@@ -314,20 +313,20 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 
 			auto result = VM::execute<std::size_t, bool, std::string_view>(src, nb, input, +print);
 
-			EXPECT_EQUAL(result, 0);
+			suite.expectEqual(result, 0uz);
 		});
 
-		addTest("compile labels", [] {
+		suite.addTest("compile labels", [&] {
 			constexpr auto src = u8R"(
 				
 			)"sv;
 			constexpr auto input = u8R"(Hello World!)"sv;
 			auto output = ""s;
 			auto result = VM::execute<std::size_t, std::u8string_view, std::string*>(src, input, &output, std::size<decltype(input)>, &std::u8string_view::at);
-			EXPECT_EQUAL(result, 0);
+			suite.expectEqual(result, 0uz);
 		});
 
-		addTest("wip 2", [] {
+		suite.addTest("wip 2", [&] {
 			constexpr auto src = u8"0, 0, 1;, 6, 2;, 3;"sv;
 			constexpr auto input = u8"Hello World!"sv;
 			constexpr auto compare = [](char8_t c) -> std::intptr_t {
@@ -335,7 +334,8 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 				return c == 'W';
 			};
 			auto result = VM::execute<std::intptr_t, bool, char8_t, std::size_t, const std::u8string_view*>(src, &input, &std::u8string_view::at, +compare);
-			EXPECT(result);
+			suite.expect(result);
 		});
-	}
+
+	}};
 }

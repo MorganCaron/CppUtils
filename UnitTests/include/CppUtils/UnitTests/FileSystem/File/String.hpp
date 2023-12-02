@@ -2,23 +2,22 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTests::FileSystem::File::String
+namespace CppUtils::UnitTest::FileSystem::File::String
 {
-	TEST_GROUP("FileSystem/File/String")
-	{
+	auto _ = TestSuite{"FileSystem/File/String", [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 		
-		addTest("WriteRead", [] {
+		suite.addTest("WriteRead", [&] {
 			const auto filePath = std::filesystem::path{"test.tmp"};
 			const auto originalString = "Hello world!";
 			CppUtils::FileSystem::File::String::write(filePath, originalString);
 			const auto fileContent = CppUtils::FileSystem::File::String::read(filePath);
 			Logger::print("{}", fileContent);
 			CppUtils::FileSystem::File::deleteFile(filePath);
-			EXPECT(fileContent == originalString);
+			suite.expect(fileContent == originalString);
 		});
 
-		addTest("Append", [] {
+		suite.addTest("Append", [&] {
 			const auto filePath = std::filesystem::path{"test.tmp"};
 			const auto firstString = "Hello ";
 			const auto secondString = "world!";
@@ -27,7 +26,8 @@ namespace CppUtils::UnitTests::FileSystem::File::String
 			const auto fileContent = CppUtils::FileSystem::File::String::read(filePath);
 			Logger::print("{}", fileContent);
 			CppUtils::FileSystem::File::deleteFile(filePath);
-			EXPECT(fileContent == std::string{firstString} + secondString);
+			suite.expect(fileContent == std::string{firstString} + secondString);
 		});
-	}
+
+	}};
 }

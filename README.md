@@ -83,7 +83,6 @@ xmake run
 	- [LoopThread](Thread/README.md#LoopThread)
 - **[Type](Type/README.md)**
 	- [Cloneable](Type/README.md#Cloneable)
-	- [Named](Type/README.md#Named)
 	- [NonCopyable](Type/README.md#NonCopyable)
 	- [NonInstantiable](Type/README.md#NonInstantiable)
 	- [NonMovable](Type/README.md#NonMovable)

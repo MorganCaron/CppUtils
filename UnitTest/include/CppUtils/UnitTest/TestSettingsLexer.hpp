@@ -4,7 +4,7 @@
 
 #include <CppUtils/Log/Logger.hpp>
 #include <CppUtils/Parameters/ParametersLexer.hpp>
-#include <CppUtils/UnitTest/TestSettings.hpp>
+#include <CppUtils/UnitTest/TestRunner.hpp>
 
 namespace CppUtils::UnitTest
 {

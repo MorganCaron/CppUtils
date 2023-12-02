@@ -2,23 +2,22 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTests::FileSystem::File::Binary
+namespace CppUtils::UnitTest::FileSystem::File::Binary
 {
-	TEST_GROUP("FileSystem/File/Binary")
-	{
+	auto _ = TestSuite{"FileSystem/File/Binary", [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 
-		addTest("WriteRead", [] {
+		suite.addTest("WriteRead", [&] {
 			auto filePath = std::filesystem::path{"test.tmp"};
 			constexpr auto originalValue = 12345;
 			CppUtils::FileSystem::File::Binary::write(filePath, originalValue);
 			auto fileContent = CppUtils::FileSystem::File::Binary::read<decltype(originalValue)>(filePath);
 			Logger::print("{}", fileContent);
 			CppUtils::FileSystem::File::deleteFile(filePath);
-			EXPECT(fileContent == originalValue);
+			suite.expect(fileContent == originalValue);
 		});
 
-		addTest("WriteReadVector", [] {
+		suite.addTest("WriteReadVector", [&] {
 			auto filePath = std::filesystem::path{"test.tmp"};
 			auto originalVector = std::vector<int>{};
 			originalVector.resize(10);
@@ -28,7 +27,8 @@ namespace CppUtils::UnitTests::FileSystem::File::Binary
 			for (auto nb : vector)
 				Logger::print("{}", nb);
 			CppUtils::FileSystem::File::deleteFile(filePath);
-			EXPECT(vector == originalVector);
+			suite.expect(vector == originalVector);
 		});
-	}
+
+	}};
 }

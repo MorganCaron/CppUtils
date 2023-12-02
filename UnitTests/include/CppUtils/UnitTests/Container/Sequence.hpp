@@ -2,7 +2,7 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTests::Container::Sequence
+namespace CppUtils::UnitTest::Container::Sequence
 {
 	[[nodiscard]] static std::vector<CppUtils::Container::Sequence::Difference> generateDifferenceVector(std::string_view string)
 	{
@@ -22,26 +22,26 @@ namespace CppUtils::UnitTests::Container::Sequence
 		return result;
 	}
 
-	TEST_GROUP("Container/Sequence")
-	{
+	auto _ = TestSuite{"Container/Sequence", [](auto& suite) {
 		using namespace std::literals;
 
-		addTest("string", [] {
+		suite.addTest("string", [&] {
 			const auto s0 = "azTESTerABCtyui99o9p"sv;
 			const auto s1 = "000azWXYZerty123uiopHELLO"sv;
 			const auto differences = generateDifferenceVector("+++  ----++++  ---  +++  -- - +++++"sv);
 			const auto result = CppUtils::Container::Sequence::getDifferences<char>(s0, s1);
-			EXPECT(result == differences);
+			suite.expectEqual(result, differences);
 		});
 
-		addTest("vector", [] {
+		suite.addTest("vector", [&] {
 			const auto s0 = "azTESTerABCtyui99o9p"sv;
 			const auto s1 = "000azWXYZerty123uiopHELLO"sv;
 			const auto vec0 = std::vector<char>{s0.begin(), s0.end()};
 			const auto vec1 = std::vector<char>{s1.begin(), s1.end()};
 			const auto differences = generateDifferenceVector("+++  ----++++  ---  +++  -- - +++++"sv);
 			const auto result = CppUtils::Container::Sequence::getDifferences<char>(vec0, vec1);
-			EXPECT(result == differences);
+			suite.expectEqual(result, differences);
 		});
-	}
+
+	}};
 }

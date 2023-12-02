@@ -121,4 +121,12 @@ namespace CppUtils::String
 			c = toUppercase(c);
 		return result;
 	}
+	
+	[[nodiscard]] constexpr auto formatValue(auto value)
+	{
+		if constexpr (std::formattable<decltype(value), char>)
+			return std::format("{}", value);
+		else
+			return "<non printable>";
+	}
 }

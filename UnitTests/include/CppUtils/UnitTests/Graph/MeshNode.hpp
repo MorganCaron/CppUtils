@@ -2,30 +2,29 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTests::Graph::MeshNode
+namespace CppUtils::UnitTest::Graph::MeshNode
 {
-	TEST_GROUP("Graph/MeshNode")
-	{
+	auto _ = TestSuite{"Graph/MeshNode", [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 		using StringMeshNetwork = CppUtils::Graph::MeshNetwork<std::string, std::string>;
 		using Node = StringMeshNetwork::Node;
 
-		addTest("One", [] {
+		suite.addTest("One", [&] {
 			auto meshNetwork = StringMeshNetwork{};
 			auto banana = std::shared_ptr<Node>{meshNetwork.newNode("banana")};
 			Logger::print("{}", banana->value);
-			EXPECT(banana->value == "banana");
+			suite.expect(banana->value == "banana");
 		});
 
-		addTest("Two", [] {
+		suite.addTest("Two", [&] {
 			auto meshNetwork = StringMeshNetwork{};
 			auto fruit = std::shared_ptr<Node>{meshNetwork.newNode("fruit")};
 			auto banana = std::shared_ptr<Node>{meshNetwork.newNode("banana")};
 			Node::attach("Categories", fruit, "Elements", banana);
 
-			EXPECT(fruit->value == "fruit");
+			suite.expect(fruit->value == "fruit");
 			const auto fruitName = std::shared_ptr<Node>{fruit->get("Elements")[0]};
-			EXPECT(fruitName->value == "banana");
+			suite.expect(fruitName->value == "banana");
 
 			for (const auto& aFruit : fruit->get("Elements"))
 			{
@@ -34,7 +33,7 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 			}
 		});
 
-		addTest("Many", [] {
+		suite.addTest("Many", [&] {
 			auto meshNetwork = StringMeshNetwork{};
 			auto fruit = std::shared_ptr<Node>{meshNetwork.newNode("fruit")};
 			auto banana = std::shared_ptr<Node>{meshNetwork.newNode("banana")};
@@ -53,11 +52,11 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 			Node::attach("Categories", color, "Elements", orangeColor);
 			Node::attach("Categories", fruit, "Elements", orangeFruit);
 
-			EXPECT(fruit->value == "fruit");
+			suite.expect(fruit->value == "fruit");
 			const auto fruitName = std::shared_ptr<Node>{fruit->get("Elements")[0]};
-			EXPECT(fruitName->value == "banana");
+			suite.expect(fruitName->value == "banana");
 			const auto fruitColor = std::shared_ptr<Node>{fruitName->get("Colors")[0]};
-			EXPECT(fruitColor->value == "yellow");
+			suite.expect(fruitColor->value == "yellow");
 			
 			for (const auto& aFruit : fruit->get("Elements"))
 			{
@@ -66,5 +65,6 @@ namespace CppUtils::UnitTests::Graph::MeshNode
 				Logger::print("{} is a {} {}", sharedFruit->value, std::shared_ptr<Node>{sharedFruit->get("Colors")[0]}->value, std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value);
 			}
 		});
-	}
+
+	}};
 }

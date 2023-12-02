@@ -15,22 +15,42 @@ namespace CppUtils
 		return result;
 	}
 
+	template <class CharT = char, std::size_t N = 1>
 	struct Hasher final
 	{
 		constexpr Hasher(Hash hash):
-			hash{hash}
+			hash{hash},
+			name{'\0'}
 		{}
 
-		constexpr Hasher(const char* cString):
+		constexpr Hasher(const CharT (&cString)[N]):
 			hash{CppUtils::hash(cString)}
-		{}
+		{
+			std::copy(cString, cString + N, name.begin());
+		}
+
+		[[nodiscard]] constexpr operator Hash() const noexcept
+		{
+			return hash;
+		}
+
+		[[nodiscard]] constexpr operator std::basic_string_view<CharT>() const noexcept
+		{
+			return std::basic_string_view<CharT>{std::data(name), N - 1};
+		}
+
+		[[nodiscard]] constexpr operator std::basic_string<CharT>() const noexcept
+		{
+			return std::basic_string<CharT>{std::data(name), N - 1};
+		}
 
 		[[nodiscard]] constexpr auto operator==(Hash otherHash) const noexcept -> bool
 		{
 			return hash == otherHash;
 		}
 
-		const Hash hash;
+		Hash hash;
+		std::array<CharT, N> name;
 	};
 
 	namespace Hashing::Literals

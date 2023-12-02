@@ -2,30 +2,29 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTests::Graph::Tree
+namespace CppUtils::UnitTest::Graph::Tree
 {
-	TEST_GROUP("Graph/Tree")
-	{
+	auto _ = TestSuite{"Graph/Tree", [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 		using StringTreeNode = CppUtils::Graph::Tree::Node<std::string>;
 
-		addTest("", [] {
+		suite.addTest("", [&] {
 			auto root = StringTreeNode{"Root"};
-			CppUtils::Graph::Tree::log(root);
+			// CppUtils::Graph::Tree::log(root);
 			Logger::print("{}", root.value);
-			EXPECT(root.value == "Root");
+			suite.expect(root.value == "Root");
 			
 			root.nodes.emplace_back(StringTreeNode{"Branch0"});
 			root.nodes.emplace_back(StringTreeNode{"Branch1"});
 			Logger::print("{}", root.nodes[1].value);
-			EXPECT(root.nodes[1].value == "Branch1");
+			suite.expect(root.nodes[1].value == "Branch1");
 
 			auto& branch0 = root.nodes[0];
 			branch0.nodes.emplace_back(StringTreeNode{"SubBranch0"});
 			branch0.nodes[0].nodes.emplace_back(StringTreeNode{"SubSubBranch0"});
 			branch0.nodes.emplace_back(StringTreeNode{"SubBranch1"});
 			branch0.nodes.emplace_back(StringTreeNode{"SubBranch2"});
-			EXPECT(branch0.nodes.size() == 3);
+			suite.expect(branch0.nodes.size() == 3);
 
 			root.nodes.emplace_back(StringTreeNode{"Branch2"});
 			auto& branch2 = root.nodes[2];
@@ -37,7 +36,7 @@ namespace CppUtils::UnitTests::Graph::Tree
 			CppUtils::Graph::Tree::log(root);
 		});
 
-		/*addTest("Differences", [] {
+		/*suite.addTest("Differences", [&] {
 			[[maybe_unused]] const auto jsonTree0 = R"(
 			{
 				"removed": "value",
@@ -57,7 +56,8 @@ namespace CppUtils::UnitTests::Graph::Tree
 			}
 			)"_json;
 			// const auto differences = 
-			// EXPECT(jsonTree0 != jsonTree1);
+			// suite.expect(jsonTree0 != jsonTree1);
 		});*/
-	}
+
+	}};
 }

@@ -42,7 +42,7 @@ int main()
 	using namespace CppUtils::Type::Literals;
 
 	const auto src = "\"Text\""sv;
-	auto pos = std::size_t{0};
+	auto pos = 0uz;
 	auto cursor = CppUtils::Language::Parser::Cursor{src, pos};
 	auto rootNode = CppUtils::Parser::ASTNode<CppUtils::Type::Token>{"Root"_token};
 	auto context = Parser::Context<Types...>{

@@ -2,14 +2,15 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTests::Log::ChronoLogger
+namespace CppUtils::UnitTest::Log::ChronoLogger
 {
-	TEST_GROUP("Log/ChronoLogger")
-	{
-		addTest("", [] {
+	auto _ = TestSuite{"Log", [](auto& suite) {
+
+		suite.addTest("ChronoLogger", [&] {
 			auto chronoLogger = CppUtils::Log::ChronoLogger{"Test"};
 			chronoLogger.stop();
-			EXPECT(true);
+			suite.expect(true);
 		});
-	}
+
+	}};
 }

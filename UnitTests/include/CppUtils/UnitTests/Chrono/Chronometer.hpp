@@ -2,18 +2,18 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTests::Chrono::Chronometer
+namespace CppUtils::UnitTest::Chrono::Chronometer
 {
-	TEST_GROUP("Chrono/Chronometer")
-	{
+	auto _ = TestSuite{"Chrono", [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 
-		addTest("", [] {
+		suite.addTest("Chronometer", [&] {
 			auto chrono = CppUtils::Chrono::Chronometer{};
 			chrono.stop();
 			auto string = CppUtils::Chrono::durationToString(chrono.getDuration());
-			EXPECT(!std::empty(string));
+			suite.expect(!std::empty(string));
 			Logger::print("{}", string);
 		});
-	}
+
+	}};
 }

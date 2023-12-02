@@ -2,13 +2,12 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTests::Logger
+namespace CppUtils::UnitTest::Logger
 {
-	TEST_GROUP("Log/Logger")
-	{
+	auto _ = TestSuite{"Log/Logger", [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 
-		addTest("In console", [] {
+		suite.addTest("In console", [&] {
 			Logger::print("Message");
 
 			Logger::print<"info">("Information message");
@@ -18,10 +17,10 @@ namespace CppUtils::UnitTests::Logger
 			Logger::print<"detail">("Detail message");
 			Logger::print<"warning">("Warning message");
 			Logger::print<"error">("Error message");
-			EXPECT(true);
+			suite.expect(true);
 		});
 
-		addTest("In file", [] {
+		suite.addTest("In file", [&] {
 			const auto logPath = std::filesystem::path{"test.tmp"};
 			auto logFile = std::ofstream{logPath, std::ios::app};
 
@@ -36,7 +35,8 @@ namespace CppUtils::UnitTests::Logger
 			Logger::print<"error">(logFile, "Error message");
 
 			CppUtils::FileSystem::File::deleteFile(logPath);
-			EXPECT(true);
+			suite.expect(true);
 		});
-	}
+
+	}};
 }
