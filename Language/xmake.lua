@@ -11,8 +11,7 @@ includes("Xml")
 target("CppUtils-Language")
 	set_kind("headeronly")
 	add_deps(
-		"CppUtils-Language-Parser",
-		"CppUtils-Language-Compiler",
+		"CppUtils-Language-Parser"
 		"CppUtils-Language-IR",
 		"CppUtils-Language-Ini",
 		"CppUtils-Language-Json",

@@ -13,7 +13,7 @@
 #include <functional>
 
 #include <CppUtils/Log/Logger.hpp>
-#include <CppUtils/Type/Functional.hpp>
+#include <CppUtils/String/String.hpp>
 #include <CppUtils/Type/VariadicTemplate.hpp>
 
 // Ribosome
@@ -31,8 +31,8 @@ namespace CppUtils::Language::VirtualMachine
 		template<Type::Concept::TriviallyCopyable T>
 		[[nodiscard]] constexpr auto get(Stack& stack, std::size_t offset = 0) -> T
 		{
-			if (std::size(stack.data) < sizeof(T) + offset)
-				throw std::logic_error{"Stack underflow"}; // C++23: return std::unexpected{...};
+			if (std::size(stack.data) < sizeof(T) + offset) [[unlikely]]
+				throw std::logic_error{"Stack underflow"};
 			auto buffer = std::array<std::byte, sizeof(T)>{};
 			for (auto i = 0uz; i < sizeof(T); ++i)
 				buffer[i] = stack.data[std::size(stack.data) - sizeof(T) - offset + i];
@@ -42,8 +42,8 @@ namespace CppUtils::Language::VirtualMachine
 		template<Type::Concept::TriviallyCopyable T>
 		constexpr auto set(Stack& stack, T newValue, std::size_t offset = 0) -> void
 		{
-			if (std::size(stack.data) < sizeof(T) + offset)
-				throw std::logic_error{"Stack underflow"}; // C++23: return std::unexpected{...};
+			if (std::size(stack.data) < sizeof(T) + offset) [[unlikely]]
+				throw std::logic_error{"Stack underflow"};
 			auto buffer = std::bit_cast<std::array<std::byte, sizeof(T)>>(newValue);
 			for (auto i = 0uz; i < sizeof(T); ++i)
 				stack.data[std::size(stack.data) - sizeof(T) - offset + i] = buffer[i];
@@ -61,8 +61,8 @@ namespace CppUtils::Language::VirtualMachine
 		template<Type::Concept::TriviallyCopyable T>
 		constexpr auto drop(Stack& stack) -> void
 		{
-			if (std::size(stack.data) < sizeof(T))
-				throw std::logic_error{"Stack underflow"}; // C++23: return std::unexpected{...};
+			if (std::size(stack.data) < sizeof(T)) [[unlikely]]
+				throw std::logic_error{"Stack underflow"};
 			stack.data.resize(std::size(stack.data) - sizeof(T));
 			stack.types.pop_back();
 		}
@@ -70,8 +70,8 @@ namespace CppUtils::Language::VirtualMachine
 		template<Type::Concept::TriviallyCopyable T>
 		[[nodiscard]] constexpr auto pop(Stack& stack) -> decltype(auto)
 		{
-			if (std::size(stack.data) < sizeof(T))
-				throw std::logic_error{"Stack underflow"}; // C++23: return std::unexpected{...};
+			if (std::size(stack.data) < sizeof(T)) [[unlikely]]
+				throw std::logic_error{"Stack underflow"};
 			auto value = get<T>(stack);
 			drop<T>(stack);
 			return value;
@@ -87,7 +87,7 @@ namespace CppUtils::Language::VirtualMachine
 		constexpr auto paddingAfter = (0z + ... + sizeof(Args));
 
 		template<std::size_t N, Type::Concept::TriviallyCopyable T, Type::Concept::TriviallyCopyable... Args>
-		[[nodiscard]] constexpr auto getPaddingAfterT() -> std::size_t
+		[[nodiscard]] constexpr auto getPaddingAfterT() noexcept -> std::size_t
 		{
 			if constexpr (N == 0)
 			{
@@ -152,6 +152,14 @@ namespace CppUtils::Language::VirtualMachine
 				set(stack, call(stack, function, objectPointer, std::index_sequence_for<Args...>{}), (0 + ... + sizeof(std::remove_reference_t<Args>)));
 			(..., drop<std::remove_reference_t<Args>>(stack));
 		}
+
+		template<class T>
+		constexpr auto conditionalJump(Stack& stack, std::size_t& instructionPointer, std::size_t jumpDistance) -> void
+		{
+			if constexpr (std::is_constructible_v<bool, T>)
+				if (!pop<T>(stack))
+					instructionPointer += jumpDistance;
+		}
 	}
 	
 	template<Type::Concept::TriviallyCopyable ReturnType, Type::Concept::TriviallyCopyable... SupportedTypes>
@@ -171,15 +179,12 @@ namespace CppUtils::Language::VirtualMachine
 			return offset;
 		};
 		static constexpr auto conditionalJumpTypes = std::array<void(*)(Stack&, std::size_t&, std::size_t), 1 + sizeof...(SupportedTypes)>{
-			+[](Stack& stack, std::size_t& instructionPointer, std::size_t jumpDistance) -> void {
-				if constexpr (std::is_constructible_v<bool, ReturnType>) if (!pop<ReturnType>(stack)) instructionPointer += jumpDistance; },
-			+[](Stack& stack, std::size_t& instructionPointer, std::size_t jumpDistance) -> void {
-				if constexpr (std::is_constructible_v<bool, SupportedTypes>) if (!pop<SupportedTypes>(stack)) instructionPointer += jumpDistance; }...
+			&conditionalJump<ReturnType>, &conditionalJump<SupportedTypes>...
 		};
 		static constexpr auto copyTypesBuilder = []<class SourceType>() consteval -> auto {
 			return std::array<void(*)(Stack&, std::size_t, std::size_t), 1 + sizeof...(SupportedTypes)>{
-				+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { if constexpr (std::is_convertible_v<SourceType, ReturnType>) copy<SourceType, ReturnType>(stack, sourcePosition, destinationPosition); },
-				+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { if constexpr (std::is_convertible_v<SourceType, SupportedTypes>) copy<SourceType, SupportedTypes>(stack, sourcePosition, destinationPosition); }...
+				+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { if constexpr (std::is_convertible_v<SourceType, ReturnType>) return copy<SourceType, ReturnType>(stack, sourcePosition, destinationPosition); else return {}; },
+				+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { if constexpr (std::is_convertible_v<SourceType, SupportedTypes>) return copy<SourceType, SupportedTypes>(stack, sourcePosition, destinationPosition); else return {}; }...
 			};
 		};
 		static constexpr auto copyTypes = std::array<std::array<void(*)(Stack&, std::size_t, std::size_t), 1 + sizeof...(SupportedTypes)>, 1 + sizeof...(SupportedTypes)>{
@@ -190,10 +195,8 @@ namespace CppUtils::Language::VirtualMachine
 			auto type = stack.types[std::size(stack.types) - 1 - position];
 			Logger::print<"debug">("Position: {} Type: {} Value:", position, type);
 			[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Magenta};
-			if constexpr (Type::Concept::Printable<ValueType>)
-				std::cout << get<ValueType>(stack, getTypeOffset(stack, position)) << std::endl;
-			else
-				Logger::print("<?>\n");
+			auto value = get<ValueType>(stack, getTypeOffset(stack, position));
+			Logger::print("{}\n", String::formatValue(value));
 		};
 		static constexpr auto printTypes = std::array<void(*)(Stack&, std::size_t), 1 + sizeof...(SupportedTypes)>{
 			printType.template operator()<ReturnType>,
@@ -204,10 +207,10 @@ namespace CppUtils::Language::VirtualMachine
 			{
 			case ',': [[fallthrough]];
 			case '(':
-				if constexpr(Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
+				if constexpr (Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
 					push<std::size_t, ReturnType, SupportedTypes...>(stack, 0uz);
 				else
-					throw std::invalid_argument{"Type std::size_t missing in template parameters"}; // C++23: return std::unexpected{...};
+					throw std::invalid_argument{"Type std::size_t missing in template parameters"};
 				break;
 			case ')': drop<ValueType>(stack); break;
 			case '_': set(stack, ValueType{}); break;
@@ -221,7 +224,10 @@ namespace CppUtils::Language::VirtualMachine
 				break;
 			}
 			// Todo: case 'D': set(stack, &get<ValueType>(stack)); break;
-			case 'R': if constexpr (std::is_pointer_v<ValueType> && Type::Concept::TriviallyCopyable<std::remove_pointer_t<ValueType>>) set(stack, *get<ValueType>(stack)); break;
+			case 'R':
+				if constexpr (std::is_pointer_v<ValueType> && Type::Concept::TriviallyCopyable<std::remove_pointer_t<ValueType>>)
+					set(stack, *get<ValueType>(stack));
+				break;
 			case 'I':
 				Logger::print<"debug">("Stack size: {} elements; {} bytes", std::size(stack.types), std::size(stack.data));
 				for (auto i = 0uz; i < std::size(stack.types); ++i)
@@ -229,16 +235,16 @@ namespace CppUtils::Language::VirtualMachine
 				break;
 			case 'J': instructionPointer = get<std::size_t>(stack); break;
 			case 'P':
-				if constexpr(Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
+				if constexpr (Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
 					push<std::size_t, ReturnType, SupportedTypes...>(stack, instructionPointer);
 				else
-					throw std::invalid_argument{"Type std::size_t missing in template parameters"}; // C++23: return std::unexpected{...};
+					throw std::invalid_argument{"Type std::size_t missing in template parameters"};
 				break;
 			case 'W':
 			{
 				auto id = pop<std::size_t>(stack);
-				if (id >= std::size(pushTypes))
-					throw std::invalid_argument{"Type id " + std::to_string(id) + " out of range"}; // C++23: return std::unexpected{...};
+				if (id >= std::size(pushTypes)) [[unlikely]]
+					throw std::invalid_argument{"Type id " + std::to_string(id) + " out of range"};
 				printTypes[stack.types[std::size(stack.types) - 1 - id]](stack, id);
 				break;
 			}
@@ -246,8 +252,8 @@ namespace CppUtils::Language::VirtualMachine
 			case ':':
 			{
 				auto id = pop<std::size_t>(stack);
-				if (id >= std::size(pushTypes))
-					throw std::invalid_argument{"Type id " + std::to_string(id) + " out of range"}; // C++23: return std::unexpected{...};
+				if (id >= std::size(pushTypes)) [[unlikely]]
+					throw std::invalid_argument{"Type id " + std::to_string(id) + " out of range"};
 				pushTypes[id](stack);
 				break;
 			}
@@ -259,7 +265,7 @@ namespace CppUtils::Language::VirtualMachine
 					if constexpr (Type::Concept::isFunctionPointer<T> || std::is_member_function_pointer_v<T>)
 						call(stack, data);
 					else if constexpr (!Type::Concept::Present<T, ReturnType, SupportedTypes...>)
-						throw std::invalid_argument{"Type " + std::to_string(dataId) + " missing in template parameters"}; // C++23: return std::unexpected{...};
+						throw std::invalid_argument{"Type " + std::to_string(dataId) + " missing in template parameters"};
 					else
 						push<T, ReturnType, SupportedTypes...>(stack, data);
 				}, externalData[dataId]);
@@ -277,48 +283,45 @@ namespace CppUtils::Language::VirtualMachine
 					if constexpr (std::is_constructible_v<bool, ValueType>)
 						push<bool, ReturnType, SupportedTypes...>(stack, !static_cast<bool>(pop<ValueType>(stack)));
 					else
-						drop<ValueType>(stack); // C++23: return std::unexpected{...};
+						drop<ValueType>(stack);
 				}
 				else
-					throw std::invalid_argument{"Type bool missing in template parameters"}; // C++23: return std::unexpected{...};
+					throw std::invalid_argument{"Type bool missing in template parameters"};
 				break;
 			case '=':
-				if constexpr (Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+					throw std::invalid_argument{"Type bool missing in template parameters"};
+				else if constexpr (std::equality_comparable<ValueType>)
 				{
-					[[maybe_unused]] auto rhs = pop<ValueType>(stack);
-					if constexpr (std::equality_comparable<ValueType>)
-						push<bool, ReturnType, SupportedTypes...>(stack, static_cast<bool>(pop<ValueType>(stack) == rhs));
+					auto rhs = pop<ValueType>(stack);
+					push<bool, ReturnType, SupportedTypes...>(stack, static_cast<bool>(pop<ValueType>(stack) == rhs));
 				}
-				else
-					throw std::invalid_argument{"Type bool missing in template parameters"}; // C++23: return std::unexpected{...};
 				break;
 			case '<':
-				if constexpr (Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+					throw std::invalid_argument{"Type bool missing in template parameters"};
+				else if constexpr (std::totally_ordered<ValueType>)
 				{
-					[[maybe_unused]] auto rhs = pop<ValueType>(stack);
-					if constexpr (std::totally_ordered<ValueType>)
-						push<bool, ReturnType, SupportedTypes...>(stack, static_cast<bool>(pop<ValueType>(stack) < rhs));
+					auto rhs = pop<ValueType>(stack);
+					push<bool, ReturnType, SupportedTypes...>(stack, static_cast<bool>(pop<ValueType>(stack) < rhs));
 				}
-				else
-					throw std::invalid_argument{"Type bool missing in template parameters"}; // C++23: return std::unexpected{...};
 				break;
 			case '>':
-				if constexpr (Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+					throw std::invalid_argument{"Type bool missing in template parameters"};
+				else if constexpr (std::totally_ordered<ValueType>)
 				{
-					[[maybe_unused]] auto rhs = pop<ValueType>(stack);
-					if constexpr (std::totally_ordered<ValueType>)
-						push<bool, ReturnType, SupportedTypes...>(stack, static_cast<bool>(pop<ValueType>(stack) > rhs));
+					auto rhs = pop<ValueType>(stack);
+					push<bool, ReturnType, SupportedTypes...>(stack, static_cast<bool>(pop<ValueType>(stack) > rhs));
 				}
-				else
-					throw std::invalid_argument{"Type bool missing in template parameters"}; // C++23: return std::unexpected{...};
 				break;
-			case '&': if constexpr (std::is_arithmetic_v<ValueType>) { [[maybe_unused]] auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) & rhs)); } break;
-			case '|': if constexpr (std::is_arithmetic_v<ValueType>) { [[maybe_unused]] auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) | rhs)); } break;
-			case '^': if constexpr (std::is_arithmetic_v<ValueType>) { [[maybe_unused]] auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) ^ rhs)); } break;
-			case '+': if constexpr (std::is_arithmetic_v<ValueType>) { [[maybe_unused]] auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) + rhs); } break;
-			case '-': if constexpr (std::is_arithmetic_v<ValueType>) { [[maybe_unused]] auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) - rhs); } break;
-			case '*': if constexpr (std::is_arithmetic_v<ValueType>) { [[maybe_unused]] auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) * rhs); } break;
-			case '/': if constexpr (std::is_arithmetic_v<ValueType>) { [[maybe_unused]] auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) / rhs); } break;
+			case '&': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) & rhs)); } break;
+			case '|': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) | rhs)); } break;
+			case '^': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) ^ rhs)); } break;
+			case '+': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) + rhs); } break;
+			case '-': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) - rhs); } break;
+			case '*': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) * rhs); } break;
+			case '/': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, pop<ValueType>(stack) / rhs); } break;
 			case '\\': if constexpr (std::is_constructible_v<ValueType, decltype(source[0])>) set(stack, static_cast<ValueType>(get<ValueType>(stack) + static_cast<ValueType>(source[++instructionPointer]))); break;
 			default: if constexpr (std::is_arithmetic_v<ValueType>) if (auto c = instruction; c >= '0' && c <= '9') set(stack, static_cast<ValueType>(get<ValueType>(stack) * 10 + static_cast<ValueType>(c - '0'))); break;
 			}
@@ -331,8 +334,8 @@ namespace CppUtils::Language::VirtualMachine
 		push<ReturnType, ReturnType, SupportedTypes...>(stack, ReturnType{});
 		for (auto instructionPointer = 0uz; instructionPointer < std::size(source); ++instructionPointer)
 		{
-			if (std::empty(stack.types))
-				throw std::logic_error{"Stack empty"}; // C++23: return std::unexpected{...};
+			if (std::empty(stack.types)) [[unlikely]]
+				throw std::logic_error{"Stack empty"};
 			executeInstruction[stack.types.back()](stack, source, externalData, instructionPointer);
 		}
 		return get<ReturnType>(stack);

@@ -25,7 +25,7 @@ namespace CppUtils
 		{
 			return {
 				Terminal::TextModifier{},
-				std::string{message} + '\n'
+				std::string{message}
 			};
 		}
 

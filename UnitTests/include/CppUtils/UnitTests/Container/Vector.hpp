@@ -15,7 +15,7 @@ namespace CppUtils::UnitTest::Container::Vector
 			const auto vector = CppUtils::Container::Vector::merge({std::cref(a), std::cref(b), std::cref(c), std::cref(d)});
 			suite.expectEqual(std::size(vector), 8uz);
 			for (const auto& string : vector)
-				Logger::print("{}", string);
+				Logger::print("{}\n", string);
 		});
 
 	}};

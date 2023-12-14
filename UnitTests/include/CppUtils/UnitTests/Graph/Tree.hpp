@@ -11,12 +11,12 @@ namespace CppUtils::UnitTest::Graph::Tree
 		suite.addTest("", [&] {
 			auto root = StringTreeNode{"Root"};
 			// CppUtils::Graph::Tree::log(root);
-			Logger::print("{}", root.value);
+			Logger::print("{}\n", root.value);
 			suite.expect(root.value == "Root");
 			
 			root.nodes.emplace_back(StringTreeNode{"Branch0"});
 			root.nodes.emplace_back(StringTreeNode{"Branch1"});
-			Logger::print("{}", root.nodes[1].value);
+			Logger::print("{}\n", root.nodes[1].value);
 			suite.expect(root.nodes[1].value == "Branch1");
 
 			auto& branch0 = root.nodes[0];

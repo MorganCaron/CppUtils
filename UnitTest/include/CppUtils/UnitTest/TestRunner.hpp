@@ -137,13 +137,16 @@ namespace CppUtils::UnitTest
 					Logger::print<"success">("All tests passed successfully");
 					return EXIT_SUCCESS;
 				}
-				Logger::print<"error">("The tests failed:");
+				{
+					[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
+					Logger::print("The tests failed:\n");
+				}
 				if (nbSuccess > 0)
 					Logger::print<"success">("- {} successful tests", nbSuccess);
 				[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
 				if (nbSuccess == 0)
-					Logger::print("- 0 successful tests");
-				Logger::print("- {} failed tests", nbFail);
+					Logger::print("- 0 successful tests\n");
+				Logger::print("- {} failed tests\n", nbFail);
 			}
 			
 			return EXIT_FAILURE;
@@ -172,7 +175,7 @@ namespace CppUtils::UnitTest
 		auto expect(bool condition, std::source_location sourceLocation = std::source_location::current()) -> void
 		{
 			if (!condition) [[unlikely]]
-				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expect(condition)",
+				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expect(condition)\n",
 					sourceLocation.file_name(),
 					sourceLocation.line(), sourceLocation.column())};
 		}
@@ -181,7 +184,7 @@ namespace CppUtils::UnitTest
 		{
 			if (lhs != rhs) [[unlikely]]
 			{
-				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectEqual(lhs, rhs)\nwith lhs = {}\nand  rhs = {}",
+				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectEqual(lhs, rhs)\nwith lhs = {}\nand  rhs = {}\n",
 					sourceLocation.file_name(),
 					sourceLocation.line(), sourceLocation.column(),
 					(std::formattable<decltype(lhs), char>) ? String::formatValue(lhs) : "<non printable>",

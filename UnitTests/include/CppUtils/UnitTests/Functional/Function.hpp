@@ -13,7 +13,7 @@ namespace CppUtils::UnitTest::Functional::Function
 			}};
 			const auto vec = std::vector<int>{10, 15, 17};
 			const auto result = CppUtils::Functional::callFunction<3>(sum, vec);
-			Logger::print("{}", result);
+			Logger::print("{}\n", result);
 			suite.expect(result == 42);
 		});
 

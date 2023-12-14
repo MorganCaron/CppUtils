@@ -12,7 +12,7 @@ namespace CppUtils::UnitTest::FileSystem::File::String
 			const auto originalString = "Hello world!";
 			CppUtils::FileSystem::File::String::write(filePath, originalString);
 			const auto fileContent = CppUtils::FileSystem::File::String::read(filePath);
-			Logger::print("{}", fileContent);
+			Logger::print("{}\n", fileContent);
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			suite.expect(fileContent == originalString);
 		});
@@ -24,7 +24,7 @@ namespace CppUtils::UnitTest::FileSystem::File::String
 			CppUtils::FileSystem::File::String::append(filePath, firstString);
 			CppUtils::FileSystem::File::String::append(filePath, secondString);
 			const auto fileContent = CppUtils::FileSystem::File::String::read(filePath);
-			Logger::print("{}", fileContent);
+			Logger::print("{}\n", fileContent);
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			suite.expect(fileContent == std::string{firstString} + secondString);
 		});

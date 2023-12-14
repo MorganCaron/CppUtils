@@ -8,7 +8,7 @@ namespace CppUtils::UnitTest::Logger
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("In console", [&] {
-			Logger::print("Message");
+			Logger::print("Message\n");
 
 			Logger::print<"info">("Information message");
 			Logger::print<"important">("Important message");

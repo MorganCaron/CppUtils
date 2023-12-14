@@ -4,6 +4,7 @@ set_license("LGPL3")
 set_languages("clatest", "cxxlatest")
 set_warnings("allextra", "error")
 add_cxflags("-Wpedantic -Wconversion -Wno-error=deprecated-declarations -Wfatal-errors")
+-- add_cxflags("-Wno-gnu-statement-expression-from-macro-expansion -Wno-gnu-statement-expression")
 set_optimize("fastest")
 set_symbols("hidden")
 

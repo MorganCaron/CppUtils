@@ -12,7 +12,7 @@ namespace CppUtils::UnitTest::String
 			auto strings = std::vector{"A"sv, "B"sv, "C"sv};
 			auto string = CppUtils::String::concatenateStringsWithDelimiter(strings, ", ");
 
-			Logger::print("{}", string);
+			Logger::print("{}\n", string);
 			suite.expectEqual(string, "A, B, C");
 		});
 
@@ -22,13 +22,13 @@ namespace CppUtils::UnitTest::String
 			auto rightTrimString = CppUtils::String::rightTrimString(string);
 			auto trimString = CppUtils::String::trimString(string);
 
-			Logger::print(R"("{}")", leftTrimString);
+			Logger::print("\"{}\"\n", leftTrimString);
 			suite.expectEqual(leftTrimString, "Hello World!\n \t ");
 
-			Logger::print(R"("{}")", rightTrimString);
+			Logger::print("\"{}\"\n", rightTrimString);
 			suite.expectEqual(rightTrimString, "\n \t Hello World!");
 
-			Logger::print(R"("{}")", trimString);
+			Logger::print("\"{}\"\n", trimString);
 			suite.expectEqual(trimString, "Hello World!");
 		});
 
@@ -36,7 +36,7 @@ namespace CppUtils::UnitTest::String
 			auto output = ""s;
 			for (char c = 0; c >= 0; ++c)
 				output += CppUtils::String::getPrintableChar(c) + ' ';
-			Logger::print("{}", output);
+			Logger::print("{}\n", output);
 		});
 
 	}};

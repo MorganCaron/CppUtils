@@ -276,11 +276,10 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			constexpr auto input = "Hello World!"sv;
 
 			constexpr auto print = [](std::string_view text) -> void {
-				Logger::print("{}", text);
+				Logger::print("{}\n", text);
 			};
 
 			auto result = VM::execute<std::size_t, std::string_view>(src, input, +print);
-
 			suite.expectEqual(result, 0uz);
 		});
 
@@ -308,11 +307,10 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			constexpr auto input = "Hello World!"sv;
 
 			constexpr auto print = [](std::string_view text) -> void {
-				Logger::print("{}", text);
+				Logger::print("{}\n", text);
 			};
 
 			auto result = VM::execute<std::size_t, bool, std::string_view>(src, nb, input, +print);
-
 			suite.expectEqual(result, 0uz);
 		});
 
