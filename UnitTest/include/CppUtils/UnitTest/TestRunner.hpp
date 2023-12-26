@@ -11,7 +11,6 @@
 
 #include <CppUtils/Log/Logger.hpp>
 #include <CppUtils/String/String.hpp>
-#include <CppUtils/Parameters/ParametersLexer.hpp>
 
 namespace CppUtils::UnitTest
 {

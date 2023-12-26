@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include <CppUtils/Log/Logger.hpp>
-#include <CppUtils/Hash.hpp>
+#include <CppUtils/HashTable.hpp>
 #include <CppUtils/Type/Concept.hpp>
 
 namespace CppUtils::Graph::Tree
@@ -67,36 +67,27 @@ namespace CppUtils::Graph::Tree
 		return lhs.value == rhs.value && lhs.nodes == rhs.nodes;
 	}
 
-	template<class T>
+	template<class T, class Logger = Logger<"CppUtils">>
 	requires Type::Concept::Printable<T> // Fonctionne sur GCC mais pas sur Clang https://godbolt.org/z/75cja8
 	auto log(const Node<T>& node, const std::string& prefix = "") noexcept -> void
 	{
-		using namespace Hash::Literals;
-		auto logger = Log::Logger{std::cout};
-		logger
-			<< node.value << '\n';
-		const auto nbNodes = node.nodes.size();
-		for (auto i = 0u; i < nbNodes; ++i)
+		Logger::print("{}\n", node.value);
+		const auto nbNodes = std::size(node.nodes);
+		for (auto i = 0uz; i < nbNodes; ++i)
 		{
-			logger
-				<< Terminal::TextColor::TextColorEnum::Blue
-				<< prefix << ((i != nbNodes - 1) ? "├" : "└") << "─ ";
-			log(node.nodes.at(i), prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
+			Logger::print("{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
+			log<T, Logger>(node.nodes.at(i), prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
 		}
 	}
 
-	auto log(const Node<Hash::Token>& node, const Hash::TokenNames& tokenNames, const std::string& prefix = "") noexcept -> void
+	template<class Logger = Logger<"CppUtils">>
+	auto log(const Node<Token>& node, const HashTable::TokenNames& tokenNames, const std::string& prefix = "") noexcept -> void
 	{
-		using namespace Hash::Literals;
-		auto logger = Log::Logger{std::cout};
-		logger
-			<< Hash::getTokenNameOrValue(node.value, tokenNames) << '\n';
-		const auto nbNodes = node.nodes.size();
-		for (auto i = 0u; i < nbNodes; ++i)
+		Logger::print("{}\n", HashTable::getTokenNameOrValue(node.value, tokenNames));
+		const auto nbNodes = std::size(node.nodes);
+		for (auto i = 0uz; i < nbNodes; ++i)
 		{
-			logger
-				<< Terminal::TextColor::TextColorEnum::Blue
-				<< prefix << ((i != nbNodes - 1) ? "├" : "└") << "─ ";
+			Logger::print("{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
 			log(node.nodes.at(i), tokenNames, prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
 		}
 	}

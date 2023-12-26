@@ -10,7 +10,7 @@
 namespace CppUtils::Language::IR::Compiler::Bytecode
 {
 	using namespace std::literals;
-	using namespace Hash::Literals;
+	using namespace Hashing::Literals;
 
 	struct Instruction final
 	{

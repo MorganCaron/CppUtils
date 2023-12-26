@@ -1,12 +1,12 @@
 #pragma once
 
-#include <CppUtils/Language/VirtualMachine.hpp>
+// #include <CppUtils/Language/VirtualMachine.old.hpp>
 
 namespace CppUtils::Language::Grammar
 {
 	[[nodiscard]] auto getAstGrammar() -> Ast
 	{
-		using namespace Hash::Literals;
+		using namespace Hashing::Literals;
 		return Ast{"context", {
 			AstNode{"source"_token, {
 				AstNode{"main"_token, {

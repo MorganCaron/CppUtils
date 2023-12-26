@@ -3,11 +3,11 @@
 #include <string>
 
 #include <CppUtils/Log/Logger.hpp>
-#include <CppUtils/Parameters/ParametersLexer.hpp>
 #include <CppUtils/UnitTest/TestRunner.hpp>
 
 namespace CppUtils::UnitTest
 {
+	/*
 	class TestSettingsLexer final
 	{
 	public:
@@ -87,4 +87,5 @@ namespace CppUtils::UnitTest
 		static auto testSettingsLexer = TestSettingsLexer{};
 		return testSettingsLexer.executeCommands(argc, argv);
 	}
+	*/
 }

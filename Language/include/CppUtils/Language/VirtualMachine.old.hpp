@@ -4,10 +4,10 @@
 
 namespace CppUtils::Language::VirtualMachine
 {
-	[[nodiscard]] inline auto getTokenNames() -> const Hash::TokenNames&
+	[[nodiscard]] inline auto getTokenNames() -> const HashTable::TokenNames&
 	{
-		using namespace Hash::Literals;
-		static const auto tokenNames = Hash::TokenNames{
+		using namespace Hashing::Literals;
+		static const auto tokenNames = HashTable::TokenNames{
 			{ "token"_token, "token" },
 			{ "source"_token, "source" },
 			{ "stack"_token, "stack" },
@@ -40,7 +40,7 @@ namespace CppUtils::Language::VirtualMachine
 
 	[[nodiscard]] inline auto getTargetNode(AstNode& contextNode, const AstNode& addressNode) -> AstNode&
 	{
-		using namespace Hash::Literals;
+		using namespace Hashing::Literals;
 		auto subNodeValue = addressNode.nodes.front().value;
 		switch (addressNode.value)
 		{
@@ -61,15 +61,15 @@ namespace CppUtils::Language::VirtualMachine
 
 	[[nodiscard]] inline auto getValueNode(AstNode& contextNode, const AstNode& addressNode) -> const AstNode&
 	{
-		using namespace Hash::Literals;
+		using namespace Hashing::Literals;
 		if (addressNode.value == "value"_token)
 			return addressNode.nodes.front();
 		return resolveAddress(contextNode, addressNode);
 	}
 
-	[[nodiscard]] inline auto getValue(AstNode& contextNode, const AstNode& addressNode) -> Hash::Token
+	[[nodiscard]] inline auto getValue(AstNode& contextNode, const AstNode& addressNode) -> Token
 	{
-		using namespace Hash::Literals;
+		using namespace Hashing::Literals;
 		if (addressNode.value == "deref"_token)
 		{
 			const auto address = resolveAddress(contextNode, addressNode.nodes.front()).value;
@@ -80,7 +80,7 @@ namespace CppUtils::Language::VirtualMachine
 
 	inline auto callExternalFunction(Ast& context, const AstNode& addressNode) -> void
 	{
-		using namespace Hash::Literals;
+		using namespace Hashing::Literals;
 		auto functionAddress = Ast::getFirstNode(resolveAddress(context.root["source"_token], addressNode)).value;
 		auto* functionPointer = reinterpret_cast<void (*)(Ast&)>(functionAddress);
 		functionPointer(context);
@@ -88,7 +88,7 @@ namespace CppUtils::Language::VirtualMachine
 
 	inline auto run(Ast& context, Hash::Token entryPoint = Hash::hash(std::string_view{"main"})) -> void
 	{
-		using namespace Hash::Literals;
+		using namespace Hashing::Literals;
 		const auto& declarations = context.root["source"_token];
 		auto declarationIt = declarations.find(entryPoint);
 		if (declarationIt == std::cend(declarations.nodes))
@@ -115,7 +115,7 @@ namespace CppUtils::Language::VirtualMachine
 
 	[[nodiscard]] inline auto getReturnNode(Ast& context) -> AstNode&
 	{
-		using namespace Hash::Literals;
+		using namespace Hashing::Literals;
 		return Ast::getFirstNode(context.root["register"_token][0]);
 	}
 }

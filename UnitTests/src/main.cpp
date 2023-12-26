@@ -1,13 +1,16 @@
 #include <CppUtils/UnitTests/UnitTests.hpp>
 
-int main(const int argc, const char *argv[])
+int main([[maybe_unused]] const int argc, [[maybe_unused]] const char *argv[])
 {
 	try
 	{
 		CppUtils::Terminal::setConsoleOutputUTF8();
+		/*
 		auto& settings = CppUtils::UnitTest::executeCommands(argc, argv);
 		if (settings.abort)
 			return EXIT_SUCCESS;
+		*/
+		auto settings = CppUtils::UnitTest::TestSettings{};
 		return CppUtils::UnitTest::executeTests(std::move(settings));
 	}
 	catch (const std::exception& exception)
