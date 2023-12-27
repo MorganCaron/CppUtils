@@ -1,5 +1,6 @@
 #include <CppUtils/UnitTests/UnitTests.hpp>
 
+// Todo: std::span<const std::string_view> args
 int main([[maybe_unused]] const int argc, [[maybe_unused]] const char *argv[])
 {
 	try

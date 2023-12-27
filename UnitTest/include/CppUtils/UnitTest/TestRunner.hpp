@@ -100,8 +100,7 @@ namespace CppUtils::UnitTest
 				), std::end(m_tests));
 				auto newSettings = settings;
 				newSettings.filter = "";
-				const auto result = executeTests(newSettings);
-				return result;
+				return executeTests(newSettings);
 			}
 
 			if (std::empty(m_tests))
@@ -174,7 +173,7 @@ namespace CppUtils::UnitTest
 		auto expect(bool condition, std::source_location sourceLocation = std::source_location::current()) -> void
 		{
 			if (!condition) [[unlikely]]
-				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expect(condition)\n",
+				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expect(condition)",
 					sourceLocation.file_name(),
 					sourceLocation.line(), sourceLocation.column())};
 		}
@@ -183,7 +182,7 @@ namespace CppUtils::UnitTest
 		{
 			if (lhs != rhs) [[unlikely]]
 			{
-				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectEqual(lhs, rhs)\nwith lhs = {}\nand  rhs = {}\n",
+				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectEqual(lhs, rhs)\nwith lhs = {}\nand  rhs = {}",
 					sourceLocation.file_name(),
 					sourceLocation.line(), sourceLocation.column(),
 					(std::formattable<decltype(lhs), char>) ? String::formatValue(lhs) : "<non printable>",

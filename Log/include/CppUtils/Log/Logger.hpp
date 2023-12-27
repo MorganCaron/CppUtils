@@ -9,6 +9,10 @@
 #include <CppUtils/Terminal/Terminal.hpp>
 #include <CppUtils/Terminal/TextModifier.hpp>
 
+// Todo: log le datetime
+// Todo: log le stacktrace ( https://en.cppreference.com/w/cpp/utility/stacktrace_entry )
+// Todo: rotation de logs
+
 namespace CppUtils
 {
 	template<Hasher loggerName = Hash{}>
@@ -151,7 +155,7 @@ namespace CppUtils
 			Logger::print<"error">("{}", exception.what());
 		[[maybe_unused]] auto textModifier = (depth == 0) ? Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red} : Terminal::TextModifier{};
 		if (depth > 0)
-			Logger::print("{}{}", std::string(depth * 2, ' '), exception.what());
+			Logger::print("{}{}\n", std::string(depth * 2, ' '), exception.what());
 		try
 		{
 			std::rethrow_if_nested(exception);

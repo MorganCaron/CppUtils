@@ -13,5 +13,6 @@
 #include <CppUtils/UnitTests/Graph/MeshNode.hpp>
 #include <CppUtils/UnitTests/Graph/Tree.hpp>
 #include <CppUtils/UnitTests/Language/VirtualMachine.hpp>
+#include <CppUtils/UnitTests/Language/LowLevelLabelsCompiler.hpp>
 #include <CppUtils/UnitTests/Type/Concept.hpp>
 #include <CppUtils/UnitTests/UnitTest.hpp>

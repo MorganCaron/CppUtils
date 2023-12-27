@@ -1,13 +1,33 @@
 #pragma once
 
 #include <map>
-#include <unordered_map>
 
-#include <CppUtils/Language/Parser/Modifiers.hpp>
-#include <CppUtils/Language/Lexer/GrammarLexer.hpp>
-
-namespace CppUtils::Parameters
+namespace CppUtils::Language::Parameters
 {
+	using namespace std::literals;
+
+	constexpr auto argvGrammar = R"(
+		main: _spaces (command >= 0) _spaces;
+		command: _spaces keywordParser ~_value;
+		!_value: _spaces '[' ((contentParser != ']') >= 0) ']' ~trimModifier;
+		!_spaces: (_space >= 0);
+		!_space: (' ' || '\t' || '\n');
+	)"sv;
+
+	[[nodiscard]] auto parse(const std::size_t argc, const char *argv[]) -> Parser::Ast
+	{
+		static auto grammarManager = Lexer::GrammarManager{};
+		grammarManager.addGrammar("argvGrammar"sv, argvGrammar);
+
+		auto argvVector = std::span{argv + 1, argc - 1};
+		auto src = String::concatenateStringsWithDelimiter(argvVector, " ");
+		auto argvAst = grammarManager.parseLanguage(src, "argvGrammar"sv);
+		auto parameters = std::map<std::string, std::string>{};
+		for (const auto& argument : argvAst.nodes)
+			parameters[std::string{std::get<Type::Token>(argument.getChildValue(0)).name}] = (argument.nodes.size() == 2 ? std::get<std::string>(argument.getChildValue(1)) : "");
+		return parameters;
+	}
+
 	class ParametersLexer final
 	{
 	public:
@@ -33,7 +53,7 @@ namespace CppUtils::Parameters
 		[[nodiscard]] std::map<std::string, std::string> parseParameters(const std::size_t argc, const char *argv[]) const
 		{
 			using namespace Type::Literals;
-			const auto argumentVector = String::cstringArrayToVectorOfStrings<std::string_view>(argv + 1, argc - 1);
+			const auto argumentVector = std::span{argv + 1, argc - 1};
 			const auto src = String::concatenateStringsWithDelimiter(argumentVector, " ");
 			const auto commandTree = m_grammarLexer.parseLanguage("main"_token, src);
 			auto parameters = std::map<std::string, std::string>{};

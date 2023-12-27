@@ -75,15 +75,19 @@ namespace CppUtils::Language::Parser
 		auto arrowOffset = cursor.position - startPosition;
 		auto charOffset = arrowOffset == 0 ? arrowOffset : (arrowOffset == length * 2 + 1 ? arrowOffset - 2 : arrowOffset - 1);
 		
+		// Todo: utiliser std::format ici:
 		if (!empty(sample))
 			sample += '\n' + std::basic_string<CharT>(arrowOffset, ' ') + "↑\n";
 		sample += std::basic_string<CharT>(charOffset, ' ') + '\'' + String::reverseEscapedChar(cursor.current()) + "'\n";
 		return sample;
 	}
 
+	// Todo: constexpr
 	template<class Element>
-	[[nodiscard]] constexpr auto getPositionInformation(const CppUtils::Language::Parser::Cursor<Element>& cursor) -> std::string
+	[[nodiscard]] auto getPositionInformation(const CppUtils::Language::Parser::Cursor<Element>& cursor) -> std::string
 	{
+		// Todo: utiliser std::format ici:
+		// std::cout << std::basic_string<Element>{std::cbegin(cursor.data), std::cend(cursor.data)} << std::endl;
 		if constexpr (String::Concept::Char<Element>)
 			return "At line " + std::to_string(getLineNumber(cursor)) +
 				" position " + std::to_string(getPositionInTheLine(cursor)) + ":\n" +

@@ -32,5 +32,22 @@ namespace CppUtils::Language
 				return node.value == token;
 			});
 		}
+
+		[[nodiscard]] inline auto getStackNode(std::size_t argumentNumber) -> AstNode&
+		{
+			using namespace Hashing::Literals;
+			auto& stack = root["stack"_token].nodes;
+			return stack[std::size(stack) - 1 - argumentNumber];
+		}
+
+		[[nodiscard]] static inline auto getFirstNode(AstNode& node) -> AstNode&
+		{
+			return std::empty(node.nodes) ? node.nodes.emplace_back() : node.nodes.front();
+		}
+
+		static inline auto pushPointer(AstNode& contextNode, const auto* data) -> void
+		{
+			contextNode.nodes.emplace_back(reinterpret_cast<Token>(data));
+		}
 	};
 }

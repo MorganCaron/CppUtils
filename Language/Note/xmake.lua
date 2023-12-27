@@ -1,7 +1,7 @@
 target("CppUtils-Language-Note")
 	set_kind("headeronly")
 	add_deps(
-		"CppUtils-Language-Lexer"
+		"CppUtils-Language"
 	)
 	add_includedirs("include", { public = true })
 	add_headerfiles("include/**.hpp")
