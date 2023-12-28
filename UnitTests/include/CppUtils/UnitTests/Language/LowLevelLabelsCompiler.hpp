@@ -14,13 +14,12 @@ namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 			suite.expectEqual(std::size(output), 0uz);
 		});
 
-		/*suite.addTest("code without labels", [&] constexpr {
+		suite.addTest("code without labels", [&] constexpr {
 			constexpr auto source = "42"sv;
-			constexpr auto output = ""sv;
-			auto result = CppUtils::Language::LowLevelLabels::compile(source, output);
+			auto [result, output] = CppUtils::Language::LowLevelLabels::compile(source);
 			suite.expectEqual(result, 0uz);
-			suite.expectEqual(output, "42"sv);
-		});*/
+			suite.expectEqual(output, source);
+		});
 		
 	}};
 }
