@@ -8,9 +8,9 @@ namespace CppUtils::UnitTest::String
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 
-		suite.addTest("concatenateStringsWithDelimiter", [&] {
+		suite.addTest("concatenateStringsWithSeparator", [&] {
 			auto strings = std::vector{"A"sv, "B"sv, "C"sv};
-			auto string = CppUtils::String::concatenateStringsWithDelimiter(strings, ", ");
+			auto string = CppUtils::String::concatenateStringsWithSeparator(strings, ", ");
 
 			Logger::print("{}\n", string);
 			suite.expectEqual(string, "A, B, C");

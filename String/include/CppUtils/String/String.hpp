@@ -1,8 +1,9 @@
 #pragma once
 
 #include <cctype>
-#include <vector>
+#include <ranges>
 #include <string>
+#include <vector>
 #include <numeric>
 #include <string_view>
 #include <unordered_map>
@@ -31,20 +32,10 @@ namespace CppUtils::String
 		return std::basic_string<CharT>{c};
 	}
 
-	[[nodiscard]] inline auto concatenateStringsWithDelimiter(const std::vector<std::string>& strings, std::string_view delimiter) -> std::string
+	template<Concept::Text StringT>
+	[[nodiscard]] inline auto concatenateStringsWithSeparator(std::span<StringT> strings, std::basic_string_view<typename StringT::value_type> separator) -> std::string
 	{
-		return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{},
-			[delimiter](const std::string& lhs, const std::string& rhs) {
-				return lhs.empty() ? rhs : (lhs + delimiter.data() + rhs);
-			});
-	}
-	
-	[[nodiscard]] inline auto concatenateStringsWithDelimiter(const std::vector<std::string_view>& strings, std::string_view delimiter) -> std::string
-	{
-		return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{},
-			[delimiter](std::string_view lhs, std::string_view rhs) {
-				return lhs.empty() ? std::string{rhs} : (std::string{lhs} + std::string{delimiter} + std::string{rhs});
-			});
+		return std::ranges::to<std::basic_string<typename StringT::value_type>>(strings | std::views::join_with(separator));
 	}
 
 	[[nodiscard]] inline auto leftTrimString(std::string_view stringView) -> std::string_view
