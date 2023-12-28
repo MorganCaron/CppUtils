@@ -4,17 +4,30 @@
 
 namespace CppUtils::Language
 {
+	template<class CharT>
+	struct CompilationResult
+	{
+		std::size_t result;
+		std::basic_string<CharT> output;
+	};
+
 	namespace LowLevelLabels
 	{
-		constexpr auto compile(const auto source, auto& output) -> std::size_t
+		template<class CharT>
+		constexpr auto compile(std::basic_string_view<CharT> source) -> CompilationResult<CharT>
 		{
 			using namespace std::literals;
 			constexpr auto lowLevelLabelsCompiler = u8R"(
 				0, 1;, 2;, 
 			)"sv;
-			return VirtualMachine::execute<std::size_t, bool, const decltype(source)*, decltype(output)*>(
-				lowLevelLabelsCompiler, &source, &output,
+
+			auto compilationResult = CompilationResult<CharT>{};
+			compilationResult.result = VirtualMachine::execute<std::size_t, bool, decltype(source)*, decltype(compilationResult.output)*>(
+				lowLevelLabelsCompiler,
+				&source,
+				&compilationResult.output,
 				&decltype(source)::at);
+			return compilationResult;
 		}
 	}
 

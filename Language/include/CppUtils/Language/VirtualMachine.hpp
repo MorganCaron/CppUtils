@@ -84,7 +84,7 @@ namespace CppUtils::Language::VirtualMachine
 		}
 
 		template<Type::Concept::TriviallyCopyable... Args>
-		constexpr auto paddingAfter = (0z + ... + sizeof(Args));
+		constexpr auto paddingAfter = (0uz + ... + sizeof(Args));
 
 		template<std::size_t N, Type::Concept::TriviallyCopyable T, Type::Concept::TriviallyCopyable... Args>
 		[[nodiscard]] constexpr auto getPaddingAfterT() noexcept -> std::size_t
