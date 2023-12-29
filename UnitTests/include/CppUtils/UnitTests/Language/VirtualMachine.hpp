@@ -283,14 +283,6 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			suite.expectEqual(result, 0uz);
 		});
 
-		/*
-			_3<_L <_D <_3SP <_4!	_<E
-			_3<_R <_167D <_21!	_4<_L <_1SDA _<87J
-			_3<_R <_42D <_51!	_4<_60A_95A_49A_83A_66A_95A_82A_60A_95A_83A_66A
-			_3<_R <_4SA
-			_3<_1J _<1B
-		*/
-
 		suite.addTest("test loops", [&] {
 			constexpr auto source = u8R"(
 				1;, 1+ P,

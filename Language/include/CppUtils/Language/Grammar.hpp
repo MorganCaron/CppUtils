@@ -14,11 +14,19 @@ namespace CppUtils::Language
 	namespace LowLevelLabels
 	{
 		template<class CharT>
-		constexpr auto compile(std::basic_string_view<CharT> source) -> CompilationResult<CharT>
+		inline constexpr auto compile(std::basic_string_view<CharT> source) -> CompilationResult<CharT>
 		{
 			using namespace std::literals;
 			constexpr auto lowLevelLabelsCompiler = u8R"(
-				0, 1;, 2;, 
+				0, 1;, 3;I, source length
+				0, zero
+				P, position for loop
+				0, 2, 0C, counter
+				0, 4, 0C source length
+				I=, 4I? (0X quit if parsing is finished
+				I
+				(0X abort
+				IJ goto position for loop
 			)"sv;
 
 			auto compilationResult = CompilationResult<CharT>{};
@@ -26,22 +34,20 @@ namespace CppUtils::Language
 				lowLevelLabelsCompiler,
 				&source,
 				&compilationResult.output,
+				&decltype(source)::size,
 				&decltype(source)::at);
 			return compilationResult;
 		}
 	}
 
-	/*
-	inline constexpr auto lowLevelLabelsCompiler = u8R"(
+	/*inline constexpr auto lowLevelLabelsCompiler = u8R"(
 		_3<_L <_D <_3SP <_4!	_<E
 		_3<_R <_167D <_21!	_4<_L <_1SDA _<87J
 		_3<_R <_42D <_51!	_4<_60A_95A_49A_83A_66A_95A_82A_60A_95A_83A_66A
 		_3<_R <_4SA
 		_3<_1J _<1B
 	)"sv;
-	*/
 
-	/*
 	inline constexpr auto highLevelLabelsCompiler = u8R"(
 		main
 			goto _1* define labels §
@@ -63,11 +69,8 @@ namespace CppUtils::Language
 			§ end
 			_*
 	)"sv;
-	*/
 
-	/*
-	constexpr auto CLanguage = std::array{
+	inline constexpr auto CLanguage = std::array{
 
-	};
-	*/
+	};*/
 }

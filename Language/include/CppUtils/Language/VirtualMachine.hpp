@@ -193,10 +193,8 @@ namespace CppUtils::Language::VirtualMachine
 		};
 		static constexpr auto printType = []<class ValueType>(Stack& stack, std::size_t position) static -> void {
 			auto type = stack.types[std::size(stack.types) - 1 - position];
-			Logger::print<"debug">("Position: {} Type: {} Value:", position, type);
-			[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Magenta};
 			auto value = get<ValueType>(stack, getTypeOffset(stack, position));
-			Logger::print("{}\n", String::formatValue(value));
+			Logger::print<"debug">("Position: {} Type: {} Value: {}", position, type, String::formatValue(value));
 		};
 		static constexpr auto printTypes = std::array<void(*)(Stack&, std::size_t), 1 + sizeof...(SupportedTypes)>{
 			printType.template operator()<ReturnType>,
