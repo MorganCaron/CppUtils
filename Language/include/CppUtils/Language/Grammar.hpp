@@ -18,24 +18,37 @@ namespace CppUtils::Language
 		{
 			using namespace std::literals;
 			constexpr auto lowLevelLabelsCompiler = u8R"(
-				0, 1;, 3;), source length
-				0, zero
-				P, position for loop
-				0, 2, 0C, counter
-				0, 4, 0C source length
-				I=, 4I? (0X quit if parsing is finished
-				I
-				(0X abort
-				IJ goto position for loop
+				0, 1;, 3;) source length
+				(0 counter
+				P position for loop
+				(0, 2, 0C copy counter
+				(0, 4, 0C copy source length
+				=, 4? (0X quit if parsing is finished
+				(2; output
+				(2: char
+				(1; source
+				(0, 5, 0C copy counter
+				(4;) get char at
+				(5;) push back char in output
+				(0, 2, 0C copy counter
+				(1+ plus one
+				(0, 2C) copy counter
+				J goto position for loop
 			)"sv;
 
 			auto compilationResult = CompilationResult<CharT>{};
-			compilationResult.result = VirtualMachine::execute<std::size_t, bool, const decltype(source)*, decltype(compilationResult.output)*>(
-				lowLevelLabelsCompiler,
-				&source,
-				&compilationResult.output,
-				&decltype(source)::size,
-				&decltype(source)::at);
+			compilationResult.result = VirtualMachine::execute<
+				std::size_t,
+				bool,
+				CharT,
+				const decltype(source)*,
+				std::basic_string<CharT>*>(
+					lowLevelLabelsCompiler,
+					&source,
+					&compilationResult.output,
+					&decltype(source)::size,
+					&decltype(source)::at,
+					&std::basic_string<CharT>::push_back);
 			return compilationResult;
 		}
 	}

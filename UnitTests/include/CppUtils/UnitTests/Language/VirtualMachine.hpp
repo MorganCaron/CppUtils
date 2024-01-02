@@ -91,12 +91,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("equal", [&] {
 			{
-				constexpr auto source = u8"(2:40, 2:2+, 2:42="sv;
+				constexpr auto source = u8"0, 2:40, 2:2+, 2:42="sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(source);
 				suite.expect(result);
 			}
 			{
-				constexpr auto source = u8"(2:0, 2:42="sv;
+				constexpr auto source = u8"0, 2:0, 2:42="sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(source);
 				suite.expect(!result);
 			}
@@ -104,12 +104,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("inferior", [&] {
 			{
-				constexpr auto source = u8"(2:21, 2:42<"sv;
+				constexpr auto source = u8"0, 2:21, 2:42<"sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(source);
 				suite.expect(result);
 			}
 			{
-				constexpr auto source = u8"(2:42, 2:21<"sv;
+				constexpr auto source = u8"0, 2:42, 2:21<"sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(source);
 				suite.expect(!result);
 			}
@@ -117,12 +117,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("superior", [&] {
 			{
-				constexpr auto source = u8"(2:21, 2:42>"sv;
+				constexpr auto source = u8"0, 2:21, 2:42>"sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(source);
 				suite.expect(!result);
 			}
 			{
-				constexpr auto source = u8"(2:42, 2:21>"sv;
+				constexpr auto source = u8"0, 2:42, 2:21>"sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(source);
 				suite.expect(result);
 			}
@@ -285,12 +285,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("test loops", [&] {
 			constexpr auto source = u8R"(
-				1;, 1+ P,
-				0, 2, 0C,
-				1-,
-				0, 2C,
-				0=, 4? (0X,
-				2;, 3;
+				1;, 1+ P
+				(0, 2, 0C
+				(1-
+				(0, 2C
+				(0=, 4? (0X
+				(2;, 3;
 				J
 			)"sv;
 

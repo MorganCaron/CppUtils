@@ -18,6 +18,8 @@
 
 // Ribosome
 
+// Todo: Ajouter des offsets d'adresses
+
 namespace CppUtils::Language::VirtualMachine
 {
 	struct Stack final
