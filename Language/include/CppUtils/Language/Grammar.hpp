@@ -14,11 +14,11 @@ namespace CppUtils::Language
 	namespace LowLevelLabels
 	{
 		template<class CharT>
-		inline constexpr auto compile(std::basic_string_view<CharT> source) -> CompilationResult<CharT>
+		inline constexpr auto compile(const std::basic_string_view<CharT> source) -> CompilationResult<CharT>
 		{
 			using namespace std::literals;
 			constexpr auto lowLevelLabelsCompiler = u8R"(
-				0, 1;, 3;I, source length
+				0, 1;, 3;), source length
 				0, zero
 				P, position for loop
 				0, 2, 0C, counter
@@ -30,7 +30,7 @@ namespace CppUtils::Language
 			)"sv;
 
 			auto compilationResult = CompilationResult<CharT>{};
-			compilationResult.result = VirtualMachine::execute<std::size_t, bool, decltype(source)*, decltype(compilationResult.output)*>(
+			compilationResult.result = VirtualMachine::execute<std::size_t, bool, const decltype(source)*, decltype(compilationResult.output)*>(
 				lowLevelLabelsCompiler,
 				&source,
 				&compilationResult.output,

@@ -202,7 +202,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 		});
 
 		suite.addTest("external member function", [&] {
-			constexpr auto source = u8"0, 1;, 2;"sv;
+			constexpr auto source = u8"0, 1;, 2;)"sv;
 			constexpr auto input = u8"Hello World!"sv;
 			auto result = VM::execute<std::size_t, const std::u8string_view*>(source, &input, &std::u8string_view::size);
 			suite.expectEqual(result, std::size(input));
@@ -255,14 +255,14 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 		});
 
 		suite.addTest("return string.at", [&] {
-			constexpr auto source = u8"0, 1;, 6, 2;"sv;
+			constexpr auto source = u8"0, 1;, 6, 2;)"sv;
 			constexpr auto input = u8"Hello World!"sv;
 			auto result = VM::execute<char8_t, std::size_t, const std::u8string_view*>(source, &input, &std::u8string_view::at);
 			suite.expectEqual(result, 'W');
 		});
 
 		suite.addTest("compare string.at", [&] {
-			constexpr auto source = u8R"(0, 2:0, 1;, 1:6, 2;, 2:\W =)"sv;
+			constexpr auto source = u8R"(0, 2:0, 1;, 1:6, 2;), 2:\W =)"sv;
 			constexpr auto input = u8"Hello World!"sv;
 			auto result = VM::execute<bool, std::size_t, char8_t, const std::u8string_view*>(source, &input, &std::u8string_view::at);
 			suite.expect(result);
@@ -317,7 +317,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 		});
 
 		suite.addTest("wip 2", [&] {
-			constexpr auto source = u8"0, 0, 1;, 6, 2;, 3;"sv;
+			constexpr auto source = u8"0, 0, 1;, 6, 2;), 3;"sv;
 			constexpr auto input = u8"Hello World!"sv;
 			constexpr auto compare = [](char8_t c) -> std::intptr_t {
 				std::wcout << static_cast<wchar_t>(c) << std::endl;

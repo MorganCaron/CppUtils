@@ -131,7 +131,7 @@ namespace CppUtils::Language::VirtualMachine
 			if constexpr (std::is_void_v<ReturnType>)
 				call(stack, function, objectPointer, std::index_sequence_for<Args...>{});
 			else
-				set(stack, call(stack, function, objectPointer, std::index_sequence_for<Args...>{}), (0 + ... + sizeof(std::remove_reference_t<Args>)));
+				set(stack, call(stack, function, objectPointer, std::index_sequence_for<Args...>{}), sizeof(objectPointer) + (0 + ... + sizeof(std::remove_reference_t<Args>)));
 			(..., drop<std::remove_reference_t<Args>>(stack));
 		}
 
@@ -149,7 +149,7 @@ namespace CppUtils::Language::VirtualMachine
 			if constexpr (std::is_void_v<ReturnType>)
 				call(stack, function, objectPointer, std::index_sequence_for<Args...>{});
 			else
-				set(stack, call(stack, function, objectPointer, std::index_sequence_for<Args...>{}), (0 + ... + sizeof(std::remove_reference_t<Args>)));
+				set(stack, call(stack, function, objectPointer, std::index_sequence_for<Args...>{}), sizeof(objectPointer) + (0 + ... + sizeof(std::remove_reference_t<Args>)));
 			(..., drop<std::remove_reference_t<Args>>(stack));
 		}
 
@@ -194,7 +194,7 @@ namespace CppUtils::Language::VirtualMachine
 		static constexpr auto printType = []<class ValueType>(Stack& stack, std::size_t position) static -> void {
 			auto type = stack.types[std::size(stack.types) - 1 - position];
 			auto value = get<ValueType>(stack, getTypeOffset(stack, position));
-			Logger::print<"debug">("Position: {} Type: {} Value: {}", position, type, String::formatValue(value));
+			Logger::print<"debug">("Position: {}; Type: {}; Size: {} bytes; Value: {}", position, type, sizeof(ValueType), String::formatValue(value));
 		};
 		static constexpr auto printTypes = std::array<void(*)(Stack&, std::size_t), 1 + sizeof...(SupportedTypes)>{
 			printType.template operator()<ReturnType>,
