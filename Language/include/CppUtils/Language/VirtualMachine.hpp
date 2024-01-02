@@ -18,9 +18,6 @@
 
 // Ribosome
 
-// Todo: Ajouter des offsets d'adresses
-// Todo: Ajouter des registres ?
-
 namespace CppUtils::Language::VirtualMachine
 {
 	struct Stack final
@@ -157,11 +154,18 @@ namespace CppUtils::Language::VirtualMachine
 		}
 
 		template<class T>
-		constexpr auto conditionalJump(Stack& stack, std::size_t& instructionPointer, std::size_t jumpDistance) -> void
+		constexpr auto conditionalJump(Stack& stack, std::size_t& instructionPointer, std::size_t mode, std::size_t jumpPosition) -> void
 		{
-			if constexpr (std::is_constructible_v<bool, T>)
-				if (!pop<T>(stack))
-					instructionPointer += jumpDistance;
+			if constexpr (!std::is_constructible_v<bool, T>)
+				throw std::invalid_argument{"The type used in conditional jump is not convertible to boolean"};
+			else if (!pop<T>(stack))
+				switch (mode)
+				{
+					case 0: instructionPointer += jumpPosition; break;
+					case 1: [[fallthrough]];
+					case 2: instructionPointer = jumpPosition; break;
+					default: throw std::invalid_argument{"Invalid conditional jump mode"};
+				}
 		}
 	}
 	
@@ -181,7 +185,7 @@ namespace CppUtils::Language::VirtualMachine
 				offset += typesSize[stack.types[std::size(stack.types) - position--]];
 			return offset;
 		};
-		static constexpr auto conditionalJumpTypes = std::array<void(*)(Stack&, std::size_t&, std::size_t), 1 + sizeof...(SupportedTypes)>{
+		static constexpr auto conditionalJumpTypes = std::array<void(*)(Stack&, std::size_t&, std::size_t, std::size_t), 1 + sizeof...(SupportedTypes)>{
 			&conditionalJump<ReturnType>, &conditionalJump<SupportedTypes>...
 		};
 		static constexpr auto copyTypesBuilder = []<class SourceType>() consteval -> auto {
@@ -248,10 +252,10 @@ namespace CppUtils::Language::VirtualMachine
 				}
 				break;
 			case 'P':
-				if constexpr (Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
-					push<std::size_t, ReturnType, SupportedTypes...>(stack, instructionPointer);
-				else
+				if constexpr (!Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
 					throw std::invalid_argument{"Type std::size_t missing in template parameters"};
+				else
+					push<std::size_t, ReturnType, SupportedTypes...>(stack, instructionPointer);
 				break;
 			case 'W':
 			{
@@ -286,9 +290,14 @@ namespace CppUtils::Language::VirtualMachine
 			}
 			case '?':
 			{
-				auto jump = pop<std::size_t>(stack);
-				// Todo: Ajouter un bit d'adressage
-				conditionalJumpTypes[stack.types.back()](stack, instructionPointer, jump);
+				if constexpr (!Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
+					throw std::invalid_argument{"Type std::size_t missing in template parameters"};
+				else
+				{
+					auto mode = pop<std::size_t>(stack);
+					auto jump = mode == 2 ? get<std::size_t>(stack, getTypeOffset(stack, pop<std::size_t>(stack))) : pop<std::size_t>(stack);
+					conditionalJumpTypes[stack.types.back()](stack, instructionPointer, mode, jump);
+				}
 				break;
 			}
 			case '!':
