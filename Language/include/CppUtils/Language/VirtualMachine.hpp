@@ -19,6 +19,7 @@
 // Ribosome
 
 // Todo: Ajouter des offsets d'adresses
+// Todo: Ajouter des registres ?
 
 namespace CppUtils::Language::VirtualMachine
 {
@@ -214,8 +215,9 @@ namespace CppUtils::Language::VirtualMachine
 				break;
 			case ')': drop<ValueType>(stack); break;
 			case '_': set(stack, ValueType{}); break;
-			case 'C':
+			case 'C': // Todo: renommer en M ?
 			{
+				// Todo: Ajouter deux bits d'adressage
 				auto destinationPosition = pop<std::size_t>(stack);
 				auto sourcePosition = pop<std::size_t>(stack);
 				auto sourceType = stack.types[std::size(stack.types) - 1 - sourcePosition];
@@ -233,7 +235,18 @@ namespace CppUtils::Language::VirtualMachine
 				for (auto i = 0uz; i < std::size(stack.types); ++i)
 					printTypes[stack.types[std::size(stack.types) - 1 - i]](stack, i);
 				break;
-			case 'J': instructionPointer = get<std::size_t>(stack); break;
+			case 'J':
+				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+					throw std::invalid_argument{"Type bool missing in template parameters"};
+				else if constexpr (!Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
+					throw std::invalid_argument{"Type std::size_t missing in template parameters"};
+				else
+				{
+					auto destination = pop<std::size_t>(stack);
+					auto isAddress = pop<bool>(stack);
+					instructionPointer = isAddress ? get<std::size_t>(stack, getTypeOffset(stack, destination)) : destination;
+				}
+				break;
 			case 'P':
 				if constexpr (Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
 					push<std::size_t, ReturnType, SupportedTypes...>(stack, instructionPointer);
@@ -274,21 +287,24 @@ namespace CppUtils::Language::VirtualMachine
 			case '?':
 			{
 				auto jump = pop<std::size_t>(stack);
+				// Todo: Ajouter un bit d'adressage
 				conditionalJumpTypes[stack.types.back()](stack, instructionPointer, jump);
 				break;
 			}
 			case '!':
-				if constexpr (Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+					throw std::invalid_argument{"Type bool missing in template parameters"};
+				else
 				{
+					// Todo: Ajouter un bit d'adressage
 					if constexpr (std::is_constructible_v<bool, ValueType>)
 						push<bool, ReturnType, SupportedTypes...>(stack, !static_cast<bool>(pop<ValueType>(stack)));
 					else
 						drop<ValueType>(stack);
 				}
-				else
-					throw std::invalid_argument{"Type bool missing in template parameters"};
 				break;
 			case '=':
+				// Todo: Ajouter deux bits d'adressage
 				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
 					throw std::invalid_argument{"Type bool missing in template parameters"};
 				else if constexpr (std::equality_comparable<ValueType>)
@@ -298,6 +314,7 @@ namespace CppUtils::Language::VirtualMachine
 				}
 				break;
 			case '<':
+				// Todo: Ajouter deux bits d'adressage
 				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
 					throw std::invalid_argument{"Type bool missing in template parameters"};
 				else if constexpr (std::totally_ordered<ValueType>)
@@ -307,6 +324,7 @@ namespace CppUtils::Language::VirtualMachine
 				}
 				break;
 			case '>':
+				// Todo: Ajouter deux bits d'adressage
 				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
 					throw std::invalid_argument{"Type bool missing in template parameters"};
 				else if constexpr (std::totally_ordered<ValueType>)
@@ -315,6 +333,7 @@ namespace CppUtils::Language::VirtualMachine
 					push<bool, ReturnType, SupportedTypes...>(stack, static_cast<bool>(pop<ValueType>(stack) > rhs));
 				}
 				break;
+			// Todo: Ajouter deux bits d'adressage:
 			case '&': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) & rhs)); } break;
 			case '|': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) | rhs)); } break;
 			case '^': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = pop<ValueType>(stack); push<ValueType, ReturnType, SupportedTypes...>(stack, static_cast<ValueType>(pop<ValueType>(stack) ^ rhs)); } break;

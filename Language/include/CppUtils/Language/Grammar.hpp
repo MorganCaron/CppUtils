@@ -33,7 +33,7 @@ namespace CppUtils::Language
 				(0, 2, 0C copy counter
 				(1+ plus one
 				(0, 2C) copy counter
-				J goto position for loop
+				(1:1, 0J goto position for loop
 			)"sv;
 
 			auto compilationResult = CompilationResult<CharT>{};

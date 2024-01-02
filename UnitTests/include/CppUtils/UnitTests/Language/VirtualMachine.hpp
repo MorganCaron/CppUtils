@@ -236,22 +236,28 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			suite.expectEqual(result, 3uz);
 		});
 
-		suite.addTest("jump", [&] {
-			constexpr auto source = u8"0, 5JX) 42"sv;
-			constexpr auto result = VM::execute<int, std::size_t>(source);
-			suite.expectEqual(result, 42);
+		suite.addTest("direct jump", [&] {
+			constexpr auto source = u8"0, 1:0, 11JX 42"sv;
+			constexpr auto result = VM::execute<std::size_t, bool>(source);
+			suite.expectEqual(result, 42uz);
+		});
+
+		suite.addTest("indirect jump", [&] {
+			constexpr auto source = u8"11, 1:1, 0JX_42"sv;
+			auto result = VM::execute<std::size_t, bool>(source);
+			suite.expectEqual(result, 42uz);
 		});
 
 		suite.addTest("copy", [&] {
 			constexpr auto source = u8"21, 0:0, 1, 0C+"sv;
-			constexpr auto result = VM::execute<int, std::size_t>(source);
-			suite.expectEqual(result, 42);
+			constexpr auto result = VM::execute<std::size_t>(source);
+			suite.expectEqual(result, 42uz);
 		});
 
 		suite.addTest("cast", [&] {
 			constexpr auto source = u8"0, 1:42, 0, 1C)"sv;
 			constexpr auto result = VM::execute<bool, std::size_t>(source);
-			suite.expectEqual(result, 1);
+			suite.expect(result);
 		});
 
 		suite.addTest("return string.at", [&] {
@@ -285,13 +291,15 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("test loops", [&] {
 			constexpr auto source = u8R"(
-				1;, 1+ P
-				(0, 2, 0C
-				(1-
-				(0, 2C
-				(0=, 4? (0X
-				(2;, 3;
-				J
+				1;, 1+ get nb plus one
+				P position for loop
+				(0, 2, 0C copy nb
+				(1- minus one
+				(0, 2C copy nb
+				(0=, 4? (0X quit if nb equal zero
+				(2; get input
+				(3; execute print
+				(1:1, 0J goto position for loop
 			)"sv;
 
 			constexpr auto nb = std::size_t{3};
