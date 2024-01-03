@@ -152,6 +152,11 @@ namespace CppUtils::Language::VirtualMachine
 				set(stack, call(stack, function, objectPointer, std::index_sequence_for<Args...>{}), sizeof(objectPointer) + (0 + ... + sizeof(std::remove_reference_t<Args>)));
 			(..., drop<std::remove_reference_t<Args>>(stack));
 		}
+
+		[[nodiscard]] inline constexpr auto isModeAbsolute(std::size_t mode) noexcept -> bool { return mode & 0b01; }
+		[[nodiscard]] inline constexpr auto isModeRelative(std::size_t mode) noexcept -> bool { return !isModeAbsolute(mode); }
+		[[nodiscard]] inline constexpr auto isModeIndirect(std::size_t mode) noexcept -> bool { return mode & 0b10; }
+		[[nodiscard]] inline constexpr auto isModeDirect(std::size_t mode) noexcept -> bool { return !isModeIndirect(mode); }
 	}
 	
 	template<Type::Concept::TriviallyCopyable ReturnType, Type::Concept::TriviallyCopyable... SupportedTypes>
@@ -165,26 +170,43 @@ namespace CppUtils::Language::VirtualMachine
 			+[](Stack& stack) -> void { push<SupportedTypes, ReturnType, SupportedTypes...>(stack, SupportedTypes{}); }...
 		};
 		static constexpr auto getTypeOffset = [](Stack& stack, std::size_t position) -> std::size_t {
+			if (position >= std::size(stack.types))
+				throw std::logic_error{"Segmentation fault"};
 			auto offset = 0uz;
 			while (position > 0)
 				offset += typesSize[stack.types[std::size(stack.types) - position--]];
 			return offset;
 		};
-		static constexpr auto getAbsoluteJump = [](Stack& stack, std::size_t instructionPointer, std::size_t mode, std::size_t destination) -> std::size_t {
-			if (mode & 0b10)
-				destination = get<std::size_t>(stack, getTypeOffset(stack, destination));
-			return (mode & 0b01) ? destination : (instructionPointer + destination);
+		static constexpr auto getPositionInSource = [](Stack& stack, std::size_t instructionPointer, std::size_t mode, std::size_t position) -> std::size_t {
+			if (isModeIndirect(mode))
+				position = get<std::size_t>(stack, getTypeOffset(stack, position));
+			return isModeRelative(mode) ? (instructionPointer + position) : position;
+		};
+		static constexpr auto getPositionOnStack = [](Stack& stack, std::size_t mode, std::size_t position) -> std::size_t {
+			if (isModeDirect(mode))
+				return (std::size(stack.types) - 1 - position);
+			else
+				return isModeRelative(mode) ? position : (std::size(stack.types) - 1 - position);
 		};
 		static constexpr auto conditionalJump = []<class ValueType>(Stack& stack, std::size_t& instructionPointer) static -> void {
 			if constexpr (!std::is_constructible_v<bool, ValueType>)
 				throw std::invalid_argument{"The type used in conditional jump is not convertible to boolean"};
 			else
 			{
-				auto mode = pop<std::size_t>(stack);
-				auto destination = pop<std::size_t>(stack);
-				auto condition = pop<ValueType>(stack);
-				if (!condition)
-					instructionPointer = getAbsoluteJump(stack, instructionPointer, mode, destination);
+				auto jumpMode = pop<std::size_t>(stack);
+				auto jumpDestination = pop<std::size_t>(stack);
+				auto conditionValue = [](Stack& stack) -> ValueType {
+					if (auto conditionMode = pop<std::size_t>(stack); isModeDirect(conditionMode))
+						return pop<ValueType>(stack);
+					else
+					{
+						auto conditionPosition = pop<std::size_t>(stack);
+						conditionPosition = getPositionOnStack(stack, conditionMode, conditionPosition);
+						return get<ValueType>(stack, getTypeOffset(stack, conditionPosition));
+					}
+				}(stack);
+				if (!conditionValue)
+					instructionPointer = getPositionInSource(stack, instructionPointer, jumpMode, jumpDestination);
 			}
 		};
 		static constexpr auto conditionalJumpTypes = std::array<void(*)(Stack&, std::size_t&), 1 + sizeof...(SupportedTypes)>{
@@ -249,7 +271,7 @@ namespace CppUtils::Language::VirtualMachine
 				{
 					auto mode = pop<std::size_t>(stack);
 					auto destination = pop<std::size_t>(stack);
-					instructionPointer = getAbsoluteJump(stack, instructionPointer, mode, destination);
+					instructionPointer = getPositionInSource(stack, instructionPointer, mode, destination);
 				}
 				break;
 			case 'P':
@@ -293,10 +315,10 @@ namespace CppUtils::Language::VirtualMachine
 			{
 				if constexpr (!Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>)
 					throw std::invalid_argument{"Type std::size_t missing in template parameters"};
-				else if (std::size(stack.types) < 4)
-					throw std::invalid_argument{"Stack underflow"};
+				else if (std::size(stack.types) <= 4)
+					throw std::invalid_argument{"Stack Underflow: Not enough parameters passed to conditional jump"};
 				else
-					conditionalJumpTypes[stack.types[std::size(stack.types) - 3]](stack, instructionPointer);
+					conditionalJumpTypes[stack.types[std::size(stack.types) - 4]](stack, instructionPointer);
 				break;
 			}
 			case '!':

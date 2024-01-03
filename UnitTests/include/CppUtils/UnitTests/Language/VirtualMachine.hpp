@@ -232,53 +232,79 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			suite.expectEqual(result, 42uz);
 		});
 
-		suite.addTest("conditional jump (direct, relative)", [&] {
+		suite.addTest("conditional (direct) jump (direct, relative)", [&] {
 			{
-				constexpr auto source = u8"0, 1, 4, 0? 42X 21"sv;
+				constexpr auto source = u8"0, 1, 0, 4, 0? 42X 21"sv;
 				constexpr auto result = VM::execute<int, std::size_t>(source);
 				suite.expectEqual(result, 42);
 			}
 			{
-				constexpr auto source = u8"0, 0, 4, 0? 21X 42"sv;
-				constexpr auto result = VM::execute<int, std::size_t>(source);
-				suite.expectEqual(result, 42);
-			}
-		});
-
-		suite.addTest("conditional jump (direct, absolute)", [&] {
-			{
-				constexpr auto source = u8"0, 1, 15, 1? 42X 21"sv;
-				constexpr auto result = VM::execute<int, std::size_t>(source);
-				suite.expectEqual(result, 42);
-			}
-			{
-				constexpr auto source = u8"0, 0, 15, 1? 21X 42"sv;
+				constexpr auto source = u8"0, 0, 0, 4, 0? 21X 42"sv;
 				constexpr auto result = VM::execute<int, std::size_t>(source);
 				suite.expectEqual(result, 42);
 			}
 		});
 
-		suite.addTest("conditional jump (indirect, relative)", [&] {
+		suite.addTest("conditional (direct) jump (direct, absolute)", [&] {
 			{
-				constexpr auto source = u8"0, 5, 1, 0, 2? )42X )21"sv;
+				constexpr auto source = u8"0, 1, 0, 18, 1? 42X 21"sv;
 				constexpr auto result = VM::execute<int, std::size_t>(source);
 				suite.expectEqual(result, 42);
 			}
 			{
-				constexpr auto source = u8"0, 5, 0, 0, 2? )21X )42"sv;
+				constexpr auto source = u8"0, 0, 0, 18, 1? 21X 42"sv;
 				constexpr auto result = VM::execute<int, std::size_t>(source);
 				suite.expectEqual(result, 42);
 			}
 		});
 
-		suite.addTest("conditional jump (indirect, absolute)", [&] {
+		suite.addTest("conditional (direct) jump (indirect, relative)", [&] {
 			{
-				constexpr auto source = u8"0, 20, 1, 0, 3? )42X )21"sv;
+				constexpr auto source = u8"0, 5, 1, 0, 0, 2? )42X )21"sv;
 				constexpr auto result = VM::execute<int, std::size_t>(source);
 				suite.expectEqual(result, 42);
 			}
 			{
-				constexpr auto source = u8"0, 20, 0, 0, 3? )21X )42"sv;
+				constexpr auto source = u8"0, 5, 0, 0, 0, 2? )21X )42"sv;
+				constexpr auto result = VM::execute<int, std::size_t>(source);
+				suite.expectEqual(result, 42);
+			}
+		});
+
+		suite.addTest("conditional (direct) jump (indirect, absolute)", [&] {
+			{
+				constexpr auto source = u8"0, 23, 1, 0, 0, 3? )42X )21"sv;
+				constexpr auto result = VM::execute<int, std::size_t>(source);
+				suite.expectEqual(result, 42);
+			}
+			{
+				constexpr auto source = u8"0, 23, 0, 0, 0, 3? )21X )42"sv;
+				constexpr auto result = VM::execute<int, std::size_t>(source);
+				suite.expectEqual(result, 42);
+			}
+		});
+
+		suite.addTest("conditional (indirect, relative) jump (direct, relative)", [&] {
+			{
+				constexpr auto source = u8"0, 1, 0, 2, 5, 0? )42X )21"sv;
+				constexpr auto result = VM::execute<int, std::size_t>(source);
+				suite.expectEqual(result, 42);
+			}
+			{
+				constexpr auto source = u8"0, 0, 0, 2, 5, 0? )21X )42"sv;
+				constexpr auto result = VM::execute<int, std::size_t>(source);
+				suite.expectEqual(result, 42);
+			}
+		});
+
+		suite.addTest("conditional (indirect, absolute) jump (direct, relative)", [&] {
+			{
+				constexpr auto source = u8"0, 1, 1, 3, 5, 0? )42X )21"sv;
+				constexpr auto result = VM::execute<int, std::size_t>(source);
+				suite.expectEqual(result, 42);
+			}
+			{
+				constexpr auto source = u8"0, 0, 1, 3, 5, 0? )21X )42"sv;
 				constexpr auto result = VM::execute<int, std::size_t>(source);
 				suite.expectEqual(result, 42);
 			}
@@ -347,7 +373,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 				(0, 2, 0C copy nb
 				(1- minus one
 				(0, 2C copy nb
-				(0=, 4, 0? (0X quit if nb equal zero
+				(0=, 0, 4, 0? (0X quit if nb equal zero
 				(2; get input
 				(3; execute print
 				(0, 3J goto position for loop

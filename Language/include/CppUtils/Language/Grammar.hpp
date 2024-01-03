@@ -23,7 +23,7 @@ namespace CppUtils::Language
 				P position for loop
 				(0, 2, 0C copy counter
 				(0, 4, 0C copy source length
-				=, 4, 0? (0X quit if parsing is finished
+				=, 0, 4, 0? (0X quit if parsing is finished
 				(2; output
 				(2: char
 				(1; source
