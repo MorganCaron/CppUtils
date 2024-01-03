@@ -23,7 +23,7 @@ namespace CppUtils::Language
 				P position for loop
 				(0, 2, 0C copy counter
 				(0, 4, 0C copy source length
-				=, 4? (0X quit if parsing is finished
+				=, 4, 0? (0X quit if parsing is finished
 				(2; output
 				(2: char
 				(1; source
@@ -33,7 +33,7 @@ namespace CppUtils::Language
 				(0, 2, 0C copy counter
 				(1+ plus one
 				(0, 2C) copy counter
-				(1:1, 0J goto position for loop
+				(0, 3J goto position for loop
 			)"sv;
 
 			auto compilationResult = CompilationResult<CharT>{};
