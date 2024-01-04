@@ -70,5 +70,14 @@ namespace CppUtils::UnitTest::Container::VariantVector
 			suite.expectEqual(std::size(variantVector), 0uz);
 		});
 
+		suite.addTest("copy", [&] {
+			auto variantVector = CppUtils::Container::VariantVector<int>{0, 42};
+			
+			variantVector.copy<int>(1, 0);
+			variantVector.drop<int>();
+
+			suite.expectEqual(variantVector.get<int>(0), 42);
+		});
+
 	}};
 }

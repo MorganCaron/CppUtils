@@ -32,7 +32,7 @@ namespace CppUtils::Container
 		{
 			return std::size(m_types);
 		}
-		
+
 		[[nodiscard]] constexpr auto getType(std::size_t position) const -> std::size_t
 		{
 			if (position >= std::size(m_types)) [[unlikely]]
@@ -99,6 +99,12 @@ namespace CppUtils::Container
 			auto value = get<T>(0);
 			drop<T>();
 			return value;
+		}
+
+		template<Type::Concept::TriviallyCopyable SourceType, Type::Concept::TriviallyCopyable DestinationType = SourceType>
+		constexpr auto copy(std::size_t sourcePosition, std::size_t destinationPosition) -> void
+		{
+			set(destinationPosition, static_cast<DestinationType>(get<SourceType>(sourcePosition)));
 		}
 
 	private:
