@@ -13,6 +13,7 @@
 #include <CppUtils/Container/Sequence.hpp>
 #include <CppUtils/Container/Size2d.hpp>
 #include <CppUtils/Container/Size3d.hpp>
+#include <CppUtils/Container/VariantVector.hpp>
 #include <CppUtils/Container/Vector.hpp>
 #include <CppUtils/Symbol/Symbol.hpp>
 #include <CppUtils/Error.hpp>
