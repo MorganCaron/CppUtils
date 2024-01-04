@@ -10,7 +10,7 @@
 namespace CppUtils::Container
 {
 	template<Type::Concept::TriviallyCopyable... SupportedTypes>
-	class VariantVector final
+	class Stack final
 	{
 	public:
 		using Types = std::tuple<SupportedTypes...>;
@@ -18,9 +18,9 @@ namespace CppUtils::Container
 
 		template<Type::Concept::TriviallyCopyable... Args>
 		requires (Type::Concept::Present<Args, SupportedTypes...> && ...)
-		constexpr explicit VariantVector(Args... values)
+		constexpr explicit Stack(Args... values)
 		{
-			(pushBack(values), ...);
+			(push(values), ...);
 		}
 
 		[[nodiscard]] constexpr auto empty() const noexcept -> bool
@@ -36,7 +36,7 @@ namespace CppUtils::Container
 		[[nodiscard]] constexpr auto getType(std::size_t position) const -> std::size_t
 		{
 			if (position >= std::size(m_types)) [[unlikely]]
-				throw std::out_of_range{"VariantVector::get(std::size_t position) : Out of range"};
+				throw std::out_of_range{"Stack::get(std::size_t position) : Out of range"};
 			return m_types[position];
 		}
 
@@ -69,7 +69,7 @@ namespace CppUtils::Container
 
 		template<Type::Concept::TriviallyCopyable T>
 		requires Type::Concept::Present<T, SupportedTypes...>
-		constexpr auto pushBack(T value) -> void
+		constexpr auto push(T value) -> void
 		{
 			m_types.push_back(Type::getPosition<T, SupportedTypes...>());
 			m_data.resize(std::size(m_data) + sizeof(T), std::byte{0});
@@ -81,7 +81,7 @@ namespace CppUtils::Container
 		constexpr auto drop() -> void
 		{
 			if (empty()) [[unlikely]]
-				throw std::underflow_error{"VariantVector::drop() : Container already empty"};
+				throw std::underflow_error{"Stack::drop() : Container already empty"};
 			if (Type::getPosition<T, SupportedTypes...>() != m_types.back()) [[unlikely]]
 				throw std::logic_error{"The type at the specified position does not match the stored type"};
 			m_data.resize(std::size(m_data) - sizeof(T));
@@ -93,7 +93,7 @@ namespace CppUtils::Container
 		[[nodiscard]] constexpr auto pop() -> decltype(auto)
 		{
 			if (empty()) [[unlikely]]
-				throw std::underflow_error{"VariantVector::drop() : Container already empty"};
+				throw std::underflow_error{"Stack::drop() : Container already empty"};
 			if (Type::getPosition<T, SupportedTypes...>() != m_types.back()) [[unlikely]]
 				throw std::logic_error{"The type at the specified position does not match the stored type"};
 			auto value = get<T>(0);
@@ -111,7 +111,7 @@ namespace CppUtils::Container
 		[[nodiscard]] constexpr auto getTypeOffset(std::size_t position) const -> std::size_t
 		{
 			if (position >= std::size(m_types))
-				throw std::out_of_range{"VariantVector: Out of range"};
+				throw std::out_of_range{"Stack: Out of range"};
 			auto offset = 0uz;
 			for (auto i = 0uz; i < position; ++i)
 				offset += typesSize[m_types[i]];

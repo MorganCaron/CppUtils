@@ -2,7 +2,7 @@
 
 #include <CppUtils/UnitTests/UnitTest.hpp>
 #include <CppUtils/UnitTests/Container/Sequence.hpp>
-#include <CppUtils/UnitTests/Container/VariantVector.hpp>
+#include <CppUtils/UnitTests/Container/Stack.hpp>
 #include <CppUtils/UnitTests/Container/Vector.hpp>
 #include <CppUtils/UnitTests/String/String.hpp>
 #include <CppUtils/UnitTests/Chrono/Chronometer.hpp>
