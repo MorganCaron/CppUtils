@@ -33,6 +33,11 @@ namespace CppUtils::Container
 			return std::size(m_types);
 		}
 
+		[[nodiscard]] constexpr auto getByteSize() const noexcept -> std::size_t
+		{
+			return std::size(m_data);
+		}
+
 		[[nodiscard]] constexpr auto getType(std::size_t position) const -> std::size_t
 		{
 			if (position >= std::size(m_types)) [[unlikely]]
