@@ -78,14 +78,14 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("not", [&] {
 			{
-				constexpr auto source = u8"0!"sv;
-				constexpr auto result = VM::execute<bool>(source);
-				suite.expectEqual(result, 1);
+				constexpr auto source = u8"0, 0:0!"sv;
+				constexpr auto result = VM::execute<bool, std::size_t>(source);
+				suite.expect(result);
 			}
 			{
-				constexpr auto source = u8"1!"sv;
-				constexpr auto result = VM::execute<bool>(source);
-				suite.expectEqual(result, 0);
+				constexpr auto source = u8"0, 0:1!"sv;
+				constexpr auto result = VM::execute<bool, std::size_t>(source);
+				suite.expect(!result);
 			}
 		});
 

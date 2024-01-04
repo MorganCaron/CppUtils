@@ -182,11 +182,18 @@ namespace CppUtils::Language::VirtualMachine
 				position = get<std::size_t>(stack, getTypeOffset(stack, position));
 			return isModeRelative(mode) ? (instructionPointer + position) : position;
 		};
-		static constexpr auto getPositionOnStack = [](Stack& stack, std::size_t mode, std::size_t position) -> std::size_t {
-			if (isModeDirect(mode))
-				return (std::size(stack.types) - 1 - position);
+		static constexpr auto applyModeToPosition = [](Stack& stack, std::size_t mode, std::size_t position) -> std::size_t {
+			return (isModeDirect(mode) || isModeRelative(mode)) ? position : (std::size(stack.types) - 1 - position);
+		};
+		static constexpr auto getValueOnStack = []<class ValueType>(Stack& stack) -> ValueType {
+			if (auto mode = pop<std::size_t>(stack); isModeDirect(mode))
+				return pop<ValueType>(stack);
 			else
-				return isModeRelative(mode) ? position : (std::size(stack.types) - 1 - position);
+			{
+				auto valuePosition = pop<std::size_t>(stack);
+				valuePosition = applyModeToPosition(stack, mode, valuePosition);
+				return get<ValueType>(stack, getTypeOffset(stack, valuePosition));
+			}
 		};
 		static constexpr auto conditionalJump = []<class ValueType>(Stack& stack, std::size_t& instructionPointer) static -> void {
 			if constexpr (!std::is_constructible_v<bool, ValueType>)
@@ -195,17 +202,7 @@ namespace CppUtils::Language::VirtualMachine
 			{
 				auto jumpMode = pop<std::size_t>(stack);
 				auto jumpDestination = pop<std::size_t>(stack);
-				auto conditionValue = [](Stack& stack) -> ValueType {
-					if (auto conditionMode = pop<std::size_t>(stack); isModeDirect(conditionMode))
-						return pop<ValueType>(stack);
-					else
-					{
-						auto conditionPosition = pop<std::size_t>(stack);
-						conditionPosition = getPositionOnStack(stack, conditionMode, conditionPosition);
-						return get<ValueType>(stack, getTypeOffset(stack, conditionPosition));
-					}
-				}(stack);
-				if (!conditionValue)
+				if (auto conditionValue = getValueOnStack.template operator()<ValueType>(stack); !conditionValue)
 					instructionPointer = getPositionInSource(stack, instructionPointer, jumpMode, jumpDestination);
 			}
 		};
@@ -322,16 +319,13 @@ namespace CppUtils::Language::VirtualMachine
 				break;
 			}
 			case '!':
+				// Todo: Ajouter un bit d'adressage
 				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
 					throw std::invalid_argument{"Type bool missing in template parameters"};
+				else if constexpr (!std::is_constructible_v<bool, ValueType>)
+					throw std::invalid_argument{"Type not convertible to boolean"};
 				else
-				{
-					// Todo: Ajouter un bit d'adressage
-					if constexpr (std::is_constructible_v<bool, ValueType>)
-						push<bool, ReturnType, SupportedTypes...>(stack, !static_cast<bool>(pop<ValueType>(stack)));
-					else
-						drop<ValueType>(stack);
-				}
+					push<bool, ReturnType, SupportedTypes...>(stack, !static_cast<bool>(pop<ValueType>(stack)));
 				break;
 			case '=':
 				// Todo: Ajouter deux bits d'adressage
