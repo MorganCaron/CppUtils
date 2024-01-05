@@ -11,25 +11,25 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("empty source", [&] {
 			constexpr auto source = u8""sv;
-			constexpr auto result = VM::execute<int>(source);
+			constexpr auto result = VM::execute<int, std::size_t>(source);
 			suite.expectEqual(result, 0);
 		});
 
 		suite.addTest("return value (int)", [&] {
 			constexpr auto source = u8"42"sv;
-			constexpr auto result = VM::execute<int>(source);
+			constexpr auto result = VM::execute<int, std::size_t>(source);
 			suite.expectEqual(result, 42);
 		});
 
 		suite.addTest("return value (char8_t)", [&] {
 			constexpr auto source = u8R"(\A)"sv;
-			constexpr auto result = VM::execute<char8_t>(source);
+			constexpr auto result = VM::execute<char8_t, std::size_t>(source);
 			suite.expectEqual(result, 'A');
 		});
 
 		suite.addTest("reset value", [&] {
 			constexpr auto source = u8"42_"sv;
-			constexpr auto result = VM::execute<int>(source);
+			constexpr auto result = VM::execute<int, std::size_t>(source);
 			suite.expectEqual(result, 0);
 		});
 
@@ -397,12 +397,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			)"sv;
 			constexpr auto input = u8R"(Hello World!)"sv;
 			auto output = ""s;
-			auto result = VM::execute<std::size_t, std::u8string_view, std::string*>(source, input, &output, std::size<decltype(input)>, &std::u8string_view::at);
+			auto result = VM::execute<std::size_t, std::u8string_view, char8_t, const std::u8string_view*, std::string*>(source, input, &output, std::size<decltype(input)>, &std::u8string_view::at);
 			suite.expectEqual(result, 0uz);
 		});
 
 		suite.addTest("wip 2", [&] {
-			constexpr auto source = u8"0, 0, 1;, 6, 2;), 3;"sv;
+			constexpr auto source = u8"0, 0:, 2:, 1;, 6, 2;), 3;"sv;
 			constexpr auto input = u8"Hello World!"sv;
 			constexpr auto compare = [](char8_t c) -> std::intptr_t {
 				std::wcout << static_cast<wchar_t>(c) << std::endl;
