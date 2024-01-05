@@ -123,6 +123,11 @@ namespace CppUtils::Container
 			set(destinationPosition, static_cast<DestinationType>(get<SourceType>(sourcePosition)));
 		}
 
+		constexpr auto visit(std::size_t position, auto&& visitor) -> void
+		{
+			visit(position, visitor, std::index_sequence_for<SupportedTypes...>{});
+		}
+
 	private:
 		[[nodiscard]] constexpr auto getTypeOffset(std::size_t position) const -> std::size_t
 		{
@@ -132,7 +137,16 @@ namespace CppUtils::Container
 			for (auto i = 0uz; i < position; ++i)
 				offset += typesSize[m_types[i]];
 			return offset;
-		};
+		}
+
+		template<std::size_t... I>
+		constexpr auto visit(std::size_t position, auto&& visitor, [[maybe_unused]] std::index_sequence<I...> indexSequence) -> void
+		{
+			(..., [this, position, visitor = std::forward<decltype(visitor)>(visitor)]() {
+				if (position == I) [[unlikely]]
+					visitor(get<Type::NthType<I, SupportedTypes...>>(position));
+			}());
+		}
 
 		std::vector<std::byte> m_data = {};
 		std::vector<std::size_t> m_types = {};

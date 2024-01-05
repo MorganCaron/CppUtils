@@ -391,26 +391,5 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			suite.expectEqual(result, 0uz);
 		});
 
-		suite.addTest("compile labels", [&] {
-			constexpr auto source = u8R"(
-				
-			)"sv;
-			constexpr auto input = u8R"(Hello World!)"sv;
-			auto output = ""s;
-			auto result = VM::execute<std::size_t, std::u8string_view, char8_t, const std::u8string_view*, std::string*>(source, input, &output, std::size<decltype(input)>, &std::u8string_view::at);
-			suite.expectEqual(result, 0uz);
-		});
-
-		suite.addTest("wip 2", [&] {
-			constexpr auto source = u8"0, 0:, 2:, 1;, 6, 2;), 3;"sv;
-			constexpr auto input = u8"Hello World!"sv;
-			constexpr auto compare = [](char8_t c) -> std::intptr_t {
-				std::wcout << static_cast<wchar_t>(c) << std::endl;
-				return c == 'W';
-			};
-			auto result = VM::execute<std::intptr_t, bool, char8_t, std::size_t, const std::u8string_view*>(source, &input, &std::u8string_view::at, +compare);
-			suite.expect(result);
-		});
-
 	}};
 }
