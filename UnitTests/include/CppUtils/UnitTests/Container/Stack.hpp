@@ -58,6 +58,18 @@ namespace CppUtils::UnitTest::Container::Stack
 			suite.expectEqual(std::size(Stack), 1uz);
 		});
 
+		suite.addTest("top", [&] {
+			auto Stack = CppUtils::Container::Stack<int>{42};
+
+			suite.expect(!std::empty(Stack));
+			suite.expectEqual(std::size(Stack), 1uz);
+
+			suite.expectEqual(Stack.top<int>(), 42);
+
+			suite.expect(!std::empty(Stack));
+			suite.expectEqual(std::size(Stack), 1uz);
+		});
+
 		suite.addTest("pop", [&] {
 			auto Stack = CppUtils::Container::Stack<int>{42};
 

@@ -41,7 +41,7 @@ namespace CppUtils::Container
 		[[nodiscard]] constexpr auto getType(std::size_t position) const -> std::size_t
 		{
 			if (position >= std::size(m_types)) [[unlikely]]
-				throw std::out_of_range{"Stack::get(std::size_t position) : Out of range"};
+				throw std::out_of_range{"Stack::getType(std::size_t position) : Out of range"};
 			return m_types[position];
 		}
 
@@ -49,8 +49,10 @@ namespace CppUtils::Container
 		requires Type::Concept::Present<T, SupportedTypes...>
 		[[nodiscard]] constexpr auto get(std::size_t position) const -> T
 		{
-			if (Type::getPosition<T, SupportedTypes...>() != getType(position)) [[unlikely]]
-				throw std::logic_error{"The type at the specified position does not match the stored type"};
+			if (position >= std::size(m_types)) [[unlikely]]
+				throw std::out_of_range{"Stack::get(std::size_t position) : Out of range"};
+			if (auto storedType = m_types[position]; Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
+				throw std::logic_error{std::format("Stack::get(std::size_t position) : The type at the specified position does not match the stored type (Type: {})", storedType)};
 			
 			auto offset = getTypeOffset(position);
 			auto buffer = std::array<std::byte, sizeof(T)>{};
@@ -61,10 +63,19 @@ namespace CppUtils::Container
 
 		template<Type::Concept::TriviallyCopyable T>
 		requires Type::Concept::Present<T, SupportedTypes...>
+		[[nodiscard]] constexpr auto top() const -> decltype(auto)
+		{
+			return get<T>(size() - 1);
+		}
+
+		template<Type::Concept::TriviallyCopyable T>
+		requires Type::Concept::Present<T, SupportedTypes...>
 		constexpr auto set(std::size_t position, T newValue) -> void
 		{
-			if (Type::getPosition<T, SupportedTypes...>() != getType(position)) [[unlikely]]
-				throw std::logic_error{"The type at the specified position does not match the stored type"};
+			if (position >= std::size(m_types)) [[unlikely]]
+				throw std::out_of_range{"Stack::set(std::size_t position, T newValue) : Out of range"};
+			if (auto storedType = m_types[position]; Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
+				throw std::logic_error{std::format("Stack::set(std::size_t position, T newValue) : The type at the specified position does not match the stored type (Type: {})", storedType)};
 			
 			auto offset = getTypeOffset(position);
 			auto buffer = std::bit_cast<std::array<std::byte, sizeof(T)>>(newValue);
@@ -77,7 +88,7 @@ namespace CppUtils::Container
 		constexpr auto push(T value) -> void
 		{
 			m_types.push_back(Type::getPosition<T, SupportedTypes...>());
-			m_data.resize(std::size(m_data) + sizeof(T), std::byte{0});
+			m_data.resize(getByteSize() + sizeof(T), std::byte{0});
 			set(size() - 1, std::move(value));
 		}
 
@@ -87,9 +98,9 @@ namespace CppUtils::Container
 		{
 			if (empty()) [[unlikely]]
 				throw std::underflow_error{"Stack::drop() : Container already empty"};
-			if (Type::getPosition<T, SupportedTypes...>() != m_types.back()) [[unlikely]]
-				throw std::logic_error{"The type at the specified position does not match the stored type"};
-			m_data.resize(std::size(m_data) - sizeof(T));
+			if (auto storedType = m_types.back(); Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
+				throw std::logic_error{std::format("Stack::drop() : The type at the specified position does not match the stored type (Type: {})", storedType)};
+			m_data.resize(getByteSize() - sizeof(T));
 			m_types.pop_back();
 		}
 
@@ -98,10 +109,10 @@ namespace CppUtils::Container
 		[[nodiscard]] constexpr auto pop() -> decltype(auto)
 		{
 			if (empty()) [[unlikely]]
-				throw std::underflow_error{"Stack::drop() : Container already empty"};
-			if (Type::getPosition<T, SupportedTypes...>() != m_types.back()) [[unlikely]]
-				throw std::logic_error{"The type at the specified position does not match the stored type"};
-			auto value = get<T>(0);
+				throw std::underflow_error{"Stack::pop() : Container already empty"};
+			if (auto storedType = m_types.back(); Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
+				throw std::logic_error{std::format("Stack::pop() : The type at the specified position does not match the stored type (Type: {})", storedType)};
+			auto value = get<T>(size() - 1);
 			drop<T>();
 			return value;
 		}
@@ -115,7 +126,7 @@ namespace CppUtils::Container
 	private:
 		[[nodiscard]] constexpr auto getTypeOffset(std::size_t position) const -> std::size_t
 		{
-			if (position >= std::size(m_types))
+			if (position >= size())
 				throw std::out_of_range{"Stack: Out of range"};
 			auto offset = 0uz;
 			for (auto i = 0uz; i < position; ++i)
