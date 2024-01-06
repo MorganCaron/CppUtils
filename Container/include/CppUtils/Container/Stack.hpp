@@ -85,11 +85,21 @@ namespace CppUtils::Container
 
 		template<Type::Concept::TriviallyCopyable T>
 		requires Type::Concept::Present<T, SupportedTypes...>
-		constexpr auto push(T value) -> void
+		constexpr auto push(T value = T{}) -> void
 		{
 			m_types.push_back(Type::getPosition<T, SupportedTypes...>());
 			m_data.resize(getByteSize() + sizeof(T), std::byte{0});
 			set(size() - 1, std::move(value));
+		}
+
+		constexpr auto pushType(std::size_t type) -> void
+		{
+			static constexpr auto pushbyType = std::array{
+				+[](Stack<SupportedTypes...>& stack) -> void {
+					stack.template push<SupportedTypes>();
+				}...
+			};
+			pushbyType[type](*this);
 		}
 
 		template<Type::Concept::TriviallyCopyable T>
@@ -125,7 +135,12 @@ namespace CppUtils::Container
 
 		constexpr auto visit(std::size_t position, auto&& visitor) -> void
 		{
-			visit(position, visitor, std::index_sequence_for<SupportedTypes...>{});
+			static constexpr auto visitorsbyType = std::array{
+				+[](const Stack<SupportedTypes...>& stack, std::size_t position, decltype(visitor) visitor) -> void {
+					visitor(stack.template get<SupportedTypes>(position));
+				}...
+			};
+			visitorsbyType[position](*this, position, std::forward<decltype(visitor)>(visitor));
 		}
 
 	private:
@@ -137,15 +152,6 @@ namespace CppUtils::Container
 			for (auto i = 0uz; i < position; ++i)
 				offset += typesSize[m_types[i]];
 			return offset;
-		}
-
-		template<std::size_t... I>
-		constexpr auto visit(std::size_t position, auto&& visitor, [[maybe_unused]] std::index_sequence<I...> indexSequence) -> void
-		{
-			(..., [this, position, visitor = std::forward<decltype(visitor)>(visitor)]() {
-				if (position == I) [[unlikely]]
-					visitor(get<Type::NthType<I, SupportedTypes...>>(position));
-			}());
 		}
 
 		std::vector<std::byte> m_data = {};

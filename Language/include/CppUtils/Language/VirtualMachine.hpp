@@ -80,13 +80,9 @@ namespace CppUtils::Language::VirtualMachine
 	requires Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>
 	constexpr auto execute(const auto& source, auto... data) -> ReturnType
 	{
-		using Stack = Container::Stack<ReturnType, SupportedTypes...>;
 		using Logger = Logger<"CppUtils">;
+		using Stack = Container::Stack<ReturnType, SupportedTypes...>;
 		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{ &source, data... };
-		static constexpr auto pushTypes = std::array<void(*)(Stack&), 1 + sizeof...(SupportedTypes)>{
-			+[](Stack& stack) -> void { stack.push(ReturnType{}); },
-			+[](Stack& stack) -> void { stack.push(SupportedTypes{}); }...
-		};
 		static constexpr auto getPositionInSource = [](Stack& stack, std::size_t instructionPointer, std::size_t mode, std::size_t position) -> std::size_t {
 			if (isModeIndirect(mode))
 				position = stack.template get<std::size_t>(std::size(stack) - 1 - position);
@@ -130,14 +126,10 @@ namespace CppUtils::Language::VirtualMachine
 			copyTypesBuilder.template operator()<ReturnType>(),
 			copyTypesBuilder.template operator()<SupportedTypes>()...
 		};
-		static constexpr auto printType = []<class ValueType>(Stack& stack, std::size_t position) static -> void {
-			auto type = stack.getType(std::size(stack) - 1 - position);
-			auto value = stack.template get<ValueType>(std::size(stack) - 1 - position);
-			Logger::print<"debug">("Position: {}; Type: {}; Size: {} bytes; Value: {}", position, type, sizeof(ValueType), String::formatValue(value));
-		};
-		static constexpr auto printTypes = std::array<void(*)(Stack&, std::size_t), 1 + sizeof...(SupportedTypes)>{
-			printType.template operator()<ReturnType>,
-			printType.template operator()<SupportedTypes>...
+		static constexpr auto printType = [](Stack& stack, std::size_t position) -> void {
+			stack.visit(position, [position, type = stack.getType(position)](auto&& value) -> void {
+				Logger::print<"debug">("Position: {}; Type: {}; Size: {} bytes; Value: {}", position, type, sizeof(decltype(value)), String::formatValue(value));
+			});
 		};
 		static constexpr auto executeInstructionFunction = []<class ValueType>(Stack& stack, decltype(source) source, decltype(externalData) externalData, std::size_t& instructionPointer) static -> void {
 			switch (auto instruction = source[instructionPointer]; instruction)
@@ -160,7 +152,7 @@ namespace CppUtils::Language::VirtualMachine
 			case 'I':
 				Logger::print<"debug">("Stack size: {} elements; {} bytes", std::size(stack), stack.getByteSize());
 				for (auto i = 0uz; i < std::size(stack); ++i)
-					printTypes[stack.getType(std::size(stack) - 1 - i)](stack, i);
+					printType(stack, i);
 				break;
 			case 'J':
 				{
@@ -179,23 +171,9 @@ namespace CppUtils::Language::VirtualMachine
 				else
 					stack.template push<DereferencedType>(*stack.template pop<ValueType>());
 				break;
-			case 'W':
-			{
-				auto id = stack.template pop<std::size_t>();
-				if (id >= std::size(pushTypes)) [[unlikely]]
-					throw std::invalid_argument{"Type id " + std::to_string(id) + " out of range"};
-				printTypes[stack.getType(std::size(stack) - 1 - id)](stack, id);
-				break;
-			}
+			case 'W': printType(stack, stack.template pop<std::size_t>()); break;
 			case 'X': instructionPointer = std::size(source) - 1; break;
-			case ':':
-			{
-				auto id = stack.template pop<std::size_t>();
-				if (id >= std::size(pushTypes)) [[unlikely]]
-					throw std::invalid_argument{"Type id " + std::to_string(id) + " out of range"};
-				pushTypes[id](stack);
-				break;
-			}
+			case ':': stack.pushType(stack.template pop<std::size_t>()); break;
 			case ';':
 			{
 				auto dataId = stack.template pop<std::size_t>();

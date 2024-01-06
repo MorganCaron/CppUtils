@@ -15,6 +15,7 @@ namespace CppUtils::UnitTest::Container::Stack
 
 		suite.addTest("One value", [&] {
 			auto stack = CppUtils::Container::Stack<int>{42};
+			suite.expect(!std::empty(stack));
 			suite.expectEqual(std::size(stack), 1uz);
 		});
 
@@ -25,7 +26,6 @@ namespace CppUtils::UnitTest::Container::Stack
 
 		suite.addTest("Multiple types", [&] {
 			auto stack = CppUtils::Container::Stack<bool, int, float, std::string_view>{true, 42, 3.14f, "Hello World!"sv};
-			
 			suite.expectEqual(std::size(stack), 4uz);
 			
 			Logger::print("{}\n", stack.get<bool>(0));
@@ -34,60 +34,37 @@ namespace CppUtils::UnitTest::Container::Stack
 			Logger::print("{}\n", stack.get<std::string_view>(3));
 		});
 
-		suite.addTest("push", [&] {
-			auto stack = CppUtils::Container::Stack<int>{};
-			
-			suite.expect(std::empty(stack));
-			suite.expectEqual(std::size(stack), 0uz);
-
+		suite.addTest("push/top", [&] {
+			auto stack = CppUtils::Container::Stack<bool, int, float>{};
+			stack.push(true);
+			suite.expectEqual(stack.top<bool>(), true);
 			stack.push(42);
+			suite.expectEqual(stack.top<int>(), 42);
+			stack.push(3.14f);
+			suite.expectEqual(stack.top<float>(), 3.14f);
+		});
 
-			suite.expect(!std::empty(stack));
-			suite.expectEqual(std::size(stack), 1uz);
+		suite.addTest("pushType", [&] {
+			auto stack = CppUtils::Container::Stack<bool, int, float>{};
+			stack.pushType(1);
+			suite.expectEqual(stack.top<int>(), 0);
 		});
 
 		suite.addTest("get", [&] {
 			auto stack = CppUtils::Container::Stack<int>{42};
-			
-			suite.expect(!std::empty(stack));
-			suite.expectEqual(std::size(stack), 1uz);
-			
 			suite.expectEqual(stack.get<int>(0), 42);
-
-			suite.expect(!std::empty(stack));
-			suite.expectEqual(std::size(stack), 1uz);
-		});
-
-		suite.addTest("top", [&] {
-			auto stack = CppUtils::Container::Stack<int>{42};
-
-			suite.expect(!std::empty(stack));
-			suite.expectEqual(std::size(stack), 1uz);
-
-			suite.expectEqual(stack.top<int>(), 42);
-
-			suite.expect(!std::empty(stack));
-			suite.expectEqual(std::size(stack), 1uz);
 		});
 
 		suite.addTest("pop", [&] {
 			auto stack = CppUtils::Container::Stack<int>{42};
-
-			suite.expect(!std::empty(stack));
-			suite.expectEqual(std::size(stack), 1uz);
-
 			suite.expectEqual(stack.pop<int>(), 42);
-
 			suite.expect(std::empty(stack));
-			suite.expectEqual(std::size(stack), 0uz);
 		});
 
 		suite.addTest("copy", [&] {
 			auto stack = CppUtils::Container::Stack<int>{0, 42};
-			
 			stack.copy<int>(1, 0);
 			stack.drop<int>();
-
 			suite.expectEqual(stack.get<int>(0), 42);
 		});
 
