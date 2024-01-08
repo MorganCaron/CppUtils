@@ -101,7 +101,11 @@ namespace CppUtils::Language::VirtualMachine
 					visitor(std::forward<decltype(value)>(value));
 				});
 			else
-				stack.visit(applyModeToPosition(stack, mode, stack.template pop<std::size_t>()), std::forward<decltype(visitor)>(visitor));
+			{
+				auto position = stack.template pop<std::size_t>();
+				position = applyModeToPosition(stack, mode, position);
+				stack.visit(position, std::forward<decltype(visitor)>(visitor));
+			}
 		};
 		static constexpr auto printType = [](Stack& stack, std::size_t position) -> void {
 			stack.visit(position, [position, type = stack.getType(position)](auto&& value) -> void {
@@ -117,10 +121,13 @@ namespace CppUtils::Language::VirtualMachine
 			case '_': stack.set(std::size(stack) - 1, ValueType{}); break;
 			case 'C': // Todo: renommer en M ?
 			{
-				// Todo: Ajouter deux bits d'adressage
+				auto destinationMode = stack.template pop<std::size_t>();
 				auto destinationPosition = stack.template pop<std::size_t>();
+				auto sourceMode = stack.template pop<std::size_t>();
 				auto sourcePosition = stack.template pop<std::size_t>();
-				stack.copy(std::size(stack) - 1 - sourcePosition, std::size(stack) - 1 - destinationPosition);
+				sourcePosition = applyModeToPosition(stack, sourceMode, sourcePosition);
+				destinationPosition = applyModeToPosition(stack, destinationMode, destinationPosition);
+				stack.copy(sourcePosition, destinationPosition);
 			}
 			break;
 			// Todo: case 'D': stack.push(&stack.template pop<ValueType>()); break;

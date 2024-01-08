@@ -326,13 +326,13 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 		});
 
 		suite.addTest("copy", [&] {
-			constexpr auto source = u8"21, 0:0, 1, 0C+"sv;
+			constexpr auto source = u8"21, 0:0, 1, 0, 0, 0C+"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
 			suite.expectEqual(result, 42uz);
 		});
 
 		suite.addTest("cast", [&] {
-			constexpr auto source = u8"0, 1:42, 0, 1C)"sv;
+			constexpr auto source = u8"0, 1:42, 0, 0, 1, 0C)"sv;
 			constexpr auto result = VM::execute<bool, std::size_t>(source);
 			suite.expect(result);
 		});
@@ -370,9 +370,9 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			constexpr auto source = u8R"(
 				1;, 1+ get nb plus one
 				P position for loop
-				(0, 2, 0C copy nb
+				(0, 2, 0, 0, 0C copy nb
 				(1- minus one
-				(0, 2C copy nb
+				(0, 0, 2, 0C copy nb
 				(0=, 0, 4, 0? (0X quit if nb equal zero
 				(2; get input
 				(3; execute print
