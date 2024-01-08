@@ -2,6 +2,7 @@
 
 #include <bit>
 #include <array>
+#include <format>
 #include <vector>
 #include <stdexcept>
 
@@ -40,8 +41,8 @@ namespace CppUtils::Container
 
 		[[nodiscard]] constexpr auto getType(std::size_t position) const -> std::size_t
 		{
-			if (position >= std::size(m_types)) [[unlikely]]
-				throw std::out_of_range{"Stack::getType(std::size_t position) : Out of range"};
+			if (position >= size()) [[unlikely]]
+				throw std::out_of_range{std::format("Stack::getType({}) : Out of range", position)};
 			return m_types[position];
 		}
 
@@ -49,10 +50,10 @@ namespace CppUtils::Container
 		requires Type::Concept::Present<T, SupportedTypes...>
 		[[nodiscard]] constexpr auto get(std::size_t position) const -> T
 		{
-			if (position >= std::size(m_types)) [[unlikely]]
-				throw std::out_of_range{"Stack::get(std::size_t position) : Out of range"};
+			if (position >= size()) [[unlikely]]
+				throw std::out_of_range{std::format("Stack::get({}) : Out of range", position)};
 			if (auto storedType = m_types[position]; Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
-				throw std::logic_error{std::format("Stack::get(std::size_t position) : The type at the specified position does not match the stored type (Type: {})", storedType)};
+				throw std::logic_error{std::format("Stack::get({}) : The type at the specified position does not match the stored type (Type: {})", position, storedType)};
 			
 			auto offset = getTypeOffset(position);
 			auto buffer = std::array<std::byte, sizeof(T)>{};
@@ -72,8 +73,8 @@ namespace CppUtils::Container
 		requires Type::Concept::Present<T, SupportedTypes...>
 		constexpr auto set(std::size_t position, T newValue) -> void
 		{
-			if (position >= std::size(m_types)) [[unlikely]]
-				throw std::out_of_range{"Stack::set(std::size_t position, T newValue) : Out of range"};
+			if (position >= size()) [[unlikely]]
+				throw std::out_of_range{std::format("Stack::set({}, T newValue) : Out of range", position)};
 			if (auto storedType = m_types[position]; Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
 				throw std::logic_error{std::format("Stack::set(std::size_t position, T newValue) : The type at the specified position does not match the stored type (Type: {})", storedType)};
 			
@@ -94,6 +95,8 @@ namespace CppUtils::Container
 
 		constexpr auto pushType(std::size_t type) -> void
 		{
+			if (type >= sizeof...(SupportedTypes))
+				throw std::out_of_range{std::format("Stack::pushType({}) : Out of range", type)};
 			static constexpr auto pushbyType = std::array{
 				+[](Stack<SupportedTypes...>& stack) -> void {
 					stack.template push<SupportedTypes>();
@@ -102,15 +105,18 @@ namespace CppUtils::Container
 			pushbyType[type](*this);
 		}
 
-		template<Type::Concept::TriviallyCopyable T>
-		requires Type::Concept::Present<T, SupportedTypes...>
 		constexpr auto drop() -> void
 		{
+			static constexpr auto dropFunctions = std::array{
+				+[](const Stack<SupportedTypes...>& stack, std::vector<std::byte>& data) -> void {
+					data.resize(stack.getByteSize() - sizeof(SupportedTypes));
+				}...
+			};
+
 			if (empty()) [[unlikely]]
 				throw std::underflow_error{"Stack::drop() : Container already empty"};
-			if (auto storedType = m_types.back(); Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
-				throw std::logic_error{std::format("Stack::drop() : The type at the specified position does not match the stored type (Type: {})", storedType)};
-			m_data.resize(getByteSize() - sizeof(T));
+
+			dropFunctions[m_types[size() - 1]](*this, m_data);
 			m_types.pop_back();
 		}
 
@@ -123,31 +129,51 @@ namespace CppUtils::Container
 			if (auto storedType = m_types.back(); Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
 				throw std::logic_error{std::format("Stack::pop() : The type at the specified position does not match the stored type (Type: {})", storedType)};
 			auto value = get<T>(size() - 1);
-			drop<T>();
+			drop();
 			return value;
 		}
 
-		template<Type::Concept::TriviallyCopyable SourceType, Type::Concept::TriviallyCopyable DestinationType = SourceType>
 		constexpr auto copy(std::size_t sourcePosition, std::size_t destinationPosition) -> void
 		{
-			set(destinationPosition, static_cast<DestinationType>(get<SourceType>(sourcePosition)));
+			static constexpr auto copyToDestination = []<class SourceType>() consteval -> auto {
+				return std::array<void(*)(Stack<SupportedTypes...>&, std::size_t, std::size_t), sizeof...(SupportedTypes)>{
+					+[](Stack<SupportedTypes...>& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void {
+						if constexpr (!std::is_convertible_v<SourceType, SupportedTypes>)
+							throw std::logic_error{std::format("Stack::copy({}, {}) : The source type is not convertible to the destination type", sourcePosition, destinationPosition)};
+						else
+							stack.set(destinationPosition, static_cast<SupportedTypes>(stack.template get<SourceType>(sourcePosition)));
+					}...
+				};
+			};
+			static constexpr auto copyFromSource = std::array<std::array<void(*)(Stack<SupportedTypes...>&, std::size_t, std::size_t), sizeof...(SupportedTypes)>, sizeof...(SupportedTypes)>{
+				copyToDestination.template operator()<SupportedTypes>()...
+			};
+
+			if (sourcePosition >= size())
+				throw std::out_of_range{std::format("Stack::copy({}, {}) : Source out of range", sourcePosition, destinationPosition)};
+			if (destinationPosition >= size())
+				throw std::out_of_range{std::format("Stack::copy({}, {}) : Destination out of range", sourcePosition, destinationPosition)};
+
+			copyFromSource[m_types[sourcePosition]][m_types[destinationPosition]](*this, sourcePosition, destinationPosition);
 		}
 
 		constexpr auto visit(std::size_t position, auto&& visitor) -> void
 		{
-			static constexpr auto visitorsbyType = std::array{
+			static constexpr auto visitors = std::array{
 				+[](const Stack<SupportedTypes...>& stack, std::size_t position, decltype(visitor) visitor) -> void {
 					visitor(stack.template get<SupportedTypes>(position));
 				}...
 			};
-			visitorsbyType[position](*this, position, std::forward<decltype(visitor)>(visitor));
+
+			if (position >= size())
+				throw std::out_of_range{std::format("Stack::visit({}, auto&& visitor) : Out of range", position)};
+
+			visitors[m_types[position]](*this, position, std::forward<decltype(visitor)>(visitor));
 		}
 
 	private:
 		[[nodiscard]] constexpr auto getTypeOffset(std::size_t position) const -> std::size_t
 		{
-			if (position >= size())
-				throw std::out_of_range{"Stack: Out of range"};
 			auto offset = 0uz;
 			for (auto i = 0uz; i < position; ++i)
 				offset += typesSize[m_types[i]];

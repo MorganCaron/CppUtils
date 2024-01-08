@@ -33,7 +33,8 @@ namespace CppUtils::Language::VirtualMachine
 				call(stack, function, std::index_sequence_for<Args...>{});
 			else
 				stack.set(std::size(stack) - 1 - sizeof...(Args), call(stack, function, std::index_sequence_for<Args...>{}));
-			(..., stack.template drop<std::remove_cvref_t<Args>>());
+			for (auto i = 0uz; i < sizeof...(Args); ++i)
+				stack.drop();
 		}
 
 		template<class Stack, class ReturnType, class Object, class... Args, std::size_t... I>
@@ -50,7 +51,8 @@ namespace CppUtils::Language::VirtualMachine
 				call(stack, function, objectPointer, std::index_sequence_for<Args...>{});
 			else
 				stack.set(std::size(stack) - 2 - sizeof...(Args), call(stack, function, objectPointer, std::index_sequence_for<Args...>{}));
-			(..., stack.template drop<std::remove_cvref_t<Args>>());
+			for (auto i = 0uz; i < sizeof...(Args); ++i)
+				stack.drop();
 		}
 
 		template<class Stack, class ReturnType, class Object, class... Args, std::size_t... I>
@@ -67,7 +69,8 @@ namespace CppUtils::Language::VirtualMachine
 				call(stack, function, objectPointer, std::index_sequence_for<Args...>{});
 			else
 				stack.set(std::size(stack) - 2 - sizeof...(Args), call(stack, function, objectPointer, std::index_sequence_for<Args...>{}));
-			(..., stack.template drop<std::remove_cvref_t<Args>>());
+			for (auto i = 0uz; i < sizeof...(Args); ++i)
+				stack.drop();
 		}
 
 		[[nodiscard]] inline constexpr auto isModeAbsolute(std::size_t mode) noexcept -> bool { return mode & 0b01; }
@@ -89,42 +92,16 @@ namespace CppUtils::Language::VirtualMachine
 			return isModeRelative(mode) ? (instructionPointer + position) : position;
 		};
 		static constexpr auto applyModeToPosition = [](Stack& stack, std::size_t mode, std::size_t position) -> std::size_t {
-			return (isModeDirect(mode) || isModeRelative(mode)) ? position : (std::size(stack) - 1 - position);
+			return (isModeDirect(mode) || isModeRelative(mode)) ? (std::size(stack) - 1 - position) : position;
 		};
-		static constexpr auto getValueOnStack = []<class ValueType>(Stack& stack) -> ValueType {
+		static constexpr auto getValueWithMode = [](Stack& stack, auto&& visitor) -> void {
 			if (auto mode = stack.template pop<std::size_t>(); isModeDirect(mode))
-				return stack.template pop<ValueType>();
+				stack.visit(std::size(stack) - 1, [&stack, visitor = std::forward<decltype(visitor)>(visitor)](auto&& value) -> void {
+					stack.drop();
+					visitor(std::forward<decltype(value)>(value));
+				});
 			else
-			{
-				auto valuePosition = stack.template pop<std::size_t>();
-				valuePosition = applyModeToPosition(stack, mode, valuePosition);
-				return stack.template get<ValueType>(std::size(stack) - 1 - valuePosition);
-			}
-		};
-		static constexpr auto conditionalJump = []<class ValueType>(Stack& stack, std::size_t& instructionPointer) static -> void {
-			if constexpr (!std::is_constructible_v<bool, ValueType>)
-				throw std::invalid_argument{"The type used in conditional jump is not convertible to boolean"};
-			else
-			{
-				auto jumpMode = stack.template pop<std::size_t>();
-				auto jumpDestination = stack.template pop<std::size_t>();
-				if (auto conditionValue = getValueOnStack.template operator()<ValueType>(stack); !conditionValue)
-					instructionPointer = getPositionInSource(stack, instructionPointer, jumpMode, jumpDestination);
-			}
-		};
-		static constexpr auto conditionalJumpTypes = std::array<void(*)(Stack&, std::size_t&), 1 + sizeof...(SupportedTypes)>{
-			conditionalJump.template operator()<ReturnType>,
-			conditionalJump.template operator()<SupportedTypes>...
-		};
-		static constexpr auto copyTypesBuilder = []<class SourceType>() consteval -> auto {
-			return std::array<void(*)(Stack&, std::size_t, std::size_t), 1 + sizeof...(SupportedTypes)>{
-				+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { if constexpr (std::is_convertible_v<SourceType, ReturnType>) return stack.template copy<SourceType, ReturnType>(sourcePosition, destinationPosition); else return {}; },
-				+[](Stack& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void { if constexpr (std::is_convertible_v<SourceType, SupportedTypes>) return stack.template copy<SourceType, SupportedTypes>(sourcePosition, destinationPosition); else return {}; }...
-			};
-		};
-		static constexpr auto copyTypes = std::array<std::array<void(*)(Stack&, std::size_t, std::size_t), 1 + sizeof...(SupportedTypes)>, 1 + sizeof...(SupportedTypes)>{
-			copyTypesBuilder.template operator()<ReturnType>(),
-			copyTypesBuilder.template operator()<SupportedTypes>()...
+				stack.visit(applyModeToPosition(stack, mode, stack.template pop<std::size_t>()), std::forward<decltype(visitor)>(visitor));
 		};
 		static constexpr auto printType = [](Stack& stack, std::size_t position) -> void {
 			stack.visit(position, [position, type = stack.getType(position)](auto&& value) -> void {
@@ -136,18 +113,16 @@ namespace CppUtils::Language::VirtualMachine
 			{
 			case ',': [[fallthrough]];
 			case '(': stack.push(0uz); break;
-			case ')': stack.template drop<ValueType>(); break;
+			case ')': stack.drop(); break;
 			case '_': stack.set(std::size(stack) - 1, ValueType{}); break;
 			case 'C': // Todo: renommer en M ?
 			{
 				// Todo: Ajouter deux bits d'adressage
 				auto destinationPosition = stack.template pop<std::size_t>();
 				auto sourcePosition = stack.template pop<std::size_t>();
-				auto sourceType = stack.getType(std::size(stack) - 1 - sourcePosition);
-				auto destinationType = stack.getType(std::size(stack) - 1 - destinationPosition);
-				copyTypes[sourceType][destinationType](stack, std::size(stack) - 1 - sourcePosition, std::size(stack) - 1 - destinationPosition);
-				break;
+				stack.copy(std::size(stack) - 1 - sourcePosition, std::size(stack) - 1 - destinationPosition);
 			}
+			break;
 			// Todo: case 'D': stack.push(&stack.template pop<ValueType>()); break;
 			case 'I':
 				Logger::print<"debug">("Stack size: {} elements; {} bytes", std::size(stack), stack.getByteSize());
@@ -155,12 +130,12 @@ namespace CppUtils::Language::VirtualMachine
 					printType(stack, i);
 				break;
 			case 'J':
-				{
-					auto mode = stack.template pop<std::size_t>();
-					auto destination = stack.template pop<std::size_t>();
-					instructionPointer = getPositionInSource(stack, instructionPointer, mode, destination);
-				}
-				break;
+			{
+				auto mode = stack.template pop<std::size_t>();
+				auto destination = stack.template pop<std::size_t>();
+				instructionPointer = getPositionInSource(stack, instructionPointer, mode, destination);
+			}
+			break;
 			case 'P': stack.template push<std::size_t>(instructionPointer); break;
 			case 'R':
 				if constexpr (!std::is_pointer_v<ValueType>)
@@ -186,16 +161,20 @@ namespace CppUtils::Language::VirtualMachine
 					else
 						stack.template push<T>(data);
 				}, externalData[dataId]);
-				break;
 			}
+			break;
 			case '?':
 			{
-				if (std::size(stack) <= 4)
-					throw std::underflow_error{"Stack Underflow: Not enough parameters passed to conditional jump"};
-				else
-					conditionalJumpTypes[stack.getType(std::size(stack) - 4)](stack, instructionPointer);
-				break;
+				auto jumpMode = stack.template pop<std::size_t>();
+				auto jumpDestination = stack.template pop<std::size_t>();
+				getValueWithMode(stack, [&stack, &instructionPointer, jumpMode, jumpDestination](auto&& condition) -> void {
+					if constexpr (!std::is_constructible_v<bool, decltype(condition)>)
+						throw std::invalid_argument{"The type used in conditional jump instruction is not convertible to boolean"};
+					else if (!condition)
+						instructionPointer = getPositionInSource(stack, instructionPointer, jumpMode, jumpDestination);
+				});
 			}
+			break;
 			case '!':
 				// Todo: Ajouter un bit d'adressage
 				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)

@@ -63,8 +63,8 @@ namespace CppUtils::UnitTest::Container::Stack
 
 		suite.addTest("copy", [&] {
 			auto stack = CppUtils::Container::Stack<int>{0, 42};
-			stack.copy<int>(1, 0);
-			stack.drop<int>();
+			stack.copy(1, 0);
+			stack.drop();
 			suite.expectEqual(stack.get<int>(0), 42);
 		});
 
