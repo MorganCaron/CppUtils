@@ -112,13 +112,28 @@ namespace CppUtils::Language::VirtualMachine
 				Logger::print<"debug">("Position: {}; Type: {}; Size: {} bytes; Value: {}", position, type, sizeof(decltype(value)), String::formatValue(value));
 			});
 		};
+		static constexpr auto doOperation = [](Stack& stack, auto&& operation) -> void {
+			// Todo: Ajouter deux bits d'adressage
+			stack.visit(std::size(stack) - 1, [&stack, operation](auto&& rhs) -> void {
+				stack.drop();
+				stack.visit(std::size(stack) - 1, [&stack, operation, rhs = std::move(rhs)](auto&& lhs) -> void {
+					stack.drop();
+					stack.push(operation(std::move(lhs), std::move(rhs)));
+				});
+			});
+		};
+		// Todo: faire sauter la template
 		static constexpr auto executeInstructionFunction = []<class ValueType>(Stack& stack, decltype(source) source, decltype(externalData) externalData, std::size_t& instructionPointer) static -> void {
 			switch (auto instruction = source[instructionPointer]; instruction)
 			{
 			case ',': [[fallthrough]];
 			case '(': stack.push(0uz); break;
 			case ')': stack.drop(); break;
-			case '_': stack.set(std::size(stack) - 1, ValueType{}); break;
+			case '_':
+				stack.visit(std::size(stack) - 1, [&stack](auto&& value) -> void {
+					stack.set(std::size(stack) - 1, std::decay_t<decltype(value)>{});
+				});
+				break;
 			case 'C': // Todo: renommer en M ?
 			{
 				auto destinationMode = stack.template pop<std::size_t>();
@@ -145,13 +160,15 @@ namespace CppUtils::Language::VirtualMachine
 			break;
 			case 'P': stack.template push<std::size_t>(instructionPointer); break;
 			case 'R':
-				if constexpr (!std::is_pointer_v<ValueType>)
-					throw std::logic_error{"The dereferenced type is not a pointer"};
-				else if constexpr (using DereferencedType = std::decay_t<decltype(*std::declval<ValueType>())>;
-					!Type::Concept::Present<DereferencedType, ReturnType, SupportedTypes...>)
-					throw std::logic_error{"The dereferenced type is not present among the supported types"};
-				else
-					stack.template push<DereferencedType>(*stack.template pop<ValueType>());
+				stack.visit(std::size(stack) - 1, [&stack](auto&& pointer) -> void {
+					if constexpr (!std::is_pointer_v<std::decay_t<decltype(pointer)>>)
+						throw std::logic_error{"The dereferenced type is not a pointer"};
+					else if constexpr (using DereferencedType = std::decay_t<decltype(*pointer)>;
+						!Type::Concept::Present<DereferencedType, ReturnType, SupportedTypes...>)
+						throw std::logic_error{"The dereferenced type is not present among the supported types"};
+					else
+						stack.template push<DereferencedType>(*stack.template pop<std::decay_t<decltype(pointer)>>());
+				});
 				break;
 			case 'W': printType(stack, stack.template pop<std::size_t>()); break;
 			case 'X': instructionPointer = std::size(source) - 1; break;
@@ -186,40 +203,53 @@ namespace CppUtils::Language::VirtualMachine
 				// Todo: Ajouter un bit d'adressage
 				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
 					throw std::invalid_argument{"Type bool missing in template parameters"};
-				else if constexpr (!std::is_constructible_v<bool, ValueType>)
-					throw std::invalid_argument{"Type not convertible to boolean"};
 				else
-					stack.push(!static_cast<bool>(stack.template pop<ValueType>()));
+					stack.visit(std::size(stack) - 1, [&stack](auto&& value) -> void {
+						using Value = std::decay_t<decltype(value)>;
+						if constexpr (!std::is_constructible_v<bool, Value>)
+							throw std::invalid_argument{"Type not convertible to boolean"};
+						else
+							stack.push(!static_cast<bool>(stack.template pop<Value>()));
+					});
 				break;
 			case '=':
-				// Todo: Ajouter deux bits d'adressage
 				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
 					throw std::invalid_argument{"Type bool missing in template parameters"};
-				else if constexpr (std::equality_comparable<ValueType>)
-				{
-					auto rhs = stack.template pop<ValueType>();
-					stack.push(static_cast<bool>(stack.template pop<ValueType>() == rhs));
-				}
+				else
+					doOperation(stack, [](auto lhs, auto rhs) -> bool {
+						if constexpr (!std::same_as<decltype(lhs), decltype(rhs)>)
+							throw std::logic_error{R"(Operation "=" used on different types)"};
+						else if constexpr (!std::equality_comparable<decltype(lhs)>)
+							throw std::logic_error{R"(Operation "=" used on non equality comparable types)"};
+						else
+							return lhs == rhs;
+					});
 				break;
 			case '<':
-				// Todo: Ajouter deux bits d'adressage
 				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
 					throw std::invalid_argument{"Type bool missing in template parameters"};
-				else if constexpr (std::totally_ordered<ValueType>)
-				{
-					auto rhs = stack.template pop<ValueType>();
-					stack.push(static_cast<bool>(stack.template pop<ValueType>() < rhs));
-				}
+				else
+					doOperation(stack, [](auto lhs, auto rhs) -> bool {
+						if constexpr (!std::same_as<decltype(lhs), decltype(rhs)>)
+							throw std::logic_error{R"(Operation "<" used on different types)"};
+						else if constexpr (!std::totally_ordered<decltype(lhs)>)
+							throw std::logic_error{R"(Operation "<" used on non totally ordered types)"};
+						else
+							return lhs < rhs;
+					});
 				break;
 			case '>':
-				// Todo: Ajouter deux bits d'adressage
 				if constexpr (!Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
 					throw std::invalid_argument{"Type bool missing in template parameters"};
-				else if constexpr (std::totally_ordered<ValueType>)
-				{
-					auto rhs = stack.template pop<ValueType>();
-					stack.push(static_cast<bool>(stack.template pop<ValueType>() > rhs));
-				}
+				else
+					doOperation(stack, [](auto lhs, auto rhs) -> bool {
+						if constexpr (!std::same_as<decltype(lhs), decltype(rhs)>)
+							throw std::logic_error{R"(Operation ">" used on different types)"};
+						else if constexpr (!std::totally_ordered<decltype(lhs)>)
+							throw std::logic_error{R"(Operation ">" used on non totally ordered types)"};
+						else
+							return lhs > rhs;
+					});
 				break;
 			// Todo: Ajouter deux bits d'adressage:
 			case '&': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = stack.template pop<ValueType>(); stack.push(static_cast<ValueType>(stack.template pop<ValueType>() & rhs)); } break;
