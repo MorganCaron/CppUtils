@@ -130,12 +130,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("and", [&] {
 			{
-				constexpr auto source = u8"1, 0:1&"sv;
+				constexpr auto source = u8"1, 0, 0:1, 0&"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(source);
 				suite.expect(result);
 			}
 			{
-				constexpr auto source = u8"0, 0:1&"sv;
+				constexpr auto source = u8"0, 0, 0:1, 0&"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(source);
 				suite.expect(!result);
 			}
@@ -143,12 +143,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("or", [&] {
 			{
-				constexpr auto source = u8"0, 0:1|"sv;
+				constexpr auto source = u8"0, 0, 0:1, 0|"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(source);
 				suite.expect(result);
 			}
 			{
-				constexpr auto source = u8"0, 0:0|"sv;
+				constexpr auto source = u8"0, 0, 0:0, 0|"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(source);
 				suite.expect(!result);
 			}
@@ -156,12 +156,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("xor", [&] {
 			{
-				constexpr auto source = u8"0, 0:1^"sv;
+				constexpr auto source = u8"0, 0, 0:1, 0^"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(source);
 				suite.expect(result);
 			}
 			{
-				constexpr auto source = u8"1, 0:1^"sv;
+				constexpr auto source = u8"1, 0, 0:1, 0^"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(source);
 				suite.expect(!result);
 			}

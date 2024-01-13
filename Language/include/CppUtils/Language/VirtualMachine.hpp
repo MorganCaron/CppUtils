@@ -251,10 +251,46 @@ namespace CppUtils::Language::VirtualMachine
 						stack.set(lhs > rhs);
 				});
 				break;
+			case '&':
+				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
+					static_cast<void>(stack);
+					using Lhs = std::decay_t<decltype(lhs)>;
+					using Rhs = std::decay_t<decltype(rhs)>;
+					if constexpr (not std::same_as<Lhs, Rhs>)
+						throw std::invalid_argument{"Operands don't have the same type"};
+					else if constexpr (not std::is_arithmetic_v<Lhs>)
+						throw std::invalid_argument{"Operator & used on non arithmetic type"};
+					else
+						stack.push(static_cast<Lhs>(lhs & rhs));
+				});
+				break;
+			case '|':
+				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
+					static_cast<void>(stack);
+					using Lhs = std::decay_t<decltype(lhs)>;
+					using Rhs = std::decay_t<decltype(rhs)>;
+					if constexpr (not std::same_as<Lhs, Rhs>)
+						throw std::invalid_argument{"Operands don't have the same type"};
+					else if constexpr (not std::is_arithmetic_v<Lhs>)
+						throw std::invalid_argument{"Operator | used on non arithmetic type"};
+					else
+						stack.push(static_cast<Lhs>(lhs | rhs));
+				});
+				break;
+			case '^':
+				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
+					static_cast<void>(stack);
+					using Lhs = std::decay_t<decltype(lhs)>;
+					using Rhs = std::decay_t<decltype(rhs)>;
+					if constexpr (not std::same_as<Lhs, Rhs>)
+						throw std::invalid_argument{"Operands don't have the same type"};
+					else if constexpr (not std::is_arithmetic_v<Lhs>)
+						throw std::invalid_argument{"Operator ^ used on non arithmetic type"};
+					else
+						stack.push(static_cast<Lhs>(lhs ^ rhs));
+				});
+				break;
 			// Todo: Ajouter deux bits d'adressage:
-			case '&': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = stack.template pop<ValueType>(); stack.push(static_cast<ValueType>(stack.template pop<ValueType>() & rhs)); } break;
-			case '|': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = stack.template pop<ValueType>(); stack.push(static_cast<ValueType>(stack.template pop<ValueType>() | rhs)); } break;
-			case '^': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = stack.template pop<ValueType>(); stack.push(static_cast<ValueType>(stack.template pop<ValueType>() ^ rhs)); } break;
 			case '+': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = stack.template pop<ValueType>(); stack.template push<ValueType>(stack.template pop<ValueType>() + rhs); } break;
 			case '-': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = stack.template pop<ValueType>(); stack.template push<ValueType>(stack.template pop<ValueType>() - rhs); } break;
 			case '*': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = stack.template pop<ValueType>(); stack.template push<ValueType>(stack.template pop<ValueType>() * rhs); } break;
