@@ -18,14 +18,56 @@ namespace CppUtils::Language::VirtualMachine
 {
 	namespace
 	{
+		[[nodiscard]] inline constexpr auto isModeAbsolute(std::size_t mode) noexcept -> bool { return mode & 0b01; }
+		[[nodiscard]] inline constexpr auto isModeRelative(std::size_t mode) noexcept -> bool { return !isModeAbsolute(mode); }
+		[[nodiscard]] inline constexpr auto isModeIndirect(std::size_t mode) noexcept -> bool { return mode & 0b10; }
+		[[nodiscard]] inline constexpr auto isModeDirect(std::size_t mode) noexcept -> bool { return !isModeIndirect(mode); }
+
+		template<Type::Concept::TriviallyCopyable... StackTypes>
+		[[nodiscard]] inline constexpr auto getPositionInSource(Container::Stack<StackTypes...>& stack, std::size_t instructionPointer, std::size_t mode, std::size_t position) -> std::size_t
+		{
+			if (isModeIndirect(mode))
+				position = stack.template get<std::size_t>(std::size(stack) - 1 - position);
+			return isModeRelative(mode) ? (instructionPointer + position) : position;
+		}
+
+		template<Type::Concept::TriviallyCopyable... StackTypes>
+		[[nodiscard]] inline constexpr auto applyModeToPosition(Container::Stack<StackTypes...>& stack, std::size_t mode, std::size_t position) -> std::size_t
+		{
+			return (isModeRelative(mode)) ? (std::size(stack) - 1 - position) : position;
+		}
+
+		template<Type::Concept::TriviallyCopyable... StackTypes>
+		inline constexpr auto getValueWithMode(Container::Stack<StackTypes...>& stack, auto&& visitor) -> void
+		{
+			if (auto mode = stack.template pop<std::size_t>(); isModeDirect(mode))
+				stack.pop(std::forward<decltype(visitor)>(visitor));
+			else
+			{
+				auto position = stack.template pop<std::size_t>();
+				position = applyModeToPosition(stack, mode, position);
+				stack.visit(position, std::forward<decltype(visitor)>(visitor));
+			}
+		}
+
+		template<Type::Concept::TriviallyCopyable... StackTypes>
+		inline constexpr auto getOperands(Container::Stack<StackTypes...>& stack, auto&& visitor) -> void
+		{
+			getValueWithMode(stack, [&stack, visitor](auto&& rhs) -> void {
+					getValueWithMode(stack, [visitor, rhs = std::move(rhs)](auto&& lhs) -> void {
+						visitor(std::move(lhs), std::move(rhs));
+				});
+			});
+		}
+
 		template<class Stack, class ReturnType, class... Args, std::size_t... I>
-		[[nodiscard]] constexpr auto call(Stack& stack, ReturnType(*function)(Args...), [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
+		[[nodiscard]] inline constexpr auto call(Stack& stack, ReturnType(*function)(Args...), [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
 		{
 			return std::invoke(function, stack.template get<std::remove_cvref_t<Type::NthType<I, Args...>>>(std::size(stack) - sizeof...(Args) + I)...);
 		}
 
 		template<class Stack, class ReturnType, class... Args>
-		constexpr auto call(Stack& stack, ReturnType(*function)(Args...)) -> void
+		inline constexpr auto call(Stack& stack, ReturnType(*function)(Args...)) -> void
 		{
 			if constexpr (std::is_void_v<ReturnType>)
 				call(stack, function, std::index_sequence_for<Args...>{});
@@ -36,13 +78,13 @@ namespace CppUtils::Language::VirtualMachine
 		}
 
 		template<class Stack, class ReturnType, class Object, class... Args, std::size_t... I>
-		[[nodiscard]] constexpr auto call(Stack& stack, ReturnType(Object::*function)(Args...), Object* object, [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
+		[[nodiscard]] inline constexpr auto call(Stack& stack, ReturnType(Object::*function)(Args...), Object* object, [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
 		{
 			return std::invoke(function, object, stack.template get<std::remove_cvref_t<Type::NthType<I, Args...>>>(std::size(stack) - sizeof...(Args) + I)...);
 		}
 
 		template<class Stack, class ReturnType, class Object, class... Args>
-		constexpr auto call(Stack& stack, ReturnType(Object::*function)(Args...)) -> void
+		inline constexpr auto call(Stack& stack, ReturnType(Object::*function)(Args...)) -> void
 		{
 			auto* objectPointer = stack.template get<Object*>(std::size(stack) - 1 - sizeof...(Args));
 			if constexpr (std::is_void_v<ReturnType>)
@@ -54,13 +96,13 @@ namespace CppUtils::Language::VirtualMachine
 		}
 
 		template<class Stack, class ReturnType, class Object, class... Args, std::size_t... I>
-		[[nodiscard]] constexpr auto call(Stack& stack, ReturnType(Object::*function)(Args...) const, const Object* object, [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
+		[[nodiscard]] inline constexpr auto call(Stack& stack, ReturnType(Object::*function)(Args...) const, const Object* object, [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
 		{
 			return std::invoke(function, object, stack.template get<std::remove_cvref_t<Type::NthType<I, Args...>>>(std::size(stack) - sizeof...(Args) + I)...);
 		}
 
 		template<class Stack, class ReturnType, class Object, class... Args>
-		constexpr auto call(Stack& stack, ReturnType(Object::*function)(Args...) const) -> void
+		inline constexpr auto call(Stack& stack, ReturnType(Object::*function)(Args...) const) -> void
 		{
 			const auto* objectPointer = stack.template get<const Object*>(std::size(stack) - 1 - sizeof...(Args));
 			if constexpr (std::is_void_v<ReturnType>)
@@ -70,11 +112,6 @@ namespace CppUtils::Language::VirtualMachine
 			for (auto i = 0uz; i < sizeof...(Args); ++i)
 				stack.drop();
 		}
-
-		[[nodiscard]] inline constexpr auto isModeAbsolute(std::size_t mode) noexcept -> bool { return mode & 0b01; }
-		[[nodiscard]] inline constexpr auto isModeRelative(std::size_t mode) noexcept -> bool { return !isModeAbsolute(mode); }
-		[[nodiscard]] inline constexpr auto isModeIndirect(std::size_t mode) noexcept -> bool { return mode & 0b10; }
-		[[nodiscard]] inline constexpr auto isModeDirect(std::size_t mode) noexcept -> bool { return !isModeIndirect(mode); }
 	}
 	
 	template<Type::Concept::TriviallyCopyable ReturnType, Type::Concept::TriviallyCopyable... SupportedTypes>
@@ -83,31 +120,6 @@ namespace CppUtils::Language::VirtualMachine
 	{
 		using Stack = Container::Stack<ReturnType, SupportedTypes...>;
 		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{ &source, data... };
-		static constexpr auto getPositionInSource = [](Stack& stack, std::size_t instructionPointer, std::size_t mode, std::size_t position) -> std::size_t {
-			if (isModeIndirect(mode))
-				position = stack.template get<std::size_t>(std::size(stack) - 1 - position);
-			return isModeRelative(mode) ? (instructionPointer + position) : position;
-		};
-		static constexpr auto applyModeToPosition = [](Stack& stack, std::size_t mode, std::size_t position) -> std::size_t {
-			return (isModeRelative(mode)) ? (std::size(stack) - 1 - position) : position;
-		};
-		static constexpr auto getValueWithMode = [](Stack& stack, auto&& visitor) -> void {
-			if (auto mode = stack.template pop<std::size_t>(); isModeDirect(mode))
-				stack.pop(std::forward<decltype(visitor)>(visitor));
-			else
-			{
-				auto position = stack.template pop<std::size_t>();
-				position = applyModeToPosition(stack, mode, position);
-				stack.visit(position, std::forward<decltype(visitor)>(visitor));
-			}
-		};
-		static constexpr auto getOperands = [](Stack& stack, auto&& visitor) -> void {
-			getValueWithMode(stack, [&stack, visitor](auto&& rhs) -> void {
-					getValueWithMode(stack, [visitor, rhs = std::move(rhs)](auto&& lhs) -> void {
-						visitor(std::move(lhs), std::move(rhs));
-				});
-			});
-		};
 		// Todo: faire sauter la template
 		static constexpr auto executeInstructionFunction = []<class ValueType>(Stack& stack, decltype(source) source, decltype(externalData) externalData, std::size_t& instructionPointer) static -> void {
 			switch (auto instruction = source[instructionPointer]; instruction)
@@ -157,6 +169,7 @@ namespace CppUtils::Language::VirtualMachine
 			case ':': stack.pushType(stack.template pop<std::size_t>()); break;
 			case ';':
 			{
+				// Ajouter des bits d'adressage
 				auto dataId = stack.template pop<std::size_t>();
 				std::visit([&stack, dataId](auto&& data) -> void {
 					using T = std::remove_cvref_t<decltype(data)>;
