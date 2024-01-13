@@ -78,12 +78,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("not", [&] {
 			{
-				constexpr auto source = u8"0, 0:0!"sv;
+				constexpr auto source = u8"0!"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(source);
 				suite.expect(result);
 			}
 			{
-				constexpr auto source = u8"0, 0:1!"sv;
+				constexpr auto source = u8"1!"sv;
 				constexpr auto result = VM::execute<bool, std::size_t>(source);
 				suite.expect(!result);
 			}
@@ -91,12 +91,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("equal", [&] {
 			{
-				constexpr auto source = u8"0, 2:40, 2:2+, 2:42="sv;
+				constexpr auto source = u8"0, 2:42, 0, 2:42, 0="sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(source);
 				suite.expect(result);
 			}
 			{
-				constexpr auto source = u8"0, 2:0, 2:42="sv;
+				constexpr auto source = u8"0, 2:42, 0, 2:21, 0="sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(source);
 				suite.expect(!result);
 			}
@@ -104,12 +104,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("inferior", [&] {
 			{
-				constexpr auto source = u8"0, 2:21, 2:42<"sv;
+				constexpr auto source = u8"0, 2:21, 0, 2:42, 0<"sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(source);
 				suite.expect(result);
 			}
 			{
-				constexpr auto source = u8"0, 2:42, 2:21<"sv;
+				constexpr auto source = u8"0, 2:42, 0, 2:21, 0<"sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(source);
 				suite.expect(!result);
 			}
@@ -117,12 +117,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("superior", [&] {
 			{
-				constexpr auto source = u8"0, 2:21, 2:42>"sv;
+				constexpr auto source = u8"0, 2:21, 0, 2:42, 0>"sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(source);
 				suite.expect(!result);
 			}
 			{
-				constexpr auto source = u8"0, 2:42, 2:21>"sv;
+				constexpr auto source = u8"0, 2:42, 0, 2:21, 0>"sv;
 				constexpr auto result = VM::execute<bool, std::size_t, int>(source);
 				suite.expect(result);
 			}
@@ -345,7 +345,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 		});
 
 		suite.addTest("compare string.at", [&] {
-			constexpr auto source = u8R"(0, 2:0, 1;, 1:6, 2;), 2:\W =)"sv;
+			constexpr auto source = u8R"(0, 2:0, 1;, 1:6, 2;), 0, 2:\W, 0 =)"sv;
 			constexpr auto input = u8"Hello World!"sv;
 			auto result = VM::execute<bool, std::size_t, char8_t, const std::u8string_view*>(source, &input, &std::u8string_view::at);
 			suite.expect(result);
@@ -370,12 +370,13 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			constexpr auto source = u8R"(
 				1;, 1+ get nb plus one
 				P position for loop
-				(0, 2, 0, 0, 0C copy nb
-				(1- minus one
-				(0, 0, 2, 0C copy nb
-				(0=, 0, 4, 0? (0X quit if nb equal zero
-				(2; get input
-				(3; execute print
+					(1:
+						(0, 0, 1, 0, 0C copy nb
+						(1- minus one
+						(0, 0, 0, 1C copy nb
+						(0 , 0, 0=, 0, 4, 0? (0X quit if nb equal zero
+					(2; get input
+					(3; execute print
 				(0, 3J goto position for loop
 			)"sv;
 

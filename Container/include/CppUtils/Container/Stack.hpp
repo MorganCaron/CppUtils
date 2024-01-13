@@ -86,6 +86,13 @@ namespace CppUtils::Container
 
 		template<Type::Concept::TriviallyCopyable T>
 		requires Type::Concept::Present<T, SupportedTypes...>
+		constexpr auto set(T newValue) -> void
+		{
+			set(size() - 1, std::move(newValue));
+		}
+
+		template<Type::Concept::TriviallyCopyable T>
+		requires Type::Concept::Present<T, SupportedTypes...>
 		constexpr auto push(T value = T{}) -> void
 		{
 			m_types.push_back(Type::getPosition<T, SupportedTypes...>());
@@ -131,6 +138,14 @@ namespace CppUtils::Container
 			auto value = get<T>(size() - 1);
 			drop();
 			return value;
+		}
+
+		constexpr auto pop(auto&& visitor) -> void
+		{
+			visit(size() - 1, [this, visitor = std::forward<decltype(visitor)>(visitor)](auto&& value) -> void {
+				drop();
+				visitor(std::forward<decltype(value)>(value));
+			});
 		}
 
 		constexpr auto copy(std::size_t sourcePosition, std::size_t destinationPosition) -> void
