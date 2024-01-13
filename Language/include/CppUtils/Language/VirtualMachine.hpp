@@ -10,8 +10,6 @@
 #include <stdexcept>
 #include <functional>
 
-#include <CppUtils/Log/Logger.hpp>
-#include <CppUtils/String/String.hpp>
 #include <CppUtils/Container/Stack.hpp>
 
 // Ribosome
@@ -83,7 +81,6 @@ namespace CppUtils::Language::VirtualMachine
 	requires Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>
 	constexpr auto execute(const auto& source, auto... data) -> ReturnType
 	{
-		using Logger = Logger<"CppUtils">;
 		using Stack = Container::Stack<ReturnType, SupportedTypes...>;
 		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{ &source, data... };
 		static constexpr auto getPositionInSource = [](Stack& stack, std::size_t instructionPointer, std::size_t mode, std::size_t position) -> std::size_t {
@@ -111,11 +108,6 @@ namespace CppUtils::Language::VirtualMachine
 				});
 			});
 		};
-		static constexpr auto printType = [](Stack& stack, std::size_t position) -> void {
-			stack.visit(position, [position, type = stack.getType(position)](auto&& value) -> void {
-				Logger::print<"debug">("Position: {}; Type: {}; Size: {} bytes; Value: {}", position, type, sizeof(decltype(value)), String::formatValue(value));
-			});
-		};
 		// Todo: faire sauter la template
 		static constexpr auto executeInstructionFunction = []<class ValueType>(Stack& stack, decltype(source) source, decltype(externalData) externalData, std::size_t& instructionPointer) static -> void {
 			switch (auto instruction = source[instructionPointer]; instruction)
@@ -140,11 +132,7 @@ namespace CppUtils::Language::VirtualMachine
 			}
 			break;
 			// Todo: case 'D': stack.push(&stack.template pop<ValueType>()); break;
-			case 'I':
-				Logger::print<"debug">("Stack size: {} elements; {} bytes", std::size(stack), stack.getByteSize());
-				for (auto i = std::size(stack); i > 0;)
-					printType(stack, --i);
-				break;
+			case 'I': stack.print(); break;
 			case 'J':
 			{
 				auto mode = stack.template pop<std::size_t>();
@@ -164,7 +152,7 @@ namespace CppUtils::Language::VirtualMachine
 						stack.template push<DereferencedType>(*pointer);
 				});
 				break;
-			case 'W': printType(stack, stack.template pop<std::size_t>()); break;
+			case 'W': stack.print(stack.template pop<std::size_t>()); break;
 			case 'X': instructionPointer = std::size(source) - 1; break;
 			case ':': stack.pushType(stack.template pop<std::size_t>()); break;
 			case ';':

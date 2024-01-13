@@ -6,6 +6,8 @@
 #include <vector>
 #include <stdexcept>
 
+#include <CppUtils/Log/Logger.hpp>
+#include <CppUtils/String/String.hpp>
 #include <CppUtils/Type/VariadicTemplate.hpp>
 
 namespace CppUtils::Container
@@ -14,6 +16,7 @@ namespace CppUtils::Container
 	class Stack final
 	{
 	public:
+		using Logger = Logger<"CppUtils">;
 		using Types = std::tuple<SupportedTypes...>;
 		static constexpr auto typesSize = std::array<std::size_t, sizeof...(SupportedTypes)>{ sizeof(SupportedTypes)... };
 
@@ -185,6 +188,20 @@ namespace CppUtils::Container
 
 			visitors[m_types[position]](*this, position, std::forward<decltype(visitor)>(visitor));
 		}
+
+		constexpr auto print(std::size_t position) -> void
+		{
+			visit(position, [position, type = getType(position)](auto&& value) -> void {
+				Logger::print<"debug">("Position: {}; Type: {}; Size: {} bytes; Value: {}", position, type, sizeof(decltype(value)), String::formatValue(value));
+			});
+		};
+
+		constexpr auto print() -> void
+		{
+			Logger::print<"debug">("Stack size: {} elements; {} bytes", size(), getByteSize());
+			for (auto i = size(); i > 0;)
+				print(--i);
+		};
 
 	private:
 		[[nodiscard]] constexpr auto getTypeOffset(std::size_t position) const -> std::size_t
