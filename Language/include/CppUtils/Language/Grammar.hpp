@@ -18,15 +18,13 @@ namespace CppUtils::Language
 		{
 			using namespace std::literals;
 			constexpr auto lowLevelLabelsCompiler = u8R"(
-				0, 1;, 3;) source length
+				0
+				(0:
+					(1;, 3;) source length
 				(0 counter
 				P position for loop
 				(1:
-					(0, 3, 0, 0, 0C copy counter
-					(0
-					(0, 6, 0, 0, 0C copy source length
-					(0
-					=
+					(1, 3, 2, 3=
 					, 0, 4, 0? (0X quit if parsing is finished
 				(2; output
 				(2: char
