@@ -22,19 +22,23 @@ namespace CppUtils::Language
 				(0:
 					(1;, 3;) source length
 				(0 counter
+
 				P position for loop
-				(1:
-					(1, 3, 2, 3=
-					, 0, 4, 0? (0X quit if parsing is finished
-				(2; output
-				(2: char
-				(1; source
-				(0, 5, 0, 0, 0C copy counter
-					, 4;) get char at
-					, 5;) push back char in output
-				(0, 2, 0, 0, 0C copy counter
-					, 0, 1, 0+ plus one
-				(0, 0, 2, 0C) copy counter
+
+					(1:
+						(1, 3, 2, 3=
+						, 0, 4, 0? (0X quit if parsing is finished
+
+					(2; output
+						(2: char
+							(1; source
+							(0, 5, 0, 0, 0C copy counter
+								, 4;) get char at
+						, 5;) push back char in output
+
+					(2, 3, 1, 0+ counter plus one
+					(0, 0, 2, 3C) copy counter
+
 				(0, 3J goto position for loop
 			)"sv;
 

@@ -198,7 +198,7 @@ namespace CppUtils::Language::VirtualMachine
 			}
 			break;
 			case '!':
-				// Todo: Ajouter un bit d'adressage
+				// Todo: Ajouter un bit d'adressage ?
 				if constexpr (not Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
 					throw std::invalid_argument{"Type bool missing in template parameters"};
 				else

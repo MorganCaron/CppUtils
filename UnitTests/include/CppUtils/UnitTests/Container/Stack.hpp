@@ -28,6 +28,8 @@ namespace CppUtils::UnitTest::Container::Stack
 			auto stack = CppUtils::Container::Stack<bool, int, float, std::string_view>{true, 42, 3.14f, "Hello World!"sv};
 			suite.expectEqual(std::size(stack), 4uz);
 			
+			stack.print();
+
 			Logger::print("{}\n", stack.get<bool>(0));
 			Logger::print("{}\n", stack.get<int>(1));
 			Logger::print("{}\n", stack.get<float>(2));
@@ -72,7 +74,8 @@ namespace CppUtils::UnitTest::Container::Stack
 			auto stack = CppUtils::Container::Stack<bool, int, float, std::string_view>{true, 42, 3.14f, "Hello World!"sv};
 
 			for (auto i = 0uz; i < std::size(stack); ++i)
-				stack.visit(i, [](auto&& value) -> void {
+				stack.visit(i, [&stack, i](auto&& value) -> void {
+					stack.print(i);
 					Logger::print("{}\n", value);
 				});
 			
