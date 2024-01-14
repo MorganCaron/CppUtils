@@ -120,8 +120,11 @@ namespace CppUtils::Language::VirtualMachine
 	{
 		using Stack = Container::Stack<ReturnType, SupportedTypes...>;
 		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{ &source, data... };
-		// Todo: faire sauter la template
-		static constexpr auto executeInstructionFunction = []<class ValueType>(Stack& stack, decltype(source) source, decltype(externalData) externalData, std::size_t& instructionPointer) static -> void {
+		auto stack = Stack{ReturnType{}};
+		for (auto instructionPointer = 0uz; instructionPointer < std::size(source); ++instructionPointer)
+		{
+			if (std::empty(stack)) [[unlikely]]
+				throw std::logic_error{"Stack empty"};
 			switch (auto instruction = source[instructionPointer]; instruction)
 			{
 			case ',': [[fallthrough]];
@@ -343,26 +346,32 @@ namespace CppUtils::Language::VirtualMachine
 					else if constexpr (not std::is_arithmetic_v<Lhs>)
 						throw std::invalid_argument{"Operator / used on non arithmetic type"};
 					else if (rhs == Rhs{})
-						throw std::invalid_argument{"Division by zero not allowed"};
+						throw std::logic_error{"Division by zero not allowed"};
 					else
 						stack.push(static_cast<Lhs>(lhs / static_cast<Lhs>(rhs)));
 				});
 				break;
-			// Todo: Ajouter deux bits d'adressage:
-			case '\\': if constexpr (std::is_constructible_v<ValueType, decltype(source[0])>) stack.set(static_cast<ValueType>(stack.template top<ValueType>() + static_cast<ValueType>(source[++instructionPointer]))); break;
-			default: if constexpr (std::is_arithmetic_v<ValueType>) if (auto c = instruction; c >= '0' && c <= '9') stack.set(static_cast<ValueType>(stack.template top<ValueType>() * 10 + static_cast<ValueType>(c - '0'))); break;
+			case '\\':
+				stack.top([&stack, &source, &instructionPointer](auto&& value) -> void {
+					using Char = decltype(source[0]);
+					using Value = std::decay_t<decltype(value)>;
+					if constexpr (not std::is_constructible_v<Value, Char>)
+						throw std::logic_error{"Incorrect type"};
+					else
+						stack.set(static_cast<Value>(stack.template top<Value>() + static_cast<Value>(source[++instructionPointer])));
+				});
+				break;
+			default:
+				if (auto c = instruction; c >= '0' && c <= '9')
+					stack.top([&stack, c](auto&& value) -> void {
+						using Value = std::decay_t<decltype(value)>;
+						if constexpr (not std::is_arithmetic_v<Value>)
+							throw std::logic_error{"Arithmetic operation used on non arithmetic type"};
+						else
+							stack.set(static_cast<Value>(value * 10 + static_cast<Value>(c - '0')));
+					});
+				break;
 			}
-		};
-		static constexpr auto executeInstruction = std::array<void(*)(Stack&, decltype(source), decltype(externalData), std::size_t&), 1 + sizeof...(SupportedTypes)>{
-			executeInstructionFunction.template operator()<ReturnType>,
-			executeInstructionFunction.template operator()<SupportedTypes>...
-		};
-		auto stack = Stack{ReturnType{}};
-		for (auto instructionPointer = 0uz; instructionPointer < std::size(source); ++instructionPointer)
-		{
-			if (std::empty(stack)) [[unlikely]]
-				throw std::logic_error{"Stack empty"};
-			executeInstruction[stack.getType(std::size(stack) - 1)](stack, source, externalData, instructionPointer);
 		}
 		return stack.template top<ReturnType>();
 	}

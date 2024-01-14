@@ -72,6 +72,11 @@ namespace CppUtils::Container
 			return get<T>(size() - 1);
 		}
 
+		constexpr auto top(auto&& visitor) const -> void
+		{
+			visit(size() - 1, std::forward<decltype(visitor)>(visitor));
+		}
+
 		template<Type::Concept::TriviallyCopyable T>
 		requires Type::Concept::Present<T, SupportedTypes...>
 		constexpr auto set(std::size_t position, T newValue) -> void
@@ -145,7 +150,7 @@ namespace CppUtils::Container
 
 		constexpr auto pop(auto&& visitor) -> void
 		{
-			visit(size() - 1, [this, visitor = std::forward<decltype(visitor)>(visitor)](auto&& value) mutable -> void {
+			top([this, visitor = std::forward<decltype(visitor)>(visitor)](auto&& value) mutable -> void {
 				drop();
 				visitor(std::forward<decltype(value)>(value));
 			});
@@ -175,7 +180,7 @@ namespace CppUtils::Container
 			copyFromSource[m_types[sourcePosition]][m_types[destinationPosition]](*this, sourcePosition, destinationPosition);
 		}
 
-		constexpr auto visit(std::size_t position, auto&& visitor) -> void
+		constexpr auto visit(std::size_t position, auto&& visitor) const -> void
 		{
 			static constexpr auto visitors = std::array{
 				+[](const Stack<SupportedTypes...>& stack, std::size_t position, decltype(visitor) visitor) -> void {
@@ -189,14 +194,14 @@ namespace CppUtils::Container
 			visitors[m_types[position]](*this, position, std::forward<decltype(visitor)>(visitor));
 		}
 
-		constexpr auto print(std::size_t position) -> void
+		constexpr auto print(std::size_t position) const -> void
 		{
 			visit(position, [position, type = getType(position)](auto&& value) -> void {
 				Logger::print<"debug">("Position: {}; Type: {}; Size: {} bytes; Value: {}", position, type, sizeof(decltype(value)), String::formatValue(value));
 			});
 		};
 
-		constexpr auto print() -> void
+		constexpr auto print() const -> void
 		{
 			Logger::print<"debug">("Stack size: {} elements; {} bytes", size(), getByteSize());
 			for (auto i = size(); i > 0;)
