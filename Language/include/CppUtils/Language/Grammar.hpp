@@ -33,7 +33,7 @@ namespace CppUtils::Language
 					, 4;) get char at
 					, 5;) push back char in output
 				(0, 2, 0, 0, 0C copy counter
-					, 1+ plus one
+					, 0, 1, 0+ plus one
 				(0, 0, 2, 0C) copy counter
 				(0, 3J goto position for loop
 			)"sv;

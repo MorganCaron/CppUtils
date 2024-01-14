@@ -53,25 +53,25 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 		});
 
 		suite.addTest("addition", [&] {
-			constexpr auto source = u8"40, 0:2+"sv;
+			constexpr auto source = u8"40, 0, 0:2, 0+"sv;
 			constexpr auto result = VM::execute<int, std::size_t>(source);
 			suite.expectEqual(result, 42);
 		});
 
 		suite.addTest("substraction", [&] {
-			constexpr auto source = u8"44, 0:2-"sv;
+			constexpr auto source = u8"44, 0, 0:2, 0-"sv;
 			constexpr auto result = VM::execute<int, std::size_t>(source);
 			suite.expectEqual(result, 42);
 		});
 
 		suite.addTest("multiplication", [&] {
-			constexpr auto source = u8"21, 0:2*"sv;
+			constexpr auto source = u8"21, 0, 0:2, 0*"sv;
 			constexpr auto result = VM::execute<int, std::size_t>(source);
 			suite.expectEqual(result, 42);
 		});
 
 		suite.addTest("division", [&] {
-			constexpr auto source = u8"84, 0:2/"sv;
+			constexpr auto source = u8"84, 0, 0:2, 0/"sv;
 			constexpr auto result = VM::execute<int, std::size_t>(source);
 			suite.expectEqual(result, 42);
 		});
@@ -326,7 +326,12 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 		});
 
 		suite.addTest("copy", [&] {
-			constexpr auto source = u8"21, 0:0, 1, 0, 0, 0C+"sv;
+			constexpr auto source = u8R"(
+				(0
+					(21, 0
+					(0, 2, 0, 0, 0C, 0
+					+
+			)"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
 			suite.expectEqual(result, 42uz);
 		});
@@ -368,11 +373,11 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 		suite.addTest("test loops", [&] {
 			constexpr auto source = u8R"(
-				1;, 1+ get nb plus one
+				1;, 0, 1, 0+ get nb plus one
 				P position for loop
 					(1:
 						(0, 0, 1, 0, 0C copy nb
-						(1- minus one
+						(0, 1, 0- minus one
 						(0, 0, 0, 1C copy nb
 						(0 , 0, 0=, 0, 4, 0? (0X quit if nb equal zero
 					(2; get input

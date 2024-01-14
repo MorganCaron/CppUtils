@@ -53,8 +53,8 @@ namespace CppUtils::Language::VirtualMachine
 		template<Type::Concept::TriviallyCopyable... StackTypes>
 		inline constexpr auto getOperands(Container::Stack<StackTypes...>& stack, auto&& visitor) -> void
 		{
-			getValueWithMode(stack, [&stack, visitor](auto&& rhs) -> void {
-					getValueWithMode(stack, [visitor, rhs = std::move(rhs)](auto&& lhs) -> void {
+			getValueWithMode(stack, [&stack, visitor](auto&& rhs) mutable -> void {
+					getValueWithMode(stack, [visitor, rhs = std::move(rhs)](auto&& lhs) mutable -> void {
 						visitor(std::move(lhs), std::move(rhs));
 				});
 			});
@@ -290,11 +290,65 @@ namespace CppUtils::Language::VirtualMachine
 						stack.push(static_cast<Lhs>(lhs ^ rhs));
 				});
 				break;
+			case '+':
+				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
+					static_cast<void>(stack);
+					using Lhs = std::decay_t<decltype(lhs)>;
+					using Rhs = std::decay_t<decltype(rhs)>;
+					if constexpr (not std::same_as<Lhs, Rhs>)
+						throw std::invalid_argument{"Operands don't have the same type"};
+					else if constexpr (not std::is_arithmetic_v<Lhs>)
+						throw std::invalid_argument{"Operator + used on non arithmetic type"};
+					else if constexpr (not Type::Concept::Present<decltype(lhs + rhs), ReturnType, SupportedTypes...>)
+						throw std::invalid_argument{"Type not supported"};
+					else
+						stack.push(lhs + rhs);
+				});
+				break;
+			case '-':
+				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
+					static_cast<void>(stack);
+					using Lhs = std::decay_t<decltype(lhs)>;
+					using Rhs = std::decay_t<decltype(rhs)>;
+					if constexpr (not std::same_as<Lhs, Rhs>)
+						throw std::invalid_argument{"Operands don't have the same type"};
+					else if constexpr (not std::is_arithmetic_v<Lhs>)
+						throw std::invalid_argument{"Operator - used on non arithmetic type"};
+					else if constexpr (not Type::Concept::Present<decltype(lhs - rhs), ReturnType, SupportedTypes...>)
+						throw std::invalid_argument{"Type not supported"};
+					else
+						stack.push(lhs - rhs);
+				});
+				break;
+			case '*':
+				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
+					static_cast<void>(stack);
+					using Lhs = std::decay_t<decltype(lhs)>;
+					using Rhs = std::decay_t<decltype(rhs)>;
+					if constexpr (not std::same_as<Lhs, Rhs>)
+						throw std::invalid_argument{"Operands don't have the same type"};
+					else if constexpr (not std::is_arithmetic_v<Lhs>)
+						throw std::invalid_argument{"Operator * used on non arithmetic type"};
+					else
+						stack.push(static_cast<Lhs>(lhs * rhs));
+				});
+				break;
+			case '/':
+				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
+					static_cast<void>(stack);
+					using Lhs = std::decay_t<decltype(lhs)>;
+					using Rhs = std::decay_t<decltype(rhs)>;
+					if constexpr (not std::same_as<Lhs, Rhs>)
+						throw std::invalid_argument{"Operands don't have the same type"};
+					else if constexpr (not std::is_arithmetic_v<Lhs>)
+						throw std::invalid_argument{"Operator / used on non arithmetic type"};
+					else if (rhs == Rhs{})
+						throw std::invalid_argument{"Division by zero not allowed"};
+					else
+						stack.push(static_cast<Lhs>(lhs / static_cast<Lhs>(rhs)));
+				});
+				break;
 			// Todo: Ajouter deux bits d'adressage:
-			case '+': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = stack.template pop<ValueType>(); stack.template push<ValueType>(stack.template pop<ValueType>() + rhs); } break;
-			case '-': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = stack.template pop<ValueType>(); stack.template push<ValueType>(stack.template pop<ValueType>() - rhs); } break;
-			case '*': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = stack.template pop<ValueType>(); stack.template push<ValueType>(stack.template pop<ValueType>() * rhs); } break;
-			case '/': if constexpr (std::is_arithmetic_v<ValueType>) { auto rhs = stack.template pop<ValueType>(); stack.template push<ValueType>(stack.template pop<ValueType>() / rhs); } break;
 			case '\\': if constexpr (std::is_constructible_v<ValueType, decltype(source[0])>) stack.set(static_cast<ValueType>(stack.template top<ValueType>() + static_cast<ValueType>(source[++instructionPointer]))); break;
 			default: if constexpr (std::is_arithmetic_v<ValueType>) if (auto c = instruction; c >= '0' && c <= '9') stack.set(static_cast<ValueType>(stack.template top<ValueType>() * 10 + static_cast<ValueType>(c - '0'))); break;
 			}

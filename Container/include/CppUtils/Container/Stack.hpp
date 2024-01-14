@@ -145,7 +145,7 @@ namespace CppUtils::Container
 
 		constexpr auto pop(auto&& visitor) -> void
 		{
-			visit(size() - 1, [this, visitor = std::forward<decltype(visitor)>(visitor)](auto&& value) -> void {
+			visit(size() - 1, [this, visitor = std::forward<decltype(visitor)>(visitor)](auto&& value) mutable -> void {
 				drop();
 				visitor(std::forward<decltype(value)>(value));
 			});
