@@ -18,10 +18,11 @@ namespace CppUtils::Language
 		{
 			using namespace std::literals;
 			constexpr auto lowLevelLabelsCompiler = u8R"(
+				init parsing variables
 				0
 				(0:
 					(1;, 3;) source length
-				(0 counter
+				(0 source position
 
 				P position for loop
 
@@ -32,12 +33,25 @@ namespace CppUtils::Language
 					(2; output
 						(2: char
 							(1; source
-							(0, 5, 0, 0, 0C copy counter
+							(0, 5, 0, 0, 0C copy source position
 								, 4;) get char at
+
+						condition verifiant les caractères §
+						(1:
+							(1, 2, 2:\§, 0=
+							, 0, 4, 0?
+								todo
+
+						condition verifiant les caractères ¤
+						(1:
+							(1, 2, 2:\¤, 0=
+							, 0, 4, 0?
+								todo
+
 						, 5;) push back char in output
 
-					(2, 3, 1, 0+ counter plus one
-					(0, 0, 2, 3C) copy counter
+					(2, 3, 1, 0+ source position plus one
+					(0, 0, 2, 3C) copy source position
 
 				(0, 3J goto position for loop
 			)"sv;
