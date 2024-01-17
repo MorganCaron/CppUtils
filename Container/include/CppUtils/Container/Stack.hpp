@@ -203,6 +203,7 @@ namespace CppUtils::Container
 
 		constexpr auto print() const -> void
 		{
+			Logger::printSeparator<"debug">();
 			Logger::print<"debug">("Stack size: {} elements; {} bytes", size(), getByteSize());
 			for (auto i = size(); i > 0;)
 				print(--i);

@@ -17,12 +17,13 @@ namespace CppUtils::Language
 		inline constexpr auto compile(const std::basic_string_view<CharT> source) -> CompilationResult<CharT>
 		{
 			using namespace std::literals;
-			constexpr auto lowLevelLabelsCompiler = u8R"(
+			constexpr auto lowLevelLabelsCompiler = uR"(
 				init parsing variables
-				0
-				(0:
+				(0
+				(:
 					(1;, 3;) source length
 				(0 source position
+				(0 nb labels
 
 				P position for loop
 
@@ -33,22 +34,26 @@ namespace CppUtils::Language
 					(2; output
 						(2: char
 							(1; source
-							(0, 5, 0, 0, 0C copy source position
-								, 4;) get char at
+							(0, 2, 1, 0, 0C copy source position
+								, 4;)) get char at
 
-						condition verifiant les caractères §
-						(1:
-							(1, 2, 2:\§, 0=
-							, 0, 4, 0?
-								todo
+							condition verifiant les caractères §
+							(1: bool
+								(1, 2, 2:\§, 0=
+								, 0, 17, 0?
+									todo
 
-						condition verifiant les caractères ¤
-						(1:
-							(1, 2, 2:\¤, 0=
-							, 0, 4, 0?
-								todo
+							condition verifiant les caractères ¤
+							(1: bool
+								(1, 2, 2:\¤, 0=
+								, 0, 128, 0?
+									_\,, 5;
+									_\3, 5;
+									_\J
+									(3, 3, 1, 0+ increment nb labels
+									(0, 0, 3, 1C) copy nb labels
 
-						, 5;) push back char in output
+							, 5;)) push back char in output
 
 					(2, 3, 1, 0+ source position plus one
 					(0, 0, 2, 3C) copy source position

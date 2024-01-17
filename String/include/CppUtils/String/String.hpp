@@ -84,28 +84,28 @@ namespace CppUtils::String
 		return std::isprint(c) ? ("'"s + c + '\'') : std::to_string(c);
 	}
 
-	[[nodiscard]] constexpr auto isUppercase(auto c) noexcept -> bool
+	[[nodiscard]] inline constexpr auto isUppercase(auto c) noexcept -> bool
 	{
 		return (c >= 'A' && c <= 'Z');
 	}
 
-	[[nodiscard]] constexpr auto isLowercase(auto c) noexcept -> bool
+	[[nodiscard]] inline constexpr auto isLowercase(auto c) noexcept -> bool
 	{
 		return (c >= 'a' && c <= 'z');
 	}
 
-	[[nodiscard]] constexpr auto toLowercase(auto c) noexcept
+	[[nodiscard]] inline constexpr auto toLowercase(auto c) noexcept
 	{
 		return isUppercase(c) ? c + ('a' - 'A') : c;
 	}
 
-	[[nodiscard]] constexpr auto toUppercase(auto c) noexcept
+	[[nodiscard]] inline constexpr auto toUppercase(auto c) noexcept
 	{
 		return isLowercase(c) ? c - ('a' - 'A') : c;
 	}
 
 	template<class CharT>
-	[[nodiscard]] constexpr auto toLowercase(std::basic_string_view<CharT> originalString) -> std::basic_string<CharT>
+	[[nodiscard]] inline constexpr auto toLowercase(std::basic_string_view<CharT> originalString) -> std::basic_string<CharT>
 	{
 		auto result = std::basic_string<CharT>{originalString};
 		for (auto& c : result)
@@ -114,7 +114,7 @@ namespace CppUtils::String
 	}
 
 	template<class CharT>
-	[[nodiscard]] constexpr auto toUppercase(std::basic_string_view<CharT> originalString) -> std::basic_string<CharT>
+	[[nodiscard]] inline constexpr auto toUppercase(std::basic_string_view<CharT> originalString) -> std::basic_string<CharT>
 	{
 		auto result = std::basic_string<CharT>{originalString};
 		for (auto& c : result)
@@ -122,11 +122,21 @@ namespace CppUtils::String
 		return result;
 	}
 	
-	[[nodiscard]] constexpr auto formatValue(auto value)
+	[[nodiscard]] inline constexpr auto formatValue(auto value)
 	{
 		if constexpr (std::formattable<decltype(value), char>)
 			return std::format("{}", value);
 		else
 			return "<non printable>";
+	}
+
+	template<Concept::Text StringT>
+	[[nodiscard]] inline constexpr auto toAscii(const StringT& string) -> std::string
+	{
+		auto asciiString = std::string{};
+		std::transform(std::cbegin(string), std::cend(string), std::back_inserter(asciiString), [](auto c) -> char {
+			return c < 128 ? static_cast<char>(c) : '?';
+		});
+		return asciiString;
 	}
 }

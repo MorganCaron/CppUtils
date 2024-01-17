@@ -73,8 +73,6 @@ namespace CppUtils::Language::VirtualMachine
 				call(stack, function, std::index_sequence_for<Args...>{});
 			else
 				stack.set(std::size(stack) - 1 - sizeof...(Args), call(stack, function, std::index_sequence_for<Args...>{}));
-			for (auto i = 0uz; i < sizeof...(Args); ++i)
-				stack.drop();
 		}
 
 		template<class Stack, class ReturnType, class Object, class... Args, std::size_t... I>
@@ -91,8 +89,6 @@ namespace CppUtils::Language::VirtualMachine
 				call(stack, function, objectPointer, std::index_sequence_for<Args...>{});
 			else
 				stack.set(std::size(stack) - 2 - sizeof...(Args), call(stack, function, objectPointer, std::index_sequence_for<Args...>{}));
-			for (auto i = 0uz; i < sizeof...(Args); ++i)
-				stack.drop();
 		}
 
 		template<class Stack, class ReturnType, class Object, class... Args, std::size_t... I>
@@ -109,8 +105,6 @@ namespace CppUtils::Language::VirtualMachine
 				call(stack, function, objectPointer, std::index_sequence_for<Args...>{});
 			else
 				stack.set(std::size(stack) - 2 - sizeof...(Args), call(stack, function, objectPointer, std::index_sequence_for<Args...>{}));
-			for (auto i = 0uz; i < sizeof...(Args); ++i)
-				stack.drop();
 		}
 	}
 	
@@ -120,11 +114,9 @@ namespace CppUtils::Language::VirtualMachine
 	{
 		using Stack = Container::Stack<ReturnType, SupportedTypes...>;
 		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{ &source, data... };
-		auto stack = Stack{ReturnType{}};
+		auto stack = Stack{};
 		for (auto instructionPointer = 0uz; instructionPointer < std::size(source); ++instructionPointer)
 		{
-			if (std::empty(stack)) [[unlikely]]
-				throw std::logic_error{"Stack empty"};
 			switch (auto instruction = source[instructionPointer]; instruction)
 			{
 			case ',': [[fallthrough]];
@@ -137,6 +129,7 @@ namespace CppUtils::Language::VirtualMachine
 				break;
 			case 'C': // Todo: renommer en M ?
 			{
+				// todo: getValueWithMode(stack, [](auto&& destination) -> void {
 				auto destinationMode = stack.template pop<std::size_t>();
 				auto destinationPosition = stack.template pop<std::size_t>();
 				auto sourceMode = stack.template pop<std::size_t>();
@@ -167,7 +160,6 @@ namespace CppUtils::Language::VirtualMachine
 						stack.template push<DereferencedType>(*pointer);
 				});
 				break;
-			case 'W': stack.print(stack.template pop<std::size_t>()); break;
 			case 'X': instructionPointer = std::size(source) - 1; break;
 			case ':': stack.pushType(stack.template pop<std::size_t>()); break;
 			case ';':
