@@ -1,6 +1,8 @@
 #include <CppUtils/Terminal/TextModifier.hpp>
 
+#if defined(OS_WINDOWS)
 #include <windows.h>
+#endif
 
 namespace CppUtils::Terminal
 {
