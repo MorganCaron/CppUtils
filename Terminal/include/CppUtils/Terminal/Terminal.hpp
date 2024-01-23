@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include <CppUtils/Platform/OS.hpp>
+#include <CppUtils/Platform/Windows.hpp>
 #include <CppUtils/Container/Size2d.hpp>
 
 #if !defined(OS_WINDOWS)
