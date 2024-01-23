@@ -8,6 +8,8 @@
 #if defined(OS_MAC) or defined(OS_LINUX)
 #	include <sys/ioctl.h>
 #	include <unistd.h>
+#elif defined(OS_WINDOWS)
+#include <windows.h>
 #endif
 
 namespace CppUtils::Terminal
