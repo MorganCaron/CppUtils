@@ -12,15 +12,18 @@
 namespace CppUtils::Terminal
 {
 #if defined(OS_WINDOWS)
-	using Handle = HANDLE;
+  // HANDLE is defined as a void pointer see https://learn.microsoft.com/en-us/windows/win32/winprog/windows-data-types#handle
+	using Handle = void*;
 #else
 	using Handle = std::intptr_t;
 #endif
 
 #if defined(OS_WINDOWS)
-	constexpr auto InvalidHandle = INVALID_HANDLE_VALUE;
+// INVALID_HANDLE_VALUE is defined as https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.10240.0/um/handleapi.h#L43
+// it can't be constexpr
+	inline const auto InvalidHandle = ((Handle)(long*)-1);
 #else
-	constexpr auto InvalidHandle = static_cast<Handle>(-1);
+	inline constexpr auto InvalidHandle = Handle{-1};
 #endif
 
 	auto setConsoleOutputUTF8() -> void;
