@@ -21,19 +21,21 @@ namespace CppUtils::Terminal::TextColor
 		Cyan,
 		White
 	};
+
 #if defined(OS_WINDOWS)
 // see https://learn.microsoft.com/en-us/windows/console/char-info-str
 	namespace Attribute
 	{
-    [[maybe_unused]] inline constexpr std::uint8_t Black = 0;
-    [[maybe_unused]] inline constexpr std::uint8_t Red = 4;
-    [[maybe_unused]] inline constexpr std::uint8_t Green = 2;
-    [[maybe_unused]] inline constexpr std::uint8_t Yellow = Red | Green | 8;
-    [[maybe_unused]] inline constexpr std::uint8_t Blue = 1;
-    [[maybe_unused]] inline constexpr std::uint8_t Magenta = 13;
-    [[maybe_unused]] inline constexpr std::uint8_t Cyan = 11;
-    [[maybe_unused]] inline constexpr std::uint8_t White = 15;
-    [[maybe_unused]] inline constexpr std::uint8_t Default = Red | Green | Blue;
+		[[maybe_unused]] inline constexpr std::uint8_t Black = 0;
+		[[maybe_unused]] inline constexpr std::uint8_t Red = 4;
+		[[maybe_unused]] inline constexpr std::uint8_t Green = 2;
+		[[maybe_unused]] inline constexpr std::uint8_t Intensity = 8;
+		[[maybe_unused]] inline constexpr std::uint8_t Yellow = Red | Green | Intensity;
+		[[maybe_unused]] inline constexpr std::uint8_t Blue = 1;
+		[[maybe_unused]] inline constexpr std::uint8_t Magenta = 13;
+		[[maybe_unused]] inline constexpr std::uint8_t Cyan = 11;
+		[[maybe_unused]] inline constexpr std::uint8_t White = 15;
+		[[maybe_unused]] inline constexpr std::uint8_t Default = Red | Green | Blue;
 	}
 
 	[[nodiscard]] constexpr std::uint8_t getTextColorCode(TextColorEnum textColor)
@@ -65,16 +67,15 @@ namespace CppUtils::Terminal::TextColor
 #elif defined(OS_LINUX) || defined(OS_MACOS)
 	namespace ANSIEscapeCode
 	{
-			[[maybe_unused]] inline constexpr auto Black = "\x1B[30m"sv;
-			[[maybe_unused]] inline constexpr auto Red = "\x1B[31m"sv;
-			[[maybe_unused]] inline constexpr auto Green = "\x1B[32m"sv;
-			[[maybe_unused]] inline constexpr auto Yellow = "\x1B[33m"sv;
-			[[maybe_unused]] inline constexpr auto Blue = "\x1B[34m"sv;
-			[[maybe_unused]] inline constexpr auto Magenta = "\x1B[35m"sv;
-			[[maybe_unused]] inline constexpr auto Cyan = "\x1B[36m"sv;
-			[[maybe_unused]] inline constexpr auto White = "\x1B[37m"sv;
-			[[maybe_unused]] inline constexpr auto Default = "\x1B[39m"sv;
-		}
+		[[maybe_unused]] inline constexpr auto Black = "\x1B[30m"sv;
+		[[maybe_unused]] inline constexpr auto Red = "\x1B[31m"sv;
+		[[maybe_unused]] inline constexpr auto Green = "\x1B[32m"sv;
+		[[maybe_unused]] inline constexpr auto Yellow = "\x1B[33m"sv;
+		[[maybe_unused]] inline constexpr auto Blue = "\x1B[34m"sv;
+		[[maybe_unused]] inline constexpr auto Magenta = "\x1B[35m"sv;
+		[[maybe_unused]] inline constexpr auto Cyan = "\x1B[36m"sv;
+		[[maybe_unused]] inline constexpr auto White = "\x1B[37m"sv;
+		[[maybe_unused]] inline constexpr auto Default = "\x1B[39m"sv;
 	}
 
 	[[nodiscard]] constexpr std::string_view getTextColorCode(TextColorEnum textColor)

@@ -1,8 +1,5 @@
 #include <CppUtils/Terminal/TextModifier.hpp>
-
-#if defined(OS_WINDOWS)
-#include <windows.h>
-#endif
+#include <CppUtils/Platform/Windows.hpp>
 
 namespace CppUtils::Terminal
 {
@@ -37,6 +34,7 @@ namespace CppUtils::Terminal
 #endif
 		}
 
+#if defined(OS_WINDOWS)
 		auto TextModifier::getTextColor(std::FILE* file) -> std::uint16_t
 		{
 			CONSOLE_SCREEN_BUFFER_INFO info;
@@ -52,4 +50,5 @@ namespace CppUtils::Terminal
 				return 0;
 			return info.wAttributes;
 		}
+#endif
 }

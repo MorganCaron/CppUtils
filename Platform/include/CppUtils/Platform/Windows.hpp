@@ -1,3 +1,4 @@
+// Ce fichier doit être importé à la place de <windows.h>
 // Ne pas importer dans un header pour ne pas tirer tout windows.h
 #pragma once
 
