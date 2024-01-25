@@ -30,19 +30,14 @@ namespace CppUtils::Terminal::TextStyle
 		{
 			case TextStyleEnum::Bolder:
 				return ANSIEscapeCode::Bolder;
-				break;
 			case TextStyleEnum::Lighter:
 				return ANSIEscapeCode::Lighter;
-				break;
 			case TextStyleEnum::Italic:
 				return ANSIEscapeCode::Italic;
-				break;
 			case TextStyleEnum::Underline:
 				return ANSIEscapeCode::Underline;
-				break;
 			default:
 				return "";
-				break;
 		}
 	}
 #endif

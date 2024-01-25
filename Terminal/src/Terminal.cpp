@@ -57,8 +57,8 @@ namespace CppUtils::Terminal
 		auto consoleScreenBufferInfo = CONSOLE_SCREEN_BUFFER_INFO{};
 		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleScreenBufferInfo);
 		return Container::Size2d<>{
-			static_cast<std::uint64_t>(consoleScreenBufferInfo.srWindow.Right - consoleScreenBufferInfo.srWindow.Left + 1),
-			static_cast<std::uint64_t>(consoleScreenBufferInfo.srWindow.Bottom - consoleScreenBufferInfo.srWindow.Top + 1)
+			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Right - consoleScreenBufferInfo.srWindow.Left + 1),
+			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Bottom - consoleScreenBufferInfo.srWindow.Top + 1)
 		};
 	}
 #elif defined(OS_MAC) or defined(OS_LINUX)
