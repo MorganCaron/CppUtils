@@ -6,7 +6,6 @@
 #include <CppUtils/UnitTests/Container/Vector.hpp>
 #include <CppUtils/UnitTests/FileSystem/File/Binary.hpp>
 #include <CppUtils/UnitTests/FileSystem/File/String.hpp>
-#include <CppUtils/UnitTests/Functional/Function.hpp>
 #include <CppUtils/UnitTests/Graph/MeshNode.hpp>
 #include <CppUtils/UnitTests/Graph/Tree.hpp>
 #include <CppUtils/UnitTests/Language/LowLevelLabelsCompiler.hpp>

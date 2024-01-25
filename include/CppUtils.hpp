@@ -12,7 +12,6 @@
 #include <CppUtils/External/DllExport.hpp>
 #include <CppUtils/External/SharedLibrary.hpp>
 #include <CppUtils/FileSystem/File.hpp>
-#include <CppUtils/Functional/Function.hpp>
 #include <CppUtils/Graph/MeshNetwork.hpp>
 #include <CppUtils/Graph/MeshNode.hpp>
 #include <CppUtils/Graph/Tree.hpp>

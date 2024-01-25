@@ -16,7 +16,6 @@ if enable_documentation
 				'../Container/include/',
 				'../External/include/',
 				'../FileSystem/include/',
-				'../Functional/include/',
 				'../Graph/include/',
 				'../Hash/include/',
 				'../Language/ASM/Compiler/include/',
