@@ -1,19 +1,31 @@
 #pragma once
 
+#include <filesystem>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
 
-#include <CppUtils/Platform/Library.hpp>
-#include <CppUtils/Symbol/Symbol.hpp>
+#include <CppUtils/Type/Concept.hpp>
+
+#if defined(OS_LINUX) || defined(OS_MACOS)
+#	include <dlfcn.h>
+#endif
 
 namespace CppUtils::External
 {
 #if defined(OS_WINDOWS)
+	using Library = HMODULE;
+#elif defined(OS_LINUX) or defined(OS_MACOS)
+	using Library = void*;
+#else
+#	error unsupported platform
+#endif
 
-	[[nodiscard]] inline auto openLibrary(const std::filesystem::path& libraryPath) -> Platform::Library
+#if defined(OS_WINDOWS)
+
+	[[nodiscard]] inline auto openLibrary(const std::filesystem::path& libraryPath) -> Library
 	{
 		auto wstringPath = libraryPath.generic_wstring();
 		auto library = LoadLibraryExW(std::data(wstringPath), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
@@ -22,9 +34,9 @@ namespace CppUtils::External
 		return library;
 	}
 
-#elif defined(OS_LINUX) || defined(OS_MACOS)
+#elif defined(OS_LINUX) or defined(OS_MACOS)
 
-	[[nodiscard]] inline auto openLibrary(const std::filesystem::path& libraryPath) -> Platform::Library
+	[[nodiscard]] inline auto openLibrary(const std::filesystem::path& libraryPath) -> Library
 	{
 		auto stringPath = libraryPath.string();
 		auto library = dlopen(std::data(stringPath), RTLD_LAZY);
@@ -37,14 +49,14 @@ namespace CppUtils::External
 
 #if defined(OS_WINDOWS)
 
-	inline auto closeLibrary(Platform::Library library) -> void
+	inline auto closeLibrary(Library library) -> void
 	{
 		static_cast<void>(FreeLibrary(library));
 	}
 
-#elif defined(OS_LINUX) || defined(OS_MACOS)
+#elif defined(OS_LINUX) or defined(OS_MACOS)
 
-	inline auto closeLibrary(Platform::Library library) -> void
+	inline auto closeLibrary(Library library) -> void
 	{
 		static_cast<void>(dlclose(library));
 	}
@@ -88,10 +100,24 @@ namespace CppUtils::External
 		template<Type::Concept::Function Function = void(*)()>
 		[[nodiscard]] auto getFunction(std::string_view signature) -> Function
 		{
-			Symbol::getFunction<Function>(signature, m_library);
+			using namespace std::literals;
+#if defined(OS_WINDOWS)
+			auto handle = GetModuleHandle(nullptr);
+			auto* functionPointer = GetProcAddress(handle, std::data(signature));
+			if (!functionPointer)
+				throw std::runtime_error("Couldn't load function "s + std::data(signature) + "\nError code: " + GetLastError());
+#elif defined(OS_LINUX) or defined(OS_MACOS)
+			auto* handle = dlopen(nullptr, RTLD_LAZY);
+			if (handle == nullptr)
+				throw std::runtime_error(dlerror());
+			auto* functionPointer = dlsym(handle, std::data(signature));
+			if (!functionPointer)
+				throw std::runtime_error("Couldn't load function "s + std::data(signature) + '\n' + dlerror());
+#endif
+			return reinterpret_cast<Function>(functionPointer);
 		}
 
 	private:
-		Platform::Library m_library = nullptr;
+		Library m_library = nullptr;
 	};
 }

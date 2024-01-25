@@ -1,6 +1,0 @@
-target("CppUtils-Symbol")
-	set_kind("headeronly")
-	add_deps("CppUtils-Platform")
-	add_deps("CppUtils-Type")
-	add_includedirs("include", { public = true })
-	add_headerfiles("include/**.hpp")
