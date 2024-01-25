@@ -23,46 +23,6 @@ namespace CppUtils::External
 #	error unsupported platform
 #endif
 
-#if defined(OS_WINDOWS)
-
-	[[nodiscard]] inline auto openLibrary(const std::filesystem::path& libraryPath) -> Library
-	{
-		auto wstringPath = libraryPath.generic_wstring();
-		auto library = LoadLibraryExW(std::data(wstringPath), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
-		if (!library)
-			throw std::runtime_error{"Couldn't load library " + wstringPath + "\n" + GetLastError()};
-		return library;
-	}
-
-#elif defined(OS_LINUX) or defined(OS_MACOS)
-
-	[[nodiscard]] inline auto openLibrary(const std::filesystem::path& libraryPath) -> Library
-	{
-		auto stringPath = libraryPath.string();
-		auto library = dlopen(std::data(stringPath), RTLD_LAZY);
-		if (!library)
-			throw std::runtime_error{"Couldn't load library " + stringPath + "\n" + dlerror()};
-		return library;
-	}
-
-#endif
-
-#if defined(OS_WINDOWS)
-
-	inline auto closeLibrary(Library library) -> void
-	{
-		static_cast<void>(FreeLibrary(library));
-	}
-
-#elif defined(OS_LINUX) or defined(OS_MACOS)
-
-	inline auto closeLibrary(Library library) -> void
-	{
-		static_cast<void>(dlclose(library));
-	}
-
-#endif
-
 	class DLL_PUBLIC SharedLibrary final
 	{
 	public:
@@ -90,11 +50,25 @@ namespace CppUtils::External
 
 		explicit SharedLibrary(const std::filesystem::path& libraryPath)
 		{
-			m_library = openLibrary(libraryPath);
+#if defined(OS_WINDOWS)
+			auto wstringPath = libraryPath.generic_wstring();
+			m_library = LoadLibraryExW(std::data(wstringPath), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+			if (!m_library)
+				throw std::runtime_error{"Couldn't load library " + wstringPath + "\n" + GetLastError()};
+#elif defined(OS_LINUX) or defined(OS_MACOS)
+			auto stringPath = libraryPath.string();
+			m_library = dlopen(std::data(stringPath), RTLD_LAZY);
+			if (!m_library)
+				throw std::runtime_error{"Couldn't load library " + stringPath + "\n" + dlerror()};
+#endif
 		}
 		~SharedLibrary() noexcept
 		{
-			closeLibrary(m_library);
+#if defined(OS_WINDOWS)
+			static_cast<void>(FreeLibrary(m_library));
+#elif defined(OS_LINUX) or defined(OS_MACOS)
+			static_cast<void>(dlclose(m_library));
+#endif
 		}
 
 		template<Type::Concept::Function Function = void(*)()>
