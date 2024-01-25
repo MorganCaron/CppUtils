@@ -40,56 +40,6 @@ xmake run
 
 ---
 
-## Documentation
-
-- **ASM**
-	- Lexer
-	- Compiler
-	- VM
-- **[Chrono](Chrono/README.md)**
-	- [Chronometer](Chrono/README.md#Chronometer)
-- **[Container](Container/README.md)**
-	- Stack
-	- [Vector](Container/README.md#Vector)
-- **External**
-	- DllExport
-	- SharedLibrary
-- **[FileSystem](FileSystem/README.md)**
-	- [File](FileSystem/README.md#File)
-- **[Functional](Functional/README.md)**
-	- [Function](Functional/README.md#Function)
-- **[Graph](Graph/README.md)**
-	- [MeshNode](Graph/README.md#MeshNode)
-	- [TreeNode](Graph/README.md#TreeNode)
-- **[Hash](Hash/README.md)**
-- **[Language](Language/README.md)**
-	- [Parser](Language/Parser/README.md)
-	- [Lexer](Language/Lexer/README.md)
-	- Intermediate Representation
-	- Compiler
-	- VM
-- **[Log](Log/README.md)**
-	- [ChronoLogger](Log/README.md#ChronoLogger)
-	- [Logger](Log/README.md#Logger)
-- **[Platform](Platform/README.md)**
-	- [OS](Platform/README.md#OS)
-- **[String](String/README.md)**
-- **[Switch](Switch/README.md)**
-- **Terminal**
-	- TextModifier
-- **[Test](Test/README.md)**
-	- [UnitTest](Test/README.md#UnitTest)
-- **[Thread](Thread/README.md)**
-	- [AsyncIStreamListener](Thread/README.md#AsyncStreamListener)
-	- [LoopThread](Thread/README.md#LoopThread)
-- **[Type](Type/README.md)**
-	- [Cloneable](Type/README.md#Cloneable)
-	- [NonCopyable](Type/README.md#NonCopyable)
-	- [NonInstantiable](Type/README.md#NonInstantiable)
-	- [NonMovable](Type/README.md#NonMovable)
-
----
-
 ## Additional Informations
 ![Top Language](https://img.shields.io/github/languages/top/MorganCaron/CppUtils?style=for-the-badge)
 [![License](https://img.shields.io/github/license/MorganCaron/CppUtils?style=for-the-badge)](https://github.com/MorganCaron/CppUtils/blob/master/LICENSE)

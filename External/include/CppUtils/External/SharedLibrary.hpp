@@ -33,7 +33,7 @@ namespace CppUtils::External
 #elif defined(OS_MACOS)
 		static constexpr auto ext = std::string_view{".dylib"};
 #else
-#	error unsupported platform=
+#	error unsupported platform
 #endif
 
 		SharedLibrary() = default;
@@ -60,6 +60,8 @@ namespace CppUtils::External
 			m_library = dlopen(std::data(stringPath), RTLD_LAZY);
 			if (!m_library)
 				throw std::runtime_error{"Couldn't load library " + stringPath + "\n" + dlerror()};
+#else
+#	error unsupported platform
 #endif
 		}
 		~SharedLibrary() noexcept
@@ -87,6 +89,8 @@ namespace CppUtils::External
 			auto* functionPointer = dlsym(handle, std::data(signature));
 			if (!functionPointer)
 				throw std::runtime_error("Couldn't load function "s + std::data(signature) + '\n' + dlerror());
+#else
+#	error unsupported platform
 #endif
 			return reinterpret_cast<Function>(functionPointer);
 		}
