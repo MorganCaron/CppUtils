@@ -2,7 +2,6 @@ target("CppUtils-Terminal")
 	set_kind("$(kind)")
 	add_options("libc++_static", "libc++_shared")
 	add_deps(
-		"CppUtils-External",
 		"CppUtils-Platform",
 		"CppUtils-Container"
 	)

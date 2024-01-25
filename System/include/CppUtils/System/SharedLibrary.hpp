@@ -13,7 +13,7 @@
 #	include <dlfcn.h>
 #endif
 
-namespace CppUtils::External
+namespace CppUtils::System
 {
 #if defined(OS_WINDOWS)
 	using Library = HMODULE;

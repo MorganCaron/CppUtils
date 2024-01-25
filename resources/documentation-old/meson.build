@@ -14,7 +14,6 @@ if enable_documentation
 				'../include/',
 				'../Chrono/include/',
 				'../Container/include/',
-				'../External/include/',
 				'../FileSystem/include/',
 				'../Graph/include/',
 				'../Hash/include/',

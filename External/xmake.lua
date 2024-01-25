@@ -1,7 +1,0 @@
-target("CppUtils-External")
-	set_kind("$(kind)")
-	add_deps("CppUtils-Type")
-	set_policy("build.merge_archive", true)
-	add_defines("DLL_EXPORT")
-	add_includedirs("include", { public = true })
-	add_headerfiles("include/**.hpp")

@@ -96,7 +96,6 @@ jobs:
       if: ${{ matrix.os.name == 'Windows' && matrix.library-type == 'shared' }}
       shell: msys2 {0}
       run: |
-        cp ./build/External/libCppUtils-External.dll ./build/UnitTests
         cp ./build/Log/libCppUtils-Log.dll ./build/UnitTests
         cp ./build/Type/libCppUtils-Type.dll ./build/UnitTests
     - name: Generate Artifact on Ubuntu and MacOS
@@ -105,14 +104,12 @@ jobs:
         zip --junk-paths CppUtils-Artifact-${{ matrix.os.name }}-${{ matrix.library-type }} \
           ./LICENSE \
           ./resources/README.txt \
-          ./build/External/libCppUtils-External.a \
           ./build/Language/Parser/libCppUtils-Language-Parser.a \
           ./build/Log/libCppUtils-Log.a \
           ./build/Switch/libCppUtils-Switch.a \
           ./build/Type/libCppUtils-Type.a
         if [ ${{ matrix.library-type }} == "shared" ]; then
           zip --junk-paths CppUtils-Artifact-${{ matrix.os.name }}-${{ matrix.library-type }} \
-            ./build/External/libCppUtils-External.so \
             ./build/Log/libCppUtils-Log.so \
             ./build/Type/libCppUtils-Type.so
         fi
@@ -123,14 +120,12 @@ jobs:
         zip --junk-paths CppUtils-Artifact-${{ matrix.os.name }}-${{ matrix.library-type }} \
           ./LICENSE \
           ./resources/README.txt \
-          ./build/External/libCppUtils-External.a \
           ./build/Language/Parser/libCppUtils-Language-Parser.a \
           ./build/Log/libCppUtils-Log.a \
           ./build/Switch/libCppUtils-Switch.a \
           ./build/Type/libCppUtils-Type.a
         if [ ${{ matrix.library-type }} == "shared" ]; then
           zip --junk-paths CppUtils-Artifact-${{ matrix.os.name }}-${{ matrix.library-type }} \
-            ./build/External/libCppUtils-External.dll \
             ./build/Log/libCppUtils-Log.dll \
             ./build/Type/libCppUtils-Type.dll
         fi

@@ -9,8 +9,6 @@
 #include <CppUtils/Container/Stack.hpp>
 #include <CppUtils/Container/Vector.hpp>
 #include <CppUtils/Error.hpp>
-#include <CppUtils/External/DllExport.hpp>
-#include <CppUtils/External/SharedLibrary.hpp>
 #include <CppUtils/FileSystem/File.hpp>
 #include <CppUtils/Graph/MeshNetwork.hpp>
 #include <CppUtils/Graph/MeshNode.hpp>
@@ -27,10 +25,12 @@
 #include <CppUtils/Log/TreeNodeLogger.hpp>
 #include <CppUtils/Memory/UniquePtr.hpp>
 #include <CppUtils/Platform/Compiler.hpp>
+#include <CppUtils/Platform/DllExport.hpp>
 #include <CppUtils/Platform/OS.hpp>
 #include <CppUtils/Platform/Windows.hpp>
 #include <CppUtils/Random/Random.hpp>
 #include <CppUtils/String/String.hpp>
+#include <CppUtils/System/SharedLibrary.hpp>
 #include <CppUtils/System/System.hpp>
 #include <CppUtils/Terminal/BackgroundColor.hpp>
 #include <CppUtils/Terminal/Terminal.hpp>

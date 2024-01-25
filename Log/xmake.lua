@@ -1,7 +1,7 @@
 target("CppUtils-Log")
 	set_kind("$(kind)")
 	add_deps(
-		"CppUtils-External",
+		"CppUtils-Platform",
 		"CppUtils-Type",
 		"CppUtils-String",
 		"CppUtils-Terminal"
