@@ -6,7 +6,7 @@ namespace CppUtils::UnitTest::Functional::Function
 {
 	auto _ = TestSuite{"Functional", [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
-		
+
 		suite.addTest("callFunction", [&] {
 			const auto sum = std::function<int(int, int, int)>{[](int a, int b, int c) {
 				return a + b + c;
@@ -16,6 +16,5 @@ namespace CppUtils::UnitTest::Functional::Function
 			Logger::print("{}\n", result);
 			suite.expect(result == 42);
 		});
-
 	}};
 }

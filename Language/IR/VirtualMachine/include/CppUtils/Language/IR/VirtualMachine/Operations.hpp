@@ -47,7 +47,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 			programMemory.registerFile[register0] = programMemory.registerFile.at(source);
 			programMemory.goToNextInstruction();
 		}
-		
+
 		static void runWrite(const Instruction& instruction, Context& context)
 		{
 			auto& [compilerOutput, programMemory] = context;
@@ -148,7 +148,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 		++cursor.position;
 	}
 	*/
-	
+
 	/*template<class... Types>
 	void push(Parser::Cursor<Bytecode::Compiler::Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
 	{

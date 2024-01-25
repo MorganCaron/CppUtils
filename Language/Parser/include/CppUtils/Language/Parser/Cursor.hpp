@@ -1,8 +1,8 @@
 #pragma once
 
-#include <span>
-#include <cstddef>
 #include <concepts>
+#include <cstddef>
+#include <span>
 #include <string_view>
 
 #include <CppUtils/String/Concept.hpp>
@@ -15,7 +15,7 @@ namespace CppUtils::Language::Parser
 	{
 		std::span<const Element> data;
 		std::size_t position = 0;
-		
+
 		[[nodiscard]] constexpr bool isEnd() const
 		{
 			return position >= data.size();
@@ -62,19 +62,19 @@ namespace CppUtils::Language::Parser
 	{
 		if constexpr (!String::Concept::Char<CharT>)
 			return std::basic_string<CharT>{};
-		
+
 		auto startPosition = cursor.position - std::min(getPositionInTheLine(cursor), length);
 
 		auto endPosition = cursor.position;
 		while (endPosition < std::size(cursor.data) && endPosition < startPosition + length && cursor.data[endPosition] != '\n')
 			++endPosition;
-		
+
 		auto sample = std::basic_string<CharT>{std::cbegin(cursor.data) + startPosition, std::cbegin(cursor.data) + endPosition};
 		std::replace(std::begin(sample), std::end(sample), '\t', ' ');
 
 		auto arrowOffset = cursor.position - startPosition;
 		auto charOffset = arrowOffset == 0 ? arrowOffset : (arrowOffset == length * 2 + 1 ? arrowOffset - 2 : arrowOffset - 1);
-		
+
 		// Todo: utiliser std::format ici:
 		if (!empty(sample))
 			sample += '\n' + std::basic_string<CharT>(arrowOffset, ' ') + "↑\n";

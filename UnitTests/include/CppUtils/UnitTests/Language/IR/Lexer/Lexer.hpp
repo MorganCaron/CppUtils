@@ -17,7 +17,7 @@ namespace CppUtils::UnitTests::Language::IR::Lexer
 				return a;
 			}
 			)"sv);
-			
+
 			CppUtils::Log::TreeNodeLogger::log(irTree);
 			EXPECT(irTree.childs.size() == 1);
 			EXPECT(irTree.childs[0].childs.size() == 3);

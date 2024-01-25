@@ -1,9 +1,9 @@
 #pragma once
 
-#include <vector>
-#include <utility>
-#include <stdexcept>
 #include <functional>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace CppUtils::Functional
 {

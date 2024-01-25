@@ -1,10 +1,10 @@
 #pragma once
 
 #include <atomic>
+#include <functional>
 #include <memory>
 #include <thread>
 #include <utility>
-#include <functional>
 
 namespace CppUtils::Thread
 {
@@ -19,7 +19,7 @@ namespace CppUtils::Thread
 		{
 			start();
 		}
-		
+
 		LoopThread(const LoopThread&) = delete;
 		LoopThread(LoopThread&& src) noexcept:
 			m_function{std::move(src.m_function)},

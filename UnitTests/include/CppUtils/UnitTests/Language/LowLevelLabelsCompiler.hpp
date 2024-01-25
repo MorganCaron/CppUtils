@@ -15,7 +15,7 @@ namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 			auto [compilationResult, output] = Compiler::compile(source);
 			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-			
+
 			auto executionResult = VM::execute<std::size_t>(output);
 			suite.expectEqual(executionResult, 0uz);
 		});
@@ -47,7 +47,7 @@ namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 			auto [compilationResult, output] = Compiler::compile(source);
 			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-			
+
 			auto executionResult = VM::execute<std::size_t>(output);
 			suite.expectEqual(executionResult, 42uz);
 		});
@@ -71,10 +71,9 @@ namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 			auto [compilationResult, output] = Compiler::compile(source);
 			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-			
+
 			auto executionResult = VM::execute<std::size_t>(output);
 			suite.expectEqual(executionResult, 42uz);
 		});
-		
 	}};
 }

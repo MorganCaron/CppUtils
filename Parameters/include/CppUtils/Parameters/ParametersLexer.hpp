@@ -14,7 +14,7 @@ namespace CppUtils::Language::Parameters
 		!_space: (' ' || '\t' || '\n');
 	)"sv;
 
-	[[nodiscard]] auto parse(const std::size_t argc, const char *argv[]) -> Parser::Ast
+	[[nodiscard]] auto parse(const std::size_t argc, const char* argv[]) -> Parser::Ast
 	{
 		static auto grammarManager = Lexer::GrammarManager{};
 		grammarManager.addGrammar("argvGrammar"sv, argvGrammar);
@@ -50,7 +50,7 @@ namespace CppUtils::Language::Parameters
 			m_grammarLexer.parseGrammar(grammarSrc);
 		}
 
-		[[nodiscard]] std::map<std::string, std::string> parseParameters(const std::size_t argc, const char *argv[]) const
+		[[nodiscard]] std::map<std::string, std::string> parseParameters(const std::size_t argc, const char* argv[]) const
 		{
 			using namespace Type::Literals;
 			const auto argumentVector = std::span{argv + 1, argc - 1};
@@ -62,7 +62,7 @@ namespace CppUtils::Language::Parameters
 			return parameters;
 		}
 
-		[[nodiscard]] bool executeCommands(const std::size_t argc, const char *argv[], const std::unordered_map<std::string_view, std::function<bool(std::string_view)>>& commands) const
+		[[nodiscard]] bool executeCommands(const std::size_t argc, const char* argv[], const std::unordered_map<std::string_view, std::function<bool(std::string_view)>>& commands) const
 		{
 			const auto parameters = parseParameters(argc, argv);
 			for (const auto& [parameterName, parameterValue] : parameters)

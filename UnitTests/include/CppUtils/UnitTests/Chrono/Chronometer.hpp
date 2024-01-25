@@ -14,6 +14,5 @@ namespace CppUtils::UnitTest::Chrono::Chronometer
 			suite.expect(!std::empty(string));
 			Logger::print("{}\n", string);
 		});
-
 	}};
 }

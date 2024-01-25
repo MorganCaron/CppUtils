@@ -1,14 +1,14 @@
 #pragma once
 
 #include <cstdio>
-#include <vector>
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 #include <string_view>
+#include <vector>
 
 namespace CppUtils::FileSystem::File
 {
-	template <typename FuncType>
+	template<typename FuncType>
 	auto forFilesWithExtension(const std::string& path, const std::string& ext, FuncType&& function) -> void
 	{
 		for (const auto& file : std::filesystem::directory_iterator(path))
@@ -20,7 +20,7 @@ namespace CppUtils::FileSystem::File
 	{
 		std::remove(filePath.string().c_str());
 	}
-	
+
 	namespace Binary
 	{
 		template<class T>
@@ -65,7 +65,7 @@ namespace CppUtils::FileSystem::File
 			return vector;
 		}
 	}
-	
+
 	namespace String
 	{
 		inline auto write(const std::filesystem::path& filePath, std::string_view content) -> void
@@ -83,7 +83,7 @@ namespace CppUtils::FileSystem::File
 				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			file << content;
 		}
-		
+
 		[[nodiscard]] inline auto read(const std::filesystem::path& filePath) -> std::string
 		{
 			auto file = std::ifstream{filePath};

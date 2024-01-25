@@ -154,7 +154,6 @@ namespace CppUtils::Language::IR::Compiler
 			context.addInstruction(nop);
 			endThen->nextInstruction = ifnz;
 			ifnz->nextInstruction = nop;
-			
 		}
 	};
 }

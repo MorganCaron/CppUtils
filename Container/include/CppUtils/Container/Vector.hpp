@@ -1,8 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 namespace CppUtils::Container::Vector
 {
@@ -17,11 +17,11 @@ namespace CppUtils::Container::Vector
 	[[nodiscard]] auto merge(const std::initializer_list<std::reference_wrapper<const std::vector<T>>>& vectors) -> std::vector<T>
 	{
 		auto size = 0uz;
-		for(const auto &vector : vectors)
+		for (const auto& vector : vectors)
 			size += vector.get().size();
 		auto newVector = std::vector<T>{};
 		newVector.reserve(size);
-		for(const auto& vector : vectors)
+		for (const auto& vector : vectors)
 			newVector.insert(newVector.end(), vector.get().begin(), vector.get().end());
 		return newVector;
 	}

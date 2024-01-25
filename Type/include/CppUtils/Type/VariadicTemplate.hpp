@@ -7,7 +7,8 @@
 
 namespace CppUtils::Type
 {
-	template<std::size_t I, class... Types> requires (I < sizeof...(Types))
+	template<std::size_t I, class... Types>
+	requires (I < sizeof...(Types))
 	using NthType = std::tuple_element_t<I, std::tuple<Types...>>;
 
 	template<class T, class... Types>
@@ -18,8 +19,6 @@ namespace CppUtils::Type
 		static_cast<void>(((++i, std::same_as<T, Types>) || ...));
 		return --i;
 	}
-
-
 
 	template<class T, class... Types>
 	struct Unique: std::type_identity<T>
@@ -40,8 +39,6 @@ namespace CppUtils::Type
 
 	template<class... Types>
 	using UniqueTuple = UniqueType<std::tuple, Types...>;
-
-
 
 	template<template<class> class Trait, class T, class... Types>
 	struct Filter: std::type_identity<T>

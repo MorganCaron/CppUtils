@@ -1,12 +1,12 @@
 #pragma once
 
-#include <string>
-#include <ranges>
-#include <vector>
 #include <iostream>
+#include <ranges>
+#include <string>
+#include <vector>
 
-#include <CppUtils/Log/Logger.hpp>
 #include <CppUtils/HashTable.hpp>
+#include <CppUtils/Log/Logger.hpp>
 #include <CppUtils/Type/Concept.hpp>
 
 namespace CppUtils::Graph::Tree
@@ -51,7 +51,7 @@ namespace CppUtils::Graph::Tree
 				throw std::out_of_range{"The Node does not contain the requested child."};
 			return *value;
 		}
-		
+
 		[[nodiscard]] constexpr auto getNodesWithValue(const T& filterValue) const
 		{
 			return nodes | std::views::filter([&filterValue](const auto& node) { return node.value == filterValue; });

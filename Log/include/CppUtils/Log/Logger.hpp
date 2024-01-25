@@ -1,8 +1,8 @@
 #pragma once
 
-#include <print>
-#include <ostream>
 #include <exception>
+#include <ostream>
+#include <print>
 
 #include <CppUtils/Hash.hpp>
 #include <CppUtils/String/Concept.hpp>
@@ -29,8 +29,7 @@ namespace CppUtils
 		{
 			return {
 				Terminal::TextModifier{},
-				std::string{message}
-			};
+				std::string{message}};
 		}
 
 		template<Hasher logType = Hash{}, class... Args>
@@ -40,7 +39,7 @@ namespace CppUtils
 			// Todo C++23: std::print(ostream, "{}", std::move(message));
 			ostream << message;
 		}
-	
+
 		template<Hasher logType = Hash{}, class... Args>
 		static inline auto print(std::format_string<Args...> fmt, Args&&... args) -> void
 		{
@@ -84,8 +83,7 @@ namespace CppUtils
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Default},
-			std::format("INFO: {}\n", message)
-		};
+			std::format("INFO: {}\n", message)};
 	}
 
 	template<>
@@ -94,8 +92,7 @@ namespace CppUtils
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Cyan},
-			std::format("{}\n", message)
-		};
+			std::format("{}\n", message)};
 	}
 
 	template<>
@@ -104,8 +101,7 @@ namespace CppUtils
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Green},
-			std::format("{}\n", message)
-		};
+			std::format("{}\n", message)};
 	}
 
 	template<>
@@ -114,8 +110,7 @@ namespace CppUtils
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Magenta},
-			std::format("DEBUG: {}\n", message)
-		};
+			std::format("DEBUG: {}\n", message)};
 	}
 
 	template<>
@@ -124,8 +119,7 @@ namespace CppUtils
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Blue},
-			std::format("{}\n", message)
-		};
+			std::format("{}\n", message)};
 	}
 
 	template<>
@@ -134,8 +128,7 @@ namespace CppUtils
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Yellow},
-			std::format("WARNING: {}\n", message)
-		};
+			std::format("WARNING: {}\n", message)};
 	}
 
 	template<>
@@ -144,8 +137,7 @@ namespace CppUtils
 	{
 		return {
 			Terminal::TextModifier{stderr, Terminal::TextColor::TextColorEnum::Red},
-			std::format("ERROR: {}\n", message)
-		};
+			std::format("ERROR: {}\n", message)};
 	}
 
 	auto logException(const std::exception& exception, std::size_t depth = 0) -> void

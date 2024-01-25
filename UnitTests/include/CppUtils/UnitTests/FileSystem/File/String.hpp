@@ -6,7 +6,7 @@ namespace CppUtils::UnitTest::FileSystem::File::String
 {
 	auto _ = TestSuite{"FileSystem/File/String", [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
-		
+
 		suite.addTest("WriteRead", [&] {
 			const auto filePath = std::filesystem::path{"test.tmp"};
 			const auto originalString = "Hello world!";
@@ -28,6 +28,5 @@ namespace CppUtils::UnitTest::FileSystem::File::String
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			suite.expect(fileContent == std::string{firstString} + secondString);
 		});
-
 	}};
 }

@@ -64,7 +64,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			EXPECT(std::size(outputAst.root.nodes) == 1);
 			EXPECT(outputAst.root.nodes[0].value == 'c');
 		});
-		
+
 		addTest("read char", [] {
 			const auto grammar = CppUtils::Language::Parser::parseAst(R"(
 				main_{ read_+ }
@@ -211,7 +211,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 			grammar.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammar);
 			outputAst.log();
-			
+
 			EXPECT(std::size(outputAst.root.nodes) == 2);
 			auto aNode = outputAst.root.nodes[0];
 			EXPECT(aNode.value == 'A');

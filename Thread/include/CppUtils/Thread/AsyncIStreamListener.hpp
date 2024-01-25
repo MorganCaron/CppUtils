@@ -1,9 +1,9 @@
 #pragma once
 
-#include <thread>
+#include <functional>
 #include <future>
 #include <iostream>
-#include <functional>
+#include <thread>
 
 #include <CppUtils/Thread/LoopThread.hpp>
 

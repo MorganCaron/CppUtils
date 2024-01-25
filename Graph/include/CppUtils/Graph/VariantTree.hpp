@@ -2,9 +2,9 @@
 
 #include <variant>
 
+#include <CppUtils/Graph/Tree.hpp>
 #include <CppUtils/Type/Concept.hpp>
 #include <CppUtils/Type/VariadicTemplate.hpp>
-#include <CppUtils/Graph/Tree.hpp>
 
 namespace CppUtils::Graph::Tree
 {

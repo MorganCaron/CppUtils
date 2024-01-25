@@ -1,10 +1,10 @@
 #pragma once
 
-#include <CppUtils/Language/IR/Lexer/Lexer.hpp>
-#include <CppUtils/Language/IR/Compiler/Bytecode.hpp>
-#include <CppUtils/Language/IR/Compiler/Context.hpp>
-#include <CppUtils/Language/IR/Compiler/CompilationFunctions.hpp>
 #include <CppUtils/Language/Compiler/Compiler.hpp>
+#include <CppUtils/Language/IR/Compiler/Bytecode.hpp>
+#include <CppUtils/Language/IR/Compiler/CompilationFunctions.hpp>
+#include <CppUtils/Language/IR/Compiler/Context.hpp>
+#include <CppUtils/Language/IR/Lexer/Lexer.hpp>
 #include <CppUtils/Language/VirtualMachine/VirtualMachine.hpp>
 
 namespace CppUtils::Language::IR::Compiler
@@ -16,24 +16,23 @@ namespace CppUtils::Language::IR::Compiler
 	public:
 		using ASTNode = Parser::ASTNode<Type::Token, std::uintptr_t, std::string>;
 
-		Compiler(): m_compiler{{
-			{ "nop"_token, CompilationFunctions::compileNop },
-			{ "halt"_token, CompilationFunctions::compileHalt },
-			{ "comma"_token, CompilationFunctions::compileComma },
-			{ "ident"_token, CompilationFunctions::compileIdent },
-			{ "number"_token, CompilationFunctions::compileNumber },
-			{ "string"_token, CompilationFunctions::compileString },
-			{ "copy"_token, CompilationFunctions::compileCopy },
-			{ "eq"_token, CompilationFunctions::compileEq },
-			{ "add"_token, CompilationFunctions::compileAdd },
-			{ "sub"_token, CompilationFunctions::compileSub },
-			{ "label"_token, CompilationFunctions::compileLabel },
-			{ "ret"_token, CompilationFunctions::compileRet },
-			{ "deref"_token, CompilationFunctions::compileDeref },
-			{ "call"_token, CompilationFunctions::compileCall },
-			{ "if"_token, CompilationFunctions::compileIf },
-			{ "while"_token, CompilationFunctions::compileWhile }
-		}}
+		Compiler():
+			m_compiler{{{"nop"_token, CompilationFunctions::compileNop},
+				{"halt"_token, CompilationFunctions::compileHalt},
+				{"comma"_token, CompilationFunctions::compileComma},
+				{"ident"_token, CompilationFunctions::compileIdent},
+				{"number"_token, CompilationFunctions::compileNumber},
+				{"string"_token, CompilationFunctions::compileString},
+				{"copy"_token, CompilationFunctions::compileCopy},
+				{"eq"_token, CompilationFunctions::compileEq},
+				{"add"_token, CompilationFunctions::compileAdd},
+				{"sub"_token, CompilationFunctions::compileSub},
+				{"label"_token, CompilationFunctions::compileLabel},
+				{"ret"_token, CompilationFunctions::compileRet},
+				{"deref"_token, CompilationFunctions::compileDeref},
+				{"call"_token, CompilationFunctions::compileCall},
+				{"if"_token, CompilationFunctions::compileIf},
+				{"while"_token, CompilationFunctions::compileWhile}}}
 		{}
 
 		[[nodiscard]] Output compile(std::string_view src) const

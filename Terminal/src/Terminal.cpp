@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include <CppUtils/Platform/Windows.hpp>
 #include <CppUtils/Container/Size2d.hpp>
+#include <CppUtils/Platform/Windows.hpp>
 
 #if defined(OS_MAC) or defined(OS_LINUX)
 #	include <sys/ioctl.h>
@@ -58,8 +58,7 @@ namespace CppUtils::Terminal
 		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleScreenBufferInfo);
 		return Container::Size2d<>{
 			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Right - consoleScreenBufferInfo.srWindow.Left + 1),
-			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Bottom - consoleScreenBufferInfo.srWindow.Top + 1)
-		};
+			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Bottom - consoleScreenBufferInfo.srWindow.Top + 1)};
 	}
 #elif defined(OS_MAC) or defined(OS_LINUX)
 	[[nodiscard]] auto getTerminalSize() -> Container::Size2d<>
@@ -68,8 +67,7 @@ namespace CppUtils::Terminal
 		ioctl(STDOUT_FILENO, TIOCGWINSZ, &windowsSize);
 		return Container::Size2d<>{
 			windowsSize.ws_col,
-			windowsSize.ws_row
-		};
+			windowsSize.ws_row};
 	}
 #endif
 }

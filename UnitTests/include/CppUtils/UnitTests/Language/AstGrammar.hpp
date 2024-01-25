@@ -18,7 +18,7 @@ namespace CppUtils::UnitTests::Language::Grammar::AstGrammar
 			auto context = CppUtils::Language::Grammar::getAstGrammar();
 			CppUtils::Language::Ast::pushPointer(context.root["rodata"_token], std::data(source));
 
-            CppUtils::Language::VirtualMachine::run(context);
+			CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			const auto& result = CppUtils::Language::VirtualMachine::getReturnNode(context);
@@ -31,7 +31,7 @@ namespace CppUtils::UnitTests::Language::Grammar::AstGrammar
 			auto context = CppUtils::Language::Grammar::getAstGrammar();
 			CppUtils::Language::Ast::pushPointer(context.root["rodata"_token], std::data(source));
 
-            CppUtils::Language::VirtualMachine::run(context);
+			CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			const auto& result = CppUtils::Language::VirtualMachine::getReturnNode(context);
@@ -46,7 +46,7 @@ namespace CppUtils::UnitTests::Language::Grammar::AstGrammar
 			auto context = CppUtils::Language::Grammar::getAstGrammar();
 			CppUtils::Language::Ast::pushPointer(context.root["rodata"_token], std::data(source));
 
-            CppUtils::Language::VirtualMachine::run(context);
+			CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			const auto& result = CppUtils::Language::VirtualMachine::getReturnNode(context);
@@ -59,7 +59,7 @@ namespace CppUtils::UnitTests::Language::Grammar::AstGrammar
 			auto context = CppUtils::Language::Grammar::getAstGrammar();
 			CppUtils::Language::Ast::pushPointer(context.root["rodata"_token], std::data(source));
 
-            CppUtils::Language::VirtualMachine::run(context);
+			CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			const auto& result = CppUtils::Language::VirtualMachine::getReturnNode(context);
@@ -72,7 +72,7 @@ namespace CppUtils::UnitTests::Language::Grammar::AstGrammar
 			auto context = CppUtils::Language::Grammar::getAstGrammar();
 			CppUtils::Language::Ast::pushPointer(context.root["rodata"_token], std::data(source));
 
-            CppUtils::Language::VirtualMachine::run(context);
+			CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			const auto& result = CppUtils::Language::VirtualMachine::getReturnNode(context);
@@ -85,7 +85,7 @@ namespace CppUtils::UnitTests::Language::Grammar::AstGrammar
 			auto context = CppUtils::Language::Grammar::getAstGrammar();
 			CppUtils::Language::Ast::pushPointer(context.root["rodata"_token], std::data(source));
 
-            CppUtils::Language::VirtualMachine::run(context);
+			CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			const auto& result = CppUtils::Language::VirtualMachine::getReturnNode(context);
@@ -98,7 +98,7 @@ namespace CppUtils::UnitTests::Language::Grammar::AstGrammar
 			auto context = CppUtils::Language::Grammar::getAstGrammar();
 			CppUtils::Language::Ast::pushPointer(context.root["rodata"_token], std::data(source));
 
-            CppUtils::Language::VirtualMachine::run(context);
+			CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			const auto& result = CppUtils::Language::VirtualMachine::getReturnNode(context);
@@ -115,7 +115,7 @@ namespace CppUtils::UnitTests::Language::Grammar::AstGrammar
 			auto context = CppUtils::Language::Grammar::getAstGrammar();
 			CppUtils::Language::Ast::pushPointer(context.root["rodata"_token], std::data(source));
 
-            CppUtils::Language::VirtualMachine::run(context);
+			CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			const auto& result = CppUtils::Language::VirtualMachine::getReturnNode(context);

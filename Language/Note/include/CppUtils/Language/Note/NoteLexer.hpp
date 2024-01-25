@@ -43,7 +43,7 @@ namespace CppUtils::Language::Note
 			m_grammarLexer.addParsingFunction("stringToTokenModifier"_token, std::bind(Parser::Modifier::stringToTokenModifier<Type::Token, std::string>, _1, true));
 			m_grammarLexer.addParsingFunction("insertEmptyString"_token, Parser::Modifier::insertEmptyString<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("insertSpace"_token, std::bind(Parser::Modifier::insertString<Type::Token, std::string>, _1, " "sv));
-			
+
 			static constexpr auto grammarSrc = R"(
 			main: _initIncrementation , (_rootElement >= 0) _spaces;
 			!_initIncrementation: (_emptyLine >= 0) , initIncrementionParser;

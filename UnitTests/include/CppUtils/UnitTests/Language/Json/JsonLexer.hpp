@@ -12,12 +12,12 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 
 		addTest("empty json", [] {
 			CppUtils::Language::Json::getJsonGrammarAst().log();
-			
+
 			const auto jsonAst = R"(
 				{}
 			)"_json;
 			jsonAst.log();
-			
+
 			EXPECT(std::empty(jsonAst.root.nodes));
 		});
 
@@ -28,7 +28,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				}
 			)"_json;
 			jsonAst.log();
-			
+
 			EXPECT(std::size(jsonAst.root.nodes) == 1);
 			{
 				const auto& nullNode = jsonAst.root.nodes[0];
@@ -45,7 +45,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				}
 			)"_json;
 			jsonAst.log();
-			
+
 			EXPECT(std::size(jsonAst.root.nodes) == 2);
 			{
 				const auto& key0Node = jsonAst.root.nodes[0];
@@ -70,7 +70,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				}
 			)"_json;
 			jsonAst.log();
-			
+
 			EXPECT(std::size(jsonAst.root.nodes) == 3);
 			{
 				const auto& key0Node = jsonAst.root.nodes[0];
@@ -123,7 +123,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				}
 			)"_json;
 			jsonAst.log();
-			
+
 			EXPECT(std::size(jsonAst.root.nodes) == 1);
 			{
 				const auto& keyNode = jsonAst.root.nodes[0];
@@ -148,7 +148,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				}
 			)"_json;
 			jsonAst.log();
-			
+
 			EXPECT(std::size(jsonAst.root.nodes) == 1);
 			{
 				const auto& keyNode = jsonAst.root.nodes[0];
@@ -183,7 +183,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 				}
 			)"_json;
 			jsonAst.log();
-			
+
 			EXPECT(std::size(jsonAst.root.nodes) == 1);
 			{
 				const auto& keyNode = jsonAst.root.nodes[0];

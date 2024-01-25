@@ -4,7 +4,8 @@
 
 namespace CppUtils::UnitTest::Container::Stack
 {
-	auto _ = TestSuite{"Container/Stack", [](auto& suite) {
+	auto _ = TestSuite{"Container/Stack",
+		[](auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 
@@ -27,7 +28,7 @@ namespace CppUtils::UnitTest::Container::Stack
 		suite.addTest("Multiple types", [&] {
 			auto stack = CppUtils::Container::Stack<bool, int, float, std::string_view>{true, 42, 3.14f, "Hello World!"sv};
 			suite.expectEqual(std::size(stack), 4uz);
-			
+
 			stack.print();
 
 			Logger::print("{}\n", stack.get<bool>(0));
@@ -78,9 +79,8 @@ namespace CppUtils::UnitTest::Container::Stack
 					stack.print(i);
 					Logger::print("{}\n", value);
 				});
-			
+
 			suite.expectEqual(std::size(stack), 4uz);
 		});
-
 	}};
 }

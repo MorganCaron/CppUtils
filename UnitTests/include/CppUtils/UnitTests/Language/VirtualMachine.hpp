@@ -394,10 +394,9 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 				(: (1:\¤, 0, 1:\§, 0=
 			)"sv;
 			auto executionResult = VM::execute<bool, decltype(source)::value_type, std::size_t>(source);
-			
+
 			suite.expect(u"¤"sv != u"§"sv);
 			suite.expectEqual(executionResult, false);
 		});
-
 	}};
 }

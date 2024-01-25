@@ -1,14 +1,14 @@
 #pragma once
 
-#include <span>
 #include <array>
-#include <stack>
+#include <concepts>
 #include <cstdint>
+#include <functional>
+#include <span>
+#include <stack>
+#include <stdexcept>
 #include <utility>
 #include <variant>
-#include <concepts>
-#include <stdexcept>
-#include <functional>
 
 #include <CppUtils/Container/Stack.hpp>
 
@@ -54,20 +54,20 @@ namespace CppUtils::Language::VirtualMachine
 		inline constexpr auto getOperands(Container::Stack<StackTypes...>& stack, auto&& visitor) -> void
 		{
 			getValueWithMode(stack, [&stack, visitor](auto&& rhs) mutable -> void {
-					getValueWithMode(stack, [visitor, rhs = std::move(rhs)](auto&& lhs) mutable -> void {
-						visitor(std::move(lhs), std::move(rhs));
+				getValueWithMode(stack, [visitor, rhs = std::move(rhs)](auto&& lhs) mutable -> void {
+					visitor(std::move(lhs), std::move(rhs));
 				});
 			});
 		}
 
 		template<class Stack, class ReturnType, class... Args, std::size_t... I>
-		[[nodiscard]] inline constexpr auto call(Stack& stack, ReturnType(*function)(Args...), [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
+		[[nodiscard]] inline constexpr auto call(Stack& stack, ReturnType (*function)(Args...), [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
 		{
 			return std::invoke(function, stack.template get<std::remove_cvref_t<Type::NthType<I, Args...>>>(std::size(stack) - sizeof...(Args) + I)...);
 		}
 
 		template<class Stack, class ReturnType, class... Args>
-		inline constexpr auto call(Stack& stack, ReturnType(*function)(Args...)) -> void
+		inline constexpr auto call(Stack& stack, ReturnType (*function)(Args...)) -> void
 		{
 			if constexpr (std::is_void_v<ReturnType>)
 				call(stack, function, std::index_sequence_for<Args...>{});
@@ -76,13 +76,13 @@ namespace CppUtils::Language::VirtualMachine
 		}
 
 		template<class Stack, class ReturnType, class Object, class... Args, std::size_t... I>
-		[[nodiscard]] inline constexpr auto call(Stack& stack, ReturnType(Object::*function)(Args...), Object* object, [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
+		[[nodiscard]] inline constexpr auto call(Stack& stack, ReturnType (Object::*function)(Args...), Object* object, [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
 		{
 			return std::invoke(function, object, stack.template get<std::remove_cvref_t<Type::NthType<I, Args...>>>(std::size(stack) - sizeof...(Args) + I)...);
 		}
 
 		template<class Stack, class ReturnType, class Object, class... Args>
-		inline constexpr auto call(Stack& stack, ReturnType(Object::*function)(Args...)) -> void
+		inline constexpr auto call(Stack& stack, ReturnType (Object::*function)(Args...)) -> void
 		{
 			auto* objectPointer = stack.template get<Object*>(std::size(stack) - 1 - sizeof...(Args));
 			if constexpr (std::is_void_v<ReturnType>)
@@ -92,13 +92,13 @@ namespace CppUtils::Language::VirtualMachine
 		}
 
 		template<class Stack, class ReturnType, class Object, class... Args, std::size_t... I>
-		[[nodiscard]] inline constexpr auto call(Stack& stack, ReturnType(Object::*function)(Args...) const, const Object* object, [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
+		[[nodiscard]] inline constexpr auto call(Stack& stack, ReturnType (Object::*function)(Args...) const, const Object* object, [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
 		{
 			return std::invoke(function, object, stack.template get<std::remove_cvref_t<Type::NthType<I, Args...>>>(std::size(stack) - sizeof...(Args) + I)...);
 		}
 
 		template<class Stack, class ReturnType, class Object, class... Args>
-		inline constexpr auto call(Stack& stack, ReturnType(Object::*function)(Args...) const) -> void
+		inline constexpr auto call(Stack& stack, ReturnType (Object::*function)(Args...) const) -> void
 		{
 			const auto* objectPointer = stack.template get<const Object*>(std::size(stack) - 1 - sizeof...(Args));
 			if constexpr (std::is_void_v<ReturnType>)
@@ -107,13 +107,13 @@ namespace CppUtils::Language::VirtualMachine
 				stack.set(std::size(stack) - 2 - sizeof...(Args), call(stack, function, objectPointer, std::index_sequence_for<Args...>{}));
 		}
 	}
-	
+
 	template<Type::Concept::TriviallyCopyable ReturnType, Type::Concept::TriviallyCopyable... SupportedTypes>
 	requires Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>
 	constexpr auto execute(const auto& source, auto... data) -> ReturnType
 	{
 		using Stack = Container::Stack<ReturnType, SupportedTypes...>;
-		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{ &source, data... };
+		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{&source, data...};
 		auto stack = Stack{};
 		for (auto instructionPointer = 0uz; instructionPointer < std::size(source); ++instructionPointer)
 		{
@@ -154,7 +154,7 @@ namespace CppUtils::Language::VirtualMachine
 					if constexpr (not std::is_pointer_v<std::decay_t<decltype(pointer)>>)
 						throw std::logic_error{"The dereferenced type is not a pointer"};
 					else if constexpr (using DereferencedType = std::decay_t<decltype(*pointer)>;
-						not Type::Concept::Present<DereferencedType, ReturnType, SupportedTypes...>)
+									   not Type::Concept::Present<DereferencedType, ReturnType, SupportedTypes...>)
 						throw std::logic_error{"The dereferenced type is not present among the supported types"};
 					else
 						stack.template push<DereferencedType>(*pointer);
@@ -166,15 +166,17 @@ namespace CppUtils::Language::VirtualMachine
 			{
 				// Ajouter des bits d'adressage
 				auto dataId = stack.template pop<std::size_t>();
-				std::visit([&stack, dataId](auto&& data) -> void {
-					using T = std::remove_cvref_t<decltype(data)>;
-					if constexpr (Type::Concept::isFunctionPointer<T> || std::is_member_function_pointer_v<T>)
-						call(stack, data);
-					else if constexpr (not Type::Concept::Present<T, ReturnType, SupportedTypes...>)
-						throw std::invalid_argument{"Type " + std::to_string(dataId) + " missing in template parameters"};
-					else
-						stack.template push<T>(data);
-				}, externalData[dataId]);
+				std::visit(
+					[&stack, dataId](auto&& data) -> void {
+						using T = std::remove_cvref_t<decltype(data)>;
+						if constexpr (Type::Concept::isFunctionPointer<T> || std::is_member_function_pointer_v<T>)
+							call(stack, data);
+						else if constexpr (not Type::Concept::Present<T, ReturnType, SupportedTypes...>)
+							throw std::invalid_argument{"Type " + std::to_string(dataId) + " missing in template parameters"};
+						else
+							stack.template push<T>(data);
+					},
+					externalData[dataId]);
 			}
 			break;
 			case '?':

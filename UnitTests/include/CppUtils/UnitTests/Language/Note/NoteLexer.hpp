@@ -9,7 +9,7 @@ namespace CppUtils::UnitTests::Language::Note::NoteLexer
 		using namespace std::literals;
 		using namespace CppUtils::Type::Literals;
 		using namespace CppUtils::Language::Note::Literals;
-		
+
 		addTest("Minimalist", [] {
 			const auto noteTree = R"(
 				Label:

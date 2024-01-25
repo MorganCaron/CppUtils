@@ -1,11 +1,11 @@
 #pragma once
 
 #include <format>
+#include <functional>
+#include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
-#include <iostream>
-#include <functional>
 // Todo C++23: #include <stacktrace>
 #include <source_location>
 
@@ -54,7 +54,7 @@ namespace CppUtils::UnitTest
 			using namespace std::literals;
 			using namespace Hashing::Literals;
 			using Logger = Logger<"CppUtils">;
-			
+
 			if (settings.verbose)
 			{
 				Logger::printSeparator<"detail">();
@@ -93,11 +93,10 @@ namespace CppUtils::UnitTest
 
 			if (!std::empty(settings.filter))
 			{
-				m_tests.erase(std::remove_if(std::begin(m_tests), std::end(m_tests),
-					[&settings](const Test& test) -> bool {
-						return test.name.substr(0, settings.filter.size()) != settings.filter;
-					}
-				), std::end(m_tests));
+				m_tests.erase(std::remove_if(std::begin(m_tests), std::end(m_tests), [&settings](const Test& test) -> bool {
+					return test.name.substr(0, settings.filter.size()) != settings.filter;
+				}),
+					std::end(m_tests));
 				auto newSettings = settings;
 				newSettings.filter = "";
 				return executeTests(newSettings);
@@ -146,14 +145,14 @@ namespace CppUtils::UnitTest
 					Logger::print("- 0 successful tests\n");
 				Logger::print("- {} failed tests\n", nbFail);
 			}
-			
+
 			return EXIT_FAILURE;
 		}
 
 	private:
 		std::vector<Test> m_tests;
 	};
-	
+
 	static constinit auto testRunner = TestRunner{};
 
 	struct TestSuite final
@@ -175,19 +174,19 @@ namespace CppUtils::UnitTest
 			if (!condition) [[unlikely]]
 				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expect(condition)",
 					sourceLocation.file_name(),
-					sourceLocation.line(), sourceLocation.column())};
+					sourceLocation.line(),
+					sourceLocation.column())};
 		}
 
 		auto expectEqual(auto lhs, auto rhs, std::source_location sourceLocation = std::source_location::current()) -> void
 		{
 			if (lhs != rhs) [[unlikely]]
-			{
 				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectEqual(lhs, rhs)\nwith lhs = {}\nand  rhs = {}",
 					sourceLocation.file_name(),
-					sourceLocation.line(), sourceLocation.column(),
+					sourceLocation.line(),
+					sourceLocation.column(),
 					(std::formattable<decltype(lhs), char>) ? String::formatValue(lhs) : "<non printable>",
 					(std::formattable<decltype(rhs), char>) ? String::formatValue(rhs) : "<non printable>")};
-			}
 		}
 
 		std::vector<Test> tests;

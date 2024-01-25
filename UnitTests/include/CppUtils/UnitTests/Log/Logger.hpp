@@ -37,6 +37,5 @@ namespace CppUtils::UnitTest::Logger
 			CppUtils::FileSystem::File::deleteFile(logPath);
 			suite.expect(true);
 		});
-
 	}};
 }

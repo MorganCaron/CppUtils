@@ -1,8 +1,8 @@
 #pragma once
 
+#include <initializer_list>
 #include <stdexcept>
 #include <type_traits>
-#include <initializer_list>
 
 // https://en.cppreference.com/w/cpp/header/expected
 namespace CppUtils::Stl
@@ -20,8 +20,7 @@ namespace CppUtils::Stl
 		constexpr unexpected(unexpected&&) = default;
 
 		template<class Err = E>
-		requires
-			(!std::is_same_v<std::remove_cvref_t<Err>, unexpected> &&
+		requires (!std::is_same_v<std::remove_cvref_t<Err>, unexpected> &&
 			!std::is_same_v<std::remove_cvref_t<Err>, std::in_place_t> &&
 			std::is_constructible_v<E, Err>)
 		constexpr explicit unexpected(Err&& e):
@@ -83,7 +82,7 @@ namespace CppUtils::Stl
 		E unex;
 	};
 
-	template<class E> 
+	template<class E>
 	unexpected(E) -> unexpected<E>;
 
 	template<class E>
@@ -167,7 +166,7 @@ namespace CppUtils::Stl
 		}
 		template<class U, class G>
 		constexpr explicit(!std::is_convertible_v<std::add_lvalue_reference_t<const U>, T> || !std::is_convertible_v<const G&, E>)
-		expected(const expected<U, G>& other):
+			expected(const expected<U, G>& other):
 			has_val{other.has_value()}
 		{
 			using UF = std::add_lvalue_reference_t<const U>;
@@ -179,7 +178,7 @@ namespace CppUtils::Stl
 		}
 		template<class U, class G>
 		constexpr explicit(!std::is_convertible_v<U, T> || !std::is_convertible_v<G, E>)
-		expected(expected<U, G>&& other):
+			expected(expected<U, G>&& other):
 			has_val{other.has_value()}
 		{
 			using UF = U;
@@ -192,22 +191,20 @@ namespace CppUtils::Stl
 
 		template<class U = T>
 		constexpr explicit(!std::is_convertible_v<U, T>)
-		expected(U&& v):
+			expected(U&& v):
 			has_val{true},
 			val(std::forward<U>(v))
 		{}
 
 		template<class G>
-		explicit(!std::is_convertible_v<const G&, E>)
-		constexpr expected(const unexpected<G>& e):
+		explicit(!std::is_convertible_v<const G&, E>) constexpr expected(const unexpected<G>& e):
 			has_val{false}
 		{
 			using GF = const G&;
 			unex(std::forward<GF>(e.error()));
 		}
 		template<class G>
-		explicit(!std::is_convertible_v<G, E>)
-		constexpr expected(unexpected<G>&& e):
+		explicit(!std::is_convertible_v<G, E>) constexpr expected(unexpected<G>&& e):
 			has_val{false}
 		{
 			using GF = G;
@@ -251,7 +248,8 @@ namespace CppUtils::Stl
 		constexpr expected& operator=(expected&&) noexcept(
 			std::is_nothrow_move_constructible_v<T> && std::is_nothrow_move_assignable_v<T> &&
 			std::is_nothrow_move_constructible_v<E> && std::is_nothrow_move_assignable_v<E>);
-		template<class U = T> constexpr expected& operator=(U&&);
+		template<class U = T>
+		constexpr expected& operator=(U&&);
 		template<class G>
 		constexpr expected& operator=(const unexpected<G>&);
 		template<class G>
@@ -301,47 +299,41 @@ namespace CppUtils::Stl
 			{
 				other.swap(*this);
 			}
+			else if constexpr (std::is_void_v<T>)
+			{
+				std::construct_at(std::addressof(unex), std::move(other.unex));
+				std::destroy_at(std::addressof(other.unex));
+			}
+			else if constexpr (std::is_nothrow_move_constructible_v<E>)
+			{
+				auto temp = E{std::move(other.unex)};
+				std::destroy_at(std::addressof(other.unex));
+				try
+				{
+					std::construct_at(std::addressof(other.val), std::move(val));
+					std::destroy_at(std::addressof(val));
+					std::construct_at(std::addressof(unex), std::move(temp));
+				}
+				catch (...)
+				{
+					std::construct_at(std::addressof(other.unex), std::move(temp));
+					throw;
+				}
+			}
 			else
 			{
-				if constexpr (std::is_void_v<T>)
+				auto temp = T{std::move(val)};
+				std::destroy_at(std::addressof(val));
+				try
 				{
 					std::construct_at(std::addressof(unex), std::move(other.unex));
 					std::destroy_at(std::addressof(other.unex));
+					std::construct_at(std::addressof(other.val), std::move(temp));
 				}
-				else
+				catch (...)
 				{
-					if constexpr (std::is_nothrow_move_constructible_v<E>)
-					{
-						auto temp = E{std::move(other.unex)};
-						std::destroy_at(std::addressof(other.unex));
-						try
-						{
-							std::construct_at(std::addressof(other.val), std::move(val));
-							std::destroy_at(std::addressof(val));
-							std::construct_at(std::addressof(unex), std::move(temp));
-						}
-						catch(...)
-						{
-							std::construct_at(std::addressof(other.unex), std::move(temp));
-							throw;
-						}
-					}
-					else
-					{
-						auto temp = T{std::move(val)};
-						std::destroy_at(std::addressof(val));
-						try
-						{
-							std::construct_at(std::addressof(unex), std::move(other.unex));
-							std::destroy_at(std::addressof(other.unex));
-							std::construct_at(std::addressof(other.val), std::move(temp));
-						}
-						catch(...)
-						{
-							std::construct_at(std::addressof(val), std::move(temp));
-							throw;
-						}
-					}
+					std::construct_at(std::addressof(val), std::move(temp));
+					throw;
 				}
 			}
 		}
@@ -496,7 +488,7 @@ namespace CppUtils::Stl
 		}
 		template<class U, class G>
 		constexpr explicit(!std::is_convertible_v<std::add_lvalue_reference_t<const U>, T> || !std::is_convertible_v<const G&, E>)
-		expected(const expected<U, G>& other):
+			expected(const expected<U, G>& other):
 			has_val{other.has_value()}
 		{
 			using GF = const G&;
@@ -505,7 +497,7 @@ namespace CppUtils::Stl
 		}
 		template<class U, class G>
 		constexpr explicit(!std::is_convertible_v<U, T> || !std::is_convertible_v<G, E>)
-		expected(expected<U, G>&& other):
+			expected(expected<U, G>&& other):
 			has_val{other.has_value()}
 		{
 			using GF = G;
@@ -514,16 +506,14 @@ namespace CppUtils::Stl
 		}
 
 		template<class G>
-		explicit(!std::is_convertible_v<const G&, E>)
-		constexpr expected(const unexpected<G>& e):
+		explicit(!std::is_convertible_v<const G&, E>) constexpr expected(const unexpected<G>& e):
 			has_val{false}
 		{
 			using GF = const G&;
 			unex(std::forward<GF>(e.error()));
 		}
 		template<class G>
-		explicit(!std::is_convertible_v<G, E>)
-		constexpr expected(unexpected<G>&& e):
+		explicit(!std::is_convertible_v<G, E>) constexpr expected(unexpected<G>&& e):
 			has_val{false}
 		{
 			using GF = G;
@@ -567,7 +557,6 @@ namespace CppUtils::Stl
 		constexpr void swap(expected& other) noexcept(
 			std::is_nothrow_move_constructible_v<E> && std::is_nothrow_swappable_v<E>)
 		{
-
 		}
 		friend constexpr void swap(expected& lhs, expected& rhs) noexcept(noexcept(lhs.swap(rhs)))
 		{

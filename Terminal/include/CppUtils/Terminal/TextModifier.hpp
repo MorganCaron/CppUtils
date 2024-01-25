@@ -1,20 +1,20 @@
 #pragma once
 
-#include <print>
 #include <iostream>
+#include <print>
 #include <string_view>
 
 #include <CppUtils/External/DllExport.hpp>
 #include <CppUtils/Platform/OS.hpp>
-#include <CppUtils/Terminal/Terminal.hpp>
-#include <CppUtils/Terminal/TextStyle.hpp>
-#include <CppUtils/Terminal/TextColor.hpp>
 #include <CppUtils/Terminal/BackgroundColor.hpp>
+#include <CppUtils/Terminal/Terminal.hpp>
+#include <CppUtils/Terminal/TextColor.hpp>
+#include <CppUtils/Terminal/TextStyle.hpp>
 
 namespace CppUtils::Terminal
 {
 	using namespace std::literals;
-	
+
 #if defined(OS_LINUX) || defined(OS_MACOS)
 	namespace ANSIEscapeCode
 	{
@@ -44,7 +44,7 @@ namespace CppUtils::Terminal
 		[[nodiscard]] static auto getTextColor(std::ostream& stream) -> std::uint16_t;
 #endif
 
-		static auto eraseCurrentLine([[maybe_unused]]std::ostream& stream) -> void
+		static auto eraseCurrentLine([[maybe_unused]] std::ostream& stream) -> void
 		{
 #if defined(OS_LINUX) || defined(OS_MACOS)
 			stream << ANSIEscapeCode::EraseCurrentLine;
@@ -55,7 +55,7 @@ namespace CppUtils::Terminal
 		bool m_modify = false;
 		std::FILE* m_file = nullptr;
 #if defined(OS_WINDOWS)
-    std::uint16_t m_attributes;
+		std::uint16_t m_attributes;
 #endif
 	};
 }

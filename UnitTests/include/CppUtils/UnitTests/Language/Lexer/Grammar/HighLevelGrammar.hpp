@@ -14,13 +14,13 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 			const auto highLevelGrammarAst = CppUtils::Language::Lexer::parse(CppUtils::Language::Lexer::Grammar::highLevelGrammarSrc, lowLevelGrammarAst);
 			highLevelGrammarAst.log();
-			
+
 			const auto grammarAst = R"(
 				main: ;
 			)"_grammar;
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(""sv, grammarAst);
-			
+
 			EXPECT(std::empty(outputAst.root.nodes));
 		});
 
@@ -30,7 +30,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			)"_grammar;
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(""sv, grammarAst);
-			
+
 			EXPECT(std::empty(outputAst.root.nodes));
 		});
 
@@ -41,7 +41,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			)"_grammar;
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(""sv, grammarAst);
-			
+
 			EXPECT(std::empty(outputAst.root.nodes));
 		});
 
@@ -51,7 +51,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			)"_grammar;
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
-			
+
 			EXPECT(std::empty(outputAst.root.nodes));
 		});
 
@@ -61,7 +61,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			)"_grammar;
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
-			
+
 			EXPECT(std::empty(outputAst.root.nodes));
 		});
 
@@ -72,7 +72,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(" \n\t\r\""sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::empty(outputAst.root.nodes));
 		});
 
@@ -83,7 +83,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::size(outputAst.root.nodes) == 1);
 			EXPECT(outputAst.root.nodes[0].value == 'c');
 		});
@@ -95,7 +95,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::size(outputAst.root.nodes) == 1);
 			EXPECT(outputAst.root.nodes[0].value == 'c');
 		});
@@ -108,7 +108,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::empty(outputAst.root.nodes));
 		});
 
@@ -120,7 +120,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("Hello World!"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::empty(outputAst.root.nodes));
 		});
 
@@ -133,7 +133,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAA"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::size(outputAst.root.nodes) == 3);
 			for (auto i = 0uz; i < 3; ++i)
 				EXPECT(outputAst.root.nodes[i].value == 'A');
@@ -148,7 +148,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAA"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::size(outputAst.root.nodes) == 3);
 			for (auto i = 0uz; i < 3; ++i)
 				EXPECT(outputAst.root.nodes[i].value == 'A');
@@ -161,7 +161,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("BC"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::size(outputAst.root.nodes) == 1);
 			EXPECT(outputAst.root.nodes[0].value == 'C');
 		});
@@ -173,7 +173,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::size(outputAst.root.nodes) == 1);
 			EXPECT(outputAst.root.nodes[0].value == 'C');
 		});
@@ -188,7 +188,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("C"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::size(outputAst.root.nodes) == 1);
 			EXPECT(outputAst.root.nodes[0].value == "maj"_token);
 		});
@@ -201,7 +201,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("variable"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::size(outputAst.root.nodes) == 1);
 			EXPECT(outputAst.root.nodes[0].value == "variable"_token);
 		});
@@ -215,7 +215,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(R"("Hello")"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::size(outputAst.root.nodes) == 5);
 			EXPECT(outputAst.root.nodes[0].value == 'H');
 			EXPECT(outputAst.root.nodes[1].value == 'e');
@@ -232,7 +232,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::size(outputAst.root.nodes) == 2);
 			auto aNode = outputAst.root.nodes[0];
 			EXPECT(aNode.value == 'A');
@@ -253,7 +253,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAAB,B,BC"sv, grammarAst);
 			outputAst.log();
-			
+
 			EXPECT(std::size(outputAst.root.nodes) == 1);
 			EXPECT(outputAst.root.nodes[0].value == 'C');
 		});

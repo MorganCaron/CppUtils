@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cmath>
 #include <array>
-#include <cstddef>
+#include <cmath>
 #include <concepts>
+#include <cstddef>
 #include <stdexcept>
 #include <type_traits>
 #include <unordered_map>
@@ -19,7 +19,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 		std::uintptr_t basePointer = stackSize; // ebp (32bits) / rbp (64bits)
 		std::uintptr_t stackPointer = stackSize; // esp (32bits) / rsp (64bits)
 	};
-	
+
 	template<std::size_t stackSize>
 	struct ProgramMemory final
 	{

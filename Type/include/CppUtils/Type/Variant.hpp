@@ -1,7 +1,7 @@
 #pragma once
 
-#include <variant>
 #include <iostream>
+#include <variant>
 
 #include <CppUtils/Type/Concept.hpp>
 
@@ -11,9 +11,11 @@ namespace CppUtils::Type::Variant::Operators
 	requires (sizeof...(Types) > 0)
 	auto operator<<(std::ostream& os, const std::variant<Types...>& variant) -> std::ostream&
 	{
-		return std::visit([&os](auto&& value) -> std::ostream& {
-			return os << value;
-		}, variant);
+		return std::visit(
+			[&os](auto&& value) -> std::ostream& {
+				return os << value;
+			},
+			variant);
 	}
 
 	template<class LhsType, class... RhsTypes>
@@ -31,12 +33,14 @@ namespace CppUtils::Type::Variant::Operators
 	requires (!Concept::Present<LhsTypes, RhsTypes...> || ...)
 	auto operator==(const std::variant<LhsTypes...>& lhs, const std::variant<RhsTypes...>& rhs) -> bool
 	{
-		return std::visit([&rhs](auto&& lhsValue) -> bool {
-			if constexpr (!Concept::Present<decltype(lhsValue), RhsTypes...>)
-				return lhsValue == rhs;
-			else
-				return false;
-		}, lhs);
+		return std::visit(
+			[&rhs](auto&& lhsValue) -> bool {
+				if constexpr (!Concept::Present<decltype(lhsValue), RhsTypes...>)
+					return lhsValue == rhs;
+				else
+					return false;
+			},
+			lhs);
 	}
 }
 

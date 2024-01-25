@@ -7,8 +7,8 @@
 namespace CppUtils::Terminal::TextStyle
 {
 	using namespace std::literals;
-	
-	enum class TextStyleEnum: char
+
+	enum class TextStyleEnum : char
 	{
 		Bolder,
 		Lighter,
@@ -28,16 +28,16 @@ namespace CppUtils::Terminal::TextStyle
 	{
 		switch (textStyle)
 		{
-			case TextStyleEnum::Bolder:
-				return ANSIEscapeCode::Bolder;
-			case TextStyleEnum::Lighter:
-				return ANSIEscapeCode::Lighter;
-			case TextStyleEnum::Italic:
-				return ANSIEscapeCode::Italic;
-			case TextStyleEnum::Underline:
-				return ANSIEscapeCode::Underline;
-			default:
-				return "";
+		case TextStyleEnum::Bolder:
+			return ANSIEscapeCode::Bolder;
+		case TextStyleEnum::Lighter:
+			return ANSIEscapeCode::Lighter;
+		case TextStyleEnum::Italic:
+			return ANSIEscapeCode::Italic;
+		case TextStyleEnum::Underline:
+			return ANSIEscapeCode::Underline;
+		default:
+			return "";
 		}
 	}
 #endif

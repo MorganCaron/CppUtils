@@ -1,8 +1,8 @@
 #pragma once
 
+#include <concepts>
 #include <string>
 #include <vector>
-#include <concepts>
 
 #include <CppUtils/Hash/Token.hpp>
 #include <CppUtils/Log/Logger.hpp>
@@ -24,11 +24,11 @@ namespace CppUtils::Language::IR::Compiler::Bytecode
 		explicit Instruction(Hash::Token c_type = "nop"_token):
 			type{c_type}
 		{}
-		
+
 		explicit Instruction(std::uintptr_t registerId, std::string_view c_name = ""sv, std::uintptr_t c_value = 0):
 			type{"init"_token}, name{c_name}, value{c_value}, parametersId{registerId}
 		{}
-		
+
 		template<class... Parameters>
 		requires (std::same_as<std::uintptr_t, Parameters> && ...)
 		Instruction(Hash::Token c_type, Parameters... c_parametersId):

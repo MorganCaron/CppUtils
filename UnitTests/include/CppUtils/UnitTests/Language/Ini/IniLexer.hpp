@@ -11,7 +11,6 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 		using namespace CppUtils::Language::Json::Literals;
 
 		addTest("Minimalist", [] {
-			
 			const auto iniTree = R"(
 			[Section 1]
 			key=value

@@ -1,12 +1,12 @@
 #pragma once
 
-#include <memory>
 #include <functional>
+#include <memory>
 #include <unordered_map>
 
-#include <CppUtils/Language/IR/Lexer/Lexer.hpp>
-#include <CppUtils/Language/IR/Compiler/Output.hpp>
 #include <CppUtils/Language/Compiler/Compiler.hpp>
+#include <CppUtils/Language/IR/Compiler/Output.hpp>
+#include <CppUtils/Language/IR/Lexer/Lexer.hpp>
 
 namespace CppUtils::Language::IR::Compiler
 {

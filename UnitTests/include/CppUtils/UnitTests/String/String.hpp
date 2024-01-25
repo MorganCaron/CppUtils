@@ -38,6 +38,5 @@ namespace CppUtils::UnitTest::String
 				output += CppUtils::String::getPrintableChar(c) + ' ';
 			Logger::print("{}\n", output);
 		});
-
 	}};
 }

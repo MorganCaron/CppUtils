@@ -90,7 +90,7 @@ namespace CppUtils::Language::Lexer::Grammar
 		spaces_{ optional_{repeat_{token_{space_}}} }
 		space_{ or_{ string_{\ } string_{\n} string_{\t} string_{\r} } }
 	)"sv;
-	
+
 	constexpr auto highLevelGrammarSrc = R"(
 		main: decls ~spaces;
 		decls: ~spaces or(comment, decl) ~decls;

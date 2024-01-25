@@ -8,8 +8,8 @@
 namespace CppUtils::Terminal::TextColor
 {
 	using namespace std::literals;
-	
-	enum class TextColorEnum: char
+
+	enum class TextColorEnum : char
 	{
 		Default,
 		Black,
@@ -23,7 +23,7 @@ namespace CppUtils::Terminal::TextColor
 	};
 
 #if defined(OS_WINDOWS)
-// see https://learn.microsoft.com/en-us/windows/console/char-info-str
+	// see https://learn.microsoft.com/en-us/windows/console/char-info-str
 	namespace Attribute
 	{
 		[[maybe_unused]] inline constexpr std::uint8_t Black = 0;
@@ -42,26 +42,26 @@ namespace CppUtils::Terminal::TextColor
 	{
 		switch (textColor)
 		{
-			case TextColorEnum::Default:
-				return Attribute::Default;
-			case TextColorEnum::Black:
-				return Attribute::Black;
-			case TextColorEnum::Red:
-				return Attribute::Red;
-			case TextColorEnum::Green:
-				return Attribute::Green;
-			case TextColorEnum::Yellow:
-				return Attribute::Yellow;
-			case TextColorEnum::Blue:
-				return Attribute::Blue;
-			case TextColorEnum::Magenta:
-				return Attribute::Magenta;
-			case TextColorEnum::Cyan:
-				return Attribute::Cyan;
-			case TextColorEnum::White:
-				return Attribute::White;
-			default:
-				return Attribute::Default;
+		case TextColorEnum::Default:
+			return Attribute::Default;
+		case TextColorEnum::Black:
+			return Attribute::Black;
+		case TextColorEnum::Red:
+			return Attribute::Red;
+		case TextColorEnum::Green:
+			return Attribute::Green;
+		case TextColorEnum::Yellow:
+			return Attribute::Yellow;
+		case TextColorEnum::Blue:
+			return Attribute::Blue;
+		case TextColorEnum::Magenta:
+			return Attribute::Magenta;
+		case TextColorEnum::Cyan:
+			return Attribute::Cyan;
+		case TextColorEnum::White:
+			return Attribute::White;
+		default:
+			return Attribute::Default;
 		}
 	}
 #elif defined(OS_LINUX) || defined(OS_MACOS)
@@ -82,26 +82,26 @@ namespace CppUtils::Terminal::TextColor
 	{
 		switch (textColor)
 		{
-			case TextColorEnum::Default:
-				return ANSIEscapeCode::Default;
-			case TextColorEnum::Black:
-				return ANSIEscapeCode::Black;
-			case TextColorEnum::Red:
-				return ANSIEscapeCode::Red;
-			case TextColorEnum::Green:
-				return ANSIEscapeCode::Green;
-			case TextColorEnum::Yellow:
-				return ANSIEscapeCode::Yellow;
-			case TextColorEnum::Blue:
-				return ANSIEscapeCode::Blue;
-			case TextColorEnum::Magenta:
-				return ANSIEscapeCode::Magenta;
-			case TextColorEnum::Cyan:
-				return ANSIEscapeCode::Cyan;
-			case TextColorEnum::White:
-				return ANSIEscapeCode::White;
-			default:
-				return ANSIEscapeCode::Default;
+		case TextColorEnum::Default:
+			return ANSIEscapeCode::Default;
+		case TextColorEnum::Black:
+			return ANSIEscapeCode::Black;
+		case TextColorEnum::Red:
+			return ANSIEscapeCode::Red;
+		case TextColorEnum::Green:
+			return ANSIEscapeCode::Green;
+		case TextColorEnum::Yellow:
+			return ANSIEscapeCode::Yellow;
+		case TextColorEnum::Blue:
+			return ANSIEscapeCode::Blue;
+		case TextColorEnum::Magenta:
+			return ANSIEscapeCode::Magenta;
+		case TextColorEnum::Cyan:
+			return ANSIEscapeCode::Cyan;
+		case TextColorEnum::White:
+			return ANSIEscapeCode::White;
+		default:
+			return ANSIEscapeCode::Default;
 		}
 	}
 #endif

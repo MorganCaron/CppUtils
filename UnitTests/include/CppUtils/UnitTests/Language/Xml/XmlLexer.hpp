@@ -9,7 +9,7 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 		using namespace std::literals;
 		using namespace CppUtils::Type::Literals;
 		using namespace CppUtils::Language::Xml::Literals;
-		
+
 		addTest("Tag", [] {
 			const auto xmlTree = R"(
 			<h1>Title</h1>

@@ -12,11 +12,11 @@ namespace CppUtils::UnitTest::Container::Sequence
 		{
 			switch (c)
 			{
-				case ' ': result.emplace_back(CppUtils::Container::Sequence::Difference::None); break;
-				case '+': result.emplace_back(CppUtils::Container::Sequence::Difference::Added); break;
-				case '-': result.emplace_back(CppUtils::Container::Sequence::Difference::Removed); break;
-				case '*': result.emplace_back(CppUtils::Container::Sequence::Difference::Edited); break;
-				default: throw std::runtime_error{"generateDifferenceVector(): Unknown character."};
+			case ' ': result.emplace_back(CppUtils::Container::Sequence::Difference::None); break;
+			case '+': result.emplace_back(CppUtils::Container::Sequence::Difference::Added); break;
+			case '-': result.emplace_back(CppUtils::Container::Sequence::Difference::Removed); break;
+			case '*': result.emplace_back(CppUtils::Container::Sequence::Difference::Edited); break;
+			default: throw std::runtime_error{"generateDifferenceVector(): Unknown character."};
 			}
 		}
 		return result;
@@ -42,6 +42,5 @@ namespace CppUtils::UnitTest::Container::Sequence
 			const auto result = CppUtils::Container::Sequence::getDifferences<char>(vec0, vec1);
 			suite.expectEqual(result, differences);
 		});
-
 	}};
 }

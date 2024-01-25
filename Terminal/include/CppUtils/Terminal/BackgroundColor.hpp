@@ -8,8 +8,8 @@
 namespace CppUtils::Terminal::BackgroundColor
 {
 	using namespace std::literals;
-	
-	enum class BackgroundColorEnum: char
+
+	enum class BackgroundColorEnum : char
 	{
 		Default,
 		Black,
@@ -23,7 +23,7 @@ namespace CppUtils::Terminal::BackgroundColor
 	};
 
 #if defined(OS_WINDOWS)
-// see https://learn.microsoft.com/en-us/windows/console/char-info-str
+	// see https://learn.microsoft.com/en-us/windows/console/char-info-str
 	namespace Attribute
 	{
 		[[maybe_unused]] inline constexpr std::uint8_t Black = 0;
@@ -42,26 +42,26 @@ namespace CppUtils::Terminal::BackgroundColor
 	{
 		switch (backgroundColor)
 		{
-			case BackgroundColorEnum::Default:
-				return Attribute::Default;
-			case BackgroundColorEnum::Black:
-				return Attribute::Black;
-			case BackgroundColorEnum::Red:
-				return Attribute::Red;
-			case BackgroundColorEnum::Green:
-				return Attribute::Green;
-			case BackgroundColorEnum::Yellow:
-				return Attribute::Yellow;
-			case BackgroundColorEnum::Blue:
-				return Attribute::Blue;
-			case BackgroundColorEnum::Magenta:
-				return Attribute::Magenta;
-			case BackgroundColorEnum::Cyan:
-				return Attribute::Cyan;
-			case BackgroundColorEnum::White:
-				return Attribute::White;
-			default:
-				return Attribute::Default;
+		case BackgroundColorEnum::Default:
+			return Attribute::Default;
+		case BackgroundColorEnum::Black:
+			return Attribute::Black;
+		case BackgroundColorEnum::Red:
+			return Attribute::Red;
+		case BackgroundColorEnum::Green:
+			return Attribute::Green;
+		case BackgroundColorEnum::Yellow:
+			return Attribute::Yellow;
+		case BackgroundColorEnum::Blue:
+			return Attribute::Blue;
+		case BackgroundColorEnum::Magenta:
+			return Attribute::Magenta;
+		case BackgroundColorEnum::Cyan:
+			return Attribute::Cyan;
+		case BackgroundColorEnum::White:
+			return Attribute::White;
+		default:
+			return Attribute::Default;
 		}
 	}
 #elif defined(OS_LINUX) || defined(OS_MACOS)
@@ -82,26 +82,26 @@ namespace CppUtils::Terminal::BackgroundColor
 	{
 		switch (backgroundColor)
 		{
-			case BackgroundColorEnum::Default:
-				return ANSIEscapeCode::Default;
-			case BackgroundColorEnum::Black:
-				return ANSIEscapeCode::Black;
-			case BackgroundColorEnum::Red:
-				return ANSIEscapeCode::Red;
-			case BackgroundColorEnum::Green:
-				return ANSIEscapeCode::Green;
-			case BackgroundColorEnum::Yellow:
-				return ANSIEscapeCode::Yellow;
-			case BackgroundColorEnum::Blue:
-				return ANSIEscapeCode::Blue;
-			case BackgroundColorEnum::Magenta:
-				return ANSIEscapeCode::Magenta;
-			case BackgroundColorEnum::Cyan:
-				return ANSIEscapeCode::Cyan;
-			case BackgroundColorEnum::White:
-				return ANSIEscapeCode::White;
-			default:
-				return ANSIEscapeCode::Default;
+		case BackgroundColorEnum::Default:
+			return ANSIEscapeCode::Default;
+		case BackgroundColorEnum::Black:
+			return ANSIEscapeCode::Black;
+		case BackgroundColorEnum::Red:
+			return ANSIEscapeCode::Red;
+		case BackgroundColorEnum::Green:
+			return ANSIEscapeCode::Green;
+		case BackgroundColorEnum::Yellow:
+			return ANSIEscapeCode::Yellow;
+		case BackgroundColorEnum::Blue:
+			return ANSIEscapeCode::Blue;
+		case BackgroundColorEnum::Magenta:
+			return ANSIEscapeCode::Magenta;
+		case BackgroundColorEnum::Cyan:
+			return ANSIEscapeCode::Cyan;
+		case BackgroundColorEnum::White:
+			return ANSIEscapeCode::White;
+		default:
+			return ANSIEscapeCode::Default;
 		}
 	}
 #endif

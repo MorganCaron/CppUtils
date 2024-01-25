@@ -14,8 +14,9 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 			lowLevelGrammarAst.log();
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: ;
-			)"sv, lowLevelGrammarAst);
+					main: ;
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(""sv, grammarAst);
 
@@ -26,8 +27,9 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: end();
-			)"sv, lowLevelGrammarAst);
+					main: end();
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(""sv, grammarAst);
 
@@ -36,11 +38,12 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("comment", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				# entry point
-				main: ;
-			)"sv, lowLevelGrammarAst);
+					# entry point
+					main: ;
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(""sv, grammarAst);
 
@@ -49,10 +52,11 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("char", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: 'c';
-			)"sv, lowLevelGrammarAst);
+					main: 'c';
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
 
@@ -61,10 +65,11 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("is char", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: is('c') 'c';
-			)"sv, lowLevelGrammarAst);
+					main: is('c') 'c';
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
 
@@ -73,10 +78,11 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("escaped chars", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: "\ \n\t\r\"";
-			)"sv, lowLevelGrammarAst);
+					main: "\ \n\t\r\"";
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(" \n\t\r\""sv, grammarAst);
 			outputAst.log();
@@ -86,10 +92,11 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("add char", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: 'c' add('c');
-			)"sv, lowLevelGrammarAst);
+					main: 'c' add('c');
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
 			outputAst.log();
@@ -97,13 +104,14 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 			EXPECT(std::size(outputAst.root.nodes) == 1);
 			EXPECT(outputAst.root.nodes[0].value == 'c');
 		});
-		
+
 		addTest("read char", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: read()+;
-			)"sv, lowLevelGrammarAst);
+					main: read()+;
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
 			outputAst.log();
@@ -114,11 +122,12 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("token", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: c;
-				c: 'c';
-			)"sv, lowLevelGrammarAst);
+					main: c;
+					c: 'c';
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
 			outputAst.log();
@@ -128,11 +137,12 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("string", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: word;
-				word: "Hello World!";
-			)"sv, lowLevelGrammarAst);
+					main: word;
+					word: "Hello World!";
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("Hello World!"sv, grammarAst);
 			outputAst.log();
@@ -142,12 +152,13 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("recurrence", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: chars;
-				chars: char chars; chars: char;
-				char: read()+;
-			)"sv, lowLevelGrammarAst);
+					main: chars;
+					chars: char chars; chars: char;
+					char: read()+;
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAA"sv, grammarAst);
 			outputAst.log();
@@ -159,12 +170,13 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("optional", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: chars;
-				chars: char ~chars;
-				char: read()+;
-			)"sv, lowLevelGrammarAst);
+					main: chars;
+					chars: char ~chars;
+					char: read()+;
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAA"sv, grammarAst);
 			outputAst.log();
@@ -176,10 +188,11 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("or", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: or('A', 'B') read()+;
-			)"sv, lowLevelGrammarAst);
+					main: or('A', 'B') read()+;
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("BC"sv, grammarAst);
 			outputAst.log();
@@ -190,10 +203,11 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("parenthesis", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: ('A' 'B') read()+;
-			)"sv, lowLevelGrammarAst);
+					main: ('A' 'B') read()+;
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammarAst);
 			outputAst.log();
@@ -204,13 +218,14 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("comparison", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: char;
-				char: or(min, maj);
-				min: ['a', 'z']+ add(min);
-				maj: ['A', 'Z']+ add(maj);
-			)"sv, lowLevelGrammarAst);
+					main: char;
+					char: or(min, maj);
+					min: ['a', 'z']+ add(min);
+					maj: ['A', 'Z']+ add(maj);
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("C"sv, grammarAst);
 			outputAst.log();
@@ -221,11 +236,12 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("hash", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: hash(keyword);
-				keyword: read()+ ~keyword;
-			)"sv, lowLevelGrammarAst);
+					main: hash(keyword);
+					keyword: read()+ ~keyword;
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("variable"sv, grammarAst);
 			outputAst.log();
@@ -236,12 +252,13 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("not", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: quote;
-				quote: '"' ~quoteContent '"';
-				quoteContent: !'"' read()+ ~quoteContent;
-			)"sv, lowLevelGrammarAst);
+					main: quote;
+					quote: '"' ~quoteContent '"';
+					quoteContent: !'"' read()+ ~quoteContent;
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse(R"("Hello")"sv, grammarAst);
 			outputAst.log();
@@ -256,11 +273,12 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("sub", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: node add(';');
-				node: read()+ ~sub(node);
-			)"sv, lowLevelGrammarAst);
+					main: node add(';');
+					node: read()+ ~sub(node);
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammarAst);
 			outputAst.log();
@@ -280,10 +298,11 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("repeat", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: repeat('A') repeat('B', ',') read()+;
-			)"sv, lowLevelGrammarAst);
+					main: repeat('A') repeat('B', ',') read()+;
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAAB,B,BC"sv, grammarAst);
 			outputAst.log();
@@ -294,11 +313,12 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("push-pop", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: push(hash(keyword)) pop();
-				keyword: read()+ ~keyword;
-			)"sv, lowLevelGrammarAst);
+					main: push(hash(keyword)) pop();
+					keyword: read()+ ~keyword;
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammarAst);
 			outputAst.log();
@@ -309,12 +329,13 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 
 		addTest("unsigned int", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			
+
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
-				main: uint;
-				uint: add('\0') repeat(digit);
-				digit: ['0', '9'] read()+;
-			)"sv, lowLevelGrammarAst);
+					main: uint;
+					uint: add('\0') repeat(digit);
+					digit: ['0', '9'] read()+;
+				)"sv,
+				lowLevelGrammarAst);
 			grammarAst.log();
 			const auto outputAst = CppUtils::Language::Lexer::parse("42"sv, grammarAst);
 			outputAst.log();

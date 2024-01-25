@@ -2,8 +2,8 @@
 
 #include <chrono>
 
-#include <CppUtils/Type/Concept.hpp>
 #include <CppUtils/Stl/chrono.hpp>
+#include <CppUtils/Type/Concept.hpp>
 
 namespace CppUtils::Chrono::Concept
 {

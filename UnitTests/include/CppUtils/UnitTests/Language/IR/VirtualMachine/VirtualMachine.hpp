@@ -13,13 +13,14 @@ namespace CppUtils::UnitTests::Language::IR::VirtualMachine
 			const auto virtualMachine = CppUtils::Language::IR::VirtualMachine::VirtualMachine<1000>{};
 			auto context = CppUtils::Language::IR::VirtualMachine::Context<1000>{};
 			auto result = virtualMachine.run("main"_token, R"(
-			int main()
-			{
-				nop;
-				a = (20 + 24) - 2;
-				return a;
-			}
-			)"sv, context);
+				int main()
+				{
+					nop;
+					a = (20 + 24) - 2;
+					return a;
+				}
+				)"sv,
+				context);
 			CppUtils::Log::Logger::logInformation(std::to_string(result));
 			EXPECT(result == 42);
 		});
@@ -35,7 +36,7 @@ namespace CppUtils::UnitTests::Language::IR::VirtualMachine
 				*output = 0;
 				return output;
 			}
-			
+
 			int main()
 			{
 				return append("hello", '!');

@@ -50,7 +50,7 @@ namespace CppUtils::Language::Ini
 			m_grammarLexer.addParsingFunction("booleanParser"_token, Parser::booleanParser<Type::Token, bool, float, std::string>);
 			m_grammarLexer.addParsingFunction("floatParser"_token, Parser::floatParser<Type::Token, bool, float, std::string>);
 			m_grammarLexer.addParsingFunction("stringParser"_token, valueParser);
-			
+
 			static constexpr auto grammarSrc = R"(
 			main: (line >= 0) spaceParser;
 			!line: spaceParser (comment || section || assignment);

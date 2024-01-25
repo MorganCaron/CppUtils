@@ -52,7 +52,6 @@ namespace CppUtils::Language::Json
 		)"_grammar;
 		return jsonGrammarAst;
 	}
-	
 
 	[[nodiscard]] auto parse(std::string_view src) -> Parser::Ast
 	{

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <bit>
 #include <array>
+#include <bit>
 #include <format>
-#include <vector>
 #include <stdexcept>
+#include <vector>
 
 #include <CppUtils/Log/Logger.hpp>
 #include <CppUtils/String/String.hpp>
@@ -18,7 +18,7 @@ namespace CppUtils::Container
 	public:
 		using Logger = Logger<"CppUtils">;
 		using Types = std::tuple<SupportedTypes...>;
-		static constexpr auto typesSize = std::array<std::size_t, sizeof...(SupportedTypes)>{ sizeof(SupportedTypes)... };
+		static constexpr auto typesSize = std::array<std::size_t, sizeof...(SupportedTypes)>{sizeof(SupportedTypes)...};
 
 		template<Type::Concept::TriviallyCopyable... Args>
 		requires (Type::Concept::Present<Args, SupportedTypes...> && ...)
@@ -57,7 +57,7 @@ namespace CppUtils::Container
 				throw std::out_of_range{std::format("Stack::get({}) : Out of range", position)};
 			if (auto storedType = m_types[position]; Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
 				throw std::logic_error{std::format("Stack::get({}) : The type at the specified position does not match the stored type (Type: {})", position, storedType)};
-			
+
 			auto offset = getTypeOffset(position);
 			auto buffer = std::array<std::byte, sizeof(T)>{};
 			for (auto i = 0uz; i < sizeof(T); ++i)
@@ -85,7 +85,7 @@ namespace CppUtils::Container
 				throw std::out_of_range{std::format("Stack::set({}, T newValue) : Out of range", position)};
 			if (auto storedType = m_types[position]; Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
 				throw std::logic_error{std::format("Stack::set(std::size_t position, T newValue) : The type at the specified position does not match the stored type (Type: {})", storedType)};
-			
+
 			auto offset = getTypeOffset(position);
 			auto buffer = std::bit_cast<std::array<std::byte, sizeof(T)>>(newValue);
 			for (auto i = 0uz; i < sizeof(T); ++i)
@@ -114,9 +114,8 @@ namespace CppUtils::Container
 				throw std::out_of_range{std::format("Stack::pushType({}) : Out of range", type)};
 			static constexpr auto pushbyType = std::array{
 				+[](Stack<SupportedTypes...>& stack) -> void {
-					stack.template push<SupportedTypes>();
-				}...
-			};
+				stack.template push<SupportedTypes>();
+			}...};
 			pushbyType[type](*this);
 		}
 
@@ -124,9 +123,8 @@ namespace CppUtils::Container
 		{
 			static constexpr auto dropFunctions = std::array{
 				+[](const Stack<SupportedTypes...>& stack, std::vector<std::byte>& data) -> void {
-					data.resize(stack.getByteSize() - sizeof(SupportedTypes));
-				}...
-			};
+				data.resize(stack.getByteSize() - sizeof(SupportedTypes));
+			}...};
 
 			if (empty()) [[unlikely]]
 				throw std::underflow_error{"Stack::drop() : Container already empty"};
@@ -159,16 +157,15 @@ namespace CppUtils::Container
 		constexpr auto copy(std::size_t sourcePosition, std::size_t destinationPosition) -> void
 		{
 			static constexpr auto copyToDestination = []<class SourceType>() consteval -> auto {
-				return std::array<void(*)(Stack<SupportedTypes...>&, std::size_t, std::size_t), sizeof...(SupportedTypes)>{
+				return std::array<void (*)(Stack<SupportedTypes...>&, std::size_t, std::size_t), sizeof...(SupportedTypes)>{
 					+[](Stack<SupportedTypes...>& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void {
-						if constexpr (!std::is_convertible_v<SourceType, SupportedTypes>)
-							throw std::logic_error{std::format("Stack::copy({}, {}) : The source type is not convertible to the destination type", sourcePosition, destinationPosition)};
-						else
-							stack.set(destinationPosition, static_cast<SupportedTypes>(stack.template get<SourceType>(sourcePosition)));
-					}...
-				};
+					if constexpr (!std::is_convertible_v<SourceType, SupportedTypes>)
+						throw std::logic_error{std::format("Stack::copy({}, {}) : The source type is not convertible to the destination type", sourcePosition, destinationPosition)};
+					else
+						stack.set(destinationPosition, static_cast<SupportedTypes>(stack.template get<SourceType>(sourcePosition)));
+				}...};
 			};
-			static constexpr auto copyFromSource = std::array<std::array<void(*)(Stack<SupportedTypes...>&, std::size_t, std::size_t), sizeof...(SupportedTypes)>, sizeof...(SupportedTypes)>{
+			static constexpr auto copyFromSource = std::array<std::array<void (*)(Stack<SupportedTypes...>&, std::size_t, std::size_t), sizeof...(SupportedTypes)>, sizeof...(SupportedTypes)> {
 				copyToDestination.template operator()<SupportedTypes>()...
 			};
 
@@ -184,9 +181,8 @@ namespace CppUtils::Container
 		{
 			static constexpr auto visitors = std::array{
 				+[](const Stack<SupportedTypes...>& stack, std::size_t position, decltype(visitor) visitor) -> void {
-					visitor(stack.template get<SupportedTypes>(position));
-				}...
-			};
+				visitor(stack.template get<SupportedTypes>(position));
+			}...};
 
 			if (position >= size())
 				throw std::out_of_range{std::format("Stack::visit({}, auto&& visitor) : Out of range", position)};

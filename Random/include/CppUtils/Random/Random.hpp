@@ -1,7 +1,7 @@
 #pragma once
 
-#include <random>
 #include <concepts>
+#include <random>
 
 namespace CppUtils::Random
 {

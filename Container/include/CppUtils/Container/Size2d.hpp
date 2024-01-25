@@ -11,7 +11,7 @@ namespace CppUtils::Container
 			width{c_width},
 			height{c_height}
 		{}
-		
+
 		T width, height;
 	};
 }

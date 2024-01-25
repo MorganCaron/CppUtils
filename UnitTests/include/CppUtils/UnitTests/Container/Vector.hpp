@@ -17,6 +17,5 @@ namespace CppUtils::UnitTest::Container::Vector
 			for (const auto& string : vector)
 				Logger::print("{}\n", string);
 		});
-
 	}};
 }

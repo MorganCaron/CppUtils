@@ -9,7 +9,7 @@ namespace CppUtils::Container
 			x{c_x},
 			y{c_y}
 		{}
-		
+
 		T x, y;
 	};
 }

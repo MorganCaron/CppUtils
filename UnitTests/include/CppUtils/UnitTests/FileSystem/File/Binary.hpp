@@ -29,6 +29,5 @@ namespace CppUtils::UnitTest::FileSystem::File::Binary
 			CppUtils::FileSystem::File::deleteFile(filePath);
 			suite.expect(vector == originalVector);
 		});
-
 	}};
 }

@@ -1,13 +1,13 @@
 #pragma once
 
-#include <iostream>
 #include <concepts>
+#include <iostream>
 #include <type_traits>
 
 namespace CppUtils::Type::Concept
 {
 	template<class T>
-	concept Printable = requires(T value) {
+	concept Printable = requires (T value) {
 		{ std::cout << value } -> std::same_as<std::ostream&>;
 	};
 
@@ -15,7 +15,7 @@ namespace CppUtils::Type::Concept
 	concept Present = (std::same_as<Type, Types> || ...);
 
 	template<class T>
-	concept Dereferenceable = requires(T value) {
+	concept Dereferenceable = requires (T value) {
 		*value;
 	};
 	template<class T, template<class...> class IncompleteType>

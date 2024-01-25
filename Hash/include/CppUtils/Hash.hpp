@@ -6,16 +6,16 @@ namespace CppUtils
 {
 	using Hash = std::uint64_t;
 	using Token = Hash;
-	
+
 	[[nodiscard]] constexpr auto hash(std::string_view string) noexcept -> Hash
 	{
-		auto result = 0xcbf29ce484222325u;
+		auto result = 0xcb'f2'9c'e4'84'22'23'25u;
 		for (const auto& c : string)
-			result = (static_cast<Hash>(c) ^ result) * 0x100000001b3u;
+			result = (static_cast<Hash>(c) ^ result) * 0x1'00'00'00'01'b3u;
 		return result;
 	}
 
-	template <class CharT = char, std::size_t N = 1>
+	template<class CharT = char, std::size_t N = 1>
 	struct Hasher final
 	{
 		constexpr Hasher(Hash hash):
@@ -64,7 +64,7 @@ namespace CppUtils
 		{
 			return hash(std::string_view{cString, size});
 		}
-		
+
 		static_assert("Number"_hash == "Number"_hash);
 		static_assert("Number"_hash != "String"_hash);
 

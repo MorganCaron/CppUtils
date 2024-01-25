@@ -1,8 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <stack>
 #include <type_traits>
-#include <functional>
 
 #include <CppUtils/Language/IR/Compiler/Compiler.hpp>
 #include <CppUtils/Language/IR/VirtualMachine/Context.hpp>
@@ -19,19 +19,20 @@ namespace CppUtils::Language::IR::VirtualMachine
 	public:
 		using Instruction = Compiler::Bytecode::Instruction;
 
-		VirtualMachine(): m_virtualMachine{{
-				{ "nop"_token, Operations<Context<stackSize>>::runNop },
-				{ "halt"_token, Operations<Context<stackSize>>::runHalt },
-				{ "init"_token, Operations<Context<stackSize>>::runInit },
-				{ "read"_token, Operations<Context<stackSize>>::runRead },
-				{ "write"_token, Operations<Context<stackSize>>::runWrite },
-				{ "copy"_token, Operations<Context<stackSize>>::runCopy },
+		VirtualMachine():
+			m_virtualMachine{{
+				{"nop"_token, Operations<Context<stackSize>>::runNop},
+				{"halt"_token, Operations<Context<stackSize>>::runHalt},
+				{"init"_token, Operations<Context<stackSize>>::runInit},
+				{"read"_token, Operations<Context<stackSize>>::runRead},
+				{"write"_token, Operations<Context<stackSize>>::runWrite},
+				{"copy"_token, Operations<Context<stackSize>>::runCopy},
 				/*{ "eq"_token, Operations<Context<stackSize>>::runEq },*/
-				{ "add"_token, Operations<Context<stackSize>>::runAdd },
-				{ "sub"_token, Operations<Context<stackSize>>::runSub },
-				{ "call"_token, Operations<Context<stackSize>>::runCall },
-				{ "ret"_token, Operations<Context<stackSize>>::runRet }/*,
-				{ "ifnz"_token, Operations<Context<stackSize>>::runIf }*/
+				{"add"_token, Operations<Context<stackSize>>::runAdd},
+				{"sub"_token, Operations<Context<stackSize>>::runSub},
+				{"call"_token, Operations<Context<stackSize>>::runCall},
+				{"ret"_token, Operations<Context<stackSize>>::runRet} /*,
+			   { "ifnz"_token, Operations<Context<stackSize>>::runIf }*/
 			}}
 		{}
 

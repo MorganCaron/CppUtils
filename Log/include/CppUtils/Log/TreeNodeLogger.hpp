@@ -11,14 +11,14 @@ namespace CppUtils::Log
 		{
 			switch (difference)
 			{
-				case Container::Sequence::Difference::Added:
-					return '+';
-				case Container::Sequence::Difference::Removed:
-					return '-';
-				case Container::Sequence::Difference::Edited:
-					return '*';
-				default:
-					return ' ';
+			case Container::Sequence::Difference::Added:
+				return '+';
+			case Container::Sequence::Difference::Removed:
+				return '-';
+			case Container::Sequence::Difference::Edited:
+				return '*';
+			default:
+				return ' ';
 			}
 		}
 
@@ -26,14 +26,14 @@ namespace CppUtils::Log
 		{
 			switch (difference)
 			{
-				case Container::Sequence::Difference::Added:
-					return Terminal::TextColor::TextColorEnum::Green;
-				case Container::Sequence::Difference::Removed:
-					return Terminal::TextColor::TextColorEnum::Red;
-				case Container::Sequence::Difference::Edited:
-					return Terminal::TextColor::TextColorEnum::Cyan;
-				default:
-					return Terminal::TextColor::TextColorEnum::Default;
+			case Container::Sequence::Difference::Added:
+				return Terminal::TextColor::TextColorEnum::Green;
+			case Container::Sequence::Difference::Removed:
+				return Terminal::TextColor::TextColorEnum::Red;
+			case Container::Sequence::Difference::Edited:
+				return Terminal::TextColor::TextColorEnum::Cyan;
+			default:
+				return Terminal::TextColor::TextColorEnum::Default;
 			}
 		}
 	};

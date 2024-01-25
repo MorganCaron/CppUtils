@@ -14,7 +14,7 @@ namespace CppUtils::UnitTests::Language::ASM::Lexer
 			)"sv);
 			CppUtils::Log::TreeNodeLogger::log(ast);
 		});
-		
+
 		addTest("Halt", [] {
 			const auto ast = CppUtils::Language::ASM::Lexer::parse(R"(
 			hlt
@@ -28,7 +28,7 @@ namespace CppUtils::UnitTests::Language::ASM::Lexer
 			)"sv);
 			CppUtils::Log::TreeNodeLogger::log(ast);
 		});
-		
+
 		addTest("Add", [] {
 			const auto ast = CppUtils::Language::ASM::Lexer::parse(R"(
 			mov r2, 20

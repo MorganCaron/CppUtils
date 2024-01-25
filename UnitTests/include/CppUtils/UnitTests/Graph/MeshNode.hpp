@@ -29,7 +29,7 @@ namespace CppUtils::UnitTest::Graph::MeshNode
 			for (const auto& aFruit : fruit->get("Elements"))
 			{
 				auto sharedFruit = std::shared_ptr<Node>{aFruit};
-				Logger::print("{} is a {}\n", sharedFruit->value, std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value);
+				Logger::print("{} is a {}\n", sharedFruit->value, std::shared_ptr<Node> { sharedFruit->get("Categories")[0] } -> value);
 			}
 		});
 
@@ -57,14 +57,13 @@ namespace CppUtils::UnitTest::Graph::MeshNode
 			suite.expect(fruitName->value == "banana");
 			const auto fruitColor = std::shared_ptr<Node>{fruitName->get("Colors")[0]};
 			suite.expect(fruitColor->value == "yellow");
-			
+
 			for (const auto& aFruit : fruit->get("Elements"))
 			{
 				auto sharedFruit = std::shared_ptr<Node>{aFruit};
-				
-				Logger::print("{} is a {} {}\n", sharedFruit->value, std::shared_ptr<Node>{sharedFruit->get("Colors")[0]}->value, std::shared_ptr<Node>{sharedFruit->get("Categories")[0]}->value);
+
+				Logger::print("{} is a {} {}\n", sharedFruit->value, std::shared_ptr<Node> { sharedFruit->get("Colors")[0] } -> value, std::shared_ptr<Node> { sharedFruit->get("Categories")[0] } -> value);
 			}
 		});
-
 	}};
 }

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <memory>
-#include <vector>
-#include <stdexcept>
 #include <functional>
+#include <memory>
+#include <stdexcept>
 #include <unordered_map>
+#include <vector>
 
 namespace CppUtils::Graph
 {
@@ -19,7 +19,7 @@ namespace CppUtils::Graph
 			node1->attach(branchKey0, node0);
 			node0->attach(branchKey1, node1);
 		}
-		
+
 		explicit MeshNode(Value c_value):
 			value(std::move(c_value))
 		{}

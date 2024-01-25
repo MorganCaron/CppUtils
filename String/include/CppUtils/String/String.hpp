@@ -1,26 +1,25 @@
 #pragma once
 
 #include <cctype>
-#include <vector>
-#include <string>
 #include <numeric>
+#include <string>
 #include <string_view>
 #include <unordered_map>
+#include <vector>
 
 #include <CppUtils/String/Concept.hpp>
 
 namespace CppUtils::String
 {
 	const auto escapedChars = std::unordered_map<char, char>{
-		{ '0', '\0' },
-		{ 'a', '\a' },
-		{ 'b', '\b' },
-		{ 'f', '\f' },
-		{ 'n', '\n' },
-		{ 'r', '\r' },
-		{ 't', '\t' },
-		{ 'v', '\v' }
-	};
+		{'0', '\0'},
+		{'a', '\a'},
+		{'b', '\b'},
+		{'f', '\f'},
+		{'n', '\n'},
+		{'r', '\r'},
+		{'t', '\t'},
+		{'v', '\v'}};
 
 	template<Concept::Char CharT>
 	[[nodiscard]] auto reverseEscapedChar(CharT c) noexcept -> std::basic_string<CharT>
@@ -33,29 +32,24 @@ namespace CppUtils::String
 
 	[[nodiscard]] inline auto concatenateStringsWithDelimiter(const std::vector<std::string>& strings, std::string_view delimiter) -> std::string
 	{
-		return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{},
-			[delimiter](const std::string& lhs, const std::string& rhs) {
-				return lhs.empty() ? rhs : (lhs + delimiter.data() + rhs);
-			});
+		return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{}, [delimiter](const std::string& lhs, const std::string& rhs) {
+			return lhs.empty() ? rhs : (lhs + delimiter.data() + rhs);
+		});
 	}
-	
+
 	[[nodiscard]] inline auto concatenateStringsWithDelimiter(const std::vector<std::string_view>& strings, std::string_view delimiter) -> std::string
 	{
-		return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{},
-			[delimiter](std::string_view lhs, std::string_view rhs) {
-				return lhs.empty() ? std::string{rhs} : (std::string{lhs} + std::string{delimiter} + std::string{rhs});
-			});
+		return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{}, [delimiter](std::string_view lhs, std::string_view rhs) {
+			return lhs.empty() ? std::string{rhs} : (std::string{lhs} + std::string{delimiter} + std::string{rhs});
+		});
 	}
 
 	[[nodiscard]] inline auto leftTrimString(std::string_view stringView) -> std::string_view
 	{
 		auto prefixLength = static_cast<std::size_t>(std::distance(std::cbegin(stringView),
-			std::find_if(std::cbegin(stringView), std::cend(stringView),
-				[](char c) {
-					return !std::isspace(c);
-				}
-			)
-		));
+			std::find_if(std::cbegin(stringView), std::cend(stringView), [](char c) {
+				return !std::isspace(c);
+			})));
 		stringView.remove_prefix(prefixLength);
 		return stringView;
 	}
@@ -63,12 +57,9 @@ namespace CppUtils::String
 	[[nodiscard]] inline auto rightTrimString(std::string_view stringView) -> std::string_view
 	{
 		auto suffixLength = static_cast<std::size_t>(std::distance(std::crbegin(stringView),
-			std::find_if(std::crbegin(stringView), std::crend(stringView),
-				[](char c) {
-					return !std::isspace(c);
-				}
-			)
-		));
+			std::find_if(std::crbegin(stringView), std::crend(stringView), [](char c) {
+				return !std::isspace(c);
+			})));
 		stringView.remove_suffix(suffixLength);
 		return stringView;
 	}
@@ -121,7 +112,7 @@ namespace CppUtils::String
 			c = toUppercase(c);
 		return result;
 	}
-	
+
 	[[nodiscard]] inline constexpr auto formatValue(auto value)
 	{
 		if constexpr (std::formattable<decltype(value), char>)

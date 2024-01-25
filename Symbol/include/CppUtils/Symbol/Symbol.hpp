@@ -3,8 +3,8 @@
 #include <filesystem>
 #include <string_view>
 
-#include <CppUtils/Platform/OS.hpp>
 #include <CppUtils/Platform/Library.hpp>
+#include <CppUtils/Platform/OS.hpp>
 #include <CppUtils/Type/Concept.hpp>
 
 namespace CppUtils::Symbol
@@ -29,9 +29,8 @@ namespace CppUtils::Symbol
 	{
 		using namespace std::literals;
 		auto* handle = dlopen(nullptr, RTLD_LAZY);
-		if (handle == nullptr) {
+		if (handle == nullptr)
 			throw std::runtime_error(dlerror());
-		}
 		auto* functionPointer = dlsym(handle, std::data(signature));
 		if (!functionPointer)
 			throw std::runtime_error("Couldn't load function "s + std::data(signature) + '\n' + dlerror());

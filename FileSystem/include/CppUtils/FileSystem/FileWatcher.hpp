@@ -1,8 +1,8 @@
 #pragma once
 
-#include <set>
-#include <mutex>
 #include <filesystem>
+#include <mutex>
+#include <set>
 #include <unordered_map>
 
 #include <CppUtils/Thread/LoopThread.hpp>
@@ -12,7 +12,12 @@ namespace CppUtils::FileSystem
 	class FileWatcher final
 	{
 	public:
-		enum class FileStatus: char { Created, Modified, Deleted };
+		enum class FileStatus : char
+		{
+			Created,
+			Modified,
+			Deleted
+		};
 
 		FileWatcher() = delete;
 

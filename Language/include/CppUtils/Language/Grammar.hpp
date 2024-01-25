@@ -68,12 +68,12 @@ namespace CppUtils::Language
 				CharT,
 				const decltype(source)*,
 				std::basic_string<CharT>*>(
-					lowLevelLabelsCompiler,
-					&source,
-					&compilationResult.output,
-					&decltype(source)::size,
-					&decltype(source)::at,
-					&std::basic_string<CharT>::push_back);
+				lowLevelLabelsCompiler,
+				&source,
+				&compilationResult.output,
+				&decltype(source)::size,
+				&decltype(source)::at,
+				&std::basic_string<CharT>::push_back);
 			return compilationResult;
 		}
 	}
@@ -90,7 +90,7 @@ namespace CppUtils::Language
 		main
 			goto _1* define labels §
 			end _<E
-		
+
 		§ define labels
 			if _3<_L <_D <_3SP <_25! then goto _5*
 			if _3<_R <_167DN <_25! then goto _2*

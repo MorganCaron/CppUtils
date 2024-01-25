@@ -1,14 +1,14 @@
 #pragma once
 
-#include <span>
-#include <vector>
 #include <algorithm>
+#include <span>
 #include <stdexcept>
 #include <string_view>
+#include <vector>
 
 namespace CppUtils::Container::Sequence
 {
-	enum class Difference: char
+	enum class Difference : char
 	{
 		None = 0,
 		Added,

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <mutex>
-#include <memory>
-#include <vector>
-#include <utility>
 #include <functional>
+#include <memory>
+#include <mutex>
+#include <utility>
+#include <vector>
 
 #include <CppUtils/Graph/MeshNode.hpp>
 
@@ -35,7 +35,7 @@ namespace CppUtils::Graph
 	public:
 		using Node = MeshNode<Key, Value, Hash>;
 
-		enum Branch: Key
+		enum Branch : Key
 		{
 			Last,
 			Next

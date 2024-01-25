@@ -5,7 +5,7 @@
 namespace CppUtils::UnitTests::Type::Concept
 {
 	using namespace CppUtils::Type::Concept;
-	
+
 	static_assert(!Printable<void>);
 	static_assert(Printable<bool>);
 	static_assert(Printable<char>);
