@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-#include <CppUtils/Platform/OS.hpp>
+#include <CppUtils/System/OS.hpp>
 
 namespace CppUtils::Terminal::TextStyle
 {

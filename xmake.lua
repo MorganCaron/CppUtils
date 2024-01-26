@@ -45,8 +45,7 @@ option_end()
 add_defines(is_kind("static") and "STATIC_LIB" or "SHARED_LIB")
 
 includes(
-	"Stl", 
-	"Platform",
+	"Stl",
 	"Random",
 	"Memory",
 	"System",
@@ -75,7 +74,6 @@ target("CppUtils")
 	add_syslinks("pthread", "dl")
 	add_deps(
 		"CppUtils-Stl",
-		"CppUtils-Platform",
 		"CppUtils-Random",
 		"CppUtils-Memory",
 		"CppUtils-System",

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CppUtils/Platform/OS.hpp>
+#include <CppUtils/System/OS.hpp>
 
 #if defined(OS_LINUX)
 

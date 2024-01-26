@@ -4,7 +4,7 @@
 #include <print>
 #include <string_view>
 
-#include <CppUtils/Platform/DllExport.hpp>
+#include <CppUtils/System/DllExport.hpp>
 #include <CppUtils/Terminal/BackgroundColor.hpp>
 #include <CppUtils/Terminal/Terminal.hpp>
 #include <CppUtils/Terminal/TextColor.hpp>

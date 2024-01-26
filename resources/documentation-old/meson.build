@@ -29,7 +29,7 @@ if enable_documentation
 				'../Language/VirtualMachine/include/',
 				'../Log/include/',
 				'../Parameters/include/',
-				'../Platform/include/',
+				'../System/include/',
 				'../String/include/',
 				'../Terminal/include/',
 				'../Thread/include/',

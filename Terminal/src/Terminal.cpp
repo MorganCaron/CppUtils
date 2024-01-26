@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include <CppUtils/Container/Size2d.hpp>
-#include <CppUtils/Platform/Windows.hpp>
+#include <CppUtils/System/Windows.hpp>
 
 #if defined(OS_MAC) or defined(OS_LINUX)
 #	include <sys/ioctl.h>

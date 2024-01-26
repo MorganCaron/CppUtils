@@ -59,7 +59,7 @@ namespace CppUtils::Language
 					(0, 0, 2, 3C) copy source position
 
 				(0, 3J goto position for loop
-			)"sv;
+				)"sv;
 
 			auto compilationResult = CompilationResult<CharT>{};
 			compilationResult.result = VirtualMachine::execute<
@@ -73,7 +73,7 @@ namespace CppUtils::Language
 				&compilationResult.output,
 				&decltype(source)::size,
 				&decltype(source)::at,
-				&std::basic_string<CharT>::push_back);
+				&decltype(compilationResult.output)::push_back);
 			return compilationResult;
 		}
 	}

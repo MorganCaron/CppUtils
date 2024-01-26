@@ -1,4 +1,4 @@
-#include <CppUtils/Platform/Windows.hpp>
+#include <CppUtils/System/Windows.hpp>
 #include <CppUtils/Terminal/TextModifier.hpp>
 
 namespace CppUtils::Terminal

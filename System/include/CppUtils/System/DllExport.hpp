@@ -1,7 +1,7 @@
 #pragma once
 
-#include <CppUtils/Platform/Compiler.hpp>
-#include <CppUtils/Platform/OS.hpp>
+#include <CppUtils/System/Compiler.hpp>
+#include <CppUtils/System/OS.hpp>
 
 #if !(defined(STATIC_LIB) || defined(SHARED_LIB))
 #	error "Either STATIC_LIB or SHARED_LIB must be defined"
