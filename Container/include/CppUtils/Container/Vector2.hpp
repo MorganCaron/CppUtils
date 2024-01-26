@@ -3,9 +3,9 @@
 namespace CppUtils::Container
 {
 	template<class T>
-	struct Point2d
+	struct Vector2
 	{
-		Point2d(T c_x, T c_y):
+		Vector2(T c_x, T c_y):
 			x{c_x},
 			y{c_y}
 		{}

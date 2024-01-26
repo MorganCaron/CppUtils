@@ -23,7 +23,7 @@ Nodes storage is managed by a ``std::shared_ptr<MeshNode<Key, Value>>`` (simplif
 
 int main()
 {
-	using StringMeshNode = CppUtils::Graph::MeshNode<std::string, std::string>;
+	using StringMeshNode = CppUtils::Container::MeshNode<std::string, std::string>;
 	auto fruit = std::make_shared<StringMeshNode>("fruit");
 	auto banana = std::make_shared<StringMeshNode>("banana");
 	auto lemon = std::make_shared<StringMeshNode>("lemon");
@@ -82,7 +82,7 @@ For this, the Storage type must have a ``std::ostream& operator<<(std::ostream&)
 
 int main()
 {
-	using StringTreeNode = CppUtils::Graph::TreeNode<std::string>;
+	using StringTreeNode = CppUtils::Container::TreeNode<std::string>;
 			
 	auto root = StringTreeNode{"Root"};
 	root.childs.emplace_back(StringTreeNode{"Branch0"});

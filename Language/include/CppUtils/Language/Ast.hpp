@@ -1,12 +1,12 @@
 #pragma once
 
+#include <CppUtils/Container/Tree.hpp>
 #include <CppUtils/Hash.hpp>
-#include <CppUtils/Graph/Tree.hpp>
 
 namespace CppUtils::Language
 {
-	using AstNode = Graph::Tree::Node<Token>;
-	
+	using AstNode = Container::Tree::Node<Token>;
+
 	struct Ast final
 	{
 		AstNode root;
@@ -19,11 +19,6 @@ namespace CppUtils::Language
 			root = AstNode{token, std::move(declarations)};
 			tokenNames = std::move(c_tokenNames);
 			tokenNames[token] = std::move(astName);
-		}
-
-		auto log() const -> void
-		{
-			Graph::Tree::log(root, tokenNames);
 		}
 
 		[[nodiscard]] auto find(Token token) const noexcept -> decltype(root.nodes)::const_iterator

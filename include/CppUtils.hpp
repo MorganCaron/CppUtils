@@ -1,19 +1,19 @@
 #pragma once
 
 #include <CppUtils/Chrono/Chronometer.hpp>
-#include <CppUtils/Container/Point2d.hpp>
-#include <CppUtils/Container/Point3d.hpp>
+#include <CppUtils/Container/MeshNetwork.hpp>
+#include <CppUtils/Container/MeshNode.hpp>
 #include <CppUtils/Container/Sequence.hpp>
 #include <CppUtils/Container/Size2d.hpp>
 #include <CppUtils/Container/Size3d.hpp>
 #include <CppUtils/Container/Stack.hpp>
+#include <CppUtils/Container/Tree.hpp>
+#include <CppUtils/Container/VariantTree.hpp>
 #include <CppUtils/Container/Vector.hpp>
+#include <CppUtils/Container/Vector2.hpp>
+#include <CppUtils/Container/Vector3.hpp>
 #include <CppUtils/Error.hpp>
 #include <CppUtils/FileSystem/File.hpp>
-#include <CppUtils/Graph/MeshNetwork.hpp>
-#include <CppUtils/Graph/MeshNode.hpp>
-#include <CppUtils/Graph/Tree.hpp>
-#include <CppUtils/Graph/VariantTree.hpp>
 #include <CppUtils/Hash.hpp>
 #include <CppUtils/HashTable.hpp>
 #include <CppUtils/Language/Ast.hpp>

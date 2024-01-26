@@ -3,7 +3,7 @@ target("CppUtils-Language-Parser")
 	add_deps(
 		"CppUtils-Hash",
 		"CppUtils-Type",
-		"CppUtils-Graph",
+		"CppUtils-Container",
 		"CppUtils-String",
 		"CppUtils-Terminal"
 	)

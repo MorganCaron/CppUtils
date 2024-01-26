@@ -60,7 +60,6 @@ includes(
 	"String",
 	"Type",
 	"Log",
-	"Graph",
 	"Language",
 	"Parameters",
 	"UnitTest")
@@ -90,7 +89,6 @@ target("CppUtils")
 		"CppUtils-String",
 		"CppUtils-Type",
 		"CppUtils-Log",
-		"CppUtils-Graph",
 		"CppUtils-Language",
 		"CppUtils-Parameters",
 		"CppUtils-UnitTest"

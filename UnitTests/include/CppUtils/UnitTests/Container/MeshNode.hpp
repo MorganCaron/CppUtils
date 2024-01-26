@@ -2,11 +2,11 @@
 
 #include <CppUtils.hpp>
 
-namespace CppUtils::UnitTest::Graph::MeshNode
+namespace CppUtils::UnitTest::Container::MeshNode
 {
-	auto _ = TestSuite{"Graph/MeshNode", [](auto& suite) {
+	auto _ = TestSuite{"Container/MeshNode", [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
-		using StringMeshNetwork = CppUtils::Graph::MeshNetwork<std::string, std::string>;
+		using StringMeshNetwork = CppUtils::Container::MeshNetwork<std::string, std::string>;
 		using Node = StringMeshNetwork::Node;
 
 		suite.addTest("One", [&] {

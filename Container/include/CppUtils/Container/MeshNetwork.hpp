@@ -6,9 +6,9 @@
 #include <utility>
 #include <vector>
 
-#include <CppUtils/Graph/MeshNode.hpp>
+#include <CppUtils/Container/MeshNode.hpp>
 
-namespace CppUtils::Graph
+namespace CppUtils::Container
 {
 	template<class Key, class Value, class Hash = std::hash<Key>>
 	class MeshNetwork

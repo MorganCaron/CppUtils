@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace CppUtils::Graph
+namespace CppUtils::Container
 {
 	template<class Key, class Value, class Hash = std::hash<Key>>
 	class MeshNode
