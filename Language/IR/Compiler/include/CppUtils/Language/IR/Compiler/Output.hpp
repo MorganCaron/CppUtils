@@ -5,9 +5,9 @@
 #include <string>
 #include <unordered_map>
 
-#include <CppUtils/Hash/Token.hpp>
 #include <CppUtils/Language/IR/Compiler/Bytecode.hpp>
 #include <CppUtils/Log/Logger.hpp>
+#include <CppUtils/String/Hash.hpp>
 
 namespace CppUtils::Language::IR::Compiler
 {
@@ -37,7 +37,7 @@ namespace CppUtils::Language::IR::Compiler
 				Log::Logger::logImportant("$STR: ", false);
 				Log::Logger::logInformation(std::string{stringConstants.begin(), stringConstants.end()});
 			}
-			
+
 			struct InstructionStatistics
 			{
 				bool referred = false;
@@ -72,11 +72,11 @@ namespace CppUtils::Language::IR::Compiler
 				if (const auto* condition = instruction->conditionInstruction; condition != nullptr)
 					addUniqueLabel(condition);
 			}
-			
+
 			// Displays the instructions
 			while (!remainingInstructions.empty())
 			{
-				const auto* instruction = remainingInstructions.front(); 
+				const auto* instruction = remainingInstructions.front();
 				remainingInstructions.pop_front();
 				for (; instruction != nullptr; instruction = instruction->nextInstruction)
 				{

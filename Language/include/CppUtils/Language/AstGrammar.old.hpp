@@ -6,7 +6,8 @@ namespace CppUtils::Language::Grammar
 {
 	[[nodiscard]] auto getAstGrammar() -> Ast
 	{
-		using namespace Hashing::Literals;
+		using namespace String::Literals;
+		// clang-format off
 		return Ast{"context", {
 			AstNode{"source"_token, {
 				AstNode{"LibSystem"_token, {
@@ -52,5 +53,6 @@ namespace CppUtils::Language::Grammar
 				}}
 			}}
 		}, VirtualMachine::getTokenNames()};
+		// clang-format on
 	}
 }

@@ -325,7 +325,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 					(21, 0
 					(0, 2, 0, 0, 0C, 0
 					+
-			)"sv;
+				)"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
 			suite.expectEqual(result, 42uz);
 		});
@@ -353,7 +353,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 		suite.addTest("print string_view", [&] {
 			constexpr auto source = u8R"(
 				(:, 1;, 2;)
-			)"sv;
+				)"sv;
 
 			constexpr auto input = "Hello World!"sv;
 
@@ -375,7 +375,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 						!, 0, 4, 0? (0X quit if nb equal zero
 					(2;, 3;) print input
 				(0, 3J goto position for loop
-			)"sv;
+				)"sv;
 
 			constexpr auto nb = std::size_t{3};
 
@@ -392,7 +392,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 		suite.addTest("char16_t", [&] {
 			constexpr auto source = uR"(
 				(: (1:\¤, 0, 1:\§, 0=
-			)"sv;
+				)"sv;
 			auto executionResult = VM::execute<bool, decltype(source)::value_type, std::size_t>(source);
 
 			suite.expect(u"¤"sv != u"§"sv);

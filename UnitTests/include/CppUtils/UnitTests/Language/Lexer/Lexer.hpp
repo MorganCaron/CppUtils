@@ -7,7 +7,7 @@ namespace CppUtils::UnitTests::Language::Lexer
 	TEST_GROUP("Language/Lexer")
 	{
 		using namespace std::literals;
-		using namespace CppUtils::Hash::Literals;
+		using namespace CppUtils::String::Literals;
 
 		addTest("empty grammar", [] {
 			const auto grammar = CppUtils::Language::Parser::parseAst(R"(

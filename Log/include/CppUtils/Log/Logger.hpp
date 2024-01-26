@@ -4,8 +4,8 @@
 #include <ostream>
 #include <print>
 
-#include <CppUtils/Hash.hpp>
 #include <CppUtils/String/Concept.hpp>
+#include <CppUtils/String/Hash.hpp>
 #include <CppUtils/Terminal/Terminal.hpp>
 #include <CppUtils/Terminal/TextModifier.hpp>
 
@@ -15,7 +15,7 @@
 
 namespace CppUtils
 {
-	template<Hasher loggerName = Hash{}>
+	template<String::Hasher loggerName = String::Hash{}>
 	struct Logger final
 	{
 		struct Formatter final
@@ -24,7 +24,7 @@ namespace CppUtils
 			std::string message;
 		};
 
-		template<Hasher logType = Hash{}>
+		template<String::Hasher logType = String::Hash{}>
 		static inline auto format(std::string_view message) -> Formatter
 		{
 			return {
@@ -32,7 +32,7 @@ namespace CppUtils
 				std::string{message}};
 		}
 
-		template<Hasher logType = Hash{}, class... Args>
+		template<String::Hasher logType = String::Hash{}, class... Args>
 		static inline auto print(std::ostream& ostream, std::format_string<Args...> fmt, Args&&... args) -> void
 		{
 			auto [textModifier, message] = format<logType>(std::format(fmt, std::forward<Args>(args)...));
@@ -40,10 +40,10 @@ namespace CppUtils
 			ostream << message;
 		}
 
-		template<Hasher logType = Hash{}, class... Args>
+		template<String::Hasher logType = String::Hash{}, class... Args>
 		static inline auto print(std::format_string<Args...> fmt, Args&&... args) -> void
 		{
-			using namespace Hashing::Literals;
+			using namespace String::Literals;
 			auto [textModifier, message] = format<logType>(std::format(fmt, std::forward<Args>(args)...));
 			if constexpr (logType == "error"_hash)
 				std::print(stderr, "{}", std::move(message));
@@ -51,7 +51,7 @@ namespace CppUtils
 				std::print("{}", std::move(message));
 		}
 
-		template<Hasher logType = Hash{}>
+		template<String::Hasher logType = String::Hash{}>
 		static inline auto printSeparator(std::ostream& ostream) -> void
 		{
 			using namespace std::literals;
@@ -64,7 +64,7 @@ namespace CppUtils
 			ostream << line;
 		}
 
-		template<Hasher logType = Hash{}>
+		template<String::Hasher logType = String::Hash{}>
 		static inline auto printSeparator() -> void
 		{
 			using namespace std::literals;

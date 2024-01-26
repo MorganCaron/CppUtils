@@ -23,7 +23,7 @@ namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 		suite.addTest("code without labels", [&] {
 			constexpr auto source = uR"(
 				(42X
-			)"sv;
+				)"sv;
 			auto [compilationResult, output] = Compiler::compile(source);
 			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
@@ -43,7 +43,7 @@ namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 					(42X
 
 				(22X
-			)"sv;
+				)"sv;
 			auto [compilationResult, output] = Compiler::compile(source);
 			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
@@ -67,7 +67,7 @@ namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 					(42X
 
 				(23X
-			)"sv;
+				)"sv;
 			auto [compilationResult, output] = Compiler::compile(source);
 			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));

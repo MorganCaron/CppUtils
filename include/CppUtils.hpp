@@ -14,8 +14,6 @@
 #include <CppUtils/Container/Vector3.hpp>
 #include <CppUtils/Error.hpp>
 #include <CppUtils/FileSystem/File.hpp>
-#include <CppUtils/Hash.hpp>
-#include <CppUtils/HashTable.hpp>
 #include <CppUtils/Language/Ast.hpp>
 #include <CppUtils/Language/Grammar.hpp>
 #include <CppUtils/Language/Parser/Cursor.hpp>
@@ -25,6 +23,8 @@
 #include <CppUtils/Log/TreeNodeLogger.hpp>
 #include <CppUtils/Memory/UniquePtr.hpp>
 #include <CppUtils/Random/Random.hpp>
+#include <CppUtils/String/Hash.hpp>
+#include <CppUtils/String/HashTable.hpp>
 #include <CppUtils/String/String.hpp>
 #include <CppUtils/System/Compiler.hpp>
 #include <CppUtils/System/DllExport.hpp>

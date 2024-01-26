@@ -7,7 +7,7 @@ namespace CppUtils::UnitTests::Language::Json::JsonLexer
 	TEST_GROUP("Language/Json/JsonLexer")
 	{
 		using namespace std::literals;
-		using namespace CppUtils::Hash::Literals;
+		using namespace CppUtils::String::Literals;
 		using namespace CppUtils::Language::Json::Literals;
 
 		addTest("empty json", [] {

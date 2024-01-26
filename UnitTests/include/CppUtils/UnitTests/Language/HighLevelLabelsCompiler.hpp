@@ -15,7 +15,7 @@ namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 			auto [compilationResult, output] = Compiler::compile(source);
 			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-			
+
 			auto executionResult = VM::execute<std::size_t>(output);
 			suite.expectEqual(executionResult, 0uz);
 		});
@@ -27,7 +27,7 @@ namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 			auto [compilationResult, output] = Compiler::compile(source);
 			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-			
+
 			auto executionResult = VM::execute<std::size_t>(output);
 			suite.expectEqual(executionResult, 42uz);
 		});
@@ -37,11 +37,11 @@ namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 				(4
 				# Comment: 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ
 				2
-			)"sv;
+				)"sv;
 			auto [compilationResult, output] = Compiler::compile(source);
 			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-			
+
 			auto executionResult = VM::execute<std::size_t>(output);
 			suite.expectEqual(executionResult, 42uz);
 		});
@@ -57,11 +57,11 @@ namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 				}
 				
 				22X
-			)"sv;
+				)"sv;
 			auto [compilationResult, output] = Compiler::compile(source);
 			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-			
+
 			auto executionResult = VM::execute<std::size_t>(output);
 			suite.expectEqual(executionResult, 42uz);
 		});
@@ -83,14 +83,13 @@ namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 				}
 
 				(23X
-			)"sv;
+				)"sv;
 			auto [compilationResult, output] = Compiler::compile(source);
 			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-			
+
 			auto executionResult = VM::execute<std::size_t>(output);
 			suite.expectEqual(executionResult, 42uz);
 		});
-		
 	}};
 }

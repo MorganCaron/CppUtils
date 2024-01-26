@@ -7,7 +7,7 @@ namespace CppUtils::UnitTests::Language::Grammar::AstGrammar
 	TEST_GROUP("Language/Parser/Grammar/AstGrammar")
 	{
 		using namespace std::literals;
-		using namespace CppUtils::Hash::Literals;
+		using namespace CppUtils::String::Literals;
 
 		using CppUtils::Language::Ast;
 		using CppUtils::Language::AstNode;

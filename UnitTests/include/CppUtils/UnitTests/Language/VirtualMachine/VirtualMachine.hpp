@@ -13,6 +13,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		using CppUtils::Language::AstNode;
 
 		addTest("empty source", [] {
+			// clang-format off
 			auto context = Ast{"context", {
 				AstNode{"source"_token, {
 					AstNode{"main"_token, {
@@ -20,14 +21,16 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 					}}
 				}}
 			}, CppUtils::Language::VirtualMachine::getTokenNames()};
+			// clang-format on
 
-            const auto result = CppUtils::Language::VirtualMachine::run(context);
+			const auto result = CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			TEST_ASSERT(result == AstNode{0});
 		});
 
 		addTest("move value", [] {
+			// clang-format off
 			auto context = Ast{"context", {
 				AstNode{"source"_token, {
 					AstNode{"main"_token, {
@@ -45,14 +48,16 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 					}}
 				}}
 			}, CppUtils::Language::VirtualMachine::getTokenNames()};
+			// clang-format on
 
-            const auto result = CppUtils::Language::VirtualMachine::run(context);
+			const auto result = CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			TEST_ASSERT(result == AstNode{3});
 		});
 
 		addTest("move stack", [] {
+			// clang-format off
 			auto context = Ast{"context", {
 				AstNode{"source"_token, {
 					AstNode{"main"_token, {
@@ -83,8 +88,9 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 					}}
 				}}
 			}, CppUtils::Language::VirtualMachine::getTokenNames()};
+			// clang-format on
 
-            const auto result = CppUtils::Language::VirtualMachine::run(context);
+			const auto result = CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			TEST_ASSERT(result == AstNode{3});
@@ -94,7 +100,8 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 
 		addTest("deref rodata", [] {
 			constexpr auto string = "A"sv;
-			
+
+			// clang-format off
 			auto context = Ast{"context", {
 				AstNode{"source"_token, {
 					AstNode{"main"_token, {
@@ -123,14 +130,16 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 					AstNode{reinterpret_cast<std::uintptr_t>(std::data(string))}
 				}}
 			}, CppUtils::Language::VirtualMachine::getTokenNames()};
+			// clang-format on
 
-            const auto result = CppUtils::Language::VirtualMachine::run(context);
+			const auto result = CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			TEST_ASSERT(result == AstNode{'A'});
 		});
 
 		addTest("add value", [] {
+			// clang-format off
 			auto context = Ast{"context", {
 				AstNode{"source"_token, {
 					AstNode{"main"_token, {
@@ -153,14 +162,16 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 					}}
 				}}
 			}, CppUtils::Language::VirtualMachine::getTokenNames()};
+			// clang-format on
 
-            const auto result = CppUtils::Language::VirtualMachine::run(context);
+			const auto result = CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			TEST_ASSERT(result == AstNode{11});
 		});
 
 		addTest("xor", [] {
+			// clang-format off
 			auto context = Ast{"context", {
 				AstNode{"source"_token, {
 					AstNode{"main"_token, {
@@ -193,14 +204,16 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 					}}
 				}}
 			}, CppUtils::Language::VirtualMachine::getTokenNames()};
+			// clang-format on
 
-            const auto result = CppUtils::Language::VirtualMachine::run(context);
+			const auto result = CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			TEST_ASSERT(result == AstNode{0});
 		});
 
 		addTest("cmp", [] {
+			// clang-format off
 			auto context = Ast{"context", {
 				AstNode{"source"_token, {
 					AstNode{"main"_token, {
@@ -225,14 +238,16 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 					}}
 				}}
 			}, CppUtils::Language::VirtualMachine::getTokenNames()};
+			// clang-format on
 
-            const auto result = CppUtils::Language::VirtualMachine::run(context);
+			const auto result = CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			TEST_ASSERT(result == AstNode{1});
 		});
 
 		addTest("push", [] {
+			// clang-format off
 			auto context = Ast{"context", {
 				AstNode{"source"_token, {
 					AstNode{"main"_token, {
@@ -244,8 +259,9 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 					}}
 				}}
 			}, CppUtils::Language::VirtualMachine::getTokenNames()};
+			// clang-format on
 
-            const auto result = CppUtils::Language::VirtualMachine::run(context);
+			const auto result = CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			TEST_ASSERT(result == AstNode{0});
@@ -255,6 +271,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		});
 
 		addTest("pop", [] {
+			// clang-format off
 			auto context = Ast{"context", {
 				AstNode{"source"_token, {
 					AstNode{"main"_token, {
@@ -269,8 +286,9 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 					}}
 				}}
 			}, CppUtils::Language::VirtualMachine::getTokenNames()};
+			// clang-format on
 
-            const auto result = CppUtils::Language::VirtualMachine::run(context);
+			const auto result = CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			TEST_ASSERT(result == AstNode{0});
@@ -279,6 +297,7 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 		});
 
 		addTest("call", [] {
+			// clang-format off
 			auto context = Ast{"context", {
 				AstNode{"source"_token, {
 					AstNode{"plus"_token, {
@@ -352,11 +371,11 @@ namespace CppUtils::UnitTests::Language::VirtualMachine
 					}}
 				}}
 			}, CppUtils::Language::VirtualMachine::getTokenNames()};
-			context.tokenNames.insert({
-				{ "plus"_token, "plus" }
-			});
+			// clang-format on
 
-            const auto result = CppUtils::Language::VirtualMachine::run(context);
+			context.tokenNames.insert({{"plus"_token, "plus"}});
+
+			const auto result = CppUtils::Language::VirtualMachine::run(context);
 			context.log();
 
 			TEST_ASSERT(result == AstNode{11});

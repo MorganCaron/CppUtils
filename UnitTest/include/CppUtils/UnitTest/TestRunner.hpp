@@ -52,7 +52,7 @@ namespace CppUtils::UnitTest
 		auto executeTest(const Test& test, const TestSettings& settings) const -> bool
 		{
 			using namespace std::literals;
-			using namespace Hashing::Literals;
+			using namespace String::Literals;
 			using Logger = Logger<"CppUtils">;
 
 			if (settings.verbose)

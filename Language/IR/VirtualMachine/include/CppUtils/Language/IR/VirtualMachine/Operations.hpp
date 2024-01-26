@@ -1,8 +1,8 @@
 #pragma once
 
-#include <CppUtils/Hash/Token.hpp>
 #include <CppUtils/Language/IR/Compiler/Bytecode.hpp>
 #include <CppUtils/Language/IR/VirtualMachine/Context.hpp>
+#include <CppUtils/String/Hash.hpp>
 
 namespace CppUtils::Language::IR::VirtualMachine
 {

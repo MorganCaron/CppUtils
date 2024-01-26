@@ -2,21 +2,21 @@
 
 #include <unordered_map>
 
-#include <CppUtils/Hash.hpp>
+#include <CppUtils/String/Hash.hpp>
 #include <CppUtils/String/String.hpp>
 
-namespace CppUtils::HashTable
+namespace CppUtils::String
 {
-	using TokenNames = std::unordered_map<Token, std::string>;
+	using HashTable = std::unordered_map<String::Token, std::string>;
 
-	auto addTokenName(TokenNames& tokenNames, std::string newName) -> Token
+	auto addTokenName(HashTable& tokenNames, std::string newName) -> Token
 	{
 		auto token = hash(newName);
 		tokenNames[token] = std::move(newName);
 		return token;
 	}
 
-	[[nodiscard]] auto getTokenNameOrValue(Token token, const TokenNames& tokenNames) -> std::string
+	[[nodiscard]] auto getTokenNameOrValue(Token token, const HashTable& tokenNames) -> std::string
 	{
 		using namespace std::literals;
 

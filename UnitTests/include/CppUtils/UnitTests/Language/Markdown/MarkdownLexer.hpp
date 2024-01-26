@@ -7,7 +7,7 @@ namespace CppUtils::UnitTests::Language::Markdown::MarkdownLexer
 	TEST_GROUP("Language/Markdown/MarkdownLexer")
 	{
 		using namespace std::literals;
-		using namespace CppUtils::Hash::Literals;
+		using namespace CppUtils::String::Literals;
 		using namespace CppUtils::Language::Markdown::Literals;
 
 		addTest("Minimalist", [] {

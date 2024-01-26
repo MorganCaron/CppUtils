@@ -15,7 +15,6 @@ if enable_documentation
 				'../Chrono/include/',
 				'../Container/include/',
 				'../FileSystem/include/',
-				'../Hash/include/',
 				'../Language/ASM/Compiler/include/',
 				'../Language/ASM/Lexer/include/',
 				'../Language/ASM/VirtualMachine/include/',

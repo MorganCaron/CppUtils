@@ -2,7 +2,7 @@ target("CppUtils-Language-IR-Compiler")
 	set_kind("headeronly")
 	add_deps(
 		"CppUtils-Log",
-		"CppUtils-Hash",
+		"CppUtils-String",
 		"CppUtils-Language-Parser",
 		"CppUtils-Language-Compiler",
 		"CppUtils-Language-IR-Lexer"

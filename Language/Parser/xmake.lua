@@ -1,7 +1,6 @@
 target("CppUtils-Language-Parser")
 	set_kind("headeronly")
 	add_deps(
-		"CppUtils-Hash",
 		"CppUtils-Type",
 		"CppUtils-Container",
 		"CppUtils-String",

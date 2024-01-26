@@ -7,7 +7,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 	TEST_GROUP("Language/Lexer/Grammar/highLevelGrammar")
 	{
 		using namespace std::literals;
-		using namespace CppUtils::Hash::Literals;
+		using namespace CppUtils::String::Literals;
 		using namespace CppUtils::Language::Lexer::Grammar::Literals;
 
 		addTest("empty grammar", [] {

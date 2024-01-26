@@ -7,7 +7,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 	TEST_GROUP("Language/Lexer/Grammar/lowLevelGrammar")
 	{
 		using namespace std::literals;
-		using namespace CppUtils::Hash::Literals;
+		using namespace CppUtils::String::Literals;
 
 		addTest("empty grammar", [] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);

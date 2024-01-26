@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-namespace CppUtils
+namespace CppUtils::String
 {
 	using Hash = std::uint64_t;
 	using Token = Hash;
@@ -24,7 +24,7 @@ namespace CppUtils
 		{}
 
 		constexpr Hasher(const CharT (&cString)[N]):
-			hash{CppUtils::hash(cString)}
+			hash{CppUtils::String::hash(cString)}
 		{
 			std::copy(cString, cString + N, name.begin());
 		}
@@ -53,7 +53,7 @@ namespace CppUtils
 		std::array<CharT, N> name;
 	};
 
-	namespace Hashing::Literals
+	namespace Literals
 	{
 		[[nodiscard]] constexpr auto operator"" _hash(const char* cString, std::size_t size) noexcept -> Hash
 		{

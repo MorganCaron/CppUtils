@@ -4,8 +4,8 @@
 #include <string>
 #include <unordered_map>
 
-#include <CppUtils/Hash/Token.hpp>
 #include <CppUtils/Language/ASM/Compiler/Bytecode.hpp>
+#include <CppUtils/String/Hash.hpp>
 
 namespace CppUtils::Language::ASM::Compiler
 {
@@ -14,11 +14,11 @@ namespace CppUtils::Language::ASM::Compiler
 		Bytecode::Instruction* entryPoint = nullptr;
 		std::size_t nbParameters = 0;
 	};
-	
+
 	struct Output final
 	{
 		std::vector<std::unique_ptr<Bytecode::Instruction>> instructions = {};
 		std::string stringConstants = "";
-		std::unordered_map<Hash::Token, FunctionInformations> functions = {};
+		std::unordered_map<String::Token, FunctionInformations> functions = {};
 	};
 }

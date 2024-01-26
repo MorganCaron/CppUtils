@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include <CppUtils/HashTable.hpp>
+#include <CppUtils/String/HashTable.hpp>
 #include <CppUtils/Type/Concept.hpp>
 
 namespace CppUtils::Container::Tree
