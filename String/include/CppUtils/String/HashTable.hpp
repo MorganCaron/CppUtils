@@ -9,14 +9,14 @@ namespace CppUtils::String
 {
 	using HashTable = std::unordered_map<String::Token, std::string>;
 
-	auto addTokenName(HashTable& tokenNames, std::string newName) -> Token
+	inline auto addTokenName(HashTable& tokenNames, std::string newName) -> Token
 	{
 		auto token = hash(newName);
 		tokenNames[token] = std::move(newName);
 		return token;
 	}
 
-	[[nodiscard]] auto getTokenNameOrValue(Token token, const HashTable& tokenNames) -> std::string
+	[[nodiscard]] inline auto getTokenNameOrValue(Token token, const HashTable& tokenNames) -> std::string
 	{
 		using namespace std::literals;
 

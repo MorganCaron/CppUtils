@@ -22,7 +22,7 @@ namespace CppUtils::String
 		{'v', '\v'}};
 
 	template<Concept::Char CharT>
-	[[nodiscard]] auto reverseEscapedChar(CharT c) noexcept -> std::basic_string<CharT>
+	[[nodiscard]] inline auto reverseEscapedChar(CharT c) noexcept -> std::basic_string<CharT>
 	{
 		for (const auto& [readableChar, escapedChar] : String::escapedChars)
 			if (escapedChar == c)
@@ -48,8 +48,8 @@ namespace CppUtils::String
 	{
 		auto prefixLength = static_cast<std::size_t>(std::distance(std::cbegin(stringView),
 			std::find_if(std::cbegin(stringView), std::cend(stringView), [](char c) {
-				return !std::isspace(c);
-			})));
+			return !std::isspace(c);
+		})));
 		stringView.remove_prefix(prefixLength);
 		return stringView;
 	}
@@ -58,8 +58,8 @@ namespace CppUtils::String
 	{
 		auto suffixLength = static_cast<std::size_t>(std::distance(std::crbegin(stringView),
 			std::find_if(std::crbegin(stringView), std::crend(stringView), [](char c) {
-				return !std::isspace(c);
-			})));
+			return !std::isspace(c);
+		})));
 		stringView.remove_suffix(suffixLength);
 		return stringView;
 	}

@@ -6,7 +6,7 @@
 namespace CppUtils::Random
 {
 	template<std::integral Int = std::size_t>
-	auto getRandomNumberInInterval(Int min, Int max) -> Int
+	inline auto getRandomNumberInInterval(Int min, Int max) -> Int
 	{
 		static auto randomDevice = std::random_device{};
 		static auto engine = std::mt19937{randomDevice()};

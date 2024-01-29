@@ -9,7 +9,7 @@
 namespace CppUtils::FileSystem::File
 {
 	template<typename FuncType>
-	auto forFilesWithExtension(const std::string& path, const std::string& ext, FuncType&& function) -> void
+	inline auto forFilesWithExtension(const std::string& path, const std::string& ext, FuncType&& function) -> void
 	{
 		for (const auto& file : std::filesystem::directory_iterator(path))
 			if (file.path().extension() == ext)
@@ -24,7 +24,7 @@ namespace CppUtils::FileSystem::File
 	namespace Binary
 	{
 		template<class T>
-		auto write(const std::filesystem::path& filePath, const T& buffer) -> void
+		inline auto write(const std::filesystem::path& filePath, const T& buffer) -> void
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
 			if (!file.is_open())
@@ -33,7 +33,7 @@ namespace CppUtils::FileSystem::File
 		}
 
 		template<class T>
-		[[nodiscard]] auto read(const std::filesystem::path& filePath) -> T
+		[[nodiscard]] inline auto read(const std::filesystem::path& filePath) -> T
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
 			if (!file.is_open())
@@ -44,7 +44,7 @@ namespace CppUtils::FileSystem::File
 		}
 
 		template<class T>
-		auto writeVector(const std::filesystem::path& filePath, const std::vector<T>& vector) -> void
+		inline auto writeVector(const std::filesystem::path& filePath, const std::vector<T>& vector) -> void
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
 			if (!file.is_open())
@@ -53,7 +53,7 @@ namespace CppUtils::FileSystem::File
 		}
 
 		template<class T>
-		[[nodiscard]] auto readVector(const std::filesystem::path& filePath) -> std::vector<T>
+		[[nodiscard]] inline auto readVector(const std::filesystem::path& filePath) -> std::vector<T>
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
 			if (!file.is_open())

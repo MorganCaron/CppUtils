@@ -7,7 +7,7 @@ namespace CppUtils::String
 	using Hash = std::uint64_t;
 	using Token = Hash;
 
-	[[nodiscard]] constexpr auto hash(std::string_view string) noexcept -> Hash
+	[[nodiscard]] inline constexpr auto hash(std::string_view string) noexcept -> Hash
 	{
 		auto result = 0xcb'f2'9c'e4'84'22'23'25u;
 		for (const auto& c : string)
