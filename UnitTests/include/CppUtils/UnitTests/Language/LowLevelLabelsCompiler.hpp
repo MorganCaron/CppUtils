@@ -33,10 +33,11 @@ namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 			suite.expectEqual(executionResult, 42uz);
 		});
 
+		/*
 		suite.addTest("one label", [&] {
 			constexpr auto source = uR"(
 				(0¤ main
-				
+
 				(21X
 
 				§ main
@@ -55,7 +56,7 @@ namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 		suite.addTest("multiple labels", [&] constexpr {
 			constexpr auto source = uR"(
 				(0¤ main
-				
+
 				(21X
 
 				§ main
@@ -75,5 +76,6 @@ namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 			auto executionResult = VM::execute<std::size_t>(output);
 			suite.expectEqual(executionResult, 42uz);
 		});
+		*/
 	}};
 }

@@ -127,7 +127,7 @@ namespace CppUtils::Language::VirtualMachine
 					stack.set(std::decay_t<decltype(value)>{});
 				});
 				break;
-			case 'C': // Todo: renommer en M ?
+			case 'C': // Copy // Todo: renommer en M (Move) ?
 			{
 				// todo: getValueWithMode(stack, [](auto&& destination) -> void {
 				auto destinationMode = stack.template pop<std::size_t>();
@@ -139,17 +139,17 @@ namespace CppUtils::Language::VirtualMachine
 				stack.copy(sourcePosition, destinationPosition);
 			}
 			break;
-			// Todo: case 'D': stack.push(&stack.template pop<ValueType>()); break;
-			case 'I': stack.print(); break;
-			case 'J':
+			// Todo: case 'D': /* Dereference */ stack.push(&stack.template pop<ValueType>()); break;
+			case 'I': /* Inspect */ stack.print(); break;
+			case 'J': // Jump
 			{
 				auto mode = stack.template pop<std::size_t>();
 				auto destination = stack.template pop<std::size_t>();
 				instructionPointer = getPositionInSource(stack, instructionPointer, mode, destination);
 			}
 			break;
-			case 'P': stack.template push<std::size_t>(instructionPointer); break;
-			case 'R':
+			case 'P': /* Push */ stack.template push<std::size_t>(instructionPointer); break;
+			case 'R': // Reference
 				stack.pop([&stack](auto&& pointer) -> void {
 					if constexpr (not std::is_pointer_v<std::decay_t<decltype(pointer)>>)
 						throw std::logic_error{"The dereferenced type is not a pointer"};
@@ -160,7 +160,7 @@ namespace CppUtils::Language::VirtualMachine
 						stack.template push<DereferencedType>(*pointer);
 				});
 				break;
-			case 'X': instructionPointer = std::size(source) - 1; break;
+			case 'X': /* eXit */ instructionPointer = std::size(source) - 1; break;
 			case ':': stack.pushType(stack.template pop<std::size_t>()); break;
 			case ';':
 			{
@@ -168,14 +168,14 @@ namespace CppUtils::Language::VirtualMachine
 				auto dataId = stack.template pop<std::size_t>();
 				std::visit(
 					[&stack, dataId](auto&& data) -> void {
-						using T = std::remove_cvref_t<decltype(data)>;
-						if constexpr (Type::Concept::isFunctionPointer<T> || std::is_member_function_pointer_v<T>)
-							call(stack, data);
-						else if constexpr (not Type::Concept::Present<T, ReturnType, SupportedTypes...>)
-							throw std::invalid_argument{"Type " + std::to_string(dataId) + " missing in template parameters"};
-						else
-							stack.template push<T>(data);
-					},
+					using T = std::remove_cvref_t<decltype(data)>;
+					if constexpr (Type::Concept::isFunctionPointer<T> || std::is_member_function_pointer_v<T>)
+						call(stack, data);
+					else if constexpr (not Type::Concept::Present<T, ReturnType, SupportedTypes...>)
+						throw std::invalid_argument{"Type " + std::to_string(dataId) + " missing in template parameters"};
+					else
+						stack.template push<T>(data);
+				},
 					externalData[dataId]);
 			}
 			break;
@@ -347,12 +347,12 @@ namespace CppUtils::Language::VirtualMachine
 				break;
 			case '\\':
 				stack.top([&stack, &source, &instructionPointer](auto&& value) -> void {
-					using Char = decltype(source[0]);
 					using Value = std::decay_t<decltype(value)>;
+					using Char = decltype(source[0]);
 					if constexpr (not std::is_constructible_v<Value, Char>)
 						throw std::logic_error{"Incorrect type"};
 					else
-						stack.set(static_cast<Value>(stack.template top<Value>() + static_cast<Value>(source[++instructionPointer])));
+						stack.set(static_cast<Value>(value + static_cast<Value>(source[++instructionPointer])));
 				});
 				break;
 			default:

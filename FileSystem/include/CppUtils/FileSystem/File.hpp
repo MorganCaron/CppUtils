@@ -6,19 +6,31 @@
 #include <string_view>
 #include <vector>
 
-namespace CppUtils::FileSystem::File
+namespace CppUtils::FileSystem
 {
-	template<typename FuncType>
-	inline auto forFilesWithExtension(const std::string& path, const std::string& ext, FuncType&& function) -> void
+	inline auto forFiles(
+		const std::filesystem::path& directoryPath,
+		auto&& function,
+		bool recursively = false) -> void
 	{
-		for (const auto& file : std::filesystem::directory_iterator(path))
-			if (file.path().extension() == ext)
-				function(file.path().string());
+		if (recursively)
+			for (const auto& file : std::filesystem::recursive_directory_iterator(directoryPath))
+				function(file.path());
+		else
+			for (const auto& file : std::filesystem::directory_iterator(directoryPath))
+				function(file.path());
 	}
 
-	inline auto deleteFile(const std::filesystem::path& filePath) -> void
+	inline auto forFilesWithExtension(
+		const std::filesystem::path& directoryPath,
+		std::string_view ext,
+		auto&& function,
+		bool recursively = false) -> void
 	{
-		std::remove(filePath.string().c_str());
+		forFiles(directoryPath, [&ext, function = std::forward<decltype(function)>(function)](auto&& filePath) -> void {
+			if (filePath.extension() == ext)
+				function(filePath);
+		}, recursively);
 	}
 
 	namespace Binary

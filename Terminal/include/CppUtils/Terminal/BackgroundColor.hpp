@@ -9,7 +9,7 @@ namespace CppUtils::Terminal::BackgroundColor
 {
 	using namespace std::literals;
 
-	enum class BackgroundColorEnum : char
+	enum class BackgroundColorEnum : std::uint8_t
 	{
 		Default,
 		Black,

@@ -21,21 +21,21 @@ namespace CppUtils::UnitTest::Logger
 		});
 
 		suite.addTest("In file", [&] {
-			const auto logPath = std::filesystem::path{"test.tmp"};
-			auto logFile = std::ofstream{logPath, std::ios::app};
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+				const auto logPath = directory / "test.tmp";
+				auto logFile = std::ofstream{logPath, std::ios::app};
 
-			Logger::print(logFile, "Message");
+				Logger::print(logFile, "Message");
 
-			Logger::print<"info">(logFile, "Information message");
-			Logger::print<"important">(logFile, "Important message");
-			Logger::print<"success">(logFile, "Success message");
-			Logger::print<"debug">(logFile, "Debug message");
-			Logger::print<"detail">(logFile, "Detail message");
-			Logger::print<"warning">(logFile, "Warning message");
-			Logger::print<"error">(logFile, "Error message");
-
-			CppUtils::FileSystem::File::deleteFile(logPath);
-			suite.expect(true);
+				Logger::print<"info">(logFile, "Information message");
+				Logger::print<"important">(logFile, "Important message");
+				Logger::print<"success">(logFile, "Success message");
+				Logger::print<"debug">(logFile, "Debug message");
+				Logger::print<"detail">(logFile, "Detail message");
+				Logger::print<"warning">(logFile, "Warning message");
+				Logger::print<"error">(logFile, "Error message");
+				suite.expect(true);
+			}};
 		});
 	}};
 }

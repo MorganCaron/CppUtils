@@ -13,7 +13,9 @@
 #include <CppUtils/Container/Vector2.hpp>
 #include <CppUtils/Container/Vector3.hpp>
 #include <CppUtils/Error.hpp>
+#include <CppUtils/FileSystem/Directory.hpp>
 #include <CppUtils/FileSystem/File.hpp>
+#include <CppUtils/FileSystem/FileWatcher.hpp>
 #include <CppUtils/Language/Ast.hpp>
 #include <CppUtils/Language/Grammar.hpp>
 #include <CppUtils/Language/Parser/Cursor.hpp>

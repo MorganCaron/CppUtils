@@ -73,7 +73,9 @@ namespace CppUtils::Language
 				&compilationResult.output,
 				&decltype(source)::size,
 				&decltype(source)::at,
-				&decltype(compilationResult.output)::push_back);
+				&decltype(compilationResult.output)::push_back /*,
+				 &decltype(compilationResult.output)::template operator= <decltype(compilationResult.output)>*/
+			);
 			return compilationResult;
 		}
 	}

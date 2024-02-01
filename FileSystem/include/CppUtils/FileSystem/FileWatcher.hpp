@@ -1,44 +1,120 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <mutex>
-#include <set>
 #include <unordered_map>
 
 #include <CppUtils/Thread/LoopThread.hpp>
 
 namespace CppUtils::FileSystem
 {
+	enum FileStatus : std::uint8_t
+	{
+		Created = 0b1,
+		Modified = 0b10,
+		Deleted = 0b100
+	};
+
+	using WatchedFileStatus = std::uint8_t;
+
+	inline constexpr auto allFileStatus = WatchedFileStatus{
+		FileStatus::Created |
+		FileStatus::Modified |
+		FileStatus::Deleted};
+
 	class FileWatcher final
 	{
 	public:
-		enum class FileStatus : char
+		using SubscribeFunction = std::function<void(const std::filesystem::path&, FileStatus)>;
+
+	private:
+		struct FileInfos final
 		{
-			Created,
-			Modified,
-			Deleted
+			FileInfos() = default;
+			explicit FileInfos(const std::filesystem::path& path):
+				path{path},
+				exists{std::filesystem::exists(path)},
+				lastWriteTime{
+					std::filesystem::exists(path) ?
+						std::filesystem::last_write_time(path) :
+						std::filesystem::file_time_type{}}
+			{}
+
+			std::filesystem::path path;
+			bool exists;
+			std::filesystem::file_time_type lastWriteTime;
 		};
 
-		FileWatcher() = delete;
+		struct WatchFileOptions
+		{
+			SubscribeFunction subscribedFunction;
+			WatchedFileStatus watchStatus;
+		};
 
-		template<class Rep, class Period>
-		explicit FileWatcher(const std::function<void(const std::filesystem::path& filePath, FileStatus)>& function, const std::chrono::duration<Rep, Period>& interval):
-			m_function{std::move(function)},
-			m_loopThread{std::bind(&FileWatcher::listener, this), interval}
+		struct WatchDirectoryOptions final: public WatchFileOptions
+		{
+			WatchDirectoryOptions() = default;
+			WatchDirectoryOptions(SubscribeFunction subscribedFunction, WatchedFileStatus watchStatus, bool recursively):
+				WatchFileOptions{subscribedFunction, watchStatus},
+				recursively{recursively},
+				firstScan{true}
+			{}
+
+			bool recursively;
+			bool firstScan;
+		};
+
+		struct WatchedFile final
+		{
+			WatchedFile() = default;
+			WatchedFile(const std::filesystem::path& path, WatchFileOptions options):
+				infos{path},
+				options{options}
+			{}
+
+			FileInfos infos;
+			WatchFileOptions options;
+		};
+
+		using FilesInfos = std::unordered_map<std::filesystem::path, FileInfos>;
+
+		struct WatchedDirectory final
+		{
+			WatchedDirectory() = default;
+			WatchedDirectory(const std::filesystem::path& path, WatchDirectoryOptions options):
+				path{path},
+				filesInfos{},
+				options{options}
+			{}
+
+			std::filesystem::path path;
+			FilesInfos filesInfos;
+			WatchDirectoryOptions options;
+		};
+
+		using WatchedFiles = std::unordered_map<std::filesystem::path, WatchedFile>;
+		using WatchedDirectories = std::unordered_map<std::filesystem::path, WatchedDirectory>;
+
+	public:
+		FileWatcher() = delete;
+		template<Chrono::Concept::Duration Duration = std::chrono::seconds>
+		explicit FileWatcher(Duration&& interval = Duration{1}):
+			m_loopThread{std::bind(&FileWatcher::listener, this), nullptr, interval}
 		{}
 
-		FileWatcher(const FileWatcher&) = delete;
-		FileWatcher(FileWatcher&&) noexcept = default;
-		FileWatcher& operator=(const FileWatcher&) = delete;
-		FileWatcher& operator=(FileWatcher&&) noexcept = default;
+		~FileWatcher()
+		{
+			stop();
+		}
 
 		[[nodiscard]] auto isRunning() const noexcept -> bool
 		{
 			return m_loopThread.isRunning();
 		}
 
-		template<class Rep, class Period>
-		auto start(const std::chrono::duration<Rep, Period>& interval) -> void
+		template<Chrono::Concept::Duration Duration = std::chrono::seconds>
+		auto start(Duration&& interval = Duration{1}) -> void
 		{
 			m_loopThread.start(interval);
 		}
@@ -48,53 +124,104 @@ namespace CppUtils::FileSystem
 			m_loopThread.stop();
 		}
 
-		auto watchPath(const std::filesystem::path& filePath) -> void
+		auto watchFile(
+			const std::filesystem::path& filePath,
+			SubscribeFunction function,
+			WatchedFileStatus watchStatus = allFileStatus) -> void
 		{
-			[[maybe_unused]] auto lockGuard = std::lock_guard<std::mutex>{m_mutex};
-			m_watchedFiles.insert(filePath);
-			m_fileStatus[filePath] = std::filesystem::last_write_time(filePath);
+			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+			m_watchedFiles[filePath] = WatchedFile{filePath, WatchFileOptions{std::move(function), watchStatus}};
 		}
 
-		auto unwatchPath(const std::filesystem::path& filePath) -> void
+		auto unwatchFile(const std::filesystem::path& filePath) -> void
 		{
-			[[maybe_unused]] auto lockGuard = std::lock_guard<std::mutex>{m_mutex};
+			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
 			m_watchedFiles.erase(filePath);
-			m_fileStatus.erase(filePath);
+		}
+
+		auto watchDirectory(
+			const std::filesystem::path& directory,
+			SubscribeFunction function,
+			WatchedFileStatus watchStatus = allFileStatus,
+			bool recursively = true) -> void
+		{
+			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+			m_watchedDirectories[directory] = WatchedDirectory{directory,
+				WatchDirectoryOptions{std::move(function), watchStatus, recursively}};
+		}
+
+		auto unwatchDirectory(const std::filesystem::path& directory) -> void
+		{
+			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+			m_watchedDirectories.erase(directory);
 		}
 
 	private:
-		auto listener() -> void
+		auto checkFile(FileInfos& infos, const WatchFileOptions& options) -> void
 		{
-			[[maybe_unused]] auto lockGuard = std::lock_guard<std::mutex>{m_mutex};
-			for (const auto& filePath : m_watchedFiles)
+			auto& [path, exists, lastWriteTime] = infos;
+			const auto& [subscribedFunction, watchStatus] = options;
+			if (std::filesystem::exists(path))
 			{
-				if (std::filesystem::exists(filePath))
+				if (auto currentLastWriteTime = std::filesystem::last_write_time(path);
+					not exists)
 				{
-					auto lastWriteTime = std::filesystem::last_write_time(filePath);
-					auto fileStatusIt = m_fileStatus.find(filePath);
-					if (fileStatusIt == m_fileStatus.end())
-					{
-						m_function(filePath, FileStatus::Created);
-						m_fileStatus[filePath] = lastWriteTime;
-					}
-					else if (fileStatusIt->second != lastWriteTime)
-					{
-						m_function(filePath, FileStatus::Modified);
-						m_fileStatus[filePath] = lastWriteTime;
-					}
+					lastWriteTime = currentLastWriteTime;
+					exists = true;
+					if (watchStatus & FileStatus::Created)
+						subscribedFunction(path, FileStatus::Created);
 				}
-				else
+				else if (lastWriteTime != currentLastWriteTime)
 				{
-					m_function(filePath, FileStatus::Deleted);
-					m_fileStatus.erase(filePath);
+					lastWriteTime = currentLastWriteTime;
+					if (watchStatus & FileStatus::Modified)
+						subscribedFunction(path, FileStatus::Modified);
 				}
+			}
+			else if (exists)
+			{
+				exists = false;
+				if (watchStatus & FileStatus::Deleted)
+					subscribedFunction(path, FileStatus::Deleted);
 			}
 		}
 
+		auto checkDirectory(WatchedDirectory& watchedDirectory) -> void
+		{
+			auto& [directoryPath, filesInfos, options] = watchedDirectory;
+			forFiles(directoryPath, [&filesInfos, &options](const auto& filePath) -> void {
+				if (auto fileInfosIt = filesInfos.find(filePath); fileInfosIt == std::cend(filesInfos))
+				{
+					fileInfosIt = filesInfos.emplace(std::make_pair(filePath, FileInfos{filePath})).first;
+					if (not options.firstScan)
+						fileInfosIt->second.exists = false;
+				}
+			}, options.recursively);
+			if (options.firstScan)
+				options.firstScan = false;
+			auto filesToUnwatch = std::vector<std::filesystem::path>{};
+			for (auto& [filePath, fileInfos] : filesInfos)
+			{
+				checkFile(fileInfos, options);
+				if (not std::filesystem::exists(filePath))
+					filesToUnwatch.push_back(filePath);
+			}
+			for (const auto& fileToUnwatch : filesToUnwatch)
+				filesInfos.erase(fileToUnwatch);
+		}
+
+		auto listener() -> void
+		{
+			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+			for (auto& [filePath, watchedFile] : m_watchedFiles)
+				checkFile(watchedFile.infos, watchedFile.options);
+			for (auto& [directory, WatchedDirectory] : m_watchedDirectories)
+				checkDirectory(WatchedDirectory);
+		}
+
 		std::mutex m_mutex;
-		std::set<std::filesystem::path> m_watchedFiles;
-		std::unordered_map<std::filesystem::path, std::filesystem::file_time_type> m_fileStatus;
-		std::function<void(const std::filesystem::path& filePath, FileStatus)> m_function;
+		WatchedFiles m_watchedFiles;
+		WatchedDirectories m_watchedDirectories;
 		Thread::LoopThread m_loopThread;
 	};
 }

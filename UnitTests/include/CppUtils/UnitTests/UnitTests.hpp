@@ -6,8 +6,9 @@
 #include <CppUtils/UnitTests/Container/Stack.hpp>
 #include <CppUtils/UnitTests/Container/Tree.hpp>
 #include <CppUtils/UnitTests/Container/Vector.hpp>
-#include <CppUtils/UnitTests/FileSystem/File/Binary.hpp>
-#include <CppUtils/UnitTests/FileSystem/File/String.hpp>
+#include <CppUtils/UnitTests/FileSystem/Directory.hpp>
+#include <CppUtils/UnitTests/FileSystem/File.hpp>
+#include <CppUtils/UnitTests/FileSystem/FileWatcher.hpp>
 #include <CppUtils/UnitTests/Language/LowLevelLabelsCompiler.hpp>
 #include <CppUtils/UnitTests/Language/VirtualMachine.hpp>
 #include <CppUtils/UnitTests/Log/ChronoLogger.hpp>

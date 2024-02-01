@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <thread>
@@ -13,11 +14,12 @@ namespace CppUtils::Thread
 	public:
 		LoopThread() = delete;
 
-		explicit LoopThread(std::function<void()> function, std::function<void()> interruptFunction = nullptr):
+		template<Chrono::Concept::Duration Duration = std::chrono::nanoseconds>
+		explicit LoopThread(std::function<void()> function, std::function<void()> interruptFunction = nullptr, Duration&& interval = Duration::zero()):
 			m_function{std::move(function)},
 			m_interruptFunction{std::move(interruptFunction)}
 		{
-			start();
+			start(interval);
 		}
 
 		LoopThread(const LoopThread&) = delete;
@@ -45,11 +47,12 @@ namespace CppUtils::Thread
 			return m_running.load();
 		}
 
-		auto start() -> void
+		template<Chrono::Concept::Duration Duration = std::chrono::nanoseconds>
+		auto start(Duration&& interval = Duration::zero()) -> void
 		{
 			if (isRunning())
 				stop();
-			m_thread = std::jthread{&LoopThread::run, this};
+			m_thread = std::jthread{&LoopThread::run<std::remove_cvref_t<Duration>>, this, interval};
 		}
 
 		auto stop() -> void
@@ -63,11 +66,16 @@ namespace CppUtils::Thread
 		}
 
 	private:
-		auto run() -> void
+		template<Chrono::Concept::Duration Duration = std::chrono::nanoseconds>
+		auto run(Duration&& interval = Duration::zero()) -> void
 		{
 			m_running = true;
 			while (isRunning())
+			{
 				m_function();
+				if (interval != Duration::zero())
+					std::this_thread::sleep_for(interval);
+			}
 		}
 
 		std::function<void()> m_function;

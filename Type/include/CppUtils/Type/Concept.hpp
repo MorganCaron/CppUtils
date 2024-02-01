@@ -12,7 +12,7 @@ namespace CppUtils::Type::Concept
 	};
 
 	template<class Type, class... Types>
-	concept Present = (std::same_as<Type, Types> || ...);
+	concept Present = (std::same_as<Type, Types> or ...);
 
 	template<class T>
 	concept Dereferenceable = requires (T value) {
@@ -31,7 +31,10 @@ namespace CppUtils::Type::Concept
 	concept Function = std::is_function_v<T>;
 
 	template<class T>
-	inline constexpr bool isFunctionPointer = std::is_pointer_v<T> && std::is_function_v<std::remove_pointer_t<T>>;
+	concept HasReturnValue = not std::same_as<std::invoke_result_t<T>, void>;
+
+	template<class T>
+	inline constexpr bool isFunctionPointer = std::is_pointer_v<T> and std::is_function_v<std::remove_pointer_t<T>>;
 
 	template<class T>
 	concept FunctionPointer = isFunctionPointer<T>;
