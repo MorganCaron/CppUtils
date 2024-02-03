@@ -1,7 +1,6 @@
 module;
 
 #include <CppUtils/System/OS.hpp>
-#include <CppUtils/System/Windows.hpp>
 
 #include <cstdio>
 
@@ -9,7 +8,7 @@ module;
 #	include <sys/ioctl.h>
 #	include <unistd.h>
 #elif defined(OS_WINDOWS)
-#	include <windows.h>
+#	include <CppUtils/System/Windows.hpp>
 #endif
 
 export module CppUtils.Terminal.Utility;
