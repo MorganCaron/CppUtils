@@ -2,6 +2,10 @@ module;
 
 #include <CppUtils/System/OS.hpp>
 
+#if defined(OS_WINDOWS)
+#	include <CppUtils/System/Windows.hpp>
+#endif
+
 export module CppUtils.Terminal.TextModifier;
 
 import std;
@@ -55,14 +59,14 @@ export namespace CppUtils::Terminal
 			if (!m_modify)
 				return;
 #if defined(OS_WINDOWS)
-			SetConsoleTextAttribute(Terminal::getTerminalHandle(m_file), m_attributes);
+			SetConsoleTextAttribute(getTerminalHandle(m_file), m_attributes);
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 			std::print(m_file, "{}", ANSIEscapeCode::Reset);
 #endif
 		}
 
 #if defined(OS_WINDOWS)
-		[[nodiscard]] static auto TextModifier::getTextColor(std::FILE* file) -> std::uint16_t
+		[[nodiscard]] static auto getTextColor(std::FILE* file) -> std::uint16_t
 		{
 			CONSOLE_SCREEN_BUFFER_INFO info;
 			if (!GetConsoleScreenBufferInfo(getTerminalHandle(file), &info))
@@ -70,7 +74,7 @@ export namespace CppUtils::Terminal
 			return info.wAttributes;
 		}
 
-		[[nodiscard]] static auto TextModifier::getTextColor(std::ostream& stream) -> std::uint16_t
+		[[nodiscard]] static auto getTextColor(std::ostream& stream) -> std::uint16_t
 		{
 			CONSOLE_SCREEN_BUFFER_INFO info;
 			if (!GetConsoleScreenBufferInfo(getTerminalHandle(stream), &info))

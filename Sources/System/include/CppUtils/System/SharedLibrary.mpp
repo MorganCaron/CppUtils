@@ -4,6 +4,8 @@ module;
 
 #if defined(OS_LINUX) or defined(OS_MACOS)
 #	include <dlfcn.h>
+#elif defined(OS_WINDOWS)
+#	include <CppUtils/System/Windows.hpp>
 #endif
 
 export module CppUtils.System.SharedLibrary;
@@ -48,13 +50,22 @@ export namespace CppUtils::System
 
 		explicit SharedLibrary(const std::filesystem::path& libraryPath)
 		{
-#if defined(OS_WINDOWS)
-			auto wstringPath = libraryPath.generic_wstring();
-			m_library = LoadLibraryExW(std::data(wstringPath), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
-			if (!m_library)
-				throw std::runtime_error{"Couldn't load library " + wstringPath + "\n" + GetLastError()};
-#elif defined(OS_LINUX) or defined(OS_MACOS)
 			auto stringPath = libraryPath.string();
+#if defined(OS_WINDOWS)
+			m_library = LoadLibraryEx(std::data(stringPath), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+			if (!m_library)
+			{
+				auto buf = std::array<char, 256>{};
+				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+					nullptr,
+					GetLastError(),
+					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+					std::data(buf),
+					std::size(buf),
+					nullptr);
+				throw std::runtime_error{"Couldn't load library " + stringPath + "\n" + std::data(buf)};
+			}
+#elif defined(OS_LINUX) or defined(OS_MACOS)
 			m_library = dlopen(std::data(stringPath), RTLD_LAZY);
 			if (!m_library)
 				throw std::runtime_error{"Couldn't load library " + stringPath + "\n" + dlerror()};
@@ -79,7 +90,17 @@ export namespace CppUtils::System
 			auto handle = GetModuleHandle(nullptr);
 			auto* functionPointer = GetProcAddress(handle, std::data(signature));
 			if (!functionPointer)
-				throw std::runtime_error("Couldn't load function "s + std::data(signature) + "\nError code: " + GetLastError());
+			{
+				auto buf = std::array<char, 256>{};
+				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+					nullptr,
+					GetLastError(),
+					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+					std::data(buf),
+					std::size(buf),
+					nullptr);
+				throw std::runtime_error("Couldn't load function "s + std::data(signature) + "\nError code: " + std::data(buf));
+			}
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 			auto* handle = dlopen(nullptr, RTLD_LAZY);
 			if (handle == nullptr)
