@@ -1,0 +1,50 @@
+export module CppUtils.UnitTests.Container.Sequence;
+
+import std;
+import CppUtils;
+
+namespace
+{
+	[[nodiscard]] inline auto generateDifferenceVector(std::string_view string) -> std::vector<CppUtils::Container::Sequence::Difference>
+	{
+		auto result = std::vector<CppUtils::Container::Sequence::Difference>{};
+		result.reserve(string.size());
+		for (const auto c : string)
+		{
+			switch (c)
+			{
+			case ' ': result.emplace_back(CppUtils::Container::Sequence::Difference::None); break;
+			case '+': result.emplace_back(CppUtils::Container::Sequence::Difference::Added); break;
+			case '-': result.emplace_back(CppUtils::Container::Sequence::Difference::Removed); break;
+			case '*': result.emplace_back(CppUtils::Container::Sequence::Difference::Edited); break;
+			default: throw std::runtime_error{"generateDifferenceVector(): Unknown character."};
+			}
+		}
+		return result;
+	}
+}
+
+export namespace CppUtils::UnitTest::Container::Sequence
+{
+	inline auto _ = TestSuite{"Container/Sequence", [](auto& suite) {
+		using namespace std::literals;
+
+		suite.addTest("string", [&] {
+			const auto s0 = "azTESTerABCtyui99o9p"sv;
+			const auto s1 = "000azWXYZerty123uiopHELLO"sv;
+			const auto differences = generateDifferenceVector("+++  ----++++  ---  +++  -- - +++++"sv);
+			const auto result = CppUtils::Container::Sequence::getDifferences<char>(s0, s1);
+			suite.expectEqual(result, differences);
+		});
+
+		suite.addTest("vector", [&] {
+			const auto s0 = "azTESTerABCtyui99o9p"sv;
+			const auto s1 = "000azWXYZerty123uiopHELLO"sv;
+			const auto vec0 = std::vector<char>{s0.begin(), s0.end()};
+			const auto vec1 = std::vector<char>{s1.begin(), s1.end()};
+			const auto differences = generateDifferenceVector("+++  ----++++  ---  +++  -- - +++++"sv);
+			const auto result = CppUtils::Container::Sequence::getDifferences<char>(vec0, vec1);
+			suite.expectEqual(result, differences);
+		});
+	}};
+}

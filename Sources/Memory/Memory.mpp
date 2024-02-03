@@ -1,0 +1,9 @@
+export module CppUtils.Memory;
+
+import std;
+
+export namespace CppUtils::Memory
+{
+	template<class T>
+	using UniquePtrWithDestructor = std::unique_ptr<T, std::function<void(T*)>>;
+}

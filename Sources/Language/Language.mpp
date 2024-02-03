@@ -1,0 +1,4 @@
+export module CppUtils.Language;
+
+export import CppUtils.Language.Grammar;
+export import CppUtils.Language.VirtualMachine;
