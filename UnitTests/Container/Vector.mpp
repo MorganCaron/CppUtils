@@ -14,7 +14,7 @@ export namespace CppUtils::UnitTest::Container::Vector
 			const auto c = std::vector<std::string>{"e", "f"};
 			const auto d = std::vector<std::string>{"g", "h"};
 			const auto vector = CppUtils::Container::Vector::merge({std::cref(a), std::cref(b), std::cref(c), std::cref(d)});
-			suite.expectEqual(std::size(vector), 8uz);
+			suite.expectEqual(std::size(vector), std::size_t{8});
 			for (const auto& string : vector)
 				Logger::print("{}\n", string);
 		});

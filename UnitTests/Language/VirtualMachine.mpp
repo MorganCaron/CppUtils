@@ -206,25 +206,25 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 		suite.addTest("jump (direct, relative)", [&] {
 			constexpr auto source = u8"(0, 1, 0JX 42"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42});
 		});
 
 		suite.addTest("jump (direct, absolute)", [&] {
 			constexpr auto source = u8"(0, 10, 1JX 42"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42});
 		});
 
 		suite.addTest("jump (indirect, relative)", [&] {
 			constexpr auto source = u8"(0, 1, 0, 2JX )42"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42});
 		});
 
 		suite.addTest("jump (indirect, absolute)", [&] {
 			constexpr auto source = u8"(0, 13, 0, 3JX )42"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42});
 		});
 
 		suite.addTest("conditional (direct) jump (direct, relative)", [&] {
@@ -317,7 +317,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 		suite.addTest("position", [&] {
 			constexpr auto source = u8"   P   "sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 3uz);
+			suite.expectEqual(result, std::size_t{3});
 		});
 
 		suite.addTest("copy", [&] {
@@ -328,7 +328,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 					+
 				)"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42});
 		});
 
 		suite.addTest("cast", [&] {
@@ -363,7 +363,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 			};
 
 			auto result = VM::execute<std::size_t, std::string_view>(source, input, +print);
-			suite.expectEqual(result, 0uz);
+			suite.expectEqual(result, std::size_t{0});
 		});
 
 		suite.addTest("test loops", [&] {
@@ -387,7 +387,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 			};
 
 			auto result = VM::execute<std::size_t, bool, std::string_view>(source, nb, input, +print);
-			suite.expectEqual(result, 0uz);
+			suite.expectEqual(result, std::size_t{0});
 		});
 
 		suite.addTest("char16_t", [&] {

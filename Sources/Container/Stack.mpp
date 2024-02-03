@@ -55,7 +55,7 @@ export namespace CppUtils::Container
 
 			auto offset = getTypeOffset(position);
 			auto buffer = std::array<std::byte, sizeof(T)>{};
-			for (auto i = 0uz; i < sizeof(T); ++i)
+			for (auto i = std::size_t{0}; i < sizeof(T); ++i)
 				buffer[i] = m_data[offset + i];
 			return std::bit_cast<T>(buffer);
 		}
@@ -83,7 +83,7 @@ export namespace CppUtils::Container
 
 			auto offset = getTypeOffset(position);
 			auto buffer = std::bit_cast<std::array<std::byte, sizeof(T)>>(newValue);
-			for (auto i = 0uz; i < sizeof(T); ++i)
+			for (auto i = std::size_t{0}; i < sizeof(T); ++i)
 				m_data[offset + i] = buffer[i];
 		}
 
@@ -203,8 +203,8 @@ export namespace CppUtils::Container
 	private:
 		[[nodiscard]] constexpr auto getTypeOffset(std::size_t position) const -> std::size_t
 		{
-			auto offset = 0uz;
-			for (auto i = 0uz; i < position; ++i)
+			auto offset = std::size_t{0};
+			for (auto i = std::size_t{0}; i < position; ++i)
 				offset += typesSize[m_types[i]];
 			return offset;
 		}
