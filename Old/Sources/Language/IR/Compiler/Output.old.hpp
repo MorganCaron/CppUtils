@@ -55,7 +55,7 @@ namespace CppUtils::Language::IR::Compiler
 			}
 
 			// Define labels for jumps
-			auto newLabel = [nbLabels = std::size_t{0}]() mutable -> std::string { return 'L' + std::to_string(nbLabels++); };
+			auto newLabel = [nbLabels = 0uz]() mutable -> std::string { return 'L' + std::to_string(nbLabels++); };
 			const auto addUniqueLabel = [&labels, &newLabel](const Bytecode::Instruction* instruction) -> void {
 				if (labels.find(instruction) == labels.end())
 					labels[instruction] = newLabel();

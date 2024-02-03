@@ -224,4 +224,3 @@ export namespace CppUtils::FileSystem
 		Thread::LoopThread m_loopThread;
 	};
 }
-

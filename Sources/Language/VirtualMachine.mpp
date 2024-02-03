@@ -107,12 +107,12 @@ export namespace CppUtils::Language::VirtualMachine
 		using Stack = Container::Stack<ReturnType, SupportedTypes...>;
 		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{&source, data...};
 		auto stack = Stack{};
-		for (auto instructionPointer = std::size_t{0}; instructionPointer < std::size(source); ++instructionPointer)
+		for (auto instructionPointer = 0uz; instructionPointer < std::size(source); ++instructionPointer)
 		{
 			switch (auto instruction = source[instructionPointer]; instruction)
 			{
 			case ',': [[fallthrough]];
-			case '(': stack.push(std::size_t{0}); break;
+			case '(': stack.push(0uz); break;
 			case ')': stack.drop(); break;
 			case '_':
 				stack.visit(std::size(stack) - 1, [&stack](auto&& value) -> void {
@@ -143,10 +143,10 @@ export namespace CppUtils::Language::VirtualMachine
 			case 'P': /* Push */ stack.template push<std::size_t>(instructionPointer); break;
 			case 'R': // Reference
 				stack.pop([&stack](auto&& pointer) -> void {
-					using DereferencedType = std::decay_t<decltype(*pointer)>;
 					if constexpr (not std::is_pointer_v<std::decay_t<decltype(pointer)>>)
 						throw std::logic_error{"The dereferenced type is not a pointer"};
-					else if constexpr (not Type::Concept::Present<DereferencedType, ReturnType, SupportedTypes...>)
+					else if constexpr (using DereferencedType = std::decay_t<decltype(*pointer)>;
+									   not Type::Concept::Present<DereferencedType, ReturnType, SupportedTypes...>)
 						throw std::logic_error{"The dereferenced type is not present among the supported types"};
 					else
 						stack.template push<DereferencedType>(*pointer);

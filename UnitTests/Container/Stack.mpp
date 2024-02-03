@@ -18,17 +18,17 @@ export namespace CppUtils::UnitTest::Container::Stack
 		suite.addTest("One value", [&] {
 			auto stack = CppUtils::Container::Stack<int>{42};
 			suite.expect(!std::empty(stack));
-			suite.expectEqual(std::size(stack), std::size_t{1});
+			suite.expectEqual(std::size(stack), 1uz);
 		});
 
 		suite.addTest("One type, multiple values", [&] {
 			auto stack = CppUtils::Container::Stack<int>{1, 2, 3};
-			suite.expectEqual(std::size(stack), std::size_t{3});
+			suite.expectEqual(std::size(stack), 3uz);
 		});
 
 		suite.addTest("Multiple types", [&] {
 			auto stack = CppUtils::Container::Stack<bool, int, float, std::string_view>{true, 42, 3.14f, "Hello World!"sv};
-			suite.expectEqual(std::size(stack), std::size_t{4});
+			suite.expectEqual(std::size(stack), 4uz);
 
 			stack.print();
 
@@ -75,13 +75,13 @@ export namespace CppUtils::UnitTest::Container::Stack
 		suite.addTest("visit", [&] {
 			auto stack = CppUtils::Container::Stack<bool, int, float, std::string_view>{true, 42, 3.14f, "Hello World!"sv};
 
-			for (auto i = std::size_t{0}; i < std::size(stack); ++i)
+			for (auto i = 0uz; i < std::size(stack); ++i)
 				stack.visit(i, [&stack, i](auto&& value) -> void {
 					stack.print(i);
 					Logger::print("{}\n", value);
 				});
 
-			suite.expectEqual(std::size(stack), std::size_t{4});
+			suite.expectEqual(std::size(stack), 4uz);
 		});
 	}};
 }

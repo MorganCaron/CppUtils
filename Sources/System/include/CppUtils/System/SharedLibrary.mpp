@@ -61,7 +61,7 @@ export namespace CppUtils::System
 					GetLastError(),
 					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 					std::data(buf),
-					static_cast<DWORD>(std::size(buf)),
+					std::size(buf),
 					nullptr);
 				throw std::runtime_error{"Couldn't load library " + stringPath + "\n" + std::data(buf)};
 			}
@@ -97,7 +97,7 @@ export namespace CppUtils::System
 					GetLastError(),
 					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 					std::data(buf),
-					static_cast<DWORD>(std::size(buf)),
+					std::size(buf),
 					nullptr);
 				throw std::runtime_error("Couldn't load function "s + std::data(signature) + "\nError code: " + std::data(buf));
 			}

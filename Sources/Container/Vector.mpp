@@ -14,7 +14,7 @@ export namespace CppUtils::Container::Vector
 	template<class T>
 	[[nodiscard]] inline auto merge(const std::initializer_list<std::reference_wrapper<const std::vector<T>>>& vectors) -> std::vector<T>
 	{
-		auto size = std::size_t{0};
+		auto size = 0uz;
 		for (const auto& vector : vectors)
 			size += vector.get().size();
 		auto newVector = std::vector<T>{};

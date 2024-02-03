@@ -15,11 +15,11 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 		suite.addTest("empty source", [&] {
 			constexpr auto source = u"("sv;
 			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, std::size_t{0});
+			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, std::size_t{0});
+			suite.expectEqual(executionResult, 0uz);
 		});
 
 		suite.addTest("code without labels", [&] {
@@ -27,11 +27,11 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 				(42X
 			)"sv;
 			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, std::size_t{0});
+			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, std::size_t{42});
+			suite.expectEqual(executionResult, 42uz);
 		});
 
 		suite.addTest("comment", [&] {
@@ -41,11 +41,11 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 				2
 				)"sv;
 			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, std::size_t{0});
+			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, std::size_t{42});
+			suite.expectEqual(executionResult, 42uz);
 		});
 
 		suite.addTest("one label", [&] {
@@ -61,11 +61,11 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 				22X
 				)"sv;
 			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, std::size_t{0});
+			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, std::size_t{42});
+			suite.expectEqual(executionResult, 42uz);
 		});
 
 		suite.addTest("multiple labels", [&] constexpr {
@@ -87,11 +87,11 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 				(23X
 				)"sv;
 			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, std::size_t{0});
+			suite.expectEqual(compilationResult, 0uz);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, std::size_t{42});
+			suite.expectEqual(executionResult, 42uz);
 		});
 	}};
 	*/

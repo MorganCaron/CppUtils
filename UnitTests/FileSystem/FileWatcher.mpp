@@ -35,7 +35,7 @@ export namespace CppUtils::UnitTest::FileSystem::FileWatcher
 
 		suite.addTest("Watch file creation", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto eventsTriggered = std::size_t{0};
+				auto eventsTriggered = 0uz;
 				auto fileWatcher = CppUtils::FileSystem::FileWatcher{10ms};
 				auto filePath = directory / "test.tmp";
 
@@ -48,13 +48,13 @@ export namespace CppUtils::UnitTest::FileSystem::FileWatcher
 				CppUtils::FileSystem::String::write(filePath, "Hello World!");
 				std::this_thread::sleep_for(100ms);
 
-				suite.expectEqual(eventsTriggered, std::size_t{1});
+				suite.expectEqual(eventsTriggered, 1uz);
 			}};
 		});
 
 		suite.addTest("Watch file modification", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto eventsTriggered = std::size_t{0};
+				auto eventsTriggered = 0uz;
 				auto fileWatcher = CppUtils::FileSystem::FileWatcher{10ms};
 				auto filePath = directory / "test.tmp";
 				CppUtils::FileSystem::String::write(filePath, "Foo");
@@ -69,13 +69,13 @@ export namespace CppUtils::UnitTest::FileSystem::FileWatcher
 				CppUtils::FileSystem::String::write(filePath, "Bar");
 				std::this_thread::sleep_for(100ms);
 
-				suite.expectEqual(eventsTriggered, std::size_t{1});
+				suite.expectEqual(eventsTriggered, 1uz);
 			}};
 		});
 
 		suite.addTest("Watch file deletion", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto eventsTriggered = std::size_t{0};
+				auto eventsTriggered = 0uz;
 				auto fileWatcher = CppUtils::FileSystem::FileWatcher{10ms};
 				auto filePath = directory / "test.tmp";
 				CppUtils::FileSystem::String::write(filePath, "Hello World!");
@@ -89,13 +89,13 @@ export namespace CppUtils::UnitTest::FileSystem::FileWatcher
 				std::filesystem::remove(filePath);
 				std::this_thread::sleep_for(100ms);
 
-				suite.expectEqual(eventsTriggered, std::size_t{1});
+				suite.expectEqual(eventsTriggered, 1uz);
 			}};
 		});
 
 		suite.addTest("Watch directory creation", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto eventsTriggered = std::size_t{0};
+				auto eventsTriggered = 0uz;
 				auto fileWatcher = CppUtils::FileSystem::FileWatcher{10ms};
 
 				fileWatcher.watchDirectory(directory, [&eventsTriggered, &suite](const std::filesystem::path& filePath, CppUtils::FileSystem::FileStatus status) -> void {
@@ -108,13 +108,13 @@ export namespace CppUtils::UnitTest::FileSystem::FileWatcher
 				CppUtils::FileSystem::String::write(directory / "test.tmp", "Hello World!");
 				std::this_thread::sleep_for(100ms);
 
-				suite.expectEqual(eventsTriggered, std::size_t{1});
+				suite.expectEqual(eventsTriggered, 1uz);
 			}};
 		});
 
 		suite.addTest("Watch directory modification", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto eventsTriggered = std::size_t{0};
+				auto eventsTriggered = 0uz;
 				auto fileWatcher = CppUtils::FileSystem::FileWatcher{10ms};
 				auto filePath = directory / "test.tmp";
 				CppUtils::FileSystem::String::write(filePath, "Foo");
@@ -129,13 +129,13 @@ export namespace CppUtils::UnitTest::FileSystem::FileWatcher
 				CppUtils::FileSystem::String::write(filePath, "Bar");
 				std::this_thread::sleep_for(100ms);
 
-				suite.expectEqual(eventsTriggered, std::size_t{1});
+				suite.expectEqual(eventsTriggered, 1uz);
 			}};
 		});
 
 		suite.addTest("Watch directory deletion", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto eventsTriggered = std::size_t{0};
+				auto eventsTriggered = 0uz;
 				auto fileWatcher = CppUtils::FileSystem::FileWatcher{10ms};
 				auto filePath = directory / "test.tmp";
 				CppUtils::FileSystem::String::write(filePath, "Hello World!");
@@ -150,7 +150,7 @@ export namespace CppUtils::UnitTest::FileSystem::FileWatcher
 				std::filesystem::remove(filePath);
 				std::this_thread::sleep_for(100ms);
 
-				suite.expectEqual(eventsTriggered, std::size_t{1});
+				suite.expectEqual(eventsTriggered, 1uz);
 			}};
 		});
 	}};
