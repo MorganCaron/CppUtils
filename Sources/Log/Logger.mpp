@@ -82,7 +82,7 @@ export namespace CppUtils
 
 	template<>
 	template<>
-	auto Logger<"CppUtils">::format<"info">(std::string_view message) -> Formatter
+	inline auto Logger<"CppUtils">::format<"info">(std::string_view message) -> Formatter
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Default},
@@ -91,7 +91,7 @@ export namespace CppUtils
 
 	template<>
 	template<>
-	auto Logger<"CppUtils">::format<"important">(std::string_view message) -> Formatter
+	inline auto Logger<"CppUtils">::format<"important">(std::string_view message) -> Formatter
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Cyan},
@@ -100,7 +100,7 @@ export namespace CppUtils
 
 	template<>
 	template<>
-	auto Logger<"CppUtils">::format<"success">(std::string_view message) -> Formatter
+	inline auto Logger<"CppUtils">::format<"success">(std::string_view message) -> Formatter
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Green},
@@ -109,7 +109,7 @@ export namespace CppUtils
 
 	template<>
 	template<>
-	auto Logger<"CppUtils">::format<"debug">(std::string_view message) -> Formatter
+	inline auto Logger<"CppUtils">::format<"debug">(std::string_view message) -> Formatter
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Magenta},
@@ -118,7 +118,7 @@ export namespace CppUtils
 
 	template<>
 	template<>
-	auto Logger<"CppUtils">::format<"detail">(std::string_view message) -> Formatter
+	inline auto Logger<"CppUtils">::format<"detail">(std::string_view message) -> Formatter
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Blue},
@@ -127,7 +127,7 @@ export namespace CppUtils
 
 	template<>
 	template<>
-	auto Logger<"CppUtils">::format<"warning">(std::string_view message) -> Formatter
+	inline auto Logger<"CppUtils">::format<"warning">(std::string_view message) -> Formatter
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Yellow},
@@ -136,7 +136,7 @@ export namespace CppUtils
 
 	template<>
 	template<>
-	auto Logger<"CppUtils">::format<"error">(std::string_view message) -> Formatter
+	inline auto Logger<"CppUtils">::format<"error">(std::string_view message) -> Formatter
 	{
 		return {
 			Terminal::TextModifier{stderr, Terminal::TextColor::TextColorEnum::Red},

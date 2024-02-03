@@ -5,7 +5,7 @@ import CppUtils.Chrono.Concept;
 
 export namespace CppUtils::Chrono
 {
-	[[nodiscard]] auto durationToString(Concept::Duration auto duration) -> std::string
+	[[nodiscard]] inline auto durationToString(Concept::Duration auto duration) -> std::string
 	{
 		const auto hour = std::chrono::duration_cast<std::chrono::hours>(duration);
 		duration -= hour;
@@ -54,7 +54,7 @@ export namespace CppUtils::Chrono
 			m_end = Clock::now();
 		}
 
-		[[nodiscard]] auto getDuration() const
+		[[nodiscard]] inline auto getDuration() const
 		{
 			return m_end - m_start;
 		}

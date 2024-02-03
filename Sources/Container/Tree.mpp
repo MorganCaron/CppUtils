@@ -13,26 +13,26 @@ export namespace CppUtils::Container::Tree
 		ValueType value;
 		std::vector<Node<ValueType>> nodes = {};
 
-		[[nodiscard]] constexpr auto find(const ValueType& key) const noexcept -> auto
+		[[nodiscard]] inline constexpr auto find(const ValueType& key) const noexcept -> auto
 		{
 			return std::ranges::find_if(nodes, [&key](const auto& node) -> bool {
 				return node.value == key;
 			});
 		}
 
-		[[nodiscard]] constexpr auto find(const ValueType& key) noexcept -> auto
+		[[nodiscard]] inline constexpr auto find(const ValueType& key) noexcept -> auto
 		{
 			return std::ranges::find_if(nodes, [&key](const auto& node) -> bool {
 				return node.value == key;
 			});
 		}
 
-		[[nodiscard]] constexpr auto exists(const ValueType& key) const noexcept -> bool
+		[[nodiscard]] inline constexpr auto exists(const ValueType& key) const noexcept -> bool
 		{
 			return find(key) != std::cend(nodes);
 		}
 
-		[[nodiscard]] constexpr auto operator[](const ValueType& key) -> Node<ValueType>&
+		[[nodiscard]] inline constexpr auto operator[](const ValueType& key) -> Node<ValueType>&
 		{
 			for (auto& node : nodes)
 				if (key == node.value)
@@ -40,7 +40,7 @@ export namespace CppUtils::Container::Tree
 			return nodes.emplace_back(Node<T>{key});
 		}
 
-		[[nodiscard]] constexpr auto operator[](const ValueType& key) const -> const Node<ValueType>&
+		[[nodiscard]] inline constexpr auto operator[](const ValueType& key) const -> const Node<ValueType>&
 		{
 			const auto value = find(key);
 			if (value == std::cend(nodes))
@@ -48,7 +48,7 @@ export namespace CppUtils::Container::Tree
 			return *value;
 		}
 
-		[[nodiscard]] constexpr auto getNodesWithValue(const ValueType& filterValue) const
+		[[nodiscard]] inline constexpr auto getNodesWithValue(const ValueType& filterValue) const
 		{
 			return nodes | std::views::filter([&filterValue](const auto& node) { return node.value == filterValue; });
 		}
@@ -58,7 +58,7 @@ export namespace CppUtils::Container::Tree
 	Node(T value, std::vector<Node<T>> nodes = {}) -> Node<T>;
 
 	template<class T>
-	[[nodiscard]] auto operator==(const Node<T>& lhs, const Node<T>& rhs) -> bool
+	[[nodiscard]] inline auto operator==(const Node<T>& lhs, const Node<T>& rhs) -> bool
 	{
 		return lhs.value == rhs.value and lhs.nodes == rhs.nodes;
 	}

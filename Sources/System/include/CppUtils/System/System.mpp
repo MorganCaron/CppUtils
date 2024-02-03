@@ -28,7 +28,7 @@ export namespace CppUtils::System
 			close(m_fileDescriptor);
 		}
 
-		[[nodiscard]] constexpr int get() const noexcept
+		[[nodiscard]] inline constexpr int get() const noexcept
 		{
 			return m_fileDescriptor;
 		}

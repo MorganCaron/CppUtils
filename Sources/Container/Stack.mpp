@@ -22,22 +22,22 @@ export namespace CppUtils::Container
 			(push(values), ...);
 		}
 
-		[[nodiscard]] constexpr auto empty() const noexcept -> bool
+		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
 		{
 			return std::empty(m_types);
 		}
 
-		[[nodiscard]] constexpr auto size() const noexcept -> std::size_t
+		[[nodiscard]] inline constexpr auto size() const noexcept -> std::size_t
 		{
 			return std::size(m_types);
 		}
 
-		[[nodiscard]] constexpr auto getByteSize() const noexcept -> std::size_t
+		[[nodiscard]] inline constexpr auto getByteSize() const noexcept -> std::size_t
 		{
 			return std::size(m_data);
 		}
 
-		[[nodiscard]] constexpr auto getType(std::size_t position) const -> std::size_t
+		[[nodiscard]] inline constexpr auto getType(std::size_t position) const -> std::size_t
 		{
 			if (position >= size()) [[unlikely]]
 				throw std::out_of_range{std::format("Stack::getType({}) : Out of range", position)};
@@ -46,7 +46,7 @@ export namespace CppUtils::Container
 
 		template<Type::Concept::TriviallyCopyable T>
 		requires Type::Concept::Present<T, SupportedTypes...>
-		[[nodiscard]] constexpr auto get(std::size_t position) const -> T
+		[[nodiscard]] inline constexpr auto get(std::size_t position) const -> T
 		{
 			if (position >= size()) [[unlikely]]
 				throw std::out_of_range{std::format("Stack::get({}) : Out of range", position)};
@@ -62,7 +62,7 @@ export namespace CppUtils::Container
 
 		template<Type::Concept::TriviallyCopyable T>
 		requires Type::Concept::Present<T, SupportedTypes...>
-		[[nodiscard]] constexpr auto top() const -> decltype(auto)
+		[[nodiscard]] inline constexpr auto top() const -> decltype(auto)
 		{
 			return get<T>(size() - 1);
 		}
@@ -130,7 +130,7 @@ export namespace CppUtils::Container
 
 		template<Type::Concept::TriviallyCopyable T>
 		requires Type::Concept::Present<T, SupportedTypes...>
-		[[nodiscard]] constexpr auto pop() -> decltype(auto)
+		[[nodiscard]] inline constexpr auto pop() -> decltype(auto)
 		{
 			if (empty()) [[unlikely]]
 				throw std::underflow_error{"Stack::pop() : Container already empty"};
@@ -201,7 +201,7 @@ export namespace CppUtils::Container
 		};
 
 	private:
-		[[nodiscard]] constexpr auto getTypeOffset(std::size_t position) const -> std::size_t
+		[[nodiscard]] inline constexpr auto getTypeOffset(std::size_t position) const -> std::size_t
 		{
 			auto offset = 0uz;
 			for (auto i = 0uz; i < position; ++i)
