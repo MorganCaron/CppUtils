@@ -24,7 +24,7 @@ export namespace CppUtils::Thread
 		auto operator=(const AsyncIStreamListener&) -> AsyncIStreamListener& = delete;
 		auto operator=(AsyncIStreamListener&&) noexcept -> AsyncIStreamListener& = default;
 
-		[[nodiscard]] auto isRunning() const noexcept -> bool
+		[[nodiscard]] inline auto isRunning() const noexcept -> bool
 		{
 			return m_loopThread.isRunning();
 		}

@@ -35,7 +35,7 @@ namespace CppUtils::UnitTest
 	class TestException: public std::runtime_error
 	{
 	public:
-		TestException(std::string message):
+		inline TestException(std::string message):
 			std::runtime_error{std::move(message)}
 		{}
 	};
@@ -43,14 +43,14 @@ namespace CppUtils::UnitTest
 	class TestRunner final
 	{
 	public:
-		auto addTestSuite(std::string_view name, std::vector<Test> tests) -> void
+		inline auto addTestSuite(std::string_view name, std::vector<Test> tests) -> void
 		{
 			for (auto& test : tests)
 				test.name = std::format("{}/{}", name, test.name);
 			m_tests.insert(std::end(m_tests), std::make_move_iterator(std::begin(tests)), std::make_move_iterator(std::end(tests)));
 		}
 
-		auto executeTest(const Test& test, const TestSettings& settings) const -> bool
+		inline auto executeTest(const Test& test, const TestSettings& settings) const -> bool
 		{
 			using namespace std::literals;
 			using namespace String::Literals;
@@ -88,7 +88,7 @@ namespace CppUtils::UnitTest
 			return true;
 		}
 
-		auto executeTests(TestSettings settings) -> int
+		inline auto executeTests(TestSettings settings) -> int
 		{
 			using Logger = Logger<"CppUtils">;
 
@@ -158,19 +158,19 @@ namespace CppUtils::UnitTest
 
 	export struct TestSuite final
 	{
-		explicit TestSuite(std::string name, std::function<void(TestSuite&)> function)
+		inline explicit TestSuite(std::string name, std::function<void(TestSuite&)> function)
 		{
 			function(*this);
 			testRunner.addTestSuite(std::move(name), std::move(tests));
 		}
 
-		auto addTest(std::string name, std::function<void()> function) -> void
+		inline auto addTest(std::string name, std::function<void()> function) -> void
 		{
 			tests.emplace_back(std::move(name), function);
 		}
 
 		// Todo C++23: std::stacktrace stacktrace = std::current_stacktrace()
-		auto expect(bool condition, std::source_location sourceLocation = std::source_location::current()) -> void
+		inline auto expect(bool condition, std::source_location sourceLocation = std::source_location::current()) -> void
 		{
 			if (!condition) [[unlikely]]
 				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expect(condition)",
@@ -179,7 +179,7 @@ namespace CppUtils::UnitTest
 					sourceLocation.column())};
 		}
 
-		auto expectEqual(auto lhs, auto rhs, std::source_location sourceLocation = std::source_location::current()) -> void
+		inline auto expectEqual(auto lhs, auto rhs, std::source_location sourceLocation = std::source_location::current()) -> void
 		{
 			if (lhs != rhs) [[unlikely]]
 				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectEqual(lhs, rhs)\nwith lhs = {}\nand  rhs = {}",

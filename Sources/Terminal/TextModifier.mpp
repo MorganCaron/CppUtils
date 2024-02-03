@@ -2,6 +2,10 @@ module;
 
 #include <CppUtils/System/OS.hpp>
 
+#if defined(OS_WINDOWS)
+#	include <CppUtils/System/Windows.hpp>
+#endif
+
 export module CppUtils.Terminal.TextModifier;
 
 import std;
@@ -27,7 +31,7 @@ export namespace CppUtils::Terminal
 	public:
 		TextModifier() = default;
 
-		explicit TextModifier(
+		inline explicit TextModifier(
 			std::FILE* file,
 			TextColor::TextColorEnum textColor = TextColor::TextColorEnum::Default,
 			BackgroundColor::BackgroundColorEnum backgroundColor = BackgroundColor::BackgroundColorEnum::Default,
@@ -50,19 +54,19 @@ export namespace CppUtils::Terminal
 		TextModifier(TextModifier&& other) noexcept = default;
 		TextModifier& operator=(TextModifier&& other) noexcept = default;
 
-		~TextModifier()
+		inline ~TextModifier()
 		{
 			if (!m_modify)
 				return;
 #if defined(OS_WINDOWS)
-			SetConsoleTextAttribute(Terminal::getTerminalHandle(m_file), m_attributes);
+			SetConsoleTextAttribute(getTerminalHandle(m_file), m_attributes);
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 			std::print(m_file, "{}", ANSIEscapeCode::Reset);
 #endif
 		}
 
 #if defined(OS_WINDOWS)
-		[[nodiscard]] static auto getTextColor(std::FILE* file) -> std::uint16_t
+		[[nodiscard]] inline static auto getTextColor(std::FILE* file) -> std::uint16_t
 		{
 			CONSOLE_SCREEN_BUFFER_INFO info;
 			if (!GetConsoleScreenBufferInfo(getTerminalHandle(file), &info))
@@ -70,7 +74,7 @@ export namespace CppUtils::Terminal
 			return info.wAttributes;
 		}
 
-		[[nodiscard]] static auto getTextColor(std::ostream& stream) -> std::uint16_t
+		[[nodiscard]] inline static auto getTextColor(std::ostream& stream) -> std::uint16_t
 		{
 			CONSOLE_SCREEN_BUFFER_INFO info;
 			if (!GetConsoleScreenBufferInfo(getTerminalHandle(stream), &info))
@@ -79,7 +83,7 @@ export namespace CppUtils::Terminal
 		}
 #endif
 
-		static auto eraseCurrentLine([[maybe_unused]] std::ostream& stream) -> void
+		static inline auto eraseCurrentLine([[maybe_unused]] std::ostream& stream) -> void
 		{
 #if defined(OS_LINUX) or defined(OS_MACOS)
 			stream << ANSIEscapeCode::EraseCurrentLine;
