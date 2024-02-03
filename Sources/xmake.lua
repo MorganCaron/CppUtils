@@ -4,8 +4,10 @@ target("CppUtils")
 		set_runtimes(is_mode("debug") and "MDd" or "MD")
 		add_defines("NOMINMAX", "VC_EXTRALEAN", "WIN32_LEAN_AND_MEAN", { public = true })
 		add_cxflags("/wd4251", {force = true}) -- ‘identifier’ : class ‘type’ needs to have dll-interface to be used by clients of class ‘type2’
-	end
-	add_syslinks("pthread", "dl")
+  elseif is_plat("linux", "macosx") then
+      add_syslinks("pthread", "dl")
+  end
+
 	set_policy("build.merge_archive", true)
 	set_policy("build.c++.modules", true)
 	add_defines("DLL_EXPORT")
