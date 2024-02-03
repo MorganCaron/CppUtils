@@ -29,22 +29,22 @@ export namespace CppUtils::String
 			std::copy(cString, cString + N, name.begin());
 		}
 
-		[[nodiscard]] constexpr operator Hash() const noexcept
+		[[nodiscard]] inline constexpr operator Hash() const noexcept
 		{
 			return hash;
 		}
 
-		[[nodiscard]] constexpr operator std::basic_string_view<CharT>() const noexcept
+		[[nodiscard]] inline constexpr operator std::basic_string_view<CharT>() const noexcept
 		{
 			return std::basic_string_view<CharT>{std::data(name), N - 1};
 		}
 
-		[[nodiscard]] constexpr operator std::basic_string<CharT>() const noexcept
+		[[nodiscard]] inline constexpr operator std::basic_string<CharT>() const noexcept
 		{
 			return std::basic_string<CharT>{std::data(name), N - 1};
 		}
 
-		[[nodiscard]] constexpr auto operator==(Hash otherHash) const noexcept -> bool
+		[[nodiscard]] inline constexpr auto operator==(Hash otherHash) const noexcept -> bool
 		{
 			return hash == otherHash;
 		}
@@ -55,12 +55,12 @@ export namespace CppUtils::String
 
 	namespace Literals
 	{
-		[[nodiscard]] constexpr auto operator"" _hash(const char* cString, std::size_t size) noexcept -> Hash
+		[[nodiscard]] inline constexpr auto operator"" _hash(const char* cString, std::size_t size) noexcept -> Hash
 		{
 			return hash(std::string_view{cString, size});
 		}
 
-		[[nodiscard]] constexpr auto operator"" _token(const char* cString, std::size_t size) noexcept -> Token
+		[[nodiscard]] inline constexpr auto operator"" _token(const char* cString, std::size_t size) noexcept -> Token
 		{
 			return hash(std::string_view{cString, size});
 		}

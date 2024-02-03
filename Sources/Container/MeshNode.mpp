@@ -20,19 +20,19 @@ export namespace CppUtils::Container
 			value(std::move(c_value))
 		{}
 
-		[[nodiscard]] bool exists(const Key& branchKey) const
+		[[nodiscard]] inline bool exists(const Key& branchKey) const
 		{
 			return m_branchs.find(branchKey) != m_branchs.end();
 		}
 
-		[[nodiscard]] const std::vector<std::weak_ptr<Node>>& get(const Key& branchKey) const
+		[[nodiscard]] inline const std::vector<std::weak_ptr<Node>>& get(const Key& branchKey) const
 		{
 			if (!exists(branchKey))
 				throw std::out_of_range("The branch does not exist in the MeshNode.");
 			return m_branchs.at(branchKey);
 		}
 
-		[[nodiscard]] std::vector<std::weak_ptr<Node>>& operator[](const Key& branchKey)
+		[[nodiscard]] inline std::vector<std::weak_ptr<Node>>& operator[](const Key& branchKey)
 		{
 			if (!exists(branchKey))
 				m_branchs[branchKey] = std::vector<std::weak_ptr<Node>>{};
@@ -51,7 +51,7 @@ export namespace CppUtils::Container
 			m_branchs.erase(branchKey);
 		}
 
-		[[nodiscard]] std::size_t count(const Key& branchKey) const
+		[[nodiscard]] inline std::size_t count(const Key& branchKey) const
 		{
 			return exists(branchKey) ? static_cast<std::size_t>(get(branchKey).size()) : 0uz;
 		}

@@ -39,7 +39,7 @@ export namespace CppUtils::Terminal::TextColor
 		[[maybe_unused]] inline constexpr std::uint8_t Default = Red | Green | Blue;
 	}
 
-	[[nodiscard]] constexpr std::uint8_t getTextColorCode(TextColorEnum textColor)
+	[[nodiscard]] inline constexpr std::uint8_t getTextColorCode(TextColorEnum textColor)
 	{
 		switch (textColor)
 		{
@@ -79,7 +79,7 @@ export namespace CppUtils::Terminal::TextColor
 		[[maybe_unused]] inline constexpr auto Default = "\x1B[39m"sv;
 	}
 
-	[[nodiscard]] constexpr std::string_view getTextColorCode(TextColorEnum textColor)
+	[[nodiscard]] inline constexpr std::string_view getTextColorCode(TextColorEnum textColor)
 	{
 		switch (textColor)
 		{

@@ -87,7 +87,7 @@ export namespace Stl
 		// Todo: implémenter arg()
 		// Todo: implémenter locale()
 
-		[[nodiscard]] auto out() -> iterator
+		[[nodiscard]] inline auto out() -> iterator
 		{
 			return m_outputIt;
 		}
@@ -142,7 +142,7 @@ export namespace Stl
 
 	// https://en.cppreference.com/w/cpp/utility/format/format
 	template<class CharT, class... Args>
-	[[nodiscard]] auto format(std::basic_string_view<CharT> format, Args&&... args) -> std::basic_string<CharT>
+	[[nodiscard]] inline auto format(std::basic_string_view<CharT> format, Args&&... args) -> std::basic_string<CharT>
 	{
 		auto outputString = std::basic_string<CharT>{};
 		format_to(std::back_inserter(outputString), format, args...);
