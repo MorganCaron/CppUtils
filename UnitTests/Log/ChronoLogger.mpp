@@ -1,0 +1,15 @@
+export module CppUtils.UnitTests.ChronoLogger;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::ChronoLogger
+{
+	inline auto _ = TestSuite{"Log", [](auto& suite) {
+		suite.addTest("ChronoLogger", [&] {
+			auto chronoLogger = CppUtils::Log::ChronoLogger{"Test"};
+			chronoLogger.stop();
+			suite.expect(true);
+		});
+	}};
+}

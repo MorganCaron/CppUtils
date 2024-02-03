@@ -1,0 +1,4 @@
+export module CppUtils.Chrono;
+
+export import CppUtils.Chrono.Chronometer;
+export import CppUtils.Chrono.Concept;

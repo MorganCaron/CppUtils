@@ -1,0 +1,86 @@
+export module CppUtils.Parameters;
+
+import std;
+
+export namespace CppUtils::Language::Parameters
+{
+	/*
+	using namespace std::literals;
+
+	constexpr auto argvGrammar = R"(
+		main: _spaces (command >= 0) _spaces;
+		command: _spaces keywordParser ~_value;
+		!_value: _spaces '[' ((contentParser != ']') >= 0) ']' ~trimModifier;
+		!_spaces: (_space >= 0);
+		!_space: (' ' or '\t' or '\n');
+	)"sv;
+
+	[[nodiscard]] auto parse(const std::size_t argc, const char* argv[]) -> Parser::Ast
+	{
+		static auto grammarManager = Lexer::GrammarManager{};
+		grammarManager.addGrammar("argvGrammar"sv, argvGrammar);
+
+		auto argvVector = std::span{argv + 1, argc - 1};
+		auto src = String::concatenateStringsWithDelimiter(argvVector, " ");
+		auto argvAst = grammarManager.parseLanguage(src, "argvGrammar"sv);
+		auto parameters = std::map<std::string, std::string>{};
+		for (const auto& argument : argvAst.nodes)
+			parameters[std::string{std::get<Type::Token>(argument.getChildValue(0)).name}] = (argument.nodes.size() == 2 ? std::get<std::string>(argument.getChildValue(1)) : "");
+		return parameters;
+	}
+
+	class ParametersLexer final
+	{
+	public:
+		ParametersLexer()
+		{
+			using namespace std::literals;
+			using namespace Type::Literals;
+
+			m_grammarLexer.addParsingFunction("keywordParser"_token, Language::Parser::keywordParser<Type::Token, std::string>);
+			m_grammarLexer.addParsingFunction("contentParser"_token, Language::Parser::escapeCharParser<Type::Token, std::string>);
+			m_grammarLexer.addParsingFunction("trimModifier"_token, Language::Parser::Modifier::trimModifier<Type::Token, std::string>);
+
+			static constexpr auto grammarSrc = R"(
+			main: _spaces (command >= 0) _spaces;
+			command: _spaces keywordParser ~_value;
+			!_value: _spaces '[' ((contentParser != ']') >= 0) ']' ~trimModifier;
+			!_spaces: (_space >= 0);
+			!_space: (' ' or '\t' or '\n');
+			)"sv;
+			m_grammarLexer.parseGrammar(grammarSrc);
+		}
+
+		[[nodiscard]] std::map<std::string, std::string> parseParameters(const std::size_t argc, const char* argv[]) const
+		{
+			using namespace Type::Literals;
+			const auto argumentVector = std::span{argv + 1, argc - 1};
+			const auto src = String::concatenateStringsWithDelimiter(argumentVector, " ");
+			const auto commandTree = m_grammarLexer.parseLanguage("main"_token, src);
+			auto parameters = std::map<std::string, std::string>{};
+			for (const auto& command : commandTree.childs)
+				parameters[std::string{std::get<Type::Token>(command.getChildValue(0)).name}] = (command.childs.size() == 2 ? std::get<std::string>(command.getChildValue(1)) : "");
+			return parameters;
+		}
+
+		[[nodiscard]] bool executeCommands(const std::size_t argc, const char* argv[], const std::unordered_map<std::string_view, std::function<bool(std::string_view)>>& commands) const
+		{
+			const auto parameters = parseParameters(argc, argv);
+			for (const auto& [parameterName, parameterValue] : parameters)
+			{
+				if (const auto& commandIt = commands.find(parameterName); commandIt != commands.end())
+				{
+					if (commandIt->second(parameterValue))
+						return true;
+				}
+				else
+					Log::Logger::logWarning("Unknown command: " + parameterName);
+			}
+			return false;
+		}
+
+	private:
+		Language::Lexer::GrammarLexer<Type::Token, std::string> m_grammarLexer;
+	};
+	*/
+}
