@@ -9,7 +9,7 @@ module;
 #	include <sys/ioctl.h>
 #	include <unistd.h>
 #elif defined(OS_WINDOWS)
-#include <windows.h>
+#	include <windows.h>
 #endif
 
 export module CppUtils.Terminal.Utility;
