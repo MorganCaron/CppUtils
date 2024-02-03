@@ -4,6 +4,7 @@ set_license("LGPL3")
 set_languages("clatest", "cxxlatest")
 set_warnings("allextra", "pedantic", "error")
 add_cxflags("clang::-Wno-error=deprecated-declarations")
+add_cxflags("clang::-fcolor-diagnostics", "clang::-fansi-escape-codes", "gcc::-fdiagnostics-color=always")
 -- add_cxflags("-Wno-gnu-statement-expression-from-macro-expansion -Wno-gnu-statement-expression", {tools = { "clang", "gcc" })
 set_optimize("fastest")
 
