@@ -19,7 +19,7 @@ export namespace CppUtils
 	template<String::Hasher loggerName = String::Hash{}>
 	struct Logger final
 	{
-		Logger() = delete;
+		inline Logger() = delete;
 
 		struct Formatter final
 		{

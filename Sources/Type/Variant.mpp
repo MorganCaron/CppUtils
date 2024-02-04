@@ -7,7 +7,7 @@ export namespace CppUtils::Type::Variant::Operators
 {
 	template<Concept::Printable... Types>
 	requires (sizeof...(Types) > 0)
-	auto operator<<(std::ostream& os, const std::variant<Types...>& variant) -> std::ostream&
+	inline auto operator<<(std::ostream& os, const std::variant<Types...>& variant) -> std::ostream&
 	{
 		return std::visit([&os](auto&& value) -> std::ostream& {
 			return os << value;
@@ -15,7 +15,7 @@ export namespace CppUtils::Type::Variant::Operators
 	}
 
 	template<class LhsType, class... RhsTypes>
-	auto operator==(const LhsType& lhs, const std::variant<RhsTypes...>& rhs) -> bool
+	inline auto operator==(const LhsType& lhs, const std::variant<RhsTypes...>& rhs) -> bool
 	{
 		if constexpr (!Concept::Present<LhsType, RhsTypes...>)
 			return false;
@@ -27,7 +27,7 @@ export namespace CppUtils::Type::Variant::Operators
 
 	template<class... LhsTypes, class... RhsTypes>
 	requires (!Concept::Present<LhsTypes, RhsTypes...> or ...)
-	auto operator==(const std::variant<LhsTypes...>& lhs, const std::variant<RhsTypes...>& rhs) -> bool
+	inline auto operator==(const std::variant<LhsTypes...>& lhs, const std::variant<RhsTypes...>& rhs) -> bool
 	{
 		return std::visit([&rhs](auto&& lhsValue) -> bool {
 			if constexpr (!Concept::Present<decltype(lhsValue), RhsTypes...>)

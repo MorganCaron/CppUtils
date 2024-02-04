@@ -4,7 +4,7 @@ import std;
 
 export namespace CppUtils::Container::Sequence
 {
-	enum class Difference : char
+	enum class Difference : std::uint8_t
 	{
 		None = 0,
 		Added,

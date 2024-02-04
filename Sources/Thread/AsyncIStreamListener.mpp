@@ -10,37 +10,37 @@ export namespace CppUtils::Thread
 	class AsyncIStreamListener
 	{
 	public:
-		AsyncIStreamListener() = delete;
+		inline AsyncIStreamListener() = delete;
 
-		explicit AsyncIStreamListener(std::basic_istream<Type>& istream,
+		inline explicit AsyncIStreamListener(std::basic_istream<Type>& istream,
 			const std::function<void(Type)>& function):
 			m_istream{std::ref(istream)},
 			m_function{std::move(function)},
 			m_loopThread{std::bind(&AsyncIStreamListener::listener, this)}
 		{}
 
-		AsyncIStreamListener(const AsyncIStreamListener&) = delete;
-		AsyncIStreamListener(AsyncIStreamListener&&) noexcept = default;
-		auto operator=(const AsyncIStreamListener&) -> AsyncIStreamListener& = delete;
-		auto operator=(AsyncIStreamListener&&) noexcept -> AsyncIStreamListener& = default;
+		inline AsyncIStreamListener(const AsyncIStreamListener&) = delete;
+		inline AsyncIStreamListener(AsyncIStreamListener&&) noexcept = default;
+		inline auto operator=(const AsyncIStreamListener&) -> AsyncIStreamListener& = delete;
+		inline auto operator=(AsyncIStreamListener&&) noexcept -> AsyncIStreamListener& = default;
 
 		[[nodiscard]] inline auto isRunning() const noexcept -> bool
 		{
 			return m_loopThread.isRunning();
 		}
 
-		auto start() -> void
+		inline auto start() -> void
 		{
 			m_loopThread.start();
 		}
 
-		auto stop() -> void
+		inline auto stop() -> void
 		{
 			m_loopThread.stop();
 		}
 
 	private:
-		auto listener() -> void
+		inline auto listener() -> void
 		{
 			Type value;
 			m_istream.get() >> value;

@@ -13,11 +13,11 @@ export namespace CppUtils::Container
 	public:
 		using Logger = Logger<"CppUtils">;
 		using Types = std::tuple<SupportedTypes...>;
-		static constexpr auto typesSize = std::array<std::size_t, sizeof...(SupportedTypes)>{sizeof(SupportedTypes)...};
+		static inline constexpr auto typesSize = std::array<std::size_t, sizeof...(SupportedTypes)>{sizeof(SupportedTypes)...};
 
 		template<Type::Concept::TriviallyCopyable... Args>
 		requires (Type::Concept::Present<Args, SupportedTypes...> and ...)
-		constexpr explicit Stack(Args... values)
+		inline constexpr explicit Stack(Args... values)
 		{
 			(push(values), ...);
 		}
@@ -67,14 +67,14 @@ export namespace CppUtils::Container
 			return get<T>(size() - 1);
 		}
 
-		constexpr auto top(auto&& visitor) const -> void
+		inline constexpr auto top(auto&& visitor) const -> void
 		{
 			visit(size() - 1, std::forward<decltype(visitor)>(visitor));
 		}
 
 		template<Type::Concept::TriviallyCopyable T>
 		requires Type::Concept::Present<T, SupportedTypes...>
-		constexpr auto set(std::size_t position, T newValue) -> void
+		inline constexpr auto set(std::size_t position, T newValue) -> void
 		{
 			if (position >= size()) [[unlikely]]
 				throw std::out_of_range{std::format("Stack::set({}, T newValue) : Out of range", position)};
@@ -89,21 +89,21 @@ export namespace CppUtils::Container
 
 		template<Type::Concept::TriviallyCopyable T>
 		requires Type::Concept::Present<T, SupportedTypes...>
-		constexpr auto set(T newValue) -> void
+		inline constexpr auto set(T newValue) -> void
 		{
 			set(size() - 1, std::move(newValue));
 		}
 
 		template<Type::Concept::TriviallyCopyable T>
 		requires Type::Concept::Present<T, SupportedTypes...>
-		constexpr auto push(T value = T{}) -> void
+		inline constexpr auto push(T value = T{}) -> void
 		{
 			m_types.push_back(Type::getPosition<T, SupportedTypes...>());
 			m_data.resize(getByteSize() + sizeof(T), std::byte{0});
 			set(size() - 1, std::move(value));
 		}
 
-		constexpr auto pushType(std::size_t type) -> void
+		inline constexpr auto pushType(std::size_t type) -> void
 		{
 			if (type >= sizeof...(SupportedTypes))
 				throw std::out_of_range{std::format("Stack::pushType({}) : Out of range", type)};
@@ -114,7 +114,7 @@ export namespace CppUtils::Container
 			pushbyType[type](*this);
 		}
 
-		constexpr auto drop() -> void
+		inline constexpr auto drop() -> void
 		{
 			static constexpr auto dropFunctions = std::array{
 				+[](const Stack<SupportedTypes...>& stack, std::vector<std::byte>& data) -> void {
@@ -141,7 +141,7 @@ export namespace CppUtils::Container
 			return value;
 		}
 
-		constexpr auto pop(auto&& visitor) -> void
+		inline constexpr auto pop(auto&& visitor) -> void
 		{
 			top([this, visitor = std::forward<decltype(visitor)>(visitor)](auto&& value) mutable -> void {
 				drop();
@@ -149,7 +149,7 @@ export namespace CppUtils::Container
 			});
 		}
 
-		constexpr auto copy(std::size_t sourcePosition, std::size_t destinationPosition) -> void
+		inline constexpr auto copy(std::size_t sourcePosition, std::size_t destinationPosition) -> void
 		{
 			static constexpr auto copyToDestination = []<class SourceType>() consteval -> auto {
 				return std::array<void (*)(Stack<SupportedTypes...>&, std::size_t, std::size_t), sizeof...(SupportedTypes)>{
@@ -172,7 +172,7 @@ export namespace CppUtils::Container
 			copyFromSource[m_types[sourcePosition]][m_types[destinationPosition]](*this, sourcePosition, destinationPosition);
 		}
 
-		constexpr auto visit(std::size_t position, auto&& visitor) const -> void
+		inline constexpr auto visit(std::size_t position, auto&& visitor) const -> void
 		{
 			static constexpr auto visitors = std::array{
 				+[](const Stack<SupportedTypes...>& stack, std::size_t position, decltype(visitor) visitor) -> void {
@@ -185,14 +185,14 @@ export namespace CppUtils::Container
 			visitors[m_types[position]](*this, position, std::forward<decltype(visitor)>(visitor));
 		}
 
-		constexpr auto print(std::size_t position) const -> void
+		inline constexpr auto print(std::size_t position) const -> void
 		{
 			visit(position, [position, type = getType(position)](auto&& value) -> void {
 				Logger::print<"debug">("Position: {}; Type: {}; Size: {} bytes; Value: {}", position, type, sizeof(decltype(value)), String::formatValue(value));
 			});
 		};
 
-		constexpr auto print() const -> void
+		inline constexpr auto print() const -> void
 		{
 			Logger::printSeparator<"debug">();
 			Logger::print<"debug">("Stack size: {} elements; {} bytes", size(), getByteSize());

@@ -8,7 +8,7 @@ export namespace CppUtils::FileSystem
 	class TemporaryDirectory final
 	{
 	public:
-		TemporaryDirectory(std::string_view directoryName = "temp")
+		inline explicit TemporaryDirectory(std::string_view directoryName = "temp")
 		{
 			auto nbTemporaryFiles = 0u;
 			do
@@ -19,26 +19,26 @@ export namespace CppUtils::FileSystem
 			std::filesystem::create_directory(m_tempDirectory);
 		}
 
-		TemporaryDirectory(auto&& function, auto&&... args):
+		inline explicit TemporaryDirectory(auto&& function, [[maybe_unused]] auto&&... args):
 			TemporaryDirectory{}
 		{
 			static_assert(not Type::Concept::HasReturnValue<decltype(function)>);
 			function(m_tempDirectory, std::forward<decltype(args)>(args)...);
 		}
 
-		TemporaryDirectory(std::string_view directoryName, auto&& function, auto&&... args):
+		inline TemporaryDirectory(std::string_view directoryName, auto&& function, [[maybe_unused]] auto&&... args):
 			TemporaryDirectory{directoryName}
 		{
 			static_assert(not Type::Concept::HasReturnValue<decltype(function)>);
 			function(m_tempDirectory, std::forward<decltype(args)>(args)...);
 		}
 
-		~TemporaryDirectory()
+		inline ~TemporaryDirectory()
 		{
 			std::filesystem::remove_all(m_tempDirectory);
 		}
 
-		auto execute(auto&& function, auto&&... args) -> decltype(auto)
+		inline auto execute(auto&& function, auto&&... args) -> decltype(auto)
 		{
 			if constexpr (Type::Concept::HasReturnValue<decltype(function)>)
 				return function(m_tempDirectory, std::forward<decltype(args)>(args)...);

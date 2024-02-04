@@ -39,17 +39,17 @@ export namespace CppUtils::Chrono
 	class Chronometer final
 	{
 	public:
-		Chronometer()
+		inline Chronometer()
 		{
 			start();
 		}
 
-		auto start() -> void
+		inline auto start() -> void
 		{
 			m_start = Clock::now();
 		}
 
-		auto stop() -> void
+		inline auto stop() -> void
 		{
 			m_end = Clock::now();
 		}
