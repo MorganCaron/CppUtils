@@ -30,8 +30,8 @@ export namespace CppUtils::FileSystem
 	private:
 		struct FileInfos final
 		{
-			FileInfos() = default;
-			explicit FileInfos(const std::filesystem::path& path):
+			inline FileInfos() = default;
+			inline explicit FileInfos(const std::filesystem::path& path):
 				path{path},
 				exists{std::filesystem::exists(path)},
 				lastWriteTime{
@@ -53,8 +53,8 @@ export namespace CppUtils::FileSystem
 
 		struct WatchDirectoryOptions final: public WatchFileOptions
 		{
-			WatchDirectoryOptions() = default;
-			WatchDirectoryOptions(SubscribeFunction subscribedFunction, WatchedFileStatus watchStatus, bool recursively):
+			inline WatchDirectoryOptions() = default;
+			inline WatchDirectoryOptions(SubscribeFunction subscribedFunction, WatchedFileStatus watchStatus, bool recursively):
 				WatchFileOptions{subscribedFunction, watchStatus},
 				recursively{recursively},
 				firstScan{true}
@@ -66,8 +66,8 @@ export namespace CppUtils::FileSystem
 
 		struct WatchedFile final
 		{
-			WatchedFile() = default;
-			WatchedFile(const std::filesystem::path& path, WatchFileOptions options):
+			inline WatchedFile() = default;
+			inline WatchedFile(const std::filesystem::path& path, WatchFileOptions options):
 				infos{path},
 				options{options}
 			{}
@@ -80,8 +80,8 @@ export namespace CppUtils::FileSystem
 
 		struct WatchedDirectory final
 		{
-			WatchedDirectory() = default;
-			WatchedDirectory(const std::filesystem::path& path, WatchDirectoryOptions options):
+			inline WatchedDirectory() = default;
+			inline WatchedDirectory(const std::filesystem::path& path, WatchDirectoryOptions options):
 				path{path},
 				filesInfos{},
 				options{options}
@@ -96,13 +96,14 @@ export namespace CppUtils::FileSystem
 		using WatchedDirectories = std::unordered_map<std::filesystem::path, WatchedDirectory>;
 
 	public:
-		FileWatcher() = delete;
+		inline FileWatcher() = delete;
+
 		template<Chrono::Concept::Duration Duration = std::chrono::seconds>
-		explicit FileWatcher(Duration&& interval = Duration{1}):
+		inline explicit FileWatcher(Duration&& interval = Duration{1}):
 			m_loopThread{std::bind(&FileWatcher::listener, this), nullptr, interval}
 		{}
 
-		~FileWatcher()
+		inline ~FileWatcher()
 		{
 			stop();
 		}
@@ -113,17 +114,17 @@ export namespace CppUtils::FileSystem
 		}
 
 		template<Chrono::Concept::Duration Duration = std::chrono::seconds>
-		auto start(Duration&& interval = Duration{1}) -> void
+		inline auto start(Duration&& interval = Duration{1}) -> void
 		{
 			m_loopThread.start(interval);
 		}
 
-		auto stop() -> void
+		inline auto stop() -> void
 		{
 			m_loopThread.stop();
 		}
 
-		auto watchFile(
+		inline auto watchFile(
 			const std::filesystem::path& filePath,
 			SubscribeFunction function,
 			WatchedFileStatus watchStatus = allFileStatus) -> void
@@ -132,13 +133,13 @@ export namespace CppUtils::FileSystem
 			m_watchedFiles[filePath] = WatchedFile{filePath, WatchFileOptions{std::move(function), watchStatus}};
 		}
 
-		auto unwatchFile(const std::filesystem::path& filePath) -> void
+		inline auto unwatchFile(const std::filesystem::path& filePath) -> void
 		{
 			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
 			m_watchedFiles.erase(filePath);
 		}
 
-		auto watchDirectory(
+		inline auto watchDirectory(
 			const std::filesystem::path& directory,
 			SubscribeFunction function,
 			WatchedFileStatus watchStatus = allFileStatus,
@@ -149,14 +150,14 @@ export namespace CppUtils::FileSystem
 				WatchDirectoryOptions{std::move(function), watchStatus, recursively}};
 		}
 
-		auto unwatchDirectory(const std::filesystem::path& directory) -> void
+		inline auto unwatchDirectory(const std::filesystem::path& directory) -> void
 		{
 			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
 			m_watchedDirectories.erase(directory);
 		}
 
 	private:
-		auto checkFile(FileInfos& infos, const WatchFileOptions& options) -> void
+		inline auto checkFile(FileInfos& infos, const WatchFileOptions& options) -> void
 		{
 			auto& [path, exists, lastWriteTime] = infos;
 			const auto& [subscribedFunction, watchStatus] = options;
@@ -185,7 +186,7 @@ export namespace CppUtils::FileSystem
 			}
 		}
 
-		auto checkDirectory(WatchedDirectory& watchedDirectory) -> void
+		inline auto checkDirectory(WatchedDirectory& watchedDirectory) -> void
 		{
 			auto& [directoryPath, filesInfos, options] = watchedDirectory;
 			forFiles(directoryPath, [&filesInfos, &options](const auto& filePath) -> void {
@@ -209,7 +210,7 @@ export namespace CppUtils::FileSystem
 				filesInfos.erase(fileToUnwatch);
 		}
 
-		auto listener() -> void
+		inline auto listener() -> void
 		{
 			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
 			for (auto& [filePath, watchedFile] : m_watchedFiles)

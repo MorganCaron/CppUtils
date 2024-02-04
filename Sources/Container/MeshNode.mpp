@@ -10,13 +10,13 @@ export namespace CppUtils::Container
 	public:
 		using Node = MeshNode<Key, Value, Hash>;
 
-		static void attach(const Key& branchKey0, const std::shared_ptr<Node>& node0, const Key& branchKey1, const std::shared_ptr<Node>& node1)
+		static inline void attach(const Key& branchKey0, const std::shared_ptr<Node>& node0, const Key& branchKey1, const std::shared_ptr<Node>& node1)
 		{
 			node1->attach(branchKey0, node0);
 			node0->attach(branchKey1, node1);
 		}
 
-		explicit MeshNode(Value c_value):
+		inline explicit MeshNode(Value c_value):
 			value(std::move(c_value))
 		{}
 
@@ -39,14 +39,14 @@ export namespace CppUtils::Container
 			return m_branchs[branchKey];
 		}
 
-		void attach(const Key& branchKey, const std::shared_ptr<Node>& node)
+		inline void attach(const Key& branchKey, const std::shared_ptr<Node>& node)
 		{
 			if (!exists(branchKey))
 				m_branchs[branchKey] = std::vector<std::weak_ptr<Node>>{};
 			m_branchs[branchKey].push_back(node);
 		}
 
-		void detach(const Key& branchKey)
+		inline void detach(const Key& branchKey)
 		{
 			m_branchs.erase(branchKey);
 		}

@@ -102,7 +102,7 @@ export namespace CppUtils::Language::VirtualMachine
 {
 	template<Type::Concept::TriviallyCopyable ReturnType, Type::Concept::TriviallyCopyable... SupportedTypes>
 	requires Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>
-	constexpr auto execute(const auto& source, auto... data) -> ReturnType
+	inline constexpr auto execute(const auto& source, auto... data) -> ReturnType
 	{
 		using Stack = Container::Stack<ReturnType, SupportedTypes...>;
 		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{&source, data...};

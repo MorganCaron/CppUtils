@@ -18,12 +18,12 @@ export namespace CppUtils::String
 	template<class CharT = char, std::size_t N = 1>
 	struct Hasher final
 	{
-		constexpr Hasher(Hash hash):
+		inline constexpr Hasher(Hash hash):
 			hash{hash},
 			name{'\0'}
 		{}
 
-		constexpr Hasher(const CharT (&cString)[N]):
+		inline constexpr Hasher(const CharT (&cString)[N]):
 			hash{CppUtils::String::hash(cString)}
 		{
 			std::copy(cString, cString + N, name.begin());

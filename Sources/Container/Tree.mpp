@@ -72,7 +72,7 @@ namespace std
 	struct formatter<T, CharT>: public std::formatter<std::basic_string<CharT>, CharT>
 	{
 		template<class FormatContext>
-		auto format(const T& node, FormatContext& context) const -> decltype(context.out())
+		inline auto format(const T& node, FormatContext& context) const -> decltype(context.out())
 		{
 			auto&& out = context.out();
 			formatNode(node, context);
@@ -81,7 +81,7 @@ namespace std
 
 	private:
 		template<class FormatContext>
-		auto formatNode(const T& node, FormatContext& context, std::string&& prefix = "") const -> void
+		inline auto formatNode(const T& node, FormatContext& context, std::string&& prefix = "") const -> void
 		{
 			auto&& out = context.out();
 			std::format_to(out, "{}\n", node.value);

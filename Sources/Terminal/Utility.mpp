@@ -1,14 +1,12 @@
 module;
 
-#include <CppUtils/System/OS.hpp>
-
 #include <cstdio>
+
+#include <CppUtils/System/Windows.hpp>
 
 #if defined(OS_MAC) or defined(OS_LINUX)
 #	include <sys/ioctl.h>
 #	include <unistd.h>
-#elif defined(OS_WINDOWS)
-#	include <CppUtils/System/Windows.hpp>
 #endif
 
 export module CppUtils.Terminal.Utility;

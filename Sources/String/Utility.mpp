@@ -6,7 +6,7 @@ import CppUtils.String.Concept;
 
 export namespace CppUtils::String
 {
-	const auto escapedChars = std::unordered_map<char, char>{
+	inline const auto escapedChars = std::unordered_map<char, char>{
 		{'0', '\0'},
 		{'a', '\a'},
 		{'b', '\b'},

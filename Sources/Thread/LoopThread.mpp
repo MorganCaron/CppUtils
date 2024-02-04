@@ -8,24 +8,24 @@ export namespace CppUtils::Thread
 	class LoopThread final
 	{
 	public:
-		LoopThread() = delete;
+		inline LoopThread() = delete;
 
 		template<Chrono::Concept::Duration Duration = std::chrono::nanoseconds>
-		explicit LoopThread(std::function<void()> function, std::function<void()> interruptFunction = nullptr, Duration&& interval = Duration::zero()):
+		inline explicit LoopThread(std::function<void()> function, std::function<void()> interruptFunction = nullptr, Duration&& interval = Duration::zero()):
 			m_function{std::move(function)},
 			m_interruptFunction{std::move(interruptFunction)}
 		{
 			start(interval);
 		}
 
-		LoopThread(const LoopThread&) = delete;
-		LoopThread(LoopThread&& src) noexcept:
+		inline LoopThread(const LoopThread&) = delete;
+		inline LoopThread(LoopThread&& src) noexcept:
 			m_function{std::move(src.m_function)},
 			m_running{src.isRunning()},
 			m_thread{std::move(src.m_thread)}
 		{}
-		LoopThread& operator=(const LoopThread&) = delete;
-		LoopThread& operator=(LoopThread&& rhs) noexcept
+		inline LoopThread& operator=(const LoopThread&) = delete;
+		inline LoopThread& operator=(LoopThread&& rhs) noexcept
 		{
 			m_function = std::move(rhs.m_function);
 			m_running = rhs.isRunning();
@@ -33,7 +33,7 @@ export namespace CppUtils::Thread
 			return *this;
 		}
 
-		~LoopThread()
+		inline ~LoopThread()
 		{
 			stop();
 		}
@@ -44,14 +44,14 @@ export namespace CppUtils::Thread
 		}
 
 		template<Chrono::Concept::Duration Duration = std::chrono::nanoseconds>
-		auto start(Duration&& interval = Duration::zero()) -> void
+		inline auto start(Duration&& interval = Duration::zero()) -> void
 		{
 			if (isRunning())
 				stop();
 			m_thread = std::jthread{&LoopThread::run<std::remove_cvref_t<Duration>>, this, interval};
 		}
 
-		auto stop() -> void
+		inline auto stop() -> void
 		{
 			if (!isRunning())
 				return;
@@ -63,7 +63,7 @@ export namespace CppUtils::Thread
 
 	private:
 		template<Chrono::Concept::Duration Duration = std::chrono::nanoseconds>
-		auto run(Duration&& interval = Duration::zero()) -> void
+		inline auto run(Duration&& interval = Duration::zero()) -> void
 		{
 			m_running = true;
 			while (isRunning())

@@ -1,11 +1,9 @@
 module;
 
-#include <CppUtils/System/OS.hpp>
+#include <CppUtils/System/Windows.hpp>
 
 #if defined(OS_LINUX) or defined(OS_MACOS)
 #	include <dlfcn.h>
-#elif defined(OS_WINDOWS)
-#	include <CppUtils/System/Windows.hpp>
 #endif
 
 export module CppUtils.System.SharedLibrary;
