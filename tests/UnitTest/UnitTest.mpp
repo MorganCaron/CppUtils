@@ -5,8 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest
 {
-	inline auto _ = TestSuite{"UnitTest",
-		[](auto& suite) {
+	inline auto _ = TestSuite{"UnitTest", [](auto& suite) {
 		suite.addTest("expect", [&] {
 			suite.expect(true);
 		});
