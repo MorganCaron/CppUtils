@@ -29,7 +29,7 @@ Just follow the installation steps and consult the documentation for each featur
 
 ### Build command
 ```console
-xmake f [--toolchain=llvm] [--sdk=~/path/to/llvm/install] --runtimes="c++_static"
+xmake f --toolchain=llvm --runtimes="c++_shared" [--enable_tests=y] --yes
 xmake [-vD]
 ```
 

@@ -26,8 +26,11 @@ add_rules(
 	"mode.lsan",
 	"mode.ubsan")
 
+option("enable_tests")
+
 target("CppUtils")
-	set_kind("$(kind)")
+	set_kind("headeronly")
+	add_rules("c++.moduleonly")
 	
 	if is_plat("windows") and is_config("cxx", "cl") and not is_plat("mingw") then
 		set_runtimes(is_mode("debug") and "MDd" or "MD")
@@ -41,9 +44,10 @@ target("CppUtils")
 	set_policy("build.c++.modules", true)
 	add_defines("DLL_EXPORT")
 	add_defines(is_kind("static") and "STATIC_LIB" or "SHARED_LIB")
-	add_includedirs("include", { public = true })
 	add_files("modules/**.mpp", { public = true })
-	add_headerfiles("include/**.hpp")
+	add_includedirs("include", { public = true })
+	add_headerfiles("include/(**.hpp)")
 
-
-includes("tests")
+if has_config("enable_tests") then
+	includes("tests")
+end
