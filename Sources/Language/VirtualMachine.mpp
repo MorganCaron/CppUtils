@@ -131,6 +131,16 @@ export namespace CppUtils::Language::VirtualMachine
 				stack.copy(sourcePosition, destinationPosition);
 			}
 			break;
+			case 'D':
+			{
+				stack.pop([](auto&& pointer) -> void {
+					if constexpr (not std::is_pointer_v<std::decay_t<decltype(pointer)>>)
+						throw std::logic_error{"The type is not a pointer"};
+					else
+						delete pointer;
+				});
+				break;
+			}
 			// Todo: case 'D': /* Dereference */ stack.push(&stack.template pop<ValueType>()); break;
 			case 'I': /* Inspect */ stack.print(); break;
 			case 'J': // Jump
@@ -140,6 +150,16 @@ export namespace CppUtils::Language::VirtualMachine
 				instructionPointer = getPositionInSource(stack, instructionPointer, mode, destination);
 			}
 			break;
+			case 'N': // New
+			{
+				stack.top([&stack](auto&& pointer) -> void {
+					if constexpr (not std::is_pointer_v<std::decay_t<decltype(pointer)>>)
+						throw std::logic_error{"The type is not a pointer"};
+					else
+						stack.template set<std::decay_t<decltype(pointer)>>(new std::decay_t<decltype(*pointer)>{});
+				});
+				break;
+			}
 			case 'P': /* Push */ stack.template push<std::size_t>(instructionPointer); break;
 			case 'R': // Reference
 				stack.pop([&stack](auto&& pointer) -> void {
@@ -158,8 +178,7 @@ export namespace CppUtils::Language::VirtualMachine
 			{
 				// Ajouter des bits d'adressage
 				auto dataId = stack.template pop<std::size_t>();
-				std::visit(
-					[&stack, dataId](auto&& data) -> void {
+				std::visit([&stack, dataId](auto&& data) -> void {
 					using T = std::remove_cvref_t<decltype(data)>;
 					if constexpr (Type::Concept::isFunctionPointer<T> or std::is_member_function_pointer_v<T>)
 						call(stack, data);
@@ -167,8 +186,7 @@ export namespace CppUtils::Language::VirtualMachine
 						throw std::invalid_argument{"Type " + std::to_string(dataId) + " missing in template parameters"};
 					else
 						stack.template push<T>(data);
-				},
-					externalData[dataId]);
+				}, externalData[dataId]);
 			}
 			break;
 			case '?':

@@ -366,6 +366,26 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 			suite.expectEqual(result, 0uz);
 		});
 
+		suite.addTest("new", [&] {
+			constexpr auto source = u8"(:N"sv;
+			auto pointer = VM::execute<int*, std::size_t>(source);
+			suite.expect(pointer);
+			delete pointer;
+		});
+
+		suite.addTest("delete", [&] {
+			constexpr auto source = u8"(:1 (1;D"sv;
+			auto* pointer = new int{};
+			auto result = VM::execute<bool, std::size_t, int*>(source, pointer);
+			suite.expect(result);
+		});
+
+		suite.addTest("new & delete", [&] {
+			constexpr auto source = u8"(:1 (2:ND"sv;
+			auto result = VM::execute<bool, std::size_t, int*>(source);
+			suite.expect(result);
+		});
+
 		suite.addTest("test loops", [&] {
 			constexpr auto source = u8R"(
 				(:1;, 0, 1, 0+ get nb plus one
