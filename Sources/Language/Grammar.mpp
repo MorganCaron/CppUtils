@@ -20,16 +20,14 @@ export namespace CppUtils::Language
 			using namespace std::literals;
 			constexpr auto lowLevelLabelsCompiler = uR"(
 				init parsing variables
-				(0
-				(:
-					(1;, 3;) source length
+				(0 return value
+				(: (1;, 3;) source length
 				(0 source position
 				(0 nb labels
 
 				P position for loop
 
-					(1:
-						(1, 3, 2, 3=
+					(1: (1, 3, 2, 3=
 						, 0, 4, 0? (0X quit if parsing is finished
 
 					(2; output
@@ -39,20 +37,18 @@ export namespace CppUtils::Language
 								, 4;)) get char at
 
 							condition verifiant les caractères §
-							(1: bool
-								(1, 2, 2:\§, 0=
-								, 0, 17, 0?
+							(1: (1, 2, 2:\§, 0=
+								, 0, 95, 0?
 									todo
+									(3, 3, 1, 0+ increment nb labels
+									(0, 0, 3, 1C) copy nb labels
 
 							condition verifiant les caractères ¤
-							(1: bool
-								(1, 2, 2:\¤, 0=
-								, 0, 128, 0?
+							(1: (1, 2, 2:\¤, 0=
+								, 0, 48, 0?
 									_\,, 5;
 									_\3, 5;
 									_\J
-									(3, 3, 1, 0+ increment nb labels
-									(0, 0, 3, 1C) copy nb labels
 
 							, 5;)) push back char in output
 
@@ -74,9 +70,7 @@ export namespace CppUtils::Language
 				&compilationResult.output,
 				&decltype(source)::size,
 				&decltype(source)::at,
-				&decltype(compilationResult.output)::push_back /*,
-				 &decltype(compilationResult.output)::template operator= <decltype(compilationResult.output)>*/
-			);
+				&decltype(compilationResult.output)::push_back);
 			return compilationResult;
 		}
 	}
