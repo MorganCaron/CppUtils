@@ -29,8 +29,7 @@ add_rules(
 option("enable_tests")
 
 target("CppUtils")
-	set_kind("headeronly")
-	add_rules("c++.moduleonly")
+	set_kind("moduleonly")
 	
 	if is_plat("windows") and is_config("cxx", "cl") and not is_plat("mingw") then
 		set_runtimes(is_mode("debug") and "MDd" or "MD")
