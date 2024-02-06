@@ -30,12 +30,12 @@ Just follow the installation steps and consult the documentation for each featur
 ### Build command
 ```console
 xmake f --toolchain=llvm --runtimes="c++_shared" [--enable_tests=y] --yes
-xmake [-vD]
+xmake [b|build] [-vD]
 ```
 
 ### Run tests
 ```console
-xmake run
+xmake [r|run]
 ```
 
 ---
