@@ -31,14 +31,15 @@ export namespace CppUtils::FileSystem
 		struct FileInfos final
 		{
 			inline FileInfos() = default;
-			inline explicit FileInfos(const std::filesystem::path& path):
-				path{path},
-				exists{std::filesystem::exists(path)},
-				lastWriteTime{
-					std::filesystem::exists(path) ?
-						std::filesystem::last_write_time(path) :
-						std::filesystem::file_time_type{}}
-			{}
+			inline explicit FileInfos(const std::filesystem::path& c_path)
+			{
+				path = c_path;
+				exists = std::filesystem::exists(path);
+				auto errorCode = std::error_code{};
+				lastWriteTime = exists ?
+					std::filesystem::last_write_time(path, errorCode) :
+					std::filesystem::file_time_type{};
+			}
 
 			std::filesystem::path path;
 			bool exists;
@@ -99,7 +100,7 @@ export namespace CppUtils::FileSystem
 		inline FileWatcher() = delete;
 
 		template<Chrono::Concept::Duration Duration = std::chrono::seconds>
-		inline explicit FileWatcher(Duration&& interval = Duration{1}):
+		inline explicit FileWatcher(Duration&& interval):
 			m_loopThread{std::bind(&FileWatcher::listener, this), nullptr, interval}
 		{}
 
@@ -163,8 +164,11 @@ export namespace CppUtils::FileSystem
 			const auto& [subscribedFunction, watchStatus] = options;
 			if (std::filesystem::exists(path))
 			{
-				if (auto currentLastWriteTime = std::filesystem::last_write_time(path);
-					not exists)
+				auto errorCode = std::error_code{};
+				auto currentLastWriteTime = std::filesystem::last_write_time(path, errorCode);
+				if (errorCode)
+					return;
+				if (not exists)
 				{
 					lastWriteTime = currentLastWriteTime;
 					exists = true;

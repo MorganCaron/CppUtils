@@ -13,8 +13,7 @@ export namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 
 		suite.addTest("empty source", [&] {
 			constexpr auto source = u"("sv;
-			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, 0uz);
+			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
@@ -25,8 +24,7 @@ export namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 			constexpr auto source = uR"(
 				(42X
 				)"sv;
-			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, 0uz);
+			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 			suite.expectEqual(output, source);
 
@@ -36,10 +34,9 @@ export namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 		/*
 		suite.addTest("one label", [&] {
 			constexpr auto source = uR"(
-				§(
+				§
 				)"sv;
-			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, 0uz);
+			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
