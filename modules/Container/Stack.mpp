@@ -64,11 +64,15 @@ export namespace CppUtils::Container
 		requires Type::Concept::Present<T, SupportedTypes...>
 		[[nodiscard]] inline constexpr auto top() const -> decltype(auto)
 		{
+			if (empty()) [[unlikely]]
+				throw std::out_of_range{std::format("Stack::top() : Stack underflow")};
 			return get<T>(size() - 1);
 		}
 
 		inline constexpr auto top(auto&& visitor) const -> void
 		{
+			if (empty()) [[unlikely]]
+				throw std::out_of_range{std::format("Stack::top() : Stack underflow")};
 			visit(size() - 1, std::forward<decltype(visitor)>(visitor));
 		}
 
