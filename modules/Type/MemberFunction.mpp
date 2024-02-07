@@ -1,0 +1,16 @@
+export module CppUtils.Type.MemberFunction;
+
+export namespace CppUtils::Type
+{
+	template<class ReturnType, class Object, class... Args>
+	inline constexpr auto getNonConstMemberFunction(ReturnType (Object::*function)(Args...)) -> decltype(auto)
+	{
+		return function;
+	}
+
+	template<class ReturnType, class Object, class... Args>
+	inline constexpr auto getConstMemberFunction(ReturnType (Object::*function)(Args...) const) -> decltype(auto)
+	{
+		return function;
+	}
+}
