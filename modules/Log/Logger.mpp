@@ -131,7 +131,7 @@ export namespace CppUtils
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Yellow},
-			std::format("WARNING: {}\n", message)};
+			std::format("{:^{}}\n{}\n", "⚠ WARNING ⚠", Terminal::getTerminalSize().width, message)};
 	}
 
 	template<>
@@ -140,7 +140,7 @@ export namespace CppUtils
 	{
 		return {
 			Terminal::TextModifier{stderr, Terminal::TextColor::TextColorEnum::Red},
-			std::format("ERROR: {}\n", message)};
+			std::format("{:^{}}\n{}\n", "✕ ERROR ✕", Terminal::getTerminalSize().width, message)};
 	}
 
 	inline auto logException(const std::exception& exception, std::size_t depth = 0) -> void

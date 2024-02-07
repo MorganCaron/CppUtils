@@ -84,7 +84,7 @@ namespace CppUtils::UnitTest
 				return false;
 			}
 			if (settings.verbose)
-				Logger::print<"success">("{} passed", test.name);
+				Logger::print<"success">("Passed ✓", test.name);
 			return true;
 		}
 

@@ -40,7 +40,7 @@ export namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 6uz);
+			suite.expectEqual(executionResult, 8uz);
 		});
 
 		suite.addTest("multiple labels", [&] {

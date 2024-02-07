@@ -72,7 +72,7 @@ export namespace CppUtils::Language::VirtualMachine
 					stack.set(std::decay_t<decltype(value)>{});
 				});
 				break;
-			case 'C': // Copy // Todo: renommer en M (Move) ?
+			case 'C': // Copy
 			{
 				// todo: getValueWithMode(stack, [](auto&& destination) -> void {
 				auto destinationMode = stack.template pop<std::size_t>();
