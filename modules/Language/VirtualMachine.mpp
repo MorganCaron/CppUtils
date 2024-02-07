@@ -49,53 +49,6 @@ namespace CppUtils::Language::VirtualMachine
 			});
 		});
 	}
-
-	template<class Stack, class ReturnType, class... Args, std::size_t... I>
-	[[nodiscard]] inline constexpr auto call(Stack& stack, ReturnType (*function)(Args...), [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
-	{
-		return std::invoke(function, stack.template get<std::remove_cvref_t<Type::NthType<I, Args...>>>(std::size(stack) - sizeof...(Args) + I)...);
-	}
-
-	template<class Stack, class ReturnType, class... Args>
-	inline constexpr auto call(Stack& stack, ReturnType (*function)(Args...)) -> void
-	{
-		if constexpr (std::is_void_v<ReturnType>)
-			call(stack, function, std::index_sequence_for<Args...>{});
-		else
-			stack.set(std::size(stack) - 1 - sizeof...(Args), call(stack, function, std::index_sequence_for<Args...>{}));
-	}
-
-	template<class Stack, class ReturnType, class Object, class... Args, std::size_t... I>
-	[[nodiscard]] inline constexpr auto call(Stack& stack, ReturnType (Object::*function)(Args...), Object* object, [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
-	{
-		return std::invoke(function, object, stack.template get<std::remove_cvref_t<Type::NthType<I, Args...>>>(std::size(stack) - sizeof...(Args) + I)...);
-	}
-
-	template<class Stack, class ReturnType, class Object, class... Args>
-	inline constexpr auto call(Stack& stack, ReturnType (Object::*function)(Args...)) -> void
-	{
-		auto* objectPointer = stack.template get<Object*>(std::size(stack) - 1 - sizeof...(Args));
-		if constexpr (std::is_void_v<ReturnType>)
-			call(stack, function, objectPointer, std::index_sequence_for<Args...>{});
-		else
-			stack.set(std::size(stack) - 2 - sizeof...(Args), call(stack, function, objectPointer, std::index_sequence_for<Args...>{}));
-	}
-
-	template<class Stack, class ReturnType, class Object, class... Args, std::size_t... I>
-	[[nodiscard]] inline constexpr auto call(Stack& stack, ReturnType (Object::*function)(Args...) const, const Object* object, [[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto)
-	{
-		return std::invoke(function, object, stack.template get<std::remove_cvref_t<Type::NthType<I, Args...>>>(std::size(stack) - sizeof...(Args) + I)...);
-	}
-
-	template<class Stack, class ReturnType, class Object, class... Args>
-	inline constexpr auto call(Stack& stack, ReturnType (Object::*function)(Args...) const) -> void
-	{
-		const auto* objectPointer = stack.template get<const Object*>(std::size(stack) - 1 - sizeof...(Args));
-		if constexpr (std::is_void_v<ReturnType>)
-			call(stack, function, objectPointer, std::index_sequence_for<Args...>{});
-		else
-			stack.set(std::size(stack) - 2 - sizeof...(Args), call(stack, function, objectPointer, std::index_sequence_for<Args...>{}));
-	}
 }
 
 export namespace CppUtils::Language::VirtualMachine
@@ -181,7 +134,7 @@ export namespace CppUtils::Language::VirtualMachine
 				std::visit([&stack, dataId](auto&& data) -> void {
 					using T = std::remove_cvref_t<decltype(data)>;
 					if constexpr (Type::Concept::isFunctionPointer<T> or std::is_member_function_pointer_v<T>)
-						call(stack, data);
+						stack.call(data);
 					else if constexpr (not Type::Concept::Present<T, ReturnType, SupportedTypes...>)
 						throw std::invalid_argument{"Type " + std::to_string(dataId) + " missing in template parameters"};
 					else
