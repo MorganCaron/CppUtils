@@ -1,12 +1,9 @@
-module;
+#pragma once
 
 #include <cstdio>
+#include <utility>
 
-export module CppUtils.Stl.Print;
-
-import std;
-
-export namespace Stl
+namespace Stl
 {
 	// https://en.cppreference.com/w/cpp/header/print
 

@@ -1,7 +1,0 @@
-export module CppUtils.Stl;
-
-export import CppUtils.Stl.Chrono;
-export import CppUtils.Stl.Expected;
-export import CppUtils.Stl.Format;
-export import CppUtils.Stl.Functional;
-export import CppUtils.Stl.Print;

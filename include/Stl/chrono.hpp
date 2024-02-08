@@ -1,8 +1,8 @@
-export module CppUtils.Stl.Chrono;
+#pragma once
 
-import std;
+#include <type_traits>
 
-export namespace Stl::chrono
+namespace Stl::chrono
 {
 	// https://en.cppreference.com/w/cpp/chrono/is_clock
 	template<class>

@@ -1,7 +1,10 @@
+module;
+
+#include <Stl/Chrono.hpp>
+
 export module CppUtils.Chrono.Concept;
 
 import std;
-import CppUtils.Stl;
 import CppUtils.Type.Concept;
 
 export namespace CppUtils::Chrono::Concept

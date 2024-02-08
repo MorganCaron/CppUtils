@@ -1,8 +1,6 @@
-export module CppUtils.Stl.Functional;
+#pragma once
 
-import std;
-
-export namespace Stl
+namespace Stl
 {
 	namespace detail
 	{

@@ -13,6 +13,7 @@ export import CppUtils.UnitTests.Language.LowLevelLabelsCompiler;
 export import CppUtils.UnitTests.Language.VirtualMachine;
 export import CppUtils.UnitTests.ChronoLogger;
 export import CppUtils.UnitTests.Logger;
+export import CppUtils.UnitTests.Stl.Format;
 export import CppUtils.UnitTests.String.Utility;
 export import CppUtils.UnitTests.Type.Concept;
 export import CppUtils.UnitTests.UnitTest;

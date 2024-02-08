@@ -1,8 +1,9 @@
-export module CppUtils.Stl.Expected;
+#pragma once
 
-import std;
+#include <type_traits>
+#include <utility>
 
-export namespace Stl
+namespace Stl
 {
 	// https://en.cppreference.com/w/cpp/header/expected
 
