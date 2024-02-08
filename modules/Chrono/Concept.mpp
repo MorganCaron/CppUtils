@@ -1,6 +1,6 @@
 module;
 
-#include <Stl/Chrono.hpp>
+#include <Stl/chrono.hpp>
 
 export module CppUtils.Chrono.Concept;
 

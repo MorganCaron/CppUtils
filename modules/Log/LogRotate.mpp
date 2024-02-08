@@ -29,11 +29,11 @@ export namespace CppUtils
 			auto newPath = pathWithoutExtension;
 			newPath += std::to_string(maxFiles - 1);
 			newPath += extension;
-			for (auto i = maxFiles - 1; i > 0; --i)
+			for (auto i = maxFiles - 1; i > 0;)
 			{
 				auto oldPath = pathWithoutExtension;
-				if (i - 1 != 0)
-					oldPath += std::to_string(i - 1);
+				if (--i != 0)
+					oldPath += std::to_string(i);
 				oldPath += extension;
 				if (std::filesystem::exists(oldPath))
 					std::filesystem::rename(oldPath, newPath);
