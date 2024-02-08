@@ -1,0 +1,36 @@
+export module CppUtils.UnitTests.LogRotate;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::LogRotate
+{
+	inline auto _ = TestSuite{"LogRotate", [](auto& suite) {
+		using Logger = CppUtils::Logger<"CppUtils">;
+
+		suite.addTest("Log Rotation", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+				auto logPath = directory / "file.log";
+				auto options = LogRotateOptions{
+					.filePath = logPath,
+					.maxFiles = 10,
+					.maxSize = 10};
+				{
+					auto logFile = std::ofstream{logPath, std::ios::app};
+					Logger::print(logFile, "Hello World!");
+				}
+				suite.expect(std::filesystem::exists(logPath));
+
+				logRotate(options);
+				suite.expect(std::filesystem::exists(directory / "file1.log"));
+				suite.expect(not std::filesystem::exists(logPath));
+
+				{
+					auto logFile = std::ofstream{logPath, std::ios::app};
+					Logger::print(logFile, "Hello World!");
+				}
+				suite.expect(std::filesystem::exists(logPath));
+			}};
+		});
+	}};
+}

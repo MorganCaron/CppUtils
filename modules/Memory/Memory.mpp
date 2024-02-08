@@ -6,4 +6,37 @@ export namespace CppUtils::Memory
 {
 	template<class T>
 	using UniquePtrWithDestructor = std::unique_ptr<T, std::function<void(T*)>>;
+
+	namespace Literals
+	{
+		[[nodiscard]] inline constexpr auto operator""_Ko(unsigned long long int size) -> std::size_t
+		{
+			return static_cast<std::size_t>(size) * 1000;
+		}
+
+		[[nodiscard]] inline constexpr auto operator""_Mo(unsigned long long int size) -> std::size_t
+		{
+			return static_cast<std::size_t>(size) * 1000_Ko;
+		}
+
+		[[nodiscard]] inline constexpr auto operator""_Go(unsigned long long int size) -> std::size_t
+		{
+			return static_cast<std::size_t>(size) * 1000_Mo;
+		}
+
+		[[nodiscard]] inline constexpr auto operator""_Kio(unsigned long long int size) -> std::size_t
+		{
+			return static_cast<std::size_t>(size) * 1024;
+		}
+
+		[[nodiscard]] inline constexpr auto operator""_Mio(unsigned long long int size) -> std::size_t
+		{
+			return static_cast<std::size_t>(size) * 1024_Kio;
+		}
+
+		[[nodiscard]] inline constexpr auto operator""_Gio(unsigned long long int size) -> std::size_t
+		{
+			return static_cast<std::size_t>(size) * 1024_Mio;
+		}
+	}
 }

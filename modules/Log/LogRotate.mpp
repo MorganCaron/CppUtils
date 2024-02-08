@@ -1,0 +1,44 @@
+export module CppUtils.LogRotate;
+
+import std;
+import CppUtils.FileSystem;
+import CppUtils.Memory;
+
+using namespace CppUtils::Memory::Literals;
+
+export namespace CppUtils
+{
+	struct LogRotateOptions final
+	{
+		std::filesystem::path filePath;
+		std::size_t maxFiles = 10;
+		std::size_t maxSize = 10_Mo;
+	};
+
+	inline auto logRotate(const LogRotateOptions& options) -> void
+	{
+		const auto& [filePath, maxFiles, maxSize] = options;
+
+		if (not std::filesystem::exists(filePath))
+			return;
+
+		if (std::filesystem::file_size(filePath) >= maxSize)
+		{
+			auto pathWithoutExtension = filePath.parent_path() / filePath.stem();
+			auto extension = filePath.extension();
+			auto newPath = pathWithoutExtension;
+			newPath += std::to_string(maxFiles - 1);
+			newPath += extension;
+			for (auto i = maxFiles - 1; i > 0; --i)
+			{
+				auto oldPath = pathWithoutExtension;
+				if (i - 1 != 0)
+					oldPath += std::to_string(i - 1);
+				oldPath += extension;
+				if (std::filesystem::exists(oldPath))
+					std::filesystem::rename(oldPath, newPath);
+				newPath = std::move(oldPath);
+			}
+		}
+	}
+}
