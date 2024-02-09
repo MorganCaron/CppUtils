@@ -71,6 +71,12 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 			suite.expectEqual(result, 42);
 		});
 
+		suite.addTest("modulo", [&] {
+			constexpr auto source = u8"(:3, 0, 0:2, 0%"sv;
+			constexpr auto result = VM::execute<int, std::size_t>(source);
+			suite.expectEqual(result, 1);
+		});
+
 		suite.addTest("not", [&] {
 			{
 				constexpr auto source = u8"(:0!"sv;
