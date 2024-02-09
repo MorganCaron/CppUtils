@@ -343,6 +343,18 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 			suite.expect(result);
 		});
 
+		suite.addTest("swap 1", [&] {
+			constexpr auto source = u8"(0:42, 1:0S"sv;
+			auto result = VM::execute<std::size_t, bool>(source);
+			suite.expectEqual(result, 42uz);
+		});
+
+		suite.addTest("swap 2", [&] {
+			constexpr auto source = u8"(1:0, 0:42S)"sv;
+			auto result = VM::execute<std::size_t, bool>(source);
+			suite.expectEqual(result, 42uz);
+		});
+
 		suite.addTest("return string.at", [&] {
 			constexpr auto source = u8"(:, 1;, 6, 2;))"sv;
 			constexpr auto input = u8"Hello World!"sv;

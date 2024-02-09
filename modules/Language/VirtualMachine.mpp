@@ -125,6 +125,14 @@ export namespace CppUtils::Language::VirtualMachine
 						stack.template push<DereferencedType>(*pointer);
 				});
 				break;
+			case 'S': // Swap
+				stack.pop([&stack](auto&& rhs) -> void {
+					stack.pop([&stack, rhs = std::move(rhs)](auto&& lhs) -> void {
+						stack.push(std::move(rhs));
+						stack.push(std::move(lhs));
+					});
+				});
+				break;
 			case 'X': /* eXit */ instructionPointer = std::size(source) - 1; break;
 			case ':': stack.pushType(stack.template pop<std::size_t>()); break;
 			case ';':
