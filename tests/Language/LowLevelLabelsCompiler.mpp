@@ -22,32 +22,31 @@ export namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 
 		suite.addTest("code without labels", [&] {
 			constexpr auto source = uR"(
-				(42
+				(0:42
 				)"sv;
 			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-			suite.expectEqual(output, source);
+
+			auto executionResult = VM::execute<int, std::size_t>(output);
+			suite.expectEqual(executionResult, 42);
+		});
+
+		suite.addTest("one label", [&] {
+			constexpr auto source = uR"(
+				(§(42X
+				)"sv;
+			auto output = Compiler::compile(source);
+			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
 			suite.expectEqual(executionResult, 42uz);
 		});
-		/*
-		suite.addTest("one label", [&] {
-			constexpr auto source = uR"(
-				§
-				)"sv;
-			auto output = Compiler::compile(source);
-			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-
-			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 8uz);
-		});
 
 		suite.addTest("multiple labels", [&] {
 			constexpr auto source = uR"(
-				§
-				§
-				§
+				(§
+				(§
+				(§(42
 				)"sv;
 			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
@@ -96,6 +95,5 @@ export namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 			auto executionResult = VM::execute<std::size_t>(output);
 			suite.expectEqual(executionResult, 42uz);
 		});
-		*/
 	}};
 }
