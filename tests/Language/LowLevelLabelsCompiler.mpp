@@ -22,7 +22,7 @@ export namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 
 		suite.addTest("code without labels", [&] {
 			constexpr auto source = uR"(
-				(42X
+				(42
 				)"sv;
 			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
