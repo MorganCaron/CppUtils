@@ -46,15 +46,13 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 
 		suite.addTest("one label", [&] {
 			constexpr auto source = uR"(
-				(: (0λ main
-
-				21X
+				(21X
 
 				main {
-					42X
+					42
 				}
 
-				22X
+				(22X
 				)"sv;
 			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
