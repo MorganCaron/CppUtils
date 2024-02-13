@@ -8,34 +8,36 @@ import CppUtils.Type;
 
 namespace CppUtils::Language::VirtualMachine
 {
-	[[nodiscard]] inline constexpr auto isModeAbsolute(std::size_t mode) noexcept -> bool { return mode & 0b01; }
+	[[nodiscard]] inline constexpr auto isModeAbsolute(std::size_t mode) noexcept -> bool { return mode & 0b1; }
 	[[nodiscard]] inline constexpr auto isModeRelative(std::size_t mode) noexcept -> bool { return !isModeAbsolute(mode); }
-	[[nodiscard]] inline constexpr auto isModeIndirect(std::size_t mode) noexcept -> bool { return mode & 0b10; }
+	[[nodiscard]] inline constexpr auto isModeDescending(std::size_t mode) noexcept -> bool { return mode & 0b10; }
+	[[nodiscard]] inline constexpr auto isModeAscending(std::size_t mode) noexcept -> bool { return !isModeDescending(mode); }
+	[[nodiscard]] inline constexpr auto isModeIndirect(std::size_t mode) noexcept -> bool { return mode & 0b100; }
 	[[nodiscard]] inline constexpr auto isModeDirect(std::size_t mode) noexcept -> bool { return !isModeIndirect(mode); }
+
+	template<Type::Concept::TriviallyCopyable... StackTypes>
+	[[nodiscard]] inline constexpr auto applyModeToPosition(Container::Stack<StackTypes...>& stack, std::size_t mode, std::size_t position, std::size_t rightOffset = 0) -> std::size_t
+	{
+		return isModeAscending(mode) ? position : (std::size(stack) - 1 - position - rightOffset);
+	}
 
 	template<Type::Concept::TriviallyCopyable... StackTypes>
 	[[nodiscard]] inline constexpr auto getPositionInSource(Container::Stack<StackTypes...>& stack, std::size_t instructionPointer, std::size_t mode, std::size_t position) -> std::size_t
 	{
 		if (isModeIndirect(mode))
-			position = stack.template get<std::size_t>(std::size(stack) - 1 - position);
+			position = stack.template get<std::size_t>(applyModeToPosition(stack, mode, position));
 		return isModeRelative(mode) ? (instructionPointer + position) : position;
 	}
 
 	template<Type::Concept::TriviallyCopyable... StackTypes>
-	[[nodiscard]] inline constexpr auto applyModeToPosition(Container::Stack<StackTypes...>& stack, std::size_t mode, std::size_t position) -> std::size_t
-	{
-		return (isModeRelative(mode)) ? (std::size(stack) - 1 - position) : position;
-	}
-
-	template<Type::Concept::TriviallyCopyable... StackTypes>
-	inline constexpr auto getValueWithMode(Container::Stack<StackTypes...>& stack, auto&& visitor) -> void
+	inline constexpr auto getValueWithMode(Container::Stack<StackTypes...>& stack, auto&& visitor, std::size_t rightOffset = 0) -> void
 	{
 		if (auto mode = stack.template pop<std::size_t>(); isModeDirect(mode))
 			stack.pop(std::forward<decltype(visitor)>(visitor));
 		else
 		{
 			auto position = stack.template pop<std::size_t>();
-			position = applyModeToPosition(stack, mode, position);
+			position = applyModeToPosition(stack, mode, position, rightOffset);
 			stack.visit(position, std::forward<decltype(visitor)>(visitor));
 		}
 	}
@@ -47,7 +49,7 @@ namespace CppUtils::Language::VirtualMachine
 			getValueWithMode(stack, [visitor, rhs = std::move(rhs)](auto&& lhs) mutable -> void {
 				visitor(std::move(lhs), std::move(rhs));
 			});
-		});
+		}, 2);
 	}
 }
 
