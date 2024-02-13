@@ -5,7 +5,6 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 {
-	/*
 	inline auto _ = TestSuite{"Language/HighLevelLabelsCompiler", []([[maybe_unused]] auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
@@ -14,8 +13,7 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 
 		suite.addTest("empty source", [&] {
 			constexpr auto source = u"("sv;
-			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, 0uz);
+			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
@@ -26,8 +24,7 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 			constexpr auto source = uR"(
 				(42X
 			)"sv;
-			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, 0uz);
+			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
@@ -37,11 +34,10 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 		suite.addTest("comment", [&] {
 			constexpr auto source = uR"(
 				(4
-				# Comment: 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ
+				# Comment: (),+-*/%=!:;?§¤1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ
 				2
 				)"sv;
-			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, 0uz);
+			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
@@ -60,8 +56,7 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 
 				22X
 				)"sv;
-			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, 0uz);
+			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
@@ -86,13 +81,11 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 
 				(23X
 				)"sv;
-			auto [compilationResult, output] = Compiler::compile(source);
-			suite.expectEqual(compilationResult, 0uz);
+			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
 			suite.expectEqual(executionResult, 42uz);
 		});
 	}};
-	*/
 }
