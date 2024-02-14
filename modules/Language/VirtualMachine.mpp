@@ -159,7 +159,7 @@ export namespace CppUtils::Language::VirtualMachine
 				getValueWithMode(stack, [&stack, &instructionPointer, jumpMode, jumpDestination](auto&& condition) -> void {
 					if constexpr (not std::is_constructible_v<bool, decltype(condition)>)
 						throw std::invalid_argument{"The type used in conditional jump instruction is not convertible to boolean"};
-					else if (not condition)
+					else if (condition)
 						instructionPointer = getPositionInSource(stack, instructionPointer, jumpMode, jumpDestination);
 				});
 			}

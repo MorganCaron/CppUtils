@@ -12,7 +12,7 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 		namespace Compiler = CppUtils::Language::HighLevelLabels;
 
 		suite.addTest("empty source", [&] {
-			constexpr auto source = u"("sv;
+			constexpr auto source = u"{}"sv;
 			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
@@ -20,31 +20,7 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 			suite.expectEqual(executionResult, 0uz);
 		});
 
-		suite.addTest("code without labels", [&] {
-			constexpr auto source = uR"(
-				(42X
-			)"sv;
-			auto output = Compiler::compile(source);
-			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-
-			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
-
-		suite.addTest("comment", [&] {
-			constexpr auto source = uR"(
-				(4
-				# Comment: (),+-*/%=<>!:;?§¤\1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ
-				2
-				)"sv;
-			auto output = Compiler::compile(source);
-			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-
-			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
-
-		suite.addTest("one label", [&] {
+		suite.addTest("one function", [&] {
 			constexpr auto source = uR"(
 				(21X
 
@@ -61,7 +37,22 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 			suite.expectEqual(executionResult, 42uz);
 		});
 
-		suite.addTest("multiple labels", [&] constexpr {
+		suite.addTest("comment", [&] {
+			constexpr auto source = uR"(
+					main {
+						4
+						# Comment: (),+-*/%=<>!:;?§¤\1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ
+						2
+					}
+				)"sv;
+			auto output = Compiler::compile(source);
+			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
+
+			auto executionResult = VM::execute<std::size_t>(output);
+			suite.expectEqual(executionResult, 42uz);
+		});
+
+		suite.addTest("multiple functions", [&] constexpr {
 			constexpr auto source = uR"(
 				(21X
 

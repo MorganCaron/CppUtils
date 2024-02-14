@@ -16,11 +16,11 @@ export namespace CppUtils::Language
 				(:N output
 					(3:\(, 4;) push back
 					(7; max length
-						P (2: (2, 6, 0, 0=!, 0, 181, 0? while max length not equal zero
+						P (2: (2, 6, 0, 0= (0, 181, 0? while max length not equal zero
 							(: (0, 0, 0, 2C output
 								(3:\ , 4;) push back
 							)
-							(1, 6, 1, 0-, 0, 2, 1, 0C) decrement max length
+							(1, 6, 1, 0- (0, 2, 1, 0C) decrement max length
 							, 0, 7J goto while
 						)
 					)
@@ -31,10 +31,10 @@ export namespace CppUtils::Language
 					)
 					(1: (1;, 2;) source length
 						(0 source position
-							P (2: (2, 4, 1, 4=!, 0, 449, 0? while source position not equal source length
+							P (2: (2, 4, 1, 4= (0, 449, 0? while source position not equal source length
 								(: (0, 0, 0, 2C output
 									(3: (1; (1: (2, 0, 0, 2C, 3;)) get char at source position
-										(2: (1, 6, 3:\¤, 0=, 0, 123, 0? if char is ¤
+										(2: (1, 6, 3:\¤, 0=!, 0, 123, 0? if char is ¤
 											_\,, 4; push back
 											_\5, 4; push back
 											_\J, 4; push back
@@ -50,7 +50,7 @@ export namespace CppUtils::Language
 					(3:\X, 4;) push back
 					(1: (: (0, 0, 0, 2C, 5;) (0, 1, 0- output length
 						(7; position
-							P (2: (1, 4, 0, 0=!, 0, 451, 0? while output length not equal zero
+							P (2: (1, 4, 0, 0= (0, 451, 0? while output length not equal zero
 									(1, 4, 10, 0% get digit
 										(1, 4, 0, 6- (0, 10, 0/ (0, 2, 1, 0C) remove digit from output length
 										(0, \0, 0+ add zero
@@ -69,20 +69,20 @@ export namespace CppUtils::Language
 					)
 					(1: (: (0, 0, 0, 2C, 5;) output length
 						(0 output position
-							P (2: (2, 4, 1, 4=!, 0, 984, 0? while output position not equal output length
+							P (2: (2, 4, 1, 4=, 0, 984, 0? while output position not equal output length
 								(: (0, 0, 0, 2C output
-									(3: (:, 0, 0, 0, 2C (1: (2, 0, 0, 2C, 6;)) get char at output position
-										(2: (1, 6, 3:\§, 0=, 0, 677, 0? if char is §
+									(3: (: (0, 0, 0, 2C (1: (2, 0, 0, 2C, 6;)) get char at output position
+										(2: (1, 6, 3:\§, 0=! (0, 677, 0? if char is §
 										_\(, 4; push back
 										(1: (2, 0, 0, 2C output position
-											P (2: (6, 4, 0, 0=!, 0, 242, 0? while value not equal zero
+											P (2: (6, 4, 0, 0= (0, 242, 0? while value not equal zero
 												(6, 4, 10, 0% get digit
 													(6, 4, 0, 6- (0, 10, 0/ (0, 2, 6, 0C) remove digit from value
 													(0, \0, 0+ add zero
 													S switch position and digit
 												(0, 7J goto while
 											)
-											P (2: (2, 6, 0, 0=!, 0, 220, 0? while char is not zero
+											P (2: (2, 6, 0, 0= (0, 220, 0? while char is not zero
 												(: (0, 0, 0, 2C output
 													(3: (3, 2, 0, 2C cast digit to char
 														(4; push back
@@ -101,14 +101,14 @@ export namespace CppUtils::Language
 					)
 					(3:\(, 4;) push back
 					(7; (0, 3, 0+ header length
-						P (2: (1, 4, 0, 0=!, 0, 236, 0? while header length not equal zero
+						P (2: (1, 4, 0, 0= (0, 236, 0? while header length not equal zero
 								(1, 4, 10, 0% get digit
 									(1, 4, 0, 6- (0, 10, 0/ (0, 2, 1, 0C) remove digit from header length
 									(0, \0, 0+ add zero
 								S switch position and digit
 							(0, 7J goto while
 						)
-						P (2: (2, 6, 0, 0=! (0, 185, 0? while char is not zero
+						P (2: (2, 6, 0, 0= (0, 185, 0? while char is not zero
 							(: (0, 0, 0, 2C output
 								(3: (3, 2, 0, 2C cast digit to char
 									(4; push back
@@ -155,46 +155,60 @@ export namespace CppUtils::Language
 
 				0§ main
 					(:N output
-						(1: (1;, 2;) input length
-							(0 input position
-								§ (2: (1, 6, 2, 6=! (0, 3, 5? while position not equal to length
-									(3: (1; (1: (3, 2, 0, 2C (3;)) get char at position
-										(2: (1, 6, 3:\#, 0=! (0, 7, 5? if char is # then call parse comment
-										(2: (1, 6, 3:\λ, 0=! (0, 10, 5? if char is λ then call parse function
-										(2: (1, 6, 3:\{, 0=! (0, 11, 5? if char is { then call parse opening brace
-										(2: (1, 6, 3:\}, 0=! (0, 12, 5? if char is } then call parse closing brace
-										(: (4, 2, 0, 2C output
-											S, 4; push back
-										)
-										§ continue
-									)
-									(0, 1, 0+ increment position
-								(1¤3§ end while
-							)
-						)
-						(1: (: (2, 2, 0, 2C (5;) output length
-							(0 output position
-								§ (2: (1, 6, 2, 6=! (0, 6, 5? while position not equal to length
-									(3: (: (4, 2, 0, 2C (1: (3, 2, 0, 2C (6;)) get char at position
-										(2: (1, 6, 3:\{, 0=! (0, 13, 5? if char is { then call save label
-										§ continue
-									)
-									(0, 1, 0+ increment position
-								(4¤6§ end while
-							)
-						)
+						(5¤1§ add empty prefix
+						(8¤2§ add code
+						(18¤3§ fill prefix
+						(21¤4§ add suffix
 					X
-				
-				7§ parse comment
-					(2: (2, 6, 3, 6=! (0, 9, 5? while position not equal to length
-						(3: (1; (1: (4, 2, 0, 2C (3;)) get char at position
-							(2: (1, 6, 3:10, 0=! (0, 8, 5? if char not equal new line
-								(2, 6, 1, 0+ (0, 2, 3, 2C) increment position
+
+				5§ add empty prefix
+					(3:\(, 4;) push back
+					(7; max length
+						§ (2: (1, 6, 0, 0= (0, 7, 5? while max length not equal zero
+							(: (2, 2, 0, 2C output
+								(3:\ , 4;) push back
+							)
+							(0, 1, 0- decrement max length
+						(6¤7§ end while
+					)
+					(3: push back
+						\,, 4;
+						_\1, 4;
+						_\J, 4;
+					)
+					(1¤
+
+				8§ add code
+					(1: (1;, 2;) input length
+						(0 input position
+							§ (2: (1, 6, 2, 6= (0, 11, 5? while position not equal to length
+								(3: (1; (1: (3, 2, 0, 2C (3;)) get char at position
+									(2: (1, 6, 3:\#, 0= (0, 12, 5? if char is # then call parse comment
+									(2: (1, 6, 3:\λ, 0= (0, 15, 5? if char is λ then call parse function
+									(2: (1, 6, 3:\{, 0= (0, 16, 5? if char is { then call parse opening brace
+									(2: (1, 6, 3:\}, 0= (0, 17, 5? if char is } then call parse closing brace
+									(: (4, 2, 0, 2C output
+										S, 4; push back
+									)
+									§ continue
+								)
+								(0, 1, 0+ increment position
+							(9¤11§ end while
 						)
-					(7¤8§)§ end while
+					)
+					(3:\X, 4;) push back
 					(2¤
 
-				10§ parse function
+				12§ parse comment
+					(2: (2, 6, 3, 6= (0, 14, 5? while position not equal to length
+						(3: (1; (1: (4, 2, 0, 2C (3;)) get char at position
+							(2: (1, 6, 3:10, 0= (0, 13, 5? if char not equal new line
+								(2, 6, 1, 0+ (0, 2, 3, 2C) increment position
+						)
+					(12¤13§)§ end while
+					(10¤
+
+				15§ parse function
 					(: (4, 2, 0, 2C output
 						(3: push back
 							\P, 4;
@@ -204,18 +218,18 @@ export namespace CppUtils::Language
 							_\J, 4;
 						)
 					)
-					(2¤
-				
-				11§ parse opening brace
+					(10¤
+
+				16§ parse opening brace
 					(: (4, 2, 0, 2C output
 						(3: push back
 							\{, 4;
 							_\(, 4;
 						)
 					)
-					(2¤
-				
-				12§ parse closing brace
+					(10¤
+
+				17§ parse closing brace
 					(: (4, 2, 0, 2C output
 						(3: push back
 							\S, 4;
@@ -224,15 +238,84 @@ export namespace CppUtils::Language
 							_\J, 4;
 						)
 					)
-					(2¤
-				
-				13§ save label
-					(: (4, 2, 0, 2C output
-						(3:\(, 4;) push back
-						todo write position
+					(10¤
+
+				18§ fill prefix
+					(1: (: (2, 2, 0, 2C (5;) (0, 1, 0- output length
+						(7; position
+							§ (2: (2, 6, 0, 0= (0, 20, 5? while output length not equal zero
+								(1, 6, 10, 0% get digit
+									(2, 6, 0, 6- (0, 10, 0/ (0, 2, 3, 2C) remove digit from output length
+									(0, \0, 0+ add zero
+									(: (4, 2, 0, 2C output
+										(1: (3, 2, 0, 2C position
+											(3: (3, 2, 0, 2C cast digit to char
+												, 8; replace
+											)
+											(0, 1, 0- decrement position
+										(0, 2, 3, 2C)
+									)
+								)
+							(19¤20§ end while
+						)
 					)
-					(5¤
-				
+					(3¤
+
+				21§ add suffix
+					(1: (: (2, 2, 0, 2C (5;) output length
+						(0 output position
+							§ (2: (1, 6, 2, 6= (0, 24, 5? while position not equal to length
+								(3: (: (4, 2, 0, 2C (1: (3, 2, 0, 2C (6;)) get char at position
+									(2: (1, 6, 3:\{, 0= (0, 25, 5? if char is { then call save label
+									§ continue
+								)
+								(0, 1, 0+ increment position
+							(22¤24§ end while
+						)
+					)
+					(4¤
+
+				25§ save label
+					(26 return destination
+						(: (5, 2, 0, 2C output
+							(3:\(, 4;) push back
+							(7; (0, 3, 0+ header length
+								(3: char
+									(27¤ call save label loop
+									§ continue
+								)
+							)
+						)
+						(3: push back
+							\,, 4;
+							_\1, 4;
+							_\J, 4;
+						)
+					)
+					(23¤
+
+				27§ save label loop
+					(2: (2, 6, 0, 0= (0, 28, 5? if header length is zero
+						(1: (5, 2, 0, 2C return destination
+							¤ return
+					28§ else
+					(29 return destination
+						(: (4, 2, 0, 2C output
+							(4, 6, 3, 0+ header length
+								(0, 6, 10, 0% get digit
+									(1, 6, 0, 6- (0, 10, 0/ (0, 2, 2, 2C) remove digit from header length
+									(2: (2, 6, 0, 0=! (0, 27, 5? if header length is not zero then call save label loop
+									§ continue
+									(: (3, 2, 0, 2C output
+										(3: (2, 2, 0, 2C cast digit to char
+											(0, \0, 0+ add zero
+											(4; push back
+										)
+									)
+								)
+							)
+						)
+					¤
 				)"sv;
 			auto compiler = LowLevelLabels::compile(highLevelLabelsCompiler);
 			auto maxSizeLength = std::size(std::to_string(std::numeric_limits<std::size_t>::max()));
