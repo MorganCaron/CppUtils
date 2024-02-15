@@ -1,0 +1,15 @@
+export module CppUtils.UnitTests.Math;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Math
+{
+	inline auto _ = TestSuite{"Math", [](auto& suite) {
+		suite.addTest("absolute", [&] {
+			suite.expectEqual(CppUtils::Math::absolute(0), 0u);
+			suite.expectEqual(CppUtils::Math::absolute(1), 1u);
+			suite.expectEqual(CppUtils::Math::absolute(-1), 1u);
+		});
+	}};
+}

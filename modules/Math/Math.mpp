@@ -1,0 +1,16 @@
+export module CppUtils.Math;
+
+import std;
+
+export namespace CppUtils::Math
+{
+	[[nodiscard]] inline constexpr auto absolute(auto number) -> std::make_unsigned_t<decltype(number)>
+	{
+		if constexpr (std::unsigned_integral<decltype(number)>)
+			return number;
+		else
+			return number < 0 ?
+				static_cast<std::make_unsigned_t<decltype(number)>>(number * -1) :
+				static_cast<std::make_unsigned_t<decltype(number)>>(number);
+	}
+}
