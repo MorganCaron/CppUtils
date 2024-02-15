@@ -57,9 +57,10 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 				(21X
 
 				main {
-					(: (1λ return40
+					(: (1λ # Return 40
 					# Comment: Add 2
-					, 2+X
+					(0, 2, 0+
+					X
 				}
 
 				(22X

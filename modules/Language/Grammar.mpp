@@ -211,10 +211,15 @@ export namespace CppUtils::Language
 				15§ parse function
 					(: (4, 2, 0, 2C output
 						(3: push back
-							\P, 4;
+							_\P, 4;
+							_\(, 4;
+							_\,, 4;
+							_\9, 4;
+							_\,, 4;
+							_\+, 4;
 							_\S, 4;
 							_\,, 4;
-							_\1, 4;
+							_\5, 4;
 							_\J, 4;
 						)
 					)
@@ -224,7 +229,7 @@ export namespace CppUtils::Language
 					(: (4, 2, 0, 2C output
 						(3: push back
 							\{, 4;
-							_\(, 4;
+							_\S, 4;
 						)
 					)
 					(10¤ return
@@ -275,6 +280,8 @@ export namespace CppUtils::Language
 					)
 					(3: push back
 						\(, 4;
+						_\(, 4;
+						_\(, 4;
 						_\,, 4;
 						_\5, 4;
 						_\J, 4;
@@ -286,7 +293,7 @@ export namespace CppUtils::Language
 					(26 return destination
 						(: (5, 2, 0, 2C output
 							(3:\(, 4;) push back
-							(1: (4, 6, 0, 6C position
+							(1: (4, 6, 0, 6C (0, 1, 0- position
 								(0, 6, 10, 0% get digit
 									(1, 6, 0, 6- (0, 10, 0/ (0, 2, 2, 2C) remove digit from position
 									(0, \0, 0+ add zero
