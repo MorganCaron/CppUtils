@@ -2,6 +2,7 @@ export module CppUtils.Language.Grammar;
 
 import std;
 import CppUtils.Type;
+import CppUtils.String;
 import CppUtils.Language.VirtualMachine;
 
 export namespace CppUtils::Language
@@ -124,7 +125,7 @@ export namespace CppUtils::Language
 						_\J, 4;
 					)
 				)"sv;
-			auto maxSizeLength = std::size(std::to_string(std::numeric_limits<std::size_t>::max()));
+			constexpr auto maxSizeLength = String::getNumberLength(std::numeric_limits<std::size_t>::max());
 			auto output = std::unique_ptr<std::basic_string<CharT>>(VirtualMachine::execute<
 				std::basic_string<CharT>*,
 				std::size_t,
@@ -336,7 +337,7 @@ export namespace CppUtils::Language
 						¤ return
 				)"sv;
 			auto compiler = LowLevelLabels::compile(highLevelLabelsCompiler);
-			auto maxSizeLength = std::size(std::to_string(std::numeric_limits<std::size_t>::max()));
+			constexpr auto maxSizeLength = String::getNumberLength(std::numeric_limits<std::size_t>::max());
 			auto output = std::unique_ptr<std::basic_string<CharT>>(VirtualMachine::execute<
 				std::basic_string<CharT>*,
 				std::size_t,
@@ -355,38 +356,4 @@ export namespace CppUtils::Language
 			return std::basic_string<CharT>{std::move(*output)};
 		}
 	}
-
-	/*inline constexpr auto lowLevelLabelsCompiler = u8R"(
-		_3<_L <_D <_3SP <_4!	_<E
-		_3<_R <_167D <_21!	_4<_L <_1SDA _<87J
-		_3<_R <_42D <_51!	_4<_60A_95A_49A_83A_66A_95A_82A_60A_95A_83A_66A
-		_3<_R <_4SA
-		_3<_1J _<1B
-	)"sv;
-
-	inline constexpr auto highLevelLabelsCompiler = u8R"(
-		main
-			goto _1* define labels §
-			end _<E
-
-		§ define labels
-			if _3<_L <_D <_3SP <_25! then goto _5*
-			if _3<_R <_167DN <_25! then goto _2*
-				_4<_L <_1SDA _<87J
-				_4*
-			§ endif
-			if _3<_R <_42DN <_25! then goto _3*
-				_4<_60A_95A_49A_83A_66A_95A_82A_60A_95A_83A_66A
-				_4*
-			§ endif
-			_3<_R <_4SA
-			§ next char
-			_3<_1J _1* define labels
-			§ end
-			_*
-	)"sv;
-
-	inline constexpr auto CLanguage = std::array{
-
-	};*/
 }
