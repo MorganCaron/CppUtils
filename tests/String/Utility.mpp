@@ -40,6 +40,22 @@ export namespace CppUtils::UnitTest::String::Utility
 			Logger::print("{}\n", output);
 		});
 
+		suite.addTest("getNumberLength", [&] {
+			suite.expectEqual(CppUtils::String::getNumberLength(0), 1uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(1), 1uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(2), 1uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(10), 2uz);
+
+			suite.expectEqual(CppUtils::String::getNumberLength(-1), 2uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(-2), 2uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(-10), 3uz);
+
+			suite.expectEqual(CppUtils::String::getNumberLength(0, 2), 1uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(1, 2), 1uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(2, 2), 2uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(10, 2), 4uz);
+		});
+
 		suite.addTest("toString", [&] {
 			suite.expectEqual(CppUtils::String::toString<2>(0), "0"sv);
 			suite.expectEqual(CppUtils::String::toString<2>(1), "1"sv);

@@ -129,6 +129,8 @@ export namespace CppUtils::String
 	// Todo: gérer les flottants
 	[[nodiscard]] inline constexpr auto getNumberLength(std::integral auto number, std::size_t base = 10) -> std::size_t
 	{
+		if (number == 0)
+			return 1uz;
 		auto length = 0uz;
 		if constexpr (std::signed_integral<decltype(number)>)
 			if (number < 0)
