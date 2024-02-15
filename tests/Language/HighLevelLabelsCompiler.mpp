@@ -12,7 +12,7 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 		namespace Compiler = CppUtils::Language::HighLevelLabels;
 
 		suite.addTest("empty source", [&] {
-			constexpr auto source = u"{}"sv;
+			constexpr auto source = u"{X}"sv;
 			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
@@ -25,7 +25,7 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 				(21X
 
 				main {
-					42
+					42X
 				}
 
 				(22X
@@ -42,7 +42,7 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 					main {
 						4
 						# Comment: (),+-*/%=<>!:;?§¤\1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ
-						2
+						2X
 					}
 				)"sv;
 			auto output = Compiler::compile(source);
@@ -52,7 +52,7 @@ export namespace CppUtils::UnitTest::Language::HighLevelLabelsCompiler
 			suite.expectEqual(executionResult, 42uz);
 		});
 
-		suite.addTest("multiple functions", [&] constexpr {
+		suite.addTest("call function", [&] constexpr {
 			constexpr auto source = uR"(
 				(21X
 

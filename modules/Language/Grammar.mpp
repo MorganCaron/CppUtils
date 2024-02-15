@@ -241,7 +241,7 @@ export namespace CppUtils::Language
 					(10¤ return
 
 				18§ fill prefix
-					(1: (: (2, 2, 0, 2C (5;) output length
+					(1: (: (2, 2, 0, 2C (5;) (0, 1, 0- output length
 						(7; position
 							§ (2: (2, 6, 0, 0= (0, 20, 5? while output length not equal zero
 								(1, 6, 10, 0% get digit
@@ -274,8 +274,9 @@ export namespace CppUtils::Language
 						)
 					)
 					(3: push back
+						\(, 4;
 						_\,, 4;
-						_\1, 4;
+						_\5, 4;
 						_\J, 4;
 					)
 					(3:\X, 4;) push back
@@ -285,9 +286,9 @@ export namespace CppUtils::Language
 					(26 return destination
 						(: (5, 2, 0, 2C output
 							(3:\(, 4;) push back
-							(7; (0, 3, 0+ header length
+							(1: (4, 6, 0, 6C position
 								(0, 6, 10, 0% get digit
-									(1, 6, 0, 6- (0, 10, 0/ (0, 2, 2, 2C) remove digit from header length
+									(1, 6, 0, 6- (0, 10, 0/ (0, 2, 2, 2C) remove digit from position
 									(0, \0, 0+ add zero
 									(27¤ call save label loop
 									§ continue
@@ -303,17 +304,17 @@ export namespace CppUtils::Language
 					(23¤ return
 
 				27§ save label loop
-					(2: (2, 6, 0, 0=! (0, 28, 5? if header length is zero
+					(2: (2, 6, 0, 0=! (0, 28, 5? if position is zero
 						(1: (4, 2, 0, 2C return destination
 							I¤ return
 					28§ else
 					(29 return destination
 						(: (4, 2, 0, 2C output
-							(1: (4, 6, 0, 6C header length
+							(1: (4, 6, 0, 6C position
 								(0, 6, 10, 0% get digit
-									(1, 6, 0, 6- (0, 10, 0/ (0, 2, 2, 2C) remove digit from header length
+									(1, 6, 0, 6- (0, 10, 0/ (0, 2, 2, 2C) remove digit from position
 									(0, \0, 0+ add zero
-									(2: (2, 6, 0, 0=! (0, 27, 5? if header length is not zero then call save label loop
+									(2: (2, 6, 0, 0=! (0, 27, 5? if position is not zero then call save label loop
 									§ continue
 									(: (3, 2, 0, 2C output
 										(3: (2, 2, 0, 2C cast digit to char
