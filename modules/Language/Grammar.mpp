@@ -176,7 +176,7 @@ export namespace CppUtils::Language
 						_\1, 4;
 						_\J, 4;
 					)
-					(1¤
+					(1¤ return
 
 				8§ add code
 					(1: (1;, 2;) input length
@@ -197,7 +197,7 @@ export namespace CppUtils::Language
 						)
 					)
 					(3:\X, 4;) push back
-					(2¤
+					(2¤ return
 
 				12§ parse comment
 					(2: (2, 6, 3, 6= (0, 14, 5? while position not equal to length
@@ -206,7 +206,7 @@ export namespace CppUtils::Language
 								(2, 6, 1, 0+ (0, 2, 3, 2C) increment position
 						)
 					(12¤13§)§ end while
-					(10¤
+					(10¤ return
 
 				15§ parse function
 					(: (4, 2, 0, 2C output
@@ -218,7 +218,7 @@ export namespace CppUtils::Language
 							_\J, 4;
 						)
 					)
-					(10¤
+					(10¤ return
 
 				16§ parse opening brace
 					(: (4, 2, 0, 2C output
@@ -227,7 +227,7 @@ export namespace CppUtils::Language
 							_\(, 4;
 						)
 					)
-					(10¤
+					(10¤ return
 
 				17§ parse closing brace
 					(: (4, 2, 0, 2C output
@@ -238,10 +238,10 @@ export namespace CppUtils::Language
 							_\J, 4;
 						)
 					)
-					(10¤
+					(10¤ return
 
 				18§ fill prefix
-					(1: (: (2, 2, 0, 2C (5;) (0, 1, 0- output length
+					(1: (: (2, 2, 0, 2C (5;) output length
 						(7; position
 							§ (2: (2, 6, 0, 0= (0, 20, 5? while output length not equal zero
 								(1, 6, 10, 0% get digit
@@ -259,7 +259,7 @@ export namespace CppUtils::Language
 							(19¤20§ end while
 						)
 					)
-					(3¤
+					(3¤ return
 
 				21§ add suffix
 					(1: (: (2, 2, 0, 2C (5;) output length
@@ -273,49 +273,59 @@ export namespace CppUtils::Language
 							(22¤24§ end while
 						)
 					)
-					(4¤
+					(3: push back
+						_\,, 4;
+						_\1, 4;
+						_\J, 4;
+					)
+					(3:\X, 4;) push back
+					(4¤ return
 
 				25§ save label
 					(26 return destination
 						(: (5, 2, 0, 2C output
 							(3:\(, 4;) push back
 							(7; (0, 3, 0+ header length
-								(3: char
-									(27¤ call save label loop
-									§ continue
-								)
-							)
-						)
-						(3: push back
-							\,, 4;
-							_\1, 4;
-							_\J, 4;
-						)
-					)
-					(23¤
-
-				27§ save label loop
-					(2: (2, 6, 0, 0= (0, 28, 5? if header length is zero
-						(1: (5, 2, 0, 2C return destination
-							¤ return
-					28§ else
-					(29 return destination
-						(: (4, 2, 0, 2C output
-							(4, 6, 3, 0+ header length
 								(0, 6, 10, 0% get digit
 									(1, 6, 0, 6- (0, 10, 0/ (0, 2, 2, 2C) remove digit from header length
-									(2: (2, 6, 0, 0=! (0, 27, 5? if header length is not zero then call save label loop
+									(0, \0, 0+ add zero
+									(27¤ call save label loop
 									§ continue
 									(: (3, 2, 0, 2C output
 										(3: (2, 2, 0, 2C cast digit to char
-											(0, \0, 0+ add zero
 											(4; push back
 										)
 									)
 								)
 							)
 						)
-					¤
+					)
+					(23¤ return
+
+				27§ save label loop
+					(2: (2, 6, 0, 0=! (0, 28, 5? if header length is zero
+						(1: (4, 2, 0, 2C return destination
+							I¤ return
+					28§ else
+					(29 return destination
+						(: (4, 2, 0, 2C output
+							(1: (4, 6, 0, 6C header length
+								(0, 6, 10, 0% get digit
+									(1, 6, 0, 6- (0, 10, 0/ (0, 2, 2, 2C) remove digit from header length
+									(0, \0, 0+ add zero
+									(2: (2, 6, 0, 0=! (0, 27, 5? if header length is not zero then call save label loop
+									§ continue
+									(: (3, 2, 0, 2C output
+										(3: (2, 2, 0, 2C cast digit to char
+											(4; push back
+										)
+									)
+								)
+							)
+						)
+					)
+					(1: (4, 2, 0, 2C return destination
+						¤ return
 				)"sv;
 			auto compiler = LowLevelLabels::compile(highLevelLabelsCompiler);
 			auto maxSizeLength = std::size(std::to_string(std::numeric_limits<std::size_t>::max()));
