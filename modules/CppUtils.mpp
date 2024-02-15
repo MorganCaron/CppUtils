@@ -8,6 +8,7 @@ export import CppUtils.Language;
 export import CppUtils.ChronoLogger;
 export import CppUtils.Logger;
 export import CppUtils.LogRotate;
+export import CppUtils.Math;
 export import CppUtils.Memory;
 export import CppUtils.Random;
 export import CppUtils.String;

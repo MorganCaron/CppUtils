@@ -2,6 +2,7 @@ export module CppUtils.String.Utility;
 
 import std;
 
+import CppUtils.Math;
 import CppUtils.String.Concept;
 
 export namespace CppUtils::String
@@ -116,14 +117,43 @@ export namespace CppUtils::String
 			return "<non printable>";
 	}
 
-	template<Concept::Text StringT>
-	[[nodiscard]] inline constexpr auto toAscii(const StringT& string) -> std::string
+	[[nodiscard]] inline constexpr auto toAscii(const Concept::Text auto& string) -> std::string
 	{
 		auto asciiString = std::string{};
 		std::transform(std::cbegin(string), std::cend(string), std::back_inserter(asciiString), [](auto c) -> char {
 			return c < 128 ? static_cast<char>(c) : '?';
 		});
 		return asciiString;
+	}
+
+	// Todo: gérer les flottants
+	[[nodiscard]] inline constexpr auto getNumberLength(std::integral auto number, std::size_t base = 10) -> std::size_t
+	{
+		auto length = 0uz;
+		if constexpr (std::signed_integral<decltype(number)>)
+			if (number < 0)
+				++length;
+		for (auto unsignedNumber = Math::absolute(number); unsignedNumber; unsignedNumber /= base)
+			++length;
+		return length;
+	}
+
+	// Todo: gérer les flottants
+	template<std::size_t base = 10, class CharT = char>
+	requires (base > 1 and base < 37)
+	[[nodiscard]] inline constexpr auto toString(std::integral auto number) -> std::basic_string<CharT>
+	{
+		if (number == 0)
+			return std::basic_string<CharT>{"0"};
+		auto digits = std::basic_string_view<CharT>{"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"};
+		auto string = std::basic_string<CharT>(getNumberLength(number, base), ' ');
+		if constexpr (std::signed_integral<decltype(number)>)
+			if (number < 0)
+				string[0] = '-';
+		auto unsignedNumber = Math::absolute(number);
+		for (auto i = std::size(string); unsignedNumber != 0; unsignedNumber /= base)
+			string[--i] = digits[unsignedNumber % base];
+		return string;
 	}
 
 	// Todo: function splitString (donne un std::vector<std::string> à partir d'un string comportant des espaces

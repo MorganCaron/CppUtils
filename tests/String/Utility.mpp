@@ -39,5 +39,27 @@ export namespace CppUtils::UnitTest::String::Utility
 				output += CppUtils::String::getPrintableChar(c) + ' ';
 			Logger::print("{}\n", output);
 		});
+
+		suite.addTest("toString", [&] {
+			suite.expectEqual(CppUtils::String::toString<2>(0), "0"sv);
+			suite.expectEqual(CppUtils::String::toString<2>(1), "1"sv);
+			suite.expectEqual(CppUtils::String::toString<2>(2), "10"sv);
+			suite.expectEqual(CppUtils::String::toString<2>(10), "1010"sv);
+
+			suite.expectEqual(CppUtils::String::toString(0), "0"sv);
+			suite.expectEqual(CppUtils::String::toString(1), "1"sv);
+			suite.expectEqual(CppUtils::String::toString(-1), "-1"sv);
+
+			suite.expectEqual(CppUtils::String::toString(42), "42"sv);
+			suite.expectEqual(CppUtils::String::toString(42u), "42"sv);
+			suite.expectEqual(CppUtils::String::toString(42uz), "42"sv);
+			suite.expectEqual(CppUtils::String::toString(42ll), "42"sv);
+
+			suite.expectEqual(CppUtils::String::toString(-42), "-42"sv);
+			suite.expectEqual(CppUtils::String::toString(-42ll), "-42"sv);
+
+			suite.expectEqual(CppUtils::String::toString(123456), "123456"sv);
+			suite.expectEqual(CppUtils::String::toString(-123456), "-123456"sv);
+		});
 	}};
 }
