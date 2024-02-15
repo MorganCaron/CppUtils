@@ -184,7 +184,7 @@ export namespace CppUtils::Language
 							§ (2: (1, 6, 2, 6= (0, 11, 5? while position not equal to length
 								(3: (1; (1: (3, 2, 0, 2C (3;)) get char at position
 									(2: (1, 6, 3:\#, 0= (0, 12, 5? if char is # then call parse comment
-									(2: (1, 6, 3:\λ, 0= (0, 15, 5? if char is λ then call parse function
+									(2: (1, 6, 3:\@, 0= (0, 15, 5? if char is @ then call parse function
 									(2: (1, 6, 3:\{, 0= (0, 16, 5? if char is { then call parse opening brace
 									(2: (1, 6, 3:\}, 0= (0, 17, 5? if char is } then call parse closing brace
 									(: (4, 2, 0, 2C output
