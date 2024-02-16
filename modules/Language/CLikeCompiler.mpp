@@ -1,0 +1,36 @@
+export module CppUtils.Language.CLikeCompiler;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Language.VirtualMachine;
+export import CppUtils.Language.HighLevelLabelsCompiler;
+
+export namespace CppUtils::Language::CLikeCompiler
+{
+	template<class CharT>
+	inline constexpr auto compile(const std::basic_string_view<CharT> source) -> std::basic_string<CharT>
+	{
+		using namespace std::literals;
+		constexpr auto cLikeCompiler = uR"(
+				main {
+					(: (1@ # call foobar
+					X
+				}
+
+				foobar {
+					N
+				}
+				)"sv;
+		auto compiler = HighLevelLabelsCompiler::compile(cLikeCompiler);
+		auto output = std::unique_ptr<std::basic_string<CharT>>(VirtualMachine::execute<
+			std::basic_string<CharT>*,
+			std::size_t,
+			bool,
+			CharT,
+			const decltype(source)*>(
+			compiler,
+			&source));
+		return std::basic_string<CharT>{std::move(*output)};
+	}
+}

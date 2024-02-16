@@ -1,0 +1,24 @@
+export module CppUtils.Language.AST;
+
+import std;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+
+export namespace CppUtils::Language
+{
+	struct AST final
+	{
+		using Node = Container::Tree::Node<String::Token>;
+
+		Node root;
+		String::HashTable hashTable;
+
+		inline explicit AST(std::string astName, String::HashTable c_hashTable = {})
+		{
+			const auto token = String::hash(astName);
+			root = Node{token};
+			hashTable = std::move(c_hashTable);
+			hashTable[token] = std::move(astName);
+		}
+	};
+}

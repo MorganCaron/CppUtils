@@ -135,6 +135,9 @@ export namespace CppUtils::Language::VirtualMachine
 					});
 				});
 				break;
+			case 'T': // Transform
+				// Todo: faire les casts ici, au lieu d'à l'intérieur de l'instruction copy
+				break;
 			case 'X': /* eXit */ instructionPointer = std::size(source) - 1; break;
 			case ':': stack.pushType(stack.template pop<std::size_t>()); break;
 			case ';':

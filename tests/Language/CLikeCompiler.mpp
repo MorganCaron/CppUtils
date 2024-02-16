@@ -1,0 +1,33 @@
+export module CppUtils.UnitTests.Language.CLikeCompiler;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Language::CLikeCompiler
+{
+	/*
+	inline auto _ = TestSuite{"Language/CLikeCompiler", []([[maybe_unused]] auto& suite) {
+		using namespace std::literals;
+		using Logger = CppUtils::Logger<"CppUtils">;
+		namespace VM = CppUtils::Language::VirtualMachine;
+		namespace Compiler = CppUtils::Language::CLike;
+
+		suite.addTest("empty main", [&] {
+			constexpr auto source = uR"(
+				keywords: [
+					"int" = 0
+					"std::size" = 1
+				]
+
+				int main {
+					return 42;
+				}
+			)"sv;
+			auto output = Compiler::compile(source);
+			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
+
+			auto executionResult = VM::execute<std::size_t>(output);
+			suite.expectEqual(executionResult, 0uz);
+		});
+	}};*/
+}

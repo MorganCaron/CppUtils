@@ -1,4 +1,7 @@
 export module CppUtils.Language;
 
-export import CppUtils.Language.Grammar;
+export import CppUtils.Language.AST;
+export import CppUtils.Language.ASTCompiler;
+export import CppUtils.Language.LowLevelLabelsCompiler;
+export import CppUtils.Language.HighLevelLabelsCompiler;
 export import CppUtils.Language.VirtualMachine;

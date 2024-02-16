@@ -9,7 +9,7 @@ export namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 		namespace VM = CppUtils::Language::VirtualMachine;
-		namespace Compiler = CppUtils::Language::LowLevelLabels;
+		namespace Compiler = CppUtils::Language::LowLevelLabelsCompiler;
 
 		suite.addTest("empty source", [&] {
 			constexpr auto source = u"("sv;

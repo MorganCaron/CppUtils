@@ -1,0 +1,78 @@
+export module CppUtils.UnitTests.Language.ASTCompiler;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Language::ASTCompiler
+{
+	inline auto _ = TestSuite{"Language/ASTCompiler", []([[maybe_unused]] auto& suite) {
+		using namespace std::literals;
+		using Logger = CppUtils::Logger<"CppUtils">;
+		namespace VM = CppUtils::Language::VirtualMachine;
+		namespace Compiler = CppUtils::Language::ASTCompiler;
+
+		suite.addTest("Empty source", [&] {
+			constexpr auto source = u""sv;
+			auto output = Compiler::compile(source);
+			Logger::print("Output:\n{}\n", output);
+			suite.expectEqual(output, 0uz);
+		});
+
+		suite.addTest("Single node", [&] {
+			constexpr auto source = u"node"sv;
+			auto output = Compiler::compile(source);
+			Logger::print("Output:\n{}\n", output);
+			suite.expectEqual(output, 0uz);
+		});
+
+		suite.addTest("Whitespaces", [&] {
+			constexpr auto source = uR"(
+				node
+				)"sv;
+			auto output = Compiler::compile(source);
+			Logger::print("Output:\n{}\n", output);
+			suite.expectEqual(output, 0uz);
+		});
+
+		suite.addTest("Multiple nodes", [&] {
+			constexpr auto source = u"foo bar"sv;
+			auto output = Compiler::compile(source);
+			Logger::print("Output:\n{}\n", output);
+			suite.expectEqual(output, 0uz);
+		});
+
+		suite.addTest("Escaped chars", [&] {
+			constexpr auto source = uR"(
+				Hello\ World!
+			)"sv;
+			auto output = Compiler::compile(source);
+			Logger::print("Output:\n{}\n", output);
+			suite.expectEqual(output, 0uz);
+		});
+
+		suite.addTest("Empty node", [&] {
+			constexpr auto source = u"node{}"sv;
+			auto output = Compiler::compile(source);
+			Logger::print("Output:\n{}\n", output);
+			suite.expectEqual(output, 0uz);
+		});
+
+		suite.addTest("Node with content", [&] {
+			constexpr auto source = u"parent{child0 child1}"sv;
+			auto output = Compiler::compile(source);
+			Logger::print("Output:\n{}\n", output);
+			suite.expectEqual(output, 0uz);
+		});
+
+		suite.addTest("Nested nodes", [&] {
+			constexpr auto source = uR"(
+				main{
+					print{ string{Hello\ World\ \0} }
+				}
+			)"sv;
+			auto output = Compiler::compile(source);
+			Logger::print("Output:\n{}\n", output);
+			suite.expectEqual(output, 0uz);
+		});
+	}};
+}
