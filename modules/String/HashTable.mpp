@@ -9,33 +9,27 @@ export namespace CppUtils::String
 {
 	using HashTable = std::unordered_map<String::Token, std::string>;
 
-	inline auto addTokenName(HashTable& tokenNames, std::string newName) -> Token
-	{
-		auto token = hash(newName);
-		tokenNames[token] = std::move(newName);
-		return token;
-	}
-
-	[[nodiscard]] inline auto getTokenNameOrValue(Token token, const HashTable& tokenNames) -> std::string
+	template<class CharT>
+	[[nodiscard]] inline auto getNameOrValue(Token token, const HashTable& tokenNames) -> auto
 	{
 		using namespace std::literals;
 
 		if (tokenNames.contains(token))
 		{
 			if (const auto& name = tokenNames.at(token); !std::empty(name))
-				return name;
+				return std::format("{}", name);
 			else
-				return "\"\"";
+				return std::format(R"("")");
 		}
 		if (token <= std::numeric_limits<wchar_t>::max())
 		{
 			auto c = static_cast<char>(token);
-			if (std::isprint(static_cast<char>(token)))
-				return std::string{std::to_string(token) + " '"s + c + '\''};
+			if (std::isprint(c))
+				return std::format("{} '{}'", token, c);
 			for (const auto& [readableChar, escapedChar] : String::escapedChars)
 				if (escapedChar == c)
-					return std::to_string(token) + " '\\"s + readableChar + '\'';
+					return std::format(R"({} \'{}')", token, readableChar);
 		}
-		return std::to_string(token);
+		return std::format("{}", token);
 	}
 }

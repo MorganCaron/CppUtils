@@ -7,6 +7,11 @@ export namespace CppUtils::Memory
 	template<class T>
 	using UniquePtrWithDestructor = std::unique_ptr<T, std::function<void(T*)>>;
 
+	[[nodiscard]] inline auto moveRawPointer(auto* pointer) -> std::remove_reference_t<decltype(*pointer)>
+	{
+		return std::move(*std::unique_ptr<std::remove_reference_t<decltype(*pointer)>>(pointer));
+	}
+
 	namespace Literals
 	{
 		[[nodiscard]] inline constexpr auto operator""_Ko(unsigned long long int size) -> std::size_t

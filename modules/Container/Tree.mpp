@@ -69,8 +69,13 @@ namespace std
 	template<class T, class CharT>
 	requires CppUtils::Type::Concept::Specializes<T, CppUtils::Container::Tree::Node> and
 		CppUtils::Type::Concept::Printable<typename T::ValueType>
-	struct formatter<T, CharT>: public std::formatter<std::basic_string<CharT>, CharT>
+	struct formatter<T, CharT>
 	{
+		constexpr auto parse(std::format_parse_context& ctx) -> auto
+		{
+			return std::begin(ctx);
+		}
+
 		template<class FormatContext>
 		inline auto format(const T& node, FormatContext& context) const -> decltype(context.out())
 		{
