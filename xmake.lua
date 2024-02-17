@@ -28,7 +28,7 @@ add_rules(
 
 option("enable_tests")
 
-target("CppUtils")
+target("CppUtils", function()
 	set_kind("moduleonly")
 	
 	if is_plat("windows") and is_config("cxx", "cl") and not is_plat("mingw") then
@@ -46,6 +46,7 @@ target("CppUtils")
 	add_files("modules/**.mpp", { public = true })
 	add_includedirs("include", { public = true })
 	add_headerfiles("include/(**.hpp)")
+end)
 
 if has_config("enable_tests") then
 	includes("tests")

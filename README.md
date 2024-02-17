@@ -1,6 +1,6 @@
 # CppUtils
 
-<p align="center"><img src="resources/logo.svg" alt="Logo CppUtils" width="200" height="200" /></p>
+<p align="center"><img src="resources/logo.svg" alt="Logo CppUtils" width="200" height="200"/></p>
 
 ## *C++ Utilities Library*
 
@@ -13,9 +13,6 @@
 [![CI Windows MSYS2](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows%20MSYS2?label=Windows%20MSYS2&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows-msys2.yml)
 [![CI Linux](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Linux?label=Linux&logo=linux&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-linux.yml)
 [![CI MacOS](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20MacOS?label=MacOS&logo=macos&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-macos.yml)
-
-[![Codacy](https://img.shields.io/codacy/grade/2fab3fcb24a34138a9e77f847da68b28?logo=Codacy&style=for-the-badge)](https://www.codacy.com/manual/MorganCaron/CppUtils)
-[![CD Documentation](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CD%20C++:%20Documentation?label=Documentation&logo=read-the-docs&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/cd-cpp-documentation.yml)
 
 ---
 
