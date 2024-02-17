@@ -6,7 +6,17 @@
 
 ![Github Stars](https://img.shields.io/github/stars/MorganCaron/CppUtils?style=for-the-badge)
 ![Github Forks](https://img.shields.io/github/forks/MorganCaron/CppUtils?style=for-the-badge)
+![Top Language](https://img.shields.io/github/languages/top/MorganCaron/CppUtils?style=for-the-badge)
 [![Discord](https://img.shields.io/discord/268838260153909249?label=Chat&logo=Discord&style=for-the-badge)](https://discord.gg/mxZvun4)
+[![License](https://img.shields.io/github/license/MorganCaron/CppUtils?style=for-the-badge)](https://github.com/MorganCaron/CppUtils/blob/master/LICENSE)
+
+### Project Health
+[![CI Windows](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows?label=Windows&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows.yml)
+[![CI Windows MSYS2](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows%20MSYS2?label=Windows%20MSYS2&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows-msys2.yml)
+[![CI Linux](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Linux?label=Linux&logo=linux&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-linux.yml)
+[![CI MacOS](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20MacOS?label=MacOS&logo=macos&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-macos.yml)
+
+---
 
 ### In this library you can find:
 
@@ -22,13 +32,9 @@
 - [STL polyfills](include/Stl)
 - Many other functions
 
-### Project Health
-[![CI Windows](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows?label=Windows&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows.yml)
-[![CI Windows MSYS2](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows%20MSYS2?label=Windows%20MSYS2&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows-msys2.yml)
-[![CI Linux](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Linux?label=Linux&logo=linux&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-linux.yml)
-[![CI MacOS](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20MacOS?label=MacOS&logo=macos&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-macos.yml)
+The [unit tests](tests) serve as examples of how to use these functions.
 
----
+
 
 ## Getting Started
 
@@ -52,7 +58,3 @@ xmake [r|run]
 ```
 
 ---
-
-## Additional Informations
-![Top Language](https://img.shields.io/github/languages/top/MorganCaron/CppUtils?style=for-the-badge)
-[![License](https://img.shields.io/github/license/MorganCaron/CppUtils?style=for-the-badge)](https://github.com/MorganCaron/CppUtils/blob/master/LICENSE)
