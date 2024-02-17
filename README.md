@@ -8,6 +8,20 @@
 ![Github Forks](https://img.shields.io/github/forks/MorganCaron/CppUtils?style=for-the-badge)
 [![Discord](https://img.shields.io/discord/268838260153909249?label=Chat&logo=Discord&style=for-the-badge)](https://discord.gg/mxZvun4)
 
+### In this library you can find:
+
+- Additional containers ([trees](modules/Container/Tree.mpp), [meshes](modules/Container/MeshNetwork.mpp), [stacks](modules/Container/Stack.mpp))
+- A [file modification listener](modules/FileSystem/FileWatcher.mpp)
+- Tools for creating parsers and compilers (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
+- Parsers and compilers for well-known languages (CSS, INI, HTML, JSON, Markdown, XML) (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
+- A logger [logger](modules/Log/Logger.mpp) with a [file rotation system](modules/Log/LogRotate.mpp)
+- [Benchmark tools](modules/Log/ChronoLogger.mpp)
+- [Hashing functions](modules/String/Hash.mpp)
+- [Color terminal writing](modules/Terminal/TextModifier.mpp)
+- [Tools for writing unit tests](modules/UnitTest/UnitTest.mpp)
+- [STL polyfills](include/Stl)
+- Many other functions
+
 ### Project Health
 [![CI Windows](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows?label=Windows&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows.yml)
 [![CI Windows MSYS2](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows%20MSYS2?label=Windows%20MSYS2&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows-msys2.yml)
@@ -17,6 +31,8 @@
 ---
 
 ## Getting Started
+
+A C++23 compliant compiler with std module support and XMake is needed to build CppUtils
 
 This library is used in my C++ projects, but you can also use it in your projects.
 Just follow the installation steps and consult the documentation for each feature you need.
