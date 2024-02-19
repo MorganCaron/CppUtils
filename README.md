@@ -23,7 +23,7 @@
 - Additional containers ([trees](modules/Container/Tree.mpp), [meshes](modules/Container/MeshNetwork.mpp), [stacks](modules/Container/Stack.mpp))
 - A [file modification listener](modules/FileSystem/FileWatcher.mpp)
 - Tools for creating parsers and compilers (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
-- Parsers and compilers for well-known languages (CSS, INI, HTML, JSON, Markdown, XML) (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
+- Parsers and compilers for popular languages (CSS, INI, HTML, JSON, Markdown, XML) (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
 - A logger [logger](modules/Log/Logger.mpp) with a [file rotation system](modules/Log/LogRotate.mpp)
 - [Benchmark tools](modules/Log/ChronoLogger.mpp)
 - [Hashing functions](modules/String/Hash.mpp)

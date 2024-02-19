@@ -3,71 +3,75 @@ export module CppUtils.Container.Tree;
 import std;
 import CppUtils.Type;
 
-export namespace CppUtils::Container::Tree
+export namespace CppUtils::Container
 {
 	template<class T>
-	struct Node final
+	struct Tree final
 	{
 		using ValueType = T;
 
-		ValueType value;
-		std::vector<Node<ValueType>> nodes = {};
-
-		[[nodiscard]] inline constexpr auto find(const ValueType& key) const noexcept -> auto
+		struct Node final
 		{
-			return std::ranges::find_if(nodes, [&key](const auto& node) -> bool {
-				return node.value == key;
-			});
-		}
+			using ValueType = T;
 
-		[[nodiscard]] inline constexpr auto find(const ValueType& key) noexcept -> auto
-		{
-			return std::ranges::find_if(nodes, [&key](const auto& node) -> bool {
-				return node.value == key;
-			});
-		}
+			ValueType value;
+			std::vector<Node> nodes = {};
 
-		[[nodiscard]] inline constexpr auto exists(const ValueType& key) const noexcept -> bool
-		{
-			return find(key) != std::cend(nodes);
-		}
+			[[nodiscard]] inline auto operator==(const Node& rhs) -> bool
+			{
+				return value == rhs.value and nodes == rhs.nodes;
+			}
 
-		[[nodiscard]] inline constexpr auto operator[](const ValueType& key) -> Node<ValueType>&
-		{
-			for (auto& node : nodes)
-				if (key == node.value)
-					return node;
-			return nodes.emplace_back(Node<T>{key});
-		}
+			[[nodiscard]] inline constexpr auto find(const ValueType& key) const noexcept -> auto
+			{
+				return std::ranges::find_if(nodes, [&key](const auto& node) -> bool {
+					return node.value == key;
+				});
+			}
 
-		[[nodiscard]] inline constexpr auto operator[](const ValueType& key) const -> const Node<ValueType>&
-		{
-			const auto value = find(key);
-			if (value == std::cend(nodes))
-				throw std::out_of_range{"The Node does not contain the requested child."};
-			return *value;
-		}
+			[[nodiscard]] inline constexpr auto find(const ValueType& key) noexcept -> auto
+			{
+				return std::ranges::find_if(nodes, [&key](const auto& node) -> bool {
+					return node.value == key;
+				});
+			}
 
-		[[nodiscard]] inline constexpr auto getNodesWithValue(const ValueType& filterValue) const
-		{
-			return nodes | std::views::filter([&filterValue](const auto& node) { return node.value == filterValue; });
-		}
+			[[nodiscard]] inline constexpr auto exists(const ValueType& key) const noexcept -> bool
+			{
+				return find(key) != std::cend(nodes);
+			}
+
+			[[nodiscard]] inline constexpr auto operator[](const ValueType& key) -> Node&
+			{
+				for (auto& node : nodes)
+					if (key == node.value)
+						return node;
+				return nodes.emplace_back(Node{key});
+			}
+
+			[[nodiscard]] inline constexpr auto operator[](const ValueType& key) const -> const Node&
+			{
+				const auto value = find(key);
+				if (value == std::cend(nodes))
+					throw std::out_of_range{"The Node does not contain the requested child."};
+				return *value;
+			}
+
+			[[nodiscard]] inline constexpr auto getNodesWithValue(const ValueType& filterValue) const
+			{
+				return nodes | std::views::filter([&filterValue](const auto& node) { return node.value == filterValue; });
+			}
+		};
 	};
 
 	template<class T>
-	Node(T value, std::vector<Node<T>> nodes = {}) -> Node<T>;
-
-	template<class T>
-	[[nodiscard]] inline auto operator==(const Node<T>& lhs, const Node<T>& rhs) -> bool
-	{
-		return lhs.value == rhs.value and lhs.nodes == rhs.nodes;
-	}
+	using TreeNode = Tree<T>::Node;
 }
 
 namespace std
 {
 	template<class T, class CharT>
-	requires CppUtils::Type::Concept::Specializes<T, CppUtils::Container::Tree::Node> and
+	requires CppUtils::Type::Concept::Specializes<T, CppUtils::Container::TreeNode> and
 		CppUtils::Type::Concept::Printable<typename T::ValueType>
 	struct formatter<T, CharT>
 	{
