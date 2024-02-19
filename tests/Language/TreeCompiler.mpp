@@ -8,61 +8,60 @@ export namespace CppUtils::UnitTest::Language::TreeCompiler
 	inline auto _ = TestSuite{"Language/TreeCompiler", []([[maybe_unused]] auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
-		namespace VM = CppUtils::Language::VirtualMachine;
 		namespace Compiler = CppUtils::Language::TreeCompiler;
-		using TreeNode = CppUtils::Language::Tree::Node;
+		using TreeNode = CppUtils::Container::TokenTree::Node;
 
 		suite.addTest("Empty source", [&] {
 			constexpr auto source = u""sv;
-			auto ast = Compiler::compile(source);
-			Logger::print("Tree:\n{}\n", ast);
-			suite.expectEqual(ast.root, TreeNode{});
+			auto tree = Compiler::compile(source);
+			Logger::print("Tree:\n{}\n", tree);
+			suite.expectEqual(tree.root, TreeNode{});
 		});
 
 		suite.addTest("Single node", [&] {
 			constexpr auto source = u"node"sv;
-			auto ast = Compiler::compile(source);
-			Logger::print("Tree:\n{}\n", ast);
-			suite.expectEqual(ast.root, TreeNode{});
+			auto tree = Compiler::compile(source);
+			Logger::print("Tree:\n{}\n", tree);
+			suite.expectEqual(tree.root, TreeNode{});
 		});
 
 		suite.addTest("Whitespaces", [&] {
 			constexpr auto source = uR"(
 				node
 				)"sv;
-			auto ast = Compiler::compile(source);
-			Logger::print("Tree:\n{}\n", ast);
-			suite.expectEqual(ast.root, TreeNode{});
+			auto tree = Compiler::compile(source);
+			Logger::print("Tree:\n{}\n", tree);
+			suite.expectEqual(tree.root, TreeNode{});
 		});
 
 		suite.addTest("Multiple nodes", [&] {
 			constexpr auto source = u"foo bar"sv;
-			auto ast = Compiler::compile(source);
-			Logger::print("Tree:\n{}\n", ast);
-			suite.expectEqual(ast.root, TreeNode{});
+			auto tree = Compiler::compile(source);
+			Logger::print("Tree:\n{}\n", tree);
+			suite.expectEqual(tree.root, TreeNode{});
 		});
 
 		suite.addTest("Escaped chars", [&] {
 			constexpr auto source = uR"(
 				Hello\ World!
 			)"sv;
-			auto ast = Compiler::compile(source);
-			Logger::print("Tree:\n{}\n", ast);
-			suite.expectEqual(ast.root, TreeNode{});
+			auto tree = Compiler::compile(source);
+			Logger::print("Tree:\n{}\n", tree);
+			suite.expectEqual(tree.root, TreeNode{});
 		});
 
 		suite.addTest("Empty node", [&] {
 			constexpr auto source = u"node{}"sv;
-			auto ast = Compiler::compile(source);
-			Logger::print("Tree:\n{}\n", ast);
-			suite.expectEqual(ast.root, TreeNode{});
+			auto tree = Compiler::compile(source);
+			Logger::print("Tree:\n{}\n", tree);
+			suite.expectEqual(tree.root, TreeNode{});
 		});
 
 		suite.addTest("Node with content", [&] {
 			constexpr auto source = u"parent{child0 child1}"sv;
-			auto ast = Compiler::compile(source);
-			Logger::print("Tree:\n{}\n", ast);
-			suite.expectEqual(ast.root, TreeNode{});
+			auto tree = Compiler::compile(source);
+			Logger::print("Tree:\n{}\n", tree);
+			suite.expectEqual(tree.root, TreeNode{});
 		});
 
 		suite.addTest("Nested nodes", [&] {
@@ -71,9 +70,9 @@ export namespace CppUtils::UnitTest::Language::TreeCompiler
 					print{ string{Hello\ World\ \0} }
 				}
 			)"sv;
-			auto ast = Compiler::compile(source);
-			Logger::print("Tree:\n{}\n", ast);
-			suite.expectEqual(ast.root, TreeNode{});
+			auto tree = Compiler::compile(source);
+			Logger::print("Tree:\n{}\n", tree);
+			suite.expectEqual(tree.root, TreeNode{});
 		});
 	}};
 }

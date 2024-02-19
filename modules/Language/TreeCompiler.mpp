@@ -1,30 +1,30 @@
-export module CppUtils.Language.ASTCompiler;
+export module CppUtils.Language.TreeCompiler;
 
 import std;
 import CppUtils.Memory;
-import CppUtils.Language.AST;
+import CppUtils.Container.Tree;
 import CppUtils.Language.VirtualMachine;
 import CppUtils.Language.HighLevelLabelsCompiler;
 
-export namespace CppUtils::Language::ASTCompiler
+export namespace CppUtils::Language::TreeCompiler
 {
 	template<class CharT>
-	inline auto compile(const std::basic_string_view<CharT> source) -> AST
+	inline auto compile(const std::basic_string_view<CharT> source) -> Container::TokenTree
 	{
 		using namespace std::literals;
-		constexpr auto astCompiler = uR"(
+		constexpr auto treeCompiler = uR"(
 				main {
-					(1@ # call buildAST
+					(1@ # call buildTree
 					X
 				}
 
-				buildAST {
+				buildTree {
 					N
 				}
 				)"sv;
-		auto compiler = HighLevelLabelsCompiler::compile(astCompiler);
+		auto compiler = HighLevelLabelsCompiler::compile(treeCompiler);
 		return Memory::moveRawPointer(VirtualMachine::execute<
-			AST*,
+			Container::TokenTree*,
 			std::size_t>(
 			compiler,
 			&source));

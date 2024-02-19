@@ -7,5 +7,4 @@ export import CppUtils.Container.Size2d;
 export import CppUtils.Container.Size3d;
 export import CppUtils.Container.Stack;
 export import CppUtils.Container.Tree;
-export import CppUtils.Container.VariantTree;
 export import CppUtils.Container.Vector;
