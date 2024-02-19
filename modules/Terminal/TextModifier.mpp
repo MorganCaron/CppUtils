@@ -1,10 +1,6 @@
 module;
 
-#include <CppUtils/System/OS.hpp>
-
-#if defined(OS_WINDOWS)
-#	include <CppUtils/System/Windows.hpp>
-#endif
+#include <CppUtils/System/Windows.hpp>
 
 export module CppUtils.Terminal.TextModifier;
 

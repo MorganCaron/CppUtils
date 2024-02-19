@@ -73,7 +73,7 @@ export namespace CppUtils::Container
 		Node root;
 		String::HashTable hashTable;
 
-		inline explicit TokenTree(std::string_view rootName = "root", String::HashTable c_hashTable = {})
+		inline explicit TokenTree(std::string rootName = "root", String::HashTable c_hashTable = {})
 		{
 			auto token = String::hash(rootName);
 			root = Node{token};
@@ -119,6 +119,11 @@ export namespace CppUtils::Container
 			}
 		};
 	};
+
+	[[nodiscard]] inline auto operator==(const Tree::Node<String::Token>& lhs, const TokenTree::NodeView& rhs) -> bool
+	{
+		return lhs == rhs.get();
+	}
 
 	using AST = TokenTree;
 	using ASTNode = TokenTree::Node;

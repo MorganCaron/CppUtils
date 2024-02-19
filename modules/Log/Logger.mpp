@@ -12,7 +12,6 @@ import CppUtils.Terminal.Utility;
 
 // Todo: log le datetime
 // Todo: log le stacktrace ( https://en.cppreference.com/w/cpp/utility/stacktrace_entry )
-// Todo: rotation de logs
 
 export namespace CppUtils
 {

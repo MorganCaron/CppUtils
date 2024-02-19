@@ -186,8 +186,8 @@ namespace CppUtils::UnitTest
 					sourceLocation.file_name(),
 					sourceLocation.line(),
 					sourceLocation.column(),
-					(std::formattable<decltype(lhs), char>) ? String::formatValue(lhs) : "<non printable>",
-					(std::formattable<decltype(rhs), char>) ? String::formatValue(rhs) : "<non printable>")};
+					String::formatValue(lhs),
+					String::formatValue(rhs))};
 		}
 
 		std::vector<Test> tests;
