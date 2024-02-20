@@ -13,20 +13,58 @@ export namespace CppUtils::Language::TreeCompiler
 	{
 		using namespace std::literals;
 		constexpr auto treeCompiler = uR"(
-				main {
-					(1@ # call buildTree
-					X
+				main(): Container::TokenTree* {
+					(:N # TokenTree
+						(0 # Source position
+							(2@ # Call buildNode
+						)
+					X # return TokenTree
 				}
 
-				buildTree {
-					N
+				buildNode(std::size_t sourcePosition): void {
+					# (4@ # Call skipSpaces
+				}
+
+				isEndOfFile: bool {
+					
+				}
+
+				isSpace: bool {
+					
+				}
+
+				incrementPosition(std::size_t sourcePosition): void {
+					I
+					(0, 1, 0+ # Increment position
+					I
+				}
+
+				skipSpaces(std::size_t sourcePosition): void {
+					(1: (1; (2;) # Source size
+					(0, 1, 6=! (0, 6, 4? {
+						(3: # char
+							(1; # Source
+								(1: (3, 6, 0, 0C # Source position
+									(3; # Get char at position
+								)
+							)
+						)
+						(2@ # Call incrementPosition
+					}
 				}
 				)"sv;
 		auto compiler = HighLevelLabelsCompiler::compile(treeCompiler);
 		return Memory::moveRawPointer(VirtualMachine::execute<
 			Container::TokenTree*,
-			std::size_t>(
+			std::size_t,
+			bool,
+			CharT,
+			const decltype(source)*,
+			std::basic_string<CharT>*>(
 			compiler,
-			&source));
+			&source,
+			&decltype(source)::size,
+			&decltype(source)::at,
+			&std::basic_string<CharT>::push_back));
 	}
 }

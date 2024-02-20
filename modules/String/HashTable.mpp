@@ -9,6 +9,11 @@ export namespace CppUtils::String
 {
 	using HashTable = std::unordered_map<String::Token, std::string>;
 
+	[[nodiscard]] inline auto makeHashTable(auto... sv) -> HashTable
+	{
+		return HashTable{std::make_pair(String::hash(sv), sv)...};
+	}
+
 	template<class CharT>
 	[[nodiscard]] inline auto getNameOrValue(Token token, const HashTable& tokenNames) -> auto
 	{

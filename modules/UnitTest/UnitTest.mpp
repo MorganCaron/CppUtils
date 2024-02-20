@@ -182,7 +182,7 @@ namespace CppUtils::UnitTest
 		inline auto expectEqual(auto lhs, auto rhs, std::source_location sourceLocation = std::source_location::current()) -> void
 		{
 			if (lhs != rhs) [[unlikely]]
-				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectEqual(lhs, rhs)\nwith lhs = {}\nand  rhs = {}",
+				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectEqual(lhs, rhs)\nwith lhs:\n{}\nand rhs:\n{}",
 					sourceLocation.file_name(),
 					sourceLocation.line(),
 					sourceLocation.column(),

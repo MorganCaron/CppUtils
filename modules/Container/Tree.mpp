@@ -70,16 +70,8 @@ export namespace CppUtils::Container
 	struct TokenTree
 	{
 		using Node = Tree::Node<String::Token>;
-		Node root;
-		String::HashTable hashTable;
-
-		inline explicit TokenTree(std::string rootName = "root", String::HashTable c_hashTable = {})
-		{
-			auto token = String::hash(rootName);
-			root = Node{token};
-			hashTable = std::move(c_hashTable);
-			hashTable[token] = std::move(rootName);
-		}
+		Node root = Node{String::hash("root")};
+		String::HashTable hashTable = String::makeHashTable("root");
 
 		struct NodeView final
 		{
@@ -120,9 +112,29 @@ export namespace CppUtils::Container
 		};
 	};
 
-	[[nodiscard]] inline auto operator==(const Tree::Node<String::Token>& lhs, const TokenTree::NodeView& rhs) -> bool
+	[[nodiscard]] inline auto operator==(const TokenTree::NodeView& lhs, const TokenTree::NodeView& rhs) -> bool
 	{
-		return lhs == rhs.get();
+		return lhs.get() == rhs.get();
+	}
+
+	[[nodiscard]] inline auto operator==(const TokenTree::NodeView& lhs, const TokenTree::Node& rhs) -> bool
+	{
+		return lhs.get() == rhs;
+	}
+
+	[[nodiscard]] inline auto operator==(const TokenTree& lhs, const TokenTree::NodeView& rhs) -> bool
+	{
+		return TokenTree::NodeView{lhs} == rhs;
+	}
+
+	[[nodiscard]] inline auto operator==(const TokenTree& lhs, const TokenTree::Node& rhs) -> bool
+	{
+		return TokenTree::NodeView{lhs} == rhs;
+	}
+
+	[[nodiscard]] inline auto operator==(const TokenTree& lhs, const TokenTree& rhs) -> bool
+	{
+		return TokenTree::NodeView{lhs} == TokenTree::NodeView{rhs};
 	}
 
 	using AST = TokenTree;
@@ -147,7 +159,7 @@ namespace std
 		{
 			auto&& out = context.out();
 			formatNode(node, context);
-			return std::format_to(out, "\n");
+			return out;
 		}
 
 	private:
@@ -155,11 +167,11 @@ namespace std
 		inline auto formatNode(const T& node, FormatContext& context, std::string&& prefix = "") const -> void
 		{
 			auto&& out = context.out();
-			std::format_to(out, "{}\n", node.value);
+			std::format_to(out, "{}", node.value);
 			const auto nbNodes = std::size(node.nodes);
 			for (auto i = 0uz; i < nbNodes; ++i)
 			{
-				std::format_to(out, "{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
+				std::format_to(out, "\n{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
 				formatNode(node.nodes.at(i), context, prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
 			}
 		}
@@ -178,7 +190,7 @@ namespace std
 		{
 			auto&& out = context.out();
 			formatNode(nodeView, context);
-			return std::format_to(out, "\n");
+			return out;
 		}
 
 	private:
@@ -187,11 +199,11 @@ namespace std
 		{
 			const auto& [node, tree] = nodeView;
 			auto&& out = context.out();
-			std::format_to(out, "{}\n", nodeView.template getPrintableValue<CharT>());
+			std::format_to(out, "{}", nodeView.template getPrintableValue<CharT>());
 			const auto nbNodes = std::size(node.get().nodes);
 			for (auto i = 0uz; i < nbNodes; ++i)
 			{
-				std::format_to(out, "{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
+				std::format_to(out, "\n{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
 				auto child = CppUtils::Container::TokenTree::NodeView{node.get().nodes.at(i), tree};
 				formatNode(child, context, prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
 			}
