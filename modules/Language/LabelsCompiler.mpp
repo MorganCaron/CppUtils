@@ -1,17 +1,17 @@
-export module CppUtils.Language.LowLevelLabelsCompiler;
+export module CppUtils.Language.LabelsCompiler;
 
 import std;
 import CppUtils.Type;
 import CppUtils.String;
 import CppUtils.Language.VirtualMachine;
 
-export namespace CppUtils::Language::LowLevelLabelsCompiler
+export namespace CppUtils::Language::LabelsCompiler
 {
 	template<class CharT>
 	inline constexpr auto compile(const std::basic_string_view<CharT> source) -> std::basic_string<CharT>
 	{
 		using namespace std::literals;
-		constexpr auto lowLevelLabelsCompiler = uR"(
+		constexpr auto labelsCompiler = uR"(
 				(:N output
 					(3:\(, 4;) push back
 					(7; max length
@@ -30,9 +30,18 @@ export namespace CppUtils::Language::LowLevelLabelsCompiler
 					)
 					(1: (1;, 2;) source length
 						(0 source position
-							P (2: (2, 4, 1, 4= (0, 449, 0? while source position not equal source length
+							P (2: (2, 4, 1, 4<! (0, 797, 0? while source position inferior source length
 								(: (0, 0, 0, 2C output
 									(3: (1; (1: (2, 0, 0, 2C, 3;)) get char at source position
+										(2: (1, 6, 3:\\, 0=! (0, 305, 0? if char is backslash
+											_\\, 4; push back
+											(2, 4, 1, 0+ (0, 2, 2, 0C) increment output position
+											(: (0, 0, 0, 2C output
+												(3: (1; (1: (2, 0, 0, 2C, 3;)) get char at source position
+													(4; push back
+												)
+											)
+											(209, 0J goto end if
 										(2: (1, 6, 3:\¤, 0=!, 0, 123, 0? if char is ¤
 											_\,, 4; push back
 											_\5, 4; push back
@@ -68,10 +77,13 @@ export namespace CppUtils::Language::LowLevelLabelsCompiler
 					)
 					(1: (: (0, 0, 0, 2C, 5;) output length
 						(0 output position
-							P (2: (2, 4, 1, 4=, 0, 984, 0? while output position not equal output length
+							P (2: (2, 4, 1, 4<! (0, 1142, 0? while output position inferior output length
 								(: (0, 0, 0, 2C output
 									(3: (: (0, 0, 0, 2C (1: (2, 0, 0, 2C, 6;)) get char at output position
-										(2: (1, 6, 3:\§, 0=! (0, 677, 0? if char is §
+										(2: (1, 6, 3:\\, 0=! (0, 117, 0? if char is backslash
+											(2, 4, 1, 0+ (0, 2, 2, 0C) increment output position
+											(730, 0J goto end if
+										(2: (1, 6, 3:\§, 0=! (0, 675, 0? if char is §
 										_\(, 4; push back
 										(1: (2, 0, 0, 2C output position
 											P (2: (6, 4, 0, 0= (0, 242, 0? while value not equal zero
@@ -130,7 +142,7 @@ export namespace CppUtils::Language::LowLevelLabelsCompiler
 			bool,
 			CharT,
 			const decltype(source)*>(
-			lowLevelLabelsCompiler,
+			labelsCompiler,
 			&source,
 			&decltype(source)::size,
 			&decltype(source)::at,

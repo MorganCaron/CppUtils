@@ -1,6 +1,6 @@
 export module CppUtils.Language;
 
 export import CppUtils.Language.TreeCompiler;
-export import CppUtils.Language.LowLevelLabelsCompiler;
-export import CppUtils.Language.HighLevelLabelsCompiler;
+export import CppUtils.Language.LabelsCompiler;
+export import CppUtils.Language.CallStackCompiler;
 export import CppUtils.Language.VirtualMachine;

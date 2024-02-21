@@ -1,18 +1,18 @@
-export module CppUtils.UnitTests.Language.LowLevelLabelsCompiler;
+export module CppUtils.UnitTests.Language.CallStackCompiler;
 
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
+export namespace CppUtils::UnitTest::Language::CallStackCompiler
 {
-	inline auto _ = TestSuite{"Language/LowLevelLabelsCompiler", []([[maybe_unused]] auto& suite) {
+	inline auto _ = TestSuite{"Language/CallStackCompiler", []([[maybe_unused]] auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 		namespace VM = CppUtils::Language::VirtualMachine;
-		namespace Compiler = CppUtils::Language::LowLevelLabelsCompiler;
+		namespace Compiler = CppUtils::Language::CallStackCompiler;
 
 		suite.addTest("empty source", [&] {
-			constexpr auto source = u"("sv;
+			constexpr auto source = u"§{X}"sv;
 			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
@@ -20,49 +20,13 @@ export namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 			suite.expectEqual(executionResult, 0uz);
 		});
 
-		suite.addTest("code without labels", [&] {
+		suite.addTest("one function", [&] {
 			constexpr auto source = uR"(
-				(0:42
-				)"sv;
-			auto output = Compiler::compile(source);
-			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-
-			auto executionResult = VM::execute<int, std::size_t>(output);
-			suite.expectEqual(executionResult, 42);
-		});
-
-		suite.addTest("one label", [&] {
-			constexpr auto source = uR"(
-				(§(42X
-				)"sv;
-			auto output = Compiler::compile(source);
-			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-
-			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
-
-		suite.addTest("multiple labels", [&] {
-			constexpr auto source = uR"(
-				(§
-				(§
-				(§(42
-				)"sv;
-			auto output = Compiler::compile(source);
-			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
-
-			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
-
-		suite.addTest("one jump", [&] {
-			constexpr auto source = uR"(
-				(0¤ main
-
 				(21X
 
-				§ main
-					(42X
+				main §{
+					42X
+				}
 
 				(22X
 				)"sv;
@@ -73,19 +37,39 @@ export namespace CppUtils::UnitTest::Language::LowLevelLabelsCompiler
 			suite.expectEqual(executionResult, 42uz);
 		});
 
-		suite.addTest("multiple jumps", [&] constexpr {
+		suite.addTest("comment", [&] {
 			constexpr auto source = uR"(
-				(0¤ main
+					main §{
+						4
+						# Comment: (),+-*/%=<>!:;?§¤@\1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ
+						2X
+					}
+				)"sv;
+			auto output = Compiler::compile(source);
+			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
+			auto executionResult = VM::execute<std::size_t>(output);
+			suite.expectEqual(executionResult, 42uz);
+		});
+
+		suite.addTest("call function", [&] constexpr {
+			constexpr auto source = uR"(
 				(21X
 
-				§ main
-					(1¤ function
+				main §{
+					# Call return40 function
+					(: (11@ # <- return 40
+
+					# Add 2
+					(0, 2, 0+
+					X
+				}
 
 				(22X
 
-				§ function
-					(42X
+				return40 §{
+					40
+				}
 
 				(23X
 				)"sv;

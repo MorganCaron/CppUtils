@@ -4,7 +4,7 @@ import std;
 import CppUtils.Type;
 import CppUtils.String;
 import CppUtils.Language.VirtualMachine;
-export import CppUtils.Language.HighLevelLabelsCompiler;
+export import CppUtils.Language.CallStackCompiler;
 
 export namespace CppUtils::Language::CLikeCompiler
 {
@@ -22,7 +22,7 @@ export namespace CppUtils::Language::CLikeCompiler
 					N
 				}
 				)"sv;
-		auto compiler = HighLevelLabelsCompiler::compile(cLikeCompiler);
+		auto compiler = CallStackCompiler::compile(cLikeCompiler);
 		auto output = std::unique_ptr<std::basic_string<CharT>>(VirtualMachine::execute<
 			std::basic_string<CharT>*,
 			std::size_t,

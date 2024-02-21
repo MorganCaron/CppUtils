@@ -4,7 +4,7 @@ import std;
 import CppUtils.Memory;
 import CppUtils.Container.Tree;
 import CppUtils.Language.VirtualMachine;
-import CppUtils.Language.HighLevelLabelsCompiler;
+import CppUtils.Language.CallStackCompiler;
 
 export namespace CppUtils::Language::TreeCompiler
 {
@@ -13,33 +13,75 @@ export namespace CppUtils::Language::TreeCompiler
 	{
 		using namespace std::literals;
 		constexpr auto treeCompiler = uR"(
-				main(): Container::TokenTree* {
+				main(): Container::TokenTree* 10§{
+					(0, 0, 0, 5C # register0 = source position
 					(:N # TokenTree
-						(0 # Source position
-							(2@ # Call buildNode
+						# (15@ # call buildNode
+						X # return TokenTree
+				}
+
+				isEndOfFile(): bool 11§{
+					(2: # bool
+						(1: (0, 5, 0, 0C,, # lhs = position
+						(1: (1; (2;), # rhs = source.size()
+						<! # not inferior
+				}
+
+				getChar(): char 12§{
+					(3: # char
+						(1; # arg0 = source
+							(1: (0, 5, 0, 0C,, # arg1 = position
+								(3; # call string::at()
+							)
 						)
-					X # return TokenTree
 				}
 
-				buildNode(std::size_t sourcePosition): void {
-					# (4@ # Call skipSpaces
+				isSpace(): bool 13§{
+					(1; # source
+						§  { # while ()
+							I
+						}§ # end while
 				}
 
-				isEndOfFile: bool {
-					
+				skipSpaces(): void 16§{
+					§ (2: (13@ { # while isSpace(position)
+						
+					}§ # end while
 				}
 
-				isSpace: bool {
-					
+				buildNode(std::size_t sourcePosition): void 19§{
+					(16@ # call skipSpaces
+					# while not isEndOfFile
+
+					# (2: (13@ # Call isSpace
+
+					IF:
+					{condition} <conditional-jump>
+						{content}
+					<destination>
+
+					ELSE:
+					{condition} <conditional-jump to 1>
+						{content}
+						<jump to 2>
+					<destination 1> ! <conditional-jump>
+						{content}
+					<destination 2>
+
+					WHILE:
+					<destination 1> {condition} <conditional-jump to 2>
+						{content}
+						<jump to 1>
+					<destination2>
 				}
 
-				incrementPosition(std::size_t sourcePosition): void {
+				incrementPosition(std::size_t sourcePosition): void §{
 					I
 					(0, 1, 0+ # Increment position
 					I
 				}
 
-				skipSpaces(std::size_t sourcePosition): void {
+				skipSpaces(std::size_t sourcePosition): void §{
 					(1: (1; (2;) # Source size
 					(0, 1, 6=! (0, 6, 4? {
 						(3: # char
@@ -53,7 +95,7 @@ export namespace CppUtils::Language::TreeCompiler
 					}
 				}
 				)"sv;
-		auto compiler = HighLevelLabelsCompiler::compile(treeCompiler);
+		auto compiler = CallStackCompiler::compile(treeCompiler);
 		return Memory::moveRawPointer(VirtualMachine::execute<
 			Container::TokenTree*,
 			std::size_t,
