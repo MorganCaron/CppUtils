@@ -14,7 +14,7 @@ export namespace CppUtils::Language::TreeCompiler
 		using namespace std::literals;
 		constexpr auto treeCompiler = uR"(
 				main(): Container::TokenTree* 10§{
-					(0, 0, 0, 5C # register0 = 0; (source position)
+					(0 (0, 2, 0, 0C # register0 = 0; (source position)
 					(:N # arg0 = new TokenTree();
 						(20@ # buildNode(arg0);
 					X # return arg0;
@@ -25,44 +25,44 @@ export namespace CppUtils::Language::TreeCompiler
 				}
 
 				getSourcePosition(): size 12§{
-					(0, 5, 0, 0C # return position;
+					(0, 0, 0, 2C # return position;
 				}
 
 				incrementSourcePosition(): void 13§{
-					(0, 5, 1, 0+ (0, 0, 5C # position += 1;
+					(0, 5, 1, 0+ (0, 2, 0, 0C) # position += 1;
 				}
 
 				isEndOfFile(): bool 14§{
-					(1:(12@, (1:(11@, <! # return getSourcePosition() >= getSourceSize();
+					((12@, ((11@, <! # return getSourcePosition() >= getSourceSize();
 				}
 
 				getChar(): char 15§{
-					(1; (1:(12@ (3;)) # return source.at(getSourcePosition());
+					(1; ((12@ (3;)) # return source.at(getSourcePosition());
 				}
 
 				isSpace(): bool 16§{
-					(3:(15@ # char = getChar();
-						(0, 6, \ , 0=! # if (char == ' ')
-							(0, 8, 0? )1} # return true;
-						(0, 6, 9, 0=! # if (char == '\t')
-							(0, 8, 0? )1} # return true;
-						(0, 6, 10, 0=! # if (char == '\n')
-							(0, 8, 0? )1} # return true;
-					)0 # return false;
+					(3:(15@ S # char = getChar();
+						(1, 6, 3:\ , 0=! # if (char == ' ')
+							(0, 10, 0? 1S)} # return true;
+						(2:(1, 6, 3:9, 0=! # if (char == '\t')
+							(0, 10, 0? 1S)} # return true;
+						(2:(1, 6, 3:10, 0=! # if (char == '\n')
+							(0, 10, 0? 1S)} # return true;
+					)(2:0 # return false;
 				}
 
 				skipSpaces(): void 17§{
-					§ (2:(14@ (0, 19, 5? (2:(16@! (0, 19, 5? # while (not isEndOfFile() and isSpace()) {
+					§ (2:(14@, 0, 19, 5? (2:(16@!, 0, 19, 5? # while (not isEndOfFile() and isSpace()) {
 						(13@ # incrementSourcePosition();
 					(18¤§ # }
 				}
 
 				buildNode(TokenTree* node): void 20§{
 					(17@ # skipSpaces();
-					# while (not isEndOfFile()) {
-						# parse
+					§ (2:(14@, 0, 22, 5? # while (not isEndOfFile()) {
+						(13@ # incrementSourcePosition();
 						(17@ # skipSpaces();
-					# }
+					(21¤§ # }
 				}
 				)"sv;
 		auto compiler = CallStackCompiler::compile(treeCompiler);
@@ -76,7 +76,6 @@ export namespace CppUtils::Language::TreeCompiler
 			compiler,
 			&source,
 			&decltype(source)::size,
-			&decltype(source)::at,
-			&std::basic_string<CharT>::push_back));
+			&decltype(source)::at));
 	}
 }
