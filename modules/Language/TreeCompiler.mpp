@@ -16,7 +16,7 @@ export namespace CppUtils::Language::TreeCompiler
 				main(): Container::TokenTree* 10§{
 					(0 (0, 2, 0, 0C # register0 = 0; (source position)
 					(:N # arg0 = new TokenTree();
-						(20@ # buildNode(arg0);
+						(21@ # buildNode(arg0);
 					X # return arg0;
 				}
 
@@ -57,12 +57,16 @@ export namespace CppUtils::Language::TreeCompiler
 					(18¤§ # }
 				}
 
-				buildNode(TokenTree* node): void 20§{
+				parseKeyword(): void 20§{
+				}
+
+				buildNode(TokenTree* node): void 21§{
 					(17@ # skipSpaces();
-					§ (2:(14@, 0, 22, 5? # while (not isEndOfFile()) {
+					§ (2:(14@, 0, 23, 5? # while (not isEndOfFile()) {
+						(20@ # parseKeyword();
 						(13@ # incrementSourcePosition();
 						(17@ # skipSpaces();
-					(21¤§ # }
+					(22¤§ # }
 				}
 				)"sv;
 		auto compiler = CallStackCompiler::compile(treeCompiler);

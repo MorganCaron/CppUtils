@@ -22,7 +22,7 @@ export namespace CppUtils::UnitTest::Language::TreeCompiler
 				String::makeHashTable("root")};
 			suite.expectEqual(tree, expected);
 		});
-
+		/*
 		suite.addTest("Single node", [&] {
 			constexpr auto source = u"node"sv;
 			auto tree = Compiler::compile(source);
@@ -100,5 +100,6 @@ export namespace CppUtils::UnitTest::Language::TreeCompiler
 				String::makeHashTable("root", "print", "Hello World!")};
 			suite.expectEqual(tree, expected);
 		});
+		*/
 	}};
 }

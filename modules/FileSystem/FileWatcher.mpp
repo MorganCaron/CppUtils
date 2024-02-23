@@ -1,3 +1,11 @@
+module;
+
+#include <CppUtils/System/OS.hpp>
+
+#if defined(OS_LINUX)
+#	include <sys/inotify.h>
+#endif
+
 export module CppUtils.FileSystem.FileWatcher;
 
 import std;
@@ -6,6 +14,11 @@ import CppUtils.FileSystem.File;
 import CppUtils.Thread;
 import CppUtils.Type;
 
+/* Todo:
+Windows: FindFirstChangeNotification -> https://learn.microsoft.com/fr-fr/windows/win32/api/fileapi/nf-fileapi-findfirstchangenotificationa?redirectedfrom=MSDN
+MacOS: kqueue -> https://man.freebsd.org/cgi/man.cgi?kqueue
+Linux: inotify -> https://man7.org/linux/man-pages/man7/inotify.7.html
+*/
 export namespace CppUtils::FileSystem
 {
 	enum FileStatus : std::uint8_t
