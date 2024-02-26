@@ -1,0 +1,19 @@
+export module CppUtils.UnitTests.Container.Pair;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Container::Pair
+{
+	inline auto _ = TestSuite{"Container/Pair",
+		[](auto& suite) {
+		using namespace std::literals;
+
+		suite.addTest("Swap pair", [&] {
+			auto pair = std::make_pair<int, const std::string>(42, "Hello World!");
+			auto newPair = CppUtils::Container::swapPair(pair);
+			suite.expectEqual(newPair.first, "Hello World!"sv);
+			suite.expectEqual(newPair.second, 42);
+		});
+	}};
+}
