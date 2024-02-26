@@ -1,0 +1,27 @@
+export module CppUtils.UnitTests.Container.BidirectionalMap;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Container::BidirectionalMap
+{
+	inline auto _ = TestSuite{"Container/BidirectionalMap",
+		[](auto& suite) {
+		using namespace std::literals;
+
+		suite.addTest("Empty Map", [&] {
+			auto map = CppUtils::Container::BidirectionalMap<int, int>{};
+			suite.expect(std::empty(map));
+			suite.expectEqual(std::size(map), 0uz);
+		});
+
+		suite.addTest("One value", [&] {
+			auto map = CppUtils::Container::BidirectionalMap<int, std::string>{};
+			map.insert({42, "Hello World!"s});
+			suite.expect(not std::empty(map));
+			suite.expectEqual(std::size(map), 1uz);
+			suite.expectEqual(map.left[42], "Hello World!"sv);
+			suite.expectEqual(map.right["Hello World!"s], 42);
+		});
+	}};
+}

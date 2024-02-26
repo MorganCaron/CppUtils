@@ -1,0 +1,75 @@
+export module CppUtils.Container.BidirectionalMap;
+
+import std;
+import CppUtils.Container.Pair;
+
+export namespace CppUtils::Container
+{
+	template<class Lhs, class Rhs>
+	struct BidirectionalMap final
+	{
+		using Map = std::unordered_map<Lhs, const Rhs>;
+		using InverseMap = std::unordered_map<Rhs, const Lhs>;
+
+		BidirectionalMap() = default;
+		explicit BidirectionalMap(std::initializer_list<typename Map::value_type> values):
+			left{values}
+		{
+			for (const auto& [lhsKey, lhsValue] : left)
+				right[lhsValue] = lhsKey;
+		}
+
+		[[nodiscard]] constexpr inline auto begin() noexcept -> Map::iterator
+		{
+			return std::begin(left);
+		}
+		[[nodiscard]] constexpr inline auto cbegin() const noexcept -> Map::const_iterator
+		{
+			return std::cbegin(left);
+		}
+		[[nodiscard]] constexpr inline auto end() noexcept -> Map::iterator
+		{
+			return std::end(left);
+		}
+		[[nodiscard]] constexpr inline auto cend() const noexcept -> Map::const_iterator
+		{
+			return std::cend(left);
+		}
+
+		[[nodiscard]] constexpr inline auto empty() const noexcept -> bool
+		{
+			return std::empty(left);
+		}
+
+		[[nodiscard]] constexpr inline auto size() const noexcept -> std::size_t
+		{
+			return std::size(left);
+		}
+
+		inline auto clear() noexcept -> void
+		{
+			left.clear();
+			right.clear();
+		}
+
+		inline auto insert(Map::value_type&& value) -> void
+		{
+			right.insert(swapPair(value));
+			left.insert(value);
+		}
+
+		inline auto eraseLeft(Lhs lhsKey) noexcept -> void
+		{
+			right.erase(right[lhsKey]);
+			left.erase(lhsKey);
+		}
+		inline auto eraseRight(Rhs rhsKey) noexcept -> void
+		{
+			left.erase(left[rhsKey]);
+			right.erase(rhsKey);
+		}
+
+		Map left;
+		InverseMap right;
+	};
+}
