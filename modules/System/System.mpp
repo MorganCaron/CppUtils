@@ -42,7 +42,7 @@ export namespace CppUtils::System
 		using namespace std::literals;
 		auto fileDescriptor = memfd_create(name.data(), flags);
 		if (fileDescriptor == -1)
-			throw std::runtime_error{"Failed to create an anonymous file:\n"s + std::strerror(errno)};
+			throw std::runtime_error{std::format("Failed to create an anonymous file:\n{}", std::strerror(errno))};
 		return FileDescriptor{fileDescriptor};
 	}
 

@@ -60,12 +60,12 @@ export namespace CppUtils::Container
 
 		inline auto eraseLeft(Lhs lhsKey) noexcept -> void
 		{
-			right.erase(right[lhsKey]);
+			right.erase(left[lhsKey]);
 			left.erase(lhsKey);
 		}
 		inline auto eraseRight(Rhs rhsKey) noexcept -> void
 		{
-			left.erase(left[rhsKey]);
+			left.erase(right[rhsKey]);
 			right.erase(rhsKey);
 		}
 

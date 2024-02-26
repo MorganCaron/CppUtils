@@ -23,5 +23,12 @@ export namespace CppUtils::UnitTest::Container::BidirectionalMap
 			suite.expectEqual(map.left[42], "Hello World!"sv);
 			suite.expectEqual(map.right["Hello World!"s], 42);
 		});
+
+		suite.addTest("Erase value", [&] {
+			auto map = CppUtils::Container::BidirectionalMap<int, std::string>{};
+			map.insert({42, "Hello World!"s});
+			map.eraseLeft(42);
+			suite.expect(std::empty(map));
+		});
 	}};
 }
