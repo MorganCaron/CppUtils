@@ -11,16 +11,16 @@
 [![License](https://img.shields.io/github/license/MorganCaron/CppUtils?style=for-the-badge)](https://github.com/MorganCaron/CppUtils/blob/master/LICENSE)
 
 ### Project Health
-[![CI Windows](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows?label=Windows&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows.yml)
-[![CI Windows MSYS2](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Windows%20MSYS2?label=Windows%20MSYS2&logo=windows&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-windows-msys2.yml)
-[![CI Linux](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20Linux?label=Linux&logo=linux&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-linux.yml)
-[![CI MacOS](https://img.shields.io/github/workflow/status/MorganCaron/CppUtils/CI%20C++:%20MacOS?label=MacOS&logo=macos&logoColor=white&style=for-the-badge)](https://github.com/MorganCaron/CppUtils/actions/workflows/ci-cpp-macos.yml)
+![CI Windows](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-windows.yml?style=for-the-badge&logo=windows&logoColor=white&label=Windows)
+![CI Windows MSYS2](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-windows-msys2.yml?style=for-the-badge&logo=windows&logoColor=white&label=Windows%20MSYS2)
+![CI Linux](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-linux.yml?style=for-the-badge&logo=linux&logoColor=white&label=Linux)
+![CI MacOS](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-macos.yml?style=for-the-badge&logo=macos&logoColor=white&label=MacOS)
 
 ---
 
 ### In this library you can find:
 
-- Additional containers ([trees](modules/Container/Tree.mpp), [meshes](modules/Container/MeshNetwork.mpp), [stacks](modules/Container/Stack.mpp))
+- Additional containers ([bidirectional map](modules/Container/BidirectionalMap.mpp), [trees](modules/Container/Tree.mpp), [meshes](modules/Container/MeshNetwork.mpp), [stacks](modules/Container/Stack.mpp))
 - A [file modification listener](modules/FileSystem/FileWatcher.mpp)
 - Tools for creating parsers and compilers (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
 - Parsers and compilers for popular languages (CSS, INI, HTML, JSON, Markdown, XML) (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
