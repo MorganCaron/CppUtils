@@ -1,0 +1,79 @@
+module;
+
+#include <CppUtils/System/OS.hpp>
+
+#if defined(OS_LINUX)
+#	include <cerrno>
+#	include <unistd.h>
+#endif
+
+export module CppUtils.System.FileDescriptor;
+
+import std;
+
+export namespace CppUtils::System
+{
+#if defined(OS_LINUX)
+	class FileDescriptor final
+	{
+	public:
+		inline FileDescriptor() = default;
+
+		explicit inline FileDescriptor(int fileDescriptor):
+			m_fileDescriptor{fileDescriptor}
+		{
+			if (fileDescriptor == -1)
+				throw std::runtime_error{std::format("Failed to get file descriptor: {}", std::strerror(errno))};
+		}
+		FileDescriptor(const FileDescriptor&) = default;
+		FileDescriptor(FileDescriptor&& other) noexcept:
+			m_fileDescriptor{std::exchange(other.m_fileDescriptor, 0)}
+		{}
+		FileDescriptor& operator=(const FileDescriptor&) = default;
+		FileDescriptor& operator=(FileDescriptor&& rhs) noexcept
+		{
+			m_fileDescriptor = std::exchange(rhs.m_fileDescriptor, 0);
+			return *this;
+		}
+
+		inline ~FileDescriptor()
+		{
+			close();
+		}
+
+		[[nodiscard]] inline constexpr auto get() const noexcept -> int
+		{
+			return m_fileDescriptor;
+		}
+
+		[[nodiscard]] inline constexpr auto release() noexcept -> int
+		{
+			return std::exchange(m_fileDescriptor, 0);
+		}
+
+		inline auto close() -> void
+		{
+			if (m_fileDescriptor != 0)
+			{
+				if (::close(m_fileDescriptor) == -1)
+					throw std::runtime_error{std::format("Failed to close the file descriptor: {}", std::strerror(errno))};
+				m_fileDescriptor = 0;
+			}
+		}
+
+		inline constexpr auto operator=(int fileDescriptor)
+		{
+			close();
+			m_fileDescriptor = fileDescriptor;
+		}
+
+		[[nodiscard]] constexpr operator int() const noexcept
+		{
+			return m_fileDescriptor;
+		}
+
+	private:
+		int m_fileDescriptor;
+	};
+#endif
+}

@@ -2,53 +2,21 @@ module;
 
 #include <CppUtils/System/OS.hpp>
 
-#include <cerrno>
-#include <cstring>
-
 #if defined(OS_LINUX)
-#	include <unistd.h>
 #	include <sys/mman.h>
 #endif
 
 export module CppUtils.System;
 
 import std;
+export import CppUtils.System.FileDescriptor;
 
 export namespace CppUtils::System
 {
 #if defined(OS_LINUX)
-	class FileDescriptor final
+	[[nodiscard]] inline auto createAnonymousFile(std::string_view name, unsigned int flags = 0) -> FileDescriptor
 	{
-	public:
-		explicit FileDescriptor(int fileDescriptor):
-			m_fileDescriptor{fileDescriptor}
-		{}
-		~FileDescriptor()
-		{
-			close(m_fileDescriptor);
-		}
-
-		[[nodiscard]] inline constexpr int get() const noexcept
-		{
-			return m_fileDescriptor;
-		}
-
-	private:
-		int m_fileDescriptor;
-	};
-
-	[[nodiscard]] inline FileDescriptor createAnonymousFile(std::string_view name, unsigned int flags = 0)
-	{
-		using namespace std::literals;
-		auto fileDescriptor = memfd_create(name.data(), flags);
-		if (fileDescriptor == -1)
-			throw std::runtime_error{std::format("Failed to create an anonymous file:\n{}", std::strerror(errno))};
-		return FileDescriptor{fileDescriptor};
-	}
-
-	inline void closeFileDescriptor(int fileDescriptor)
-	{
-		close(fileDescriptor);
+		return FileDescriptor{memfd_create(std::data(name), flags)};
 	}
 #endif
 }
