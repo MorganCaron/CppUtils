@@ -1,7 +1,9 @@
 export module CppUtils.UnitTests;
 
 export import CppUtils.UnitTests.Chrono.Chronometer;
+export import CppUtils.UnitTests.Container.BidirectionalMap;
 export import CppUtils.UnitTests.Container.MeshNode;
+export import CppUtils.UnitTests.Container.Pair;
 export import CppUtils.UnitTests.Container.Sequence;
 export import CppUtils.UnitTests.Container.Stack;
 export import CppUtils.UnitTests.Container.Tree;
