@@ -1,0 +1,20 @@
+module;
+
+#include <cerrno>
+
+export module CppUtils.System.Errno;
+
+import std;
+
+export namespace CppUtils::System
+{
+	inline auto checkErrno(int value, std::string_view message = "") -> int
+	{
+		if (value == -1) [[unlikely]]
+			throw std::runtime_error{
+				std::empty(message) ?
+					std::format("{}", std::strerror(errno)) :
+					std::format("{}: {}", message, std::strerror(errno))};
+		return value;
+	}
+}
