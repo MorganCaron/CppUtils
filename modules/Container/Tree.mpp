@@ -199,11 +199,11 @@ namespace std
 		{
 			const auto& [node, tree] = nodeView;
 			auto&& out = context.out();
-			std::format_to(out, "{}", nodeView.template getPrintableValue<CharT>());
+			std::format_to(out, "{}\n", nodeView.template getPrintableValue<CharT>());
 			const auto nbNodes = std::size(node.get().nodes);
 			for (auto i = 0uz; i < nbNodes; ++i)
 			{
-				std::format_to(out, "\n{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
+				std::format_to(out, "{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
 				auto child = CppUtils::Container::TokenTree::NodeView{node.get().nodes.at(i), tree};
 				formatNode(child, context, prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
 			}
