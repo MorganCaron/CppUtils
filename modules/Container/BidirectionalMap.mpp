@@ -3,56 +3,106 @@ export module CppUtils.Container.BidirectionalMap;
 import std;
 import CppUtils.Container.Pair;
 
+namespace std
+{
+	template<class First, class Second>
+	struct hash<std::pair<First, Second>>
+	{
+		std::size_t operator()(const std::pair<First, Second>& pair) const
+		{
+			auto hash1 = std::hash<First>{}(pair.first);
+			auto hash2 = std::hash<Second>{}(pair.second);
+			return hash1 ^ (hash2 << 1);
+		}
+	};
+}
+
 export namespace CppUtils::Container
 {
 	template<class Lhs, class Rhs>
 	struct BidirectionalMap final
 	{
-		using Map = std::unordered_map<Lhs, const Rhs>;
-		using InverseMap = std::unordered_map<Rhs, const Lhs>;
+		using Set = std::unordered_set<std::pair<Lhs, Rhs>>;
 
+	public:
 		BidirectionalMap() = default;
-		explicit BidirectionalMap(std::initializer_list<typename Map::value_type> values):
-			left{values}
+		explicit BidirectionalMap(std::initializer_list<typename Set::value_type> values):
+			values{values}
+		{}
+
+		[[nodiscard]] constexpr inline auto begin(this auto&& self) -> decltype(auto)
 		{
-			for (const auto& [lhsKey, lhsValue] : left)
-				right[lhsValue] = lhsKey;
+			return std::begin(self.values);
+		}
+		[[nodiscard]] constexpr inline auto cbegin() const -> decltype(auto)
+		{
+			return std::cbegin(values);
+		}
+		[[nodiscard]] constexpr inline auto end(this auto&& self) -> decltype(auto)
+		{
+			return std::end(self.values);
+		}
+		[[nodiscard]] constexpr inline auto cend() const -> decltype(auto)
+		{
+			return std::cend(values);
 		}
 
 		[[nodiscard]] constexpr inline auto empty() const noexcept -> bool
 		{
-			return std::empty(left);
+			return std::empty(values);
 		}
 
 		[[nodiscard]] constexpr inline auto size() const noexcept -> std::size_t
 		{
-			return std::size(left);
+			return std::size(values);
 		}
 
 		inline auto clear() noexcept -> void
 		{
-			left.clear();
-			right.clear();
+			values.clear();
 		}
 
-		inline auto insert(Map::value_type&& value) -> void
+		inline auto insert(Set::value_type&& value) -> void
 		{
-			right.insert(swapPair(value));
-			left.insert(value);
+			values.insert(value);
 		}
 
-		inline auto eraseLeft(Lhs lhsKey) noexcept -> void
+		[[nodiscard]] inline auto findLeft(const Lhs& lhs) -> decltype(auto)
 		{
-			right.erase(left[lhsKey]);
-			left.erase(lhsKey);
-		}
-		inline auto eraseRight(Rhs rhsKey) noexcept -> void
-		{
-			left.erase(right[rhsKey]);
-			right.erase(rhsKey);
+			return std::find_if(std::cbegin(values), std::cend(values), [&lhs](auto&& pair) -> bool { return pair.first == lhs; });
 		}
 
-		Map left;
-		InverseMap right;
+		[[nodiscard]] inline auto findRight(const Rhs& rhs) -> decltype(auto)
+		{
+			return std::find_if(std::cbegin(values), std::cend(values), [&rhs](auto&& pair) -> bool { return pair.second == rhs; });
+		}
+
+		[[nodiscard]] inline auto left(const Lhs& lhs) -> decltype(auto)
+		{
+			if (auto it = findLeft(lhs); it == std::cend(values))
+				throw std::runtime_error{"Missing key in BidirectionalMap"};
+			else
+				return it->second;
+		}
+
+		[[nodiscard]] inline auto right(const Rhs& rhs) -> decltype(auto)
+		{
+			if (auto it = findRight(rhs); it == std::cend(values))
+				throw std::runtime_error{"Missing key in BidirectionalMap"};
+			else
+				return it->first;
+		}
+
+		inline auto eraseLeft(const Lhs& lhs) noexcept -> void
+		{
+			std::erase_if(values, [&lhs](auto&& pair) -> bool { return pair.first == lhs; });
+		}
+		inline auto eraseRight(const Rhs& rhs) noexcept -> void
+		{
+			std::erase_if(values, [&rhs](auto&& pair) -> bool { return pair.second == rhs; });
+		}
+
+	private:
+		Set values;
 	};
 }
