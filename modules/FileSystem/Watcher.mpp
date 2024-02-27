@@ -131,10 +131,10 @@ export namespace CppUtils::FileSystem
 					m_watchDescriptors.eraseRight(inotifyEvent.wd);
 					continue;
 				}
-				if (auto it = m_watchDescriptors.right.find(inotifyEvent.wd);
-					it != std::cend(m_watchDescriptors.right))
+				if (auto it = m_watchDescriptors.findRight(inotifyEvent.wd);
+					it != std::cend(m_watchDescriptors))
 				{
-					auto path = it->second;
+					auto path = it->first;
 					if (std::filesystem::is_directory(path))
 						path /= inotifyEvent.name;
 					if (std::filesystem::is_directory(path))
@@ -176,7 +176,7 @@ export namespace CppUtils::FileSystem
 			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
 #if defined(OS_LINUX)
 			System::throwErrno(
-				inotify_rm_watch(m_inotify, m_watchDescriptors.left[filePath]),
+				inotify_rm_watch(m_inotify, m_watchDescriptors.left(filePath)),
 				std::format("Failed to stop watching the file {}", filePath.string()));
 			m_watchDescriptors.eraseLeft(filePath);
 #endif
@@ -186,7 +186,7 @@ export namespace CppUtils::FileSystem
 		{
 			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
 #if defined(OS_LINUX)
-			for (const auto& [path, fileDescriptor] : m_watchDescriptors.left)
+			for (const auto& [path, fileDescriptor] : m_watchDescriptors)
 				System::throwErrno(
 					inotify_rm_watch(m_inotify, fileDescriptor),
 					std::format("Failed to stop watching the file {}", path.string()));
