@@ -1,12 +1,15 @@
 module;
 
 #include <CppUtils/System/OS.hpp>
+#include <CppUtils/System/Windows.hpp>
 
 #if defined(OS_LINUX)
 #	include <cerrno>
 #	include <unistd.h>
 #	include <sys/epoll.h>
 #	include <sys/inotify.h>
+#elif defined(OS_MACOS)
+#	include <sys/event.h>
 #endif
 
 export module CppUtils.FileSystem.FileWatcher;
@@ -21,8 +24,8 @@ import CppUtils.Type;
 
 /* Todo:
 Windows: FindFirstChangeNotification -> https://learn.microsoft.com/fr-fr/windows/win32/api/fileapi/nf-fileapi-findfirstchangenotificationa?redirectedfrom=MSDN
-MacOS: kqueue -> https://man.freebsd.org/cgi/man.cgi?kqueue
-Linux: inotify -> https://man7.org/linux/man-pages/man7/inotify.7.html
+MacOS: FSEvents (privilégié à kqueue) -> https://stackoverflow.com/a/11557250
+Linux: inotify & epoll
 */
 export namespace CppUtils::FileSystem
 {
@@ -67,6 +70,16 @@ export namespace CppUtils::FileSystem
 				System::checkErrno(
 					epoll_ctl(m_eventPollFileDescriptor, EPOLL_CTL_ADD, m_inotifyFileDescriptor, &m_event),
 					"Can't add inotify file descriptor to epoll");
+#elif defined(OS_MACOS)
+				/*
+				m_filesystemEventStream = FSEventStreamCreate(CFAllocatorRef allocator,
+					FSEventStreamCallback callback,
+					FSEventStreamContext * context,
+					CFArrayRef pathsToWatch,
+					FSEventStreamEventId sinceWhen,
+					CFTimeInterval latency,
+					FSEventStreamCreateFlags flags);
+				*/
 #endif
 			}
 
@@ -128,6 +141,8 @@ export namespace CppUtils::FileSystem
 			std::uint32_t m_eventMask;
 			using WatchDescriptor = int;
 			Container::BidirectionalMap<std::filesystem::path, WatchDescriptor> m_watchDescriptors;
+#elif defined(OS_MACOS)
+			FSEventStreamRef m_filesystemEventStream;
 #endif
 		};
 	}
