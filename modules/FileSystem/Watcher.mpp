@@ -1,0 +1,183 @@
+module;
+
+#include <CppUtils/System/OS.hpp>
+#include <CppUtils/System/Windows.hpp>
+
+#if defined(OS_LINUX)
+#	include <cerrno>
+#	include <unistd.h>
+#	include <sys/epoll.h>
+#	include <sys/inotify.h>
+#elif defined(OS_MACOS)
+#	include <sys/event.h>
+#endif
+
+export module CppUtils.FileSystem.Watcher;
+
+import std;
+import CppUtils.Chrono;
+import CppUtils.Container;
+import CppUtils.FileSystem.File;
+import CppUtils.System;
+import CppUtils.Thread;
+import CppUtils.Type;
+
+/* Todo:
+Windows: FindFirstChangeNotification -> https://learn.microsoft.com/fr-fr/windows/win32/api/fileapi/nf-fileapi-findfirstchangenotificationa?redirectedfrom=MSDN
+MacOS: FSEvents (privilégié à kqueue) -> https://stackoverflow.com/a/11557250
+Linux: inotify & epoll
+*/
+export namespace CppUtils::FileSystem
+{
+	inline namespace experimental
+	{
+		class Watcher final
+		{
+			static inline constexpr auto maxEvents = 2uz;
+
+		public:
+			enum Event : std::uint8_t
+			{
+				Created = 0b1,
+				Modified = 0b0,
+				Deleted = 0b100
+			};
+
+			using SubscribeFunction = std::function<void(const std::filesystem::path&, Event)>;
+#if defined(OS_LINUX)
+			using WatchDescriptor = int;
+#endif
+
+			inline Watcher():
+				m_loopThread{std::bind(&Watcher::listener, this)}
+			{
+				[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+#if defined(OS_LINUX)
+				m_inotifyFileDescriptor = inotify_init1(IN_NONBLOCK);
+				m_eventPollFileDescriptor = epoll_create1(0);
+				m_event.events = EPOLLIN | EPOLLET;
+				m_event.data.fd = m_inotifyFileDescriptor;
+				System::checkErrno(
+					epoll_ctl(m_eventPollFileDescriptor, EPOLL_CTL_ADD, m_inotifyFileDescriptor, &m_event),
+					"Can't add inotify file descriptor to epoll");
+#elif defined(OS_MACOS)
+				/*
+				m_filesystemEventStream = FSEventStreamCreate(CFAllocatorRef allocator,
+					FSEventStreamCallback callback,
+					FSEventStreamContext * context,
+					CFArrayRef pathsToWatch,
+					FSEventStreamEventId sinceWhen,
+					CFTimeInterval latency,
+					FSEventStreamCreateFlags flags);
+				*/
+#endif
+				m_loopThread.start();
+			}
+
+			~Watcher()
+			{
+				stop();
+#if defined(OS_LINUX)
+				epoll_ctl(m_eventPollFileDescriptor, EPOLL_CTL_DEL, m_inotifyFileDescriptor, 0);
+				m_inotifyFileDescriptor.close();
+				m_eventPollFileDescriptor.close();
+#endif
+			}
+
+			[[nodiscard]] inline auto isRunning() const noexcept -> bool
+			{
+				return m_loopThread.isRunning();
+			}
+
+			inline auto start() -> void
+			{
+				m_loopThread.start();
+			}
+
+			inline auto stop() -> void
+			{
+				m_loopThread.stop();
+			}
+
+			inline auto listener() -> void
+			{
+				[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+#if defined(OS_LINUX)
+				auto nbFileDescriptorsReady = 0uz;
+				{
+					auto epollWaitResult = epoll_wait(m_eventPollFileDescriptor, std::data(m_events), maxEvents, 1);
+					if (epollWaitResult == -1)
+						return;
+					[[assume(epollWaitResult >= 0)]];
+					nbFileDescriptorsReady = static_cast<std::size_t>(epollWaitResult);
+				}
+
+				auto eventBuffer = std::vector<std::uint8_t>{};
+				for (auto i = 0uz; i < nbFileDescriptorsReady; ++i)
+				{
+					auto length = read(m_events[i].data.fd, std::data(eventBuffer), std::size(eventBuffer));
+					if (length == -1 and errno == EINTR)
+						break;
+				}
+#endif
+			}
+
+			inline auto watch(const std::filesystem::path& filePath, bool recursively = true) -> void
+			{
+				if (not std::filesystem::exists(filePath))
+					return;
+				if (std::filesystem::is_directory(filePath))
+				{
+					forFiles(filePath, [this, recursively](const auto& filePath) -> void {
+						watch(filePath, recursively);
+					}, recursively);
+					return;
+				}
+#if defined(OS_LINUX)
+				auto watchDescriptor = System::checkErrno(
+					inotify_add_watch(m_inotifyFileDescriptor, filePath.string().c_str(), m_eventMask),
+					std::format("Failed to watch the file {}", filePath.string()));
+				m_watchDescriptors.insert({filePath, watchDescriptor});
+#endif
+			}
+
+			inline auto unwatch(const std::filesystem::path& filePath, bool recursively = true) -> void
+			{
+				if (std::filesystem::is_directory(filePath))
+				{
+					forFiles(filePath, [this, recursively](const auto& filePath) -> void {
+						unwatch(filePath, recursively);
+					}, recursively);
+					return;
+				}
+#if defined(OS_LINUX)
+				System::checkErrno(
+					inotify_rm_watch(m_inotifyFileDescriptor, m_watchDescriptors.left[filePath]),
+					std::format("Failed to stop watching the file {}", filePath.string()));
+				m_watchDescriptors.eraseLeft(filePath);
+#endif
+			}
+
+			inline auto onEvent(Event event, const SubscribeFunction& function) -> void
+			{
+				[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+				subcribedFunctions[event] = function;
+			}
+
+		private:
+			std::mutex m_mutex;
+			Thread::LoopThread m_loopThread;
+#if defined(OS_LINUX)
+			System::FileDescriptor m_inotifyFileDescriptor;
+			System::FileDescriptor m_eventPollFileDescriptor;
+			epoll_event m_event;
+			std::array<epoll_event, maxEvents> m_events;
+			std::uint32_t m_eventMask;
+			Container::BidirectionalMap<std::filesystem::path, WatchDescriptor> m_watchDescriptors;
+			std::unordered_map<Event, SubscribeFunction> subcribedFunctions;
+#elif defined(OS_MACOS)
+			FSEventStreamRef m_filesystemEventStream;
+#endif
+		};
+	}
+}
