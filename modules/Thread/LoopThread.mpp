@@ -1,7 +1,6 @@
 export module CppUtils.Thread.LoopThread;
 
 import std;
-import CppUtils.Chrono;
 
 export namespace CppUtils::Thread
 {
@@ -10,13 +9,10 @@ export namespace CppUtils::Thread
 	public:
 		inline LoopThread() = delete;
 
-		template<Chrono::Concept::Duration Duration = std::chrono::nanoseconds>
-		inline explicit LoopThread(std::function<void()> function, std::function<void()> interruptFunction = nullptr, Duration&& interval = Duration::zero()):
+		inline explicit LoopThread(std::function<void()> function, std::function<void()> interruptFunction = nullptr):
 			m_function{std::move(function)},
 			m_interruptFunction{std::move(interruptFunction)}
-		{
-			start(interval);
-		}
+		{}
 
 		inline LoopThread(const LoopThread&) = delete;
 		inline LoopThread(LoopThread&& src) noexcept:
@@ -43,17 +39,16 @@ export namespace CppUtils::Thread
 			return m_running.load();
 		}
 
-		template<Chrono::Concept::Duration Duration = std::chrono::nanoseconds>
-		inline auto start(Duration&& interval = Duration::zero()) -> void
+		inline auto start() -> void
 		{
 			if (isRunning())
 				stop();
-			m_thread = std::jthread{&LoopThread::run<std::remove_cvref_t<Duration>>, this, interval};
+			m_thread = std::jthread{&LoopThread::run, this};
 		}
 
 		inline auto stop() -> void
 		{
-			if (!isRunning())
+			if (not isRunning())
 				return;
 			m_running = false;
 			if (m_interruptFunction)
@@ -62,16 +57,11 @@ export namespace CppUtils::Thread
 		}
 
 	private:
-		template<Chrono::Concept::Duration Duration = std::chrono::nanoseconds>
-		inline auto run(Duration&& interval = Duration::zero()) -> void
+		inline auto run() -> void
 		{
 			m_running = true;
 			while (isRunning())
-			{
 				m_function();
-				if (interval != Duration::zero())
-					std::this_thread::sleep_for(interval);
-			}
 		}
 
 		std::function<void()> m_function;
