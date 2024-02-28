@@ -35,6 +35,7 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.x'
+    - uses: MorganCaron/clang-precompiled-action@master
     - name: Install ${{ matrix.compiler.cc }}/${{ matrix.compiler.cxx }}
       run: |
         ${{ matrix.compiler.install }}
