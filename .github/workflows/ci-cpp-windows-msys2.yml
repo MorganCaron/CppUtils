@@ -27,12 +27,14 @@ jobs:
         }
         library-type: [static, shared]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+
     - uses: msys2/setup-msys2@v2
       with:
         install: >-
           ${{ matrix.compiler.install }}
           mingw-w64-x86_64-xmake
+
     - name: Compile
       shell: msys2 {0}
       env:
@@ -41,6 +43,7 @@ jobs:
       run: |
         xmake f -p mingw -k ${{ matrix.library-type }} -v
         xmake -vD
+
     - name: Run tests
       shell: msys2 {0}
       run: |

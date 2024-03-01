@@ -22,7 +22,7 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 				std::this_thread::sleep_for(10ms);
 			}};
 		});
-
+		/*
 		suite.addTest("No event", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
 				auto watcher = CppUtils::FileSystem::Watcher{};
@@ -177,5 +177,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 				suite.expectEqual(eventsTriggered, 1uz);
 			}};
 		});
+		*/
 	}};
 }

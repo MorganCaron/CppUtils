@@ -25,15 +25,19 @@ jobs:
         }
         library-type: [static, shared]
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
       with:
         python-version: '3.x'
+
     - name: Install LLVM
       run: |
         brew install llvm
+
     - name: Install XMake
       run: brew install xmake
+
     - name: Compile
       env:
         CC: ${{ matrix.compiler.cc }}
@@ -41,6 +45,7 @@ jobs:
       run: |
         xmake f -p macosx -k ${{ matrix.library-type }} -v
         xmake -vD
+
     - name: Run tests
       run: |
         xmake run

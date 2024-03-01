@@ -21,12 +21,16 @@ jobs:
         }
         library-type: [static, shared]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+
     - uses: ilammy/msvc-dev-cmd@v1
+
     - uses: MinoruSekine/setup-scoop@v1
+
     - name: Install XMake
       run: |
         scoop install xmake
+
     - name: Compile
       env:
         CC: ${{ matrix.compiler.cc }}
@@ -34,6 +38,7 @@ jobs:
       run: |
         xmake f -p windows -k ${{ matrix.library-type }} -v
         xmake -vD
+
     - name: Run tests
       run: |
         xmake run

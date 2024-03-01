@@ -4,7 +4,7 @@ on: [ push, pull_request ]
 
 jobs:
   build:
-    name: ${{ matrix.os.name }} (${{ matrix.compiler.cxx }}, ${{ matrix.library-type }})
+    name: ${{ matrix.os.name }} (${{ matrix.compiler.name }}, ${{ matrix.library-type }})
     runs-on: ${{ matrix.os.value }}
     strategy:
       fail-fast: false
@@ -16,29 +16,58 @@ jobs:
         }
         compiler:
         - {
+          name: "GCC 13 (apt)",
+          cc: "gcc",
+          cxx: "g++",
+          install: "sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt-get install -y gcc-13 g++-13",
+          alternative-cc: "sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13",
+          alternative-cxx: "sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 13",
+        }
+        - { # https://apt.llvm.org
+          name: "Clang 19 (apt)",
           cc: "clang",
-          cxx: "clang++"
+          cxx: "clang++",
+          install: "sudo wget https://apt.llvm.org/llvm.sh && sudo chmod +x llvm.sh && sudo ./llvm.sh 19 ''",
+          alternative-cc: "sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 19",
+          alternative-cxx: "sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 19"
+        }
+        - {
+          name: "Latest Clang",
+          cc: "clang",
+          cxx: "clang++",
+          xmake-toolchain: "--toolchain=llvm --sdk=llvm/"
         }
         library-type: [static, shared]
     steps:
     - uses: actions/checkout@v4
+
     - uses: actions/setup-python@v5
       with:
         python-version: '3.x'
-    - uses: MorganCaron/clang-precompiled-action@master
+
+    - name: Install ${{ matrix.compiler.name }}
+      run: |
+        ${{ matrix.compiler.install }}
+        ${{ matrix.compiler.alternative-cc }}
+        ${{ matrix.compiler.alternative-cxx }}
+
+    - name: Install Latest Clang
+      if: ${{ matrix.os.name == 'Ubuntu' && matrix.compiler.name == 'Latest Clang' }}
+      uses: MorganCaron/latest-clang-action@master
+
+    # https://xmake.io/#/guide/installation
     - name: Install XMake
       run: |
-        sudo apt install software-properties-common
-        sudo add-apt-repository ppa:xmake-io/xmake
-        sudo apt update
-        sudo apt install xmake
+        curl -fsSL https://xmake.io/shget.text | bash
+
     - name: Compile
       env:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}
       run: |
-        xmake f --toolchain=llvm --sdk=llvm/ --runtimes="c++_shared" --enable_tests=y --yes
-        xmake build
+        xmake f ${{ matrix.compiler.xmake-toolchain }} --runtimes="c++_shared" --enable_tests=y --yes
+        xmake build -vD
+
     - name: Run tests
       run: |
         xmake run
