@@ -45,7 +45,8 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Install ${{ matrix.compiler.name }}
+    - name: Install ${{ matrix.compiler.name }} from a package manager
+      if: ${{ matrix.compiler.install }}
       run: |
         ${{ matrix.compiler.install }}
         ${{ matrix.compiler.alternative-cc }}

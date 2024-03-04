@@ -6,6 +6,7 @@ import CppUtils.Thread.LoopThread;
 export namespace CppUtils::Thread
 {
 	// Todo: Recoder sans streams
+	// avec epoll ? https://suchprogramming.com/epoll-in-3-easy-steps/
 	template<class Type>
 	class AsyncIStreamListener
 	{

@@ -25,12 +25,12 @@ export namespace CppUtils::System
 		{}
 		FileDescriptor(const FileDescriptor&) = default;
 		FileDescriptor(FileDescriptor&& other) noexcept:
-			m_fileDescriptor{std::exchange(other.m_fileDescriptor, 0)}
+			m_fileDescriptor{std::exchange(other.m_fileDescriptor, -1)}
 		{}
 		FileDescriptor& operator=(const FileDescriptor&) = default;
 		FileDescriptor& operator=(FileDescriptor&& rhs) noexcept
 		{
-			m_fileDescriptor = std::exchange(rhs.m_fileDescriptor, 0);
+			m_fileDescriptor = std::exchange(rhs.m_fileDescriptor, -1);
 			return *this;
 		}
 
@@ -46,14 +46,14 @@ export namespace CppUtils::System
 
 		[[nodiscard]] inline constexpr auto release() noexcept -> int
 		{
-			return std::exchange(m_fileDescriptor, 0);
+			return std::exchange(m_fileDescriptor, -1);
 		}
 
 		inline auto close() -> void
 		{
-			if (m_fileDescriptor != 0)
+			if (m_fileDescriptor != -1)
 				checkErrno(::close(m_fileDescriptor));
-			m_fileDescriptor = 0;
+			m_fileDescriptor = -1;
 		}
 
 		inline constexpr auto operator=(int fileDescriptor)
@@ -68,7 +68,7 @@ export namespace CppUtils::System
 		}
 
 	private:
-		int m_fileDescriptor;
+		int m_fileDescriptor = -1;
 	};
 #endif
 }

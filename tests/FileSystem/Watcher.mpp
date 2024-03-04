@@ -13,9 +13,25 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
 				auto watcher = CppUtils::FileSystem::Watcher{};
 				watcher.watch(directory / "test.tmp");
-				watcher.onEvent(CppUtils::FileSystem::Watcher::Event::Created,
+				watcher.onEvent(CppUtils::FileSystem::Event::Created,
 					[&suite](const std::filesystem::path& filePath,
-						[[maybe_unused]] CppUtils::FileSystem::Watcher::Event event) -> void {
+						[[maybe_unused]] CppUtils::FileSystem::Event event) -> void {
+					Logger::print("{}\n", filePath.string());
+					suite.expect(false);
+				});
+				std::this_thread::sleep_for(10ms);
+			}};
+		});
+
+		suite.addTest("No event", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+				auto watcher = CppUtils::FileSystem::Watcher{};
+				auto filePath = directory / "test.tmp";
+				CppUtils::FileSystem::String::write(filePath, "Hello World!");
+				watcher.watch(filePath);
+				watcher.onEvent(CppUtils::FileSystem::Event::Created,
+					[&suite](const std::filesystem::path& filePath,
+						[[maybe_unused]] CppUtils::FileSystem::Event event) -> void {
 					Logger::print("{}\n", filePath.string());
 					suite.expect(false);
 				});
@@ -23,22 +39,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 			}};
 		});
 		/*
-		suite.addTest("No event", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto watcher = CppUtils::FileSystem::Watcher{};
-				auto filePath = directory / "test.tmp";
-				CppUtils::FileSystem::String::write(filePath, "Hello World!");
-				watcher.watch(filePath);
-				watcher.onEvent(CppUtils::FileSystem::Watcher::Event::Created,
-					[&suite](const std::filesystem::path& filePath,
-						[[maybe_unused]] CppUtils::FileSystem::Watcher::Event event) -> void {
-					Logger::print("{}\n", filePath.string());
-					suite.expect(false);
-				});
-				std::this_thread::sleep_for(10ms);
-			}};
-		});
-
 		suite.addTest("Watch file creation", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
 				auto eventsTriggered = 0uz;
@@ -46,12 +46,12 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 				auto filePath = directory / "test.tmp";
 
 				watcher.watch(filePath);
-				watcher.onEvent(CppUtils::FileSystem::Watcher::Event::Created,
+				watcher.onEvent(CppUtils::FileSystem::Event::Created,
 					[&eventsTriggered, &suite](const std::filesystem::path& filePath,
-						[[maybe_unused]] CppUtils::FileSystem::Watcher::Event event) -> void {
+						[[maybe_unused]] CppUtils::FileSystem::Event event) -> void {
 					++eventsTriggered;
 					Logger::print("{}\n", filePath.string());
-					suite.expectEqual(event, CppUtils::FileSystem::Watcher::Event::Created);
+					suite.expectEqual(event, CppUtils::FileSystem::Event::Created);
 				});
 
 				CppUtils::FileSystem::String::write(filePath, "Hello World!");
@@ -69,12 +69,12 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 				CppUtils::FileSystem::String::write(filePath, "Foo");
 
 				watcher.watch(filePath);
-				watcher.onEvent(CppUtils::FileSystem::Watcher::Event::Modified,
+				watcher.onEvent(CppUtils::FileSystem::Event::Modified,
 					[&eventsTriggered, &suite](const std::filesystem::path& filePath,
-						[[maybe_unused]] CppUtils::FileSystem::Watcher::Event event) -> void {
+						[[maybe_unused]] CppUtils::FileSystem::Event event) -> void {
 					++eventsTriggered;
 					Logger::print("{}\n", filePath.string());
-					suite.expectEqual(event, CppUtils::FileSystem::Watcher::Event::Modified);
+					suite.expectEqual(event, CppUtils::FileSystem::Event::Modified);
 				});
 
 				std::this_thread::sleep_for(10ms);
@@ -93,12 +93,12 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 				CppUtils::FileSystem::String::write(filePath, "Hello World!");
 
 				watcher.watch(filePath);
-				watcher.onEvent(CppUtils::FileSystem::Watcher::Event::Deleted,
+				watcher.onEvent(CppUtils::FileSystem::Event::Deleted,
 					[&eventsTriggered, &suite](const std::filesystem::path& filePath,
-						[[maybe_unused]] CppUtils::FileSystem::Watcher::Event event) -> void {
+						[[maybe_unused]] CppUtils::FileSystem::Event event) -> void {
 					++eventsTriggered;
 					Logger::print("{}\n", filePath.string());
-					suite.expectEqual(event, CppUtils::FileSystem::Watcher::Event::Deleted);
+					suite.expectEqual(event, CppUtils::FileSystem::Event::Deleted);
 				});
 
 				std::filesystem::remove(filePath);
@@ -114,12 +114,12 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 				auto watcher = CppUtils::FileSystem::Watcher{};
 
 				watcher.watch(directory);
-				watcher.onEvent(CppUtils::FileSystem::Watcher::Event::Created,
+				watcher.onEvent(CppUtils::FileSystem::Event::Created,
 					[&eventsTriggered, &suite](const std::filesystem::path& filePath,
-						[[maybe_unused]] CppUtils::FileSystem::Watcher::Event event) -> void {
+						[[maybe_unused]] CppUtils::FileSystem::Event event) -> void {
 					++eventsTriggered;
 					Logger::print("{}\n", filePath.string());
-					suite.expectEqual(event, CppUtils::FileSystem::Watcher::Event::Created);
+					suite.expectEqual(event, CppUtils::FileSystem::Event::Created);
 				});
 
 				std::this_thread::sleep_for(10ms);
@@ -138,12 +138,12 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 				CppUtils::FileSystem::String::write(filePath, "Foo");
 
 				watcher.watch(directory);
-				watcher.onEvent(CppUtils::FileSystem::Watcher::Event::Modified,
+				watcher.onEvent(CppUtils::FileSystem::Event::Modified,
 					[&eventsTriggered, &suite](const std::filesystem::path& filePath,
-						[[maybe_unused]] CppUtils::FileSystem::Watcher::Event event) -> void {
+						[[maybe_unused]] CppUtils::FileSystem::Event event) -> void {
 					++eventsTriggered;
 					Logger::print("{}\n", filePath.string());
-					suite.expectEqual(event, CppUtils::FileSystem::Watcher::Event::Modified);
+					suite.expectEqual(event, CppUtils::FileSystem::Event::Modified);
 				});
 
 				std::this_thread::sleep_for(10ms);
@@ -162,12 +162,12 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 				CppUtils::FileSystem::String::write(filePath, "Hello World!");
 
 				watcher.watch(directory);
-				watcher.onEvent(CppUtils::FileSystem::Watcher::Event::Deleted,
+				watcher.onEvent(CppUtils::FileSystem::Event::Deleted,
 					[&eventsTriggered, &suite](const std::filesystem::path& filePath,
-						[[maybe_unused]] CppUtils::FileSystem::Watcher::Event event) -> void {
+						[[maybe_unused]] CppUtils::FileSystem::Event event) -> void {
 					++eventsTriggered;
 					Logger::print("{}\n", filePath.string());
-					suite.expectEqual(event, CppUtils::FileSystem::Watcher::Event::Deleted);
+					suite.expectEqual(event, CppUtils::FileSystem::Event::Deleted);
 				});
 
 				std::this_thread::sleep_for(10ms);
