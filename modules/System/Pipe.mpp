@@ -1,0 +1,35 @@
+module;
+
+#include <CppUtils/System/OS.hpp>
+
+#if defined(OS_LINUX)
+#	include <unistd.h>
+#	include <fcntl.h> // For O_* macros
+#endif
+
+export module CppUtils.System.Pipe;
+
+import std;
+import CppUtils.System.Errno;
+import CppUtils.System.FileDescriptor;
+
+export namespace CppUtils::System
+{
+#if defined(OS_LINUX)
+	struct Pipe final
+	{
+		inline Pipe()
+		{
+			auto pipeFileDescriptors = std::array<int, 2>{};
+			throwErrno(
+				pipe2(std::data(pipeFileDescriptors), O_NONBLOCK),
+				"Can't create a pipe");
+			read = pipeFileDescriptors[0];
+			write = pipeFileDescriptors[1];
+		}
+
+		FileDescriptor read;
+		FileDescriptor write;
+	};
+#endif
+}

@@ -3,7 +3,6 @@ module;
 #include <CppUtils/System/OS.hpp>
 
 #if defined(OS_LINUX)
-#	include <cerrno>
 #	include <unistd.h>
 #endif
 
@@ -21,7 +20,7 @@ export namespace CppUtils::System
 		inline FileDescriptor() = default;
 
 		explicit inline FileDescriptor(int fileDescriptor):
-			m_fileDescriptor{checkErrno(fileDescriptor)}
+			m_fileDescriptor{throwErrno(fileDescriptor)}
 		{}
 		FileDescriptor(const FileDescriptor&) = default;
 		FileDescriptor(FileDescriptor&& other) noexcept:
@@ -52,7 +51,7 @@ export namespace CppUtils::System
 		inline auto close() -> void
 		{
 			if (m_fileDescriptor != -1)
-				checkErrno(::close(m_fileDescriptor));
+				throwErrno(::close(m_fileDescriptor));
 			m_fileDescriptor = -1;
 		}
 

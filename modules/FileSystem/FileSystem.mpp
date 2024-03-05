@@ -1,5 +1,6 @@
 export module CppUtils.FileSystem;
 
 export import CppUtils.FileSystem.Directory;
+export import CppUtils.FileSystem.Event;
 export import CppUtils.FileSystem.File;
 export import CppUtils.FileSystem.Watcher;

@@ -149,7 +149,7 @@ namespace std
 		CppUtils::Type::Concept::Printable<typename T::ValueType>
 	struct formatter<T, CharT>
 	{
-		constexpr auto parse(std::format_parse_context& ctx) -> auto
+		inline constexpr auto parse(std::format_parse_context& ctx) -> auto
 		{
 			return std::begin(ctx);
 		}
@@ -180,7 +180,7 @@ namespace std
 	template<class CharT>
 	struct formatter<CppUtils::Container::TokenTree::NodeView, CharT>
 	{
-		constexpr auto parse(std::format_parse_context& ctx) -> auto
+		inline constexpr auto parse(std::format_parse_context& ctx) -> auto
 		{
 			return std::begin(ctx);
 		}
@@ -213,7 +213,7 @@ namespace std
 	template<class CharT>
 	struct formatter<CppUtils::Container::TokenTree, CharT>
 	{
-		constexpr auto parse(std::format_parse_context& ctx) -> auto
+		inline constexpr auto parse(std::format_parse_context& ctx) -> auto
 		{
 			return std::begin(ctx);
 		}
