@@ -4,40 +4,33 @@ on: [ push, pull_request ]
 
 jobs:
   build:
-    name: ${{ matrix.os.name }} (${{ matrix.compiler.cxx }}, ${{ matrix.library-type }})
-    runs-on: ${{ matrix.os.value }}
+    name: Windows (${{ matrix.compiler.name }})
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        os:
-        - {
-          name: "Windows",
-          value: windows-latest
-        }
         compiler:
         - {
+          name: "cl",
           cc: "cl",
           cxx: "cl"
         }
-        library-type: [static, shared]
     steps:
     - uses: actions/checkout@v4
-
+    - uses: xmake-io/github-action-setup-xmake@v1
     - uses: ilammy/msvc-dev-cmd@v1
 
-    - uses: MinoruSekine/setup-scoop@v1
-
-    - name: Install XMake
+    - name: Update XMake
       run: |
-        scoop install xmake
+        xmake update -s https://github.com/Arthapz/xmake.git#fix-toolchain-ld-path
 
     - name: Compile
       env:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}
       run: |
-        xmake f -p windows -k ${{ matrix.library-type }} -v
-        xmake -vD
+        xmake f --runtimes="c++_shared" --enable_tests=y --yes
+        xmake build -vD
 
     - name: Run tests
       run: |

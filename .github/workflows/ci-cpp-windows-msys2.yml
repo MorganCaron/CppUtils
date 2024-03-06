@@ -4,28 +4,24 @@ on: [ push, pull_request ]
 
 jobs:
   build:
-    name: ${{ matrix.os.name }} (${{ matrix.compiler.cxx }}, ${{ matrix.library-type }})
-    runs-on: ${{ matrix.os.value }}
+    name: Windows MSYS2 (${{ matrix.compiler.name }})
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        os:
-        - {
-          name: "Windows",
-          value: windows-latest
-        }
         compiler:
         - {
+          name: "GCC",
           cc: "gcc",
           cxx: "g++",
           install: "mingw-w64-x86_64-gcc"
         }
         - {
+          name: "Clang",
           cc: "clang",
           cxx: "clang++",
           install: "mingw-w64-x86_64-clang"
         }
-        library-type: [static, shared]
     steps:
     - uses: actions/checkout@v4
 
@@ -35,14 +31,18 @@ jobs:
           ${{ matrix.compiler.install }}
           mingw-w64-x86_64-xmake
 
+    - name: Update XMake
+      run: |
+        xmake update -s https://github.com/Arthapz/xmake.git#fix-toolchain-ld-path
+    
     - name: Compile
       shell: msys2 {0}
       env:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}
       run: |
-        xmake f -p mingw -k ${{ matrix.library-type }} -v
-        xmake -vD
+        xmake f --runtimes="c++_shared" --enable_tests=y --yes
+        xmake build -vD
 
     - name: Run tests
       shell: msys2 {0}

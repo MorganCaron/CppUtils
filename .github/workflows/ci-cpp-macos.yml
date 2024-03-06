@@ -4,47 +4,42 @@ on: [ push, pull_request ]
 
 jobs:
   build:
-    name: ${{ matrix.os.name }} (${{ matrix.compiler.cxx }}, ${{ matrix.library-type }})
-    runs-on: ${{ matrix.os.value }}
+    name: MacOS (${{ matrix.compiler.name }})
+    runs-on: macos-11
     strategy:
       fail-fast: false
       matrix:
-        os:
-        - {
-          name: "MacOS",
-          value: macos-11
-        }
         compiler:
         - {
+          name: "GCC",
           cc: "gcc",
           cxx: "g++"
         }
         - {
+          name: "Clang",
           cc: "clang",
           cxx: "clang++"
         }
-        library-type: [static, shared]
     steps:
     - uses: actions/checkout@v4
-
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.x'
+    - uses: xmake-io/github-action-setup-xmake@v1
 
     - name: Install LLVM
+      if: ${{ matrix.compiler.name == 'Clang' }}
       run: |
         brew install llvm
 
-    - name: Install XMake
-      run: brew install xmake
+    - name: Update XMake
+      run: |
+        xmake update -s https://github.com/Arthapz/xmake.git#fix-toolchain-ld-path
 
     - name: Compile
       env:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}
       run: |
-        xmake f -p macosx -k ${{ matrix.library-type }} -v
-        xmake -vD
+        xmake f --runtimes="c++_shared" --enable_tests=y --yes
+        xmake build -vD
 
     - name: Run tests
       run: |

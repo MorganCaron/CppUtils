@@ -4,16 +4,11 @@ on: [ push, pull_request ]
 
 jobs:
   build:
-    name: ${{ matrix.os.name }} (${{ matrix.compiler.name }}, ${{ matrix.library-type }})
-    runs-on: ${{ matrix.os.value }}
+    name: Ubuntu (${{ matrix.compiler.name }})
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os:
-        - {
-          name: "Ubuntu",
-          value: ubuntu-latest
-        }
         compiler:
         - {
           name: "GCC 13 (apt)",
@@ -21,7 +16,7 @@ jobs:
           cxx: "g++",
           install: "sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt-get install -y gcc-13 g++-13",
           alternative-cc: "sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13",
-          alternative-cxx: "sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 13",
+          alternative-cxx: "sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 13"
         }
         - { # https://apt.llvm.org
           name: "Clang 19 (apt)",
@@ -37,13 +32,9 @@ jobs:
           cxx: "clang++",
           xmake-toolchain: "--toolchain=llvm --sdk=llvm/"
         }
-        library-type: [static, shared]
     steps:
     - uses: actions/checkout@v4
-
-    - uses: actions/setup-python@v5
-      with:
-        python-version: '3.x'
+    - uses: xmake-io/github-action-setup-xmake@v1
 
     - name: Install ${{ matrix.compiler.name }} from a package manager
       if: ${{ matrix.compiler.install }}
@@ -53,18 +44,14 @@ jobs:
         ${{ matrix.compiler.alternative-cxx }}
 
     - name: Install Latest Clang
-      if: ${{ matrix.os.name == 'Ubuntu' && matrix.compiler.name == 'Latest Clang' }}
+      if: ${{ matrix.compiler.name == 'Latest Clang' }}
       uses: MorganCaron/latest-clang-action@master
 
-    # https://xmake.io/#/guide/installation
-    - name: Install XMake
+    - name: Update XMake
       run: |
-        curl -fsSL https://xmake.io/shget.text | bash
+        xmake update -s https://github.com/Arthapz/xmake.git#fix-toolchain-ld-path
 
     - name: Compile
-      env:
-        CC: ${{ matrix.compiler.cc }}
-        CXX: ${{ matrix.compiler.cxx }}
       run: |
         xmake f ${{ matrix.compiler.xmake-toolchain }} --runtimes="c++_shared" --enable_tests=y --yes
         xmake build -vD
