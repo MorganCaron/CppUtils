@@ -9,6 +9,7 @@ module;
 export module CppUtils.FileSystem.Event;
 
 import std;
+import CppUtils.String.Utility;
 
 export namespace CppUtils::FileSystem
 {
@@ -66,54 +67,56 @@ namespace std
 		template<class FormatContext>
 		inline constexpr auto format(CppUtils::FileSystem::Event event, FormatContext& context) const -> decltype(context.out())
 		{
+			using namespace std::literals;
 			using Event = CppUtils::FileSystem::Event;
 			auto&& out = context.out();
+			auto string = ""s;
 #if defined(OS_LINUX)
 			{
 				auto isCloseWrite = event & Event::CloseWrite;
 				auto isCloseNoWrite = event & Event::CloseNoWrite;
 				if (isCloseWrite and isCloseNoWrite)
-					std::format_to(out, "close ");
+					string += "close ";
 				else if (isCloseWrite)
-					std::format_to(out, "close (write) ");
+					string += "close (write) ";
 				else if (isCloseNoWrite)
-					std::format_to(out, "close (no write) ");
+					string += "close (no write) ";
 			}
 			{
 				auto isMovedSelf = event & Event::MoveSelf;
 				auto isMovedFrom = event & Event::MovedFrom;
 				auto isMovedTo = event & Event::MovedTo;
 				if (isMovedSelf or (isMovedFrom and isMovedTo))
-					std::format_to(out, "moved ");
+					string += "moved ";
 				else if (isMovedFrom)
-					std::format_to(out, "moved from ");
+					string += "moved from ";
 				else if (isMovedTo)
-					std::format_to(out, "moved to ");
+					string += "moved to ";
 			}
 			if (event & Event::Access)
-				std::format_to(out, "access ");
+				string += "access ";
 			if (event & Event::Attribute)
-				std::format_to(out, "attribute ");
+				string += "attribute ";
 			if (event & Event::Created)
-				std::format_to(out, "created ");
+				string += "created ";
 			if (event & Event::Deleted or event & Event::DeletedSelf)
-				std::format_to(out, "deleted ");
+				string += "deleted ";
 			if (event & Event::Modified)
-				std::format_to(out, "modified ");
+				string += "modified ";
 			if (event & Event::Open)
-				std::format_to(out, "open ");
+				string += "open ";
 			if (event & Event::IsDirectory)
-				std::format_to(out, "is directory ");
+				string += "is directory ";
 			if (event & Event::Unmount)
-				std::format_to(out, "unmount ");
+				string += "unmount ";
 			if (event & Event::QOverflow)
-				std::format_to(out, "Q overflow ");
+				string += "Q overflow ";
 			if (event & Event::Ignored)
-				std::format_to(out, "ignored ");
+				string += "ignored ";
 			if (event & Event::Oneshot)
-				std::format_to(out, "oneshot ");
+				string += "oneshot ";
 #endif
-			return out;
+			return std::format_to(out, "{}", CppUtils::String::rightTrimString(string));
 		}
 	};
 }

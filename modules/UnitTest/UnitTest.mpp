@@ -68,7 +68,6 @@ namespace CppUtils::UnitTest
 				{
 					auto chronoLogger = Log::ChronoLogger{"Test", settings.verbose and settings.chrono};
 					test.function();
-					chronoLogger.stop();
 				}
 				catch (const TestException&)
 				{
@@ -165,7 +164,7 @@ namespace CppUtils::UnitTest
 			m_promise.set_value();
 		}
 
-		inline auto wait_for(const CppUtils::Chrono::Concept::Duration auto& timeout) -> std::future_status
+		inline auto wait_for(const Chrono::Concept::Duration auto& timeout) -> std::future_status
 		{
 			return m_promise.get_future().wait_for(timeout);
 		}
@@ -208,9 +207,9 @@ namespace CppUtils::UnitTest
 					String::formatValue(rhs))};
 		}
 
-		inline auto expectCall(ExpectedCall& expectedCall, const CppUtils::Chrono::Concept::Duration auto& timeout, std::source_location sourceLocation = std::source_location::current()) -> void
+		inline auto expectCall(ExpectedCall& expectedCall, const Chrono::Concept::Duration auto& timeout, std::source_location sourceLocation = std::source_location::current()) -> void
 		{
-			if (expectedCall.wait_for(timeout) == std::future_status::timeout)
+			if (expectedCall.wait_for(timeout) != std::future_status::ready)
 				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectCall(expectedCall, timeout)",
 					sourceLocation.file_name(),
 					sourceLocation.line(),

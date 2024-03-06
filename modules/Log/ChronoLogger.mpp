@@ -15,6 +15,11 @@ export namespace CppUtils::Log
 			m_chrono{}
 		{}
 
+		inline ~ChronoLogger()
+		{
+			stop();
+		}
+
 		inline auto start() -> void
 		{
 			if (!m_enabled)

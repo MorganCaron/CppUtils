@@ -80,6 +80,7 @@ export namespace CppUtils::FileSystem
 		~Watcher()
 		{
 			stop();
+			// unwatchAll(); // Déjà fait par linux via close(m_inotify);
 #if defined(OS_LINUX)
 			epoll_ctl(m_eventPoll, EPOLL_CTL_DEL, m_inotify, 0);
 			epoll_ctl(m_eventPoll, EPOLL_CTL_DEL, m_stopPipe.read, 0);
@@ -175,6 +176,18 @@ export namespace CppUtils::FileSystem
 				inotify_rm_watch(m_inotify, m_watchDescriptors.left[filePath]),
 				std::format("Failed to stop watching the file {}", filePath.string()));
 			m_watchDescriptors.eraseLeft(filePath);
+#endif
+		}
+
+		inline auto unwatchAll() -> void
+		{
+			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+#if defined(OS_LINUX)
+			for (const auto& [path, fileDescriptor] : m_watchDescriptors.left)
+				System::throwErrno(
+					inotify_rm_watch(m_inotify, fileDescriptor),
+					std::format("Failed to stop watching the file {}", path.string()));
+			m_watchDescriptors.clear();
 #endif
 		}
 
