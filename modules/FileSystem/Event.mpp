@@ -18,7 +18,7 @@ export namespace CppUtils::FileSystem
 	enum class Event : std::uint32_t
 	{
 		Access = IN_ACCESS,
-		Attrib = IN_ATTRIB,
+		Attribute = IN_ATTRIB,
 		CloseWrite = IN_CLOSE_WRITE,
 		CloseNoWrite = IN_CLOSE_NOWRITE,
 		Closed = IN_CLOSE,
@@ -92,8 +92,8 @@ namespace std
 			}
 			if (event & Event::Access)
 				std::format_to(out, "access ");
-			if (event & Event::Attrib)
-				std::format_to(out, "attrib ");
+			if (event & Event::Attribute)
+				std::format_to(out, "attribute ");
 			if (event & Event::Created)
 				std::format_to(out, "created ");
 			if (event & Event::Deleted or event & Event::DeletedSelf)

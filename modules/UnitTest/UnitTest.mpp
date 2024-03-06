@@ -5,6 +5,7 @@ module;
 export module CppUtils.UnitTest;
 
 import std;
+import CppUtils.Chrono.Concept;
 import CppUtils.ChronoLogger;
 import CppUtils.Logger;
 import CppUtils.String;
@@ -156,6 +157,23 @@ namespace CppUtils::UnitTest
 
 	inline constinit auto testRunner = TestRunner{};
 
+	export class ExpectedCall final
+	{
+	public:
+		inline auto call() -> void
+		{
+			m_promise.set_value();
+		}
+
+		inline auto wait_for(const CppUtils::Chrono::Concept::Duration auto& timeout) -> std::future_status
+		{
+			return m_promise.get_future().wait_for(timeout);
+		}
+
+	private:
+		std::promise<void> m_promise;
+	};
+
 	export struct TestSuite final
 	{
 		inline explicit TestSuite(std::string name, std::function<void(TestSuite&)> function)
@@ -188,6 +206,15 @@ namespace CppUtils::UnitTest
 					sourceLocation.column(),
 					String::formatValue(lhs),
 					String::formatValue(rhs))};
+		}
+
+		inline auto expectCall(ExpectedCall& expectedCall, const CppUtils::Chrono::Concept::Duration auto& timeout, std::source_location sourceLocation = std::source_location::current()) -> void
+		{
+			if (expectedCall.wait_for(timeout) == std::future_status::timeout)
+				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectCall(expectedCall, timeout)",
+					sourceLocation.file_name(),
+					sourceLocation.line(),
+					sourceLocation.column())};
 		}
 
 		std::vector<Test> tests;

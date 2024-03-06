@@ -146,14 +146,14 @@ export namespace CppUtils::FileSystem
 #endif
 		}
 
-		inline auto watch(const std::filesystem::path& filePath, Event event = Event::All, bool recursively = true) -> void
+		inline auto watch(const std::filesystem::path& filePath, Event event = Event::All) -> void
 		{
 			if (not std::filesystem::exists(filePath))
 				return;
 			if (std::filesystem::is_directory(filePath))
-				forFiles(filePath, [this, event, recursively](const auto& filePath) -> void {
-					watch(filePath, event, recursively);
-				}, recursively);
+				forFiles(filePath, [this, event](const auto& filePath) -> void {
+					watch(filePath, event);
+				}, true);
 			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
 #if defined(OS_LINUX)
 			auto watchDescriptor = System::throwErrno(
@@ -163,17 +163,12 @@ export namespace CppUtils::FileSystem
 #endif
 		}
 
-		inline auto watch(const std::filesystem::path& filePath, bool recursively) -> void
+		inline auto unwatch(const std::filesystem::path& filePath) -> void
 		{
-			watch(filePath, Event::All, recursively);
-		}
-
-		inline auto unwatch(const std::filesystem::path& filePath, bool recursively = true) -> void
-		{
-			if (std::filesystem::is_directory(filePath))
-				forFiles(filePath, [this, recursively](const auto& filePath) -> void {
-					unwatch(filePath, recursively);
-				}, recursively);
+			if (std::filesystem::exists(filePath) and std::filesystem::is_directory(filePath))
+				forFiles(filePath, [this](const auto& filePath) -> void {
+					unwatch(filePath);
+				}, true);
 			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
 #if defined(OS_LINUX)
 			System::throwErrno(
