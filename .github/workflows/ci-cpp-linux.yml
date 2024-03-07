@@ -47,10 +47,6 @@ jobs:
       if: ${{ matrix.compiler.name == 'Latest Clang' }}
       uses: MorganCaron/latest-clang-action@master
 
-    - name: Update XMake
-      run: |
-        xmake update -s https://github.com/Arthapz/xmake.git#fix-toolchain-ld-path
-
     - name: Compile
       run: |
         xmake f ${{ matrix.compiler.xmake-toolchain }} --runtimes="c++_shared" --enable_tests=y --yes

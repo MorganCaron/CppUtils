@@ -156,7 +156,10 @@ export namespace CppUtils::FileSystem
 					watch(filePath, event);
 				}, true);
 			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
-#if defined(OS_LINUX)
+#if defined(OS_WINDOWS)
+			auto changeHandle = FindFirstChangeNotification(
+				filePath.string().c_str(), true, FILE_NOTIFY_CHANGE_FILE_NAME);
+#elif defined(OS_LINUX)
 			auto watchDescriptor = System::throwErrno(
 				inotify_add_watch(m_inotify, filePath.string().c_str(), static_cast<std::underlying_type_t<Event>>(event)),
 				std::format("Failed to watch the file {}", filePath.string()));

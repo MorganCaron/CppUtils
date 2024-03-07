@@ -13,6 +13,7 @@ export import CppUtils.System.Errno;
 export import CppUtils.System.FileDescriptor;
 export import CppUtils.System.Pipe;
 export import CppUtils.System.SharedLibrary;
+export import CppUtils.System.Type;
 
 export namespace CppUtils::System
 {

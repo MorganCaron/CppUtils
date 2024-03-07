@@ -11,11 +11,6 @@ jobs:
       matrix:
         compiler:
         - {
-          name: "GCC",
-          cc: "gcc",
-          cxx: "g++"
-        }
-        - {
           name: "Clang",
           cc: "clang",
           cxx: "clang++"
@@ -28,10 +23,6 @@ jobs:
       if: ${{ matrix.compiler.name == 'Clang' }}
       run: |
         brew install llvm
-
-    - name: Update XMake
-      run: |
-        xmake update -s https://github.com/Arthapz/xmake.git#fix-toolchain-ld-path
 
     - name: Compile
       env:

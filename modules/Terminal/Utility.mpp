@@ -13,24 +13,10 @@ export module CppUtils.Terminal.Utility;
 
 import std;
 import CppUtils.Container.Size2d;
+import CppUtils.System.Type;
 
 export namespace CppUtils::Terminal
 {
-#if defined(OS_WINDOWS)
-	// HANDLE is defined as a void pointer see https://learn.microsoft.com/en-us/windows/win32/winprog/windows-data-types#handle
-	using Handle = HANDLE;
-#else
-	using Handle = std::intptr_t;
-#endif
-
-#if defined(OS_WINDOWS)
-	// INVALID_HANDLE_VALUE is defined as https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.10240.0/um/handleapi.h#L43
-	// it can't be constexpr
-	inline const auto InvalidHandle = INVALID_HANDLE_VALUE;
-#else
-	inline constexpr auto InvalidHandle = Handle{-1};
-#endif
-
 	inline auto setConsoleOutputUTF8() -> void
 	{
 #if defined(OS_WINDOWS)
@@ -39,9 +25,9 @@ export namespace CppUtils::Terminal
 	}
 
 #if defined(OS_WINDOWS)
-	[[nodiscard]] inline auto getTerminalHandle(std::FILE* file) -> Handle
+	[[nodiscard]] inline auto getTerminalHandle(std::FILE* file) -> System::Handle
 	{
-		auto terminalHandle = InvalidHandle;
+		auto terminalHandle = System::InvalidHandle;
 		if (file == stdout)
 			terminalHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 		else if (file == stderr)
@@ -49,9 +35,9 @@ export namespace CppUtils::Terminal
 		return terminalHandle;
 	}
 
-	[[nodiscard]] inline auto getTerminalHandle(std::ostream& stream) -> Handle
+	[[nodiscard]] inline auto getTerminalHandle(std::ostream& stream) -> System::Handle
 	{
-		auto terminalHandle = InvalidHandle;
+		auto terminalHandle = System::InvalidHandle;
 		if (&stream == &std::cout)
 			terminalHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 		else if (&stream == &std::cerr)
@@ -59,14 +45,14 @@ export namespace CppUtils::Terminal
 		return terminalHandle;
 	}
 #else
-	[[nodiscard]] inline auto getTerminalHandle([[maybe_unused]] std::FILE* file) -> Handle
+	[[nodiscard]] inline auto getTerminalHandle([[maybe_unused]] std::FILE* file) -> System::Handle
 	{
-		return InvalidHandle;
+		return System::InvalidHandle;
 	}
 
-	[[nodiscard]] inline auto getTerminalHandle([[maybe_unused]] std::ostream& stream) -> Handle
+	[[nodiscard]] inline auto getTerminalHandle([[maybe_unused]] std::ostream& stream) -> System::Handle
 	{
-		return InvalidHandle;
+		return System::InvalidHandle;
 	}
 #endif
 

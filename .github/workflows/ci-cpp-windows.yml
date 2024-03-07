@@ -20,10 +20,6 @@ jobs:
     - uses: xmake-io/github-action-setup-xmake@v1
     - uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Update XMake
-      run: |
-        xmake update -s https://github.com/Arthapz/xmake.git#fix-toolchain-ld-path
-
     - name: Compile
       env:
         CC: ${{ matrix.compiler.cc }}

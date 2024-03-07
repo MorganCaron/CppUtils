@@ -1,0 +1,25 @@
+module;
+
+#include <CppUtils/System/Windows.hpp>
+
+export module CppUtils.System.Type;
+
+import std;
+
+export namespace CppUtils::System
+{
+#if defined(OS_WINDOWS)
+	// HANDLE is defined as a void pointer see https://learn.microsoft.com/en-us/windows/win32/winprog/windows-data-types#handle
+	using Handle = HANDLE;
+#else
+	using Handle = std::intptr_t;
+#endif
+
+#if defined(OS_WINDOWS)
+	// INVALID_HANDLE_VALUE is defined as https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.10240.0/um/handleapi.h#L43
+	// it can't be constexpr
+	inline const auto InvalidHandle = INVALID_HANDLE_VALUE;
+#else
+	inline constexpr auto InvalidHandle = Handle{-1};
+#endif
+}

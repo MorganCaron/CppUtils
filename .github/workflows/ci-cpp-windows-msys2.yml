@@ -31,10 +31,6 @@ jobs:
           ${{ matrix.compiler.install }}
           mingw-w64-x86_64-xmake
 
-    - name: Update XMake
-      run: |
-        xmake update -s https://github.com/Arthapz/xmake.git#fix-toolchain-ld-path
-    
     - name: Compile
       shell: msys2 {0}
       env:
