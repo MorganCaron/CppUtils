@@ -1,6 +1,7 @@
 export module CppUtils.Thread.LoopThread;
 
 import std;
+import CppUtils.Logger;
 
 export namespace CppUtils::Thread
 {
@@ -59,9 +60,24 @@ export namespace CppUtils::Thread
 	private:
 		inline auto run() -> void
 		{
-			m_running = true;
-			while (isRunning())
-				m_function();
+			try
+			{
+				m_running = true;
+				while (isRunning())
+					m_function();
+			}
+			catch (const std::exception& exception)
+			{
+				m_running = false;
+				logException(std::runtime_error{std::format("Exception occurred during thread execution:\n{}", exception.what())});
+				std::terminate();
+			}
+			catch (...)
+			{
+				m_running = false;
+				Logger<"CppUtils">::print<"error">("Exception occurred during thread execution");
+				std::terminate();
+			}
 		}
 
 		std::function<void()> m_function;
