@@ -5,6 +5,26 @@ import CppUtils.Type.Concept;
 
 export namespace CppUtils::FileSystem
 {
+	inline auto forDirectories(
+		const std::filesystem::path& directoryPath,
+		auto&& function,
+		bool recursively = false) -> void
+	{
+		if (not std::filesystem::exists(directoryPath) or
+			not std::filesystem::is_directory(directoryPath))
+			return;
+		if (recursively)
+		{
+			for (const auto& directoryEntry : std::filesystem::recursive_directory_iterator(directoryPath))
+				if (const auto& path = directoryEntry.path(); std::filesystem::is_directory(path))
+					function(path);
+		}
+		else
+			for (const auto& directoryEntry : std::filesystem::directory_iterator(directoryPath))
+				if (const auto& path = directoryEntry.path(); std::filesystem::is_directory(path))
+					function(path);
+	}
+
 	class TemporaryDirectory final
 	{
 	public:

@@ -83,14 +83,11 @@ namespace std
 					string += "close (no write) ";
 			}
 			{
-				auto isMovedSelf = event & Event::MoveSelf;
-				auto isMovedFrom = event & Event::MovedFrom;
-				auto isMovedTo = event & Event::MovedTo;
-				if (isMovedSelf or (isMovedFrom and isMovedTo))
-					string += "moved ";
-				else if (isMovedFrom)
+				if (event & Event::MoveSelf)
+					string += "moved self ";
+				else if (event & Event::MovedFrom)
 					string += "moved from ";
-				else if (isMovedTo)
+				else if (event & Event::MovedTo)
 					string += "moved to ";
 			}
 			if (event & Event::Access)
@@ -99,8 +96,10 @@ namespace std
 				string += "attribute ";
 			if (event & Event::Created)
 				string += "created ";
-			if (event & Event::Deleted or event & Event::DeletedSelf)
+			if (event & Event::Deleted)
 				string += "deleted ";
+			if (event & Event::DeletedSelf)
+				string += "deleted self ";
 			if (event & Event::Modified)
 				string += "modified ";
 			if (event & Event::Open)

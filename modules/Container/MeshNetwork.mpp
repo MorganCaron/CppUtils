@@ -14,7 +14,7 @@ export namespace CppUtils::Container
 		template<class... Args>
 		[[nodiscard]] inline std::shared_ptr<Node> newNode(Args&&... params)
 		{
-			[[maybe_unused]] const auto lock = std::unique_lock(m_nodesMutex);
+			auto lock = std::unique_lock{m_nodesMutex};
 			return m_nodes.emplace_back(std::make_shared<Node>(std::forward<Args>(params)...));
 		}
 

@@ -30,7 +30,7 @@ export namespace CppUtils::Thread
 			return *this;
 		}
 
-		inline ~LoopThread()
+		inline ~LoopThread() noexcept(false)
 		{
 			stop();
 		}
@@ -49,6 +49,8 @@ export namespace CppUtils::Thread
 
 		inline auto stop() -> void
 		{
+			if (m_exceptionOccurred.load())
+				throw std::runtime_error{"Exception occurred during thread execution"};
 			if (not isRunning())
 				return;
 			m_running = false;
@@ -65,24 +67,24 @@ export namespace CppUtils::Thread
 				m_running = true;
 				while (isRunning())
 					m_function();
+				return;
 			}
 			catch (const std::exception& exception)
 			{
-				m_running = false;
-				logException(std::runtime_error{std::format("Exception occurred during thread execution:\n{}", exception.what())});
-				std::terminate();
+				logException(std::runtime_error{std::format("Exception occurred during thread execution:\n{}\nThread execution is interrupted", exception.what())});
 			}
 			catch (...)
 			{
-				m_running = false;
-				Logger<"CppUtils">::print<"error">("Exception occurred during thread execution");
-				std::terminate();
+				Logger<"CppUtils">::print<"error">("Exception occurred during thread execution.\nThread execution is interrupted");
 			}
+			m_running = false;
+			m_exceptionOccurred = true;
 		}
 
 		std::function<void()> m_function;
 		std::function<void()> m_interruptFunction;
 		std::atomic_bool m_running = false;
+		std::atomic_bool m_exceptionOccurred = false;
 		std::jthread m_thread;
 	};
 }

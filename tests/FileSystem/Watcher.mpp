@@ -48,7 +48,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 			}};
 		});
 
-		/*
 		suite.addTest("Watch file creation", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
 				auto expectCreateFile = ExpectedCall{};
@@ -84,7 +83,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 				suite.expectCall(expectCloseFile, 100ms);
 			}};
 		});
-		*/
 
 		suite.addTest("Watch file modification", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
@@ -113,7 +111,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 			}};
 		});
 
-		/*
 		suite.addTest("Watch file modification in a directory", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
 				auto expectModifyFile = ExpectedCall{};
@@ -140,7 +137,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 				suite.expectCall(expectModifyFile, 100ms);
 			}};
 		});
-		*/
 
 		suite.addTest("Watch file deletion", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
@@ -155,11 +151,11 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 						const std::filesystem::path& filePath) -> void {
 					Logger::print("{}: {}\n", event, filePath.string());
 				});
-				watcher.onEvent(CppUtils::FileSystem::Event::DeletedSelf,
+				watcher.onEvent(CppUtils::FileSystem::Event::Deleted,
 					[&suite, &expectDeleteFile, &filePath](
 						CppUtils::FileSystem::Event event,
 						const std::filesystem::path& eventFilePath) -> void {
-					suite.expectEqual(event, CppUtils::FileSystem::Event::DeletedSelf);
+					suite.expectEqual(event, CppUtils::FileSystem::Event::Deleted);
 					suite.expectEqual(eventFilePath, filePath);
 					expectDeleteFile.call();
 				});

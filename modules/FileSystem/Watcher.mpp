@@ -18,7 +18,7 @@ import std;
 import CppUtils.Chrono;
 import CppUtils.Container;
 import CppUtils.FileSystem.Event;
-import CppUtils.FileSystem.File;
+import CppUtils.FileSystem.Directory;
 import CppUtils.System;
 import CppUtils.Thread;
 import CppUtils.Type;
@@ -45,7 +45,7 @@ export namespace CppUtils::FileSystem
 		inline Watcher():
 			m_loopThread{std::bind(&Watcher::listener, this), std::bind(&Watcher::interruptFunction, this)}
 		{
-			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+			auto lockGuard = std::unique_lock{m_mutex};
 #if defined(OS_LINUX)
 			m_eventPoll = epoll_create1(0);
 			{
@@ -116,75 +116,87 @@ export namespace CppUtils::FileSystem
 
 			for (auto i = 0uz; i < nbFileDescriptorsReady; ++i)
 			{
-				auto inotifyEvent = INotifyEvent{};
+				auto buffer = std::array<std::byte, 1024>{};
+				auto length = 0z;
 				{
 					auto eventFileDescriptor = m_events[i].data.fd;
 					if (eventFileDescriptor == m_stopPipe.read)
-						return;
-					if (auto length = read(eventFileDescriptor, &inotifyEvent, sizeof(inotifyEvent));
-						length == -1 and errno == EINTR)
+						continue;
+					length = read(eventFileDescriptor, &buffer, std::size(buffer));
+					if (length == -1 and errno == EINTR)
 						break;
 				}
-				[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
-				if (Event::Ignored & static_cast<Event>(inotifyEvent.mask))
+				for (auto offset = std::ptrdiff_t{0}; offset < length;)
 				{
-					m_watchDescriptors.eraseRight(inotifyEvent.wd);
-					continue;
-				}
-				if (auto it = m_watchDescriptors.findRight(inotifyEvent.wd);
-					it != std::cend(m_watchDescriptors))
-				{
-					auto path = it->first;
-					if (std::filesystem::is_directory(path))
-						path /= inotifyEvent.name;
-					if (std::filesystem::is_directory(path))
-						inotifyEvent.mask |= static_cast<std::underlying_type_t<Event>>(Event::IsDirectory);
-					for (const auto& [event, subcribedFunction] : m_subcribedFunctions)
-						if (event & static_cast<Event>(inotifyEvent.mask))
-							subcribedFunction(static_cast<Event>(inotifyEvent.mask), path);
+					auto inotifyEvent = *reinterpret_cast<INotifyEvent*>(std::data(buffer) + offset);
+					offset += sizeof(INotifyEvent);
+					auto filename = std::string_view{reinterpret_cast<const char*>(std::data(buffer) + offset)};
+					offset += inotifyEvent.len;
+
+					auto lockGuard = std::unique_lock{m_mutex};
+					if (Event::Ignored & static_cast<Event>(inotifyEvent.mask))
+					{
+						m_watchDescriptors.eraseRight(inotifyEvent.wd);
+						continue;
+					}
+					if (auto it = m_watchDescriptors.findRight(inotifyEvent.wd);
+						it != std::cend(m_watchDescriptors))
+					{
+						auto path = it->first;
+						if (std::filesystem::is_directory(path))
+							path /= filename;
+						if (std::filesystem::is_directory(path))
+							inotifyEvent.mask |= static_cast<std::underlying_type_t<Event>>(Event::IsDirectory);
+						for (const auto& [event, subcribedFunction] : m_subcribedFunctions)
+							if (event & static_cast<Event>(inotifyEvent.mask))
+								subcribedFunction(static_cast<Event>(inotifyEvent.mask), path);
+					}
 				}
 			}
 #endif
 		}
 
-		inline auto watch(const std::filesystem::path& filePath, Event event = Event::All) -> void
+		inline auto watch(const std::filesystem::path& path, Event event = Event::All) -> void
 		{
-			if (not std::filesystem::exists(filePath))
+			if (not std::filesystem::exists(path))
 				return;
-			if (std::filesystem::is_directory(filePath))
-				forFiles(filePath, [this, event](const auto& filePath) -> void {
-					watch(filePath, event);
+			if (std::filesystem::is_directory(path))
+				forDirectories(path, [this, event](const auto& path) -> void {
+					watch(path, event);
 				}, true);
-			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+			auto lockGuard = std::unique_lock{m_mutex};
 #if defined(OS_WINDOWS)
 			auto changeHandle = FindFirstChangeNotification(
-				filePath.string().c_str(), true, FILE_NOTIFY_CHANGE_FILE_NAME);
+				path.string().c_str(), true, FILE_NOTIFY_CHANGE_FILE_NAME);
+			if (changeHandle == INVALID_HANDLE_VALUE)
+				throw std::runtime_error{std::format("Failed to watch the file {}\n{}", path.string())}; // Todo: utiliser GetLastError()
+			m_changeHandles.push_back(changeHandle);
 #elif defined(OS_LINUX)
 			auto watchDescriptor = System::throwErrno(
-				inotify_add_watch(m_inotify, filePath.string().c_str(), static_cast<std::underlying_type_t<Event>>(event)),
-				std::format("Failed to watch the file {}", filePath.string()));
-			m_watchDescriptors.insert({filePath, watchDescriptor});
+				inotify_add_watch(m_inotify, path.string().c_str(), static_cast<std::underlying_type_t<Event>>(event)),
+				std::format("Failed to watch the file {}", path.string()));
+			m_watchDescriptors.insert({path, watchDescriptor});
 #endif
 		}
 
-		inline auto unwatch(const std::filesystem::path& filePath) -> void
+		inline auto unwatch(const std::filesystem::path& directoryPath) -> void
 		{
-			if (std::filesystem::exists(filePath) and std::filesystem::is_directory(filePath))
-				forFiles(filePath, [this](const auto& filePath) -> void {
-					unwatch(filePath);
+			if (std::filesystem::exists(directoryPath) and std::filesystem::is_directory(directoryPath))
+				forDirectories(directoryPath, [this](const auto& directoryPath) -> void {
+					unwatch(directoryPath);
 				}, true);
-			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+			auto lockGuard = std::unique_lock{m_mutex};
 #if defined(OS_LINUX)
 			System::throwErrno(
-				inotify_rm_watch(m_inotify, m_watchDescriptors.left(filePath)),
-				std::format("Failed to stop watching the file {}", filePath.string()));
-			m_watchDescriptors.eraseLeft(filePath);
+				inotify_rm_watch(m_inotify, m_watchDescriptors.left(directoryPath)),
+				std::format("Failed to stop watching the file {}", directoryPath.string()));
+			m_watchDescriptors.eraseLeft(directoryPath);
 #endif
 		}
 
 		inline auto unwatchAll() -> void
 		{
-			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+			auto lockGuard = std::unique_lock{m_mutex};
 #if defined(OS_LINUX)
 			for (const auto& [path, fileDescriptor] : m_watchDescriptors)
 				System::throwErrno(
@@ -196,13 +208,13 @@ export namespace CppUtils::FileSystem
 
 		inline auto onEvent(Event event, const SubscribeFunction& function) -> void
 		{
-			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+			auto lockGuard = std::unique_lock{m_mutex};
 			m_subcribedFunctions.push_back({event, function});
 		}
 
 		inline auto onEvent(const SubscribeFunction& function) -> void
 		{
-			[[maybe_unused]] auto lockGuard = std::unique_lock<std::mutex>{m_mutex};
+			auto lockGuard = std::unique_lock{m_mutex};
 			m_subcribedFunctions.push_back({Event::All, function});
 		}
 
@@ -217,7 +229,9 @@ export namespace CppUtils::FileSystem
 
 		std::mutex m_mutex;
 		Thread::LoopThread m_loopThread;
-#if defined(OS_LINUX)
+#if defined(OS_WINDOWS)
+		std::vector<System::Handle> m_changeHandles;
+#elif defined(OS_LINUX)
 		System::FileDescriptor m_eventPoll;
 		System::FileDescriptor m_inotify;
 		System::Pipe m_stopPipe;

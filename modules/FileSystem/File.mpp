@@ -13,11 +13,11 @@ export namespace CppUtils::FileSystem
 			not std::filesystem::is_directory(directoryPath))
 			return;
 		if (recursively)
-			for (const auto& file : std::filesystem::recursive_directory_iterator(directoryPath))
-				function(file.path());
+			for (const auto& directoryEntry : std::filesystem::recursive_directory_iterator(directoryPath))
+				function(directoryEntry.path());
 		else
-			for (const auto& file : std::filesystem::directory_iterator(directoryPath))
-				function(file.path());
+			for (const auto& directoryEntry : std::filesystem::directory_iterator(directoryPath))
+				function(directoryEntry.path());
 	}
 
 	inline auto forFilesWithExtension(

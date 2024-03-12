@@ -71,11 +71,11 @@ namespace CppUtils::UnitTest
 				}
 				catch (const TestException&)
 				{
-					std::throw_with_nested(std::runtime_error{std::format("The following test didn't pass: {}", test.name)});
+					std::throw_with_nested(std::runtime_error{std::format("The following test didn't pass:\n{}", test.name)});
 				}
 				catch (const std::exception&)
 				{
-					std::throw_with_nested(std::runtime_error{std::format("An exception occurred during the test: {}", test.name)});
+					std::throw_with_nested(std::runtime_error{std::format("An exception occurred during the test:\n{}", test.name)});
 				}
 			}
 			catch (const std::exception& exception)

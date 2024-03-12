@@ -8,7 +8,7 @@ namespace std
 	template<class First, class Second>
 	struct hash<std::pair<First, Second>>
 	{
-		std::size_t operator()(const std::pair<First, Second>& pair) const
+		[[nodiscard]] inline auto operator()(const std::pair<First, Second>& pair) const -> std::size_t
 		{
 			auto hash1 = std::hash<First>{}(pair.first);
 			auto hash2 = std::hash<Second>{}(pair.second);
@@ -25,8 +25,8 @@ export namespace CppUtils::Container
 		using Set = std::unordered_set<std::pair<Lhs, Rhs>>;
 
 	public:
-		BidirectionalMap() = default;
-		explicit BidirectionalMap(std::initializer_list<typename Set::value_type> values):
+		inline BidirectionalMap() = default;
+		explicit inline BidirectionalMap(std::initializer_list<typename Set::value_type> values):
 			values{values}
 		{}
 
