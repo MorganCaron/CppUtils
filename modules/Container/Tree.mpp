@@ -167,11 +167,11 @@ namespace std
 		inline auto formatNode(const T& node, FormatContext& context, std::string&& prefix = "") const -> void
 		{
 			auto&& out = context.out();
-			std::format_to(out, "{}", node.value);
+			std::format_to(out, "{}\n", node.value);
 			const auto nbNodes = std::size(node.nodes);
 			for (auto i = 0uz; i < nbNodes; ++i)
 			{
-				std::format_to(out, "\n{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
+				std::format_to(out, "{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
 				formatNode(node.nodes.at(i), context, prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
 			}
 		}

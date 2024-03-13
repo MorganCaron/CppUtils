@@ -18,6 +18,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: branch@master
 
     - name: Install LLVM
       if: ${{ matrix.compiler.name == 'Clang' }}

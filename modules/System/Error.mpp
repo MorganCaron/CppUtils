@@ -1,0 +1,57 @@
+module;
+
+#include <cerrno>
+
+#include <CppUtils/System/Windows.hpp>
+
+export module CppUtils.System.Error;
+
+import std;
+
+export namespace CppUtils::System
+{
+	inline auto throwErrno(int value, std::string_view message = "") -> int
+	{
+		if (value == -1) [[unlikely]]
+			throw std::runtime_error{
+				std::empty(message) ?
+					std::format("{}", std::strerror(errno)) :
+					std::format("{}: {}", message, std::strerror(errno))};
+		return value;
+	}
+
+	[[nodiscard]] inline auto expectErrno(int value, std::string_view message = "") -> std::expected<int, std::runtime_error>
+	{
+		if (value == -1) [[unlikely]]
+			return std::unexpected(std::runtime_error{
+				std::empty(message) ?
+					std::format("{}", std::strerror(errno)) :
+					std::format("{}: {}", message, std::strerror(errno))});
+		return value;
+	}
+
+#if defined(OS_WINDOWS)
+	inline auto throwLastError(std::string_view message = "") -> void
+	{
+		throw std::runtime_error{
+			std::empty(message) ?
+				std::format("{}", GetLastError()) :
+				std::format("{}: {}", message, GetLastError())};
+	}
+
+	inline auto throwLastErrorIf(int value, std::string_view message = "") -> void
+	{
+		if (value != 0) [[unlikely]]
+			throwLastError(message);
+	}
+
+	[[nodiscard]] inline auto expectNoError(int value, std::string_view message = "") -> std::expected<std::runtime_error>
+	{
+		if (value != 0) [[unlikely]]
+			return std::unexpected(std::runtime_error{
+				std::empty(message) ?
+					std::format("{}", GetLastError()) :
+					std::format("{}: {}", message, GetLastError())});
+	}
+#endif
+}

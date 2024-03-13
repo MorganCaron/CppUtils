@@ -1,15 +1,15 @@
-export module CppUtils.UnitTests.Language.TreeCompiler;
+export module CppUtils.UnitTests.Language.TreeParser;
 
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Language::TreeCompiler
+export namespace CppUtils::UnitTest::Language::TreeParser
 {
-	inline auto _ = TestSuite{"Language/TreeCompiler", []([[maybe_unused]] auto& suite) {
+	inline auto _ = TestSuite{"Language/TreeParser", []([[maybe_unused]] auto& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
-		namespace Compiler = CppUtils::Language::TreeCompiler;
+		namespace Compiler = CppUtils::Language::TreeParser;
 		using TokenTree = CppUtils::Container::TokenTree;
 		using Node = TokenTree::Node;
 

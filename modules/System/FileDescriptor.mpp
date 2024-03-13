@@ -9,7 +9,7 @@ module;
 export module CppUtils.System.FileDescriptor;
 
 import std;
-import CppUtils.System.Errno;
+import CppUtils.System.Error;
 
 export namespace CppUtils::System
 {

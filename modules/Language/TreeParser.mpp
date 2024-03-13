@@ -1,4 +1,4 @@
-export module CppUtils.Language.TreeCompiler;
+export module CppUtils.Language.TreeParser;
 
 import std;
 import CppUtils.Memory;
@@ -6,7 +6,7 @@ import CppUtils.Container.Tree;
 import CppUtils.Language.VirtualMachine;
 import CppUtils.Language.CallStackCompiler;
 
-export namespace CppUtils::Language::TreeCompiler
+export namespace CppUtils::Language::TreeParser
 {
 	template<class CharT>
 	inline auto compile(const std::basic_string_view<CharT> source) -> Container::TokenTree
@@ -58,13 +58,13 @@ export namespace CppUtils::Language::TreeCompiler
 				}
 
 				parseKeyword(): void 20§{
+					(13@ # incrementSourcePosition();
 				}
 
 				buildNode(TokenTree* node): void 21§{
 					(17@ # skipSpaces();
 					§ (2:(14@, 0, 23, 5? # while (not isEndOfFile()) {
 						(20@ # parseKeyword();
-						(13@ # incrementSourcePosition();
 						(17@ # skipSpaces();
 					(22¤§ # }
 				}

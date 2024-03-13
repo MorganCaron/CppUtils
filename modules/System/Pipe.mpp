@@ -10,7 +10,7 @@ module;
 export module CppUtils.System.Pipe;
 
 import std;
-import CppUtils.System.Errno;
+import CppUtils.System.Error;
 import CppUtils.System.FileDescriptor;
 
 export namespace CppUtils::System

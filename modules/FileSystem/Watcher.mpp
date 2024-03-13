@@ -104,7 +104,24 @@ export namespace CppUtils::FileSystem
 
 		inline auto listener() -> void
 		{
-#if defined(OS_LINUX)
+#if defined(OS_WINDOWS)
+			switch (WaitForMultipleObjects(std::size(m_changeHandles), std::data(m_changeHandles), false, INFINITE);)
+			{
+			case WAIT_OBJECT_0: // An event occurred on a file
+				RefreshDirectory(lpDir);
+				System::throwLastErrorIf(not FindNextChangeNotification(dwChangeHandles[0]), "FindNextChangeNotification failed");
+				break;
+			case WAIT_OBJECT_0 + 1: // An event occurred on a directory
+				RefreshTree(lpDrive);
+				System::throwLastErrorIf(not FindNextChangeNotification(dwChangeHandles[1]), "FindNextChangeNotification failed");
+				break;
+			case WAIT_TIMEOUT: break;
+			default:
+				System::throwLastError("CppUtils/FileSystem/Watcher/listener: Unhandled wait status");
+				break;
+			}
+			// Todo: https://learn.microsoft.com/fr-fr/windows/win32/fileio/obtaining-directory-change-notifications?redirectedfrom=MSDN
+#elif defined(OS_LINUX)
 			auto nbFileDescriptorsReady = 0uz;
 			{
 				auto epollWaitResult = epoll_wait(m_eventPoll, std::data(m_events), maxEvents, 1);

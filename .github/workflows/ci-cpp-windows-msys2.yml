@@ -24,12 +24,14 @@ jobs:
         }
     steps:
     - uses: actions/checkout@v4
+    - uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: branch@master
 
     - uses: msys2/setup-msys2@v2
       with:
         install: >-
           ${{ matrix.compiler.install }}
-          mingw-w64-x86_64-xmake
 
     - name: Compile
       shell: msys2 {0}

@@ -9,7 +9,7 @@ module;
 export module CppUtils.System;
 
 import std;
-export import CppUtils.System.Errno;
+export import CppUtils.System.Error;
 export import CppUtils.System.FileDescriptor;
 export import CppUtils.System.Pipe;
 export import CppUtils.System.SharedLibrary;
