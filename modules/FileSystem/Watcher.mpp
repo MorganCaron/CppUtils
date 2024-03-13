@@ -160,10 +160,9 @@ export namespace CppUtils::FileSystem
 		{
 			if (not std::filesystem::exists(path))
 				return;
-			if (std::filesystem::is_directory(path))
-				forDirectories(path, [this, event](const auto& path) -> void {
-					watch(path, event);
-				}, true);
+			forDirectories(path, [this, event](const auto& path) -> void {
+				watch(path, event);
+			}, true);
 			auto lockGuard = std::unique_lock{m_mutex};
 #if defined(OS_WINDOWS)
 			auto changeHandle = FindFirstChangeNotification(
@@ -181,10 +180,9 @@ export namespace CppUtils::FileSystem
 
 		inline auto unwatch(const std::filesystem::path& directoryPath) -> void
 		{
-			if (std::filesystem::exists(directoryPath) and std::filesystem::is_directory(directoryPath))
-				forDirectories(directoryPath, [this](const auto& directoryPath) -> void {
-					unwatch(directoryPath);
-				}, true);
+			forDirectories(directoryPath, [this](const auto& directoryPath) -> void {
+				unwatch(directoryPath);
+			}, true);
 			auto lockGuard = std::unique_lock{m_mutex};
 #if defined(OS_LINUX)
 			System::throwErrno(

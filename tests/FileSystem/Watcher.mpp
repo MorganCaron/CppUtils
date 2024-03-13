@@ -97,11 +97,11 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 						const std::filesystem::path& filePath) -> void {
 					Logger::print("{}: {}\n", event, filePath.string());
 				});
-				watcher.onEvent(CppUtils::FileSystem::Event::Modified,
+				watcher.onEvent(CppUtils::FileSystem::Event::CloseWrite,
 					[&suite, &expectModifyFile, &filePath](
 						CppUtils::FileSystem::Event event,
 						const std::filesystem::path& eventFilePath) -> void {
-					suite.expectEqual(event, CppUtils::FileSystem::Event::Modified);
+					suite.expectEqual(event, CppUtils::FileSystem::Event::CloseWrite);
 					suite.expectEqual(eventFilePath, filePath);
 					expectModifyFile.call();
 				});
@@ -124,11 +124,11 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 						const std::filesystem::path& filePath) -> void {
 					Logger::print("{}: {}\n", event, filePath.string());
 				});
-				watcher.onEvent(CppUtils::FileSystem::Event::Modified,
+				watcher.onEvent(CppUtils::FileSystem::Event::CloseWrite,
 					[&suite, &expectModifyFile, &filePath](
 						CppUtils::FileSystem::Event event,
 						const std::filesystem::path& eventFilePath) -> void {
-					suite.expectEqual(event, CppUtils::FileSystem::Event::Modified);
+					suite.expectEqual(event, CppUtils::FileSystem::Event::CloseWrite);
 					suite.expectEqual(eventFilePath, filePath);
 					expectModifyFile.call();
 				});
