@@ -4,7 +4,7 @@ import std;
 import CppUtils.Type;
 import CppUtils.String;
 import CppUtils.Language.VirtualMachine;
-export import CppUtils.Language.CallStackCompiler;
+import CppUtils.Language.CallStackCompiler;
 
 export namespace CppUtils::Language::CLikeCompiler
 {

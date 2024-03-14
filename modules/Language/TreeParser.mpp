@@ -16,7 +16,7 @@ export namespace CppUtils::Language::TreeParser
 				main(): Container::TokenTree* 10§{
 					(0 (0, 2, 0, 0C # register0 = 0; (source position)
 					(:N # arg0 = new TokenTree();
-						(21@ # buildNode(arg0);
+						(26@ # buildNode(arg0);
 					X # return arg0;
 				}
 
@@ -43,30 +43,75 @@ export namespace CppUtils::Language::TreeParser
 				isSpace(): bool 16§{
 					(3:(15@ S # char = getChar();
 						(1, 6, 3:\ , 0=! # if (char == ' ')
-							(0, 10, 0? 1S)} # return true;
+							(0, 10, 0? )(2:1} # return true;
 						(2:(1, 6, 3:9, 0=! # if (char == '\t')
-							(0, 10, 0? 1S)} # return true;
+							(0, 10, 0? )(2:1} # return true;
 						(2:(1, 6, 3:10, 0=! # if (char == '\n')
-							(0, 10, 0? 1S)} # return true;
-					)(2:0 # return false;
+							(0, 10, 0? )(2:1} # return true;
+					)
+					(2:} # return false;
 				}
 
 				skipSpaces(): void 17§{
-					§ (2:(14@, 0, 19, 5? (2:(16@!, 0, 19, 5? # while (not isEndOfFile() and isSpace()) {
+					§ # while
+						(2:(14@, 0, 19, 5? # not isEndOfFile()
+						(2:(16@!, 0, 19, 5? # and isSpace() {
 						(13@ # incrementSourcePosition();
 					(18¤§ # }
 				}
 
-				parseKeyword(): void 20§{
-					(13@ # incrementSourcePosition();
+				createStringView(size): string_view 20§{
+					((12@, 0, 0, 6- # length = getSourcePosition() - startPosition;
+					) # return new string_view{startPosition, length};
 				}
 
-				buildNode(TokenTree* node): void 21§{
+				isEndOfKeyword(): bool 21§{
+					(14@! # if isEndOfFile()
+						(0, 10, 0? (2:1} # return true;
+					(2:(16@! # if isSpace()
+						(0, 10, 0? (2:1} # return true;
+					(3:(15@ # char = getChar();
+						(2:(1, 6, 3:123, 0=! # if (char == '{')
+							(0, 10, 0? )(2:1} # return true;
+						(2:(1, 6, 3:125, 0=! # if (char == '}')
+							(0, 10, 0? )(2:1} # return true;
+					)
+					(2:} # return false;
+				}
+
+				parseKeyword(): void 22§{
+					((12@ # startPosition = getSourcePosition();
+						§ (2:(21@, 0, 24, 5? # while (not isEndOfKeyword()) {
+							(13@ # incrementSourcePosition();
+						(23¤§ # }
+						(20@) # [[unused]] _ = createStringView(startPosition);
+						# hashKeyword();
+				}
+
+				parseAccolades(): void 25§{
 					(17@ # skipSpaces();
-					§ (2:(14@, 0, 23, 5? # while (not isEndOfFile()) {
-						(20@ # parseKeyword();
+					(2:(14@! # if isEndOfFile()
+						(0, 10, 0? } # return;
+					(3:(15@ # char = getChar();
+						(2:(1, 6, 3:123, 0= # if (char != '{')
+							(0, 10, 0? )} # return;
+					)
+					(13@ # incrementSourcePosition();
+					(26@ # buildNode();
+					(17@ # skipSpaces();
+					(3:(15@ # char = getChar();
+						(2:(1, 6, 3:125, 0= # if (char != '}')
+							(0, 10, 0? X # exit;
+					)
+				}
+
+				buildNode(TokenTree* node): void 26§{
+					(17@ # skipSpaces();
+					§ (2:(14@, 0, 28, 5? # while (not isEndOfFile()) {
+						(22@ # parseKeyword();
+						(25@ # parseAccolades();
 						(17@ # skipSpaces();
-					(22¤§ # }
+					(27¤§ # }
 				}
 				)"sv;
 		auto compiler = CallStackCompiler::compile(treeCompiler);
