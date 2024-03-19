@@ -2,20 +2,22 @@ export module CppUtils.String.Hash;
 
 import std;
 
+import CppUtils.String.Concept;
+
 export namespace CppUtils::String
 {
 	using Hash = std::uint64_t;
 	using Token = Hash;
 
-	[[nodiscard]] inline constexpr auto hash(std::string_view string) noexcept -> Hash
+	[[nodiscard]] inline constexpr auto hash(GenericText auto&& sv) noexcept -> Hash
 	{
 		auto result = 0xcb'f2'9c'e4'84'22'23'25u;
-		for (const auto& c : string)
+		for (const auto& c : sv)
 			result = (static_cast<Hash>(c) ^ result) * 0x1'00'00'00'01'b3u;
 		return result;
 	}
 
-	template<class CharT = char, std::size_t N = 1>
+	template<Char CharT = char, std::size_t N = 1>
 	struct Hasher final
 	{
 		inline constexpr Hasher(Hash hash):
@@ -65,14 +67,14 @@ export namespace CppUtils::String
 			return hash(std::string_view{cString, size});
 		}
 
-		static_assert("Number"_hash == "Number"_hash);
-		static_assert("Number"_hash != "String"_hash);
+		static_assert("Foo"_hash == "Foo"_hash);
+		static_assert("Foo"_hash != "Bar"_hash);
 
-		static_assert("Number"_token == "Number"_token);
-		static_assert("Number"_token != "String"_token);
+		static_assert("Foo"_token == "Foo"_token);
+		static_assert("Foo"_token != "Bar"_token);
 
-		static_assert("Number"_hash == "Number"_token);
-		static_assert("Number"_hash == "Number"_token);
-		static_assert("Number"_hash != "String"_token);
+		static_assert("Foo"_hash == "Foo"_token);
+		static_assert("Foo"_hash == "Foo"_token);
+		static_assert("Foo"_hash != "Bar"_token);
 	}
 }

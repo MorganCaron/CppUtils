@@ -17,7 +17,7 @@ export namespace CppUtils::String
 		{'t', '\t'},
 		{'v', '\v'}};
 
-	template<Concept::Char CharT>
+	template<Char CharT>
 	[[nodiscard]] inline auto reverseEscapedChar(CharT c) noexcept -> std::basic_string<CharT>
 	{
 		for (const auto& [readableChar, escapedChar] : String::escapedChars)
@@ -117,7 +117,7 @@ export namespace CppUtils::String
 			return "<non printable>";
 	}
 
-	[[nodiscard]] inline constexpr auto toAscii(const Concept::Text auto& string) -> std::string
+	[[nodiscard]] inline constexpr auto toAscii(const GenericText auto& string) -> std::string
 	{
 		auto asciiString = std::string{};
 		std::transform(std::cbegin(string), std::cend(string), std::back_inserter(asciiString), [](auto c) -> char {

@@ -2,6 +2,7 @@ export module CppUtils.Language.TreeParser;
 
 import std;
 import CppUtils.Memory;
+import CppUtils.String.Hash;
 import CppUtils.Container.Tree;
 import CppUtils.Language.VirtualMachine;
 import CppUtils.Language.CallStackCompiler;
@@ -9,7 +10,7 @@ import CppUtils.Language.CallStackCompiler;
 export namespace CppUtils::Language::TreeParser
 {
 	template<class CharT>
-	inline auto compile(const std::basic_string_view<CharT> source) -> Container::TokenTree
+	inline auto compile(const std::basic_string_view<CharT> source) -> Container::AST<CharT>
 	{
 		using namespace std::literals;
 		constexpr auto treeCompiler = uR"(
@@ -61,8 +62,12 @@ export namespace CppUtils::Language::TreeParser
 				}
 
 				createStringView(size): string_view 20§{
+					(4:S #stringView
+					(1; # source
+					S # startPosition
 					((12@, 0, 0, 6- # length = getSourcePosition() - startPosition;
-					) # return new string_view{startPosition, length};
+					(4; # stringView = newStringView(source, startPosition, length);
+					)))} # return stringView;
 				}
 
 				isEndOfKeyword(): bool 21§{
@@ -85,7 +90,7 @@ export namespace CppUtils::Language::TreeParser
 							(13@ # incrementSourcePosition();
 						(23¤§ # }
 						(20@) # [[unused]] _ = createStringView(startPosition);
-						# hashKeyword();
+						I# hashKeyword();
 				}
 
 				parseAccolades(): void 25§{
@@ -115,8 +120,11 @@ export namespace CppUtils::Language::TreeParser
 				}
 				)"sv;
 		auto compiler = CallStackCompiler::compile(treeCompiler);
+		constexpr auto tokenize = [](const decltype(source)* source, std::size_t begin, std::size_t length) -> String::Token {
+			return String::hash(source->substr(begin, length));
+		};
 		return Memory::moveRawPointer(VirtualMachine::execute<
-			Container::TokenTree*,
+			Container::AST<CharT>*,
 			std::size_t,
 			bool,
 			CharT,
@@ -125,6 +133,7 @@ export namespace CppUtils::Language::TreeParser
 			compiler,
 			&source,
 			&decltype(source)::size,
-			&decltype(source)::at));
+			&decltype(source)::at,
+			+tokenize));
 	}
 }

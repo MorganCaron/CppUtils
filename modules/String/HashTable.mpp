@@ -2,20 +2,23 @@ export module CppUtils.String.HashTable;
 
 import std;
 
+import CppUtils.String.Concept;
 import CppUtils.String.Hash;
 import CppUtils.String.Utility;
 
 export namespace CppUtils::String
 {
-	using HashTable = std::unordered_map<String::Token, std::string>;
+	template<Char CharT>
+	using HashTable = std::unordered_map<Token, std::basic_string<CharT>>;
 
-	[[nodiscard]] inline auto makeHashTable(auto... sv) -> HashTable
+	template<Char CharT>
+	[[nodiscard]] inline auto makeHashTable(Text<CharT> auto&&... texts) -> decltype(auto)
 	{
-		return HashTable{std::make_pair(String::hash(sv), sv)...};
+		return HashTable<CharT>{std::make_pair(String::hash(texts), std::forward<decltype(texts)>(texts))...};
 	}
 
-	template<class CharT>
-	[[nodiscard]] inline auto getNameOrValue(Token token, const HashTable& tokenNames) -> auto
+	template<Char CharT>
+	[[nodiscard]] inline auto getNameOrValue(Token token, const HashTable<CharT>& tokenNames) -> auto
 	{
 		using namespace std::literals;
 

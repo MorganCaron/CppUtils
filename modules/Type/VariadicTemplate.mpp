@@ -9,8 +9,11 @@ export namespace CppUtils::Type
 	requires (I < sizeof...(Types))
 	using NthType = std::tuple_element_t<I, std::tuple<Types...>>;
 
+	template<class... Types>
+	using FirstType = NthType<0, Types...>;
+
 	template<class T, class... Types>
-	requires Concept::Present<T, Types...>
+	requires Present<T, Types...>
 	consteval auto getPosition() -> std::size_t
 	{
 		auto i = 0uz;

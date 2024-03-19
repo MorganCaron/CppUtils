@@ -5,21 +5,21 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Language::TreeParser
 {
-	inline auto _ = TestSuite{"Language/TreeParser", []([[maybe_unused]] auto& suite) {
+	inline auto _ = TestSuite{"Language/TreeParser", [](auto& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 		namespace Compiler = CppUtils::Language::TreeParser;
-		using TokenTree = CppUtils::Container::TokenTree;
-		using Node = TokenTree::Node;
+		using AST = CppUtils::Container::AST<>;
+		using Node = CppUtils::Container::ASTNode<>;
 
 		suite.addTest("Empty source", [&] {
-			constexpr auto source = u""sv;
+			constexpr auto source = ""sv;
 			auto tree = Compiler::compile(source);
 			Logger::print("Tree:\n{}", tree);
-			auto expected = TokenTree{
+			auto expected = AST{
 				Node{"root"_token},
-				String::makeHashTable("root")};
+				String::makeHashTable<char>("root")};
 			suite.expectEqual(tree, expected);
 		});
 		/*
@@ -27,7 +27,7 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 			constexpr auto source = u"node"sv;
 			auto tree = Compiler::compile(source);
 			Logger::print("Tree:\n{}", tree);
-			auto expected = TokenTree{
+			auto expected = AST{
 				Node{"root"_token, {Node{"node"_token}}},
 				String::makeHashTable("root", "node")};
 			suite.expectEqual(tree, expected);
@@ -36,10 +36,10 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 		suite.addTest("Whitespaces", [&] {
 			constexpr auto source = uR"(
 				node
-				)"sv;
+			)"sv;
 			auto tree = Compiler::compile(source);
 			Logger::print("Tree:\n{}", tree);
-			auto expected = TokenTree{
+			auto expected = AST{
 				Node{"root"_token, {Node{"node"_token}}},
 				String::makeHashTable("root", "node")};
 			suite.expectEqual(tree, expected);
@@ -49,7 +49,7 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 			constexpr auto source = u"foo bar"sv;
 			auto tree = Compiler::compile(source);
 			Logger::print("Tree:\n{}", tree);
-			auto expected = TokenTree{
+			auto expected = AST{
 				Node{"root"_token, {Node{"foo"_token}, Node{"bar"_token}}},
 				String::makeHashTable("root", "foo", "bar")};
 			suite.expectEqual(tree, expected);
@@ -61,7 +61,7 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 			)"sv;
 			auto tree = Compiler::compile(source);
 			Logger::print("Tree:\n{}", tree);
-			auto expected = TokenTree{
+			auto expected = AST{
 				Node{"root"_token, {Node{"Hello World!"_token}}},
 				String::makeHashTable("root", "Hello World!")};
 			suite.expectEqual(tree, expected);
@@ -71,7 +71,7 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 			constexpr auto source = u"node{}"sv;
 			auto tree = Compiler::compile(source);
 			Logger::print("Tree:\n{}", tree);
-			auto expected = TokenTree{
+			auto expected = AST{
 				Node{"root"_token, {Node{"node"_token}}},
 				String::makeHashTable("root", "node")};
 			suite.expectEqual(tree, expected);
@@ -81,7 +81,7 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 			constexpr auto source = u"parent{child0 child1}"sv;
 			auto tree = Compiler::compile(source);
 			Logger::print("Tree:\n{}", tree);
-			auto expected = TokenTree{
+			auto expected = AST{
 				Node{"root"_token, {Node{"parent"_token, {Node{"child0"_token}, Node{"child1"_token}}}}},
 				String::makeHashTable("root", "parent", "child0", "child1")};
 			suite.expectEqual(tree, expected);
@@ -95,7 +95,7 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 			)"sv;
 			auto tree = Compiler::compile(source);
 			Logger::print("Tree:\n{}", tree);
-			auto expected = TokenTree{
+			auto expected = AST{
 				Node{"root"_token, {Node{"main"_token, {Node{"print"_token, {Node{"Hello World"_token}}}}}}},
 				String::makeHashTable("root", "print", "Hello World!")};
 			suite.expectEqual(tree, expected);

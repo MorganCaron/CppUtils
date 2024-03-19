@@ -42,14 +42,14 @@ export namespace CppUtils::FileSystem
 		inline explicit TemporaryDirectory(auto&& function, [[maybe_unused]] auto&&... args):
 			TemporaryDirectory{}
 		{
-			static_assert(not Type::Concept::HasReturnValue<decltype(function)>);
+			static_assert(not Type::HasReturnValue<decltype(function)>);
 			function(m_tempDirectory, std::forward<decltype(args)>(args)...);
 		}
 
 		inline TemporaryDirectory(std::string_view directoryName, auto&& function, [[maybe_unused]] auto&&... args):
 			TemporaryDirectory{directoryName}
 		{
-			static_assert(not Type::Concept::HasReturnValue<decltype(function)>);
+			static_assert(not Type::HasReturnValue<decltype(function)>);
 			function(m_tempDirectory, std::forward<decltype(args)>(args)...);
 		}
 
@@ -60,7 +60,7 @@ export namespace CppUtils::FileSystem
 
 		inline auto execute(auto&& function, auto&&... args) -> decltype(auto)
 		{
-			if constexpr (Type::Concept::HasReturnValue<decltype(function)>)
+			if constexpr (Type::HasReturnValue<decltype(function)>)
 				return function(m_tempDirectory, std::forward<decltype(args)>(args)...);
 			else
 				function(m_tempDirectory, std::forward<decltype(args)>(args)...);

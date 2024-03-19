@@ -2,7 +2,7 @@ export module CppUtils.Type.Concept;
 
 import std;
 
-export namespace CppUtils::Type::Concept
+export namespace CppUtils::Type
 {
 	template<class T>
 	concept Printable = requires (T value) {

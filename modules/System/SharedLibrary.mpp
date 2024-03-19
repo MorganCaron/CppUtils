@@ -80,7 +80,7 @@ export namespace CppUtils::System
 #endif
 		}
 
-		template<Type::Concept::Function Function = void(*)()>
+		template<Type::Function Function = void(*)()>
 		[[nodiscard]] inline auto getFunction(std::string_view signature) -> Function
 		{
 			using namespace std::literals;

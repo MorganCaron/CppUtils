@@ -41,14 +41,14 @@ namespace CppUtils::Language::Parser
 	template<class CharT>
 	Cursor(std::basic_string_view<CharT>, std::size_t position = 0) -> Cursor<CharT>;
 
-	template<String::Concept::Char CharT>
+	template<String::Char CharT>
 	[[nodiscard]] constexpr auto getLineNumber(const Cursor<CharT>& cursor) -> std::size_t
 	{
 		const auto subSpan = cursor.data.subspan(0, cursor.position);
 		return std::count(std::cbegin(subSpan), std::cend(subSpan), '\n') + 1;
 	}
 
-	template<String::Concept::Char CharT>
+	template<String::Char CharT>
 	[[nodiscard]] constexpr auto getPositionInTheLine(const Cursor<CharT>& cursor) noexcept -> std::size_t
 	{
 		auto lineLength = 0u;
@@ -57,10 +57,10 @@ namespace CppUtils::Language::Parser
 		return lineLength;
 	}
 
-	template<String::Concept::Char CharT>
+	template<String::Char CharT>
 	[[nodiscard]] constexpr auto getSample(const Cursor<CharT>& cursor, std::size_t length) -> std::basic_string<CharT>
 	{
-		if constexpr (!String::Concept::Char<CharT>)
+		if constexpr (!String::Char<CharT>)
 			return std::basic_string<CharT>{};
 
 		auto startPosition = cursor.position - std::min(getPositionInTheLine(cursor), length);
@@ -88,7 +88,7 @@ namespace CppUtils::Language::Parser
 	{
 		// Todo: utiliser std::format ici:
 		// std::cout << std::basic_string<Element>{std::cbegin(cursor.data), std::cend(cursor.data)} << std::endl;
-		if constexpr (String::Concept::Char<Element>)
+		if constexpr (String::Char<Element>)
 			return "At line " + std::to_string(getLineNumber(cursor)) +
 				" position " + std::to_string(getPositionInTheLine(cursor)) + ":\n" +
 				getSample(cursor, Terminal::getTerminalSize().width);

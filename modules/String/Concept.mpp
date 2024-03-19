@@ -4,17 +4,23 @@ import std;
 
 import CppUtils.Type.Concept;
 
-export namespace CppUtils::String::Concept
+export namespace CppUtils::String
 {
 	template<class T>
-	concept Char = Type::Concept::Present<T, char, signed char, unsigned char, wchar_t, char8_t, char16_t, char32_t>;
+	concept Char = Type::Present<T, char, wchar_t, char8_t, char16_t, char32_t>;
 
 	template<class T>
-	concept String = Type::Concept::Specializes<T, std::basic_string>;
+	concept String = Type::Specializes<T, std::basic_string>;
 
 	template<class T>
-	concept StringView = Type::Concept::Specializes<T, std::basic_string_view>;
+	concept StringView = Type::Specializes<T, std::basic_string_view>;
+
+	template<class T, class... Chars>
+	concept Text = (std::is_convertible_v<std::remove_cvref_t<T>, std::basic_string_view<Chars>> or ...);
 
 	template<class T>
-	concept Text = String<T> or StringView<T>;
+	concept GenericText = Text<T, char, char8_t, char16_t, char32_t, wchar_t>;
+
+	template<GenericText T>
+	using TextCharT = typename decltype(std::basic_string_view{std::declval<T>()})::value_type;
 }

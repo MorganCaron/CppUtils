@@ -7,7 +7,7 @@ import CppUtils.Type;
 
 export namespace CppUtils::Container
 {
-	template<Type::Concept::TriviallyCopyable... SupportedTypes>
+	template<Type::TriviallyCopyable... SupportedTypes>
 	class Stack final
 	{
 	public:
@@ -15,8 +15,8 @@ export namespace CppUtils::Container
 		using Types = std::tuple<SupportedTypes...>;
 		static inline constexpr auto typesSize = std::array<std::size_t, sizeof...(SupportedTypes)>{sizeof(SupportedTypes)...};
 
-		template<Type::Concept::TriviallyCopyable... Args>
-		requires (Type::Concept::Present<Args, SupportedTypes...> and ...)
+		template<Type::TriviallyCopyable... Args>
+		requires (Type::Present<Args, SupportedTypes...> and ...)
 		inline constexpr explicit Stack(Args... values)
 		{
 			(push(values), ...);
@@ -44,8 +44,8 @@ export namespace CppUtils::Container
 			return m_types[position];
 		}
 
-		template<Type::Concept::TriviallyCopyable T>
-		requires Type::Concept::Present<T, SupportedTypes...>
+		template<Type::TriviallyCopyable T>
+		requires Type::Present<T, SupportedTypes...>
 		[[nodiscard]] inline constexpr auto get(std::size_t position) const -> T
 		{
 			if (position >= size()) [[unlikely]]
@@ -60,8 +60,8 @@ export namespace CppUtils::Container
 			return std::bit_cast<T>(buffer);
 		}
 
-		template<Type::Concept::TriviallyCopyable T>
-		requires Type::Concept::Present<T, SupportedTypes...>
+		template<Type::TriviallyCopyable T>
+		requires Type::Present<T, SupportedTypes...>
 		[[nodiscard]] inline constexpr auto top() const -> decltype(auto)
 		{
 			if (empty()) [[unlikely]]
@@ -76,8 +76,8 @@ export namespace CppUtils::Container
 			visit(size() - 1, std::forward<decltype(visitor)>(visitor));
 		}
 
-		template<Type::Concept::TriviallyCopyable T>
-		requires Type::Concept::Present<T, SupportedTypes...>
+		template<Type::TriviallyCopyable T>
+		requires Type::Present<T, SupportedTypes...>
 		inline constexpr auto set(std::size_t position, T newValue) -> void
 		{
 			if (position >= size()) [[unlikely]]
@@ -91,15 +91,15 @@ export namespace CppUtils::Container
 				m_data[offset + i] = buffer[i];
 		}
 
-		template<Type::Concept::TriviallyCopyable T>
-		requires Type::Concept::Present<T, SupportedTypes...>
+		template<Type::TriviallyCopyable T>
+		requires Type::Present<T, SupportedTypes...>
 		inline constexpr auto set(T newValue) -> void
 		{
 			set(size() - 1, std::move(newValue));
 		}
 
-		template<Type::Concept::TriviallyCopyable T>
-		requires Type::Concept::Present<T, SupportedTypes...>
+		template<Type::TriviallyCopyable T>
+		requires Type::Present<T, SupportedTypes...>
 		inline constexpr auto push(T value = T{}) -> void
 		{
 			m_types.push_back(Type::getPosition<T, SupportedTypes...>());
@@ -132,8 +132,8 @@ export namespace CppUtils::Container
 			m_types.pop_back();
 		}
 
-		template<Type::Concept::TriviallyCopyable T>
-		requires Type::Concept::Present<T, SupportedTypes...>
+		template<Type::TriviallyCopyable T>
+		requires Type::Present<T, SupportedTypes...>
 		[[nodiscard]] inline constexpr auto pop() -> decltype(auto)
 		{
 			if (empty()) [[unlikely]]

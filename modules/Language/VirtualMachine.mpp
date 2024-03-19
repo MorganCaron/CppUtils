@@ -15,13 +15,13 @@ namespace CppUtils::Language::VirtualMachine
 	[[nodiscard]] inline constexpr auto isModeIndirect(std::size_t mode) noexcept -> bool { return mode & 0b100; }
 	[[nodiscard]] inline constexpr auto isModeDirect(std::size_t mode) noexcept -> bool { return !isModeIndirect(mode); }
 
-	template<Type::Concept::TriviallyCopyable... StackTypes>
+	template<Type::TriviallyCopyable... StackTypes>
 	[[nodiscard]] inline constexpr auto applyModeToPosition(Container::Stack<StackTypes...>& stack, std::size_t mode, std::size_t position, std::size_t rightOffset = 0) -> std::size_t
 	{
 		return isModeAscending(mode) ? position : (std::size(stack) - 1 - position - rightOffset);
 	}
 
-	template<Type::Concept::TriviallyCopyable... StackTypes>
+	template<Type::TriviallyCopyable... StackTypes>
 	[[nodiscard]] inline constexpr auto getPositionInSource(Container::Stack<StackTypes...>& stack, std::size_t instructionPointer, std::size_t mode, std::size_t position) -> std::size_t
 	{
 		if (isModeIndirect(mode))
@@ -29,7 +29,7 @@ namespace CppUtils::Language::VirtualMachine
 		return isModeRelative(mode) ? (instructionPointer + position) : position;
 	}
 
-	template<Type::Concept::TriviallyCopyable... StackTypes>
+	template<Type::TriviallyCopyable... StackTypes>
 	inline constexpr auto getValueWithMode(Container::Stack<StackTypes...>& stack, auto&& visitor, std::size_t rightOffset = 0) -> void
 	{
 		if (auto mode = stack.template pop<std::size_t>(); isModeDirect(mode))
@@ -42,7 +42,7 @@ namespace CppUtils::Language::VirtualMachine
 		}
 	}
 
-	template<Type::Concept::TriviallyCopyable... StackTypes>
+	template<Type::TriviallyCopyable... StackTypes>
 	inline constexpr auto getOperands(Container::Stack<StackTypes...>& stack, auto&& visitor) -> void
 	{
 		getValueWithMode(stack, [&stack, visitor](auto&& rhs) mutable -> void {
@@ -55,8 +55,8 @@ namespace CppUtils::Language::VirtualMachine
 
 export namespace CppUtils::Language::VirtualMachine
 {
-	template<Type::Concept::TriviallyCopyable ReturnType, Type::Concept::TriviallyCopyable... SupportedTypes>
-	requires Type::Concept::Present<std::size_t, ReturnType, SupportedTypes...>
+	template<Type::TriviallyCopyable ReturnType, Type::TriviallyCopyable... SupportedTypes>
+	requires Type::Present<std::size_t, ReturnType, SupportedTypes...>
 	inline constexpr auto execute(const auto& source, auto... data) -> ReturnType
 	{
 		using Stack = Container::Stack<ReturnType, SupportedTypes...>;
@@ -121,7 +121,7 @@ export namespace CppUtils::Language::VirtualMachine
 					if constexpr (not std::is_pointer_v<std::decay_t<decltype(pointer)>>)
 						throw std::logic_error{"The dereferenced type is not a pointer"};
 					else if constexpr (using DereferencedType = std::decay_t<decltype(*pointer)>;
-									   not Type::Concept::Present<DereferencedType, ReturnType, SupportedTypes...>)
+									   not Type::Present<DereferencedType, ReturnType, SupportedTypes...>)
 						throw std::logic_error{"The dereferenced type is not present among the supported types"};
 					else
 						stack.template push<DereferencedType>(*pointer);
@@ -146,9 +146,9 @@ export namespace CppUtils::Language::VirtualMachine
 				auto dataId = stack.template pop<std::size_t>();
 				std::visit([&stack, dataId](auto&& data) -> void {
 					using T = std::remove_cvref_t<decltype(data)>;
-					if constexpr (Type::Concept::isFunctionPointer<T> or std::is_member_function_pointer_v<T>)
+					if constexpr (Type::isFunctionPointer<T> or std::is_member_function_pointer_v<T>)
 						stack.call(data);
-					else if constexpr (not Type::Concept::Present<T, ReturnType, SupportedTypes...>)
+					else if constexpr (not Type::Present<T, ReturnType, SupportedTypes...>)
 						throw std::invalid_argument{"Type " + std::to_string(dataId) + " missing in template parameters"};
 					else
 						stack.template push<T>(data);
@@ -169,7 +169,7 @@ export namespace CppUtils::Language::VirtualMachine
 			break;
 			case '!':
 				// Todo: Ajouter un bit d'adressage ?
-				if constexpr (not Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+				if constexpr (not Type::Present<bool, ReturnType, SupportedTypes...>)
 					throw std::invalid_argument{"Type bool missing in template parameters"};
 				else
 					stack.pop([&stack](auto&& value) -> void {
@@ -188,7 +188,7 @@ export namespace CppUtils::Language::VirtualMachine
 						throw std::invalid_argument{"Operands don't have the same type"};
 					else if constexpr (not std::equality_comparable<Lhs>)
 						throw std::invalid_argument{"Operator = used on non equality comparable type"};
-					else if constexpr (not Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+					else if constexpr (not Type::Present<bool, ReturnType, SupportedTypes...>)
 						throw std::invalid_argument{"Type bool missing in template parameters"};
 					else
 						stack.set(lhs == rhs);
@@ -203,7 +203,7 @@ export namespace CppUtils::Language::VirtualMachine
 						throw std::invalid_argument{"Operands don't have the same type"};
 					else if constexpr (not std::totally_ordered<Lhs>)
 						throw std::invalid_argument{"Operation < used on non totally ordered type"};
-					else if constexpr (not Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+					else if constexpr (not Type::Present<bool, ReturnType, SupportedTypes...>)
 						throw std::invalid_argument{"Type bool missing in template parameters"};
 					else
 						stack.set(lhs < rhs);
@@ -218,7 +218,7 @@ export namespace CppUtils::Language::VirtualMachine
 						throw std::invalid_argument{"Operands don't have the same type"};
 					else if constexpr (not std::totally_ordered<Lhs>)
 						throw std::invalid_argument{"Operator > used on non totally ordered type"};
-					else if constexpr (not Type::Concept::Present<bool, ReturnType, SupportedTypes...>)
+					else if constexpr (not Type::Present<bool, ReturnType, SupportedTypes...>)
 						throw std::invalid_argument{"Type bool missing in template parameters"};
 					else
 						stack.set(lhs > rhs);
@@ -272,7 +272,7 @@ export namespace CppUtils::Language::VirtualMachine
 						throw std::invalid_argument{"Operands don't have the same type"};
 					else if constexpr (not std::is_arithmetic_v<Lhs>)
 						throw std::invalid_argument{"Operator + used on non arithmetic type"};
-					else if constexpr (not Type::Concept::Present<decltype(lhs + rhs), ReturnType, SupportedTypes...>)
+					else if constexpr (not Type::Present<decltype(lhs + rhs), ReturnType, SupportedTypes...>)
 						throw std::invalid_argument{"Type not supported"};
 					else
 						stack.push(lhs + rhs);
@@ -287,7 +287,7 @@ export namespace CppUtils::Language::VirtualMachine
 						throw std::invalid_argument{"Operands don't have the same type"};
 					else if constexpr (not std::is_arithmetic_v<Lhs>)
 						throw std::invalid_argument{"Operator - used on non arithmetic type"};
-					else if constexpr (not Type::Concept::Present<decltype(lhs - rhs), ReturnType, SupportedTypes...>)
+					else if constexpr (not Type::Present<decltype(lhs - rhs), ReturnType, SupportedTypes...>)
 						throw std::invalid_argument{"Type not supported"};
 					else
 						stack.push(lhs - rhs);

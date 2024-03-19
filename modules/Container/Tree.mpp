@@ -65,25 +65,28 @@ export namespace CppUtils::Container
 		template<class... Types>
 		requires std::default_initializable<Type::NthType<0, Types...>>
 		using VariantNode = Node<std::variant<Types...>>;
-	}
 
-	struct TokenTree
-	{
-		using Node = Tree::Node<String::Token>;
-		Node root = Node{String::hash("root")};
-		String::HashTable hashTable = String::makeHashTable("root");
+		template<class CharT = char>
+		struct TokenTree
+		{
+			using Node = Tree::Node<String::Token>;
+			Node root = Node{String::hash(std::basic_string<CharT>{'r', 'o', 'o', 't'})};
+			String::HashTable<CharT> hashTable = String::makeHashTable<CharT>(std::basic_string<CharT>{'r', 'o', 'o', 't'});
+		};
 
+		template<class CharT = char>
 		struct NodeView final
 		{
+			using Node = Node<String::Token>;
 			std::reference_wrapper<const Node> node;
-			std::reference_wrapper<const TokenTree> tree;
+			std::reference_wrapper<const TokenTree<CharT>> tree;
 
-			inline explicit NodeView(const TokenTree& tree):
+			inline explicit NodeView(const TokenTree<CharT>& tree):
 				node{std::cref(tree.root)},
 				tree{std::cref(tree)}
 			{}
 
-			inline explicit NodeView(const Node& node, const TokenTree& tree):
+			inline explicit NodeView(const Node& node, const TokenTree<CharT>& tree):
 				node{std::cref(node)},
 				tree{std::cref(tree)}
 			{}
@@ -104,49 +107,58 @@ export namespace CppUtils::Container
 				return *this;
 			}
 
-			template<class CharT>
 			[[nodiscard]] inline auto getPrintableValue() const -> auto
 			{
-				return String::getNameOrValue<CharT>(get().value, tree.get().hashTable);
+				return String::toAscii(String::getNameOrValue(get().value, tree.get().hashTable));
 			}
 		};
-	};
 
-	[[nodiscard]] inline auto operator==(const TokenTree::NodeView& lhs, const TokenTree::NodeView& rhs) -> bool
-	{
-		return lhs.get() == rhs.get();
+		template<class CharT>
+		[[nodiscard]] inline auto operator==(const NodeView<CharT>& lhs, const NodeView<CharT>& rhs) -> bool
+		{
+			return lhs.get() == rhs.get();
+		}
+
+		template<class CharT>
+		[[nodiscard]] inline auto operator==(const TokenTree<CharT>& lhs, const NodeView<CharT>& rhs) -> bool
+		{
+			return NodeView<CharT>{lhs} == rhs;
+		}
+
+		template<class CharT>
+		[[nodiscard]] inline auto operator==(const TokenTree<CharT>& lhs, const TokenTree<CharT>& rhs) -> bool
+		{
+			return NodeView<CharT>{lhs} == NodeView<CharT>{rhs};
+		}
+
+		template<class CharT>
+		[[nodiscard]] inline auto operator==(const NodeView<CharT>& lhs, const typename TokenTree<CharT>::Node& rhs) -> bool
+		{
+			return lhs.get() == rhs;
+		}
+
+		template<class CharT>
+		[[nodiscard]] inline auto operator==(const TokenTree<CharT>& lhs, const typename TokenTree<CharT>::Node& rhs) -> bool
+		{
+			return NodeView<CharT>{lhs} == rhs;
+		}
 	}
 
-	[[nodiscard]] inline auto operator==(const TokenTree::NodeView& lhs, const TokenTree::Node& rhs) -> bool
-	{
-		return lhs.get() == rhs;
-	}
-
-	[[nodiscard]] inline auto operator==(const TokenTree& lhs, const TokenTree::NodeView& rhs) -> bool
-	{
-		return TokenTree::NodeView{lhs} == rhs;
-	}
-
-	[[nodiscard]] inline auto operator==(const TokenTree& lhs, const TokenTree::Node& rhs) -> bool
-	{
-		return TokenTree::NodeView{lhs} == rhs;
-	}
-
-	[[nodiscard]] inline auto operator==(const TokenTree& lhs, const TokenTree& rhs) -> bool
-	{
-		return TokenTree::NodeView{lhs} == TokenTree::NodeView{rhs};
-	}
-
-	using AST = TokenTree;
-	using ASTNode = TokenTree::Node;
-	using ASTNodeView = TokenTree::NodeView;
+	template<class CharT = char>
+	using TokenTree = Tree::TokenTree<CharT>;
+	template<class CharT = char>
+	using AST = TokenTree<CharT>;
+	template<class CharT = char>
+	using ASTNode = TokenTree<CharT>::Node;
+	template<class CharT = char>
+	using ASTNodeView = Tree::NodeView<CharT>;
 }
 
 namespace std
 {
 	template<class T, class CharT>
-	requires CppUtils::Type::Concept::Specializes<T, CppUtils::Container::Tree::Node> and
-		CppUtils::Type::Concept::Printable<typename T::ValueType>
+	requires CppUtils::Type::Specializes<T, CppUtils::Container::Tree::Node> and
+		CppUtils::Type::Printable<typename T::ValueType>
 	struct formatter<T, CharT>
 	{
 		inline constexpr auto parse(std::format_parse_context& ctx) -> auto
@@ -164,7 +176,7 @@ namespace std
 
 	private:
 		template<class FormatContext>
-		inline auto formatNode(const T& node, FormatContext& context, std::string&& prefix = "") const -> void
+		inline auto formatNode(const T& node, FormatContext& context, std::basic_string<CharT>&& prefix = "") const -> void
 		{
 			auto&& out = context.out();
 			std::format_to(out, "{}\n", node.value);
@@ -177,8 +189,8 @@ namespace std
 		}
 	};
 
-	template<class CharT>
-	struct formatter<CppUtils::Container::TokenTree::NodeView, CharT>
+	template<class CharT, class OutputCharT>
+	struct formatter<CppUtils::Container::ASTNodeView<CharT>, OutputCharT>
 	{
 		inline constexpr auto parse(std::format_parse_context& ctx) -> auto
 		{
@@ -186,7 +198,7 @@ namespace std
 		}
 
 		template<class FormatContext>
-		inline auto format(const CppUtils::Container::TokenTree::NodeView& nodeView, FormatContext& context) const -> decltype(context.out())
+		inline auto format(const CppUtils::Container::ASTNodeView<CharT>& nodeView, FormatContext& context) const -> decltype(context.out())
 		{
 			auto&& out = context.out();
 			formatNode(nodeView, context);
@@ -195,23 +207,23 @@ namespace std
 
 	private:
 		template<class FormatContext>
-		inline auto formatNode(const CppUtils::Container::TokenTree::NodeView& nodeView, FormatContext& context, std::string&& prefix = "") const -> void
+		inline auto formatNode(const CppUtils::Container::ASTNodeView<CharT>& nodeView, FormatContext& context, std::basic_string<OutputCharT>&& prefix = "") const -> void
 		{
 			const auto& [node, tree] = nodeView;
 			auto&& out = context.out();
-			std::format_to(out, "{}\n", nodeView.template getPrintableValue<CharT>());
+			std::format_to(out, "{}\n", nodeView.getPrintableValue());
 			const auto nbNodes = std::size(node.get().nodes);
 			for (auto i = 0uz; i < nbNodes; ++i)
 			{
 				std::format_to(out, "{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
-				auto child = CppUtils::Container::TokenTree::NodeView{node.get().nodes.at(i), tree};
+				auto child = CppUtils::Container::ASTNodeView<CharT>{node.get().nodes.at(i), tree};
 				formatNode(child, context, prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
 			}
 		}
 	};
 
-	template<class CharT>
-	struct formatter<CppUtils::Container::TokenTree, CharT>
+	template<class CharT, class OutputCharT>
+	struct formatter<CppUtils::Container::TokenTree<CharT>, OutputCharT>
 	{
 		inline constexpr auto parse(std::format_parse_context& ctx) -> auto
 		{
@@ -219,10 +231,10 @@ namespace std
 		}
 
 		template<class FormatContext>
-		inline auto format(const CppUtils::Container::TokenTree& tree, FormatContext& context) const -> decltype(context.out())
+		inline auto format(const CppUtils::Container::TokenTree<CharT>& tree, FormatContext& context) const -> decltype(context.out())
 		{
 			auto&& out = context.out();
-			return std::format_to(out, "{}", typename CppUtils::Container::TokenTree::NodeView{tree});
+			return std::format_to(out, "{}", typename CppUtils::Container::Tree::NodeView<CharT>{tree});
 		}
 	};
 }
