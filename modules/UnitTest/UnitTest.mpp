@@ -9,13 +9,11 @@ import CppUtils.Chrono.Concept;
 import CppUtils.ChronoLogger;
 import CppUtils.Logger;
 import CppUtils.String;
+import CppUtils.System.Main;
 import CppUtils.Terminal;
 
 namespace CppUtils::UnitTest
 {
-	export inline constexpr auto exitSuccess = 0;
-	export inline constexpr auto exitFailure = 1;
-
 	export struct TestSettings final
 	{
 		bool verbose = true;

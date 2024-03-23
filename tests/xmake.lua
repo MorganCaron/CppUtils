@@ -1,8 +1,6 @@
 target("CppUtils-UnitTests", function()
 	set_kind("binary")
 	add_deps("CppUtils")
-	set_policy("build.merge_archive", true)
-	set_policy("build.c++.modules", true)
 	add_files("**.cpp")
 	add_files("**.mpp")
 end)

@@ -40,10 +40,6 @@ option("enable_tests")
 target("CppUtils", function()
 	set_kind("moduleonly")
 
-	set_policy("build.c++.modules", true)
-	add_defines("DLL_EXPORT")
-	add_defines(is_kind("static") and "STATIC_LIB" or "SHARED_LIB")
-
 	add_files("modules/**.mpp", { public = true })
 	add_includedirs("include", { public = true })
 	add_headerfiles("include/(CppUtils/**.hpp)")

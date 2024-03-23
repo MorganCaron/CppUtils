@@ -11,6 +11,7 @@ export module CppUtils.System;
 import std;
 export import CppUtils.System.Error;
 export import CppUtils.System.FileDescriptor;
+export import CppUtils.System.Main;
 export import CppUtils.System.Pipe;
 export import CppUtils.System.SharedLibrary;
 export import CppUtils.System.Type;

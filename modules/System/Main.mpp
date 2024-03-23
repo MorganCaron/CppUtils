@@ -5,12 +5,15 @@ module;
 
 extern auto start(std::span<const std::string_view> args) -> int;
 
-export module CppUtils.Main;
+export module CppUtils.System.Main;
 
 import CppUtils.Terminal;
 
-export inline constexpr auto exitSuccess = 0;
-export inline constexpr auto exitFailure = 1;
+namespace CppUtils
+{
+	export inline constexpr auto exitSuccess = 0;
+	export inline constexpr auto exitFailure = 1;
+}
 
 export auto main(const int argc, const char* argv[]) -> int
 {
