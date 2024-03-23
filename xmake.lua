@@ -46,7 +46,8 @@ target("CppUtils", function()
 	add_defines(is_kind("static") and "STATIC_LIB" or "SHARED_LIB")
 	add_files("modules/**.mpp", { public = true })
 	add_includedirs("include", { public = true })
-	add_headerfiles("include/(**.hpp)")
+	add_headerfiles("include/(CppUtils/**.hpp)")
+	add_headerfiles("include/(Stl/**.hpp)")
 end)
 
 if has_config("enable_tests") then
