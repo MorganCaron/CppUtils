@@ -1,0 +1,19 @@
+module;
+
+#include <span>
+#include <string_view>
+
+extern auto start(std::span<const std::string_view> args) -> int;
+
+export module CppUtils.Main;
+
+import CppUtils.Terminal;
+
+export inline constexpr auto exitSuccess = 0;
+export inline constexpr auto exitFailure = 1;
+
+export auto main(const int argc, const char* argv[]) -> int
+{
+	CppUtils::Terminal::setConsoleOutputUTF8();
+	return start(std::vector<std::string_view>{argv, argv + argc});
+}
