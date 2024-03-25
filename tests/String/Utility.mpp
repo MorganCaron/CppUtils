@@ -77,5 +77,12 @@ export namespace CppUtils::UnitTest::String::Utility
 			suite.expectEqual(CppUtils::String::toString(123456), "123456"sv);
 			suite.expectEqual(CppUtils::String::toString(-123456), "-123456"sv);
 		});
+
+		suite.addTest("split", [&] {
+			auto splitString = CppUtils::String::split("Hello World!", " ");
+			suite.expectEqual(std::size(splitString), 2uz);
+			suite.expectEqual(splitString[0], "Hello"sv);
+			suite.expectEqual(splitString[1], "World!"sv);
+		});
 	}};
 }

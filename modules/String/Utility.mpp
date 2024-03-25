@@ -158,5 +158,8 @@ export namespace CppUtils::String
 		return string;
 	}
 
-	// Todo: function splitString (donne un std::vector<std::string> à partir d'un string comportant des espaces
+	[[nodiscard]] inline auto split(std::string_view string, std::string_view delimiter) -> decltype(auto)
+	{
+		return string | std::ranges::views::split(delimiter) | std::ranges::to<std::vector<std::string>>();
+	}
 }
