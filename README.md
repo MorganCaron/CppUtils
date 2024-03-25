@@ -43,8 +43,19 @@ A C++23 compliant compiler with std module support and XMake is needed to build 
 This library is used in my C++ projects, but you can also use it in your projects.
 Just follow the installation steps and consult the documentation for each feature you need.
 
-[![Install](https://img.shields.io/badge/-Install-blue?style=for-the-badge)](INSTALL.md)
-[![Contribute](https://img.shields.io/badge/-Contribute-blue?style=for-the-badge)](CONTRIBUTING.md)
+### Installation
+
+In your XMake projects:
+```lua
+add_repositories("xmake-repo git@github.com:MorganCaron/xmake-repo.git")
+add_requires("CppUtils")
+
+target("YourProject", function()
+	add_packages("CppUtils", {public = true})
+end)
+```
+
+### Contribute
 
 ### Build command
 ```console
@@ -56,5 +67,7 @@ xmake [b|build] [-vD]
 ```console
 xmake [r|run]
 ```
+
+[![Contribute](https://img.shields.io/badge/-Contribute-blue?style=for-the-badge)](CONTRIBUTING.md)
 
 ---

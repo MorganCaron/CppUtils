@@ -9,7 +9,7 @@ auto start([[maybe_unused]] std::span<const std::string_view> args) -> int
 		/*
 		auto& settings = CppUtils::UnitTest::executeCommands(argc, argv);
 		if (settings.abort)
-			return exitSuccess;
+			return CppUtils::exitSuccess;
 		*/
 		auto settings = CppUtils::UnitTest::TestSettings{};
 		return CppUtils::UnitTest::executeTests(std::move(settings));
