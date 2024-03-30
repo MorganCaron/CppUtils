@@ -23,4 +23,10 @@ export namespace CppUtils::Container::Vector
 			newVector.insert(newVector.end(), vector.get().begin(), vector.get().end());
 		return newVector;
 	}
+
+	template<class T>
+	inline auto remove(std::vector<T>& vector, const T& value) -> void
+	{
+		vector.erase(std::remove(std::begin(vector), std::end(vector), value), std::end(vector));
+	}
 }

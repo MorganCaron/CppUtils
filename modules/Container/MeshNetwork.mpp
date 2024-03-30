@@ -1,28 +1,100 @@
 export module CppUtils.Container.MeshNetwork;
 
 import std;
-import CppUtils.Container.MeshNode;
+import CppUtils.Container.Vector;
 
 export namespace CppUtils::Container
 {
-	template<class Key, class Value, class Hash = std::hash<Key>>
-	class MeshNetwork
+	template<class Key, class Value>
+	class MeshNetwork final
 	{
 	public:
-		using Node = MeshNode<Key, Value, Hash>;
-
-		template<class... Args>
-		[[nodiscard]] inline std::shared_ptr<Node> newNode(Args&&... params)
+		class Node final
 		{
-			auto lock = std::unique_lock{m_nodesMutex};
-			return m_nodes.emplace_back(std::make_shared<Node>(std::forward<Args>(params)...));
+		public:
+			explicit inline Node(std::string c_value):
+				value{std::move(c_value)}
+			{}
+
+			[[nodiscard]] inline auto exists(const Key& branchKey) const -> bool
+			{
+				return m_branchs.find(branchKey) != std::cend(m_branchs);
+			}
+
+			[[nodiscard]] inline auto get(const Key& key) const -> const std::vector<std::reference_wrapper<Node>>&
+			{
+				if (!exists(key))
+					throw std::out_of_range("The branch does not exist in the Node.");
+				return m_branchs.at(key);
+			}
+
+			[[nodiscard]] inline auto operator[](const Key& key) -> std::vector<std::reference_wrapper<Node>>&
+			{
+				if (!exists(key))
+					m_branchs[key] = std::vector<std::reference_wrapper<Node>>{};
+				return m_branchs[key];
+			}
+
+			[[nodiscard]] inline auto count(const Key& key) const -> std::size_t
+			{
+				return exists(key) ? std::size(get(key)) : 0uz;
+			}
+
+			inline auto attach(const Key& key, Node& node) -> void
+			{
+				m_branchs[key].push_back(std::ref(node));
+				node.m_parentBranchs.push_back(std::ref(*this));
+			}
+
+			inline auto detach(const Key& key, Node& node) -> void
+			{
+				auto& branch = m_branchs[key];
+				for (auto& targetNode : branch)
+					Vector::remove(targetNode.m_parentBranchs, std::ref(*this));
+				Vector::remove(branch, std::ref(node));
+				if (std::empty(branch))
+					m_branchs.erase(key);
+			}
+
+			inline auto detach(const Key& key) -> void
+			{
+				auto& branch = m_branchs[key];
+				for (auto& targetNode : branch)
+					Vector::remove(targetNode.m_parentBranchs, std::ref(*this));
+				m_branchs.erase(key);
+			}
+
+			inline auto detachAll() -> void
+			{
+				for (auto& branch : m_branchs)
+					for (auto& targetNode : branch)
+						Vector::remove(targetNode.m_parentBranchs, std::ref(*this));
+				m_branchs.clear();
+			}
+
+			Value value;
+
+		private:
+			std::unordered_map<Key, std::vector<std::reference_wrapper<Node>>> m_branchs;
+			std::vector<std::reference_wrapper<Node>> m_parentBranchs;
+		};
+
+		static inline auto attach(const Key& key0, Node& node0, const Key& key1, Node& node1) -> void
+		{
+			node1.attach(key0, node0);
+			node0.attach(key1, node1);
 		}
 
-	protected:
-		std::mutex m_nodesMutex;
-		std::vector<std::shared_ptr<Node>> m_nodes;
+		[[nodiscard]] inline auto newNode(auto&&... args) -> Node&
+		{
+			return *m_nodes.emplace_back(std::make_unique<Node>(std::forward<decltype(args)>(args)...));
+		}
+
+	private:
+		std::vector<std::unique_ptr<Node>> m_nodes;
 	};
 
+	/*
 	template<bool doubleLinked, class Key, class Value, class Hash = std::hash<Key>>
 	requires std::is_integral_v<Key>
 	class FragmentedMeshNetwork: public MeshNetwork<Key, Value, Hash>
@@ -37,7 +109,7 @@ export namespace CppUtils::Container
 		};
 
 		template<class Type>
-		[[nodiscard]] inline std::shared_ptr<Node> newChain(Type data)
+		[[nodiscard]] inline auto newChain(Type data) -> std::shared_ptr<Node>
 		{
 			static_assert(sizeof(Type) >= sizeof(Value));
 			static_assert(sizeof(Type) % sizeof(Value) == 0);
@@ -52,7 +124,7 @@ export namespace CppUtils::Container
 		}
 
 		template<class Type>
-		[[nodiscard]] inline std::shared_ptr<Node> getBranchOrDefault(const std::shared_ptr<Node>& baseNode, Key branchKey, Type&& defaultValue)
+		[[nodiscard]] inline auto getBranchOrDefault(const std::shared_ptr<Node>& baseNode, Key branchKey, Type&& defaultValue) -> std::shared_ptr<Node>
 		{
 			if (!baseNode->exists(branchKey))
 				baseNode->attach(branchKey, newChain(std::move(defaultValue)));
@@ -60,11 +132,12 @@ export namespace CppUtils::Container
 		}
 
 		template<class Type>
-		[[nodiscard]] inline std::shared_ptr<Node> getBranchOrDefault(Key baseKey, const std::shared_ptr<Node>& baseNode, Key branchKey, Type&& defaultValue)
+		[[nodiscard]] inline auto getBranchOrDefault(Key baseKey, const std::shared_ptr<Node>& baseNode, Key branchKey, Type&& defaultValue) -> std::shared_ptr<Node>
 		{
 			if (!baseNode->exists(branchKey))
 				Node::attach(baseKey, baseNode, branchKey, newChain(std::move(defaultValue)));
 			return std::shared_ptr<Node>{(*baseNode)[branchKey][0]};
 		}
 	};
+	*/
 }

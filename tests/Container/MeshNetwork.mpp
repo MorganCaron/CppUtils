@@ -1,0 +1,62 @@
+export module CppUtils.UnitTests.Container.MeshNetwork;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Container::MeshNetwork
+{
+	inline auto _ = TestSuite{"Container/MeshNetwork", [](auto& suite) {
+		using Logger = CppUtils::Logger<"CppUtils">;
+		using StringMeshNetwork = CppUtils::Container::MeshNetwork<std::string, std::string>;
+
+		suite.addTest("One", [&] {
+			auto meshNetwork = StringMeshNetwork{};
+			auto& banana = meshNetwork.newNode("banana");
+			Logger::print("{}\n", banana.value);
+			suite.expect(banana.value == "banana");
+		});
+
+		suite.addTest("Two", [&] {
+			auto meshNetwork = StringMeshNetwork{};
+			auto& fruit = meshNetwork.newNode("fruit");
+			auto& banana = meshNetwork.newNode("banana");
+			StringMeshNetwork::attach("Categories", fruit, "Elements", banana);
+
+			suite.expect(fruit.value == "fruit");
+			const auto& fruitName = fruit.get("Elements")[0].get();
+			suite.expect(fruitName.value == "banana");
+
+			for (const auto& aFruit : fruit.get("Elements"))
+				Logger::print("{} is a {}\n", aFruit.get().value, aFruit.get().get("Categories")[0].get().value);
+		});
+
+		suite.addTest("Many", [&] {
+			auto meshNetwork = StringMeshNetwork{};
+			auto& fruit = meshNetwork.newNode("fruit");
+			auto& banana = meshNetwork.newNode("banana");
+			auto& lemon = meshNetwork.newNode("lemon");
+			auto& color = meshNetwork.newNode("color");
+			auto& yellow = meshNetwork.newNode("yellow");
+			auto& orangeFruit = meshNetwork.newNode("orange");
+			auto& orangeColor = meshNetwork.newNode("orange");
+
+			StringMeshNetwork::attach("Colors", yellow, "Elements", banana);
+			StringMeshNetwork::attach("Colors", yellow, "Elements", lemon);
+			StringMeshNetwork::attach("Colors", orangeColor, "Elements", orangeFruit);
+			StringMeshNetwork::attach("Categories", color, "Elements", yellow);
+			StringMeshNetwork::attach("Categories", fruit, "Elements", banana);
+			StringMeshNetwork::attach("Categories", fruit, "Elements", lemon);
+			StringMeshNetwork::attach("Categories", color, "Elements", orangeColor);
+			StringMeshNetwork::attach("Categories", fruit, "Elements", orangeFruit);
+
+			suite.expect(fruit.value == "fruit");
+			const auto& fruitName = fruit.get("Elements")[0].get();
+			suite.expect(fruitName.value == "banana");
+			const auto& fruitColor = fruitName.get("Colors")[0].get();
+			suite.expect(fruitColor.value == "yellow");
+
+			for (const auto& aFruit : fruit.get("Elements"))
+				Logger::print("{} is a {} {}\n", aFruit.get().value, aFruit.get().get("Colors")[0].get().value, aFruit.get().get("Categories")[0].get().value);
+		});
+	}};
+}

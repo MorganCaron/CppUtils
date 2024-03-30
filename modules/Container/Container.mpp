@@ -2,7 +2,6 @@ export module CppUtils.Container;
 
 export import CppUtils.Container.BidirectionalMap;
 export import CppUtils.Container.MeshNetwork;
-export import CppUtils.Container.MeshNode;
 export import CppUtils.Container.Pair;
 export import CppUtils.Container.Sequence;
 export import CppUtils.Container.Size2d;
