@@ -11,22 +11,11 @@ export namespace CppUtils::Container::Vector
 		dest.insert(dest.end(), src.begin(), src.end());
 	}
 
-	template<class T>
-	[[nodiscard]] inline auto merge(const std::initializer_list<std::reference_wrapper<const std::vector<T>>>& vectors) -> std::vector<T>
+	[[nodiscard]] inline auto merge(auto&&... containers) -> decltype(auto)
 	{
-		auto size = 0uz;
-		for (const auto& vector : vectors)
-			size += vector.get().size();
-		auto newVector = std::vector<T>{};
-		newVector.reserve(size);
-		for (const auto& vector : vectors)
-			newVector.insert(newVector.end(), vector.get().begin(), vector.get().end());
-		return newVector;
-	}
-
-	template<class T>
-	inline auto remove(std::vector<T>& vector, const T& value) -> void
-	{
-		vector.erase(std::remove(std::begin(vector), std::end(vector), value), std::end(vector));
+		using ValueType = typename std::common_type_t<std::decay_t<decltype(*std::begin(containers))>...>;
+		auto result = std::vector<ValueType>{};
+		(result.insert(std::end(result), std::make_move_iterator(std::begin(containers)), std::make_move_iterator(std::end(containers))), ...);
+		return result;
 	}
 }

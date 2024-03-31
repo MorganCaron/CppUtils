@@ -58,5 +58,24 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			for (const auto& aFruit : fruit.get("Elements"))
 				Logger::print("{} is a {} {}\n", aFruit.get().value, aFruit.get().get("Colors")[0].get().value, aFruit.get().get("Categories")[0].get().value);
 		});
+
+		suite.addTest("attachUnique", [&] {
+			auto meshNetwork = StringMeshNetwork{};
+			auto& fruit = meshNetwork.newNode("fruit");
+			fruit.attach("fruits", meshNetwork.newNode("banana"));
+
+			suite.expectEqual(std::size(fruit["fruits"]), 1uz);
+
+			auto& banana = meshNetwork.newNode("banana");
+			banana.attach("color", meshNetwork.newNode("yellow"));
+			StringMeshNetwork::attach("Categories", fruit, "Elements", banana);
+
+			fruit.attachUnique("fruits", banana);
+
+			suite.expectEqual(std::size(fruit["fruits"]), 1uz);
+			suite.expect(fruit["fruits"][0].get().exists("color"));
+			suite.expectEqual(std::size(fruit["fruits"][0].get()["color"]), 1uz);
+			suite.expectEqual(fruit["fruits"][0].get()["color"][0].get().value, "yellow");
+		});
 	}};
 }

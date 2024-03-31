@@ -46,12 +46,26 @@ export namespace CppUtils::Container
 				node.m_parentBranchs.push_back(std::ref(*this));
 			}
 
+			inline auto attachUnique(const Key& key, Node& node) -> void
+			{
+				auto& nodes = (*this)[key];
+				if (auto nodeIt = std::find_if(std::cbegin(nodes), std::cend(nodes), [&value = node.value](const auto& node) -> bool { return node.get().value == value; });
+					nodeIt == std::cend(nodes))
+					nodes.push_back(std::ref(node));
+				else
+				{
+					auto& destNode = nodeIt->get();
+					destNode.m_branchs.insert(std::begin(node.m_branchs), std::end(node.m_branchs));
+					destNode.m_parentBranchs.insert(std::end(destNode.m_parentBranchs), std::begin(node.m_parentBranchs), std::end(node.m_parentBranchs));
+				}
+			}
+
 			inline auto detach(const Key& key, Node& node) -> void
 			{
 				auto& branch = m_branchs[key];
 				for (auto& targetNode : branch)
-					Vector::remove(targetNode.m_parentBranchs, std::ref(*this));
-				Vector::remove(branch, std::ref(node));
+					std::erase(targetNode.m_parentBranchs, std::ref(*this));
+				std::erase(branch, std::ref(node));
 				if (std::empty(branch))
 					m_branchs.erase(key);
 			}
@@ -60,7 +74,7 @@ export namespace CppUtils::Container
 			{
 				auto& branch = m_branchs[key];
 				for (auto& targetNode : branch)
-					Vector::remove(targetNode.m_parentBranchs, std::ref(*this));
+					std::erase(targetNode.m_parentBranchs, std::ref(*this));
 				m_branchs.erase(key);
 			}
 
@@ -68,7 +82,7 @@ export namespace CppUtils::Container
 			{
 				for (auto& branch : m_branchs)
 					for (auto& targetNode : branch)
-						Vector::remove(targetNode.m_parentBranchs, std::ref(*this));
+						std::erase(targetNode.m_parentBranchs, std::ref(*this));
 				m_branchs.clear();
 			}
 
@@ -88,6 +102,11 @@ export namespace CppUtils::Container
 		[[nodiscard]] inline auto newNode(auto&&... args) -> Node&
 		{
 			return *m_nodes.emplace_back(std::make_unique<Node>(std::forward<decltype(args)>(args)...));
+		}
+
+		inline auto deleteNode(Node& node) -> void
+		{
+			std::erase_if(m_nodes, [nodeAddress = &node](const auto& node) -> bool { return &node == nodeAddress; });
 		}
 
 	private:
@@ -114,7 +133,7 @@ export namespace CppUtils::Container
 			static_assert(sizeof(Type) >= sizeof(Value));
 			static_assert(sizeof(Type) % sizeof(Value) == 0);
 			auto firstNode = this->newNode(*reinterpret_cast<Value*>(&data)), lastNode = firstNode;
-			for (std::size_t i = 1u; i * sizeof(Value) < sizeof(Type); ++i)
+			for (auto i = 1uz; i * sizeof(Value) < sizeof(Type); ++i)
 			{
 				auto nextNode = this->newNode(*reinterpret_cast<Value*>(&data + i * sizeof(Value)));
 				(doubleLinked ? Node::attach(Last, lastNode, Next, nextNode) : lastNode->attach(Next, nextNode));
