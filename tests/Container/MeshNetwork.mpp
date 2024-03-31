@@ -77,5 +77,16 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			suite.expectEqual(std::size(fruit["fruits"][0].get()["color"]), 1uz);
 			suite.expectEqual(fruit["fruits"][0].get()["color"][0].get().value, "yellow");
 		});
+
+		suite.addTest("deleteNode", [&] {
+			auto meshNetwork = StringMeshNetwork{};
+			suite.expect(std::empty(meshNetwork));
+
+			auto& fruit = meshNetwork.newNode("fruit");
+			suite.expectEqual(std::size(meshNetwork), 1uz);
+
+			meshNetwork.deleteNode(fruit);
+			suite.expect(std::empty(meshNetwork));
+		});
 	}};
 }

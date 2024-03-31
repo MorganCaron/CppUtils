@@ -64,7 +64,7 @@ export namespace CppUtils::Container
 			{
 				auto& branch = m_branchs[key];
 				for (auto& targetNode : branch)
-					std::erase(targetNode.m_parentBranchs, std::ref(*this));
+					std::erase_if(targetNode.get().m_parentBranchs, [this](const auto& parentBranch) -> bool { return &parentBranch.get() == this; });
 				std::erase(branch, std::ref(node));
 				if (std::empty(branch))
 					m_branchs.erase(key);
@@ -74,16 +74,24 @@ export namespace CppUtils::Container
 			{
 				auto& branch = m_branchs[key];
 				for (auto& targetNode : branch)
-					std::erase(targetNode.m_parentBranchs, std::ref(*this));
+					std::erase_if(targetNode.get().m_parentBranchs, [this](const auto& parentBranch) -> bool { return &parentBranch.get() == this; });
 				m_branchs.erase(key);
 			}
 
 			inline auto detachAll() -> void
 			{
-				for (auto& branch : m_branchs)
+				for (auto& [key, branch] : m_branchs)
 					for (auto& targetNode : branch)
-						std::erase(targetNode.m_parentBranchs, std::ref(*this));
+						std::erase_if(targetNode.get().m_parentBranchs, [this](const auto& parentBranch) -> bool { return &parentBranch.get() == this; });
 				m_branchs.clear();
+			}
+
+			inline auto detachFromAll() -> void
+			{
+				for (auto& targetNodes : m_parentBranchs)
+					for (auto& [key, branch] : targetNodes.get().m_branchs)
+						std::erase_if(branch, [this](const auto& node) -> bool { return &node.get() == this; });
+				m_parentBranchs.clear();
 			}
 
 			Value value;
@@ -106,7 +114,19 @@ export namespace CppUtils::Container
 
 		inline auto deleteNode(Node& node) -> void
 		{
-			std::erase_if(m_nodes, [nodeAddress = &node](const auto& node) -> bool { return &node == nodeAddress; });
+			node.detachAll();
+			node.detachFromAll();
+			std::erase_if(m_nodes, [nodeAddress = &node](const auto& node) -> bool { return node.get() == nodeAddress; });
+		}
+
+		[[nodiscard]] inline auto size() const -> std::size_t
+		{
+			return std::size(m_nodes);
+		}
+
+		[[nodiscard]] inline auto empty() const -> bool
+		{
+			return size() == 0;
 		}
 
 	private:
