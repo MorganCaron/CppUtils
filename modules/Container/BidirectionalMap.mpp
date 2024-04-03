@@ -1,7 +1,6 @@
 export module CppUtils.Container.BidirectionalMap;
 
 import std;
-import CppUtils.Container.Pair;
 
 namespace std
 {

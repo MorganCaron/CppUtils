@@ -20,7 +20,10 @@ jobs:
     - uses: xmake-io/github-action-setup-xmake@v1
       with:
         xmake-version: branch@master
-    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v2
+      with:
+        vs-prerelease: true
 
     - name: Compile
       env:

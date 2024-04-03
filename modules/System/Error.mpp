@@ -45,7 +45,7 @@ export namespace CppUtils::System
 			throwLastError(message);
 	}
 
-	[[nodiscard]] inline auto expectNoError(int value, std::string_view message = "") -> std::expected<std::runtime_error>
+	[[nodiscard]] inline auto expectNoError(int value, std::string_view message = "") -> std::expected<int, std::runtime_error>
 	{
 		if (value != 0) [[unlikely]]
 			return std::unexpected(std::runtime_error{

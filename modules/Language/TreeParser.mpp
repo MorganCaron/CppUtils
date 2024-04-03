@@ -14,9 +14,9 @@ export namespace CppUtils::Language::TreeParser
 	{
 		using namespace std::literals;
 		constexpr auto treeCompiler = uR"(
-				main(): Container::TokenTree* 10§{
+				main(): Container::AST<CharT>* 10§{
 					(0 (0, 2, 0, 0C # register0 = 0; (source position)
-					(:N # arg0 = new TokenTree();
+					(:N # arg0 = new Container::AST<CharT>();
 						(26@ # buildNode(arg0);
 					X # return arg0;
 				}

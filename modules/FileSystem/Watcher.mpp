@@ -164,9 +164,9 @@ export namespace CppUtils::FileSystem
 							path /= filename;
 						if (std::filesystem::is_directory(path))
 							inotifyEvent.mask |= static_cast<std::underlying_type_t<Event>>(Event::IsDirectory);
-						for (const auto& [event, subcribedFunction] : m_subcribedFunctions)
+						for (const auto& [event, subscribedFunction] : m_subscribedFunctions)
 							if (event & static_cast<Event>(inotifyEvent.mask))
-								subcribedFunction(static_cast<Event>(inotifyEvent.mask), path);
+								subscribedFunction(static_cast<Event>(inotifyEvent.mask), path);
 					}
 				}
 			}
@@ -224,13 +224,13 @@ export namespace CppUtils::FileSystem
 		inline auto onEvent(Event event, const SubscribeFunction& function) -> void
 		{
 			auto lockGuard = std::unique_lock{m_mutex};
-			m_subcribedFunctions.push_back({event, function});
+			m_subscribedFunctions.push_back({event, function});
 		}
 
 		inline auto onEvent(const SubscribeFunction& function) -> void
 		{
 			auto lockGuard = std::unique_lock{m_mutex};
-			m_subcribedFunctions.push_back({Event::All, function});
+			m_subscribedFunctions.push_back({Event::All, function});
 		}
 
 	private:
@@ -254,7 +254,7 @@ export namespace CppUtils::FileSystem
 		epoll_event m_stopEvent;
 		std::array<epoll_event, maxEvents> m_events;
 		Container::BidirectionalMap<std::filesystem::path, WatchDescriptor> m_watchDescriptors;
-		std::vector<std::pair<Event, SubscribeFunction>> m_subcribedFunctions;
+		std::vector<std::pair<Event, SubscribeFunction>> m_subscribedFunctions;
 #elif defined(OS_MACOS)
 		FSEventStreamRef m_filesystemEventStream;
 #endif

@@ -5,7 +5,7 @@ on: [ push, pull_request ]
 jobs:
   build:
     name: MacOS (${{ matrix.compiler.name }})
-    runs-on: macos-11
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:

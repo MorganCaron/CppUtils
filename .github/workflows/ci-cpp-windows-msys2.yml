@@ -27,8 +27,23 @@ jobs:
     - uses: msys2/setup-msys2@v2
       with:
         install: >-
+          git
+          base-devel
+          unzip
+          p7zip
           ${{ matrix.compiler.install }}
-          mingw-w64-x86_64-xmake
+        update: true
+
+    - name: Install XMake
+      shell: msys2 {0}
+      run: |
+          git clone https://github.com/xmake-io/xmake.git --recurse-submodules -b master
+          pushd xmake
+          ./configure
+          make -j4
+          make install PREFIX=/mingw64
+          xmake --version
+          popd
 
     - name: Compile
       shell: msys2 {0}
