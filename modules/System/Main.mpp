@@ -1,12 +1,6 @@
-module;
-
-#include <span>
-#include <string_view>
-
-extern auto start(std::span<const std::string_view> args) -> int;
-
 export module CppUtils.System.Main;
 
+import std;
 import CppUtils.Terminal;
 
 namespace CppUtils
@@ -14,6 +8,8 @@ namespace CppUtils
 	export inline constexpr auto exitSuccess = 0;
 	export inline constexpr auto exitFailure = 1;
 }
+
+extern "C++" auto start(std::span<const std::string_view> args) -> int;
 
 export auto main(const int argc, const char* argv[]) -> int
 {

@@ -212,37 +212,37 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 		suite.addTest("jump (direct, relative)", [&] {
 			constexpr auto source = u8"(0 (1, 0JX 42"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("jump (direct, absolute)", [&] {
 			constexpr auto source = u8"(0 (11, 1JX 42"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("jump (indirect, ascending, relative)", [&] {
 			constexpr auto source = u8"(1 (0 (0, 4JX 42"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("jump (indirect, ascending, absolute)", [&] {
 			constexpr auto source = u8"(14 (0 (0, 5JX 42"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("jump (indirect, descending, relative)", [&] {
 			constexpr auto source = u8"(1 (0 (1, 6JX 42"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("jump (indirect, descending, absolute)", [&] {
 			constexpr auto source = u8"(14 (0 (1, 7JX 42"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("conditional (false, direct) jump (direct, relative)", [&] {
@@ -345,7 +345,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 		suite.addTest("position", [&] {
 			constexpr auto source = u8"   P   "sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 3uz);
+			suite.expectEqual(result, std::size_t{3}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("copy", [&] {
@@ -356,7 +356,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 					+
 				)"sv;
 			constexpr auto result = VM::execute<std::size_t>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("cast", [&] {
@@ -368,13 +368,13 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 		suite.addTest("swap 1", [&] {
 			constexpr auto source = u8"(0:42, 1:0S"sv;
 			auto result = VM::execute<std::size_t, bool>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("swap 2", [&] {
 			constexpr auto source = u8"(1:0, 0:42S)"sv;
 			auto result = VM::execute<std::size_t, bool>(source);
-			suite.expectEqual(result, 42uz);
+			suite.expectEqual(result, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("return string.at", [&] {
@@ -403,7 +403,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 			};
 
 			auto result = VM::execute<std::size_t, std::string_view>(source, input, +print);
-			suite.expectEqual(result, 0uz);
+			suite.expectEqual(result, std::size_t{0}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("new", [&] {
@@ -449,7 +449,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 			};
 
 			auto result = VM::execute<std::size_t, bool, std::string_view>(source, nb, input, +print);
-			suite.expectEqual(result, 0uz);
+			suite.expectEqual(result, std::size_t{0}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("char16_t", [&] {

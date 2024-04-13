@@ -5,7 +5,8 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Language::CallStackCompiler
 {
-	inline auto _ = TestSuite{"Language/CallStackCompiler", []([[maybe_unused]] auto& suite) {
+	inline auto _ = TestSuite{
+		"Language/CallStackCompiler", []([[maybe_unused]] auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 		namespace VM = CppUtils::Language::VirtualMachine;
@@ -17,7 +18,7 @@ export namespace CppUtils::UnitTest::Language::CallStackCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 0uz);
+			suite.expectEqual(executionResult, std::size_t{0}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("one function", [&] {
@@ -34,7 +35,7 @@ export namespace CppUtils::UnitTest::Language::CallStackCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
+			suite.expectEqual(executionResult, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("comment", [&] {
@@ -49,7 +50,7 @@ export namespace CppUtils::UnitTest::Language::CallStackCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
+			suite.expectEqual(executionResult, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 
 		suite.addTest("call function", [&] constexpr {
@@ -77,7 +78,7 @@ export namespace CppUtils::UnitTest::Language::CallStackCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
+			suite.expectEqual(executionResult, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 	}};
 }

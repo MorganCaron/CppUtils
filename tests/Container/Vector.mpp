@@ -14,7 +14,7 @@ export namespace CppUtils::UnitTest::Container::Vector
 			const auto c = std::vector<std::string>{"e", "f"};
 			const auto d = std::vector<std::string>{"g", "h"};
 			const auto vector = CppUtils::Container::Vector::merge(a, b, c, d);
-			suite.expectEqual(std::size(vector), 8uz);
+			suite.expectEqual(std::size(vector), std::size_t{8}); // Todo: ""uz (not supported on MSVC)
 			for (const auto& string : vector)
 				Logger::print("{}\n", string);
 		});

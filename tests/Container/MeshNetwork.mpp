@@ -64,7 +64,7 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto& fruit = meshNetwork.newNode("fruit");
 			fruit.attach("fruits", meshNetwork.newNode("banana"));
 
-			suite.expectEqual(std::size(fruit["fruits"]), 1uz);
+			suite.expectEqual(std::size(fruit["fruits"]), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
 
 			auto& banana = meshNetwork.newNode("banana");
 			banana.attach("color", meshNetwork.newNode("yellow"));
@@ -72,9 +72,9 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 
 			fruit.attachUnique("fruits", banana);
 
-			suite.expectEqual(std::size(fruit["fruits"]), 1uz);
+			suite.expectEqual(std::size(fruit["fruits"]), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
 			suite.expect(fruit["fruits"][0].get().exists("color"));
-			suite.expectEqual(std::size(fruit["fruits"][0].get()["color"]), 1uz);
+			suite.expectEqual(std::size(fruit["fruits"][0].get()["color"]), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
 			suite.expectEqual(fruit["fruits"][0].get()["color"][0].get().value, "yellow");
 		});
 

@@ -39,7 +39,6 @@ export namespace CppUtils::FileSystem
 		Oneshot = IN_ONESHOT,
 		All = IN_ALL_EVENTS
 	};
-#endif
 
 	[[nodiscard]] inline constexpr auto operator&(Event lhs, Event rhs) -> bool
 	{
@@ -52,10 +51,12 @@ export namespace CppUtils::FileSystem
 		return static_cast<Event>(
 			static_cast<std::underlying_type_t<Event>>(lhs) | static_cast<std::underlying_type_t<Event>>(rhs));
 	}
+#endif
 }
 
 namespace std
 {
+#if defined(OS_LINUX)
 	template<class CharT>
 	struct formatter<CppUtils::FileSystem::Event, CharT>
 	{
@@ -71,7 +72,6 @@ namespace std
 			using Event = CppUtils::FileSystem::Event;
 			auto&& out = context.out();
 			auto string = ""s;
-#if defined(OS_LINUX)
 			{
 				auto isCloseWrite = event & Event::CloseWrite;
 				auto isCloseNoWrite = event & Event::CloseNoWrite;
@@ -114,8 +114,8 @@ namespace std
 				string += "ignored ";
 			if (event & Event::Oneshot)
 				string += "oneshot ";
-#endif
 			return std::format_to(out, "{}", CppUtils::String::rightTrimString(string));
 		}
 	};
+#endif
 }

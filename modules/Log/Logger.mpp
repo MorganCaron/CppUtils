@@ -59,7 +59,7 @@ export namespace CppUtils
 			using namespace std::literals;
 			auto line = ""s;
 			auto terminalWidth = Terminal::getTerminalSize().width;
-			for (auto i = 0uz; i < terminalWidth; ++i)
+			for (auto i = std::size_t{0}; i < terminalWidth; ++i) // Todo: ""uz (not supported on MSVC)
 				line += "─";
 			auto [textModifier, message] = format<logType>("");
 			// Todo C++23: std::print(ostream, "{}", std::move(line));
@@ -72,7 +72,7 @@ export namespace CppUtils
 			using namespace std::literals;
 			auto line = ""s;
 			auto terminalWidth = Terminal::getTerminalSize().width;
-			for (auto i = 0uz; i < terminalWidth; ++i)
+			for (auto i = std::size_t{0}; i < terminalWidth; ++i) // Todo: ""uz (not supported on MSVC)
 				line += "─";
 			auto [textModifier, message] = format<logType>("");
 			std::print("{}", std::move(line));

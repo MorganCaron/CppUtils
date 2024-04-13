@@ -55,7 +55,7 @@ export namespace CppUtils::Container
 
 			auto offset = getTypeOffset(position);
 			auto buffer = std::array<std::byte, sizeof(T)>{};
-			for (auto i = 0uz; i < sizeof(T); ++i)
+			for (auto i = std::size_t{0}; i < sizeof(T); ++i) // Todo: ""uz (not supported on MSVC)
 				buffer[i] = m_data[offset + i];
 			return std::bit_cast<T>(buffer);
 		}
@@ -87,7 +87,7 @@ export namespace CppUtils::Container
 
 			auto offset = getTypeOffset(position);
 			auto buffer = std::bit_cast<std::array<std::byte, sizeof(T)>>(newValue);
-			for (auto i = 0uz; i < sizeof(T); ++i)
+			for (auto i = std::size_t{0}; i < sizeof(T); ++i) // Todo: ""uz (not supported on MSVC)
 				m_data[offset + i] = buffer[i];
 		}
 
@@ -179,7 +179,7 @@ export namespace CppUtils::Container
 		inline constexpr auto visit(std::size_t position, auto&& visitor) const -> void
 		{
 			static constexpr auto visitors = std::array{
-				+[](const Stack<SupportedTypes...>& stack, std::size_t position, decltype(visitor) visitor) -> void {
+				+[](const Stack<SupportedTypes...>& stack, std::size_t position, decltype(visitor)&& visitor) -> void {
 				visitor(stack.template get<SupportedTypes>(position));
 			}...};
 
@@ -207,7 +207,8 @@ export namespace CppUtils::Container
 		template<class ReturnType, class... Args>
 		inline constexpr auto call(ReturnType (*function)(Args...)) -> void
 		{
-			auto call = [this, function]<std::size_t... I> [[nodiscard]] ([[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto) {
+			auto call = [this, function]<std::size_t... I> /* Not supported on MSVC [[nodiscard]] */ (/* Not supported on MSVC [[maybe_unused]] */ std::index_sequence<I...> indexSequence) -> decltype(auto) {
+				static_cast<void>(indexSequence);
 				return std::invoke(function, get<std::remove_cvref_t<Type::NthType<I, Args...>>>(size() - sizeof...(Args) + I)...);
 			};
 			if constexpr (std::is_void_v<ReturnType>)
@@ -220,7 +221,8 @@ export namespace CppUtils::Container
 		inline constexpr auto call(ReturnType (Object::*function)(Args...)) -> void
 		{
 			auto* objectPointer = get<Object*>(size() - 1 - sizeof...(Args));
-			auto call = [this, function, objectPointer]<std::size_t... I> [[nodiscard]] ([[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto) {
+			auto call = [this, function, objectPointer]<std::size_t... I> /* Not supported on MSVC [[nodiscard]] */ (/* Not supported on MSVC [[maybe_unused]] */ std::index_sequence<I...> indexSequence) -> decltype(auto) {
+				static_cast<void>(indexSequence);
 				return std::invoke(function, objectPointer, get<std::remove_cvref_t<Type::NthType<I, Args...>>>(size() - sizeof...(Args) + I)...);
 			};
 			if constexpr (std::is_void_v<ReturnType>)
@@ -234,7 +236,8 @@ export namespace CppUtils::Container
 		{
 			visit(size() - 1 - sizeof...(Args), [this, function](auto&& objectPointer) -> void {
 				using ObjectPointer = std::remove_cvref_t<decltype(objectPointer)>;
-				auto call = [this, function, objectPointer]<std::size_t... I> [[nodiscard]] ([[maybe_unused]] std::index_sequence<I...> indexSequence) -> decltype(auto) {
+				auto call = [this, function, objectPointer]<std::size_t... I> /* Not supported on MSVC [[nodiscard]] */ (/* Not supported on MSVC [[maybe_unused]] */ std::index_sequence<I...> indexSequence) -> decltype(auto) {
+					static_cast<void>(indexSequence);
 					return std::invoke(function, objectPointer, get<std::remove_cvref_t<Type::NthType<I, Args...>>>(size() - sizeof...(Args) + I)...);
 				};
 				if constexpr (not std::same_as<ObjectPointer, const Object*> and not std::same_as<ObjectPointer, Object*>)
@@ -249,8 +252,8 @@ export namespace CppUtils::Container
 	private:
 		[[nodiscard]] inline constexpr auto getTypeOffset(std::size_t position) const -> std::size_t
 		{
-			auto offset = 0uz;
-			for (auto i = 0uz; i < position; ++i)
+			auto offset = std::size_t{0}; // Todo: ""uz (not supported on MSVC)
+			for (auto i = std::size_t{0}; i < position; ++i) // Todo: ""uz (not supported on MSVC)
 				offset += typesSize[m_types[i]];
 			return offset;
 		}

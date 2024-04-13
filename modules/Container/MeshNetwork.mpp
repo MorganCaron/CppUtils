@@ -37,7 +37,7 @@ export namespace CppUtils::Container
 
 			[[nodiscard]] inline auto count(const Key& key) const -> std::size_t
 			{
-				return exists(key) ? std::size(get(key)) : 0uz;
+				return exists(key) ? std::size(get(key)) : std::size_t{0}; // Todo: ""uz (not supported on MSVC)
 			}
 
 			inline auto attach(const Key& key, Node& node) -> void

@@ -51,26 +51,27 @@ export namespace CppUtils::System
 			auto stringPath = libraryPath.string();
 #if defined(OS_WINDOWS)
 			m_library = LoadLibraryEx(std::data(stringPath), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
-			if (!m_library)
+			if (not m_library)
 			{
-				auto buf = std::array<char, 256>{};
+				auto buffer = std::array<char, 256>{};
 				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 					nullptr,
 					GetLastError(),
 					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-					std::data(buf),
-					std::size(buf),
+					std::data(buffer),
+					static_cast<DWORD>(std::size(buffer)),
 					nullptr);
-				throw std::runtime_error{"Couldn't load library " + stringPath + "\n" + std::data(buf)};
+				throw std::runtime_error{std::format("Couldn't load library {}\n{}", stringPath, std::data(buffer))};
 			}
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 			m_library = dlopen(std::data(stringPath), RTLD_LAZY);
-			if (!m_library)
-				throw std::runtime_error{"Couldn't load library " + stringPath + "\n" + dlerror()};
+			if (not m_library)
+				throw std::runtime_error{std::format("Couldn't load library {}\n{}", stringPath, dlerror())};
 #else
 #	error unsupported platform
 #endif
 		}
+
 		~SharedLibrary() noexcept
 		{
 #if defined(OS_WINDOWS)
@@ -87,25 +88,25 @@ export namespace CppUtils::System
 #if defined(OS_WINDOWS)
 			auto handle = GetModuleHandle(nullptr);
 			auto* functionPointer = GetProcAddress(handle, std::data(signature));
-			if (!functionPointer)
+			if (not functionPointer)
 			{
-				auto buf = std::array<char, 256>{};
+				auto buffer = std::array<char, 256>{};
 				FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 					nullptr,
 					GetLastError(),
 					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-					std::data(buf),
-					std::size(buf),
+					std::data(buffer),
+					static_cast<DWORD>(std::size(buffer)),
 					nullptr);
-				throw std::runtime_error("Couldn't load function "s + std::data(signature) + "\nError code: " + std::data(buf));
+				throw std::runtime_error{std::format("Couldn't load function {}\nError code: {}", signature, std::data(buffer))};
 			}
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 			auto* handle = dlopen(nullptr, RTLD_LAZY);
 			if (handle == nullptr)
-				throw std::runtime_error(dlerror());
+				throw std::runtime_error{dlerror()};
 			auto* functionPointer = dlsym(handle, std::data(signature));
-			if (!functionPointer)
-				throw std::runtime_error("Couldn't load function "s + std::data(signature) + '\n' + dlerror());
+			if (not functionPointer)
+				throw std::runtime_error{std::format("Couldn't load function {}\n{}", signature, dlerror())};
 #else
 #	error unsupported platform
 #endif

@@ -181,7 +181,7 @@ namespace std
 			auto&& out = context.out();
 			std::format_to(out, "{}\n", node.value);
 			const auto nbNodes = std::size(node.nodes);
-			for (auto i = 0uz; i < nbNodes; ++i)
+			for (auto i = std::size_t{0}; i < nbNodes; ++i) // Todo: ""uz (not supported on MSVC)
 			{
 				std::format_to(out, "{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
 				formatNode(node.nodes.at(i), context, prefix + ((i != nbNodes - 1) ? "│" : " ") + "  ");
@@ -213,7 +213,7 @@ namespace std
 			auto&& out = context.out();
 			std::format_to(out, "{}\n", nodeView.getPrintableValue());
 			const auto nbNodes = std::size(node.get().nodes);
-			for (auto i = 0uz; i < nbNodes; ++i)
+			for (auto i = std::size_t{0}; i < nbNodes; ++i) // Todo: ""uz (not supported on MSVC)
 			{
 				std::format_to(out, "{}{}─ ", prefix, (i != nbNodes - 1) ? "├" : "└");
 				auto child = CppUtils::Container::ASTNodeView<CharT>{node.get().nodes.at(i), tree};

@@ -109,8 +109,8 @@ namespace CppUtils::UnitTest
 			else
 			{
 				Logger::print<"info">("{} tests found. Execution:", std::size(m_tests));
-				auto nbSuccess = 0uz;
-				auto nbFail = 0uz;
+				auto nbSuccess = std::size_t{0}; // Todo: ""uz (not supported on MSVC)
+				auto nbFail = std::size_t{0}; // Todo: ""uz (not supported on MSVC)
 				for (const auto& test : m_tests)
 				{
 					if (executeTest(test, settings))
