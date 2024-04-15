@@ -179,7 +179,7 @@ export namespace CppUtils::Container
 		inline constexpr auto visit(std::size_t position, auto&& visitor) const -> void
 		{
 			static constexpr auto visitors = std::array{
-				+[](const Stack<SupportedTypes...>& stack, std::size_t position, decltype(visitor)&& visitor) -> void {
+				+[](const Stack<SupportedTypes...>& stack, std::size_t position, decltype(visitor)&& visitor) -> void { // Todo: Retirer le && quand ça compilera avec MSVC (bug MSVC)
 				visitor(stack.template get<SupportedTypes>(position));
 			}...};
 

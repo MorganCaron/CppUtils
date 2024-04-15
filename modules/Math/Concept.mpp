@@ -1,0 +1,11 @@
+export module CppUtils.Math.Concept;
+
+import std;
+
+export namespace CppUtils::Math
+{
+	template<class Lhs, class Rhs>
+	concept Divisible = requires (Lhs lhs, Rhs rhs) {
+		{ lhs / rhs };
+	};
+}

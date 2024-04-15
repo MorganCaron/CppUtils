@@ -53,7 +53,7 @@ export namespace CppUtils::UnitTest::Language::CallStackCompiler
 			suite.expectEqual(executionResult, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
 		});
 
-		suite.addTest("call function", [&] constexpr {
+		suite.addTest("call function", [&] { // constexpr { (not supported on MSVC)
 			constexpr auto source = uR"(
 				(21X
 

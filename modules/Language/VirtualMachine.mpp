@@ -3,6 +3,7 @@ export module CppUtils.Language.VirtualMachine;
 import std;
 import CppUtils.Container;
 import CppUtils.Type;
+import CppUtils.Math.Concept;
 
 // Ribosome
 
@@ -320,8 +321,10 @@ export namespace CppUtils::Language::VirtualMachine
 						throw std::invalid_argument{"Operator / used on non arithmetic type"};
 					else if (rhs == Rhs{})
 						throw std::logic_error{"Division by zero not allowed"};
+					else if constexpr (Math::Divisible<Lhs, Rhs> and not Type::Present<bool, Lhs, Rhs>)
+						stack.push(static_cast<Lhs>(lhs / rhs));
 					else
-						stack.push(static_cast<Lhs>(lhs / static_cast<Lhs>(rhs)));
+						throw std::logic_error{"Not divisible types"};
 				});
 				break;
 			case '%':
@@ -335,8 +338,10 @@ export namespace CppUtils::Language::VirtualMachine
 						throw std::invalid_argument{"Operator % used on non arithmetic type"};
 					else if (rhs == Rhs{})
 						throw std::logic_error{"Division by zero not allowed"};
+					else if constexpr (Math::Divisible<Lhs, Rhs> and not Type::Present<bool, Lhs, Rhs>)
+						stack.push(static_cast<Lhs>(lhs % rhs));
 					else
-						stack.push(static_cast<Lhs>(lhs % static_cast<Lhs>(rhs)));
+						throw std::logic_error{"Not divisible types"};
 				});
 				break;
 			case '\\':
