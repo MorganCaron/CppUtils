@@ -9,12 +9,13 @@ export namespace CppUtils::Container
 	class MeshNetwork final
 	{
 	public:
-		class Node final
+		struct Node final
 		{
-		public:
-			explicit inline Node(std::string c_value):
-				value{std::move(c_value)}
+			Node() = default;
+			explicit inline Node(auto&&... args):
+				value{std::forward<decltype(args)>(args)...}
 			{}
+			inline Node(Node&&) = default;
 
 			[[nodiscard]] inline auto exists(const Key& branchKey) const -> bool
 			{
