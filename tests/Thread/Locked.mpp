@@ -1,0 +1,42 @@
+export module CppUtils.UnitTests.Thread.Locked;
+
+import CppUtils;
+import CppUtils.Thread.Locked;
+
+export namespace Cora::UnitTests
+{
+	inline auto _ = CppUtils::UnitTest::TestSuite{"Lock", [](auto& suite) {
+		suite.addTest("Access", [&] {
+			auto lockedString = CppUtils::Thread::Locked<std::string>{"Foo"};
+			{
+				auto accessor = lockedString.access();
+				suite.expect(*accessor == "Foo");
+			}
+		});
+
+		suite.addTest("Test mutex", [&] {
+			auto lockedNumber = CppUtils::Thread::Locked{std::size_t{0}}; // Todo: ""uz (not supported on MSVC)
+
+			auto testIncrement = [&lockedNumber](std::size_t iterations) -> void {
+				while (iterations--)
+				{
+					auto accessor = lockedNumber.access();
+					auto& nb = *accessor;
+					++nb;
+				}
+			};
+
+			auto iterations = std::size_t{1'000'000}; // Todo: ""uz (not supported on MSVC)
+			{
+				auto thread0 = std::jthread{testIncrement, iterations};
+				auto thread1 = std::jthread{testIncrement, iterations};
+			}
+			auto accessor = lockedNumber.access();
+			suite.expectEqual(*accessor, iterations * 2);
+		});
+
+		suite.addTest("Test function", [&] {
+
+		});
+	}};
+}
