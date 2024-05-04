@@ -18,14 +18,12 @@ export namespace CppUtils::Thread
 		inline LoopThread(const LoopThread&) = delete;
 		inline LoopThread(LoopThread&& src) noexcept:
 			m_function{std::move(src.m_function)},
-			m_running{src.isRunning()},
 			m_thread{std::move(src.m_thread)}
 		{}
 		inline LoopThread& operator=(const LoopThread&) = delete;
 		inline LoopThread& operator=(LoopThread&& rhs) noexcept
 		{
 			m_function = std::move(rhs.m_function);
-			m_running = rhs.isRunning();
 			m_thread = std::move(rhs.m_thread);
 			return *this;
 		}
@@ -37,53 +35,46 @@ export namespace CppUtils::Thread
 
 		[[nodiscard]] inline auto isRunning() const noexcept -> bool
 		{
-			return m_running.load();
+			return m_thread.joinable() and not m_exceptionOccurred.load();
 		}
 
 		inline auto start() -> void
 		{
-			if (isRunning())
-				stop();
-			m_thread = std::jthread{&LoopThread::run, this};
+			m_thread = std::jthread{[this](std::stop_token stopToken) -> void {
+				m_exceptionOccurred = false;
+				try
+				{
+					while (not stopToken.stop_requested())
+						m_function();
+					return;
+				}
+				catch (const std::exception& exception)
+				{
+					logException(std::runtime_error{std::format("Exception occurred during thread execution:\n{}\nThread execution is interrupted", exception.what())});
+				}
+				catch (...)
+				{
+					Logger<"CppUtils">::print<"error">("Exception occurred during thread execution.\nThread execution is interrupted");
+				}
+				m_exceptionOccurred = true;
+			}};
 		}
 
 		inline auto stop() -> void
 		{
 			if (m_exceptionOccurred.load())
 				throw std::runtime_error{"Exception occurred during thread execution"};
-			if (not isRunning())
+			if (not isRunning() or m_thread.get_stop_token().stop_requested())
 				return;
-			m_running = false;
+			m_thread.request_stop();
 			if (m_interruptFunction)
 				m_interruptFunction();
 			m_thread.join();
 		}
 
 	private:
-		inline auto run() -> void
-		{
-			try
-			{
-				m_running = true;
-				while (isRunning())
-					m_function();
-				return;
-			}
-			catch (const std::exception& exception)
-			{
-				logException(std::runtime_error{std::format("Exception occurred during thread execution:\n{}\nThread execution is interrupted", exception.what())});
-			}
-			catch (...)
-			{
-				Logger<"CppUtils">::print<"error">("Exception occurred during thread execution.\nThread execution is interrupted");
-			}
-			m_running = false;
-			m_exceptionOccurred = true;
-		}
-
 		std::function<void()> m_function;
 		std::function<void()> m_interruptFunction;
-		std::atomic_bool m_running = false;
 		std::atomic_bool m_exceptionOccurred = false;
 		std::jthread m_thread;
 	};

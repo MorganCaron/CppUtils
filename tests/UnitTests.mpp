@@ -20,5 +20,6 @@ export import CppUtils.UnitTests.Logger;
 export import CppUtils.UnitTests.Stl.Format;
 export import CppUtils.UnitTests.String.Utility;
 export import CppUtils.UnitTests.Thread.Locked;
+export import CppUtils.UnitTests.Thread.LoopThread;
 export import CppUtils.UnitTests.Type.Concept;
 export import CppUtils.UnitTests.UnitTest;

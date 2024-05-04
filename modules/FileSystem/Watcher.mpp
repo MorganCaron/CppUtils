@@ -131,7 +131,7 @@ export namespace CppUtils::FileSystem
 
 			for (auto i = std::size_t{0}; i < nbFileDescriptorsReady; ++i) // Todo: ""uz (not supported on MSVC)
 			{
-				auto buffer = std::array<std::byte, 1024>{};
+				auto buffer = std::array<std::byte, 1'024>{};
 				auto length = 0z;
 				{
 					auto eventFileDescriptor = m_events[i].data.fd;
