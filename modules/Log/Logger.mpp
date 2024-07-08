@@ -63,7 +63,7 @@ export namespace CppUtils
 				line += "─";
 			auto [textModifier, message] = format<logType>("");
 			// Todo C++23: std::print(ostream, "{}", std::move(line));
-			ostream << line;
+			ostream << line << '\n';
 		}
 
 		template<String::Hasher logType = String::Hash{}>
@@ -75,7 +75,7 @@ export namespace CppUtils
 			for (auto i = std::size_t{0}; i < terminalWidth; ++i) // Todo: ""uz (not supported on MSVC)
 				line += "─";
 			auto [textModifier, message] = format<logType>("");
-			std::print("{}", std::move(line));
+			std::print("{}\n", std::move(line));
 		}
 	};
 

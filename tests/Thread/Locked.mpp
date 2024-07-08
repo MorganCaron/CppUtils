@@ -2,7 +2,7 @@ export module CppUtils.UnitTests.Thread.Locked;
 
 import CppUtils;
 
-export namespace CppUtils::UnitTests::Thread::Locked
+export namespace CppUtils::UnitTest::Thread::Locked
 {
 	inline auto _ = CppUtils::UnitTest::TestSuite{"Lock", [](auto& suite) {
 		suite.addTest("Access", [&] {

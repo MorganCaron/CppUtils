@@ -1,0 +1,295 @@
+export module CppUtils.Container.BTree;
+
+import std;
+import CppUtils.Type;
+
+export namespace CppUtils::Container::BTree
+{
+	template<class K, class V>
+	class Node final
+	{
+	public:
+		using Key = K;
+		using Value = V;
+
+		bool isLeaf = true;
+		std::size_t maxNumberOfKeys;
+		std::vector<Key> keys;
+		std::vector<std::unique_ptr<Value>> values;
+		std::vector<std::unique_ptr<Node>> children;
+
+		explicit inline Node(bool isLeaf = true, std::size_t maxNumberOfKeys = 4):
+			isLeaf{isLeaf},
+			maxNumberOfKeys{maxNumberOfKeys}
+		{}
+
+		[[nodiscard]] inline constexpr auto size() const noexcept -> std::size_t
+		{
+			return std::accumulate(
+				std::cbegin(children),
+				std::cend(children),
+				std::size(values),
+				[](std::size_t nb, const auto& child) -> std::size_t {
+				return nb + std::size(*child);
+			});
+		}
+
+		[[nodiscard]] inline constexpr auto exists(const Key& key) const noexcept -> bool
+		{
+			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
+			if (isLeaf)
+				return it != std::cend(keys) and *it == key;
+			else
+			{
+				auto index = static_cast<std::size_t>(std::distance(std::cbegin(keys), it));
+				return children[index]->exists(key);
+			}
+		}
+
+		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
+		{
+			return std::empty(keys);
+		}
+
+		inline auto clear() noexcept -> void
+		{
+			isLeaf = true;
+			keys.clear();
+			values.clear();
+			children.clear();
+		}
+
+		[[nodiscard]] inline auto get(const Key& key) -> decltype(auto)
+		{
+			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
+			if (isLeaf)
+			{
+				if (it != std::cend(keys) and *it == key)
+				{
+					auto index = static_cast<std::size_t>(std::distance(std::cbegin(keys), it));
+					return *values[index];
+				}
+				else
+					throw std::out_of_range{"The key does not exist in the Node."};
+			}
+			else
+			{
+				auto index = static_cast<std::size_t>(std::distance(std::cbegin(keys), it));
+				return children[index]->get(key);
+			}
+		}
+
+		inline auto add(const Key& key, Value&& value) -> void
+		{
+			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
+			auto position = std::distance(std::cbegin(keys), it);
+			auto index = static_cast<std::size_t>(position);
+			if (isLeaf)
+			{
+				if (auto it = std::find(std::cbegin(keys), std::cend(keys), key); it != std::cend(keys))
+					*values[index] = std::move(value);
+				else
+				{
+					keys.insert(it, key);
+					values.insert(std::next(std::begin(values), position), std::make_unique<Value>(value));
+				}
+			}
+			else
+			{
+				children[index]->add(key, std::move(value));
+				if (std::size(children[index]->keys) > maxNumberOfKeys)
+					splitChild(index);
+			}
+			if (std::size(keys) > maxNumberOfKeys)
+				splitSelf();
+		}
+
+	private:
+		inline auto splitChild(std::size_t index) -> void
+		{
+			auto child = std::move(children[index]);
+			auto newChild = std::make_unique<Node>(child->isLeaf, child->maxNumberOfKeys);
+
+			auto middleIndex = std::size(child->keys) / 2;
+			auto middlePosition = static_cast<std::ptrdiff_t>(middleIndex);
+
+			newChild->keys.assign(
+				std::make_move_iterator(std::next(std::begin(child->keys), middlePosition + 1)),
+				std::make_move_iterator(std::end(child->keys)));
+			child->keys.resize(middleIndex);
+
+			if (child->isLeaf)
+			{
+				newChild->values.assign(
+					std::make_move_iterator(std::next(std::begin(child->values), middlePosition + 1)),
+					std::make_move_iterator(std::end(child->values)));
+				child->values.resize(middleIndex);
+			}
+			else
+			{
+				newChild->children.assign(
+					std::make_move_iterator(std::next(std::begin(child->children), middlePosition + 1)),
+					std::make_move_iterator(std::end(child->children)));
+				child->children.resize(middleIndex + 1);
+			}
+
+			keys.insert(std::next(std::begin(keys), static_cast<std::ptrdiff_t>(index)), child->keys[middleIndex]);
+			values.insert(std::next(std::begin(values), static_cast<std::ptrdiff_t>(index)), std::move(child->values[middleIndex]));
+			children.insert(std::next(std::begin(children), static_cast<std::ptrdiff_t>(index) + 1), std::move(newChild));
+		}
+
+		inline auto splitSelf() -> void
+		{
+			auto middleIndex = std::size(keys) / 2;
+			auto middlePosition = static_cast<std::ptrdiff_t>(middleIndex);
+			auto middleValue = std::move(values[middleIndex]);
+
+			auto newChild1 = std::make_unique<Node>(isLeaf, maxNumberOfKeys);
+			auto newChild2 = std::make_unique<Node>(isLeaf, maxNumberOfKeys);
+
+			newChild1->keys.assign(
+				std::make_move_iterator(std::begin(keys)),
+				std::make_move_iterator(std::next(std::begin(keys), middlePosition)));
+			newChild2->keys.assign(
+				std::make_move_iterator(std::next(std::begin(keys), middlePosition + 1)),
+				std::make_move_iterator(std::end(keys)));
+
+			if (isLeaf)
+			{
+				newChild1->values.assign(
+					std::make_move_iterator(std::begin(values)),
+					std::make_move_iterator(std::next(std::begin(values), middlePosition)));
+				newChild2->values.assign(
+					std::make_move_iterator(std::next(std::begin(values), middlePosition + 1)),
+					std::make_move_iterator(std::end(values)));
+			}
+			else
+			{
+				newChild1->children.assign(
+					std::make_move_iterator(std::begin(children)),
+					std::make_move_iterator(std::next(std::begin(children), middlePosition + 1)));
+				newChild2->children.assign(
+					std::make_move_iterator(std::next(std::begin(children), middlePosition + 1)),
+					std::make_move_iterator(std::end(children)));
+			}
+
+			keys.assign({keys[middleIndex]});
+			values.clear();
+			values.push_back(std::move(middleValue));
+			children.clear();
+			children.push_back(std::move(newChild1));
+			children.push_back(std::move(newChild2));
+			isLeaf = false;
+		}
+
+	public:
+		inline auto remove(const Key& key) -> void
+		{
+			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
+			auto position = std::distance(std::cbegin(keys), it);
+			auto index = static_cast<std::size_t>(position);
+
+			if (isLeaf)
+			{
+				if (it != std::cend(keys) && *it == key)
+				{
+					keys.erase(it);
+					values.erase(std::next(std::begin(values), position));
+				}
+			}
+			else if (it != std::cend(keys) && *it == key)
+			{
+				keys.erase(it);
+				values.erase(std::next(std::cbegin(values), position));
+				children.erase(std::next(std::cbegin(children), position));
+			}
+			else
+				children[index]->remove(key);
+		}
+
+		[[nodiscard]] inline auto operator[](const Key& key) -> decltype(auto)
+		{
+			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
+			auto position = std::distance(std::cbegin(keys), it);
+			auto index = static_cast<std::size_t>(position);
+
+			if (isLeaf)
+			{
+				if (it != std::cend(keys) && *it == key)
+					return *values[index];
+
+				keys.insert(it, key);
+				return *(*values.emplace(std::next(std::begin(values), position), std::make_unique<Value>()));
+			}
+			else
+			{
+				if (it != std::cend(keys) && *it == key)
+					return *values[index];
+
+				return children[index]->get(key);
+			}
+		}
+	};
+}
+
+namespace std
+{
+	template<class Key, class Value, class CharT>
+	requires CppUtils::Type::Printable<Value>
+	struct formatter<CppUtils::Container::BTree::Node<Key, Value>, CharT>
+	{
+		using Node = CppUtils::Container::BTree::Node<Key, Value>;
+
+		inline constexpr auto parse(std::format_parse_context& context) -> auto
+		{
+			return std::begin(context);
+		}
+
+		template<class FormatContext>
+		auto format(const Node& node, FormatContext& context) const -> decltype(context.out())
+		{
+			auto&& out = context.out();
+			formatNode(node, context);
+			return out;
+		}
+
+	private:
+		template<class FormatContext>
+		auto formatNode(const Node& node, FormatContext& context, const std::basic_string<CharT>& prefix = "") const -> void
+		{
+			auto&& out = context.out();
+			if (std::empty(node))
+			{
+				std::format_to(out, "Empty node\n");
+				return;
+			}
+			std::format_to(out, "Node: {} ─ {}\n", node.keys[0], *node.values[0]);
+
+			if (node.isLeaf)
+			{
+				const auto nbKeys = std::size(node.keys);
+				for (auto i = std::size_t{0}; i < nbKeys; ++i) // Todo: ""uz (not supported on MSVC)
+				{
+					const bool isLastKey = (i == nbKeys - 1);
+					std::format_to(out, "{}{}─ Key: {}\n", prefix, isLastKey ? "└" : "├", node.keys[i]);
+					std::format_to(out, "{}{}  └─ Value: {}\n", prefix, isLastKey ? " " : "│", *node.values[i]);
+				}
+			}
+			else
+			{
+				const auto nbKeys = std::size(node.keys);
+				if (nbKeys == 0)
+					return;
+				std::format_to(out, "{}├─ ", prefix);
+				formatNode(*node.children[0], context, prefix + "│  ");
+				for (auto i = std::size_t{0}; i < nbKeys;) // Todo: ""uz (not supported on MSVC)
+				{
+					const bool isLastKey = (i == nbKeys - 1);
+					std::format_to(out, "{}├─ Key: {}\n", prefix, node.keys[i]);
+					std::format_to(out, "{}{}─ ", prefix, isLastKey ? "└" : "├");
+					formatNode(*node.children[++i], context, prefix + (isLastKey ? " " : "│") + "  ");
+				}
+			}
+		}
+	};
+}

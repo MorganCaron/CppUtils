@@ -1,0 +1,122 @@
+export module CppUtils.UnitTests.Container.BTree;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Container::BTree
+{
+	inline auto _ = TestSuite{"Container/BTree", [](auto& suite) {
+		using namespace std::literals;
+		using Logger = CppUtils::Logger<"CppUtils">;
+
+		suite.addTest("Empty", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			Logger::print("{}\n", bTree);
+			suite.expect(std::empty(bTree));
+		});
+
+		suite.addTest("1 element", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			bTree.add(0, 'A');
+			Logger::print("{}\n", bTree);
+			suite.expect(not std::empty(bTree));
+			suite.expectEqual(std::size(bTree), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
+		});
+
+		suite.addTest("2 elements", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			bTree.add(0, 'A');
+			bTree.add(1, 'B');
+			Logger::print("{}\n", bTree);
+			suite.expectEqual(std::size(bTree), std::size_t{2}); // Todo: ""uz (not supported on MSVC)
+		});
+
+		suite.addTest("5 elements (split self)", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			for (auto i = 0; i < 5; ++i)
+				bTree.add(i, 'A' + static_cast<char>(i));
+			Logger::print("{}\n", bTree);
+			suite.expectEqual(std::size(bTree), std::size_t{5}); // Todo: ""uz (not supported on MSVC)
+		});
+
+		suite.addTest("8 elements (split self & split child)", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			for (auto i = 0; i < 8; ++i)
+				bTree.add(i, 'A' + static_cast<char>(i));
+			Logger::print("{}\n", bTree);
+			suite.expectEqual(std::size(bTree), std::size_t{8}); // Todo: ""uz (not supported on MSVC)
+		});
+
+		suite.addTest("10 elements", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			for (auto i = 0; i < 10; ++i)
+				bTree.add(i, 'A' + static_cast<char>(i));
+			Logger::print("{}\n", bTree);
+			suite.expectEqual(std::size(bTree), std::size_t{10}); // Todo: ""uz (not supported on MSVC)
+		});
+
+		suite.addTest("Exists", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			bTree.add(0, 'A');
+			Logger::print("{}\n", bTree);
+			suite.expect(bTree.exists(0));
+			suite.expect(not bTree.exists(1));
+		});
+
+		suite.addTest("Key hasher", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<std::string, int>{};
+			bTree.add("test", 0);
+			Logger::print("{}\n", bTree);
+			suite.expectEqual(std::size(bTree), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
+		});
+
+		suite.addTest("Removing element", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			bTree.add(0, 'A');
+			bTree.remove(0);
+			Logger::print("{}\n", bTree);
+			suite.expect(std::empty(bTree));
+		});
+
+		suite.addTest("Removing nested element", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			Logger::print("{}\n", bTree);
+			suite.expect(std::empty(bTree));
+		});
+
+		suite.addTest("Clear", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			bTree.add(0, 'A');
+			bTree.clear();
+			Logger::print("{}\n", bTree);
+			suite.expect(std::empty(bTree));
+		});
+
+		suite.addTest("Search key", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			bTree.add(0, 'A');
+			Logger::print("{}\n", bTree);
+			suite.expect(bTree.exists(0));
+			suite.expectEqual(bTree.get(0), 'A');
+		});
+
+		suite.addTest("Set value", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			bTree[0] = 'A';
+			Logger::print("{}\n", bTree);
+			suite.expect(not std::empty(bTree));
+			suite.expect(bTree.exists(0));
+			suite.expectEqual(bTree.get(0), 'A');
+		});
+
+		suite.addTest("Edit value", [&] {
+			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
+			bTree.add(0, 'A');
+			bTree[0] = 'B';
+			Logger::print("{}\n", bTree);
+			suite.expectEqual(bTree.size(), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
+			suite.expect(bTree.exists(0));
+			suite.expectEqual(bTree.get(0), 'B');
+		});
+	}};
+}

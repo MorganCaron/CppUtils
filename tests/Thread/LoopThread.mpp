@@ -2,22 +2,20 @@ export module CppUtils.UnitTests.Thread.LoopThread;
 
 import CppUtils;
 
-export namespace CppUtils::UnitTests::Thread::LoopThread
+export namespace CppUtils::UnitTest::Thread::LoopThread
 {
 	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/LoopThread", [](auto& suite) {
 		using namespace std::chrono_literals;
 
 		suite.addTest("isRunning", [&] {
-			{
-				auto loopThread = CppUtils::Thread::LoopThread{[] {}};
-				suite.expect(not loopThread.isRunning());
-				loopThread.start();
-				suite.expect(loopThread.isRunning());
-				loopThread.stop();
-				suite.expect(not loopThread.isRunning());
-				loopThread.start();
-				suite.expect(loopThread.isRunning());
-			}
+			auto loopThread = CppUtils::Thread::LoopThread{[] {}};
+			suite.expect(not loopThread.isRunning());
+			loopThread.start();
+			suite.expect(loopThread.isRunning());
+			loopThread.stop();
+			suite.expect(not loopThread.isRunning());
+			loopThread.start();
+			suite.expect(loopThread.isRunning());
 		});
 
 		suite.addTest("Loop", [&] {
