@@ -16,5 +16,14 @@ export namespace CppUtils::UnitTest
 			suite.expectEqual(1, 1);
 			suite.expectEqual("test"sv, "test"sv);
 		});
+
+		suite.addTest("ExpectedCall", [&] {
+			auto expectCall = ExpectedCall{};
+			auto function = [&expectCall] {
+				expectCall.call();
+			};
+			function();
+			suite.expectCall(expectCall);
+		});
 	}};
 }

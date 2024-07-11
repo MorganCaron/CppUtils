@@ -214,6 +214,15 @@ namespace CppUtils::UnitTest
 					sourceLocation.column())};
 		}
 
+		inline auto expectCall(ExpectedCall& expectedCall, std::source_location sourceLocation = std::source_location::current()) -> void
+		{
+			if (expectedCall.wait_for(std::chrono::milliseconds::zero()) != std::future_status::ready)
+				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectCall(expectedCall)",
+					sourceLocation.file_name(),
+					sourceLocation.line(),
+					sourceLocation.column())};
+		}
+
 		std::vector<Test> tests;
 	};
 
