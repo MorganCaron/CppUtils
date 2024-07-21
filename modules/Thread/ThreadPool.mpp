@@ -1,0 +1,97 @@
+export module CppUtils.Thread.ThreadPool;
+
+import std;
+
+import CppUtils.Thread.ThreadLoop;
+import CppUtils.Thread.Locked;
+
+export namespace CppUtils::Thread
+{
+	class ThreadPool final
+	{
+	private:
+		using Task = std::function<void()>;
+
+	public:
+		explicit inline ThreadPool(std::size_t numberThreads = std::thread::hardware_concurrency()):
+			m_numberThreads{numberThreads}
+		{
+			m_workers.reserve(m_numberThreads);
+			for (auto i = std::size_t{0}; i < m_numberThreads; ++i) // Todo: ""uz (not supported on MSVC)
+				m_workers.emplace_back(std::bind(&ThreadPool::workerThread, this), std::bind(&ThreadPool::interruptFunction, this)).start();
+		}
+
+		~ThreadPool()
+		{
+			for (auto& worker : m_workers)
+				worker.requestStop();
+			for (auto& worker : m_workers)
+				worker.stop();
+		}
+
+		inline auto call(auto&& function, auto&&... args) -> std::future<std::invoke_result_t<decltype(function), decltype(args)...>>
+		{
+			using ReturnType = std::invoke_result_t<decltype(function), decltype(args)...>;
+			auto task = std::make_shared<std::packaged_task<ReturnType()>>(std::bind(
+				std::forward<decltype(function)>(function),
+				std::forward<decltype(args)>(args)...));
+			auto future = task->get_future();
+			{
+				auto tasksQueueAccessor = m_tasksQueue.access();
+				tasksQueueAccessor->emplace([task = std::move(task)] { std::invoke(*task); });
+			}
+			m_startWorkingCondition.notify_one();
+			return future;
+		}
+
+		inline auto waitUntilFinished() -> void
+		{
+			auto lockGuard = std::unique_lock{m_standByMutex};
+			auto tasksQueueAccessor = m_tasksQueue.access();
+			if (m_activeWorkers != 0 and not std::empty(*tasksQueueAccessor))
+				m_standByCondition.wait(lockGuard, [this] {
+					auto tasksQueueAccessor = m_tasksQueue.access();
+					return m_activeWorkers == 0 and std::empty(*tasksQueueAccessor);
+				});
+		}
+
+	private:
+		inline auto workerThread() -> void
+		{
+			auto task = Task{};
+			{
+				auto tasksQueueAccessor = m_tasksQueue.access();
+				if (std::empty(*tasksQueueAccessor))
+				{
+					m_startWorkingCondition.wait(tasksQueueAccessor.getLockGuard());
+					if (std::empty(*tasksQueueAccessor))
+					{
+						m_standByCondition.notify_all();
+						return;
+					}
+				}
+				++m_activeWorkers;
+				task = std::move(tasksQueueAccessor->front());
+				tasksQueueAccessor->pop();
+			}
+			task();
+			--m_activeWorkers;
+			if (auto tasksQueueAccessor = m_tasksQueue.access();
+				m_activeWorkers == 0 and std::empty(*tasksQueueAccessor))
+				m_standByCondition.notify_all();
+		}
+
+		inline auto interruptFunction() -> void
+		{
+			m_startWorkingCondition.notify_all();
+		}
+
+		std::size_t m_numberThreads;
+		std::atomic_size_t m_activeWorkers = 0;
+		Locked<std::queue<Task>> m_tasksQueue;
+		std::condition_variable m_startWorkingCondition;
+		std::mutex m_standByMutex;
+		std::condition_variable m_standByCondition;
+		std::vector<ThreadLoop> m_workers;
+	};
+}

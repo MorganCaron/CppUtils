@@ -1,7 +1,7 @@
 export module CppUtils.Thread.AsyncIStreamListener;
 
 import std;
-import CppUtils.Thread.LoopThread;
+import CppUtils.Thread.ThreadLoop;
 
 export namespace CppUtils::Thread
 {
@@ -17,7 +17,7 @@ export namespace CppUtils::Thread
 			const std::function<void(Type)>& function):
 			m_istream{std::ref(istream)},
 			m_function{std::move(function)},
-			m_loopThread{std::bind(&AsyncIStreamListener::listener, this)}
+			m_threadLoop{std::bind(&AsyncIStreamListener::listener, this)}
 		{}
 
 		inline AsyncIStreamListener(const AsyncIStreamListener&) = delete;
@@ -27,17 +27,17 @@ export namespace CppUtils::Thread
 
 		[[nodiscard]] inline auto isRunning() const noexcept -> bool
 		{
-			return m_loopThread.isRunning();
+			return m_threadLoop.isRunning();
 		}
 
 		inline auto start() -> void
 		{
-			m_loopThread.start();
+			m_threadLoop.start();
 		}
 
 		inline auto stop() -> void
 		{
-			m_loopThread.stop();
+			m_threadLoop.stop();
 		}
 
 	private:
@@ -50,6 +50,6 @@ export namespace CppUtils::Thread
 
 		std::reference_wrapper<std::istream> m_istream;
 		std::function<void(Type)> m_function;
-		LoopThread m_loopThread;
+		ThreadLoop m_threadLoop;
 	};
 }

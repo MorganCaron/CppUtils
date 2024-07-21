@@ -1,0 +1,45 @@
+export module CppUtils.UnitTests.Thread.ThreadPool;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Thread::ThreadPool
+{
+	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/ThreadPool", [](auto& suite) {
+		suite.addTest("0 task / 1 thread", [&] {
+			[[maybe_unused]] auto threadPool = CppUtils::Thread::ThreadPool{1};
+		});
+
+		suite.addTest("0 task / 2 threads", [&] {
+			[[maybe_unused]] auto threadPool = CppUtils::Thread::ThreadPool{2};
+		});
+
+		suite.addTest("0 task / N threads", [&] {
+			[[maybe_unused]] auto threadPool = CppUtils::Thread::ThreadPool{};
+		});
+
+		suite.addTest("1 task with future.wait()", [&] {
+			auto expectCall = ExpectedCall{};
+			{
+				auto threadPool = CppUtils::Thread::ThreadPool{};
+				auto future = threadPool.call([&expectCall] {
+					expectCall.call();
+				});
+				future.wait();
+			}
+			std::cout << "C\n";
+			suite.expectCall(expectCall);
+		});
+
+		suite.addTest("1 task without future.wait()", [&] {
+			auto expectCall = ExpectedCall{};
+			{
+				auto threadPool = CppUtils::Thread::ThreadPool{};
+				auto future = threadPool.call([&expectCall] {
+					expectCall.call();
+				});
+			}
+			suite.expectCall(expectCall);
+		});
+	}};
+}

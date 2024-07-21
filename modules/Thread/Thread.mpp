@@ -2,4 +2,5 @@ export module CppUtils.Thread;
 
 export import CppUtils.Thread.AsyncIStreamListener;
 export import CppUtils.Thread.Locked;
-export import CppUtils.Thread.LoopThread;
+export import CppUtils.Thread.ThreadLoop;
+export import CppUtils.Thread.ThreadPool;

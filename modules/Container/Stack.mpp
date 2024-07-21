@@ -156,9 +156,9 @@ export namespace CppUtils::Container
 		inline constexpr auto copy(std::size_t sourcePosition, std::size_t destinationPosition) -> void
 		{
 			static constexpr auto copyToDestination = []<class SourceType>() consteval -> auto {
-				return std::array<void (*)(Stack<SupportedTypes...>&, std::size_t, std::size_t), sizeof...(SupportedTypes)>{
+				return std::array{
 					+[](Stack<SupportedTypes...>& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void {
-					if constexpr (!std::is_convertible_v<SourceType, SupportedTypes>)
+					if constexpr (not std::is_convertible_v<SourceType, SupportedTypes>)
 						throw std::logic_error{std::format("Stack::copy({}, {}) : The source type is not convertible to the destination type", sourcePosition, destinationPosition)};
 					else
 						stack.set(destinationPosition, static_cast<SupportedTypes>(stack.template get<SourceType>(sourcePosition)));

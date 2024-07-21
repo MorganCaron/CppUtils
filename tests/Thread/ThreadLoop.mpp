@@ -1,0 +1,39 @@
+export module CppUtils.UnitTests.Thread.ThreadLoop;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Thread::ThreadLoop
+{
+	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/ThreadLoop", [](auto& suite) {
+		using namespace std::chrono_literals;
+
+		suite.addTest("isRunning", [&] {
+			auto threadLoop = CppUtils::Thread::ThreadLoop{[] {}};
+			suite.expect(not threadLoop.isRunning());
+			threadLoop.start();
+			suite.expect(threadLoop.isRunning());
+			threadLoop.stop();
+			suite.expect(not threadLoop.isRunning());
+			threadLoop.start();
+			suite.expect(threadLoop.isRunning());
+		});
+
+		suite.addTest("Loop", [&] {
+			auto lockedNumber = CppUtils::Thread::Locked{std::size_t{0}}; // Todo: ""uz (not supported on MSVC)
+			{
+				auto threadLoop = CppUtils::Thread::ThreadLoop{[&lockedNumber] {
+					auto accessor = lockedNumber.access();
+					auto& nb = *accessor;
+					++nb;
+					std::this_thread::sleep_for(10ms);
+				}};
+				threadLoop.start();
+				std::this_thread::sleep_for(100ms);
+			}
+			auto accessor = lockedNumber.access();
+			auto nb = *accessor;
+			suite.expectEqual(nb, std::size_t{10}); // Todo: ""uz (not supported on MSVC)
+		});
+	}};
+}

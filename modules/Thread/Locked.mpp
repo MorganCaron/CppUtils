@@ -25,6 +25,16 @@ export namespace CppUtils::Thread
 				return m_value.get();
 			}
 
+			[[nodiscard]] inline auto operator->() noexcept -> decltype(auto)
+			{
+				return &m_value.get();
+			}
+
+			[[nodiscard]] inline auto getLockGuard() noexcept -> auto&
+			{
+				return m_lockGuard;
+			}
+
 		private:
 			mutable std::unique_lock<std::mutex> m_lockGuard;
 			std::reference_wrapper<T> m_value;

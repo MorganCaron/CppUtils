@@ -43,7 +43,7 @@ export namespace CppUtils::FileSystem
 #endif
 
 		inline Watcher():
-			m_loopThread{std::bind(&Watcher::listener, this), std::bind(&Watcher::interruptFunction, this)}
+			m_threadLoop{std::bind(&Watcher::listener, this), std::bind(&Watcher::interruptFunction, this)}
 		{
 			auto lockGuard = std::unique_lock{m_mutex};
 #if defined(OS_LINUX)
@@ -89,17 +89,17 @@ export namespace CppUtils::FileSystem
 
 		[[nodiscard]] inline auto isRunning() const noexcept -> bool
 		{
-			return m_loopThread.isRunning();
+			return m_threadLoop.isRunning();
 		}
 
 		inline auto start() -> void
 		{
-			m_loopThread.start();
+			m_threadLoop.start();
 		}
 
 		inline auto stop() -> void
 		{
-			m_loopThread.stop();
+			m_threadLoop.stop();
 		}
 
 		inline auto listener() -> void
@@ -246,7 +246,7 @@ export namespace CppUtils::FileSystem
 		}
 
 		std::mutex m_mutex;
-		Thread::LoopThread m_loopThread;
+		Thread::ThreadLoop m_threadLoop;
 #if defined(OS_WINDOWS)
 		std::vector<System::Handle> m_changeHandles;
 #elif defined(OS_LINUX)

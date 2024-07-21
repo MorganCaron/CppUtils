@@ -1,0 +1,90 @@
+export module CppUtils.Thread.ThreadLoop;
+
+import std;
+import CppUtils.Logger;
+
+export namespace CppUtils::Thread
+{
+	class ThreadLoop final
+	{
+	public:
+		inline ThreadLoop() = delete;
+
+		inline explicit ThreadLoop(std::function<void()> function, std::function<void()> interruptFunction = nullptr, auto&&... args):
+			m_data{std::make_unique<Data>(std::bind(function, std::forward<decltype(args)>(args)...), std::move(interruptFunction))}
+		{}
+
+		inline ThreadLoop(const ThreadLoop&) = delete;
+		inline ThreadLoop(ThreadLoop&& src) noexcept:
+			m_data{std::move(src.m_data)}
+		{}
+		inline auto operator=(const ThreadLoop&) -> ThreadLoop& = delete;
+		inline auto operator=(ThreadLoop&& rhs) noexcept -> ThreadLoop&
+		{
+			m_data = std::move(rhs.m_data);
+			return *this;
+		}
+
+		inline ~ThreadLoop() noexcept(false)
+		{
+			if (m_data)
+				stop();
+		}
+
+		[[nodiscard]] inline auto isRunning() const noexcept -> bool
+		{
+			return m_data->thread.joinable() and not m_data->exceptionOccurred.load();
+		}
+
+		inline auto start() -> void
+		{
+			m_data->exceptionOccurred = false;
+			m_data->thread = std::jthread{[data = m_data.get()](std::stop_token stopToken) -> void {
+				try
+				{
+					while (not stopToken.stop_requested())
+						data->function();
+					return;
+				}
+				catch (const std::exception& exception)
+				{
+					logException(std::runtime_error{std::format("Exception occurred during thread execution:\n{}\nThread execution is interrupted", exception.what())});
+				}
+				catch (...)
+				{
+					Logger<"CppUtils">::print<"error">("Exception occurred during thread execution.\nThread execution is interrupted");
+				}
+				data->exceptionOccurred = true;
+			}};
+		}
+
+		inline auto requestStop() -> void
+		{
+			if (not isRunning() or m_data->thread.get_stop_token().stop_requested())
+				return;
+			m_data->thread.request_stop();
+		}
+
+		inline auto stop() -> void
+		{
+			if (m_data->exceptionOccurred.load())
+				throw std::runtime_error{"Exception occurred during thread execution"};
+			if (not isRunning())
+				return;
+			requestStop();
+			if (m_data->interruptFunction)
+				m_data->interruptFunction();
+			m_data->thread.join();
+		}
+
+	private:
+		struct Data final
+		{
+			std::function<void()> function;
+			std::function<void()> interruptFunction;
+			std::atomic_bool exceptionOccurred = false;
+			std::jthread thread;
+		};
+		std::unique_ptr<Data> m_data;
+	};
+}
