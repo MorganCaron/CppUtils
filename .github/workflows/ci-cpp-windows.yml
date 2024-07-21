@@ -28,7 +28,7 @@ jobs:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}
       run: |
-        xmake f --runtimes="c++_shared" --enable_tests=y --yes
+        xmake f --enable_tests=y --yes
         xmake build -vD
 
     - name: Run tests

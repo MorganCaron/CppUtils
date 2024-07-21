@@ -27,11 +27,13 @@ add_rules(
 	"mode.check",
 	"mode.profile",
 	"mode.coverage",
-	"mode.valgrind",
-	"mode.asan",
-	"mode.tsan",
-	"mode.lsan",
-	"mode.ubsan")
+	"mode.valgrind")
+
+if is_mode("debug") then
+	set_policy("build.sanitizer.address", true)
+	set_policy("build.sanitizer.thread", true)
+	set_policy("build.sanitizer.undefined", true)
+end
 
 option("enable_tests")
 
