@@ -112,7 +112,7 @@ export namespace CppUtils::Container
 			if (type >= sizeof...(SupportedTypes))
 				throw std::out_of_range{std::format("Stack::pushType({}) : Out of range", type)};
 			static constexpr auto pushbyType = std::array{
-				+[](Stack<SupportedTypes...>& stack) -> void {
+				+[](Stack<SupportedTypes...>& stack) static -> void {
 				stack.template push<SupportedTypes>();
 			}...};
 			pushbyType[type](*this);
@@ -121,7 +121,7 @@ export namespace CppUtils::Container
 		inline constexpr auto drop() -> void
 		{
 			static constexpr auto dropFunctions = std::array{
-				+[](const Stack<SupportedTypes...>& stack, std::vector<std::byte>& data) -> void {
+				+[](const Stack<SupportedTypes...>& stack, std::vector<std::byte>& data) static -> void {
 				data.resize(stack.getByteSize() - sizeof(SupportedTypes));
 			}...};
 
@@ -157,7 +157,7 @@ export namespace CppUtils::Container
 		{
 			static constexpr auto copyToDestination = []<class SourceType>() consteval -> auto {
 				return std::array{
-					+[](Stack<SupportedTypes...>& stack, std::size_t sourcePosition, std::size_t destinationPosition) -> void {
+					+[](Stack<SupportedTypes...>& stack, std::size_t sourcePosition, std::size_t destinationPosition) static -> void {
 					if constexpr (not std::is_convertible_v<SourceType, SupportedTypes>)
 						throw std::logic_error{std::format("Stack::copy({}, {}) : The source type is not convertible to the destination type", sourcePosition, destinationPosition)};
 					else
@@ -179,7 +179,7 @@ export namespace CppUtils::Container
 		inline constexpr auto visit(std::size_t position, auto&& visitor) const -> void
 		{
 			static constexpr auto visitors = std::array{
-				+[](const Stack<SupportedTypes...>& stack, std::size_t position, decltype(visitor)&& visitor) -> void { // Todo: Retirer le && quand ça compilera avec MSVC (bug MSVC)
+				+[](const Stack<SupportedTypes...>& stack, std::size_t position, decltype(visitor)&& visitor) static -> void { // Todo: Retirer le && quand ça compilera avec MSVC (bug MSVC)
 				visitor(stack.template get<SupportedTypes>(position));
 			}...};
 

@@ -240,7 +240,7 @@ export namespace CppUtils::Language::CallStackCompiler
 			&std::basic_string<CharT>::size,
 			Type::getConstMemberFunction(&std::basic_string<CharT>::at),
 			maxSizeLength,
-			+[](std::basic_string<CharT>* s, std::size_t pos, CharT c) -> void { s->replace(pos, 1, 1, c); }));
+			+[](std::basic_string<CharT>* s, std::size_t pos, CharT c) static -> void { s->replace(pos, 1, 1, c); }));
 		return std::basic_string<CharT>{std::move(*output)};
 	}
 }
