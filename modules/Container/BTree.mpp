@@ -8,6 +8,9 @@ export namespace CppUtils::Container::BTree
 	template<class K, class V>
 	class Node final
 	{
+	private:
+		mutable std::shared_mutex m_sharedMutex;
+
 	public:
 		using Key = K;
 		using Value = V;
@@ -25,6 +28,7 @@ export namespace CppUtils::Container::BTree
 
 		[[nodiscard]] inline constexpr auto size() const noexcept -> std::size_t
 		{
+			auto lockGuard = std::shared_lock{m_sharedMutex};
 			return std::accumulate(
 				std::cbegin(children),
 				std::cend(children),
@@ -36,6 +40,7 @@ export namespace CppUtils::Container::BTree
 
 		[[nodiscard]] inline constexpr auto exists(const Key& key) const noexcept -> bool
 		{
+			auto lockGuard = std::shared_lock{m_sharedMutex};
 			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
 			if (isLeaf)
 				return it != std::cend(keys) and *it == key;
@@ -48,11 +53,13 @@ export namespace CppUtils::Container::BTree
 
 		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
 		{
+			auto lockGuard = std::shared_lock{m_sharedMutex};
 			return std::empty(keys);
 		}
 
 		inline auto clear() noexcept -> void
 		{
+			auto lockGuard = std::unique_lock{m_sharedMutex};
 			isLeaf = true;
 			keys.clear();
 			values.clear();
@@ -61,6 +68,7 @@ export namespace CppUtils::Container::BTree
 
 		[[nodiscard]] inline auto get(const Key& key) -> decltype(auto)
 		{
+			auto lockGuard = std::shared_lock{m_sharedMutex};
 			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
 			if (isLeaf)
 			{
@@ -81,6 +89,7 @@ export namespace CppUtils::Container::BTree
 
 		inline auto add(const Key& key, Value&& value) -> void
 		{
+			auto lockGuard = std::unique_lock{m_sharedMutex};
 			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
 			auto position = std::distance(std::cbegin(keys), it);
 			auto index = static_cast<std::size_t>(position);
@@ -185,6 +194,7 @@ export namespace CppUtils::Container::BTree
 	public:
 		inline auto remove(const Key& key) -> void
 		{
+			auto lockGuard = std::unique_lock{m_sharedMutex};
 			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
 			auto position = std::distance(std::cbegin(keys), it);
 			auto index = static_cast<std::size_t>(position);
@@ -209,6 +219,7 @@ export namespace CppUtils::Container::BTree
 
 		[[nodiscard]] inline auto operator[](const Key& key) -> decltype(auto)
 		{
+			auto lockGuard = std::shared_lock{m_sharedMutex};
 			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
 			auto position = std::distance(std::cbegin(keys), it);
 			auto index = static_cast<std::size_t>(position);
