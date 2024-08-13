@@ -135,7 +135,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			outputAst.log();
 
 			EXPECT(std::size(outputAst.root.nodes) == 3);
-			for (auto i = std::size_t{0}; i < 3; ++i) // Todo: ""uz (not supported on MSVC)
+			for (auto i = 0uz; i < 3; ++i)
 				EXPECT(outputAst.root.nodes[i].value == 'A');
 		});
 
@@ -150,7 +150,7 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::HighLevelGrammar
 			outputAst.log();
 
 			EXPECT(std::size(outputAst.root.nodes) == 3);
-			for (auto i = std::size_t{0}; i < 3; ++i) // Todo: ""uz (not supported on MSVC)
+			for (auto i = 0uz; i < 3; ++i)
 				EXPECT(outputAst.root.nodes[i].value == 'A');
 		});
 

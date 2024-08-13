@@ -63,12 +63,12 @@ export namespace CppUtils::Language::VirtualMachine
 		using Stack = Container::Stack<ReturnType, SupportedTypes...>;
 		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{&source, data...};
 		auto stack = Stack{};
-		for (auto instructionPointer = std::size_t{0}; instructionPointer < std::size(source); ++instructionPointer) // Todo: ""uz (not supported on MSVC)
+		for (auto instructionPointer = 0uz; instructionPointer < std::size(source); ++instructionPointer)
 		{
 			switch (auto instruction = source[instructionPointer]; instruction)
 			{
 			case ',': [[fallthrough]];
-			case '(': stack.push(std::size_t{0}); break; // Todo: ""uz (not supported on MSVC)
+			case '(': stack.push(0uz); break;
 			case ')': stack.drop(); break;
 			case '_':
 				stack.visit(std::size(stack) - 1, [&stack](auto&& value) -> void {

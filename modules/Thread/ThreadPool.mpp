@@ -17,7 +17,7 @@ export namespace CppUtils::Thread
 			m_numberThreads{numberThreads}
 		{
 			m_workers.reserve(m_numberThreads);
-			for (auto i = std::size_t{0}; i < m_numberThreads; ++i) // Todo: ""uz (not supported on MSVC)
+			for (auto i = 0uz; i < m_numberThreads; ++i)
 				m_workers.emplace_back(std::bind(&ThreadPool::workerThread, this), std::bind(&ThreadPool::interruptFunction, this)).start();
 		}
 

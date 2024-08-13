@@ -20,7 +20,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 			bTree.add(0, 'A');
 			Logger::print("{}\n", bTree);
 			suite.expect(not std::empty(bTree));
-			suite.expectEqual(std::size(bTree), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(std::size(bTree), 1uz);
 		});
 
 		suite.addTest("2 elements", [&] {
@@ -28,7 +28,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 			bTree.add(0, 'A');
 			bTree.add(1, 'B');
 			Logger::print("{}\n", bTree);
-			suite.expectEqual(std::size(bTree), std::size_t{2}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(std::size(bTree), 2uz);
 		});
 
 		suite.addTest("5 elements (split self)", [&] {
@@ -36,7 +36,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 			for (auto i = 0; i < 5; ++i)
 				bTree.add(i, 'A' + static_cast<char>(i));
 			Logger::print("{}\n", bTree);
-			suite.expectEqual(std::size(bTree), std::size_t{5}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(std::size(bTree), 5uz);
 		});
 
 		suite.addTest("8 elements (split self & split child)", [&] {
@@ -44,7 +44,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 			for (auto i = 0; i < 8; ++i)
 				bTree.add(i, 'A' + static_cast<char>(i));
 			Logger::print("{}\n", bTree);
-			suite.expectEqual(std::size(bTree), std::size_t{8}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(std::size(bTree), 8uz);
 		});
 
 		suite.addTest("10 elements", [&] {
@@ -52,7 +52,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 			for (auto i = 0; i < 10; ++i)
 				bTree.add(i, 'A' + static_cast<char>(i));
 			Logger::print("{}\n", bTree);
-			suite.expectEqual(std::size(bTree), std::size_t{10}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(std::size(bTree), 10uz);
 		});
 
 		suite.addTest("Exists", [&] {
@@ -67,7 +67,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 			auto bTree = CppUtils::Container::BTree::Node<std::string, int>{};
 			bTree.add("test", 0);
 			Logger::print("{}\n", bTree);
-			suite.expectEqual(std::size(bTree), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(std::size(bTree), 1uz);
 		});
 
 		suite.addTest("Removing element", [&] {
@@ -114,7 +114,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 			bTree.add(0, 'A');
 			bTree[0] = 'B';
 			Logger::print("{}\n", bTree);
-			suite.expectEqual(bTree.size(), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(bTree.size(), 1uz);
 			suite.expect(bTree.exists(0));
 			suite.expectEqual(bTree.get(0), 'B');
 		});

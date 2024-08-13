@@ -279,7 +279,7 @@ namespace std
 			if (node.isLeaf)
 			{
 				const auto nbKeys = std::size(node.keys);
-				for (auto i = std::size_t{0}; i < nbKeys; ++i) // Todo: ""uz (not supported on MSVC)
+				for (auto i = 0uz; i < nbKeys; ++i)
 				{
 					const bool isLastKey = (i == nbKeys - 1);
 					std::format_to(out, "{}{}─ Key: {}\n", prefix, isLastKey ? "└" : "├", node.keys[i]);
@@ -293,7 +293,7 @@ namespace std
 					return;
 				std::format_to(out, "{}├─ ", prefix);
 				formatNode(*node.children[0], context, prefix + "│  ");
-				for (auto i = std::size_t{0}; i < nbKeys;) // Todo: ""uz (not supported on MSVC)
+				for (auto i = 0uz; i < nbKeys;)
 				{
 					const bool isLastKey = (i == nbKeys - 1);
 					std::format_to(out, "{}├─ Key: {}\n", prefix, node.keys[i]);

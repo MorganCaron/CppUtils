@@ -41,19 +41,19 @@ export namespace CppUtils::UnitTest::String::Utility
 		});
 
 		suite.addTest("getNumberLength", [&] {
-			suite.expectEqual(CppUtils::String::getNumberLength(0), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
-			suite.expectEqual(CppUtils::String::getNumberLength(1), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
-			suite.expectEqual(CppUtils::String::getNumberLength(2), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
-			suite.expectEqual(CppUtils::String::getNumberLength(10), std::size_t{2}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(CppUtils::String::getNumberLength(0), 1uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(1), 1uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(2), 1uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(10), 2uz);
 
-			suite.expectEqual(CppUtils::String::getNumberLength(-1), std::size_t{2}); // Todo: ""uz (not supported on MSVC)
-			suite.expectEqual(CppUtils::String::getNumberLength(-2), std::size_t{2}); // Todo: ""uz (not supported on MSVC)
-			suite.expectEqual(CppUtils::String::getNumberLength(-10), std::size_t{3}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(CppUtils::String::getNumberLength(-1), 2uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(-2), 2uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(-10), 3uz);
 
-			suite.expectEqual(CppUtils::String::getNumberLength(0, 2), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
-			suite.expectEqual(CppUtils::String::getNumberLength(1, 2), std::size_t{1}); // Todo: ""uz (not supported on MSVC)
-			suite.expectEqual(CppUtils::String::getNumberLength(2, 2), std::size_t{2}); // Todo: ""uz (not supported on MSVC)
-			suite.expectEqual(CppUtils::String::getNumberLength(10, 2), std::size_t{4}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(CppUtils::String::getNumberLength(0, 2), 1uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(1, 2), 1uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(2, 2), 2uz);
+			suite.expectEqual(CppUtils::String::getNumberLength(10, 2), 4uz);
 		});
 
 		suite.addTest("toString", [&] {
@@ -68,19 +68,19 @@ export namespace CppUtils::UnitTest::String::Utility
 
 			suite.expectEqual(CppUtils::String::toString(42), "42"sv);
 			suite.expectEqual(CppUtils::String::toString(42u), "42"sv);
-			suite.expectEqual(CppUtils::String::toString(std::size_t{42}), "42"sv); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(CppUtils::String::toString(42uz), "42"sv);
 			suite.expectEqual(CppUtils::String::toString(42ll), "42"sv);
 
 			suite.expectEqual(CppUtils::String::toString(-42), "-42"sv);
 			suite.expectEqual(CppUtils::String::toString(-42ll), "-42"sv);
 
-			suite.expectEqual(CppUtils::String::toString(123456), "123456"sv);
-			suite.expectEqual(CppUtils::String::toString(-123456), "-123456"sv);
+			suite.expectEqual(CppUtils::String::toString(123'456), "123456"sv);
+			suite.expectEqual(CppUtils::String::toString(-123'456), "-123456"sv);
 		});
 
 		suite.addTest("split", [&] {
 			auto splitString = CppUtils::String::split("Hello World!", " ");
-			suite.expectEqual(std::size(splitString), std::size_t{2}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(std::size(splitString), 2uz);
 			suite.expectEqual(splitString[0], "Hello"sv);
 			suite.expectEqual(splitString[1], "World!"sv);
 		});

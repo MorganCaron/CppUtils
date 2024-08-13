@@ -16,7 +16,7 @@ export namespace CppUtils::Type
 	requires Present<T, Types...>
 	consteval auto getPosition() -> std::size_t
 	{
-		auto i = std::size_t{0}; // Todo: ""uz (not supported on MSVC)
+		auto i = 0uz;
 		static_cast<void>(((++i, std::same_as<T, Types>) or ...));
 		return --i;
 	}

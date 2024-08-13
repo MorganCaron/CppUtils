@@ -14,7 +14,7 @@ export namespace CppUtils::UnitTest::Thread::Locked
 		});
 
 		suite.addTest("Test mutex", [&] {
-			auto lockedNumber = CppUtils::Thread::Locked{std::size_t{0}}; // Todo: ""uz (not supported on MSVC)
+			auto lockedNumber = CppUtils::Thread::Locked{0uz};
 
 			auto incrementFunction = [&lockedNumber](std::size_t iterations) noexcept -> void {
 				while (iterations--)
@@ -25,7 +25,7 @@ export namespace CppUtils::UnitTest::Thread::Locked
 				}
 			};
 
-			auto iterations = std::size_t{1'000'000}; // Todo: ""uz (not supported on MSVC)
+			auto iterations = 1'000'000uz;
 			{
 				auto thread0 = std::jthread{incrementFunction, iterations};
 				auto thread1 = std::jthread{incrementFunction, iterations};

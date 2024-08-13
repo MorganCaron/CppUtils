@@ -34,7 +34,7 @@ export namespace CppUtils::FileSystem
 {
 	class Watcher final
 	{
-		static inline constexpr auto maxEvents = std::size_t{2}; // Todo: ""uz (not supported on MSVC)
+		static inline constexpr auto maxEvents = 2uz;
 
 	public:
 #if defined(OS_LINUX)
@@ -120,7 +120,7 @@ export namespace CppUtils::FileSystem
 			}
 			// Todo: https://learn.microsoft.com/fr-fr/windows/win32/fileio/obtaining-directory-change-notifications?redirectedfrom=MSDN
 #elif defined(OS_LINUX)
-			auto nbFileDescriptorsReady = std::size_t{0}; // Todo: ""uz (not supported on MSVC)
+			auto nbFileDescriptorsReady = 0uz;
 			{
 				auto epollWaitResult = epoll_wait(m_eventPoll, std::data(m_events), maxEvents, 1);
 				if (epollWaitResult == -1)
@@ -129,7 +129,7 @@ export namespace CppUtils::FileSystem
 				nbFileDescriptorsReady = static_cast<std::size_t>(epollWaitResult);
 			}
 
-			for (auto i = std::size_t{0}; i < nbFileDescriptorsReady; ++i) // Todo: ""uz (not supported on MSVC)
+			for (auto i = 0uz; i < nbFileDescriptorsReady; ++i)
 			{
 				auto buffer = std::array<std::byte, 1'024>{};
 				auto length = 0z;
@@ -241,7 +241,7 @@ export namespace CppUtils::FileSystem
 		{
 #if defined(OS_LINUX)
 			auto value = std::uint8_t{0};
-			write(m_stopPipe.write, &value, std::size_t{1}); // Todo: ""uz (not supported on MSVC)
+			write(m_stopPipe.write, &value, 1uz);
 #endif
 		}
 

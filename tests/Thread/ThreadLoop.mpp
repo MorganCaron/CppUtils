@@ -20,7 +20,7 @@ export namespace CppUtils::UnitTest::Thread::ThreadLoop
 		});
 
 		suite.addTest("Loop", [&] {
-			auto lockedNumber = CppUtils::Thread::Locked{std::size_t{0}}; // Todo: ""uz (not supported on MSVC)
+			auto lockedNumber = CppUtils::Thread::Locked{0uz};
 			{
 				auto threadLoop = CppUtils::Thread::ThreadLoop{[&lockedNumber] {
 					auto accessor = lockedNumber.access();
@@ -33,7 +33,7 @@ export namespace CppUtils::UnitTest::Thread::ThreadLoop
 			}
 			auto accessor = lockedNumber.access();
 			auto nb = *accessor;
-			suite.expectEqual(nb, std::size_t{10}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(nb, 10uz);
 		});
 	}};
 }

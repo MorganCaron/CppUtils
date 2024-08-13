@@ -17,7 +17,7 @@ export namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, std::size_t{0}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(executionResult, 0uz);
 		});
 
 		suite.addTest("code without labels", [&] {
@@ -39,7 +39,7 @@ export namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(executionResult, 42uz);
 		});
 
 		suite.addTest("multiple labels", [&] {
@@ -52,7 +52,7 @@ export namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(executionResult, 42uz);
 		});
 
 		suite.addTest("one jump", [&] {
@@ -70,7 +70,7 @@ export namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(executionResult, 42uz);
 		});
 
 		suite.addTest("multiple jumps", [&] constexpr {
@@ -93,7 +93,7 @@ export namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(executionResult, 42uz);
 		});
 
 		suite.addTest("escape §", [&] {
@@ -108,7 +108,7 @@ export namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(executionResult, 42uz);
 		});
 
 		suite.addTest("escape ¤", [&] {
@@ -125,7 +125,7 @@ export namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, std::size_t{42}); // Todo: ""uz (not supported on MSVC)
+			suite.expectEqual(executionResult, 42uz);
 		});
 	}};
 }

@@ -181,7 +181,7 @@ namespace std
 			auto&& out = context.out();
 			std::format_to(out, "{}\n", node.value);
 			const auto nbNodes = std::size(node.nodes);
-			for (auto i = std::size_t{0}; i < nbNodes; ++i) // Todo: ""uz (not supported on MSVC)
+			for (auto i = 0uz; i < nbNodes; ++i)
 			{
 				const auto isLastNode = (i == nbNodes - 1);
 				std::format_to(out, "{}{}─ ", prefix, isLastNode ? "└" : "├");
@@ -214,7 +214,7 @@ namespace std
 			auto&& out = context.out();
 			std::format_to(out, "{}\n", nodeView.getPrintableValue());
 			const auto nbNodes = std::size(node.get().nodes);
-			for (auto i = std::size_t{0}; i < nbNodes; ++i) // Todo: ""uz (not supported on MSVC)
+			for (auto i = 0uz; i < nbNodes; ++i)
 			{
 				const auto isLastNode = (i == nbNodes - 1);
 				std::format_to(out, "{}{}─ ", prefix, isLastNode ? "└" : "├");

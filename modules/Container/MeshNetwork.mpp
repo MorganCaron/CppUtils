@@ -19,32 +19,32 @@ export namespace CppUtils::Container
 
 			[[nodiscard]] inline auto exists(const Key& branchKey) const -> bool
 			{
-				return m_branchs.find(branchKey) != std::cend(m_branchs);
+				return m_branches.find(branchKey) != std::cend(m_branches);
 			}
 
 			[[nodiscard]] inline auto get(const Key& key) const -> const std::vector<std::reference_wrapper<Node>>&
 			{
 				if (!exists(key))
 					throw std::out_of_range("The branch does not exist in the Node.");
-				return m_branchs.at(key);
+				return m_branches.at(key);
 			}
 
 			[[nodiscard]] inline auto operator[](const Key& key) -> std::vector<std::reference_wrapper<Node>>&
 			{
 				if (!exists(key))
-					m_branchs[key] = std::vector<std::reference_wrapper<Node>>{};
-				return m_branchs[key];
+					m_branches[key] = std::vector<std::reference_wrapper<Node>>{};
+				return m_branches[key];
 			}
 
 			[[nodiscard]] inline auto count(const Key& key) const -> std::size_t
 			{
-				return exists(key) ? std::size(get(key)) : std::size_t{0}; // Todo: ""uz (not supported on MSVC)
+				return exists(key) ? std::size(get(key)) : 0uz;
 			}
 
 			inline auto attach(const Key& key, Node& node) -> void
 			{
-				m_branchs[key].push_back(std::ref(node));
-				node.m_parentBranchs.push_back(std::ref(*this));
+				m_branches[key].push_back(std::ref(node));
+				node.m_parentBranches.push_back(std::ref(*this));
 			}
 
 			inline auto attachUnique(const Key& key, Node& node) -> void
@@ -56,50 +56,50 @@ export namespace CppUtils::Container
 				else
 				{
 					auto& destNode = nodeIt->get();
-					destNode.m_branchs.insert(std::begin(node.m_branchs), std::end(node.m_branchs));
-					destNode.m_parentBranchs.insert(std::end(destNode.m_parentBranchs), std::begin(node.m_parentBranchs), std::end(node.m_parentBranchs));
+					destNode.m_branches.insert(std::begin(node.m_branches), std::end(node.m_branches));
+					destNode.m_parentBranches.insert(std::end(destNode.m_parentBranches), std::begin(node.m_parentBranches), std::end(node.m_parentBranches));
 				}
 			}
 
 			inline auto detach(const Key& key, Node& node) -> void
 			{
-				auto& branch = m_branchs[key];
+				auto& branch = m_branches[key];
 				for (auto& targetNode : branch)
-					std::erase_if(targetNode.get().m_parentBranchs, [this](const auto& parentBranch) -> bool { return &parentBranch.get() == this; });
+					std::erase_if(targetNode.get().m_parentBranches, [this](const auto& parentBranch) -> bool { return &parentBranch.get() == this; });
 				std::erase(branch, std::ref(node));
 				if (std::empty(branch))
-					m_branchs.erase(key);
+					m_branches.erase(key);
 			}
 
 			inline auto detach(const Key& key) -> void
 			{
-				auto& branch = m_branchs[key];
+				auto& branch = m_branches[key];
 				for (auto& targetNode : branch)
-					std::erase_if(targetNode.get().m_parentBranchs, [this](const auto& parentBranch) -> bool { return &parentBranch.get() == this; });
-				m_branchs.erase(key);
+					std::erase_if(targetNode.get().m_parentBranches, [this](const auto& parentBranch) -> bool { return &parentBranch.get() == this; });
+				m_branches.erase(key);
 			}
 
 			inline auto detachAll() -> void
 			{
-				for (auto& [key, branch] : m_branchs)
+				for (auto& [key, branch] : m_branches)
 					for (auto& targetNode : branch)
-						std::erase_if(targetNode.get().m_parentBranchs, [this](const auto& parentBranch) -> bool { return &parentBranch.get() == this; });
-				m_branchs.clear();
+						std::erase_if(targetNode.get().m_parentBranches, [this](const auto& parentBranch) -> bool { return &parentBranch.get() == this; });
+				m_branches.clear();
 			}
 
 			inline auto detachFromAll() -> void
 			{
-				for (auto& targetNodes : m_parentBranchs)
-					for (auto& [key, branch] : targetNodes.get().m_branchs)
+				for (auto& targetNodes : m_parentBranches)
+					for (auto& [key, branch] : targetNodes.get().m_branches)
 						std::erase_if(branch, [this](const auto& node) -> bool { return &node.get() == this; });
-				m_parentBranchs.clear();
+				m_parentBranches.clear();
 			}
 
 			Value value;
 
 		private:
-			std::unordered_map<Key, std::vector<std::reference_wrapper<Node>>> m_branchs;
-			std::vector<std::reference_wrapper<Node>> m_parentBranchs;
+			std::unordered_map<Key, std::vector<std::reference_wrapper<Node>>> m_branches;
+			std::vector<std::reference_wrapper<Node>> m_parentBranches;
 		};
 
 		static inline auto attach(const Key& key0, Node& node0, const Key& key1, Node& node1) -> void
