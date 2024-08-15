@@ -3,7 +3,7 @@ export module CppUtils.Thread.ThreadPool;
 import std;
 
 import CppUtils.Thread.ThreadLoop;
-import CppUtils.Thread.Locked;
+import CppUtils.Thread.UniqueLocker;
 
 export namespace CppUtils::Thread
 {
@@ -88,7 +88,7 @@ export namespace CppUtils::Thread
 
 		std::size_t m_numberThreads;
 		std::atomic_size_t m_activeWorkers = 0;
-		Locked<std::queue<Task>> m_tasksQueue;
+		UniqueLocker<std::queue<Task>> m_tasksQueue;
 		std::condition_variable m_startWorkingCondition;
 		std::mutex m_standByMutex;
 		std::condition_variable m_standByCondition;

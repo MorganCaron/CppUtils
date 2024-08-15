@@ -1,0 +1,59 @@
+export module CppUtils.Thread.UniqueLocker;
+
+import std;
+
+export namespace CppUtils::Thread
+{
+	template<class T, class Mutex = std::mutex>
+	class Accessor final
+	{
+	public:
+		inline explicit Accessor(Mutex& mutex, T& value):
+			m_lockGuard{mutex},
+			m_value{std::ref(value)}
+		{}
+
+		[[nodiscard]] inline auto operator*() noexcept -> decltype(auto)
+		{
+			return m_value.get();
+		}
+
+		[[nodiscard]] inline auto operator->() noexcept -> decltype(auto)
+		{
+			return &m_value.get();
+		}
+
+		[[nodiscard]] inline auto getLockGuard() noexcept -> auto&
+		{
+			return m_lockGuard;
+		}
+
+	private:
+		mutable std::unique_lock<Mutex> m_lockGuard;
+		std::reference_wrapper<T> m_value;
+	};
+
+	template<class Mutex, class T>
+	Accessor(Mutex, T) -> Accessor<T, Mutex>;
+
+	template<class T>
+	class UniqueLocker final
+	{
+	public:
+		inline explicit UniqueLocker(auto&&... args):
+			m_value{std::forward<decltype(args)>(args)...}
+		{}
+
+		[[nodiscard]] inline auto access() -> auto
+		{
+			return Accessor{m_mutex, m_value};
+		}
+
+	private:
+		std::mutex m_mutex;
+		T m_value;
+	};
+
+	template<class T>
+	UniqueLocker(T) -> UniqueLocker<T>;
+}

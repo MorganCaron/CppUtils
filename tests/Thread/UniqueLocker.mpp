@@ -1,12 +1,12 @@
-export module CppUtils.UnitTests.Thread.Locked;
+export module CppUtils.UnitTests.Thread.UniqueLocker;
 
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Thread::Locked
+export namespace CppUtils::UnitTest::Thread::UniqueLocker
 {
-	inline auto _ = CppUtils::UnitTest::TestSuite{"Lock", [](auto& suite) {
+	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/UniqueLocker", [](auto& suite) {
 		suite.addTest("Access", [&] {
-			auto lockedString = CppUtils::Thread::Locked<std::string>{"Foo"};
+			auto lockedString = CppUtils::Thread::UniqueLocker<std::string>{"Foo"};
 			{
 				auto accessor = lockedString.access();
 				suite.expect(*accessor == "Foo");
@@ -14,7 +14,7 @@ export namespace CppUtils::UnitTest::Thread::Locked
 		});
 
 		suite.addTest("Test mutex", [&] {
-			auto lockedNumber = CppUtils::Thread::Locked{0uz};
+			auto lockedNumber = CppUtils::Thread::UniqueLocker{0uz};
 
 			auto incrementFunction = [&lockedNumber](std::size_t iterations) noexcept -> void {
 				while (iterations--)

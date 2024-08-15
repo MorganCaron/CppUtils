@@ -1,0 +1,62 @@
+export module CppUtils.Thread.SharedLocker;
+
+import std;
+import CppUtils.Thread.UniqueLocker;
+
+export namespace CppUtils::Thread
+{
+	template<class T>
+	class ReadOnlyAccessor final
+	{
+	public:
+		inline explicit ReadOnlyAccessor(std::shared_mutex& mutex, const T& value):
+			m_lockGuard{mutex},
+			m_value{std::cref(value)}
+		{}
+
+		[[nodiscard]] inline auto operator*() const noexcept -> const auto&
+		{
+			return m_value.get();
+		}
+
+		[[nodiscard]] inline auto operator->() const noexcept -> const auto&
+		{
+			return &m_value.get();
+		}
+
+		[[nodiscard]] inline auto getLockGuard() const noexcept -> auto&
+		{
+			return m_lockGuard;
+		}
+
+	private:
+		mutable std::shared_lock<std::shared_mutex> m_lockGuard;
+		std::reference_wrapper<const T> m_value;
+	};
+
+	template<class T>
+	class SharedLocker final
+	{
+	public:
+		inline explicit SharedLocker(auto&&... args):
+			m_value{std::forward<decltype(args)>(args)...}
+		{}
+
+		[[nodiscard]] inline auto uniqueAccess() -> auto
+		{
+			return Accessor{m_mutex, m_value};
+		}
+
+		[[nodiscard]] inline auto sharedAccess() -> auto
+		{
+			return ReadOnlyAccessor{m_mutex, m_value};
+		}
+
+	private:
+		std::shared_mutex m_mutex;
+		T m_value;
+	};
+
+	template<class T>
+	SharedLocker(T) -> SharedLocker<T>;
+}

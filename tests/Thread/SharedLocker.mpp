@@ -1,0 +1,47 @@
+export module CppUtils.UnitTests.Thread.SharedLocker;
+
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Thread::SharedLocker
+{
+	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/SharedLocker", [](auto& suite) {
+		suite.addTest("Unique access", [&] {
+			auto lockedString = CppUtils::Thread::SharedLocker<std::string>{"Foo"};
+			{
+				auto accessor = lockedString.uniqueAccess();
+				suite.expect(*accessor == "Foo");
+			}
+		});
+
+		suite.addTest("Unique access: Test mutex", [&] {
+			auto lockedNumber = CppUtils::Thread::SharedLocker{0uz};
+
+			auto incrementFunction = [&lockedNumber](std::size_t iterations) noexcept -> void {
+				while (iterations--)
+				{
+					auto accessor = lockedNumber.uniqueAccess();
+					auto& nb = *accessor;
+					++nb;
+				}
+			};
+
+			auto iterations = 1'000'000uz;
+			{
+				auto thread0 = std::jthread{incrementFunction, iterations};
+				auto thread1 = std::jthread{incrementFunction, iterations};
+			}
+			auto accessor = lockedNumber.uniqueAccess();
+			suite.expectEqual(*accessor, iterations * 2);
+		});
+
+		suite.addTest("Shared access", [&] {
+			auto lockedString = CppUtils::Thread::SharedLocker<std::string>{"Foo"};
+			{
+				auto accessor0 = lockedString.sharedAccess();
+				auto accessor1 = lockedString.sharedAccess();
+				suite.expect(*accessor0 == "Foo");
+				suite.expect(*accessor1 == "Foo");
+			}
+		});
+	}};
+}
