@@ -71,9 +71,9 @@ namespace CppUtils::UnitTest
 				{
 					std::throw_with_nested(std::runtime_error{std::format("The following test didn't pass:\n{}", test.name)});
 				}
-				catch (const std::exception&)
+				catch (const std::exception& exception)
 				{
-					std::throw_with_nested(std::runtime_error{std::format("An exception occurred during the test:\n{}", test.name)});
+					std::throw_with_nested(std::runtime_error{std::format("An exception occurred during the test:\n{}\n{}", test.name, exception.what())});
 				}
 			}
 			catch (const std::exception& exception)
@@ -82,7 +82,7 @@ namespace CppUtils::UnitTest
 				return false;
 			}
 			if (settings.verbose)
-				Logger::print<"success">("Passed", test.name);
+				Logger::print<"success">("Passed");
 			return true;
 		}
 
@@ -105,46 +105,44 @@ namespace CppUtils::UnitTest
 			{
 				Logger::print<"warning">("No tests found.");
 				Logger::print<"detail">("Create a unit test or adjust the filter.");
-			}
-			else
-			{
-				Logger::print<"info">("{} tests found. Execution:", std::size(m_tests));
-				auto nbSuccess = 0uz;
-				auto nbFail = 0uz;
-				for (const auto& test : m_tests)
-				{
-					if (executeTest(test, settings))
-						++nbSuccess;
-					else
-					{
-						++nbFail;
-						if (settings.failFast)
-						{
-							if (settings.detail)
-								Logger::print<"detail">("Stopping tests execution (failFast mode enabled)");
-							break;
-						}
-					}
-				}
-				Logger::printSeparator<"detail">();
-				Logger::print<"detail">("Test results");
-				if (nbFail == 0)
-				{
-					Logger::print<"success">("All tests passed successfully");
-					return exitSuccess;
-				}
-				{
-					[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
-					Logger::print("The tests failed:\n");
-				}
-				if (nbSuccess > 0)
-					Logger::print<"success">("- {} successful tests", nbSuccess);
-				[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
-				if (nbSuccess == 0)
-					Logger::print("- 0 successful tests\n");
-				Logger::print("- {} failed tests\n", nbFail);
+				return exitFailure;
 			}
 
+			Logger::print<"info">("{} tests found. Execution:", std::size(m_tests));
+			auto nbSuccess = 0uz;
+			auto nbFail = 0uz;
+			for (const auto& test : m_tests)
+			{
+				if (executeTest(test, settings))
+					++nbSuccess;
+				else
+				{
+					++nbFail;
+					if (settings.failFast)
+					{
+						if (settings.detail)
+							Logger::print<"detail">("Stopping tests execution (failFast mode enabled)");
+						break;
+					}
+				}
+			}
+			Logger::printSeparator<"detail">();
+			Logger::print<"detail">("Test results");
+			if (nbFail == 0)
+			{
+				Logger::print<"success">("All tests passed successfully");
+				return exitSuccess;
+			}
+			{
+				[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
+				Logger::print("The tests failed:\n");
+			}
+			if (nbSuccess > 0)
+				Logger::print<"success">("- {} successful tests", nbSuccess);
+			[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
+			if (nbSuccess == 0)
+				Logger::print("- 0 successful tests\n");
+			Logger::print("- {} failed tests\n", nbFail);
 			return exitFailure;
 		}
 
@@ -187,7 +185,7 @@ namespace CppUtils::UnitTest
 		// Todo C++23: std::stacktrace stacktrace = std::current_stacktrace()
 		inline auto expect(bool condition, std::source_location sourceLocation = std::source_location::current()) -> void
 		{
-			if (!condition) [[unlikely]]
+			if (not condition) [[unlikely]]
 				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expect(condition)",
 					sourceLocation.file_name(),
 					sourceLocation.line(),

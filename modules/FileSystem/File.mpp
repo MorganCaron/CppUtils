@@ -42,7 +42,7 @@ export namespace CppUtils::FileSystem
 		inline auto write(const std::filesystem::path& filePath, const T& buffer) -> void
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
-			if (!file.is_open())
+			if (not file.is_open())
 				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			file.write(reinterpret_cast<const char*>(&buffer), sizeof(buffer));
 		}
@@ -51,7 +51,7 @@ export namespace CppUtils::FileSystem
 		[[nodiscard]] inline auto read(const std::filesystem::path& filePath) -> T
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
-			if (!file.is_open())
+			if (not file.is_open())
 				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			auto buffer = T{};
 			file.read(reinterpret_cast<char*>(&buffer), sizeof(buffer));
@@ -62,7 +62,7 @@ export namespace CppUtils::FileSystem
 		inline auto writeVector(const std::filesystem::path& filePath, const std::vector<T>& vector) -> void
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
-			if (!file.is_open())
+			if (not file.is_open())
 				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			file.write(reinterpret_cast<const char*>(std::data(vector)), static_cast<std::streamsize>(std::size(vector) * sizeof(T)));
 		}
@@ -71,7 +71,7 @@ export namespace CppUtils::FileSystem
 		[[nodiscard]] inline auto readVector(const std::filesystem::path& filePath) -> std::vector<T>
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
-			if (!file.is_open())
+			if (not file.is_open())
 				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			const auto nbElements = std::filesystem::file_size(filePath) / sizeof(T);
 			auto vector = std::vector<T>{};
@@ -86,7 +86,7 @@ export namespace CppUtils::FileSystem
 		inline auto write(const std::filesystem::path& filePath, std::string_view content) -> void
 		{
 			auto file = std::ofstream{filePath};
-			if (!file.is_open())
+			if (not file.is_open())
 				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			file << content;
 		}
@@ -94,7 +94,7 @@ export namespace CppUtils::FileSystem
 		inline auto append(const std::filesystem::path& filePath, std::string_view content) -> void
 		{
 			auto file = std::ofstream{filePath, std::ios::app};
-			if (!file.is_open())
+			if (not file.is_open())
 				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			file << content;
 		}
@@ -102,7 +102,7 @@ export namespace CppUtils::FileSystem
 		[[nodiscard]] inline auto read(const std::filesystem::path& filePath) -> std::string
 		{
 			auto file = std::ifstream{filePath};
-			if (!file.is_open())
+			if (not file.is_open())
 				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			return std::string{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
 		}

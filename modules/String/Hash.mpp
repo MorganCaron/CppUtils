@@ -41,7 +41,7 @@ export namespace CppUtils::String
 			return std::basic_string_view<CharT>{std::data(name), N - 1};
 		}
 
-		[[nodiscard]] inline constexpr operator std::basic_string<CharT>() const noexcept
+		[[nodiscard]] inline constexpr operator std::basic_string<CharT>() const
 		{
 			return std::basic_string<CharT>{std::data(name), N - 1};
 		}
