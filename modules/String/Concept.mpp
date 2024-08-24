@@ -23,4 +23,9 @@ export namespace CppUtils::String
 
 	template<GenericText T>
 	using TextCharT = typename decltype(std::basic_string_view{std::declval<T>()})::value_type;
+
+	template<class T>
+	concept Formattable = requires (T t) {
+		{ std::formatter<T>{} };
+	};
 }

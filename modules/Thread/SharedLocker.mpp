@@ -14,12 +14,12 @@ export namespace CppUtils::Thread
 			m_value{std::cref(value)}
 		{}
 
-		[[nodiscard]] inline auto operator*() const noexcept -> const auto&
+		[[nodiscard]] inline auto operator*() const noexcept -> decltype(auto)
 		{
 			return m_value.get();
 		}
 
-		[[nodiscard]] inline auto operator->() const noexcept -> const auto&
+		[[nodiscard]] inline auto operator->() const noexcept -> decltype(auto)
 		{
 			return &m_value.get();
 		}
@@ -33,6 +33,9 @@ export namespace CppUtils::Thread
 		mutable std::shared_lock<std::shared_mutex> m_lockGuard;
 		std::reference_wrapper<const T> m_value;
 	};
+
+	template<class T>
+	ReadOnlyAccessor(std::shared_mutex, T) -> ReadOnlyAccessor<T>;
 
 	template<class T>
 	class SharedLocker final

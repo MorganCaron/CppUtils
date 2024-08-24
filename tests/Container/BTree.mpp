@@ -11,14 +11,14 @@ export namespace CppUtils::UnitTest::Container::BTree
 
 		suite.addTest("Empty", [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expect(std::empty(bTree));
 		});
 
 		suite.addTest("1 element", [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expect(not std::empty(bTree));
 			suite.expectEqual(std::size(bTree), 1uz);
 		});
@@ -27,7 +27,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
 			bTree.add(1, 'B');
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expectEqual(std::size(bTree), 2uz);
 		});
 
@@ -35,7 +35,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			for (auto i = 0; i < 5; ++i)
 				bTree.add(i, 'A' + static_cast<char>(i));
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expectEqual(std::size(bTree), 5uz);
 		});
 
@@ -43,7 +43,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			for (auto i = 0; i < 8; ++i)
 				bTree.add(i, 'A' + static_cast<char>(i));
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expectEqual(std::size(bTree), 8uz);
 		});
 
@@ -51,14 +51,14 @@ export namespace CppUtils::UnitTest::Container::BTree
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			for (auto i = 0; i < 10; ++i)
 				bTree.add(i, 'A' + static_cast<char>(i));
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expectEqual(std::size(bTree), 10uz);
 		});
 
 		suite.addTest("Exists", [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expect(bTree.exists(0));
 			suite.expect(not bTree.exists(1));
 		});
@@ -66,7 +66,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 		suite.addTest("Key hasher", [&] {
 			auto bTree = CppUtils::Container::BTree::Node<std::string, int>{};
 			bTree.add("test", 0);
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expectEqual(std::size(bTree), 1uz);
 		});
 
@@ -74,13 +74,13 @@ export namespace CppUtils::UnitTest::Container::BTree
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
 			bTree.remove(0);
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expect(std::empty(bTree));
 		});
 
 		suite.addTest("Removing nested element", [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expect(std::empty(bTree));
 		});
 
@@ -88,14 +88,14 @@ export namespace CppUtils::UnitTest::Container::BTree
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
 			bTree.clear();
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expect(std::empty(bTree));
 		});
 
 		suite.addTest("Search key", [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expect(bTree.exists(0));
 			suite.expectEqual(bTree.get(0), 'A');
 		});
@@ -103,7 +103,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 		suite.addTest("Set value", [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree[0] = 'A';
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expect(not std::empty(bTree));
 			suite.expect(bTree.exists(0));
 			suite.expectEqual(bTree.get(0), 'A');
@@ -113,7 +113,7 @@ export namespace CppUtils::UnitTest::Container::BTree
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
 			bTree[0] = 'B';
-			Logger::print("{}\n", bTree);
+			Logger::print("{}", bTree);
 			suite.expectEqual(bTree.size(), 1uz);
 			suite.expect(bTree.exists(0));
 			suite.expectEqual(bTree.get(0), 'B');

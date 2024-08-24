@@ -20,7 +20,7 @@
 
 ### In this library you can find:
 
-- Additional containers ([bidirectional map](modules/Container/BidirectionalMap.mpp), [trees](modules/Container/Tree.mpp), [meshes](modules/Container/MeshNetwork.mpp), [stacks](modules/Container/Stack.mpp))
+- Additional containers ([bidirectional map](modules/Container/BidirectionalMap.mpp), [b-tree](modules/Container/BTree.mpp), [meshes](modules/Container/MeshNetwork.mpp), [stacks](modules/Container/Stack.mpp), [trees](modules/Container/Tree.mpp))
 - A [file modification listener](modules/FileSystem/Watcher.mpp)
 - Tools for creating parsers and compilers (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
 - Parsers and compilers for popular languages (CSS, INI, HTML, JSON, Markdown, XML) (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
@@ -28,6 +28,8 @@
 - [Benchmark tools](modules/Log/ChronoLogger.mpp)
 - [Hashing functions](modules/String/Hash.mpp)
 - [Color terminal writing](modules/Terminal/TextModifier.mpp)
+- Utilities for securing multithreaded accesses ([UniqueLocker](modules/Thread/UniqueLocker.mpp), [SharedLocker](modules/Thread/SharedLocker.mpp))
+- A [ThreadPool](modules/Thread/ThreadPool.mpp)
 - [Tools for writing unit tests](modules/UnitTest/UnitTest.mpp)
 - [STL polyfills](include/Stl)
 - Many other functions

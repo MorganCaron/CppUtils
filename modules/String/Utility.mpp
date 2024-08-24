@@ -26,10 +26,31 @@ export namespace CppUtils::String
 		return std::basic_string<CharT>{c};
 	}
 
-	template<Concept::Text StringT>
-	[[nodiscard]] inline auto concatenateStringsWithSeparator(std::span<StringT> strings, std::basic_string_view<typename StringT::value_type> separator) -> std::string
+	inline namespace cpp20
 	{
-		return std::ranges::to<std::basic_string<typename StringT::value_type>>(strings | std::views::join_with(separator));
+		[[nodiscard]] inline auto concatenateStringsWithSeparator(const std::vector<std::string>& strings, std::string_view separator) -> std::string
+		{
+			return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{}, [separator](const std::string& lhs, const std::string& rhs) {
+				return lhs.empty() ? rhs : (lhs + std::data(separator) + rhs);
+			});
+		}
+
+		[[nodiscard]] inline auto concatenateStringsWithSeparator(const std::vector<std::string_view>& strings, std::string_view separator) -> std::string
+		{
+			return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{}, [separator](std::string_view lhs, std::string_view rhs) {
+				return lhs.empty() ? std::string{rhs} : (std::string{lhs} + std::string{separator} + std::string{rhs});
+			});
+		}
+	}
+	namespace cpp23
+	{
+		/* Not yet supported by CLang libc++: std::views::join_with
+		template<Text StringT>
+		[[nodiscard]] inline auto concatenateStringsWithSeparator(std::span<StringT> strings, std::basic_string_view<typename StringT::value_type> separator) -> std::string
+		{
+			return std::ranges::to<std::basic_string<typename StringT::value_type>>(strings | std::views::join_with(separator));
+		}
+		*/
 	}
 
 	[[nodiscard]] inline auto leftTrimString(std::string_view stringView) -> std::string_view
