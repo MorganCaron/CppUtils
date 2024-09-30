@@ -35,7 +35,7 @@ export namespace CppUtils::Thread
 	};
 
 	template<class T>
-	ReadOnlyAccessor(std::shared_mutex, T) -> ReadOnlyAccessor<T>;
+	ReadOnlyAccessor(std::shared_mutex&, const T&) -> ReadOnlyAccessor<T>;
 
 	template<class T>
 	class SharedLocker final
@@ -50,13 +50,13 @@ export namespace CppUtils::Thread
 			return Accessor{m_mutex, m_value};
 		}
 
-		[[nodiscard]] inline auto sharedAccess() -> auto
+		[[nodiscard]] inline auto sharedAccess() const -> auto
 		{
 			return ReadOnlyAccessor{m_mutex, m_value};
 		}
 
 	private:
-		std::shared_mutex m_mutex;
+		mutable std::shared_mutex m_mutex;
 		T m_value;
 	};
 

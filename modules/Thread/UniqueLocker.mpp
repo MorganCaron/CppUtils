@@ -34,7 +34,7 @@ export namespace CppUtils::Thread
 	};
 
 	template<class Mutex, class T>
-	Accessor(Mutex, T) -> Accessor<T, Mutex>;
+	Accessor(Mutex&, T&) -> Accessor<T, Mutex>;
 
 	template<class T>
 	class UniqueLocker final
