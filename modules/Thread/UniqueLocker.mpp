@@ -13,7 +13,7 @@ export namespace CppUtils::Thread
 			m_value{std::ref(value)}
 		{}
 
-		[[nodiscard]] inline auto operator*() noexcept -> decltype(auto)
+		[[nodiscard]] inline auto value() noexcept -> decltype(auto)
 		{
 			return m_value.get();
 		}

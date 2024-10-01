@@ -24,7 +24,7 @@ export namespace CppUtils::UnitTest::Thread::ThreadLoop
 			{
 				auto threadLoop = CppUtils::Thread::ThreadLoop{[&lockedNumber] {
 					auto accessor = lockedNumber.access();
-					auto& nb = *accessor;
+					auto& nb = accessor.value();
 					++nb;
 					std::this_thread::sleep_for(10ms);
 				}};
@@ -32,7 +32,7 @@ export namespace CppUtils::UnitTest::Thread::ThreadLoop
 				std::this_thread::sleep_for(100ms);
 			}
 			auto accessor = lockedNumber.access();
-			auto nb = *accessor;
+			auto nb = accessor.value();
 			suite.expectEqual(nb, 10uz);
 		});
 	}};

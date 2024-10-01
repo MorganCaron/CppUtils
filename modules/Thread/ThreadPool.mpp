@@ -48,10 +48,10 @@ export namespace CppUtils::Thread
 		{
 			auto lockGuard = std::unique_lock{m_standByMutex};
 			auto tasksQueueAccessor = m_tasksQueue.access();
-			if (m_activeWorkers != 0 and not std::empty(*tasksQueueAccessor))
+			if (m_activeWorkers != 0 and not std::empty(tasksQueueAccessor.value()))
 				m_standByCondition.wait(lockGuard, [this] {
 					auto tasksQueueAccessor = m_tasksQueue.access();
-					return m_activeWorkers == 0 and std::empty(*tasksQueueAccessor);
+					return m_activeWorkers == 0 and std::empty(tasksQueueAccessor.value());
 				});
 		}
 
@@ -61,10 +61,10 @@ export namespace CppUtils::Thread
 			auto task = Task{};
 			{
 				auto tasksQueueAccessor = m_tasksQueue.access();
-				if (std::empty(*tasksQueueAccessor))
+				if (std::empty(tasksQueueAccessor.value()))
 				{
 					m_startWorkingCondition.wait(tasksQueueAccessor.getLockGuard());
-					if (std::empty(*tasksQueueAccessor))
+					if (std::empty(tasksQueueAccessor.value()))
 					{
 						m_standByCondition.notify_all();
 						return;
@@ -77,7 +77,7 @@ export namespace CppUtils::Thread
 			task();
 			--m_activeWorkers;
 			if (auto tasksQueueAccessor = m_tasksQueue.access();
-				m_activeWorkers == 0 and std::empty(*tasksQueueAccessor))
+				m_activeWorkers == 0 and std::empty(tasksQueueAccessor.value()))
 				m_standByCondition.notify_all();
 		}
 

@@ -14,7 +14,7 @@ export namespace CppUtils::Thread
 			m_value{std::cref(value)}
 		{}
 
-		[[nodiscard]] inline auto operator*() const noexcept -> decltype(auto)
+		[[nodiscard]] inline auto value() const noexcept -> decltype(auto)
 		{
 			return m_value.get();
 		}

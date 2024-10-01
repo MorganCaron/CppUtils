@@ -9,7 +9,7 @@ export namespace CppUtils::UnitTest::Thread::UniqueLocker
 			auto lockedString = CppUtils::Thread::UniqueLocker<std::string>{"Foo"};
 			{
 				auto accessor = lockedString.access();
-				suite.expect(*accessor == "Foo");
+				suite.expect(accessor.value() == "Foo");
 			}
 		});
 
@@ -20,7 +20,7 @@ export namespace CppUtils::UnitTest::Thread::UniqueLocker
 				while (iterations--)
 				{
 					auto accessor = lockedNumber.access();
-					auto& nb = *accessor;
+					auto& nb = accessor.value();
 					++nb;
 				}
 			};
@@ -31,7 +31,7 @@ export namespace CppUtils::UnitTest::Thread::UniqueLocker
 				auto thread1 = std::jthread{incrementFunction, iterations};
 			}
 			auto accessor = lockedNumber.access();
-			suite.expectEqual(*accessor, iterations * 2);
+			suite.expectEqual(accessor.value(), iterations * 2);
 		});
 	}};
 }
