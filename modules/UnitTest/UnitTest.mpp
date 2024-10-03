@@ -11,6 +11,7 @@ import CppUtils.Logger;
 import CppUtils.String;
 import CppUtils.System.Main;
 import CppUtils.Terminal;
+export import CppUtils.UnitTest.DummyObject;
 
 namespace CppUtils::UnitTest
 {

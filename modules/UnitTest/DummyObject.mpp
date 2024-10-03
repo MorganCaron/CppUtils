@@ -1,0 +1,51 @@
+export module CppUtils.UnitTest.DummyObject;
+
+import std;
+import CppUtils.Logger;
+
+export namespace CppUtils::UnitTest
+{
+	class DummyObject
+	{
+		using Logger = CppUtils::Logger<"CppUtils">;
+
+	public:
+		DummyObject(std::string name, std::size_t indentationLevel = 0):
+			m_name{std::move(name)},
+			m_indentationLevel{indentationLevel}
+		{
+			Logger::print("{}{}()\n", std::string(m_indentationLevel, '\t'), m_name);
+		}
+
+		virtual ~DummyObject()
+		{
+			Logger::print("{}~{}()\n", std::string(m_indentationLevel, '\t'), m_name);
+		}
+
+		DummyObject(const DummyObject&)
+		{
+			Logger::print("{}{}(const {}&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
+		}
+
+		DummyObject(DummyObject&&)
+		{
+			Logger::print("{}{}({}&&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
+		}
+
+		auto operator=(const DummyObject&) -> DummyObject&
+		{
+			Logger::print("{}{}::operator=(const {}&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
+			return *this;
+		}
+
+		auto operator=(DummyObject&&) -> DummyObject&
+		{
+			Logger::print("{}{}::operator=({}&&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
+			return *this;
+		}
+
+	private:
+		std::string m_name;
+		std::size_t m_indentationLevel;
+	};
+}
