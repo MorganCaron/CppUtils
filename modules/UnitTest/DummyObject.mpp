@@ -10,36 +10,46 @@ export namespace CppUtils::UnitTest
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 	public:
-		DummyObject(std::string name, std::size_t indentationLevel = 0):
+		explicit inline DummyObject(std::string name, std::size_t indentationLevel = 0):
 			m_name{std::move(name)},
 			m_indentationLevel{indentationLevel}
 		{
 			Logger::print("{}{}()\n", std::string(m_indentationLevel, '\t'), m_name);
 		}
 
-		virtual ~DummyObject()
+		inline virtual ~DummyObject()
 		{
 			Logger::print("{}~{}()\n", std::string(m_indentationLevel, '\t'), m_name);
 		}
 
-		DummyObject(const DummyObject&)
+		inline DummyObject(const DummyObject& other)
 		{
+			m_name = other.m_name;
+			m_indentationLevel = other.m_indentationLevel;
 			Logger::print("{}{}(const {}&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
 		}
 
-		DummyObject(DummyObject&&)
+		inline DummyObject(DummyObject&& other)
 		{
+			m_name = other.m_name;
+			m_indentationLevel = other.m_indentationLevel;
+			other.m_name += " [invalid object]";
 			Logger::print("{}{}({}&&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
 		}
 
-		auto operator=(const DummyObject&) -> DummyObject&
+		inline auto operator=(const DummyObject& rhs) -> DummyObject&
 		{
+			m_name = rhs.m_name;
+			m_indentationLevel = rhs.m_indentationLevel;
 			Logger::print("{}{}::operator=(const {}&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
 			return *this;
 		}
 
-		auto operator=(DummyObject&&) -> DummyObject&
+		inline auto operator=(DummyObject&& rhs) -> DummyObject&
 		{
+			m_name = rhs.m_name;
+			m_indentationLevel = rhs.m_indentationLevel;
+			rhs.m_name += " [invalid object]";
 			Logger::print("{}{}::operator=({}&&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
 			return *this;
 		}

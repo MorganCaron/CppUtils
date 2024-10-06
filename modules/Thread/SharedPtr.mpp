@@ -1,0 +1,12 @@
+export module CppUtils.Thread.SharedPtr;
+
+import std;
+
+export namespace CppUtils::Thread::SharedPtr
+{
+	// Sera remplacé par std::shared_ptr<T>::owner_equal en C++26
+	[[nodiscard]] inline auto ownerEqual(const auto& lhs, const auto& rhs) -> bool
+	{
+		return not lhs.owner_before(rhs) and not rhs.owner_before(lhs);
+	}
+}

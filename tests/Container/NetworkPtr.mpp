@@ -1,0 +1,80 @@
+export module CppUtils.UnitTests.Container.NetworkPtr;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Container::NetworkPtr
+{
+	inline auto _ = TestSuite{"Container/NetworkPtr", [](auto& suite) {
+		using Logger = CppUtils::Logger<"CppUtils">;
+		using NetworkPtr = CppUtils::Container::NetworkPtr<DummyObject>;
+
+		suite.addTest("Create root", [&] {
+			[[maybe_unused]] auto root = NetworkPtr::makeRoot("Root");
+		});
+
+		suite.addTest("Create node", [&] {
+			[[maybe_unused]] auto node = NetworkPtr::make("Node");
+		});
+
+		suite.addTest("Create branch", [&] {
+			auto root = NetworkPtr::makeRoot("Root");
+			{
+				auto branch = NetworkPtr::make("Branch", 1uz);
+				auto rootAccessor = root->uniqueAccess();
+				rootAccessor->attachChild(branch);
+			}
+			Logger::print("Persistance de Branch\n");
+		});
+
+		suite.addTest("Create leaf", [&] {
+			auto root = NetworkPtr::makeRoot("Root");
+			{
+				auto branch = NetworkPtr::make("Branch", 1uz);
+				auto rootAccessor = root->uniqueAccess();
+				rootAccessor->attachChild(branch);
+				{
+					auto leaf = NetworkPtr::make("Leaf", 2uz);
+					auto branchAccessor = branch->uniqueAccess();
+					branchAccessor->attachChild(leaf);
+				}
+				Logger::print("Persistance de Leaf\n");
+			}
+			Logger::print("Persistance de Branch\n");
+		});
+
+		suite.addTest("Cut branch", [&] {
+			auto root = NetworkPtr::makeRoot("Root");
+			{
+				auto branch = NetworkPtr::make("Branch", 1uz);
+				auto rootAccessor = root->uniqueAccess();
+				rootAccessor->attachChild(branch);
+				{
+					auto leaf = NetworkPtr::make("Leaf", 2uz);
+					auto branchAccessor = branch->uniqueAccess();
+					branchAccessor->attachChild(leaf);
+				}
+				Logger::print("Persistance de Leaf\n");
+				rootAccessor->detachChild(branch);
+			}
+			Logger::print("Non-persistance de Branch\n");
+		});
+
+		suite.addTest("Bilateral attachment", [&] {
+			auto root = NetworkPtr::makeRoot("Root");
+			auto branch = NetworkPtr::SharedPtr{};
+			{
+				branch = NetworkPtr::make("Branch", 1uz);
+				auto rootAccessor = root->uniqueAccess();
+				rootAccessor->attachChild(branch);
+			}
+			Logger::print("Persistance de Branch\n");
+			{
+				auto branchAccessor = branch->uniqueAccess();
+				Logger::print("Création d'une boucle\n");
+				branchAccessor->attachChild(root);
+			}
+			Logger::print("Libération de la boucle\n");
+		});
+	}};
+}
