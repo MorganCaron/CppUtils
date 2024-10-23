@@ -21,7 +21,7 @@ export namespace CppUtils::Thread
 
 		[[nodiscard]] inline auto operator->() const noexcept -> decltype(auto)
 		{
-			return &m_value.get();
+			return &value();
 		}
 
 		[[nodiscard]] inline auto getLockGuard() const noexcept -> auto&

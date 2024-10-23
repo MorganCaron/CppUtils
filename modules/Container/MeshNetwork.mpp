@@ -1,183 +1,63 @@
 export module CppUtils.Container.MeshNetwork;
 
 import std;
-import CppUtils.Container.Vector;
+import CppUtils.Thread.SharedLocker;
+import CppUtils.Container.NetworkPtr;
 
 export namespace CppUtils::Container
 {
 	template<class Key, class Value>
-	class MeshNetwork final
+	struct MeshNode final
 	{
-	public:
-		struct Node final
+		using SharedPtr = NetworkPtr<MeshNode<Key, Value>>::SharedPtr;
+		using WeakPtr = NetworkPtr<MeshNode<Key, Value>>::WeakPtr;
+
+		explicit inline MeshNode(auto&&... args):
+			value{std::forward<decltype(args)>(args)...}
+		{}
+
+		[[nodiscard]] inline auto operator[](const Key& key) const -> const auto&
 		{
-			Node() = default;
-			explicit inline Node(auto&&... args):
-				value{std::forward<decltype(args)>(args)...}
-			{}
-			inline Node(Node&&) = default;
-
-			[[nodiscard]] inline auto exists(const Key& branchKey) const -> bool
-			{
-				return m_branches.find(branchKey) != std::cend(m_branches);
-			}
-
-			[[nodiscard]] inline auto get(const Key& key) const -> const std::vector<std::reference_wrapper<Node>>&
-			{
-				if (!exists(key))
-					throw std::out_of_range("The branch does not exist in the Node.");
-				return m_branches.at(key);
-			}
-
-			[[nodiscard]] inline auto operator[](const Key& key) -> std::vector<std::reference_wrapper<Node>>&
-			{
-				if (!exists(key))
-					m_branches[key] = std::vector<std::reference_wrapper<Node>>{};
-				return m_branches[key];
-			}
-
-			[[nodiscard]] inline auto count(const Key& key) const -> std::size_t
-			{
-				return exists(key) ? std::size(get(key)) : 0uz;
-			}
-
-			inline auto attach(const Key& key, Node& node) -> void
-			{
-				m_branches[key].push_back(std::ref(node));
-				node.m_parentBranches.push_back(std::ref(*this));
-			}
-
-			inline auto attachUnique(const Key& key, Node& node) -> void
-			{
-				auto& nodes = (*this)[key];
-				if (auto nodeIt = std::find_if(std::cbegin(nodes), std::cend(nodes), [&value = node.value](const auto& node) -> bool { return node.get().value == value; });
-					nodeIt == std::cend(nodes))
-					nodes.push_back(std::ref(node));
-				else
-				{
-					auto& destNode = nodeIt->get();
-					destNode.m_branches.insert(std::begin(node.m_branches), std::end(node.m_branches));
-					destNode.m_parentBranches.insert(std::end(destNode.m_parentBranches), std::begin(node.m_parentBranches), std::end(node.m_parentBranches));
-				}
-			}
-
-			inline auto detach(const Key& key, Node& node) -> void
-			{
-				auto& branch = m_branches[key];
-				for (auto& targetNode : branch)
-					std::erase_if(targetNode.get().m_parentBranches, [this](const auto& parentBranch) -> bool { return &parentBranch.get() == this; });
-				std::erase(branch, std::ref(node));
-				if (std::empty(branch))
-					m_branches.erase(key);
-			}
-
-			inline auto detach(const Key& key) -> void
-			{
-				auto& branch = m_branches[key];
-				for (auto& targetNode : branch)
-					std::erase_if(targetNode.get().m_parentBranches, [this](const auto& parentBranch) -> bool { return &parentBranch.get() == this; });
-				m_branches.erase(key);
-			}
-
-			inline auto detachAll() -> void
-			{
-				for (auto& [key, branch] : m_branches)
-					for (auto& targetNode : branch)
-						std::erase_if(targetNode.get().m_parentBranches, [this](const auto& parentBranch) -> bool { return &parentBranch.get() == this; });
-				m_branches.clear();
-			}
-
-			inline auto detachFromAll() -> void
-			{
-				for (auto& targetNodes : m_parentBranches)
-					for (auto& [key, branch] : targetNodes.get().m_branches)
-						std::erase_if(branch, [this](const auto& node) -> bool { return &node.get() == this; });
-				m_parentBranches.clear();
-			}
-
-			Value value;
-
-		private:
-			std::unordered_map<Key, std::vector<std::reference_wrapper<Node>>> m_branches;
-			std::vector<std::reference_wrapper<Node>> m_parentBranches;
-		};
-
-		static inline auto attach(const Key& key0, Node& node0, const Key& key1, Node& node1) -> void
-		{
-			node1.attach(key0, node0);
-			node0.attach(key1, node1);
+			return m_branches.at(key);
 		}
 
-		[[nodiscard]] inline auto newNode(auto&&... args) -> Node&
+		[[nodiscard]] inline auto operator[](const Key& key) -> decltype(auto)
 		{
-			return *m_nodes.emplace_back(std::make_unique<Node>(std::forward<decltype(args)>(args)...));
+			return m_branches[key];
 		}
 
-		inline auto deleteNode(Node& node) -> void
+		static inline auto attach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
-			node.detachAll();
-			node.detachFromAll();
-			std::erase_if(m_nodes, [nodeAddress = &node](const auto& node) -> bool { return node.get() == nodeAddress; });
+			auto node0Accessor = node0->uniqueAccess();
+			node0Accessor->attachChild(node1);
+			node0Accessor->value[key1].push_back(node1);
 		}
 
-		[[nodiscard]] inline auto size() const -> std::size_t
+		static inline auto detach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
-			return std::size(m_nodes);
+			auto node0Accessor = node0->uniqueAccess();
+			node0Accessor->value.erase(key1);
+			node0Accessor->detachChild(node1);
 		}
 
-		[[nodiscard]] inline auto empty() const -> bool
+		static inline auto attach(const Key& key0, SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
-			return size() == 0;
+			attach(node0, key1, node1);
+			attach(node1, key0, node0);
 		}
+
+		static inline auto detach(const Key& key0, SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
+		{
+			detach(node0, key1, node1);
+			detach(node1, key0, node0);
+		}
+
+		Value value;
 
 	private:
-		std::vector<std::unique_ptr<Node>> m_nodes;
+		std::unordered_map<Key, std::vector<WeakPtr>> m_branches;
 	};
 
-	/*
-	template<bool doubleLinked, class Key, class Value, class Hash = std::hash<Key>>
-	requires std::is_integral_v<Key>
-	class FragmentedMeshNetwork: public MeshNetwork<Key, Value, Hash>
-	{
-	public:
-		using Node = MeshNode<Key, Value, Hash>;
-
-		enum Branch : Key
-		{
-			Last,
-			Next
-		};
-
-		template<class Type>
-		[[nodiscard]] inline auto newChain(Type data) -> std::shared_ptr<Node>
-		{
-			static_assert(sizeof(Type) >= sizeof(Value));
-			static_assert(sizeof(Type) % sizeof(Value) == 0);
-			auto firstNode = this->newNode(*reinterpret_cast<Value*>(&data)), lastNode = firstNode;
-			for (auto i = 1uz; i * sizeof(Value) < sizeof(Type); ++i)
-			{
-				auto nextNode = this->newNode(*reinterpret_cast<Value*>(&data + i * sizeof(Value)));
-				(doubleLinked ? Node::attach(Last, lastNode, Next, nextNode) : lastNode->attach(Next, nextNode));
-				lastNode = nextNode;
-			}
-			return firstNode;
-		}
-
-		template<class Type>
-		[[nodiscard]] inline auto getBranchOrDefault(const std::shared_ptr<Node>& baseNode, Key branchKey, Type&& defaultValue) -> std::shared_ptr<Node>
-		{
-			if (!baseNode->exists(branchKey))
-				baseNode->attach(branchKey, newChain(std::move(defaultValue)));
-			return std::shared_ptr<Node>{(*baseNode)[branchKey][0]};
-		}
-
-		template<class Type>
-		[[nodiscard]] inline auto getBranchOrDefault(Key baseKey, const std::shared_ptr<Node>& baseNode, Key branchKey, Type&& defaultValue) -> std::shared_ptr<Node>
-		{
-			if (!baseNode->exists(branchKey))
-				Node::attach(baseKey, baseNode, branchKey, newChain(std::move(defaultValue)));
-			return std::shared_ptr<Node>{(*baseNode)[branchKey][0]};
-		}
-	};
-	*/
+	template<class Key, class Value>
+	using MeshNodePtr = NetworkPtr<MeshNode<Key, Value>>;
 }

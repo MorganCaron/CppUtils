@@ -7,86 +7,106 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 {
 	inline auto _ = TestSuite{"Container/MeshNetwork", [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
-		using StringMeshNetwork = CppUtils::Container::MeshNetwork<std::string, std::string>;
+		using StringMeshNode = CppUtils::Container::MeshNodePtr<std::string, std::string>;
 
-		suite.addTest("One", [&] {
-			auto meshNetwork = StringMeshNetwork{};
-			auto& banana = meshNetwork.newNode("banana");
-			Logger::print("{}\n", banana.value);
-			suite.expect(banana.value == "banana");
+		suite.addTest("Initialization", [&] {
+			[[maybe_unused]] auto bananaNode = StringMeshNode::make("banana");
 		});
 
-		suite.addTest("Two", [&] {
-			auto meshNetwork = StringMeshNetwork{};
-			auto& fruit = meshNetwork.newNode("fruit");
-			auto& banana = meshNetwork.newNode("banana");
-			StringMeshNetwork::attach("Categories", fruit, "Elements", banana);
+		suite.addTest("Access value", [&] {
+			auto banana = StringMeshNode::make("banana");
+			auto accessor = banana->sharedAccess();
+			const auto& value = accessor->value.value;
+			Logger::print("{}\n", value);
+			suite.expect(value == "banana");
+		});
 
-			suite.expect(fruit.value == "fruit");
-			const auto& fruitName = fruit.get("Elements")[0].get();
-			suite.expect(fruitName.value == "banana");
+		suite.addTest("Copy reference", [&] {
+			auto bananaRef = StringMeshNode::SharedPtr{};
+			{
+				auto banana = StringMeshNode::make("banana");
+				bananaRef = banana;
+			}
+			auto accessor = bananaRef->sharedAccess();
+			const auto& value = accessor->value.value;
+			Logger::print("{}\n", value);
+			suite.expect(value == "banana");
+		});
 
-			for (const auto& aFruit : fruit.get("Elements"))
-				Logger::print("{} is a {}\n", aFruit.get().value, aFruit.get().get("Categories")[0].get().value);
+		suite.addTest("Attach child", [&] {
+			auto fruit = StringMeshNode::makeRoot("fruit");
+			{
+				auto banana = StringMeshNode::make("banana");
+				StringMeshNode::Value::attach(fruit, "Elements", banana);
+			}
+			auto fruitAccessor = fruit->sharedAccess();
+			auto firstFruit = std::shared_ptr{fruitAccessor->value["Elements"][0]};
+			auto bananaAccessor = firstFruit->sharedAccess();
+			const auto& value = bananaAccessor->value.value;
+			Logger::print("{}\n", value);
+			suite.expect(value == "banana");
+		});
+
+		suite.addTest("Bilateral attachment", [&] {
+			auto fruit = StringMeshNode::makeRoot("fruit");
+			auto banana = StringMeshNode::make("banana");
+			StringMeshNode::Value::attach("Categories", fruit, "Elements", banana);
+			{
+				auto fruitAccessor = fruit->sharedAccess();
+				auto firstFruit = std::shared_ptr{fruitAccessor->value["Elements"][0]};
+				auto bananaAccessor = firstFruit->sharedAccess();
+				const auto& bananaName = bananaAccessor->value.value;
+				const auto& fruitName = fruitAccessor->value.value;
+				Logger::print("{} is a {}\n", bananaName, fruitName);
+				suite.expect(bananaName == "banana");
+				suite.expect(fruitName == "fruit");
+			}
+			{
+				auto bananaAccessor = banana->sharedAccess();
+				auto firstCategory = std::shared_ptr{bananaAccessor->value["Categories"][0]};
+				auto fruitAccessor = firstCategory->sharedAccess();
+				const auto& bananaName = bananaAccessor->value.value;
+				const auto& fruitName = fruitAccessor->value.value;
+				Logger::print("{} is a {}\n", bananaName, fruitName);
+				suite.expect(bananaName == "banana");
+				suite.expect(fruitName == "fruit");
+			}
 		});
 
 		suite.addTest("Many", [&] {
-			auto meshNetwork = StringMeshNetwork{};
-			auto& fruit = meshNetwork.newNode("fruit");
-			auto& banana = meshNetwork.newNode("banana");
-			auto& lemon = meshNetwork.newNode("lemon");
-			auto& color = meshNetwork.newNode("color");
-			auto& yellow = meshNetwork.newNode("yellow");
-			auto& orangeFruit = meshNetwork.newNode("orange");
-			auto& orangeColor = meshNetwork.newNode("orange");
+			auto fruit = StringMeshNode::makeRoot("fruit");
+			auto banana = StringMeshNode::make("banana");
+			auto orangeFruit = StringMeshNode::make("orange");
+			auto lemon = StringMeshNode::make("lemon");
 
-			StringMeshNetwork::attach("Colors", yellow, "Elements", banana);
-			StringMeshNetwork::attach("Colors", yellow, "Elements", lemon);
-			StringMeshNetwork::attach("Colors", orangeColor, "Elements", orangeFruit);
-			StringMeshNetwork::attach("Categories", color, "Elements", yellow);
-			StringMeshNetwork::attach("Categories", fruit, "Elements", banana);
-			StringMeshNetwork::attach("Categories", fruit, "Elements", lemon);
-			StringMeshNetwork::attach("Categories", color, "Elements", orangeColor);
-			StringMeshNetwork::attach("Categories", fruit, "Elements", orangeFruit);
+			StringMeshNode::Value::attach("Categories", fruit, "Elements", banana);
+			StringMeshNode::Value::attach("Categories", fruit, "Elements", orangeFruit);
+			StringMeshNode::Value::attach("Categories", fruit, "Elements", lemon);
 
-			suite.expect(fruit.value == "fruit");
-			const auto& fruitName = fruit.get("Elements")[0].get();
-			suite.expect(fruitName.value == "banana");
-			const auto& fruitColor = fruitName.get("Colors")[0].get();
-			suite.expect(fruitColor.value == "yellow");
+			auto color = StringMeshNode::makeRoot("color");
+			auto orangeColor = StringMeshNode::make("orange");
+			auto yellow = StringMeshNode::make("yellow");
 
-			for (const auto& aFruit : fruit.get("Elements"))
-				Logger::print("{} is a {} {}\n", aFruit.get().value, aFruit.get().get("Colors")[0].get().value, aFruit.get().get("Categories")[0].get().value);
-		});
+			StringMeshNode::Value::attach("Categories", color, "Elements", orangeColor);
+			StringMeshNode::Value::attach("Categories", color, "Elements", yellow);
 
-		suite.addTest("attachUnique", [&] {
-			auto meshNetwork = StringMeshNetwork{};
-			auto& fruit = meshNetwork.newNode("fruit");
-			fruit.attach("fruits", meshNetwork.newNode("banana"));
+			StringMeshNode::Value::attach("Elements", banana, "Colors", yellow);
+			StringMeshNode::Value::attach("Elements", orangeFruit, "Colors", orangeColor);
+			StringMeshNode::Value::attach("Elements", lemon, "Colors", yellow);
 
-			suite.expectEqual(std::size(fruit["fruits"]), 1uz);
-
-			auto& banana = meshNetwork.newNode("banana");
-			banana.attach("color", meshNetwork.newNode("yellow"));
-			StringMeshNetwork::attach("Categories", fruit, "Elements", banana);
-
-			fruit.attachUnique("fruits", banana);
-
-			suite.expectEqual(std::size(fruit["fruits"]), 1uz);
-			suite.expect(fruit["fruits"][0].get().exists("color"));
-			suite.expectEqual(std::size(fruit["fruits"][0].get()["color"]), 1uz);
-			suite.expectEqual(fruit["fruits"][0].get()["color"][0].get().value, "yellow");
-		});
-
-		suite.addTest("deleteNode", [&] {
-			auto meshNetwork = StringMeshNetwork{};
-			suite.expect(std::empty(meshNetwork));
-
-			auto& fruit = meshNetwork.newNode("fruit");
-			suite.expectEqual(std::size(meshNetwork), 1uz);
-
-			meshNetwork.deleteNode(fruit);
-			suite.expect(std::empty(meshNetwork));
+			{
+				auto fruitAccessor = fruit->sharedAccess();
+				for (const auto& weakFruit : fruitAccessor->value["Elements"])
+				{
+					auto fruit = std::shared_ptr{weakFruit};
+					auto fruitAccessor = fruit->sharedAccess();
+					auto color = std::shared_ptr{fruitAccessor->value["Colors"][0]};
+					auto colorAccessor = color->sharedAccess();
+					auto category = std::shared_ptr{fruitAccessor->value["Categories"][0]};
+					auto categoryAccessor = category->sharedAccess();
+					Logger::print("{} is a {} {}\n", fruitAccessor->value.value, colorAccessor->value.value, categoryAccessor->value.value);
+				}
+			}
 		});
 	}};
 }

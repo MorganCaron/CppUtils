@@ -8,6 +8,7 @@ export namespace CppUtils::UnitTest::Container::NetworkPtr
 	inline auto _ = TestSuite{"Container/NetworkPtr", [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 		using NetworkPtr = CppUtils::Container::NetworkPtr<DummyObject>;
+		using StringNetworkPtr = CppUtils::Container::NetworkPtr<std::string>;
 
 		suite.addTest("Create root", [&] {
 			[[maybe_unused]] auto root = NetworkPtr::makeRoot("Root");
@@ -15,6 +16,26 @@ export namespace CppUtils::UnitTest::Container::NetworkPtr
 
 		suite.addTest("Create node", [&] {
 			[[maybe_unused]] auto node = NetworkPtr::make("Node");
+		});
+
+		suite.addTest("Read value", [&] {
+			auto node = StringNetworkPtr::make("Node");
+			{
+				auto accessor = node->sharedAccess();
+				suite.expect(accessor->value == "Node");
+			}
+		});
+
+		suite.addTest("Write value", [&] {
+			auto node = StringNetworkPtr::make("Node");
+			{
+				auto accessor = node->uniqueAccess();
+				accessor->value = "Changed";
+			}
+			{
+				auto accessor = node->sharedAccess();
+				suite.expect(accessor->value == "Changed");
+			}
 		});
 
 		suite.addTest("Create branch", [&] {

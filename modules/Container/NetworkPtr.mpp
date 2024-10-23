@@ -10,16 +10,19 @@ export namespace CppUtils::Container
 	class NetworkPtr final
 	{
 	public:
+		using Value = T;
 		using SharedPtr = std::shared_ptr<Thread::SharedLocker<NetworkPtr<T>>>;
 		using WeakPtr = std::weak_ptr<Thread::SharedLocker<NetworkPtr<T>>>;
 
-		inline NetworkPtr() = default;
-
+	private:
 		explicit inline NetworkPtr(auto&&... args):
-			m_value{std::forward<decltype(args)>(args)...}
+			value{std::forward<decltype(args)>(args)...}
 		{}
 
-		inline ~NetworkPtr()
+		friend class Thread::SharedLocker<NetworkPtr<T>>;
+
+	public:
+		inline virtual ~NetworkPtr()
 		{
 			detachChildren();
 			detachParents();
@@ -75,6 +78,8 @@ export namespace CppUtils::Container
 
 		inline auto attachChild(SharedPtr& childPtr) -> void
 		{
+			if (m_distanceFromRoot == std::numeric_limits<std::size_t>::max())
+				throw std::logic_error{"Root node not found"};
 			auto childAccessor = childPtr->uniqueAccess();
 			if (not childAccessor->isRoot())
 				if (std::empty(childAccessor->m_parents) or
@@ -149,11 +154,6 @@ export namespace CppUtils::Container
 					}
 		}
 
-		[[nodiscard]] inline auto get() const -> decltype(auto)
-		{
-			return m_value;
-		}
-
 	private:
 		static inline constexpr auto getChildAccessor(auto& child) -> decltype(auto)
 		{
@@ -209,7 +209,10 @@ export namespace CppUtils::Container
 			}
 		}
 
-		T m_value;
+	public:
+		T value;
+
+	private:
 		bool m_isRoot = false;
 		std::size_t m_distanceFromRoot = std::numeric_limits<std::size_t>::max();
 		WeakPtr m_weak_this;
