@@ -60,7 +60,7 @@ namespace CppUtils::Language::Json
 
 	namespace Literals
 	{
-		[[nodiscard]] auto operator"" _json(const char* cString, std::size_t) -> Parser::Ast
+		[[nodiscard]] auto operator""_json(const char* cString, std::size_t) -> Parser::Ast
 		{
 			return parse(cString);
 		}

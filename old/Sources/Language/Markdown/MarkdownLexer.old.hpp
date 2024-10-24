@@ -58,7 +58,7 @@ namespace CppUtils::Language::Markdown
 
 	namespace Literals
 	{
-		[[nodiscard]] auto operator"" _markdown(const char* cString, std::size_t) -> Parser::Ast
+		[[nodiscard]] auto operator""_markdown(const char* cString, std::size_t) -> Parser::Ast
 		{
 			return parse(cString);
 		}

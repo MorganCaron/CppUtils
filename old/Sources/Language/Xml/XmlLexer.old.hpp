@@ -79,7 +79,7 @@ namespace CppUtils::Language::Xml
 
 	namespace Literals
 	{
-		[[nodiscard]] Parser::ASTNode<Type::Token, std::string> operator"" _xml(const char* cstring, std::size_t)
+		[[nodiscard]] Parser::ASTNode<Type::Token, std::string> operator""_xml(const char* cstring, std::size_t)
 		{
 			return parse(cstring);
 		}

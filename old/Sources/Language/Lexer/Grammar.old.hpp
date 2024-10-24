@@ -184,7 +184,7 @@ namespace CppUtils::Language::Lexer::Grammar
 
 	namespace Literals
 	{
-		[[nodiscard]] auto operator"" _grammar(const char* cString, std::size_t) -> Parser::Ast
+		[[nodiscard]] auto operator""_grammar(const char* cString, std::size_t) -> Parser::Ast
 		{
 			return parse(cString);
 		}

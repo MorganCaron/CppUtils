@@ -87,7 +87,7 @@ namespace CppUtils::Language::Ini
 
 	namespace Literals
 	{
-		[[nodiscard]] Parser::ASTNode<Type::Token, bool, float, std::string> operator"" _ini(const char* cstring, std::size_t)
+		[[nodiscard]] Parser::ASTNode<Type::Token, bool, float, std::string> operator""_ini(const char* cstring, std::size_t)
 		{
 			return parse(cstring);
 		}

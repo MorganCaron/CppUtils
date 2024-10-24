@@ -57,12 +57,12 @@ export namespace CppUtils::String
 
 	namespace Literals
 	{
-		[[nodiscard]] inline constexpr auto operator"" _hash(const char* cString, std::size_t size) noexcept -> Hash
+		[[nodiscard]] inline constexpr auto operator""_hash(const char* cString, std::size_t size) noexcept -> Hash
 		{
 			return hash(std::string_view{cString, size});
 		}
 
-		[[nodiscard]] inline constexpr auto operator"" _token(const char* cString, std::size_t size) noexcept -> Token
+		[[nodiscard]] inline constexpr auto operator""_token(const char* cString, std::size_t size) noexcept -> Token
 		{
 			return hash(std::string_view{cString, size});
 		}
