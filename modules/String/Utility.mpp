@@ -175,4 +175,32 @@ export namespace CppUtils::String
 	{
 		return string | std::ranges::views::split(separator) | std::ranges::to<std::vector<std::string>>();
 	}
+
+	[[nodiscard]] inline constexpr auto excelColumnToPosition(std::string_view excelColumn) noexcept -> std::size_t
+	{
+		auto base = 26uz;
+		auto position = 0uz;
+		for (auto c : excelColumn)
+			if (c >= 'A' and c <= 'Z')
+				position = position * base + static_cast<std::size_t>(c - 'A') + 1;
+			else if (c >= 'a' and c <= 'z')
+				position = position * base + static_cast<std::size_t>(c - 'a') + 1;
+		return position - 1;
+	}
+
+	namespace Literals
+	{
+		[[nodiscard]] inline constexpr auto operator""_excelColumn(const char* cString, std::size_t size) noexcept -> std::size_t
+		{
+			return excelColumnToPosition(std::string_view{cString, size});
+		}
+
+		static_assert("A"_excelColumn == 0);
+		static_assert("B"_excelColumn == 1);
+		static_assert("C"_excelColumn == 2);
+		static_assert("Z"_excelColumn == 25);
+		static_assert("AA"_excelColumn == 26);
+		static_assert("AB"_excelColumn == 27);
+		static_assert("BA"_excelColumn == 52);
+	}
 }
