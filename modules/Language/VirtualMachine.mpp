@@ -10,11 +10,11 @@ import CppUtils.Math.Concept;
 namespace CppUtils::Language::VirtualMachine
 {
 	[[nodiscard]] inline constexpr auto isModeAbsolute(std::size_t mode) noexcept -> bool { return mode & 0b1; }
-	[[nodiscard]] inline constexpr auto isModeRelative(std::size_t mode) noexcept -> bool { return !isModeAbsolute(mode); }
+	[[nodiscard]] inline constexpr auto isModeRelative(std::size_t mode) noexcept -> bool { return not isModeAbsolute(mode); }
 	[[nodiscard]] inline constexpr auto isModeDescending(std::size_t mode) noexcept -> bool { return mode & 0b10; }
-	[[nodiscard]] inline constexpr auto isModeAscending(std::size_t mode) noexcept -> bool { return !isModeDescending(mode); }
+	[[nodiscard]] inline constexpr auto isModeAscending(std::size_t mode) noexcept -> bool { return not isModeDescending(mode); }
 	[[nodiscard]] inline constexpr auto isModeIndirect(std::size_t mode) noexcept -> bool { return mode & 0b100; }
-	[[nodiscard]] inline constexpr auto isModeDirect(std::size_t mode) noexcept -> bool { return !isModeIndirect(mode); }
+	[[nodiscard]] inline constexpr auto isModeDirect(std::size_t mode) noexcept -> bool { return not isModeIndirect(mode); }
 
 	template<Type::TriviallyCopyable... StackTypes>
 	[[nodiscard]] inline constexpr auto applyModeToPosition(Container::Stack<StackTypes...>& stack, std::size_t mode, std::size_t position, std::size_t rightOffset = 0) -> std::size_t

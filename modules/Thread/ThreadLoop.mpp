@@ -58,9 +58,14 @@ export namespace CppUtils::Thread
 			}};
 		}
 
+		inline auto isStopRequested() const -> bool
+		{
+			return m_data->thread.get_stop_token().stop_requested();
+		}
+
 		inline auto requestStop() -> void
 		{
-			if (not isRunning() or m_data->thread.get_stop_token().stop_requested())
+			if (not isRunning() or isStopRequested())
 				return;
 			m_data->thread.request_stop();
 		}

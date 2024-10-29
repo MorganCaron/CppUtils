@@ -4,6 +4,7 @@ import std;
 
 export namespace CppUtils::Math
 {
+	// Plus utile en C++23 (std::abs constexpr)
 	[[nodiscard]] inline constexpr auto absolute(auto number) -> std::make_unsigned_t<decltype(number)>
 	{
 		if constexpr (std::unsigned_integral<decltype(number)>)

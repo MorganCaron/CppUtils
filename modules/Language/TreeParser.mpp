@@ -62,11 +62,12 @@ export namespace CppUtils::Language::TreeParser
 				}
 
 				addNode(size): void 20§{
-					(1; # source
-					S # startPosition
-					I((12@, 0, 0, 6- # length = getSourcePosition() - startPosition;
-					I(4; # stringView = newStringView(source, startPosition, length);
-					I)))I} # return stringView;
+					(S # token
+						(1; # source
+							S # startPosition
+							((12@, 0, 0, 6- # length = getSourcePosition() - startPosition;
+							(4; # token = tokenize(source, startPosition, length);
+							)))} # return token;
 				}
 
 				isEndOfKeyword(): bool 21§{
@@ -88,8 +89,7 @@ export namespace CppUtils::Language::TreeParser
 						§ (2:(21@, 0, 24, 5? # while (not isEndOfKeyword()) {
 							(13@ # incrementSourcePosition();
 						(23¤§ # }
-						(20@) # [[unused]] _ = addNode(startPosition);
-						I# hashKeyword();
+						(20@I} # return addNode(startPosition);
 				}
 
 				parseAccolades(): void 25§{
