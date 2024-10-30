@@ -31,6 +31,7 @@ add_rules(
 	"mode.valgrind")
 
 add_requires("wayland", "wayland-protocols")
+includes("xmake/rules/wayland-protocols.lua")
 
 option("compiler_verbose", {default = false, category = "Build CppUtils", description = "Verbose the compiler output"})
 option("enable_moduleonly", {default = true, category = "Build CppUtils", description = "Module only"})
@@ -45,8 +46,35 @@ target("CppUtils", function()
 	  set_kind("$(kind)")
 	end
 	
-	add_packages("wayland", "wayland-protocols", { public = false })
+	add_packages("wayland", "wayland-protocols", { public = true })
 	-- Ajouter "wayland-cursor"
+
+	if is_plat("linux") then
+		add_rules("wayland.protocols")
+		on_load(function(target)
+			local wayland_protocols_package = target:pkg("wayland-protocols")
+			if not wayland_protocols_package then
+				os.raise("wayland-protocols package not found")
+			end
+			local wayland_protocols_dir = path.join(wayland_protocols_package:installdir() or "/usr", "share", "wayland-protocols")
+			assert(os.isdir(wayland_protocols_dir), "wayland protocols directory not found")
+
+			local protocols = {
+				path.join(wayland_protocols_dir, "stable", "xdg-shell", "xdg-shell.xml"),
+				path.join(wayland_protocols_dir, "unstable", "xdg-decoration", "xdg-decoration-unstable-v1.xml"),
+				path.join(wayland_protocols_dir, "unstable", "pointer-constraints", "pointer-constraints-unstable-v1.xml"),
+				path.join(wayland_protocols_dir, "unstable", "relative-pointer", "relative-pointer-unstable-v1.xml"),
+			}
+
+			for _, protocol in ipairs(protocols) do
+				if os.exists(protocol) then
+					target:add("files", protocol)
+				else
+					print("Protocol file not found:", protocol)
+				end
+			end
+		end)
+	end
 
 	add_files("modules/**.mpp", { public = true })
 	add_includedirs("include", { public = true })
