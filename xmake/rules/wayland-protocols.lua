@@ -1,6 +1,6 @@
 rule("wayland.protocols")
 do
-	-- Traite des fichiers XML
+	-- Spécifie que la rule traite les fichiers XML
 	set_extensions(".xml")
 
 	-- Support des modules C++20
@@ -14,46 +14,56 @@ do
 
 	on_config(function(target)
 		-- Créé le répertoire de sortie
-		local outputdir = path.join(target:autogendir(), "rules", "wayland.protocols")
-		if not os.isdir(outputdir) then
-			os.mkdir(outputdir)
+		local outputDirectory = path.join(target:autogendir(), "rules", "wayland.protocols")
+		if not os.isdir(outputDirectory) then
+			os.mkdir(outputDirectory)
+		end
+
+		local sourcebatches = target:sourcebatches()
+		if sourcebatches["wayland.protocols"] and sourcebatches["wayland.protocols"].sourcefiles then
+			for _, sourcefile in ipairs(sourcebatches["wayland.protocols"].sourcefiles) do
+				-- Noms des fichiers
+				local header = path.join(outputDirectory, path.basename(sourcefile) .. ".h")
+				local source = path.join(outputDirectory, path.basename(sourcefile) .. ".c")
+
+				-- Génère des headers vides pour la découverte de dépendances des modules
+				if not os.exists(header) then
+					os.touch(header)
+				end
+
+				-- Ajout explicitement le fichier source pour garantir son inclusion
+				target:add("files", source, { always_added = true })
+			end
 		end
 
 		-- Rend accessible les fichiers générés depuis le projet utilisant cette rule
-		target:add("includedirs", outputdir, { public = true })
+		target:add("includedirs", outputDirectory, { public = true }) -- todo: retirer le public ?
 	end)
 
 	before_buildcmd_file(function(target, batchcmds, sourcefile, opt) -- sourcefile est un fichier XML
+		import("lib.detect.find_tool")
+		local wayland_scanner = find_tool("wayland-scanner")
+		assert(wayland_scanner, "wayland-scanner not found")
+
 		-- Créé le répertoire de sortie
-		local outputdir = path.join(target:autogendir(), "rules", "wayland.protocols")
+		local outputDirectory = path.join(target:autogendir(), "rules", "wayland.protocols")
 
 		-- Récupère les fichiers générés
-		local header = path.join(outputdir, path.basename(sourcefile) .. ".h")
-		local source = path.join(outputdir, path.basename(sourcefile) .. ".c")
+		local header = path.join(outputDirectory, path.basename(sourcefile) .. ".h")
+		local source = path.join(outputDirectory, path.basename(sourcefile) .. ".c")
 
-		-- Génère le fichier .h uniquement s'il n'existe pas déjà
-		if not os.exists(header) then
-			batchcmds:show_progress(opt.progress, "Generating header for %s", path.basename(sourcefile))
-			local result = batchcmds:vexecv("wayland-scanner", {"client-header", sourcefile, header})
-			if result ~= 0 then
-				print("Failed to generate header for:", sourcefile)
-			end
-		end
+		-- Génère le fichier .h
+		batchcmds:show_progress(opt.progress, "Generating header for %s", path.basename(sourcefile))
+		batchcmds:vexecv(wayland_scanner.program, {"client-header", sourcefile, header})
 
-		-- Génère le fichier .c uniquement s'il n'existe pas déjà
-		if not os.exists(source) then
-			batchcmds:show_progress(opt.progress, "Generating source for %s", path.basename(sourcefile))
-			local result = batchcmds:vexecv("wayland-scanner", {"private-code", sourcefile, source})
-			if result ~= 0 then
-				print("Failed to generate source for:", sourcefile)
-			end
-		end
-
-		-- Ajout explicitement le fichier source pour garantir son inclusion
-		target:add("files", source, { always_added = true })
+		-- Génère le fichier .c
+		batchcmds:show_progress(opt.progress, "Generating source for %s", path.basename(sourcefile))
+		batchcmds:vexecv(wayland_scanner.program, {"private-code", sourcefile, source})
 
 		-- Si ce fichier xml est modifié, recompile ses .c/.h associés
 		batchcmds:add_depfiles(sourcefile)
+		batchcmds:set_depmtime(os.mtime(header))
+		batchcmds:set_depcache(target:dependfile(header))
 	end)
 	
 end
