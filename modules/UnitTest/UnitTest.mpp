@@ -9,9 +9,14 @@ import CppUtils.Chrono.Concept;
 import CppUtils.ChronoLogger;
 import CppUtils.Logger;
 import CppUtils.String;
-import CppUtils.System.Main;
 import CppUtils.Terminal;
 export import CppUtils.UnitTest.DummyObject;
+
+namespace
+{
+	inline constexpr auto exitSuccess = 0;
+	inline constexpr auto exitFailure = 1;
+}
 
 namespace CppUtils::UnitTest
 {
