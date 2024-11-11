@@ -38,10 +38,42 @@ end
 
 add_requires("wayland")
 add_requires("wayland-protocols")
+
 includes("xmake/rules/wayland-protocols.lua")
 
 option("enable_tests")
 option("enable_moduleonly", {default = true})
+
+local import_wayland = function()
+	add_packages("wayland", "wayland-protocols", { public = true })
+	-- Ajouter "wayland-cursor"
+
+	add_rules("wayland.protocols")
+
+	on_load(function(target)
+		local wayland_protocols_package = target:pkg("wayland-protocols")
+		if not wayland_protocols_package then
+			os.raise("wayland-protocols package not found")
+		end
+		local wayland_protocols_dir = path.join(wayland_protocols_package:installdir() or "/usr", "share", "wayland-protocols")
+		assert(os.isdir(wayland_protocols_dir), "wayland-protocols directory not found")
+
+		local protocols = {
+			path.join(wayland_protocols_dir, "stable", "xdg-shell", "xdg-shell.xml"),
+			path.join(wayland_protocols_dir, "unstable", "xdg-decoration", "xdg-decoration-unstable-v1.xml"),
+			path.join(wayland_protocols_dir, "unstable", "pointer-constraints", "pointer-constraints-unstable-v1.xml"),
+			path.join(wayland_protocols_dir, "unstable", "relative-pointer", "relative-pointer-unstable-v1.xml"),
+		}
+
+		for _, protocol in ipairs(protocols) do
+			if os.exists(protocol) then
+				target:add("files", protocol, { rule = "wayland.protocols" })
+			else
+				print("Protocol file not found:", protocol)
+			end
+		end
+	end)
+end
 
 target("CppUtils", function()
 	if get_config("enable_moduleonly") then
@@ -49,35 +81,9 @@ target("CppUtils", function()
 	else
 	  set_kind("$(kind)")
 	end
-	
-	add_packages("wayland", "wayland-protocols", { public = true })
-	-- Ajouter "wayland-cursor"
 
 	if is_plat("linux") then
-		add_rules("wayland.protocols")
-		on_load(function(target)
-			local wayland_protocols_package = target:pkg("wayland-protocols")
-			if not wayland_protocols_package then
-				os.raise("wayland-protocols package not found")
-			end
-			local wayland_protocols_dir = path.join(wayland_protocols_package:installdir() or "/usr", "share", "wayland-protocols")
-			assert(os.isdir(wayland_protocols_dir), "wayland protocols directory not found")
-
-			local protocols = {
-				path.join(wayland_protocols_dir, "stable", "xdg-shell", "xdg-shell.xml"),
-				path.join(wayland_protocols_dir, "unstable", "xdg-decoration", "xdg-decoration-unstable-v1.xml"),
-				path.join(wayland_protocols_dir, "unstable", "pointer-constraints", "pointer-constraints-unstable-v1.xml"),
-				path.join(wayland_protocols_dir, "unstable", "relative-pointer", "relative-pointer-unstable-v1.xml"),
-			}
-
-			for _, protocol in ipairs(protocols) do
-				if os.exists(protocol) then
-					target:add("files", protocol)
-				else
-					print("Protocol file not found:", protocol)
-				end
-			end
-		end)
+		import_wayland()
 	end
 
 	add_files("modules/**.mpp", { public = true })
