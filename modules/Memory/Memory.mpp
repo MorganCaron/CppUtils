@@ -5,7 +5,7 @@ import std;
 export namespace CppUtils::Memory
 {
 	template<class T>
-	using UniquePtrWithDestructor = std::unique_ptr<T, std::function<void(T*)>>;
+	using UniquePtrWithDestructor = std::unique_ptr<T, void (*)(T*)>;
 
 	[[nodiscard]] inline auto moveRawPointer(auto* pointer) -> decltype(auto)
 	{
@@ -18,32 +18,32 @@ export namespace CppUtils::Memory
 	{
 		[[nodiscard]] inline constexpr auto operator""_Ko(unsigned long long int size) -> std::size_t
 		{
-			return static_cast<std::size_t>(size) * 1000;
+			return static_cast<std::size_t>(size) * 1'000;
 		}
 
 		[[nodiscard]] inline constexpr auto operator""_Mo(unsigned long long int size) -> std::size_t
 		{
-			return static_cast<std::size_t>(size) * 1000_Ko;
+			return static_cast<std::size_t>(size) * 1'000_Ko;
 		}
 
 		[[nodiscard]] inline constexpr auto operator""_Go(unsigned long long int size) -> std::size_t
 		{
-			return static_cast<std::size_t>(size) * 1000_Mo;
+			return static_cast<std::size_t>(size) * 1'000_Mo;
 		}
 
 		[[nodiscard]] inline constexpr auto operator""_Kio(unsigned long long int size) -> std::size_t
 		{
-			return static_cast<std::size_t>(size) * 1024;
+			return static_cast<std::size_t>(size) * 1'024;
 		}
 
 		[[nodiscard]] inline constexpr auto operator""_Mio(unsigned long long int size) -> std::size_t
 		{
-			return static_cast<std::size_t>(size) * 1024_Kio;
+			return static_cast<std::size_t>(size) * 1'024_Kio;
 		}
 
 		[[nodiscard]] inline constexpr auto operator""_Gio(unsigned long long int size) -> std::size_t
 		{
-			return static_cast<std::size_t>(size) * 1024_Mio;
+			return static_cast<std::size_t>(size) * 1'024_Mio;
 		}
 	}
 }

@@ -9,6 +9,7 @@ export import CppUtils.ChronoLogger;
 export import CppUtils.Logger;
 export import CppUtils.LogRotate;
 export import CppUtils.Math.Concept;
+export import CppUtils.Math.Float;
 export import CppUtils.Math;
 export import CppUtils.Memory;
 export import CppUtils.Random;

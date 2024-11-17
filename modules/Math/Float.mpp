@@ -1,0 +1,28 @@
+export module CppUtils.Math.Float;
+
+import std;
+import CppUtils.Math;
+
+export namespace CppUtils::Math
+{
+	template<std::floating_point Float>
+	[[nodiscard]] inline constexpr auto isEqual(Float lhs, Float rhs, Float epsilon = std::numeric_limits<Float>::epsilon()) noexcept -> bool
+	{
+		auto difference = absolute(lhs - rhs);
+		auto maximum = std::max(absolute(lhs), absolute(rhs));
+		if (maximum >= Float{1})
+			return difference <= epsilon * maximum;
+		else if (maximum > Float{0})
+			return difference / maximum <= epsilon;
+		return false;
+	}
+
+	static_assert(isEqual(0.1 + 0.2, 0.3));
+	static_assert(not isEqual(0.1 + 0.2, 0.29));
+	static_assert(not isEqual(0.1 + 0.2, 0.31));
+
+	[[nodiscard]] inline constexpr auto roundToNDecimals(std::floating_point auto number, std::size_t nbDecimals) -> decltype(number)
+	{
+		return std::round(number * static_cast<decltype(number)>(nbDecimals)) / static_cast<decltype(number)>(nbDecimals);
+	}
+}
