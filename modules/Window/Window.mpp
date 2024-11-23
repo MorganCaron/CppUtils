@@ -79,8 +79,9 @@ namespace CppUtils::Window
 		static const auto waylandRegistryHandlers = std::unordered_map<std::string_view, Wayland::RegisterHandler>{
 			makeHandlerPair(wl_compositor_interface, waylandGlobals.compositor),
 			makeHandlerPair(wl_shell_interface, waylandGlobals.shell),
-			makeHandlerPair(wl_shm_interface, waylandGlobals.sharedMemory),
-			makeHandlerPair(xdg_wm_base_interface, waylandGlobals.wmBase)};
+			makeHandlerPair(wl_shm_interface, waylandGlobals.sharedMemory) /*,
+			 makeHandlerPair(xdg_wm_base_interface, waylandGlobals.wmBase)*/
+		};
 		auto interfaceName = std::string_view{interface};
 		if (const auto& iterator = waylandRegistryHandlers.find(interfaceName); iterator != waylandRegistryHandlers.end())
 		{
@@ -129,10 +130,11 @@ namespace CppUtils::Window
 				windowStyle |= WS_SYSMENU;
 			return windowStyle;
 		}
+#endif
 
 		inline auto initWindowManager() const -> void
 		{
-#	if defined(OS_LINUX)
+#if defined(OS_LINUX)
 			if (Wayland::globals.display)
 				return;
 			Wayland::globals.display.reset(wl_display_connect(nullptr));
@@ -145,18 +147,18 @@ namespace CppUtils::Window
 			wl_display_roundtrip(display);
 			if (!Wayland::globals.compositor)
 				throw std::runtime_error{"Failed to find a Wayland compositor"};
-#	endif
+#endif
 		}
 
 		inline auto openWindow() -> void
 		{
-#	if defined(OS_WINDOWS)
+#if defined(OS_WINDOWS)
 			auto hInstance = GetModuleHandleA(nullptr);
 			m_window = CreateWindowEx(
 				0, windowClassName, m_title.c_str(), generateStyle(m_style), CW_USEDEFAULT, CW_USEDEFAULT, size.width, size.height, nullptr, nullptr, hInstance, nullptr);
 			if (m_window == nullptr)
 				throw std::runtime_error{"Window creation failed."};
-#	elif defined(OS_LINUX)
+#elif defined(OS_LINUX)
 			waylandSurface.reset(wl_compositor_create_surface(Wayland::globals.compositor.get()));
 			if (!waylandSurface)
 				throw std::runtime_error{"Failed to create a Wayland surface"};
@@ -201,9 +203,8 @@ namespace CppUtils::Window
 			wl_surface_attach(waylandSurface.get(), waylandBuffer.get(), 0, 0);
 			wl_surface_damage(waylandSurface.get(), 0, 0, std::numeric_limits<std::int32_t>::max(), std::numeric_limits<std::int32_t>::max());
 			wl_surface_commit(waylandSurface.get());
-#	endif
-		}
 #endif
+		}
 
 	public:
 		inline Window(std::string title, Container::Size2d<std::size_t> size, Style style = Style{Style::IsMinimizable | Style::IsCloseable}):
