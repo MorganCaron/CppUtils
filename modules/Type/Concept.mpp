@@ -41,6 +41,9 @@ export namespace CppUtils::Type
 	concept FunctionPointer = isFunctionPointer<T>;
 
 	template<class T>
+	concept DefaultConstructible = std::is_default_constructible_v<T>;
+
+	template<class T>
 	concept TriviallyConstructible = std::is_trivially_constructible_v<T>;
 
 	template<class T>

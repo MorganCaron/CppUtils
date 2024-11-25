@@ -1,0 +1,67 @@
+export module CppUtils.UnitTests.Network;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Network
+{
+	inline auto _ = TestSuite{"Network", [](auto& suite) {
+		using Logger = CppUtils::Logger<"CppUtils">;
+
+		suite.addTest("Server: Creation", [&] {
+			[[maybe_unused]] auto server = CppUtils::Network::Server{};
+		});
+
+		suite.addTest("Server: Bind IP", [&] {
+			auto server = CppUtils::Network::Server{};
+			server.bind(8'080);
+		});
+
+		suite.addTest("Server: Listening", [&] {
+			auto server = CppUtils::Network::Server{};
+			server.bind(8'080);
+			server.listen();
+			Logger::print("Waiting for connections on port 8080...\n");
+		});
+
+		/*
+		suite.addTest("Server: Accept connection", [&] {
+			auto server = CppUtils::Network::Server{};
+			server.bind(8'080);
+			server.listen();
+			Logger::print("Waiting for connections on port 8080...\n");
+			[[maybe_unused]] auto client = server.accept();
+		});
+
+		suite.addTest("Server: Send message", [&] {
+			auto server = CppUtils::Network::Server{};
+			server.bind(8'080);
+			server.listen();
+			Logger::print("Waiting for connections on port 8080...\n");
+			auto client = server.accept();
+			client.send("Hello client!");
+		});
+
+		suite.addTest("Server: Receive message", [&] {
+			auto server = CppUtils::Network::Server{};
+			server.bind(8'080);
+			server.listen();
+			Logger::print("Waiting for connections on port 8080...\n");
+			auto client = server.accept();
+			auto response = client.receive();
+			suite.expectEqual(response, "Hello server!");
+		});
+
+		suite.addTest("Server: Ping/pong", [&] {
+			auto server = CppUtils::Network::Server{};
+			server.bind(8'080);
+			server.listen();
+			Logger::print("Waiting for connections on port 8080...\n");
+			auto client = server.accept();
+			client.send("ping");
+			auto response = client.receive();
+			suite.expectEqual(response, "pong");
+		});
+		*/
+	}};
+}

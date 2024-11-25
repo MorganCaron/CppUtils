@@ -18,6 +18,8 @@ export import CppUtils.UnitTests.Language.CallStackCompiler;
 export import CppUtils.UnitTests.Language.TreeParser;
 export import CppUtils.UnitTests.ChronoLogger;
 export import CppUtils.UnitTests.Logger;
+export import CppUtils.UnitTests.Math;
+export import CppUtils.UnitTests.Network;
 export import CppUtils.UnitTests.Stl.Format;
 export import CppUtils.UnitTests.String.Utility;
 export import CppUtils.UnitTests.Thread.SharedLocker;
