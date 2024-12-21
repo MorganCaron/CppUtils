@@ -1,0 +1,354 @@
+module;
+
+#include <CppUtils/System/OS.hpp>
+
+#if defined(OS_WINDOWS)
+#	include <winsock2.h>
+#	pragma comment(lib, "ws2_32.lib")
+#elif defined(OS_LINUX)
+#	include <sys/socket.h>
+#	include <netinet/in.h>
+#	include <arpa/inet.h>
+#	include <fcntl.h>
+#	include <unistd.h>
+#	include <cerrno>
+#endif
+
+export module CppUtils.Network.Socket;
+
+import std;
+import CppUtils.System.Error;
+import CppUtils.Type.Concept;
+import CppUtils.Chrono.Concept;
+
+export namespace CppUtils::Network
+{
+#if defined(OS_WINDOWS)
+	class WindowsSocketApi final
+	{
+	private:
+		inline WindowsSocketApi()
+		{
+			WSADATA m_windowsSocketApiData;
+			if (::WSAStartup(MAKEWORD(2, 2), &m_windowsSocketApiData) != 0)
+				throw std::runtime_error{"Failed to initialize Winsock"};
+		}
+
+		inline ~WindowsSocketApi()
+		{
+			::WSACleanup();
+		}
+
+		WindowsSocketApi(const WindowsSocketApi&) = delete;
+		WindowsSocketApi(WindowsSocketApi&&) noexcept = delete;
+
+	public:
+		static inline auto ensureIsinitialized() -> void
+		{
+			[[maybe_unused]] static auto windowsSocketApi = WindowsSocketApi{};
+		}
+
+		static inline auto throwErrno(int value, std::string_view message = "") -> int
+		{
+			if (value == SOCKET_ERROR) [[unlikely]]
+				throw std::runtime_error{
+					std::empty(message) ?
+						std::format("{}", ::WSAGetLastError()) :
+						std::format("{}: {}", message, ::WSAGetLastError())};
+			return value;
+		}
+	};
+#endif
+
+#if defined(OS_WINDOWS)
+	inline constexpr auto throwErrno = &WindowsSocketApi::throwErrno;
+#elif defined(OS_LINUX)
+	inline constexpr auto throwErrno = &System::throwErrno;
+#endif
+
+	class Socket
+	{
+	public:
+		enum class Domain : int
+		{
+			IPV4 = AF_INET,
+			IPV6 = AF_INET6,
+#if defined(OS_LINUX)
+			Local = AF_UNIX
+#endif
+		};
+
+		enum class Type : int
+		{
+			TCP = SOCK_STREAM,
+			UDP = SOCK_DGRAM
+		};
+
+		explicit inline Socket(
+			Domain domain = Domain::IPV4,
+			Type type = Type::TCP):
+			m_domain{domain}
+		{
+#if defined(OS_WINDOWS)
+			WindowsSocketApi::ensureIsinitialized();
+			m_socket = ::socket(static_cast<int>(domain), static_cast<int>(type), 0);
+			if (m_socket == INVALID_SOCKET)
+				throw std::runtime_error{"Socket creation failed"};
+#elif defined(OS_LINUX)
+			m_socket = ::socket(static_cast<int>(domain), static_cast<int>(type), 0);
+			if (m_socket < 0)
+				throw std::runtime_error{"Socket creation failed"};
+#endif
+		}
+
+#if defined(OS_WINDOWS)
+		explicit inline Socket(SOCKET socket) noexcept:
+			m_socket{socket}
+		{}
+#elif defined(OS_LINUX)
+		explicit inline Socket(int socket) noexcept:
+			m_socket{socket}
+		{}
+#endif
+
+		inline Socket(const Socket&) = delete;
+		inline Socket(Socket&&) noexcept = default;
+		inline auto operator=(const Socket&) -> Socket& = delete;
+		inline auto operator=(Socket&&) noexcept -> Socket& = default;
+
+		virtual inline ~Socket()
+		{
+#if defined(OS_WINDOWS)
+			::closesocket(m_socket);
+#elif defined(OS_LINUX)
+			::close(m_socket);
+#endif
+		}
+
+		inline auto setIPv6Only(bool enable) const -> void
+		{
+			if (m_domain != Domain::IPV6)
+				return;
+			if (not setSocketOption(
+					m_socket,
+					IPPROTO_IPV6,
+					IPV6_V6ONLY,
+					&enable,
+					sizeof(enable)))
+				throw std::runtime_error{"CppUtils::Network::Socket::setIPv6Only: Failed to set IPV6_V6ONLY option"};
+		}
+
+		inline auto setReuseAddress(bool enable) const -> void
+		{
+			auto value = enable ? 1 : 0;
+			if (not setSocketOption(m_socket, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value)))
+				throw std::runtime_error{"CppUtils::Network::Socket::setReuseAddress: Failed to set SO_REUSEADDR option"};
+		}
+
+		inline auto setNonBlocking(bool enable) const -> void
+		{
+#if defined(OS_WINDOWS)
+			auto mode = enable ? u_long{1} : u_long{0};
+			if (::ioctlsocket(m_socket, FIONBIO, &mode) != 0)
+				throw std::runtime_error{"CppUtils::Network::Socket::setNonBlocking: Failed to set non-blocking mode"};
+#elif defined(OS_LINUX)
+			auto flags = ::fcntl(m_socket, F_GETFL, 0);
+			if (flags == -1)
+				throw std::runtime_error{"CppUtils::Network::Socket::setNonBlocking: Failed to get socket flags"};
+
+			if (enable)
+				flags |= O_NONBLOCK;
+			else
+				flags &= ~O_NONBLOCK;
+			if (::fcntl(m_socket, F_SETFL, flags) == -1)
+				throw std::runtime_error{"CppUtils::Network::Socket::setNonBlocking: Failed to set socket flags"};
+#endif
+		}
+
+		[[nodiscard]] inline auto isReadyForRead(const Chrono::Duration auto& timeout) const -> bool
+		{
+			using namespace std::chrono_literals;
+			auto readSet = fd_set{};
+			FD_ZERO(&readSet);
+			FD_SET(m_socket, &readSet);
+
+			auto timeValue = timeval{};
+			timeValue.tv_sec = std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
+			timeValue.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(timeout % 1s).count();
+
+			auto result = select(m_socket + 1, &readSet, nullptr, nullptr, &timeValue);
+			if (result < 0)
+				throw std::runtime_error{"CppUtils::Network::Socket::isReadyForRead: Select failed"};
+			return result > 0;
+		}
+
+	private:
+		inline auto setSocketOption(int socket, int level, int option, const void* value, std::size_t valueSize) const noexcept -> bool
+		{
+#if defined(OS_WINDOWS)
+			return not ::setsockopt(socket, level, option, reinterpret_cast<const char*>(value), static_cast<int>(valueSize));
+#else
+			return not ::setsockopt(socket, level, option, value, static_cast<socklen_t>(valueSize));
+#endif
+		}
+
+	protected:
+		[[nodiscard]] inline auto nativeHandle() const noexcept -> auto
+		{
+			return m_socket;
+		}
+
+		struct Address final
+		{
+			sockaddr_storage storage = {};
+			socklen_t length = 0;
+		};
+
+		inline auto makeAddress(std::string_view ip, std::uint16_t port) const -> Address
+		{
+			if (port == 0 or port > 65'535)
+				throw std::invalid_argument{std::format("CppUtils::Network::Socket::makeAddress: Invalid port '{}'", port)};
+
+			auto address = Address{};
+			if (m_domain == Domain::IPV4)
+			{
+				auto* ipv4 = reinterpret_cast<sockaddr_in*>(&address.storage);
+				ipv4->sin_family = AF_INET;
+				ipv4->sin_port = ::htons(port);
+
+				if (ip.empty())
+					ipv4->sin_addr.s_addr = INADDR_ANY;
+				else if (::inet_pton(AF_INET, std::data(ip), &ipv4->sin_addr) <= 0)
+					throw std::invalid_argument{"CppUtils::Network::Socket::makeAddress: Invalid IPv4 address"};
+
+				address.length = sizeof(sockaddr_in);
+			}
+			else if (m_domain == Domain::IPV6)
+			{
+				auto* ipv6 = reinterpret_cast<sockaddr_in6*>(&address.storage);
+				ipv6->sin6_family = AF_INET6;
+				ipv6->sin6_port = ::htons(port);
+
+				if (ip.empty())
+					ipv6->sin6_addr = in6addr_any;
+				else if (::inet_pton(AF_INET6, std::data(ip), &ipv6->sin6_addr) <= 0)
+					throw std::invalid_argument{"CppUtils::Network::Socket::makeAddress: Invalid IPv6 address"};
+
+				address.length = sizeof(sockaddr_in6);
+			}
+			else
+				throw std::invalid_argument{"CppUtils::Network::Socket::makeAddress: Unsupported domain"};
+			return address;
+		}
+
+	public:
+		inline auto send(const CppUtils::Type::TriviallyCopyable auto& data) -> void
+		{
+			if (::send(m_socket, reinterpret_cast<const void*>(&data), sizeof(decltype(data)), 0) < 0)
+				throw std::runtime_error{"CppUtils::Network::Socket::send: Send failed"};
+		}
+
+		inline auto send(const std::vector<std::byte>& data) -> void
+		{
+			for (auto totalSent = 0uz; totalSent < std::size(data);)
+				if (auto bytesSent = ::send(m_socket, std::data(data) + totalSent, std::size(data) - totalSent, 0);
+					bytesSent < 0)
+				{
+#if defined(OS_WINDOWS)
+					if (::WSAGetLastError() == WSAEWOULDBLOCK)
+#else
+					if (errno == EAGAIN or errno == EWOULDBLOCK)
+#endif
+						continue;
+					throw std::runtime_error{"CppUtils::Network::Socket::send: Send failed"};
+				}
+				else
+					totalSent += static_cast<std::size_t>(bytesSent);
+		}
+
+		inline auto send(std::string_view string) -> void
+		{
+			if (::send(m_socket, std::data(string), std::size(string), 0) < 0)
+				throw std::runtime_error{"CppUtils::Network::Socket::send: Send failed"};
+		}
+
+	private:
+		[[nodiscard]] inline auto makeReceiveError() -> std::runtime_error
+		{
+#if defined(OS_WINDOWS)
+			if (::WSAGetLastError() == WSAEWOULDBLOCK)
+#else
+			if (errno == EAGAIN or errno == EWOULDBLOCK)
+#endif
+				return std::runtime_error{"Socket is non-blocking and no data is available"};
+			return std::runtime_error{"CppUtils::Network::Socket::receive: Reception failed"};
+		}
+
+	public:
+		template<class T>
+		[[nodiscard]] inline auto receive([[maybe_unused]] std::size_t bufferSize = 1'024) -> std::optional<T>
+		{
+			static_assert(CppUtils::Type::DefaultConstructible<T> and CppUtils::Type::TriviallyCopyable<T>);
+			auto data = T{};
+			for (auto totalBytesReceived = 0uz; totalBytesReceived < sizeof(T);)
+			{
+				auto bytesReceived = ::recv(m_socket, reinterpret_cast<char*>(&data) + totalBytesReceived, sizeof(T) - totalBytesReceived, 0);
+				if (bytesReceived < 0)
+				{
+#if defined(OS_WINDOWS)
+					if (WSAGetLastError() == WSAEWOULDBLOCK)
+#else
+					if (errno == EAGAIN or errno == EWOULDBLOCK)
+#endif
+						continue;
+					throw makeReceiveError();
+				}
+				if (bytesReceived == 0)
+					return std::nullopt;
+				totalBytesReceived += static_cast<std::size_t>(bytesReceived);
+			}
+			return data;
+		}
+
+		template<>
+		[[nodiscard]] inline auto receive<std::vector<std::byte>>(std::size_t bufferSize) -> std::optional<std::vector<std::byte>>
+		{
+			auto buffer = std::vector<std::byte>{bufferSize};
+			buffer.reserve(bufferSize);
+			for (auto totalBytesReceived = 0uz; totalBytesReceived < bufferSize;)
+			{
+				auto bytesReceived = ::recv(m_socket, std::data(buffer) + totalBytesReceived, bufferSize - totalBytesReceived, 0);
+				if (bytesReceived < 0)
+				{
+#if defined(OS_WINDOWS)
+					if (WSAGetLastError() == WSAEWOULDBLOCK)
+#else
+					if (errno == EAGAIN or errno == EWOULDBLOCK)
+#endif
+						continue;
+					throw makeReceiveError();
+				}
+				if (bytesReceived == 0)
+					return std::nullopt;
+				totalBytesReceived += static_cast<std::size_t>(bytesReceived);
+			}
+			return buffer;
+		}
+
+		template<>
+		[[nodiscard]] inline auto receive<std::string>(std::size_t bufferSize) -> std::optional<std::string>
+		{
+			auto buffer = receive<std::vector<std::byte>>(bufferSize);
+			return std::string(reinterpret_cast<const char*>(std::data(buffer.value())), std::size(buffer.value()));
+		}
+
+	private:
+		Domain m_domain;
+
+#if defined(OS_WINDOWS)
+		[[maybe_unused]] SOCKET m_socket;
+#elif defined(OS_LINUX)
+		[[maybe_unused]] int m_socket;
+#endif
+	};
+}

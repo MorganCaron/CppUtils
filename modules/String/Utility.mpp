@@ -122,9 +122,9 @@ export namespace CppUtils::String
 		return result;
 	}
 
-	[[nodiscard]] inline constexpr auto formatValue(auto value)
+	[[nodiscard]] inline constexpr auto formatValue(const auto& value)
 	{
-		if constexpr (std::formattable<decltype(value), char>)
+		if constexpr (std::formattable<std::remove_cvref_t<decltype(value)>, char>)
 			return std::format("{}", value);
 		else
 			return "<non printable>";

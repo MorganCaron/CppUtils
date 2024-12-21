@@ -198,7 +198,7 @@ namespace CppUtils::UnitTest
 					sourceLocation.column())};
 		}
 
-		inline auto expectEqual(auto lhs, auto rhs, std::source_location sourceLocation = std::source_location::current()) -> void
+		inline auto expectEqual(const auto& lhs, const auto& rhs, std::source_location sourceLocation = std::source_location::current()) -> void
 		{
 			if (lhs != rhs) [[unlikely]]
 				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectEqual(lhs, rhs)\nwith lhs:\n{}\nand rhs:\n{}",

@@ -27,6 +27,7 @@
 - A logger [logger](modules/Log/Logger.mpp) with a [file rotation system](modules/Log/LogRotate.mpp)
 - [Benchmark tools](modules/Log/ChronoLogger.mpp)
 - [Hashing functions](modules/String/Hash.mpp)
+- Networking functions ([Server](modules/Network/Server.mpp)/[Client](modules/Network/Client.mpp))
 - [Color terminal writing](modules/Terminal/TextModifier.mpp)
 - Utilities for securing multithreaded accesses ([UniqueLocker](modules/Thread/UniqueLocker.mpp), [SharedLocker](modules/Thread/SharedLocker.mpp))
 - A [ThreadPool](modules/Thread/ThreadPool.mpp)

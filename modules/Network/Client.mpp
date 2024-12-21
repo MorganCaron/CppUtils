@@ -7,71 +7,28 @@ module;
 #	pragma comment(lib, "ws2_32.lib")
 #elif defined(OS_LINUX)
 #	include <sys/socket.h>
-#	include <netinet/in.h>
-#	include <unistd.h>
 #endif
 
 export module CppUtils.Network.Client;
 
 import std;
-import CppUtils.System.Error;
-import CppUtils.Type.Concept;
+import CppUtils.Network.Socket;
 
 export namespace CppUtils::Network
 {
-	class Client final
+	class Client: public Socket
 	{
 	public:
-#if defined(OS_WINDOWS)
-		explicit inline Client(SOCKET socket) noexcept:
-			m_socket{socket}
-		{}
-#elif defined(OS_LINUX)
-		explicit inline Client(int socket) noexcept:
-			m_socket{socket}
-		{}
-#endif
-
-		inline auto connect() -> void
+		explicit inline Client(Domain domain = Domain::IPV4, Type type = Type::TCP):
+			Socket{domain, type}
 		{}
 
-		inline auto send(const Type::TriviallyCopyable auto& data) -> void
+		inline auto connect(std::string_view ip, std::uint16_t port) const -> void
 		{
-			if (::send(m_socket, reinterpret_cast<const void*>(&data), sizeof(decltype(data)), 0) < 0)
-				throw std::runtime_error{"Send failed"};
+			auto address = makeAddress(ip, port);
+			throwErrno(
+				::connect(nativeHandle(), reinterpret_cast<sockaddr*>(&address.storage), address.length),
+				"CppUtils::Network::Client::connect");
 		}
-
-		inline auto send(std::string_view string) -> void
-		{
-			if (::send(m_socket, std::data(string), std::size(string), 0) < 0)
-				throw std::runtime_error{"Send failed"};
-		}
-
-		template<class T>
-		requires (Type::DefaultConstructible<T> and Type::TriviallyCopyable<T>)
-		[[nodiscard]] inline auto receive() -> T
-		{
-			T data;
-			auto bytesReceived = ::recv(m_socket, reinterpret_cast<void*>(&data), sizeof(T), 0);
-			if (bytesReceived < 0 or static_cast<std::size_t>(bytesReceived) != sizeof(T))
-				throw std::runtime_error{"CppUtils::Network::Client::receive: Reception failed"};
-			return data;
-		}
-
-		[[nodiscard]] inline auto receive(std::size_t bufferSize = 1'024) -> std::string
-		{
-			auto buffer = std::vector<char>(bufferSize);
-			auto bytesReceived = ::recv(m_socket, std::data(buffer), bufferSize, 0);
-			if (bytesReceived < 0)
-				throw std::runtime_error{"CppUtils::Network::Client::receive: Reception failed"};
-			return std::string(std::data(buffer), static_cast<std::size_t>(bytesReceived));
-		}
-
-	private:
-#if defined(OS_WINDOWS)
-		[[maybe_unused]] SOCKET m_socket;
-#elif defined(OS_LINUX)
-		[[maybe_unused]] int m_socket;
-#endif
 	};
 }

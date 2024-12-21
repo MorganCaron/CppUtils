@@ -7,143 +7,61 @@ module;
 #	pragma comment(lib, "ws2_32.lib")
 #elif defined(OS_LINUX)
 #	include <sys/socket.h>
-#	include <netinet/in.h>
-#	include <unistd.h>
+#	include <cerrno>
 #endif
 
 export module CppUtils.Network.Server;
 
 import std;
-import CppUtils.System.Error;
-import CppUtils.Network.Client;
+import CppUtils.Network.Socket;
 
 export namespace CppUtils::Network
 {
-	class Server final
+	class Server: public Socket
 	{
 	public:
-#if defined(OS_WINDOWS)
-		class WindowsSocketApi final
+		explicit inline Server(
+			Socket::Domain domain = Socket::Domain::IPV4,
+			Socket::Type type = Socket::Type::TCP):
+			Socket{domain, type}
 		{
-		private:
-			inline WindowsSocketApi()
-			{
-				WSADATA m_windowsSocketApiData;
-				if (WSAStartup(MAKEWORD(2, 2), &m_windowsSocketApiData) != 0)
-					throw std::runtime_error{"Failed to initialize Winsock"};
-			}
-
-			inline ~WindowsSocketApi()
-			{
-				WSACleanup();
-			}
-
-			WindowsSocketApi(const WindowsSocketApi&) = delete;
-			WindowsSocketApi(WindowsSocketApi&&) noexcept = delete;
-
-		public:
-			static inline auto ensureIsinitialized() -> void
-			{
-				[[maybe_unused]] static auto windowsSocketApi = WindowsSocketApi{};
-			}
-
-			static inline auto throwErrno(int value, std::string_view message = "") -> int
-			{
-				if (value == SOCKET_ERROR) [[unlikely]]
-					throw std::runtime_error{
-						std::empty(message) ?
-							std::format("{}", WSAGetLastError()) :
-							std::format("{}: {}", message, WSAGetLastError())};
-				return value;
-			}
-		};
-#endif
-		enum class Domain : int
-		{
-			IPV4 = AF_INET,
-			IPV6 = AF_INET6,
-#if defined(OS_LINUX)
-			Local = AF_UNIX
-#endif
-		};
-
-		enum class Type : int
-		{
-			TCP = SOCK_STREAM,
-			UDP = SOCK_DGRAM
-		};
-
-#if defined(OS_WINDOWS)
-		static inline constexpr auto throwErrno = &WindowsSocketApi::throwErrno;
-#elif defined(OS_LINUX)
-		static inline constexpr auto throwErrno = &System::throwErrno;
-#endif
-
-		explicit inline Server(Domain domain = Domain::IPV4, Type type = Type::TCP)
-		{
-
-#if defined(OS_WINDOWS)
-			WindowsSocketApi::ensureIsinitialized();
-			m_socket = socket(static_cast<int>(domain), static_cast<int>(type), 0);
-			if (m_socket == INVALID_SOCKET)
-				throw std::runtime_error{"Server creation failed"};
-#elif defined(OS_LINUX)
-			m_socket = socket(static_cast<int>(domain), static_cast<int>(type), 0);
-			if (m_socket < 0)
-				throw std::runtime_error{"Server creation failed"};
-#endif
+			setIPv6Only(false);
 		}
 
-		inline ~Server()
+		inline auto bind(std::uint16_t port) const -> void
 		{
-#if defined(OS_WINDOWS)
-			closesocket(m_socket);
-#elif defined(OS_LINUX)
-			::close(m_socket);
-#endif
-		}
-
-		inline Server(const Server&) = delete;
-
-		inline auto bind(std::uint16_t port) -> void
-		{
-			auto adress = sockaddr_in{};
-			adress.sin_family = AF_INET;
-			adress.sin_addr.s_addr = INADDR_ANY;
-			adress.sin_port = htons(port);
-
+			auto address = makeAddress("", port);
 			throwErrno(
-				::bind(m_socket, reinterpret_cast<sockaddr*>(&adress), sizeof(adress)),
+				::bind(nativeHandle(), reinterpret_cast<sockaddr*>(&address.storage), address.length),
 				"CppUtils::Network::Server::bind");
 		}
 
 		inline auto listen(std::size_t waitingQueue = 10) -> void
 		{
 			throwErrno(
-				::listen(m_socket, static_cast<int>(waitingQueue)),
-				"CppUtils::Network::Server::bind");
+				::listen(nativeHandle(), static_cast<int>(waitingQueue)),
+				"CppUtils::Network::Server::listen");
 		}
 
-		[[nodiscard]] inline auto accept() -> Client
+		[[nodiscard]] inline auto accept() -> std::optional<Socket>
 		{
-			auto clientSocket = 0;
+			auto clientSocket = ::accept(nativeHandle(), nullptr, nullptr);
 #if defined(OS_WINDOWS)
-			clientSocket = ::accept(m_socket, nullptr, nullptr);
 			if (clientSocket == INVALID_SOCKET)
-				throw std::runtime_error{"Accept failed"};
+			{
+				if (::WSAGetLastError() == WSAEWOULDBLOCK)
+					return std::nullopt;
+				throw std::runtime_error{"CppUtils::Network::Server::accept: Accept failed"};
+			}
 #elif defined(OS_LINUX)
-			clientSocket = ::accept(m_socket, nullptr, nullptr);
 			if (clientSocket < 0)
-				throw std::runtime_error{"Accept failed"};
+			{
+				if (errno == EAGAIN or errno == EWOULDBLOCK)
+					return std::nullopt;
+				throw std::runtime_error{"CppUtils::Network::Server::accept: Accept failed"};
+			}
 #endif
-			return Client{clientSocket};
+			return Socket{clientSocket};
 		}
-
-	private:
-#if defined(OS_WINDOWS)
-		SOCKET m_socket;
-#elif defined(OS_LINUX)
-		int m_socket;
-#endif
 	};
 }
