@@ -17,7 +17,7 @@ import CppUtils.Network.Socket;
 
 export namespace CppUtils::Network
 {
-	class Server: public Socket
+	class Server final: public Socket
 	{
 	public:
 		explicit inline Server(

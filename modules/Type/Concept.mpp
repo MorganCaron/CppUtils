@@ -47,5 +47,11 @@ export namespace CppUtils::Type
 	concept TriviallyConstructible = std::is_trivially_constructible_v<T>;
 
 	template<class T>
+	concept TriviallyDestructible = std::is_trivially_destructible_v<T>;
+
+	template<class T>
 	concept TriviallyCopyable = std::is_trivially_copyable_v<T>;
+
+	template<class T>
+	concept Trivial = TriviallyConstructible<T> and TriviallyDestructible<T> and TriviallyCopyable<T>;
 }

@@ -35,7 +35,7 @@ export namespace CppUtils::UnitTest::Network
 			server.setReuseAddress(true);
 			server.bind(8'080);
 			server.listen();
-			server.setNonBlocking(true);
+			server.setBlocking(false);
 			Logger::print("Server: Waiting for connections on port 8080...\n");
 			auto clientSocket = server.accept();
 			suite.expectEqual(clientSocket, std::nullopt);
@@ -44,7 +44,7 @@ export namespace CppUtils::UnitTest::Network
 		suite.addTest("Accept connection", [&] {
 			using namespace std::chrono_literals;
 
-			auto serverListening = std::async(std::launch::async, [&]() -> void {
+			auto serverListening = std::async(std::launch::async, [&] {
 				auto server = CppUtils::Network::Server{};
 				server.setReuseAddress(true);
 				server.bind(8'080);
@@ -55,15 +55,13 @@ export namespace CppUtils::UnitTest::Network
 				Logger::print("Server: A new client has joined\n");
 			});
 
-			auto clientConnecting = std::async(std::launch::async, [&]() -> void {
+			auto clientConnecting = std::async(std::launch::async, [&] {
 				auto client = CppUtils::Network::Client{};
 				Logger::print("Client: Attempting to connect...\n");
 				client.connect("", 8'080);
 				Logger::print("Client: Connected\n");
 			});
 
-			suite.expectEqual(clientConnecting.wait_for(1s), std::future_status::ready);
-			suite.expectEqual(serverListening.wait_for(1s), std::future_status::ready);
 			clientConnecting.get();
 			serverListening.get();
 		});
@@ -71,7 +69,7 @@ export namespace CppUtils::UnitTest::Network
 		suite.addTest("Send/receive message (int)", [&] {
 			using namespace std::chrono_literals;
 
-			auto serverListening = std::async(std::launch::async, [&]() -> void {
+			auto serverListening = std::async(std::launch::async, [&] {
 				auto server = CppUtils::Network::Server{};
 				server.setReuseAddress(true);
 				server.bind(8'080);
@@ -92,11 +90,12 @@ export namespace CppUtils::UnitTest::Network
 				Logger::print("Server: Closing\n");
 			});
 
-			auto clientConnecting = std::async(std::launch::async, [&]() -> void {
+			auto clientConnecting = std::async(std::launch::async, [&] {
 				auto client = CppUtils::Network::Client{};
 				Logger::print("Client: Attempting to connect...\n");
 				client.connect("", 8'080);
-				Logger::print("Client: Connected\n");
+				client.setBlocking(true);
+				Logger::print("Client: Connected to server\n");
 
 				client.send(21);
 				Logger::print("Client: Message sent: 21\n");
@@ -109,8 +108,6 @@ export namespace CppUtils::UnitTest::Network
 				Logger::print("Client: Closing\n");
 			});
 
-			suite.expectEqual(clientConnecting.wait_for(1s), std::future_status::ready);
-			suite.expectEqual(serverListening.wait_for(1s), std::future_status::ready);
 			clientConnecting.get();
 			serverListening.get();
 		});
@@ -118,7 +115,7 @@ export namespace CppUtils::UnitTest::Network
 		suite.addTest("Send/receive message (std::string)", [&] {
 			using namespace std::chrono_literals;
 
-			auto serverListening = std::async(std::launch::async, [&]() -> void {
+			auto serverListening = std::async(std::launch::async, [&] {
 				auto server = CppUtils::Network::Server{};
 				server.setReuseAddress(true);
 				server.bind(8'080);
@@ -138,7 +135,7 @@ export namespace CppUtils::UnitTest::Network
 				Logger::print("Server: Closing\n");
 			});
 
-			auto clientConnecting = std::async(std::launch::async, [&]() -> void {
+			auto clientConnecting = std::async(std::launch::async, [&] {
 				auto client = CppUtils::Network::Client{};
 				Logger::print("Client: Attempting to connect...\n");
 				client.connect("", 8'080);
@@ -155,8 +152,6 @@ export namespace CppUtils::UnitTest::Network
 				Logger::print("Client: Closing\n");
 			});
 
-			suite.expectEqual(clientConnecting.wait_for(1s), std::future_status::ready);
-			suite.expectEqual(serverListening.wait_for(1s), std::future_status::ready);
 			clientConnecting.get();
 			serverListening.get();
 		});

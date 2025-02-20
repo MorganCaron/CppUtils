@@ -145,23 +145,38 @@ export namespace CppUtils::Network
 				throw std::runtime_error{"CppUtils::Network::Socket::setReuseAddress: Failed to set SO_REUSEADDR option"};
 		}
 
-		inline auto setNonBlocking(bool enable) const -> void
+		inline auto setBlocking(bool enable) -> void
 		{
+			m_isBlocking = enable;
 #if defined(OS_WINDOWS)
-			auto mode = enable ? u_long{1} : u_long{0};
+			auto mode = enable ? u_long{0} : u_long{1};
 			if (::ioctlsocket(m_socket, FIONBIO, &mode) != 0)
-				throw std::runtime_error{"CppUtils::Network::Socket::setNonBlocking: Failed to set non-blocking mode"};
+				throw std::runtime_error{"CppUtils::Network::Socket::setBlocking: Failed to set blocking mode"};
 #elif defined(OS_LINUX)
 			auto flags = ::fcntl(m_socket, F_GETFL, 0);
 			if (flags == -1)
-				throw std::runtime_error{"CppUtils::Network::Socket::setNonBlocking: Failed to get socket flags"};
+				throw std::runtime_error{"CppUtils::Network::Socket::setBlocking: Failed to get socket flags"};
 
 			if (enable)
-				flags |= O_NONBLOCK;
-			else
 				flags &= ~O_NONBLOCK;
+			else
+				flags |= O_NONBLOCK;
 			if (::fcntl(m_socket, F_SETFL, flags) == -1)
-				throw std::runtime_error{"CppUtils::Network::Socket::setNonBlocking: Failed to set socket flags"};
+				throw std::runtime_error{"CppUtils::Network::Socket::setBlocking: Failed to set socket flags"};
+#endif
+		}
+
+		[[nodiscard]] inline auto isBlocking() const -> bool
+		{
+#if defined(OS_WINDOWS)
+			auto mode = u_long{};
+			ioctlsocket(m_socket, FIONBIO, &mode);
+			return mode == 0;
+#elif defined(OS_LINUX)
+			int flags = fcntl(m_socket, F_GETFL, 0);
+			if (flags == -1)
+				throw std::runtime_error{"CppUtils::Network::Socket::isBlocking: Failed to get socket flags"};
+			return not (flags & O_NONBLOCK);
 #endif
 		}
 
@@ -193,7 +208,7 @@ export namespace CppUtils::Network
 		}
 
 	protected:
-		[[nodiscard]] inline auto nativeHandle() const noexcept -> auto
+		[[nodiscard]] inline auto nativeHandle() const noexcept -> decltype(auto)
 		{
 			return m_socket;
 		}
@@ -206,9 +221,6 @@ export namespace CppUtils::Network
 
 		inline auto makeAddress(std::string_view ip, std::uint16_t port) const -> Address
 		{
-			if (port == 0 or port > 65'535)
-				throw std::invalid_argument{std::format("CppUtils::Network::Socket::makeAddress: Invalid port '{}'", port)};
-
 			auto address = Address{};
 			if (m_domain == Domain::IPV4)
 			{
@@ -278,7 +290,7 @@ export namespace CppUtils::Network
 #if defined(OS_WINDOWS)
 			if (::WSAGetLastError() == WSAEWOULDBLOCK)
 #else
-			if (errno == EAGAIN or errno == EWOULDBLOCK)
+			if (errno == EWOULDBLOCK)
 #endif
 				return std::runtime_error{"Socket is non-blocking and no data is available"};
 			return std::runtime_error{"CppUtils::Network::Socket::receive: Reception failed"};
@@ -298,9 +310,11 @@ export namespace CppUtils::Network
 #if defined(OS_WINDOWS)
 					if (WSAGetLastError() == WSAEWOULDBLOCK)
 #else
-					if (errno == EAGAIN or errno == EWOULDBLOCK)
-#endif
+					if (errno == EAGAIN)
 						continue;
+					if (errno == EWOULDBLOCK)
+#endif
+						return std::nullopt;
 					throw makeReceiveError();
 				}
 				if (bytesReceived == 0)
@@ -344,11 +358,12 @@ export namespace CppUtils::Network
 
 	private:
 		Domain m_domain;
+		bool m_isBlocking = true;
 
 #if defined(OS_WINDOWS)
-		[[maybe_unused]] SOCKET m_socket;
+		SOCKET m_socket;
 #elif defined(OS_LINUX)
-		[[maybe_unused]] int m_socket;
+		int m_socket;
 #endif
 	};
 }

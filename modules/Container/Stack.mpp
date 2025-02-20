@@ -19,7 +19,7 @@ export namespace CppUtils::Container
 		requires (Type::Present<Args, SupportedTypes...> and ...)
 		inline constexpr explicit Stack(Args... values)
 		{
-			(push(values), ...);
+			(push(std::forward<Args>(values)), ...);
 		}
 
 		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
@@ -138,8 +138,9 @@ export namespace CppUtils::Container
 		{
 			if (empty()) [[unlikely]]
 				throw std::underflow_error{"Stack::pop() : Container already empty"};
-			if (auto storedType = m_types.back(); Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
-				throw std::logic_error{std::format("Stack::pop() : The type at the specified position does not match the stored type (Type: {})", storedType)};
+			if (auto specifiedType = Type::getPosition<T, SupportedTypes...>(), storedType = m_types.back();
+				specifiedType != storedType) [[unlikely]]
+				throw std::logic_error{std::format("Stack::pop() : The type at the specified position ({}) does not match the stored type ({})", specifiedType, storedType)};
 			auto value = get<T>(size() - 1);
 			drop();
 			return value;
@@ -159,7 +160,7 @@ export namespace CppUtils::Container
 		{
 			return [](Stack<SupportedTypes...>& stack, std::size_t sourcePosition, std::size_t destinationPosition) static -> void {
 				if constexpr (not std::is_convertible_v<SourceType, SupportedType>)
-					throw std::logic_error{std::format("Stack::copy({}, {}) : The source type is not convertible to the destination type", sourcePosition, destinationPosition)};
+					throw std::logic_error{std::format("Stack::copy : The source type ({}) is not convertible to the destination type ({})", sourcePosition, destinationPosition)};
 				else
 					stack.set(destinationPosition, static_cast<SupportedType>(stack.template get<SourceType>(sourcePosition)));
 			};
