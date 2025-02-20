@@ -1,0 +1,48 @@
+export module CppUtils.UnitTests.Thread.TryAsync;
+
+import std;
+import CppUtils;
+import CppUtils.Thread.TryAsync;
+
+export namespace CppUtils::UnitTest::Thread
+{
+	inline auto _ = TestSuite{"Thread/TryAsync", {"UnitTest", "Log/Logger"}, [](auto& suite) {
+		using Logger = CppUtils::Logger<"CppUtils">;
+
+		suite.addTest("Successful async call", [&] {
+			auto future = CppUtils::Thread::tryAsync([] {
+				return 42;
+			});
+			auto result = future.get();
+			suite.expect(result.has_value());
+			suite.expectEqual(result.value(), 42);
+		});
+
+		suite.addTest("Async call with exception", [&] {
+			auto future = CppUtils::Thread::tryAsync([] {
+				throw std::runtime_error{"Test exception"};
+				return 0;
+			});
+			auto result = future.get();
+			suite.expect(not result.has_value());
+			suite.expectEqual(result.error(), "Test exception");
+		});
+
+		suite.addTest("Void async call", [&] {
+			auto future = CppUtils::Thread::tryAsync([] {
+				Logger::print("Void async call executed");
+			});
+			auto result = future.get();
+			suite.expect(result.has_value());
+		});
+
+		suite.addTest("Void async call with exception", [&] {
+			auto future = CppUtils::Thread::tryAsync([] {
+				throw std::runtime_error{"Void test exception"};
+			});
+			auto result = future.get();
+			suite.expect(not result.has_value());
+			suite.expectEqual(result.error(), "Void test exception");
+		});
+	}};
+}

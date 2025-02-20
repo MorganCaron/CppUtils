@@ -25,6 +25,7 @@ export import CppUtils.UnitTests.String.Utility;
 export import CppUtils.UnitTests.Thread.SharedLocker;
 export import CppUtils.UnitTests.Thread.ThreadLoop;
 export import CppUtils.UnitTests.Thread.ThreadPool;
+export import CppUtils.UnitTests.Thread.TryAsync;
 export import CppUtils.UnitTests.Thread.UniqueLocker;
 export import CppUtils.UnitTests.Type.Concept;
 export import CppUtils.UnitTests.UnitTest;
