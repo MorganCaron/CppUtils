@@ -4,7 +4,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Thread::UniqueLocker
 {
-	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/UniqueLocker", [](auto& suite) {
+	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/UniqueLocker", {"UnitTest"}, [](auto& suite) {
 		suite.addTest("Access", [&] {
 			auto lockedString = CppUtils::Thread::UniqueLocker<std::string>{"Foo"};
 			{

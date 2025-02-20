@@ -5,7 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Thread::ThreadLoop
 {
-	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/ThreadLoop", [](auto& suite) {
+	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/ThreadLoop", {"UnitTest"}, [](auto& suite) {
 		using namespace std::chrono_literals;
 
 		suite.addTest("isRunning", [&] {

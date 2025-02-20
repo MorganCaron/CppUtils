@@ -32,7 +32,6 @@ namespace CppUtils::UnitTest
 
 	struct Test final
 	{
-	public:
 		std::string name;
 		std::function<void()> function;
 	};
@@ -48,11 +47,18 @@ namespace CppUtils::UnitTest
 	class TestRunner final
 	{
 	public:
-		inline auto addTestSuite(std::string_view name, std::vector<Test> tests) -> void
+		struct TestSuiteData final
 		{
-			for (auto& test : tests)
-				test.name = std::format("{}/{}", name, test.name);
-			m_tests.insert(std::end(m_tests), std::make_move_iterator(std::begin(tests)), std::make_move_iterator(std::end(tests)));
+			std::string name;
+			std::vector<std::string> prerequisites;
+			std::vector<Test> tests;
+		};
+
+		inline auto addTestSuite(TestSuiteData testSuite) -> void
+		{
+			for (auto& test : testSuite.tests)
+				test.name = std::format("{}/{}", testSuite.name, test.name);
+			m_testSuites.push_back(std::move(testSuite));
 		}
 
 		inline auto executeTest(const Test& test, const TestSettings& settings) const -> bool
@@ -96,42 +102,99 @@ namespace CppUtils::UnitTest
 		{
 			using Logger = Logger<"CppUtils">;
 
-			if (!std::empty(settings.filter))
+			auto remainingTestSuites = m_testSuites;
+			auto isTestFiltered = [&settings](const auto& test) -> bool {
+				return not test.name.starts_with(settings.filter);
+			};
+			if (not std::empty(settings.filter))
 			{
-				m_tests.erase(std::remove_if(std::begin(m_tests), std::end(m_tests), [&settings](const Test& test) -> bool {
-					return test.name.substr(0, settings.filter.size()) != settings.filter;
-				}),
-					std::end(m_tests));
-				auto newSettings = settings;
-				newSettings.filter = "";
-				return executeTests(newSettings);
+				std::erase_if(remainingTestSuites, isTestFiltered);
+				for (auto& testSuite : remainingTestSuites)
+					std::erase_if(testSuite.tests, isTestFiltered);
 			}
+			std::erase_if(remainingTestSuites, [](const auto& testSuite) -> bool {
+				auto testSuiteIsEmpty = std::empty(testSuite.tests);
+				if (testSuiteIsEmpty)
+					Logger::print<"warning">("No tests found in test suite {}", testSuite.name);
+				return testSuiteIsEmpty;
+			});
 
-			if (std::empty(m_tests))
+			if (std::empty(remainingTestSuites))
 			{
 				Logger::print<"warning">("No tests found.");
-				Logger::print<"detail">("Create a unit test or adjust the filter.");
+				if (std::empty(settings.filter))
+					Logger::print<"detail">("Create a unit test.");
+				else
+					Logger::print<"detail">("Create a unit test or adjust the filter.");
 				return exitFailure;
 			}
 
-			Logger::print<"info">("{} tests found. Execution:", std::size(m_tests));
-			auto nbSuccess = 0uz;
-			auto nbFail = 0uz;
-			for (const auto& test : m_tests)
+			const auto nbTests = std::ranges::fold_left(remainingTestSuites, 0uz, [](const auto& nbTests, const auto& testSuite) -> auto {
+				return nbTests + std::size(testSuite.tests);
+			});
+			Logger::print<"info">("{} tests found. Execution:", nbTests);
+			auto remainingPrerequisites = std::unordered_map<std::string, std::unordered_set<std::string>>{};
+			for (const auto& testSuite : remainingTestSuites)
 			{
-				if (executeTest(test, settings))
-					++nbSuccess;
-				else
+				if (remainingPrerequisites.contains(testSuite.name))
+					Logger::print<"warning">("Duplicate test suite name: {}", testSuite.name);
+				remainingPrerequisites[testSuite.name] = std::unordered_set<std::string>{};
+			}
+			auto successfulTests = std::vector<std::string_view>{};
+			auto failedTests = std::vector<std::string_view>{};
+			auto filteredTests = std::vector<std::string_view>{};
+			auto endTests = false;
+			while (not endTests and not std::empty(remainingTestSuites))
+			{
+				for (auto i = 0uz; not endTests and i < std::size(remainingTestSuites);)
 				{
-					++nbFail;
-					if (settings.failFast)
+					const auto& testSuite = remainingTestSuites[i];
+					if (const auto& testPrerequisites = remainingPrerequisites[testSuite.name];
+						not std::empty(testPrerequisites))
 					{
-						if (settings.detail)
-							Logger::print<"detail">("Stopping tests execution (failFast mode enabled)");
-						break;
+						++i;
+						continue;
 					}
+					for (const auto& test : testSuite.tests)
+					{
+						if (executeTest(test, settings))
+						{
+							successfulTests.push_back(test.name);
+							for (auto& remainingTestSuite : remainingTestSuites)
+								std::erase(remainingTestSuite.prerequisites, test.name);
+						}
+						else
+						{
+							failedTests.push_back(test.name);
+							if (settings.failFast)
+							{
+								if (settings.detail)
+									Logger::print<"detail">("Stopping tests execution (failFast mode enabled)");
+								endTests = true;
+								break;
+							}
+							auto disableTest = [&](this const auto& self, const auto& testName) -> void {
+								filteredTests.push_back(testName);
+								for (auto& remainingTestSuite : remainingTestSuites)
+									if (std::ranges::contains(remainingTestSuite.prerequisites, testName))
+									{
+										self(remainingTestSuite.name);
+										Logger::print<"warning">("Skipping test {} due to failed prerequisites in test suite {}", testName, remainingTestSuite.name);
+									}
+								i -= std::erase_if(remainingTestSuites, [&](const auto& testSuite) -> bool {
+									return std::ranges::contains(testSuite.prerequisites, testName);
+								});
+							};
+							disableTest(test.name);
+						}
+					}
+					remainingTestSuites.erase(std::next(std::cbegin(remainingTestSuites), static_cast<std::ptrdiff_t>(i)));
 				}
 			}
+
+			auto nbSuccess = std::size(successfulTests);
+			auto nbFail = std::size(failedTests);
+			auto nbFiltered = std::size(remainingTestSuites);
 			Logger::printSeparator<"detail">();
 			Logger::print<"detail">("Test results");
 			if (nbFail == 0)
@@ -149,11 +212,13 @@ namespace CppUtils::UnitTest
 			if (nbSuccess == 0)
 				Logger::print("- 0 successful tests\n");
 			Logger::print("- {} failed tests\n", nbFail);
+			if (nbFiltered > 0)
+				Logger::print("- {} filtered tests\n", nbFiltered);
 			return exitFailure;
 		}
 
 	private:
-		std::vector<Test> m_tests;
+		std::vector<TestSuiteData> m_testSuites;
 	};
 
 	inline constinit auto testRunner = TestRunner{};
@@ -177,12 +242,16 @@ namespace CppUtils::UnitTest
 
 	export struct TestSuite final
 	{
-		inline explicit TestSuite(std::string name, std::function<void(TestSuite&)> function)
+		inline explicit TestSuite(std::string name, std::vector<std::string> prerequisites, std::function<void(TestSuite&)> function)
 		{
 			function(*this);
-			testRunner.addTestSuite(std::move(name), std::move(tests));
+			testRunner.addTestSuite(TestRunner::TestSuiteData{std::move(name), std::move(prerequisites), std::move(tests)});
 		}
 
+		inline explicit TestSuite(std::string name, std::function<void(TestSuite&)> function):
+			TestSuite{std::move(name), {}, std::move(function)}
+		{}
+		
 		inline auto addTest(std::string name, std::function<void()> function) -> void
 		{
 			tests.emplace_back(std::move(name), function);
