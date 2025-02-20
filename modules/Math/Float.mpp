@@ -9,11 +9,11 @@ export namespace CppUtils::Math
 	[[nodiscard]] inline constexpr auto isEqual(Float lhs, Float rhs, Float epsilon = std::numeric_limits<Float>::epsilon()) noexcept -> bool
 	{
 		auto difference = absolute(lhs - rhs);
-		auto maximum = std::max(absolute(lhs), absolute(rhs));
-		if (maximum >= Float{1})
-			return difference <= epsilon * maximum;
-		else if (maximum > Float{0})
-			return difference / maximum <= epsilon;
+		auto minimum = std::min(absolute(lhs), absolute(rhs));
+		if (minimum >= Float{1})
+			return difference <= epsilon * minimum;
+		else if (minimum > Float{0})
+			return difference / minimum <= epsilon;
 		return true;
 	}
 
