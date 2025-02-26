@@ -27,7 +27,6 @@ export namespace CppUtils::UnitTest::Thread::ThreadPool
 				});
 				future.wait();
 			}
-			std::cout << "C\n";
 			suite.expectCall(expectCall);
 		});
 

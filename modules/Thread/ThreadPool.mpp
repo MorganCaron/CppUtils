@@ -47,37 +47,37 @@ export namespace CppUtils::Thread
 		inline auto waitUntilFinished() -> void
 		{
 			auto lockGuard = std::unique_lock{m_standByMutex};
-			auto tasksQueueAccessor = m_tasksQueue.access();
-			if (m_activeWorkers != 0 and not std::empty(tasksQueueAccessor.value()))
+			if (m_activeWorkers != 0 and not isTasksQueueEmpty())
 				m_standByCondition.wait(lockGuard, [this] {
-					auto tasksQueueAccessor = m_tasksQueue.access();
-					return m_activeWorkers == 0 and std::empty(tasksQueueAccessor.value());
+					return m_activeWorkers == 0 and isTasksQueueEmpty();
 				});
 		}
 
 	private:
+		[[nodiscard]] inline auto isTasksQueueEmpty() const -> bool
+		{
+			auto tasksQueueAccessor = m_tasksQueue.access();
+			return std::empty(tasksQueueAccessor.value());
+		}
+
 		inline auto workerThread() -> void
 		{
+			if (isTasksQueueEmpty())
+			{
+				auto tasksQueueAccessor = m_tasksQueue.access();
+				m_startWorkingCondition.wait(tasksQueueAccessor.getLockGuard());
+			}
+			if (isTasksQueueEmpty())
+				return;
+			++m_activeWorkers;
 			auto task = Task{};
 			{
 				auto tasksQueueAccessor = m_tasksQueue.access();
-				if (std::empty(tasksQueueAccessor.value()))
-				{
-					m_startWorkingCondition.wait(tasksQueueAccessor.getLockGuard());
-					if (std::empty(tasksQueueAccessor.value()))
-					{
-						m_standByCondition.notify_all();
-						return;
-					}
-				}
-				++m_activeWorkers;
 				task = std::move(tasksQueueAccessor->front());
 				tasksQueueAccessor->pop();
 			}
 			task();
-			--m_activeWorkers;
-			if (auto tasksQueueAccessor = m_tasksQueue.access();
-				m_activeWorkers == 0 and std::empty(tasksQueueAccessor.value()))
+			if (--m_activeWorkers == 0)
 				m_standByCondition.notify_all();
 		}
 
@@ -88,7 +88,7 @@ export namespace CppUtils::Thread
 
 		std::size_t m_numberThreads;
 		std::atomic_size_t m_activeWorkers = 0;
-		UniqueLocker<std::queue<Task>> m_tasksQueue;
+		mutable UniqueLocker<std::queue<Task>> m_tasksQueue;
 		std::condition_variable m_startWorkingCondition;
 		std::mutex m_standByMutex;
 		std::condition_variable m_standByCondition;
