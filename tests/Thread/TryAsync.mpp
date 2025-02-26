@@ -7,6 +7,7 @@ import CppUtils.Thread.TryAsync;
 export namespace CppUtils::UnitTest::Thread
 {
 	inline auto _ = TestSuite{"Thread/TryAsync", {"UnitTest", "Log/Logger"}, [](auto& suite) {
+		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("Successful async call", [&] {
@@ -25,12 +26,12 @@ export namespace CppUtils::UnitTest::Thread
 			});
 			auto result = future.get();
 			suite.expect(not result.has_value());
-			suite.expectEqual(result.error(), "Test exception");
+			suite.expectEqual(result.error().what(), "Test exception"sv);
 		});
 
 		suite.addTest("Void async call", [&] {
 			auto future = CppUtils::Thread::tryAsync([] {
-				Logger::print("Void async call executed");
+				Logger::print("Void async call executed\n");
 			});
 			auto result = future.get();
 			suite.expect(result.has_value());
@@ -42,7 +43,7 @@ export namespace CppUtils::UnitTest::Thread
 			});
 			auto result = future.get();
 			suite.expect(not result.has_value());
-			suite.expectEqual(result.error(), "Void test exception");
+			suite.expectEqual(result.error().what(), "Void test exception"sv);
 		});
 	}};
 }

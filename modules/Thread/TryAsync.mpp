@@ -7,7 +7,7 @@ export namespace CppUtils::Thread
     [[nodiscard]] inline auto tryAsync(auto&& function, auto&&... args) -> decltype(auto)
     {
         return std::async(std::launch::async, [function = std::forward<decltype(function)>(function), ...args = std::forward<decltype(args)>(args)]() mutable
-            -> std::expected<std::invoke_result_t<decltype(function), decltype(args)...>, std::string> {
+            -> std::expected<std::invoke_result_t<decltype(function), decltype(args)...>, std::runtime_error> {
             try
             {
                 if constexpr (std::is_void_v<std::invoke_result_t<decltype(function), decltype(args)...>>)
@@ -17,11 +17,11 @@ export namespace CppUtils::Thread
             }
             catch (const std::exception& exception)
             {
-                return std::unexpected{exception.what()};
+                return std::unexpected{std::runtime_error{exception.what()}};
             }
             catch (...)
             {
-                return std::unexpected{"Unknown exception occurred"};
+                return std::unexpected{std::runtime_error{"Unknown exception occurred"}};
             }
             return {};
         });
