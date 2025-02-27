@@ -132,9 +132,9 @@ namespace CppUtils::UnitTest
 					testNames.insert(testSuite.name);
 				}
 			}
-			auto successfulTests = std::vector<std::string_view>{};
-			auto failedTests = std::vector<std::string_view>{};
-			auto filteredTests = std::vector<std::string_view>{};
+			auto successfulTests = std::vector<std::string>{};
+			auto failedTests = std::vector<std::string>{};
+			auto filteredTests = std::vector<std::string>{};
 			auto atLeastOneTestHasBeenExecuted = true;
 			while (atLeastOneTestHasBeenExecuted and not std::empty(remainingTestSuites))
 			{
@@ -149,38 +149,41 @@ namespace CppUtils::UnitTest
 							continue;
 						}
 						atLeastOneTestHasBeenExecuted = true;
+						auto hasError = false;
 						for (const auto& test : testSuite.tests)
 						{
+							if (hasError)
+							{
+								filteredTests.push_back(test.name);
+								continue;
+							}
 							if (executeTest(test, settings))
 							{
 								successfulTests.push_back(test.name);
 								for (auto& remainingTestSuite : remainingTestSuites)
 									std::erase(remainingTestSuite.prerequisites, test.name);
+								continue;
 							}
-							else
-							{
-								Logger::print<"detail">("Failed test: {}", test.name);
-								failedTests.push_back(test.name);
-								auto disableTest = [&](this const auto& self, const auto& failedTestSuiteName) -> void {
-									for (auto j = 0uz; j < std::size(remainingTestSuites); ++j)
+							failedTests.push_back(test.name);
+							auto disableTest = [&](this const auto& self, const auto& failedTestSuiteName) -> void {
+								for (auto j = 0uz; j < std::size(remainingTestSuites); ++j)
+								{
+									if (std::ranges::contains(remainingTestSuites[j].prerequisites, failedTestSuiteName))
 									{
-										if (std::ranges::contains(remainingTestSuites[j].prerequisites, failedTestSuiteName))
 										{
-											{
-												const auto& remainingTestSuite = remainingTestSuites[j];
-												filteredTests.push_back(failedTestSuiteName);
-												Logger::print<"warning">("Skipping test {} due to failed prerequisites in test suite {}", remainingTestSuite.name, failedTestSuiteName);
-												self(remainingTestSuite.name);
-											}
-											if (j < i)
-												--i;
-											removeRemainingTest(j--);
+											const auto& remainingTestSuite = remainingTestSuites[j];
+											filteredTests.push_back(failedTestSuiteName);
+											Logger::print<"warning">("Skipping test {} due to failed prerequisites in test suite {}", remainingTestSuite.name, failedTestSuiteName);
+											self(remainingTestSuite.name);
 										}
+										if (j < i)
+											--i;
+										removeRemainingTest(j--);
 									}
-								};
-								disableTest(testSuite.name);
-								break;
-							}
+								}
+							};
+							disableTest(testSuite.name);
+							hasError = true;
 						}
 						for (auto& remainingTestSuite : remainingTestSuites)
 							std::erase(remainingTestSuite.prerequisites, testSuite.name);
@@ -204,7 +207,8 @@ namespace CppUtils::UnitTest
 
 			auto nbSuccess = std::size(successfulTests);
 			auto nbFail = std::size(failedTests);
-			auto nbFiltered = std::size(remainingTestSuites);
+			auto nbFiltered = std::size(filteredTests);
+			
 			Logger::printSeparator<"detail">();
 			Logger::print<"detail">("Test results");
 			if (nbFail == 0)
@@ -222,8 +226,14 @@ namespace CppUtils::UnitTest
 			if (nbSuccess == 0)
 				Logger::print("- 0 successful tests\n");
 			Logger::print("- {} failed tests\n", nbFail);
+			for (const auto& failedTest : failedTests)
+				Logger::print("  - {}\n", failedTest);
 			if (nbFiltered > 0)
+			{
 				Logger::print("- {} filtered tests\n", nbFiltered);
+				for (const auto& filteredTest : filteredTests)
+					Logger::print("  - {}\n", filteredTest);
+			}
 			return exitFailure;
 		}
 
