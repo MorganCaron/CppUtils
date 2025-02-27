@@ -5,7 +5,10 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Language::TreeParser
 {
-	inline auto _ = TestSuite{"Language/TreeParser", [](auto& suite) {
+	inline auto _ = TestSuite{
+		"Language/TreeParser",
+		{"Logger", "Language/CallStackCompiler"},
+		[](auto& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = CppUtils::Logger<"CppUtils">;

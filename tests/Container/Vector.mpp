@@ -5,7 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Container::Vector
 {
-	inline auto _ = TestSuite{"Container/Vector", [](auto& suite) {
+	inline auto _ = TestSuite{"Container/Vector", {"Logger"}, [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("merge", [&] {

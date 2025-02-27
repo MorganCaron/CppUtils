@@ -6,7 +6,10 @@ import CppUtils;
 export namespace CppUtils::UnitTest::Language::CLikeCompiler
 {
 	/*
-	inline auto _ = TestSuite{"Language/CLikeCompiler", []([[maybe_unused]] auto& suite) {
+	inline auto _ = TestSuite{
+		"Language/CLikeCompiler",
+		{"Logger", "Language/TreeParser"},
+		[]([[maybe_unused]] auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 		namespace VM = CppUtils::Language::VirtualMachine;

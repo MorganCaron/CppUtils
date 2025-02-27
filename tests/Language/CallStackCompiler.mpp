@@ -6,7 +6,9 @@ import CppUtils;
 export namespace CppUtils::UnitTest::Language::CallStackCompiler
 {
 	inline auto _ = TestSuite{
-		"Language/CallStackCompiler", []([[maybe_unused]] auto& suite) {
+		"Language/CallStackCompiler",
+		{"Logger", "Language/LabelsCompiler"},
+		[]([[maybe_unused]] auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 		namespace VM = CppUtils::Language::VirtualMachine;

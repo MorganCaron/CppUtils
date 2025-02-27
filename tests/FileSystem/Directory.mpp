@@ -5,7 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::FileSystem::Directory
 {
-	inline auto _ = TestSuite{"FileSystem/Directory", [](auto& suite) {
+	inline auto _ = TestSuite{"FileSystem/Directory", {"Logger"}, [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("TemporaryDirectory", [&] {

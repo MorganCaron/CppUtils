@@ -26,7 +26,7 @@ namespace
 
 export namespace CppUtils::UnitTest::Container::Sequence
 {
-	inline auto _ = TestSuite{"Container/Sequence", [](auto& suite) {
+	inline auto _ = TestSuite{"Container/Sequence", {"UnitTest"}, [](auto& suite) {
 		using namespace std::literals;
 
 		suite.addTest("string", [&] {

@@ -5,7 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Container::Tree
 {
-	inline auto _ = TestSuite{"Container/Tree", [](auto& suite) {
+	inline auto _ = TestSuite{"Container/Tree", {"Logger"}, [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 		using StringTreeNode = CppUtils::Container::Tree::Node<std::string>;
 

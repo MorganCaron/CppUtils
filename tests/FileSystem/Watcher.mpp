@@ -5,7 +5,10 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::FileSystem::Watcher
 {
-	inline auto _ = TestSuite{"FileSystem/Watcher", [](auto& suite) {
+	inline auto _ = TestSuite{
+		"FileSystem/Watcher",
+		{"Logger", "FileSystem/Directory", "FileSystem/File"},
+		[](auto& suite) {
 		using namespace std::chrono_literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 

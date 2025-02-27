@@ -24,10 +24,8 @@ namespace CppUtils::UnitTest
 	{
 		bool verbose = true;
 		bool detail = true;
-		bool failFast = true;
 		bool chrono = false;
 		bool abort = false;
-		std::string filter;
 	};
 
 	struct Test final
@@ -103,15 +101,6 @@ namespace CppUtils::UnitTest
 			using Logger = Logger<"CppUtils">;
 
 			auto remainingTestSuites = m_testSuites;
-			auto isTestFiltered = [&settings](const auto& test) -> bool {
-				return not test.name.starts_with(settings.filter);
-			};
-			if (not std::empty(settings.filter))
-			{
-				std::erase_if(remainingTestSuites, isTestFiltered);
-				for (auto& testSuite : remainingTestSuites)
-					std::erase_if(testSuite.tests, isTestFiltered);
-			}
 			std::erase_if(remainingTestSuites, [](const auto& testSuite) -> bool {
 				auto testSuiteIsEmpty = std::empty(testSuite.tests);
 				if (testSuiteIsEmpty)
@@ -122,74 +111,97 @@ namespace CppUtils::UnitTest
 			if (std::empty(remainingTestSuites))
 			{
 				Logger::print<"warning">("No tests found.");
-				if (std::empty(settings.filter))
-					Logger::print<"detail">("Create a unit test.");
-				else
-					Logger::print<"detail">("Create a unit test or adjust the filter.");
+				Logger::print<"detail">("Create a unit test.");
 				return exitFailure;
 			}
+
+			auto removeRemainingTest = [&](std::size_t position) -> void {
+				remainingTestSuites.erase(std::next(std::cbegin(remainingTestSuites), static_cast<std::ptrdiff_t>(position)));
+			};
 
 			const auto nbTests = std::ranges::fold_left(remainingTestSuites, 0uz, [](const auto& nbTests, const auto& testSuite) -> auto {
 				return nbTests + std::size(testSuite.tests);
 			});
 			Logger::print<"info">("{} tests found. Execution:", nbTests);
-			auto remainingPrerequisites = std::unordered_map<std::string, std::unordered_set<std::string>>{};
-			for (const auto& testSuite : remainingTestSuites)
 			{
-				if (remainingPrerequisites.contains(testSuite.name))
-					Logger::print<"warning">("Duplicate test suite name: {}", testSuite.name);
-				remainingPrerequisites[testSuite.name] = std::unordered_set<std::string>{};
+				auto testNames = std::unordered_set<std::string>{};
+				for (const auto& testSuite : remainingTestSuites)
+				{
+					if (testNames.contains(testSuite.name))
+						Logger::print<"warning">("Duplicate test suite name: {}", testSuite.name);
+					testNames.insert(testSuite.name);
+				}
 			}
 			auto successfulTests = std::vector<std::string_view>{};
 			auto failedTests = std::vector<std::string_view>{};
 			auto filteredTests = std::vector<std::string_view>{};
-			auto endTests = false;
-			while (not endTests and not std::empty(remainingTestSuites))
+			auto atLeastOneTestHasBeenExecuted = true;
+			while (atLeastOneTestHasBeenExecuted and not std::empty(remainingTestSuites))
 			{
-				for (auto i = 0uz; not endTests and i < std::size(remainingTestSuites);)
+				atLeastOneTestHasBeenExecuted = false;
+				for (auto i = 0uz; i < std::size(remainingTestSuites);)
 				{
-					const auto& testSuite = remainingTestSuites[i];
-					if (const auto& testPrerequisites = remainingPrerequisites[testSuite.name];
-						not std::empty(testPrerequisites))
 					{
-						++i;
-						continue;
-					}
-					for (const auto& test : testSuite.tests)
-					{
-						if (executeTest(test, settings))
+						const auto& testSuite = remainingTestSuites[i];
+						if (not std::empty(testSuite.prerequisites))
 						{
-							successfulTests.push_back(test.name);
-							for (auto& remainingTestSuite : remainingTestSuites)
-								std::erase(remainingTestSuite.prerequisites, test.name);
+							++i;
+							continue;
 						}
-						else
+						atLeastOneTestHasBeenExecuted = true;
+						for (const auto& test : testSuite.tests)
 						{
-							failedTests.push_back(test.name);
-							if (settings.failFast)
+							if (executeTest(test, settings))
 							{
-								if (settings.detail)
-									Logger::print<"detail">("Stopping tests execution (failFast mode enabled)");
-								endTests = true;
+								successfulTests.push_back(test.name);
+								for (auto& remainingTestSuite : remainingTestSuites)
+									std::erase(remainingTestSuite.prerequisites, test.name);
+							}
+							else
+							{
+								Logger::print<"detail">("Failed test: {}", test.name);
+								failedTests.push_back(test.name);
+								auto disableTest = [&](this const auto& self, const auto& failedTestSuiteName) -> void {
+									for (auto j = 0uz; j < std::size(remainingTestSuites); ++j)
+									{
+										if (std::ranges::contains(remainingTestSuites[j].prerequisites, failedTestSuiteName))
+										{
+											{
+												const auto& remainingTestSuite = remainingTestSuites[j];
+												filteredTests.push_back(failedTestSuiteName);
+												Logger::print<"warning">("Skipping test {} due to failed prerequisites in test suite {}", remainingTestSuite.name, failedTestSuiteName);
+												self(remainingTestSuite.name);
+											}
+											removeRemainingTest(j--);
+										}
+									}
+								};
+								disableTest(testSuite.name);
+								i = 0;
 								break;
 							}
-							auto disableTest = [&](this const auto& self, const auto& testName) -> void {
-								filteredTests.push_back(testName);
-								for (auto& remainingTestSuite : remainingTestSuites)
-									if (std::ranges::contains(remainingTestSuite.prerequisites, testName))
-									{
-										self(remainingTestSuite.name);
-										Logger::print<"warning">("Skipping test {} due to failed prerequisites in test suite {}", testName, remainingTestSuite.name);
-									}
-								i -= std::erase_if(remainingTestSuites, [&](const auto& testSuite) -> bool {
-									return std::ranges::contains(testSuite.prerequisites, testName);
-								});
-							};
-							disableTest(test.name);
+						}
+						for (auto& remainingTestSuite : remainingTestSuites)
+						{
+							std::erase(remainingTestSuite.prerequisites, testSuite.name);
+							i = 0;
 						}
 					}
-					remainingTestSuites.erase(std::next(std::cbegin(remainingTestSuites), static_cast<std::ptrdiff_t>(i)));
+					removeRemainingTest(i);
 				}
+			}
+
+			if (not atLeastOneTestHasBeenExecuted)
+			{
+				Logger::print<"error">("The following tests cannot be run because they form a circular dependency:");
+				[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
+				for (const auto& testSuite : remainingTestSuites)
+				{
+					Logger::print("- {} dependencies:\n", testSuite.name);
+					for (const auto& prerequisite : testSuite.prerequisites)
+						Logger::print("  - {}\n", prerequisite);
+				}
+				return exitFailure;
 			}
 
 			auto nbSuccess = std::size(successfulTests);

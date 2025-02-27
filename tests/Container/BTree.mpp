@@ -5,7 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Container::BTree
 {
-	inline auto _ = TestSuite{"Container/BTree", {"UnitTest", "Log/Logger"}, [](auto& suite) {
+	inline auto _ = TestSuite{"Container/BTree", {"Logger"}, [](auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 

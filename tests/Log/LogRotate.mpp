@@ -5,7 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::LogRotate
 {
-	inline auto _ = TestSuite{"LogRotate", {"UnitTest", "Log/Logger", "FileSystem/Directory"}, [](auto& suite) {
+	inline auto _ = TestSuite{"LogRotate", {"Logger", "FileSystem/Directory"}, [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("Log Rotation", [&] {

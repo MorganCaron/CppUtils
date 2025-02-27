@@ -5,10 +5,10 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Logger
 {
-	inline auto _ = TestSuite{"Log/Logger", [](auto& suite) {
+	inline auto _ = TestSuite{"Logger", {"UnitTest"}, [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 
-		suite.addTest("In console", [&] {
+		suite.addTest("In console", [] {
 			Logger::print("Message\n");
 
 			Logger::print<"info">("Information message");
@@ -18,11 +18,10 @@ export namespace CppUtils::UnitTest::Logger
 			Logger::print<"detail">("Detail message");
 			Logger::print<"warning">("Warning message");
 			Logger::print<"error">("Error message");
-			suite.expect(true);
 		});
 
-		suite.addTest("In file", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+		suite.addTest("In file", [] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 				const auto logPath = directory / "test.tmp";
 				auto logFile = std::ofstream{logPath, std::ios::app};
 
@@ -35,7 +34,6 @@ export namespace CppUtils::UnitTest::Logger
 				Logger::print<"detail">(logFile, "Detail message");
 				Logger::print<"warning">(logFile, "Warning message");
 				Logger::print<"error">(logFile, "Error message");
-				suite.expect(true);
 			}};
 		});
 	}};

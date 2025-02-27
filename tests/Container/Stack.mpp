@@ -5,8 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Container::Stack
 {
-	inline auto _ = TestSuite{"Container/Stack",
-		[](auto& suite) {
+	inline auto _ = TestSuite{"Container/Stack", {"Logger"}, [](auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 

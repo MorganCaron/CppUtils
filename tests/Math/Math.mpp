@@ -5,7 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Math
 {
-	inline auto _ = TestSuite{"Math", [](auto& suite) {
+	inline auto _ = TestSuite{"Math", {"UnitTest"}, [](auto& suite) {
 		suite.addTest("absolute", [&] {
 			suite.expectEqual(CppUtils::Math::absolute(0), 0u);
 			suite.expectEqual(CppUtils::Math::absolute(1), 1u);

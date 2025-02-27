@@ -138,7 +138,7 @@ export namespace CppUtils
 	inline auto Logger<"CppUtils">::format<"error">(std::string_view message) -> Formatter
 	{
 		return {
-			Terminal::TextModifier{stderr, Terminal::TextColor::TextColorEnum::Red},
+			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red},
 			std::format("{:^{}}\n{} ✕\n", "🛇 ERROR 🛇", Terminal::getTerminalSize().width, message)};
 	}
 

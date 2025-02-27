@@ -5,7 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Language::VirtualMachine
 {
-	inline auto _ = TestSuite{"Language/VirtualMachine", [](auto& suite) {
+	inline auto _ = TestSuite{"Language/VirtualMachine", {"Logger"}, [](auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 		namespace VM = CppUtils::Language::VirtualMachine;

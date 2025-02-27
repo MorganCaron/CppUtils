@@ -5,7 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Container::MeshNetwork
 {
-	inline auto _ = TestSuite{"Container/MeshNetwork", [](auto& suite) {
+	inline auto _ = TestSuite{"Container/MeshNetwork", {"Container/NetworkPtr"}, [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 		using StringMeshNode = CppUtils::Container::MeshNodePtr<std::string, std::string>;
 

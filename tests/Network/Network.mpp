@@ -5,7 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Network
 {
-	inline auto _ = TestSuite{"Network", {"UnitTest", "Log/Logger", "Thread/TryAsync"}, [](auto& suite) {
+	inline auto _ = TestSuite{"Network", {"Logger", "Thread/TryAsync"}, [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("Server Creation", [&] {
