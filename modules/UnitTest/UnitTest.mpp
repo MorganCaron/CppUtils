@@ -172,20 +172,18 @@ namespace CppUtils::UnitTest
 												Logger::print<"warning">("Skipping test {} due to failed prerequisites in test suite {}", remainingTestSuite.name, failedTestSuiteName);
 												self(remainingTestSuite.name);
 											}
+											if (j < i)
+												--i;
 											removeRemainingTest(j--);
 										}
 									}
 								};
 								disableTest(testSuite.name);
-								i = 0;
 								break;
 							}
 						}
 						for (auto& remainingTestSuite : remainingTestSuites)
-						{
 							std::erase(remainingTestSuite.prerequisites, testSuite.name);
-							i = 0;
-						}
 					}
 					removeRemainingTest(i);
 				}
