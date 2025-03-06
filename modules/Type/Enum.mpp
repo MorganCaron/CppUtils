@@ -1,0 +1,29 @@
+export module CppUtils.Type.Enum;
+
+import std;
+
+export namespace CppUtils::Type::Enum
+{
+	using namespace std::literals;
+
+	template<class Enum>
+	constexpr auto Values = std::make_tuple();
+
+	template<auto enumValue>
+	constexpr auto Name = "Unknown"sv;
+
+	template<class Enum>
+	[[nodiscard]] inline constexpr auto toString(Enum value) -> decltype(auto)
+	{
+		constexpr auto nbValues = std::tuple_size_v<decltype(Values<Enum>)>;
+		static_assert(nbValues != 0, "Values<T> doit être spécialisé pour le type de value.");
+
+		auto string = "Unknown"sv;
+
+		[&]<std::size_t... I>(std::index_sequence<I...>) constexpr {
+			[[maybe_unused]] auto result = ((value == std::get<I>(Values<Enum>) and (string = Name<std::get<I>(Values<Enum>)>, true)) or ...);
+		}(std::make_index_sequence<nbValues>{});
+
+		return string;
+	}
+}

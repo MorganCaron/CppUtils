@@ -28,4 +28,5 @@ export import CppUtils.UnitTests.Thread.ThreadPool;
 export import CppUtils.UnitTests.Thread.TryAsync;
 export import CppUtils.UnitTests.Thread.UniqueLocker;
 export import CppUtils.UnitTests.Type.Concept;
+export import CppUtils.UnitTests.Type.Enum;
 export import CppUtils.UnitTests.UnitTest;

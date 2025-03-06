@@ -1,6 +1,7 @@
 export module CppUtils.Type;
 
 export import CppUtils.Type.Concept;
+export import CppUtils.Type.Enum;
 export import CppUtils.Type.MemberFunction;
 export import CppUtils.Type.VariadicTemplate;
 export import CppUtils.Type.Variant;

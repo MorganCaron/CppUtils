@@ -1,0 +1,47 @@
+export module CppUtils.UnitTests.Type.Enum;
+
+import std;
+import CppUtils;
+
+namespace
+{
+    enum class Enum1 { A, B, C };
+    enum class Enum2 { A, B };
+    enum class Enum3 { A, B };
+}
+
+namespace CppUtils::Type::Enum
+{
+    template<> constexpr auto Values<Enum1> = std::make_tuple(Enum1::A, Enum1::B, Enum1::C);
+    template<> constexpr auto Name<Enum1::A> = "A1"sv;
+    template<> constexpr auto Name<Enum1::B> = "B1"sv;
+    template<> constexpr auto Name<Enum1::C> = "C1"sv;
+
+    template<> constexpr auto Values<Enum2> = std::make_tuple(Enum2::A, Enum2::B);
+    template<> constexpr auto Name<Enum2::A> = "A2"sv;
+
+    template<> constexpr auto Values<Enum3> = std::make_tuple(Enum3::A);
+    template<> constexpr auto Name<Enum3::A> = "A3"sv;
+    template<> constexpr auto Name<Enum3::B> = "B3"sv;
+}
+
+export namespace CppUtils::UnitTest::Type::Enum
+{
+    inline auto _ = CppUtils::UnitTest::TestSuite{"Type/Enum", {"UnitTest"}, [](auto& suite) {
+		suite.addTest("Basic", [&] {
+            suite.expect(CppUtils::Type::Enum::toString(Enum1::A) == "A1");
+            suite.expect(CppUtils::Type::Enum::toString(Enum1::B) == "B1");
+            suite.expect(CppUtils::Type::Enum::toString(Enum1::C) == "C1");
+		});
+
+        suite.addTest("Missing value", [&] {
+            suite.expect(CppUtils::Type::Enum::toString(Enum2::A) == "A2");
+            suite.expect(CppUtils::Type::Enum::toString(Enum2::B) == "Unknown");
+		});
+
+        suite.addTest("Missing name", [&] {
+            suite.expect(CppUtils::Type::Enum::toString(Enum3::A) == "A3");
+            suite.expect(CppUtils::Type::Enum::toString(Enum3::B) == "Unknown");
+		});
+	}};
+}

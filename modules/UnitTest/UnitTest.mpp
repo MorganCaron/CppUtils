@@ -230,7 +230,7 @@ namespace CppUtils::UnitTest
 				Logger::print("  - {}\n", failedTest);
 			if (nbFiltered > 0)
 			{
-				Logger::print("- {} filtered tests\n", nbFiltered);
+				Logger::print("- {} skipped tests\n", nbFiltered);
 				for (const auto& filteredTest : filteredTests)
 					Logger::print("  - {}\n", filteredTest);
 			}
