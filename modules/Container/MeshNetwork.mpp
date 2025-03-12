@@ -16,32 +16,17 @@ export namespace CppUtils::Container
 			value{std::forward<decltype(args)>(args)...}
 		{}
 
-		[[nodiscard]] inline auto size() const noexcept -> std::size_t
-		{
-			return std::size(m_branches);
-		}
-
-		[[nodiscard]] inline auto operator[](const Key& key) const -> const auto&
-		{
-			return m_branches.at(key);
-		}
-
-		[[nodiscard]] inline auto operator[](const Key& key) -> decltype(auto)
-		{
-			return m_branches[key];
-		}
-
 		static inline auto attach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
 			auto node0Accessor = node0->uniqueAccess();
 			node0Accessor->attachChild(node1);
-			node0Accessor->value[key1].push_back(node1);
+			node0Accessor->value.branches[key1].push_back(node1);
 		}
 
 		static inline auto detach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
 			auto node0Accessor = node0->uniqueAccess();
-			node0Accessor->value.erase(key1);
+			node0Accessor->value.branches.erase(key1);
 			node0Accessor->detachChild(node1);
 		}
 
@@ -58,9 +43,7 @@ export namespace CppUtils::Container
 		}
 
 		Value value;
-
-	private:
-		std::unordered_map<Key, std::vector<WeakPtr>> m_branches;
+		std::unordered_map<Key, std::vector<WeakPtr>> branches;
 	};
 
 	template<class Key, class Value>
