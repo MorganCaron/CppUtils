@@ -16,6 +16,11 @@ export namespace CppUtils::Container
 			value{std::forward<decltype(args)>(args)...}
 		{}
 
+		[[nodiscard]] inline auto size() const noexcept -> std::size_t
+		{
+			return std::size(m_branches);
+		}
+
 		[[nodiscard]] inline auto operator[](const Key& key) const -> const auto&
 		{
 			return m_branches.at(key);
