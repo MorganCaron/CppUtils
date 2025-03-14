@@ -26,8 +26,28 @@ export namespace CppUtils::Container
 		static inline auto detach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
 			auto node0Accessor = node0->uniqueAccess();
-			node0Accessor->value.branches.erase(key1);
+			auto& branches = node0Accessor->value.branches;
+			auto& childs = branches[key1];
+			if (auto it = std::find_if(std::cbegin(childs), std::cend(childs), [&](const auto& child) -> bool {
+				return std::shared_ptr{child} == node1;
+			}); it != std::cend(childs))
+				childs.erase(it);
+			if (std::empty(childs))
+				branches.erase(key1);
 			node0Accessor->detachChild(node1);
+		}
+
+		static inline auto detach(SharedPtr& node, const Key& key) -> void
+		{
+			auto nodeAccessor = node->uniqueAccess();
+			auto& branches = nodeAccessor->value.branches;
+			const auto& nodesToDetach = branches[key];
+			for (const auto& nodeToDetach : nodesToDetach)
+			{
+				auto sharedNode = nodeToDetach.lock();
+				nodeAccessor->detachChild(sharedNode);
+			}
+			branches.erase(key);
 		}
 
 		static inline auto attach(const Key& key0, SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void

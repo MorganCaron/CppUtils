@@ -161,7 +161,7 @@ export namespace CppUtils::Container
 			if (std::holds_alternative<SharedPtr>(child))
 				sharedPtr = std::get<SharedPtr>(child);
 			else
-				sharedPtr = std::get<WeakPtr>(child).lock();
+				sharedPtr = std::shared_ptr{std::get<WeakPtr>(child)};
 			return sharedPtr->uniqueAccess();
 		}
 

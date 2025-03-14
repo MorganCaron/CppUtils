@@ -14,30 +14,30 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 		});
 
 		suite.addTest("Access value", [&] {
-			auto banana = StringMeshNode::make("banana");
-			auto accessor = banana->sharedAccess();
+			auto apple = StringMeshNode::make("apple");
+			auto accessor = apple->sharedAccess();
 			const auto& value = accessor->value.value;
 			Logger::print("{}\n", value);
-			suite.expect(value == "banana");
+			suite.expect(value == "apple");
 		});
 
 		suite.addTest("Copy reference", [&] {
-			auto bananaRef = StringMeshNode::SharedPtr{};
+			auto appleRef = StringMeshNode::SharedPtr{};
 			{
-				auto banana = StringMeshNode::make("banana");
-				bananaRef = banana;
+				auto apple = StringMeshNode::make("apple");
+				appleRef = apple;
 			}
-			auto accessor = bananaRef->sharedAccess();
+			auto accessor = appleRef->sharedAccess();
 			const auto& value = accessor->value.value;
 			Logger::print("{}\n", value);
-			suite.expect(value == "banana");
+			suite.expect(value == "apple");
 		});
 
 		suite.addTest("Attach child", [&] {
 			auto fruit = StringMeshNode::makeRoot("fruit");
 			{
-				auto banana = StringMeshNode::make("banana");
-				StringMeshNode::Value::attach(fruit, "Elements", banana);
+				auto apple = StringMeshNode::make("apple");
+				StringMeshNode::Value::attach(fruit, "Elements", apple);
 			}
 
 			auto fruitAccessor = fruit->sharedAccess();
@@ -45,41 +45,136 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			suite.expect(std::size(fruitBranches) == 1);
 			const auto& fruits = fruitBranches.at("Elements");
 			suite.expect(std::size(fruits) == 1);
-			auto firstFruit = std::shared_ptr{fruits[0]};
-			auto bananaAccessor = firstFruit->sharedAccess();
-			const auto& value = bananaAccessor->value.value;
-			Logger::print("{}\n", value);
-			suite.expect(value == "banana");
+			{
+				auto apple = std::shared_ptr{fruits[0]};
+				auto appleAccessor = apple->sharedAccess();
+				const auto& value = appleAccessor->value.value;
+				Logger::print("{}\n", value);
+				suite.expect(value == "apple");
+			}
+		});
+
+		suite.addTest("Detach child", [&] {
+			auto fruit = StringMeshNode::makeRoot("fruit");
+			auto apple = StringMeshNode::make("apple");
+			auto banana = StringMeshNode::make("banana");
+			StringMeshNode::Value::attach(fruit, "Elements", apple);
+			StringMeshNode::Value::attach(fruit, "Elements", banana);
+
+			{
+				auto fruitAccessor = fruit->sharedAccess();
+				const auto& fruitBranches = fruitAccessor->value.branches;
+				suite.expect(std::size(fruitBranches) == 1);
+				const auto& fruits = fruitBranches.at("Elements");
+				suite.expect(std::size(fruits) == 2);
+				{
+					auto apple = std::shared_ptr{fruits[0]};
+					auto appleAccessor = apple->sharedAccess();
+					const auto& value = appleAccessor->value.value;
+					Logger::print("{}\n", value);
+					suite.expect(value == "apple");
+				}
+				{
+					auto banana = std::shared_ptr{fruits[1]};
+					auto bananaAccessor = banana->sharedAccess();
+					const auto& value = bananaAccessor->value.value;
+					Logger::print("{}\n", value);
+					suite.expect(value == "banana");
+				}
+			}
+
+			{
+				StringMeshNode::Value::detach(fruit, "Elements", apple);
+
+				auto fruitAccessor = fruit->sharedAccess();
+				const auto& fruitBranches = fruitAccessor->value.branches;
+				suite.expect(std::size(fruitBranches) == 1);
+				const auto& fruits = fruitBranches.at("Elements");
+				suite.expect(std::size(fruits) == 1);
+				{
+					auto banana = std::shared_ptr{fruits[0]};
+					auto bananaAccessor = banana->sharedAccess();
+					const auto& value = bananaAccessor->value.value;
+					Logger::print("{}\n", value);
+					suite.expect(value == "banana");
+				}
+			}
+
+			{
+				StringMeshNode::Value::detach(fruit, "Elements", banana);
+
+				auto fruitAccessor = fruit->sharedAccess();
+				const auto& fruitBranches = fruitAccessor->value.branches;
+				suite.expect(std::size(fruitBranches) == 0);
+			}
+		});
+
+		suite.addTest("Detach children", [&] {
+			auto fruit = StringMeshNode::makeRoot("fruit");
+			auto apple = StringMeshNode::make("apple");
+			auto banana = StringMeshNode::make("banana");
+			StringMeshNode::Value::attach(fruit, "Elements", apple);
+			StringMeshNode::Value::attach(fruit, "Elements", banana);
+
+			{
+				auto fruitAccessor = fruit->sharedAccess();
+				const auto& fruitBranches = fruitAccessor->value.branches;
+				suite.expect(std::size(fruitBranches) == 1);
+				const auto& fruits = fruitBranches.at("Elements");
+				suite.expect(std::size(fruits) == 2);
+				{
+					auto apple = std::shared_ptr{fruits[0]};
+					auto appleAccessor = apple->sharedAccess();
+					const auto& value = appleAccessor->value.value;
+					Logger::print("{}\n", value);
+					suite.expect(value == "apple");
+				}
+				{
+					auto banana = std::shared_ptr{fruits[1]};
+					auto bananaAccessor = banana->sharedAccess();
+					const auto& value = bananaAccessor->value.value;
+					Logger::print("{}\n", value);
+					suite.expect(value == "banana");
+				}
+			}
+
+			{
+				StringMeshNode::Value::detach(fruit, "Elements");
+
+				auto fruitAccessor = fruit->sharedAccess();
+				const auto& fruitBranches = fruitAccessor->value.branches;
+				suite.expect(std::size(fruitBranches) == 0);
+			}
 		});
 
 		suite.addTest("Bilateral attachment", [&] {
 			auto fruit = StringMeshNode::makeRoot("fruit");
-			auto banana = StringMeshNode::make("banana");
-			StringMeshNode::Value::attach("Categories", fruit, "Elements", banana);
+			auto apple = StringMeshNode::make("apple");
+			StringMeshNode::Value::attach("Categories", fruit, "Elements", apple);
 			{
 				auto fruitAccessor = fruit->sharedAccess();
 				const auto& fruitBranches = fruitAccessor->value.branches;
 				const auto& fruits = fruitBranches.at("Elements");
 				suite.expect(std::size(fruits) == 1);
 				auto firstFruit = std::shared_ptr{fruits[0]};
-				auto bananaAccessor = firstFruit->sharedAccess();
-				const auto& bananaName = bananaAccessor->value.value;
+				auto appleAccessor = firstFruit->sharedAccess();
+				const auto& appleName = appleAccessor->value.value;
 				const auto& fruitName = fruitAccessor->value.value;
-				Logger::print("{} is a {}\n", bananaName, fruitName);
-				suite.expect(bananaName == "banana");
+				Logger::print("{} is a {}\n", appleName, fruitName);
+				suite.expect(appleName == "apple");
 				suite.expect(fruitName == "fruit");
 			}
 			{
-				auto bananaAccessor = banana->sharedAccess();
-				const auto& bananaBranches = bananaAccessor->value.branches;
-				const auto& bananaCategories = bananaBranches.at("Categories");
-				suite.expect(std::size(bananaCategories) == 1);
-				auto firstCategory = std::shared_ptr{bananaCategories[0]};
+				auto appleAccessor = apple->sharedAccess();
+				const auto& appleBranches = appleAccessor->value.branches;
+				const auto& appleCategories = appleBranches.at("Categories");
+				suite.expect(std::size(appleCategories) == 1);
+				auto firstCategory = std::shared_ptr{appleCategories[0]};
 				auto fruitAccessor = firstCategory->sharedAccess();
-				const auto& bananaName = bananaAccessor->value.value;
+				const auto& appleName = appleAccessor->value.value;
 				const auto& fruitName = fruitAccessor->value.value;
-				Logger::print("{} is a {}\n", bananaName, fruitName);
-				suite.expect(bananaName == "banana");
+				Logger::print("{} is a {}\n", appleName, fruitName);
+				suite.expect(appleName == "apple");
 				suite.expect(fruitName == "fruit");
 			}
 		});
@@ -113,16 +208,19 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 					auto fruit = std::shared_ptr{weakFruit};
 					auto fruitAccessor = fruit->sharedAccess();
 					const auto& fruitBranches = fruitAccessor->value.branches;
+
+					const auto& fruitCategories = fruitBranches.at("Categories");
+					suite.expect(std::size(fruitCategories) == 1);
+					auto fruitCategory = std::shared_ptr{fruitCategories[0]};
+					auto fruitCategoryAccessor = fruitCategory->sharedAccess();
+					suite.expect(fruitCategoryAccessor->value.value == "fruit");
+
 					const auto& colors = fruitBranches.at("Colors");
 					suite.expect(std::size(colors) == 1);
 					auto color = std::shared_ptr{colors[0]};
 					auto colorAccessor = color->sharedAccess();
-					const auto& colorBranches = colorAccessor->value.branches;
-					const auto& categories = colorBranches.at("Categories");
-					suite.expect(std::size(categories) == 1);
-					auto category = std::shared_ptr{categories[0]};
-					auto categoryAccessor = category->sharedAccess();
-					Logger::print("{} is a {} {}\n", fruitAccessor->value.value, colorAccessor->value.value, categoryAccessor->value.value);
+
+					Logger::print("{} is a {} {}\n", fruitAccessor->value.value, colorAccessor->value.value, fruitCategoryAccessor->value.value);
 				}
 			}
 		});
