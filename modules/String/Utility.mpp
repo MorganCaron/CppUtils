@@ -7,24 +7,65 @@ import CppUtils.String.Concept;
 
 export namespace CppUtils::String
 {
-	inline const auto escapedChars = std::unordered_map<char, char>{
-		{'0', '\0'},
-		{'a', '\a'},
-		{'b', '\b'},
-		{'f', '\f'},
-		{'n', '\n'},
-		{'r', '\r'},
-		{'t', '\t'},
-		{'v', '\v'}};
-
-	template<Char CharT>
-	[[nodiscard]] inline auto reverseEscapedChar(CharT c) noexcept -> std::basic_string<CharT>
+	[[nodiscard]] inline constexpr auto isEscapable(char c) noexcept -> bool
 	{
-		for (const auto& [readableChar, escapedChar] : String::escapedChars)
-			if (escapedChar == c)
-				return std::basic_string<CharT>{"\\"} + readableChar;
-		return std::basic_string<CharT>{c};
+		switch (c)
+		{
+		case '0': [[fallthrough]];
+		case 'a': [[fallthrough]];
+		case 'b': [[fallthrough]];
+		case 'f': [[fallthrough]];
+		case 'n': [[fallthrough]];
+		case 'r': [[fallthrough]];
+		case 't': [[fallthrough]];
+		case 'v': return true;
+		default: return false;
+		}
 	}
+
+	static_assert(isEscapable('0'));
+	static_assert(isEscapable('n'));
+	static_assert(not isEscapable('A'));
+
+	[[nodiscard]] inline constexpr auto escape(char c) noexcept -> char
+	{
+		switch (c)
+		{
+		case '0': return '\0';
+		case 'a': return '\a';
+		case 'b': return '\b';
+		case 'f': return '\f';
+		case 'n': return '\n';
+		case 'r': return '\r';
+		case 't': return '\t';
+		case 'v': return '\v';
+		default: return c;
+		}
+	}
+
+	static_assert(escape('0') == '\0');
+	static_assert(escape('n') == '\n');
+	static_assert(escape('A') == 'A');
+
+	[[nodiscard]] inline constexpr auto unescape(char c) noexcept -> char
+	{
+		switch (c)
+		{
+		case '\0': return '0';
+		case '\a': return 'a';
+		case '\b': return 'b';
+		case '\f': return 'f';
+		case '\n': return 'n';
+		case '\r': return 'r';
+		case '\t': return 't';
+		case '\v': return 'v';
+		default: return c;
+		}
+	}
+
+	static_assert(unescape('\0') == '0');
+	static_assert(unescape('\n') == 'n');
+	static_assert(unescape('A') == 'A');
 
 	inline namespace cpp20
 	{

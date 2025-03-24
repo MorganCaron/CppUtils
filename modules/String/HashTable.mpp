@@ -34,9 +34,8 @@ export namespace CppUtils::String
 			auto c = static_cast<char>(token);
 			if (std::isprint(c))
 				return std::format("{} '{}'", token, c);
-			for (const auto& [readableChar, escapedChar] : String::escapedChars)
-				if (escapedChar == c)
-					return std::format(R"({} \'{}')", token, readableChar);
+			if (String::isEscapable(c))
+				return std::format(R"({} \'{}')", token, String::unescape(c));
 		}
 		return std::format("{}", token);
 	}
