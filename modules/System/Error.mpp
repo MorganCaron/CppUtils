@@ -47,11 +47,13 @@ export namespace CppUtils::System
 
 	[[nodiscard]] inline auto expectNoError(int value, std::string_view message = "") -> std::expected<int, std::runtime_error>
 	{
-		if (value != 0) [[unlikely]]
-			return std::unexpected(std::runtime_error{
-				std::empty(message) ?
-					std::format("{}", GetLastError()) :
-					std::format("{}: {}", message, GetLastError())});
+		if (value == 0) [[likely]]
+			return value;
+			
+		return std::unexpected(std::runtime_error{
+			std::empty(message) ?
+				std::format("{}", GetLastError()) :
+				std::format("{}: {}", message, GetLastError())});
 	}
 #endif
 }
