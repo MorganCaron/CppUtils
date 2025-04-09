@@ -15,6 +15,7 @@ if is_plat("windows") and not is_plat("mingw") then
 	set_runtimes(is_mode("debug") and "MDd" or "MD")
 	add_defines("NOMINMAX", "VC_EXTRALEAN", "WIN32_LEAN_AND_MEAN", "_CRT_SECURE_NO_WARNINGS", { public = true })
 	add_cxflags("cl::/wd4251", {force = true}) -- ‘identifier’ : class ‘type’ needs to have dll-interface to be used by clients of class ‘type2’
+	add_syslinks("Ws2_32")
 elseif is_plat("linux", "macosx") then
 	add_syslinks("pthread", "dl")
 end
