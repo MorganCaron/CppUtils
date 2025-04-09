@@ -70,7 +70,7 @@ export namespace CppUtils::Terminal
 			return info.wAttributes;
 		}
 
-		[[nodiscard]] inline static auto getTextColor(std::ostream& stream) -> std::uint16_t
+		[[nodiscard]] static inline auto getTextColor(std::ostream& stream) -> std::uint16_t
 		{
 			CONSOLE_SCREEN_BUFFER_INFO info;
 			if (!GetConsoleScreenBufferInfo(getTerminalHandle(stream), &info))

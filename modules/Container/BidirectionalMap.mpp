@@ -43,7 +43,7 @@ export namespace CppUtils::Container
 		{
 			return std::begin(values);
 		}
-		[[nodiscard]] constexpr inline auto begin() -> decltype(auto)
+		[[nodiscard]] inline constexpr auto begin() -> decltype(auto)
 		{
 			return std::begin(values);
 		}
@@ -62,7 +62,7 @@ export namespace CppUtils::Container
 		{
 			return std::end(values);
 		}
-		[[nodiscard]] constexpr inline auto end() -> decltype(auto)
+		[[nodiscard]] inline constexpr auto end() -> decltype(auto)
 		{
 			return std::end(values);
 		}
@@ -72,12 +72,12 @@ export namespace CppUtils::Container
 			return std::cend(values);
 		}
 
-		[[nodiscard]] constexpr inline auto empty() const noexcept -> bool
+		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
 		{
 			return std::empty(values);
 		}
 
-		[[nodiscard]] constexpr inline auto size() const noexcept -> std::size_t
+		[[nodiscard]] inline constexpr auto size() const noexcept -> std::size_t
 		{
 			return std::size(values);
 		}

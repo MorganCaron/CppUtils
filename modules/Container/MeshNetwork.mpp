@@ -30,7 +30,8 @@ export namespace CppUtils::Container
 			auto& childs = branches[key1];
 			if (auto it = std::find_if(std::cbegin(childs), std::cend(childs), [&](const auto& child) -> bool {
 				return std::shared_ptr{child} == node1;
-			}); it != std::cend(childs))
+			});
+				it != std::cend(childs))
 				childs.erase(it);
 			if (std::empty(childs))
 				branches.erase(key1);
