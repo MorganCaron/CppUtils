@@ -5,13 +5,13 @@ import std;
 export namespace CppUtils::Container
 {
 	template<class Lhs, class Rhs>
-	[[nodiscard]] constexpr inline auto swapPair(std::pair<Lhs, Rhs>&& pair) noexcept -> std::pair<Rhs, Lhs>
+	[[nodiscard]] inline constexpr auto swapPair(std::pair<Lhs, Rhs>&& pair) noexcept -> std::pair<Rhs, Lhs>
 	{
 		return std::pair<Rhs, Lhs>{std::move(pair.second), std::move(pair.first)};
 	}
 
 	template<class Lhs, class Rhs>
-	[[nodiscard]] constexpr inline auto swapPair(const std::pair<Lhs, Rhs>& pair) noexcept -> std::pair<Rhs, Lhs>
+	[[nodiscard]] inline constexpr auto swapPair(const std::pair<Lhs, Rhs>& pair) noexcept -> std::pair<Rhs, Lhs>
 	{
 		return std::pair<Rhs, Lhs>{pair.second, pair.first};
 	}

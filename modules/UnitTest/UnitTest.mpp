@@ -208,7 +208,7 @@ namespace CppUtils::UnitTest
 			auto nbSuccess = std::size(successfulTests);
 			auto nbFail = std::size(failedTests);
 			auto nbFiltered = std::size(filteredTests);
-			
+
 			Logger::printSeparator<"detail">();
 			Logger::print<"detail">("Test results");
 			if (nbFail == 0)
@@ -271,7 +271,7 @@ namespace CppUtils::UnitTest
 		inline explicit TestSuite(std::string name, std::function<void(TestSuite&)> function):
 			TestSuite{std::move(name), {}, std::move(function)}
 		{}
-		
+
 		inline auto addTest(std::string name, std::function<void()> function) -> void
 		{
 			tests.emplace_back(std::move(name), function);
