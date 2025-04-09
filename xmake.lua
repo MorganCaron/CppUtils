@@ -36,9 +36,14 @@ if is_mode("debug") then
 end
 
 option("enable_tests")
+option("enable_moduleonly", {default = true})
 
 target("CppUtils", function()
-	set_kind("moduleonly")
+	if get_config("enable_moduleonly") then
+		set_kind("moduleonly")
+	else
+	  set_kind("$(kind)")
+	end
 
 	add_files("modules/**.mpp", { public = true })
 	add_includedirs("include", { public = true })
