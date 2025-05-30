@@ -1,0 +1,49 @@
+export module CppUtils.Type.Callable;
+
+import std;
+
+export namespace CppUtils::Type
+{
+	template<class T>
+	struct CallableTrait;
+
+	template<class Functor>
+	requires requires { &Functor::operator(); }
+	struct CallableTrait<Functor>: CallableTrait<decltype(&Functor::operator())>
+	{};
+
+	template<class Return, class... Args>
+	struct CallableTrait<Return(Args...)>
+	{
+		using ReturnType = Return;
+		using ArgumentsTypes = std::tuple<Args...>;
+	};
+
+	template<class Return, class... Args>
+	struct CallableTrait<Return (*)(Args...)>: CallableTrait<Return(Args...)>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...)>: CallableTrait<Return(Args...)>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...)&>: CallableTrait<Return(Args...)>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...) &&>: CallableTrait<Return(Args...)>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...) const>: CallableTrait<Return(Args...)>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...) const&>: CallableTrait<Return(Args...)>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...) const&&>: CallableTrait<Return(Args...)>
+	{};
+}

@@ -4,10 +4,10 @@ import std;
 import CppUtils.Type;
 import CppUtils.String;
 import CppUtils.Language.VirtualMachine;
-import CppUtils.Language.CallStackCompiler;
 
 export namespace CppUtils::Language::CLikeCompiler
 {
+	/*
 	template<class CharT>
 	inline constexpr auto compile(const std::basic_string_view<CharT> source) -> std::basic_string<CharT>
 	{
@@ -33,4 +33,5 @@ export namespace CppUtils::Language::CLikeCompiler
 			&source));
 		return std::basic_string<CharT>{std::move(*output)};
 	}
+	*/
 }

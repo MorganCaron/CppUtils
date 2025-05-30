@@ -15,9 +15,9 @@ export namespace CppUtils::UnitTest::Type::Concept
 	static_assert(Printable<std::string>);
 	static_assert(Printable<std::string_view>);
 
-	static_assert(not Present<int>);
-	static_assert(not Present<int, bool, char, double>);
-	static_assert(Present<int, bool, char, int, double>);
+	static_assert(not IsOneOf<int>);
+	static_assert(not IsOneOf<int, bool, char, double>);
+	static_assert(IsOneOf<int, bool, char, int, double>);
 
 	static_assert(Specializes<std::vector<int>, std::vector>);
 	static_assert(not Specializes<std::vector<int>, std::map>);

@@ -17,7 +17,7 @@ export namespace CppUtils::Type::Variant::Operators
 	template<class LhsType, class... RhsTypes>
 	inline auto operator==(const LhsType& lhs, const std::variant<RhsTypes...>& rhs) -> bool
 	{
-		if constexpr (!Present<LhsType, RhsTypes...>)
+		if constexpr (!IsOneOf<LhsType, RhsTypes...>)
 			return false;
 		else if (!std::holds_alternative<LhsType>(rhs))
 			return false;
@@ -26,11 +26,11 @@ export namespace CppUtils::Type::Variant::Operators
 	}
 
 	template<class... LhsTypes, class... RhsTypes>
-	requires (!Present<LhsTypes, RhsTypes...> or ...)
+	requires (!IsOneOf<LhsTypes, RhsTypes...> or ...)
 	inline auto operator==(const std::variant<LhsTypes...>& lhs, const std::variant<RhsTypes...>& rhs) -> bool
 	{
 		return std::visit([&rhs](auto&& lhsValue) -> bool {
-			if constexpr (!Present<decltype(lhsValue), RhsTypes...>)
+			if constexpr (!IsOneOf<decltype(lhsValue), RhsTypes...>)
 				return lhsValue == rhs;
 			else
 				return false;

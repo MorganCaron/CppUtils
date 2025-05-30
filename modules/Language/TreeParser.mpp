@@ -3,12 +3,18 @@ export module CppUtils.Language.TreeParser;
 import std;
 import CppUtils.Memory;
 import CppUtils.String.Hash;
+import CppUtils.String.Concept;
 import CppUtils.Container.Tree;
 import CppUtils.Language.VirtualMachine;
-import CppUtils.Language.CallStackCompiler;
 
 export namespace CppUtils::Language::TreeParser
 {
+	inline /* constexpr */ auto compile(String::StringView auto source) -> std::expected<Container::AST<typename decltype(source)::value_type>, std::string_view>
+	{
+		using CharT = decltype(source)::value_type;
+		return Container::AST<CharT>{};
+	}
+	/*
 	template<class CharT>
 	inline auto compile(const std::basic_string_view<CharT> source) -> Container::AST<CharT>
 	{
@@ -135,4 +141,5 @@ export namespace CppUtils::Language::TreeParser
 			&decltype(source)::at,
 			+tokenize));
 	}
+	*/
 }

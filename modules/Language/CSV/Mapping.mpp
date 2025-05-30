@@ -1,0 +1,79 @@
+export module CppUtils.Language.CSV.Mapping;
+/*
+import std;
+
+import CppUtils.String;
+
+export namespace CppUtils::Language::CSV::Mapping
+{
+	struct Column final
+	{
+		String::Token token;
+		std::size_t position;
+	};
+
+	template<class...>
+	struct CSVSchema;
+
+	template<class... Columns>
+	struct CSVSchema final
+	{
+		explicit CSVSchema(const Columns&... columns)
+		{
+			([&](const Column& column) -> void {
+				columnsPositions[column.token] = column.position;
+			}(columns), ...);
+		}
+
+		std::unordered_map<String::Hash, std::size_t> columnsPositions;
+	};
+
+	template<class>
+	struct Mapping;
+
+	template<class Object>
+	[[nodiscard]] inline auto toStruct(const Language::CSV::Line& csvLine) -> decltype(auto)
+	{
+		static_assert(std::is_default_constructible_v<Object>);
+		const auto& structSchema = Language::Mapping::Mapping<Object>::schema;
+		const auto& csvSchema = Mapping<Object>::schema;
+		auto object = Object{};
+		std::apply([&](auto&&... attributes) -> void {
+			([&](auto&& attribute) -> void {
+				auto& objectAttribute = object.*attribute.address;
+				using AttributeType = std::remove_cvref_t<decltype(objectAttribute)>;
+				auto position = csvSchema.columnsPositions.at(attribute.token);
+				if (position < std::size(csvLine))
+				{
+					if (attribute.parsingFunction)
+						objectAttribute = attribute.parsingFunction(csvLine[position]);
+					else if constexpr (std::same_as<AttributeType, std::string>)
+						objectAttribute = csvLine[position];
+				}
+			}(attributes, ...);
+		}, structSchema.attributes);
+		return object;
+	}
+
+	using namespace String::Literals;
+
+	template<class T>
+	inline auto loadFile(const std::filesystem::path& filePath, std::vector<T>&& elements = {}, std::size dropNFirstLines = 0) -> std::vector<T>
+	{
+		auto fileContent = FileSystem::String::read(filePath);
+		auto csvTable = parse(fileContent, dropNFirstLines);
+		for (const auto& csvLine : csvTable)
+			elements.emplace_back(toStruct<T>(csvLine));
+		return elements;
+	}
+
+	template<class T>
+	inline auto loadDirectory(const std::filesystem::path& directory, std::vector<T>&& elements = {}, std::size_t dropNFirstLines = 0) -> std::vector<T>
+	{
+		FileSystem::forFilesWithExtension(directory, ".csv", [&elements, dropNFirstLines](const auto& filePath) {
+			loadFile(filePath, std::move(elements), dropNFirstLines);
+		});
+		return elements;
+	}
+}
+*/

@@ -1,0 +1,50 @@
+export module CppUtils.Language.Mapping;
+
+import std;
+
+import CppUtils.String;
+
+export namespace CppUtils::Language::Mapping
+{
+	template<class Object, class Property>
+	struct Attribute final
+	{
+		static_assert(std::is_class_v<Object>);
+
+		using StructType = Object;
+		using AttributeType = Property;
+
+		String::Token token;
+		AttributeType StructType::*address;
+		bool optional = false;
+		AttributeType defaultValue = AttributeType{};
+		std::function<AttributeType(std::string_view)> parsingFunction = {};
+	};
+
+	template<class Object, class Property>
+	Attribute(String::Token token, Property Object::*address, bool optional = false, Property defaultValue = Property{}, Property (*parsingFunction)(std::string_view) = {}) -> Attribute<Object, Property>;
+
+	template<class>
+	struct StructSchema;
+
+	template<class Object, class... Attributes>
+	struct StructSchema<Object(Attributes...)> final
+	{
+		static_assert(std::is_class_v<Object>);
+		static_assert((std::is_same_v<Attributes, Attribute<Object, typename Attributes::AttributeType>> and ...));
+
+		explicit StructSchema(auto&&... attributes):
+			attributes{std::forward<decltype(attributes)>(attributes)...}
+		{}
+
+		std::tuple<Attributes...> attributes;
+	};
+
+	template<class Object, class... Attributes>
+	StructSchema(Attribute<Object, Attributes>...) -> StructSchema<Object(Attribute<Object, Attributes>...)>;
+
+	template<class>
+	struct Mapping;
+
+	using namespace String::Literals;
+}

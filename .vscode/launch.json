@@ -6,6 +6,12 @@
 			"name": "Compile & Run Tests",
 			"request": "launch",
 			"type": "node-terminal"
+		},
+		{
+			"command": "xmake watch -r",
+			"name": "Watch",
+			"request": "launch",
+			"type": "node-terminal"
 		}
 	]
 }

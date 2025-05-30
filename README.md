@@ -20,7 +20,7 @@
 
 ### In this library you can find:
 
-- Additional containers ([bidirectional map](modules/Container/BidirectionalMap.mpp), [b-tree](modules/Container/BTree.mpp), [meshes](modules/Container/MeshNetwork.mpp), [stacks](modules/Container/Stack.mpp), [trees](modules/Container/Tree.mpp))
+- Additional containers ([bidirectional map](modules/Container/BidirectionalMap.mpp), [b-tree](modules/Container/BTree.mpp), [meshes](modules/Container/MeshNetwork.mpp), [stacks](modules/Container/TypedStack.mpp), [trees](modules/Container/Tree.mpp))
 - A [file modification listener](modules/FileSystem/Watcher.mpp)
 - Tools for creating parsers and compilers (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
 - Parsers and compilers for popular languages (CSS, INI, HTML, JSON, Markdown, XML) (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
@@ -62,7 +62,7 @@ end)
 
 ### Build command
 ```console
-xmake f --toolchain=llvm --runtimes="c++_shared" [--enable_tests=y] --yes
+xmake f --toolchain=llvm --runtimes="c++_shared" [--sdk=/opt/llvm-git] [--enable_tests=y] --yes
 xmake [b|build] [-vD]
 ```
 

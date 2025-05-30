@@ -10,12 +10,18 @@ export namespace CppUtils::Type
 	};
 
 	template<class Type, class... Types>
-	concept Present = (std::same_as<Type, Types> or ...);
+	concept IsOneOf = (std::same_as<Type, Types> or ...);
 
 	template<class T>
 	concept Dereferenceable = requires (T value) {
 		*value;
 	};
+
+	template<class T>
+	concept IsHashable = requires (std::remove_cvref_t<T>& a) {
+		{ std::hash<std::remove_cvref_t<T>>{}(a) } -> std::convertible_to<std::size_t>;
+	};
+
 	template<class T, template<class...> class IncompleteType>
 	inline constexpr bool isSpecializationOf = false;
 
@@ -54,4 +60,10 @@ export namespace CppUtils::Type
 
 	template<class T>
 	concept Trivial = TriviallyConstructible<T> and TriviallyDestructible<T> and TriviallyCopyable<T>;
+
+	template<class Function, class... Args>
+	concept Callable = std::invocable<Function, Args...>;
+
+	template<class Function, class... Args>
+	concept NotCallable = not Callable<Function, Args...>;
 }

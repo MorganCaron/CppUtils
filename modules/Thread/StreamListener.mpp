@@ -1,0 +1,59 @@
+export module CppUtils.Thread.StreamListener;
+
+import std;
+import CppUtils.Thread.ThreadLoop;
+
+export namespace CppUtils::Thread
+{
+	template<class Type, std::size_t BufferSize>
+	class StreamListener
+	{
+	public:
+		using Buffer = std::array<Type, BufferSize>;
+
+		inline StreamListener() = delete;
+
+		inline StreamListener(std::FILE* file,
+			const std::function<void(const Buffer&)>& function):
+			m_file{file},
+			m_function{std::move(function)},
+			m_threadLoop{std::bind(&StreamListener::listener, this)}
+		{}
+
+		inline StreamListener(const StreamListener&) = delete;
+		inline StreamListener(StreamListener&&) noexcept = default;
+		inline auto operator=(const StreamListener&) -> StreamListener& = delete;
+		inline auto operator=(StreamListener&&) noexcept -> StreamListener& = default;
+
+		inline auto start() -> void
+		{
+			m_threadLoop.start();
+		}
+
+		inline auto stop() -> void
+		{
+			m_threadLoop.stop();
+		}
+
+	private:
+		inline auto listener() -> void
+		{
+			auto buffer = Buffer{};
+			if (auto sizeRead = std::fread(buffer, sizeof(Type), BufferSize, m_file); sizeRead > 0)
+				m_function(buffer);
+			else
+			{
+				if (std::feof(m_file))
+					std::cerr << "Fin du fichier atteinte." << std::endl;
+				else if (std::ferror(m_file))
+					std::cerr << "Erreur de lecture." << std::endl;
+				stop();
+			}
+		}
+
+		std::FILE* m_file;
+		std::reference_wrapper<std::istream> m_istream;
+		std::function<void(const Buffer&)> m_function;
+		ThreadLoop m_threadLoop;
+	};
+}

@@ -10,77 +10,135 @@ export namespace CppUtils::UnitTest::Container::Stack
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("Empty Stack", [&] {
-			auto stack = CppUtils::Container::Stack<int>{};
+			auto stack = CppUtils::Container::Stack{};
 			suite.expect(std::empty(stack));
 		});
 
-		suite.addTest("One value", [&] {
-			auto stack = CppUtils::Container::Stack<int>{42};
-			suite.expect(!std::empty(stack));
-			suite.expectEqual(std::size(stack), 1uz);
+		suite.addTest("Push one value", [&] {
+			auto stack = CppUtils::Container::Stack{};
+			stack.push(42);
+			suite.expect(not std::empty(stack));
+			suite.expectEqual(std::size(stack), sizeof(int));
+		});
+
+		suite.addTest("Pop", [&] {
+			auto stack = CppUtils::Container::Stack{};
+			stack.push(42);
+			{
+				auto result = stack.pop<int>();
+				suite.expect(result.has_value());
+				suite.expectEqual(result.value(), 42);
+			}
+			suite.expect(std::empty(stack));
+			{
+				auto result = stack.pop<int>();
+				suite.expect(not result.has_value());
+			}
 		});
 
 		suite.addTest("One type, multiple values", [&] {
-			auto stack = CppUtils::Container::Stack<int>{1, 2, 3};
-			suite.expectEqual(std::size(stack), 3uz);
+			auto stack = CppUtils::Container::Stack{};
+			stack.push(1);
+			stack.push(2);
+			stack.push(3);
+			suite.expectEqual(std::size(stack), sizeof(int) * 3);
 		});
 
 		suite.addTest("Multiple types", [&] {
-			auto stack = CppUtils::Container::Stack<bool, int, float, std::string_view>{true, 42, 3.14f, "Hello World!"sv};
-			suite.expectEqual(std::size(stack), 4uz);
-
-			stack.print();
-
-			Logger::print("{}\n", stack.get<bool>(0));
-			Logger::print("{}\n", stack.get<int>(1));
-			Logger::print("{}\n", stack.get<float>(2));
-			Logger::print("{}\n", stack.get<std::string_view>(3));
-		});
-
-		suite.addTest("push/top", [&] {
-			auto stack = CppUtils::Container::Stack<bool, int, float>{};
+			auto stack = CppUtils::Container::Stack{};
 			stack.push(true);
-			suite.expectEqual(stack.top<bool>(), true);
 			stack.push(42);
-			suite.expectEqual(stack.top<int>(), 42);
 			stack.push(3.14f);
-			suite.expectEqual(stack.top<float>(), 3.14f);
+			stack.push("Hello World!"sv);
+			suite.expectEqual(std::size(stack), sizeof(bool) + sizeof(int) + sizeof(float) + sizeof(std::string_view));
+
+			stack.dump();
+
+			{
+				auto result = stack.get<bool>(sizeof(int) + sizeof(float) + sizeof(std::string_view));
+				suite.expect(result.has_value());
+				Logger::print("{}\n", result.value());
+			}
+			{
+				auto result = stack.get<int>(sizeof(float) + sizeof(std::string_view));
+				suite.expect(result.has_value());
+				Logger::print("{}\n", result.value());
+			}
+			{
+				auto result = stack.get<float>(sizeof(std::string_view));
+				suite.expect(result.has_value());
+				Logger::print("{}\n", result.value());
+			}
+			{
+				auto result = stack.get<std::string_view>();
+				suite.expect(result.has_value());
+				Logger::print("{}\n", result.value());
+			}
 		});
 
-		suite.addTest("pushType", [&] {
-			auto stack = CppUtils::Container::Stack<bool, int, float>{};
-			stack.pushType(1);
-			suite.expectEqual(stack.top<int>(), 0);
-		});
-
-		suite.addTest("get", [&] {
-			auto stack = CppUtils::Container::Stack<int>{42};
-			suite.expectEqual(stack.get<int>(0), 42);
-		});
-
-		suite.addTest("pop", [&] {
-			auto stack = CppUtils::Container::Stack<int>{42};
-			suite.expectEqual(stack.pop<int>(), 42);
+		suite.addTest("Call function: () -> std::size_t", [&] {
+			auto stack = CppUtils::Container::Stack{};
+			stack.push(0uz);
+			auto getNumber = []() -> std::size_t {
+				return 42uz;
+			};
+			stack.call(+getNumber);
+			{
+				auto result = stack.pop<std::size_t>();
+				suite.expect(result.has_value());
+				suite.expectEqual(result.value(), 42uz);
+			}
 			suite.expect(std::empty(stack));
 		});
 
-		suite.addTest("copy", [&] {
-			auto stack = CppUtils::Container::Stack<int>{0, 42};
-			stack.copy(1, 0);
-			stack.drop();
-			suite.expectEqual(stack.get<int>(0), 42);
+		suite.addTest("Call function: (std::size_t) -> void", [&] {
+			auto stack = CppUtils::Container::Stack{};
+			auto print = [](std::size_t nb) -> void {
+				std::println("{}", nb);
+			};
+			stack.push(42uz);
+			stack.call(print);
 		});
 
-		suite.addTest("visit", [&] {
-			auto stack = CppUtils::Container::Stack<bool, int, float, std::string_view>{true, 42, 3.14f, "Hello World!"sv};
+		suite.addTest("Call function: (std::size_t, std::size_t) -> std::size_t", [&] {
+			auto stack = CppUtils::Container::Stack{};
+			stack.push(0uz);
+			stack.push(30uz);
+			stack.push(12uz);
+			auto add = [](std::size_t lhs, std::size_t rhs) -> std::size_t {
+				return lhs + rhs;
+			};
+			stack.call(add);
+			stack.drop(sizeof(std::size_t) * 2);
+			{
+				auto result = stack.pop<std::size_t>();
+				suite.expect(result.has_value());
+				suite.expectEqual(result.value(), 42uz);
+			}
+			suite.expect(std::empty(stack));
+		});
 
-			for (auto i = 0uz; i < std::size(stack); ++i)
-				stack.visit(i, [&stack, i](auto&& value) -> void {
-					stack.print(i);
-					Logger::print("{}\n", value);
-				});
-
-			suite.expectEqual(std::size(stack), 4uz);
+		suite.addTest("Call functions", [&] {
+			auto stack = CppUtils::Container::Stack{};
+			stack.push(0uz);
+			stack.push(30uz);
+			stack.push(12uz);
+			auto add = [](std::size_t lhs, std::size_t rhs) -> std::size_t {
+				return lhs + rhs;
+			};
+			auto print = [](std::size_t nb) -> void {
+				std::println("{}", nb);
+			};
+			stack.call(add);
+			stack.drop(sizeof(std::size_t) * 2);
+			{
+				auto result = stack.get<std::size_t>();
+				suite.expect(result.has_value());
+				suite.expectEqual(result.value(), 42uz);
+			}
+			stack.call(print);
+			stack.drop(sizeof(std::size_t));
+			suite.expect(std::empty(stack));
 		});
 	}};
 }

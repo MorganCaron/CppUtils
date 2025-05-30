@@ -1,0 +1,35 @@
+export module CppUtils.UnitTests.Thread.AsyncIStreamListener;
+
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Thread::AsyncIStreamListener
+{
+	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/AsyncIStreamListener", {"UnitTest"}, [](auto& suite) {
+		using namespace std::chrono_literals;
+
+		suite.addTest("Standby", [&] {
+			auto stream = std::stringstream{"test"};
+			auto listener = CppUtils::Thread::AsyncIStreamListener<char>{stream, [&suite](char c) -> void {
+				std::cout << c;
+				suite.expect(false);
+			}};
+			suite.expect(not listener.isRunning());
+		});
+
+		/*
+		suite.addTest("Listening", [&] {
+			auto expectReadChar = ExpectedCall{};
+			auto stream = std::stringstream{"A"};
+			auto listener = CppUtils::Thread::AsyncIStreamListener<char>{stream, [&suite, &expectReadChar](char c) -> void {
+				std::cout << c;
+				expectReadChar.call();
+				suite.expectEqual(c, 'A');
+			}};
+			listener.start();
+			suite.expect(listener.isRunning());
+			suite.expectCall(expectReadChar, 100ms);
+			std::this_thread::sleep_for(100ms);
+		});
+		*/
+	}};
+}

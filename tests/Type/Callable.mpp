@@ -1,0 +1,8 @@
+export module CppUtils.UnitTests.Type.Callable;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Type
+{
+}

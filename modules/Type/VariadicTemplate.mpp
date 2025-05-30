@@ -7,13 +7,13 @@ export namespace CppUtils::Type
 {
 	template<std::size_t I, class... Types>
 	requires (I < sizeof...(Types))
-	using NthType = std::tuple_element_t<I, std::tuple<Types...>>;
+	using NthType = Types...[I];
 
 	template<class... Types>
 	using FirstType = NthType<0, Types...>;
 
 	template<class T, class... Types>
-	requires Present<T, Types...>
+	requires IsOneOf<T, Types...>
 	consteval auto getPosition() -> std::size_t
 	{
 		auto i = 0uz;
@@ -36,7 +36,7 @@ export namespace CppUtils::Type
 	using UniqueType = typename Unique<Container<>, Types...>::type;
 
 	template<class... Types>
-	using UniqueVariant = UniqueType<std::variant, Types...>;
+	using UniqueVariant = UniqueType<std::variant, std::decay_t<Types>...>;
 
 	template<class... Types>
 	using UniqueTuple = UniqueType<std::tuple, Types...>;

@@ -1,0 +1,14 @@
+export module CppUtils.UnitTests.Type.Mapping;
+
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Type::Mapping
+{
+	using Map = ::CppUtils::Type::Mapping<
+		::CppUtils::Type::Pair<0, 100>,
+		::CppUtils::Type::Pair<1, 200>,
+		::CppUtils::Type::Pair<2, 300>>;
+
+	static_assert(Map::toRhs<1>() == 200);
+	static_assert(Map::toLhs<300>() == 2);
+}

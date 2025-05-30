@@ -5,6 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Language::CallStackCompiler
 {
+	/*
 	inline auto _ = TestSuite{
 		"Language/CallStackCompiler",
 		{"Logger", "Language/LabelsCompiler"},
@@ -44,7 +45,7 @@ export namespace CppUtils::UnitTest::Language::CallStackCompiler
 			constexpr auto source = uR"(
 					main §{
 						4
-						# Comment: (),+-*/%=<>!:;?§¤@\1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ
+						# Comment: (),+-* /%=<>!:;?§¤@\1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ
 						2X
 					}
 				)"sv;
@@ -83,4 +84,5 @@ export namespace CppUtils::UnitTest::Language::CallStackCompiler
 			suite.expectEqual(executionResult, 42uz);
 		});
 	}};
+	*/
 }

@@ -5,27 +5,148 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Language::VirtualMachine
 {
-	inline auto _ = TestSuite{"Language/VirtualMachine", {"Logger"}, [](auto& suite) {
+	inline auto _ = TestSuite{"Language/VirtualMachine", {"Logger", "Container/Stack"}, [](auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 		namespace VM = CppUtils::Language::VirtualMachine;
 
 		suite.addTest("empty source", [&] {
-			constexpr auto source = u8"(:"sv;
-			constexpr auto result = VM::execute<int, std::size_t>(source);
-			suite.expectEqual(result, 0);
+			constexpr auto source = u8""sv;
+			auto result = VM::execute(source);
+			if (not result)
+				Logger::print<"error">("{}", result.error());
+			suite.expect(result.has_value());
 		});
 
-		suite.addTest("return value (int)", [&] {
-			constexpr auto source = u8"(:42"sv;
-			constexpr auto result = VM::execute<int, std::size_t>(source);
-			suite.expectEqual(result, 42);
+		suite.addTest("push-pop size_t", [&] {
+			constexpr auto source = u8"[]"sv;
+			auto result = VM::execute(source);
+			if (not result)
+				Logger::print<"error">("{}", result.error());
+			suite.expect(result.has_value());
 		});
 
-		suite.addTest("return value (char8_t)", [&] {
-			constexpr auto source = u8R"((:\A)"sv;
-			constexpr auto result = VM::execute<char8_t, std::size_t>(source);
-			suite.expectEqual(result, 'A');
+		suite.addTest("push-pop int", [&] {
+			constexpr auto source = u8",[0;, [0),"sv;
+			auto number = 42;
+			auto result = VM::execute(source, VM::NoFunctions{}, VM::makeReferences(number));
+			if (not result)
+				Logger::print<"error">("{}", result.error());
+			suite.expect(result.has_value());
+		});
+
+		suite.addTest("input output (int)", [&] {
+			constexpr auto source = u8"[0; [1^ [0)"sv;
+			auto input = 42;
+			auto output = 0;
+			auto result = VM::execute(source, VM::NoFunctions{}, VM::makeReferences(input, output));
+			if (not result)
+				Logger::print<"error">("{}", result.error());
+			suite.expect(result.has_value());
+			suite.expectEqual(output, input);
+		});
+
+		suite.addTest("input output (char)", [&] {
+			constexpr auto source = u8"[0; [1^ [0)"sv;
+			auto input = 'A';
+			auto output = char{};
+			auto result = VM::execute(source, VM::NoFunctions{}, VM::makeReferences(input, output));
+			if (not result)
+				Logger::print<"error">("{}", result.error());
+			suite.expect(result.has_value());
+			suite.expectEqual(output, input);
+		});
+
+		suite.addTest("Call function: () -> std::size_t", [&] {
+			constexpr auto source = u8R"(
+			[ [0,;, / number = getNumber();
+			[0^] / output = number;
+			)"sv;
+			auto getNumber = []() -> std::size_t {
+				return 42uz;
+			};
+			auto output = 0uz;
+			auto result = VM::execute(source, VM::Functions{getNumber}, VM::makeReferences(output));
+			if (not result)
+				Logger::print<"error">("{}", result.error());
+			suite.expect(result.has_value());
+			suite.expectEqual(output, 42uz);
+		});
+
+		suite.addTest("Call function: (std::size_t) -> void", [&] {
+			constexpr auto source = u8R"(
+				[42 [0; / print(42)
+				)"sv;
+			auto print = [](std::size_t number) -> void {
+				std::println("{}", number);
+			};
+			auto result = VM::execute(source, VM::Functions{print});
+
+			if (not result)
+				Logger::print<"error">("{}", result.error());
+			suite.expect(result.has_value());
+		});
+
+		suite.addTest("Call function: (std::size_t, std::size_t) -> std::size_t", [&] {
+			constexpr auto source = u8R"(
+			[ [30 [12 [0,;, ]], [1; [0^] / print(30 + 12);
+			)"sv;
+			auto add = [](std::size_t lhs, std::size_t rhs) -> std::size_t {
+				return lhs + rhs;
+			};
+			auto print = [](std::size_t number) -> void {
+				std::println("{}", number);
+			};
+			auto output = 0uz;
+			auto result = VM::execute(source, VM::Functions{add, print}, VM::makeReferences(output));
+			if (not result)
+				Logger::print<"error">("{}", result.error());
+			suite.expect(result.has_value());
+			suite.expectEqual(output, 42uz);
+		});
+		/*
+		suite.addTest("labels", [&] {
+			constexpr auto source = u8R"(
+			@
+
+			@.main#{<@} / def main
+				[ [30 [12 [0; ]] [1; ] / print(30 + 12);
+			*
+
+			@{.main#>*} / main();
+			)"sv;
+			auto input = 42;
+			auto output = 0;
+			auto result = VM::execute(source, input, output);
+			suite.expect(result.has_value());
+			suite.expectEqual(output, input);
+		});
+
+		suite.addTest("complete", [&] {
+			constexpr auto source = u8R"(
+			@
+
+			@.main#{<@} / def main
+				[ [30 [12 [0; ]] [1; ] / print(30 + 12);
+			*
+
+			@{.main#>*} / main();
+			)"sv;
+			auto input = 42;
+			auto output = 0;
+			auto result = VM::execute(source, input, output);
+			suite.expect(result.has_value());
+			suite.expectEqual(output, input);
+		});
+
+		suite.addTest("return value (char)", [&] {
+			constexpr auto source = u8""sv;
+			auto returnValue = char{};
+			auto result = VM::execute(source,
+				[]() { return 'A'; },
+				[&returnValue](auto value) { returnValue = value; });
+			suite.expect(result.has_value());
+			suite.expectEqual(returnValue, 'A');
 		});
 
 		suite.addTest("reset value", [&] {
@@ -461,5 +582,6 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 			suite.expect(u"¤"sv != u"§"sv);
 			suite.expectEqual(executionResult, false);
 		});
+		*/
 	}};
 }

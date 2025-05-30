@@ -1,273 +1,136 @@
 export module CppUtils.Container.Stack;
 
 import std;
-import CppUtils.Logger;
-import CppUtils.String.Utility;
 import CppUtils.Type;
 
 export namespace CppUtils::Container
 {
-	template<Type::TriviallyCopyable... SupportedTypes>
 	class Stack final
 	{
 	public:
-		using Logger = Logger<"CppUtils">;
-		using Types = std::tuple<SupportedTypes...>;
-		static inline constexpr auto typesSize = std::array<std::size_t, sizeof...(SupportedTypes)>{sizeof(SupportedTypes)...};
-
-		template<Type::TriviallyCopyable... Args>
-		requires (Type::Present<Args, SupportedTypes...> and ...)
-		inline constexpr explicit Stack(Args... values)
+		template<std::size_t I, class... Args>
+		[[nodiscard]] static inline consteval auto getOffset() noexcept -> std::size_t
 		{
-			(push(std::forward<Args>(values)), ...);
-		}
-
-		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
-		{
-			return std::empty(m_types);
+			if constexpr (I + 1 < sizeof...(Args))
+				return sizeof(Type::NthType<I + 1, Args...>) + getOffset<I + 1, Args...>();
+			else
+				return 0;
 		}
 
 		[[nodiscard]] inline constexpr auto size() const noexcept -> std::size_t
 		{
-			return std::size(m_types);
-		}
-
-		[[nodiscard]] inline constexpr auto getByteSize() const noexcept -> std::size_t
-		{
 			return std::size(m_data);
 		}
 
-		[[nodiscard]] inline constexpr auto getType(std::size_t position) const -> std::size_t
+		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
 		{
-			if (position >= size()) [[unlikely]]
-				throw std::out_of_range{std::format("Stack::getType({}) : Out of range", position)};
-			return m_types[position];
+			return std::empty(m_data);
+		}
+
+		inline constexpr auto set(Type::TriviallyCopyable auto value, std::size_t offset = 0) -> std::expected<void, std::string_view>
+		{
+			using namespace std::literals;
+			if (offset + sizeof(decltype(value)) > std::size(m_data)) [[unlikely]]
+				return std::unexpected{"Stack underflow"sv};
+			auto* destination = std::data(m_data) + std::size(m_data) - offset - sizeof(decltype(value));
+			std::memcpy(destination, &value, sizeof(decltype(value)));
+			return {};
+		}
+
+		inline constexpr auto push(Type::TriviallyCopyable auto value) -> void
+		{
+			m_data.resize(std::size(m_data) + sizeof(decltype(value)), std::byte{0});
+			[[maybe_unused]] auto unused = set(value);
 		}
 
 		template<Type::TriviallyCopyable T>
-		requires Type::Present<T, SupportedTypes...>
-		[[nodiscard]] inline constexpr auto get(std::size_t position) const -> T
+		[[nodiscard]] inline constexpr auto get(std::size_t offset = 0) const -> std::expected<T, std::string_view>
 		{
-			if (position >= size()) [[unlikely]]
-				throw std::out_of_range{std::format("Stack::get({}) : Out of range", position)};
-			if (auto storedType = m_types[position]; Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
-				throw std::logic_error{std::format("Stack::get({}) : The type at the specified position does not match the stored type (Type: {})", position, storedType)};
-
-			auto offset = getTypeOffset(position);
-			auto buffer = std::array<std::byte, sizeof(T)>{};
-			for (auto i = 0uz; i < sizeof(T); ++i)
-				buffer[i] = m_data[offset + i];
-			return std::bit_cast<T>(buffer);
-		}
-
-		template<Type::TriviallyCopyable T>
-		requires Type::Present<T, SupportedTypes...>
-		[[nodiscard]] inline constexpr auto top() const -> decltype(auto)
-		{
-			if (empty()) [[unlikely]]
-				throw std::out_of_range{std::format("Stack::top() : Stack underflow")};
-			return get<T>(size() - 1);
-		}
-
-		inline constexpr auto top(auto&& visitor) const -> void
-		{
-			if (empty()) [[unlikely]]
-				throw std::out_of_range{std::format("Stack::top() : Stack underflow")};
-			visit(size() - 1, std::forward<decltype(visitor)>(visitor));
-		}
-
-		template<Type::TriviallyCopyable T>
-		requires Type::Present<T, SupportedTypes...>
-		inline constexpr auto set(std::size_t position, T newValue) -> void
-		{
-			if (position >= size()) [[unlikely]]
-				throw std::out_of_range{std::format("Stack::set({}, T newValue) : Out of range", position)};
-			if (auto storedType = m_types[position]; Type::getPosition<T, SupportedTypes...>() != storedType) [[unlikely]]
-				throw std::logic_error{std::format("Stack::set(std::size_t position, T newValue) : The type at the specified position does not match the stored type (Type: {})", storedType)};
-
-			auto offset = getTypeOffset(position);
-			auto buffer = std::bit_cast<std::array<std::byte, sizeof(T)>>(newValue);
-			for (auto i = 0uz; i < sizeof(T); ++i)
-				m_data[offset + i] = buffer[i];
-		}
-
-		template<Type::TriviallyCopyable T>
-		requires Type::Present<T, SupportedTypes...>
-		inline constexpr auto set(T newValue) -> void
-		{
-			set(size() - 1, std::move(newValue));
-		}
-
-		template<Type::TriviallyCopyable T>
-		requires Type::Present<T, SupportedTypes...>
-		inline constexpr auto push(T value = T{}) -> void
-		{
-			m_types.push_back(Type::getPosition<T, SupportedTypes...>());
-			m_data.resize(getByteSize() + sizeof(T), std::byte{0});
-			set(size() - 1, std::move(value));
-		}
-
-		inline constexpr auto pushType(std::size_t type) -> void
-		{
-			if (type >= sizeof...(SupportedTypes))
-				throw std::out_of_range{std::format("Stack::pushType({}) : Out of range", type)};
-			static constexpr auto pushbyType = std::array{
-				+[](Stack<SupportedTypes...>& stack) static -> void {
-				stack.template push<SupportedTypes>();
-			}...};
-			pushbyType[type](*this);
-		}
-
-		inline constexpr auto drop() -> void
-		{
-			static constexpr auto dropFunctions = std::array{
-				+[](const Stack<SupportedTypes...>& stack, std::vector<std::byte>& data) static -> void {
-				data.resize(stack.getByteSize() - sizeof(SupportedTypes));
-			}...};
-
-			if (empty()) [[unlikely]]
-				throw std::underflow_error{"Stack::drop() : Container already empty"};
-
-			dropFunctions[m_types[size() - 1]](*this, m_data);
-			m_types.pop_back();
-		}
-
-		template<Type::TriviallyCopyable T>
-		requires Type::Present<T, SupportedTypes...>
-		[[nodiscard]] inline constexpr auto pop() -> decltype(auto)
-		{
-			if (empty()) [[unlikely]]
-				throw std::underflow_error{"Stack::pop() : Container already empty"};
-			if (auto specifiedType = Type::getPosition<T, SupportedTypes...>(), storedType = m_types.back();
-				specifiedType != storedType) [[unlikely]]
-				throw std::logic_error{std::format("Stack::pop() : The type at the specified position ({}) does not match the stored type ({})", specifiedType, storedType)};
-			auto value = get<T>(size() - 1);
-			drop();
+			using namespace std::literals;
+			if (offset + sizeof(T) > std::size(m_data)) [[unlikely]]
+				return std::unexpected{"Stack underflow"sv};
+			auto value = T{};
+			std::memcpy(&value, std::data(m_data) + std::size(m_data) - offset - sizeof(T), sizeof(T));
 			return value;
 		}
 
-		inline constexpr auto pop(auto&& visitor) -> void
+		inline constexpr auto drop(std::size_t nbBytes) -> std::expected<void, std::string_view>
 		{
-			top([this, visitor = std::forward<decltype(visitor)>(visitor)](auto&& value) mutable -> void {
-				drop();
-				visitor(std::forward<decltype(value)>(value));
-			});
+			using namespace std::literals;
+			if (nbBytes > std::size(m_data)) [[unlikely]]
+				return std::unexpected{"Stack underflow"sv};
+			m_data.resize(std::size(m_data) - nbBytes);
+			return {};
+		}
+
+		template<Type::TriviallyCopyable T>
+		[[nodiscard]] inline constexpr auto pop() -> std::expected<T, std::string_view>
+		{
+			auto value = get<T>();
+			if (auto result = drop(sizeof(T)); not result) [[unlikely]]
+				return std::unexpected{result.error()};
+			return value;
+		}
+
+		inline constexpr auto call(auto&& function) -> std::expected<void, std::string_view>
+		{
+			using FunctionType = std::decay_t<decltype(function)>;
+			using FunctionInformations = Type::CallableTrait<FunctionType>;
+			using ReturnType = FunctionInformations::ReturnType;
+			using ArgumentsTypes = FunctionInformations::ArgumentsTypes;
+			constexpr auto nbArguments = std::tuple_size_v<ArgumentsTypes>;
+
+			constexpr auto argumentsOffset = []<class ArgumentsTypes, std::size_t... I>(std::index_sequence<I...>) consteval {
+				return (0uz + ... + sizeof(std::tuple_element_t<I, ArgumentsTypes>));
+			}.template operator()<ArgumentsTypes>(std::make_index_sequence<nbArguments>{});
+
+			auto arguments = [&]<std::size_t... I>(std::index_sequence<I...>) -> std::expected<ArgumentsTypes, std::string_view> {
+				auto offset = argumentsOffset;
+				auto success = std::expected<void, std::string_view>{};
+				auto arguments = ArgumentsTypes{[&]() {
+					using ArgumentType = std::tuple_element_t<I, ArgumentsTypes>;
+					offset -= sizeof(ArgumentType);
+					auto value = get<ArgumentType>(offset);
+					if (not value) [[unlikely]]
+					{
+						success = std::unexpected{value.error()};
+						return ArgumentType{};
+					}
+					return *value;
+				}()...};
+				if (not success)
+					return std::unexpected{success.error()};
+				return arguments;
+			}(std::make_index_sequence<nbArguments>{});
+
+			if (not arguments)
+				return std::unexpected{arguments.error()};
+
+			if constexpr (std::is_void_v<ReturnType>)
+				std::apply(std::forward<decltype(function)>(function), std::move(*arguments));
+			else
+				return set(std::apply(std::forward<decltype(function)>(function), std::move(*arguments)), argumentsOffset);
+			return {};
+		}
+
+		inline auto dump() const noexcept -> void
+		{
+			std::puts("Memory dump:");
+			for (auto i = 0uz; i < std::size(m_data);)
+			{
+				std::print("{:#04x} ", static_cast<char>(m_data[i]));
+				if (++i % sizeof(std::size_t) == 0)
+					std::println(" ({} | {} -> {})",
+						*std::bit_cast<int*>(std::data(m_data) + i - sizeof(int) * 2),
+						*std::bit_cast<int*>(std::data(m_data) + i - sizeof(int)),
+						*std::bit_cast<std::size_t*>(std::data(m_data) + i - sizeof(std::size_t)));
+			}
+			if (std::size(m_data) % sizeof(std::size_t) != 0 and std::size(m_data) % sizeof(int) == 0)
+				std::println("                     ({})", *std::bit_cast<int*>(std::data(m_data) + std::size(m_data) - sizeof(int)));
+			std::puts("");
 		}
 
 	private:
-		template<class SourceType, class SupportedType>
-		static inline constexpr auto copyToDestinationImpl() -> decltype(auto)
-		{
-			return [](Stack<SupportedTypes...>& stack, std::size_t sourcePosition, std::size_t destinationPosition) static -> void {
-				if constexpr (not std::is_convertible_v<SourceType, SupportedType>)
-					throw std::logic_error{std::format("Stack::copy : The source type ({}) is not convertible to the destination type ({})", sourcePosition, destinationPosition)};
-				else
-					stack.set(destinationPosition, static_cast<SupportedType>(stack.template get<SourceType>(sourcePosition)));
-			};
-		}
-
-	public:
-		inline constexpr auto copy(std::size_t sourcePosition, std::size_t destinationPosition) -> void
-		{
-			static constexpr auto copyToDestination = []<class SourceType>() consteval -> auto {
-				return std::array{+copyToDestinationImpl<SourceType, SupportedTypes>()...};
-			};
-
-			static constexpr auto copyFromSource = std::array<std::array<void (*)(Stack<SupportedTypes...>&, std::size_t, std::size_t), sizeof...(SupportedTypes)>, sizeof...(SupportedTypes)> {
-				copyToDestination.template operator()<SupportedTypes>()...
-			};
-
-			if (sourcePosition >= size())
-				throw std::out_of_range{std::format("Stack::copy({}, {}) : Source out of range", sourcePosition, destinationPosition)};
-			if (destinationPosition >= size())
-				throw std::out_of_range{std::format("Stack::copy({}, {}) : Destination out of range", sourcePosition, destinationPosition)};
-
-			copyFromSource[m_types[sourcePosition]][m_types[destinationPosition]](*this, sourcePosition, destinationPosition);
-		}
-
-		inline constexpr auto visit(std::size_t position, auto&& visitor) const -> void
-		{
-			static constexpr auto visitors = std::array{
-				+[](const Stack<SupportedTypes...>& stack, std::size_t position, decltype(visitor)&& visitor) static -> void { // Todo: Retirer le && quand ça compilera avec MSVC (bug MSVC)
-				visitor(stack.template get<SupportedTypes>(position));
-			}...};
-
-			if (position >= size())
-				throw std::out_of_range{std::format("Stack::visit({}, auto&& visitor) : Out of range", position)};
-
-			visitors[m_types[position]](*this, position, std::forward<decltype(visitor)>(visitor));
-		}
-
-		inline constexpr auto print(std::size_t position) const -> void
-		{
-			visit(position, [position, type = getType(position)](auto&& value) -> void {
-				Logger::print<"debug">("Position: {}; Type: {}; Size: {} bytes; Value: {}", position, type, sizeof(decltype(value)), String::formatValue(value));
-			});
-		};
-
-		inline constexpr auto print() const -> void
-		{
-			Logger::printSeparator<"debug">();
-			Logger::print<"debug">("Stack size: {} elements; {} bytes", size(), getByteSize());
-			for (auto i = size(); i > 0;)
-				print(--i);
-		};
-
-		template<class ReturnType, class... Args>
-		inline constexpr auto call(ReturnType (*function)(Args...)) -> void
-		{
-			auto call = [this, function]<std::size_t... I> /* Not supported on MSVC [[nodiscard]] */ (/* Not supported on MSVC [[maybe_unused]] */ std::index_sequence<I...> indexSequence) -> decltype(auto) {
-				static_cast<void>(indexSequence);
-				return std::invoke(function, get<std::remove_cvref_t<Type::NthType<I, Args...>>>(size() - sizeof...(Args) + I)...);
-			};
-			if constexpr (std::is_void_v<ReturnType>)
-				call(std::index_sequence_for<Args...>{});
-			else
-				set(size() - 1 - sizeof...(Args), call(std::index_sequence_for<Args...>{}));
-		}
-
-		template<class ReturnType, class Object, class... Args>
-		inline constexpr auto call(ReturnType (Object::*function)(Args...)) -> void
-		{
-			auto* objectPointer = get<Object*>(size() - 1 - sizeof...(Args));
-			auto call = [this, function, objectPointer]<std::size_t... I> /* Not supported on MSVC [[nodiscard]] */ (/* Not supported on MSVC [[maybe_unused]] */ std::index_sequence<I...> indexSequence) -> decltype(auto) {
-				static_cast<void>(indexSequence);
-				return std::invoke(function, objectPointer, get<std::remove_cvref_t<Type::NthType<I, Args...>>>(size() - sizeof...(Args) + I)...);
-			};
-			if constexpr (std::is_void_v<ReturnType>)
-				call(std::index_sequence_for<Args...>{});
-			else
-				set(size() - 2 - sizeof...(Args), call(std::index_sequence_for<Args...>{}));
-		}
-
-		template<class ReturnType, class Object, class... Args>
-		inline constexpr auto call(ReturnType (Object::*function)(Args...) const) -> void
-		{
-			visit(size() - 1 - sizeof...(Args), [this, function](auto&& objectPointer) -> void {
-				using ObjectPointer = std::remove_cvref_t<decltype(objectPointer)>;
-				auto call = [this, function, objectPointer]<std::size_t... I> /* Not supported on MSVC [[nodiscard]] */ (/* Not supported on MSVC [[maybe_unused]] */ std::index_sequence<I...> indexSequence) -> decltype(auto) {
-					static_cast<void>(indexSequence);
-					return std::invoke(function, objectPointer, get<std::remove_cvref_t<Type::NthType<I, Args...>>>(size() - sizeof...(Args) + I)...);
-				};
-				if constexpr (not std::same_as<ObjectPointer, const Object*> and not std::same_as<ObjectPointer, Object*>)
-					throw std::logic_error{"The type is not an object pointer"};
-				else if constexpr (std::is_void_v<ReturnType>)
-					call(std::index_sequence_for<Args...>{});
-				else
-					set(size() - 2 - sizeof...(Args), call(std::index_sequence_for<Args...>{}));
-			});
-		}
-
-	private:
-		[[nodiscard]] inline constexpr auto getTypeOffset(std::size_t position) const -> std::size_t
-		{
-			auto offset = 0uz;
-			for (auto i = 0uz; i < position; ++i)
-				offset += typesSize[m_types[i]];
-			return offset;
-		}
-
-		std::vector<std::byte> m_data = {};
-		std::vector<std::size_t> m_types = {};
+		std::vector<std::byte> m_data;
 	};
 }

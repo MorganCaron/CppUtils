@@ -22,7 +22,7 @@ export namespace CppUtils::Container
 		friend class Thread::SharedLocker<NetworkPtr<T>>;
 
 	public:
-		inline virtual ~NetworkPtr()
+		inline ~NetworkPtr()
 		{
 			detachChildren();
 			detachParents();

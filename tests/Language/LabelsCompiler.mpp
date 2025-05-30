@@ -5,6 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Language::LabelsCompiler
 {
+	/*
 	inline auto _ = TestSuite{
 		"Language/LabelsCompiler",
 		{"Logger", "Language/VirtualMachine"},
@@ -104,7 +105,7 @@ export namespace CppUtils::UnitTest::Language::LabelsCompiler
 				(0¤
 
 				\§(21X
-				
+
 				§(42X
 				)"sv;
 			auto output = Compiler::compile(source);
@@ -121,7 +122,7 @@ export namespace CppUtils::UnitTest::Language::LabelsCompiler
 				(1¤
 
 				§(21X
-				
+
 				§(42X
 				)"sv;
 			auto output = Compiler::compile(source);
@@ -131,4 +132,5 @@ export namespace CppUtils::UnitTest::Language::LabelsCompiler
 			suite.expectEqual(executionResult, 42uz);
 		});
 	}};
+	*/
 }

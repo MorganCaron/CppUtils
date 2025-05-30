@@ -25,7 +25,7 @@ namespace CppUtils::UnitTest
 		bool verbose = true;
 		bool detail = true;
 		bool chrono = false;
-		bool abort = false;
+		bool fastAbort = false;
 	};
 
 	struct Test final
@@ -115,6 +115,25 @@ namespace CppUtils::UnitTest
 				return exitFailure;
 			}
 
+			auto filteredTests = std::vector<std::string>{};
+			{
+				auto validTestSuiteNames = std::unordered_set<std::string>{};
+				for (const auto& testSuite : remainingTestSuites)
+					validTestSuiteNames.insert(testSuite.name);
+
+				std::erase_if(remainingTestSuites, [&filteredTests, &validTestSuiteNames](const auto& remainingTestSuite) -> bool {
+					for (const auto& prerequisite : remainingTestSuite.prerequisites)
+						if (not validTestSuiteNames.contains(prerequisite))
+						{
+							Logger::print<"warning">("Skipping test suite {}: dependency {} not found", remainingTestSuite.name, prerequisite);
+							for (const auto& test : remainingTestSuite.tests)
+								filteredTests.push_back(test.name);
+							return true;
+						}
+					return false;
+				});
+			}
+
 			auto removeRemainingTest = [&](std::size_t position) -> void {
 				remainingTestSuites.erase(std::next(std::cbegin(remainingTestSuites), static_cast<std::ptrdiff_t>(position)));
 			};
@@ -134,7 +153,6 @@ namespace CppUtils::UnitTest
 			}
 			auto successfulTests = std::vector<std::string>{};
 			auto failedTests = std::vector<std::string>{};
-			auto filteredTests = std::vector<std::string>{};
 			auto atLeastOneTestHasBeenExecuted = true;
 			while (atLeastOneTestHasBeenExecuted and not std::empty(remainingTestSuites))
 			{
@@ -173,7 +191,7 @@ namespace CppUtils::UnitTest
 										{
 											const auto& remainingTestSuite = remainingTestSuites[j];
 											filteredTests.push_back(failedTestSuiteName);
-											Logger::print<"warning">("Skipping test {} due to failed prerequisites in test suite {}", remainingTestSuite.name, failedTestSuiteName);
+											Logger::print<"warning">("Skipping test suite {} due to failed prerequisites in test suite {}", remainingTestSuite.name, failedTestSuiteName);
 											self(remainingTestSuite.name);
 										}
 										if (j < i)
@@ -182,13 +200,20 @@ namespace CppUtils::UnitTest
 									}
 								}
 							};
-							disableTest(testSuite.name);
+							if (settings.fastAbort)
+							{
+								remainingTestSuites.clear();
+								break;
+							}
+							else
+								disableTest(testSuite.name);
 							hasError = true;
 						}
 						for (auto& remainingTestSuite : remainingTestSuites)
 							std::erase(remainingTestSuite.prerequisites, testSuite.name);
 					}
-					removeRemainingTest(i);
+					if (not std::empty(remainingTestSuites))
+						removeRemainingTest(i);
 				}
 			}
 

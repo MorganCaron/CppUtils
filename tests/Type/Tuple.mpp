@@ -1,0 +1,24 @@
+export module CppUtils.UnitTests.Type.Tuple;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Type::Tuple
+{
+	inline auto _ = TestSuite{"Type/Tuple", {"Logger"}, [](auto& suite) {
+		using Logger = CppUtils::Logger<"CppUtils">;
+
+		suite.addTest("ExpectedCall", [&] {
+			auto expectCall = ExpectedCall{};
+			auto function = [&expectCall](auto&& value) {
+				Logger::print<"detail">("{}", value);
+				expectCall.call();
+			};
+
+			auto tuple = std::make_tuple(1, "Hello World!");
+			CppUtils::Type::Tuple::visitAt(tuple, 1, function);
+
+			suite.expectCall(expectCall);
+		});
+	}};
+}

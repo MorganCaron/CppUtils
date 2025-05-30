@@ -3,369 +3,233 @@ export module CppUtils.Language.VirtualMachine;
 import std;
 import CppUtils.Container;
 import CppUtils.Type;
-import CppUtils.Math.Concept;
-
-// Ribosome
-
-namespace CppUtils::Language::VirtualMachine
-{
-	[[nodiscard]] inline constexpr auto isModeAbsolute(std::size_t mode) noexcept -> bool { return mode & 0b1; }
-	[[nodiscard]] inline constexpr auto isModeRelative(std::size_t mode) noexcept -> bool { return not isModeAbsolute(mode); }
-	[[nodiscard]] inline constexpr auto isModeDescending(std::size_t mode) noexcept -> bool { return mode & 0b10; }
-	[[nodiscard]] inline constexpr auto isModeAscending(std::size_t mode) noexcept -> bool { return not isModeDescending(mode); }
-	[[nodiscard]] inline constexpr auto isModeIndirect(std::size_t mode) noexcept -> bool { return mode & 0b100; }
-	[[nodiscard]] inline constexpr auto isModeDirect(std::size_t mode) noexcept -> bool { return not isModeIndirect(mode); }
-
-	template<Type::TriviallyCopyable... StackTypes>
-	[[nodiscard]] inline constexpr auto applyModeToPosition(Container::Stack<StackTypes...>& stack, std::size_t mode, std::size_t position, std::size_t rightOffset = 0) -> std::size_t
-	{
-		return isModeAscending(mode) ? position : (std::size(stack) - 1 - position - rightOffset);
-	}
-
-	template<Type::TriviallyCopyable... StackTypes>
-	[[nodiscard]] inline constexpr auto getPositionInSource(Container::Stack<StackTypes...>& stack, std::size_t instructionPointer, std::size_t mode, std::size_t position) -> std::size_t
-	{
-		if (isModeIndirect(mode))
-			position = stack.template get<std::size_t>(applyModeToPosition(stack, mode, position));
-		return isModeRelative(mode) ? (instructionPointer + position) : position;
-	}
-
-	template<Type::TriviallyCopyable... StackTypes>
-	inline constexpr auto getValueWithMode(Container::Stack<StackTypes...>& stack, auto&& visitor, std::size_t rightOffset = 0) -> void
-	{
-		if (auto mode = stack.template pop<std::size_t>(); isModeDirect(mode))
-			stack.pop(std::forward<decltype(visitor)>(visitor));
-		else
-		{
-			auto position = stack.template pop<std::size_t>();
-			position = applyModeToPosition(stack, mode, position, rightOffset);
-			stack.visit(position, std::forward<decltype(visitor)>(visitor));
-		}
-	}
-
-	template<Type::TriviallyCopyable... StackTypes>
-	inline constexpr auto getOperands(Container::Stack<StackTypes...>& stack, auto&& visitor) -> void
-	{
-		getValueWithMode(stack, [&stack, visitor](auto&& rhs) mutable -> void {
-			getValueWithMode(stack, [visitor, rhs = std::move(rhs)](auto&& lhs) mutable -> void {
-				visitor(std::move(lhs), std::move(rhs));
-			});
-		}, 2);
-	}
-}
+import CppUtils.String.Concept;
 
 export namespace CppUtils::Language::VirtualMachine
 {
-	template<Type::TriviallyCopyable ReturnType, Type::TriviallyCopyable... SupportedTypes>
-	requires Type::Present<std::size_t, ReturnType, SupportedTypes...>
-	inline constexpr auto execute(const auto& source, auto... data) -> ReturnType
+	template<class... Funcs>
+	using Functions = std::tuple<Funcs...>;
+	using NoFunctions = Functions<>;
+
+	template<class... Refs>
+	using References = std::tuple<std::reference_wrapper<Refs>...>;
+	using NoReferences = References<>;
+
+	[[nodiscard]] inline auto makeReferences(auto&... variables) noexcept
 	{
-		using Stack = Container::Stack<ReturnType, SupportedTypes...>;
-		auto externalData = std::array<Type::UniqueVariant<decltype(&source), decltype(data)...>, 1 + sizeof...(data)>{&source, data...};
-		auto stack = Stack{};
-		for (auto instructionPointer = 0uz; instructionPointer < std::size(source); ++instructionPointer)
-		{
-			switch (auto instruction = source[instructionPointer]; instruction)
+		return References{std::ref(variables)...};
+	}
+
+	template<class Functions = NoFunctions, class References = NoReferences>
+	[[nodiscard]] inline /* constexpr */ auto execute(
+		String::StringView auto source,
+		const Functions& functions = NoFunctions{},
+		References&& references = NoReferences{})
+		-> std::expected<void, std::string_view>
+	{
+		using namespace std::literals;
+		static_assert(Type::Specializes<Functions, std::tuple>);
+		static_assert(Type::Specializes<References, std::tuple>);
+
+		constexpr auto nbFunctions = std::tuple_size_v<std::remove_cvref_t<decltype(functions)>>;
+		constexpr auto nbReferences = std::tuple_size_v<std::remove_cvref_t<decltype(references)>>;
+
+		auto stack = Container::Stack{};
+		auto registers = std::unordered_map<std::size_t, std::size_t>{}; // constexpr en C++26
+
+		auto skipComment = [&source](std::size_t& position) -> void {
+			while (++position < std::size(source) and source[position] != '/' and source[position] != '\n') {}
+		};
+
+		for (auto position = 0uz; position < std::size(source); ++position)
+			switch (auto instruction = source[position]; instruction)
 			{
-			case ',': [[fallthrough]];
-			case '(': stack.push(0uz); break;
-			case ')': stack.drop(); break;
-			case '_':
-				stack.visit(std::size(stack) - 1, [&stack](auto&& value) -> void {
-					stack.set(std::decay_t<decltype(value)>{});
-				});
+			case '@':
+				do
+					++position;
+				while (position < std::size(source) and source[position] != '@');
 				break;
-			case 'C': // Copy
-			{
-				// todo: getValueWithMode(stack, [](auto&& destination) -> void {
-				auto destinationMode = stack.template pop<std::size_t>();
-				auto destinationPosition = stack.template pop<std::size_t>();
-				auto sourceMode = stack.template pop<std::size_t>();
-				auto sourcePosition = stack.template pop<std::size_t>();
-				sourcePosition = applyModeToPosition(stack, sourceMode, sourcePosition);
-				destinationPosition = applyModeToPosition(stack, destinationMode, destinationPosition);
-				stack.copy(sourcePosition, destinationPosition);
-			}
-			break;
-			case 'D':
-			{
-				stack.pop([](auto&& pointer) -> void {
-					if constexpr (not std::is_pointer_v<std::decay_t<decltype(pointer)>>)
-						throw std::logic_error{"The type is not a pointer"};
-					else
-						delete pointer;
-				});
+
+			case '[': stack.push(0uz); break;
+
+			case ']':
+				if (auto result = stack.drop(sizeof(std::size_t)); not result) [[unlikely]]
+					return result;
 				break;
-			}
-			// Todo: case 'D': /* Dereference */ stack.push(&stack.template pop<ValueType>()); break;
-			case 'I': /* Inspect */ stack.print(); break;
-			case 'J': // Jump
+
+			case '.': stack.push(position); break;
+
+			case '{':
 			{
-				auto mode = stack.template pop<std::size_t>();
-				auto destination = stack.template pop<std::size_t>();
-				instructionPointer = getPositionInSource(stack, instructionPointer, mode, destination);
-			}
-			break;
-			case 'N': // New
-			{
-				stack.top([&stack](auto&& pointer) -> void {
-					if constexpr (not std::is_pointer_v<std::decay_t<decltype(pointer)>>)
-						throw std::logic_error{"The type is not a pointer"};
-					else
-						stack.template set<std::decay_t<decltype(pointer)>>(new std::decay_t<decltype(*pointer)>{});
-				});
-				break;
-			}
-			case 'P': /* Push */ stack.template push<std::size_t>(instructionPointer); break;
-			case 'R': // Reference
-				stack.pop([&stack](auto&& pointer) -> void {
-					if constexpr (not std::is_pointer_v<std::decay_t<decltype(pointer)>>)
-						throw std::logic_error{"The dereferenced type is not a pointer"};
-					else
+				auto oldPosition = position++;
+				for (auto counter = 1uz; position < std::size(source) and counter > 0; ++position)
+					switch (auto instruction = source[position]; instruction)
 					{
-						using DereferencedType = std::decay_t<decltype(*pointer)>;
-						if constexpr (not Type::Present<DereferencedType, ReturnType, SupportedTypes...>)
-							throw std::logic_error{"The dereferenced type is not present among the supported types"};
-						else
-							stack.template push<DereferencedType>(*pointer);
+					case '\\': ++position; break;
+					case '{': ++counter; break;
+					case '}': --counter; break;
+					case '/': skipComment(position); break;
 					}
-				});
+				if (position >= std::size(source)) [[unlikely]]
+					return std::unexpected{"Missing '}'"sv};
+				stack.push(position - 1);
+				position = oldPosition;
 				break;
-			case 'S': // Swap
-				stack.pop([&stack](auto&& rhs) -> void {
-					stack.pop([&stack, rhs = std::move(rhs)](auto&& lhs) -> void {
-						stack.push(std::move(rhs));
-						stack.push(std::move(lhs));
-					});
-				});
-				break;
-			case 'T': // Transform
-				// Todo: faire les casts ici, au lieu d'à l'intérieur de l'instruction copy
-				break;
-			case 'X': /* eXit */ instructionPointer = std::size(source) - 1; break;
-			case ':': stack.pushType(stack.template pop<std::size_t>()); break;
-			case ';':
-			{
-				// Ajouter des bits d'adressage
-				auto dataId = stack.template pop<std::size_t>();
-				std::visit([&stack, dataId](auto&& data) -> void {
-					using T = std::remove_cvref_t<decltype(data)>;
-					if constexpr (Type::isFunctionPointer<T> or std::is_member_function_pointer_v<T>)
-						stack.call(data);
-					else if constexpr (not Type::Present<T, ReturnType, SupportedTypes...>)
-						throw std::invalid_argument{"Type " + std::to_string(dataId) + " missing in template parameters"};
-					else
-						stack.template push<T>(data);
-				}, externalData[dataId]);
 			}
-			break;
-			case '?':
-			{
-				auto jumpMode = stack.template pop<std::size_t>();
-				auto jumpDestination = stack.template pop<std::size_t>();
-				getValueWithMode(stack, [&stack, &instructionPointer, jumpMode, jumpDestination](auto&& condition) -> void {
-					if constexpr (not std::is_constructible_v<bool, decltype(condition)>)
-						throw std::invalid_argument{"The type used in conditional jump instruction is not convertible to boolean"};
-					else if (condition)
-						instructionPointer = getPositionInSource(stack, instructionPointer, jumpMode, jumpDestination);
-				});
-			}
-			break;
-			case '!':
-				// Todo: Ajouter un bit d'adressage ?
-				if constexpr (not Type::Present<bool, ReturnType, SupportedTypes...>)
-					throw std::invalid_argument{"Type bool missing in template parameters"};
-				else
-					stack.pop([&stack](auto&& value) -> void {
-						if constexpr (not std::is_constructible_v<bool, decltype(value)>)
-							throw std::invalid_argument{"Type not convertible to boolean"};
-						else
-							stack.push(not static_cast<bool>(value));
-					});
+			case '/': skipComment(position); break;
+
+			case ')':
+				if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
+					return std::unexpected{identifier.error()};
+				else if (identifier.value() < std::tuple_size_v<Functions>) [[unlikely]]
+					return std::unexpected{"Variable identifier too small"sv};
+				else if (identifier.value() >= std::tuple_size_v<Functions> + std::tuple_size_v<References>) [[unlikely]]
+					return std::unexpected{"Variable identifier too large"sv};
+				else if constexpr (nbReferences == 0)
+					return std::unexpected{"No reference defined"sv};
+				else if (auto size = Type::Tuple::visitAt(references, identifier.value(), [](auto& reference) { return sizeof(decltype(reference.get())); }); not size)
+					return std::unexpected{size.error()};
+				else if (auto result = stack.drop(size.value()); not result) [[unlikely]]
+					return result;
 				break;
-			case '=':
-				getOperands(stack, [&stack]([[maybe_unused]] auto&& lhs, [[maybe_unused]] auto&& rhs) -> void {
-					static_cast<void>(stack);
-					using Lhs = std::decay_t<decltype(lhs)>;
-					using Rhs = std::decay_t<decltype(rhs)>;
-					if constexpr (not std::same_as<Lhs, Rhs>)
-						throw std::invalid_argument{"Operands don't have the same type"};
-					else if constexpr (not std::equality_comparable<Lhs>)
-						throw std::invalid_argument{"Operator = used on non equality comparable type"};
-					else if constexpr (not Type::Present<bool, ReturnType, SupportedTypes...>)
-						throw std::invalid_argument{"Type bool missing in template parameters"};
-					else
-						stack.set(lhs == rhs);
-				});
+
+			case '#':
+				if (auto startPosition = stack.template get<std::size_t>(); not startPosition) [[unlikely]]
+					return std::unexpected{startPosition.error()};
+				else if (auto result = stack.set(std::hash<decltype(source)>{}(decltype(source){std::cbegin(source) + startPosition.value() + 1, std::cbegin(source) + position - 1})); not result) [[unlikely]]
+					return result;
 				break;
-			case '<':
-				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
-					static_cast<void>(stack);
-					using Lhs = std::decay_t<decltype(lhs)>;
-					using Rhs = std::decay_t<decltype(rhs)>;
-					if constexpr (not std::same_as<Lhs, Rhs>)
-						throw std::invalid_argument{"Operands don't have the same type"};
-					else if constexpr (not std::totally_ordered<Lhs>)
-						throw std::invalid_argument{"Operation < used on non totally ordered type"};
-					else if constexpr (not Type::Present<bool, ReturnType, SupportedTypes...>)
-						throw std::invalid_argument{"Type bool missing in template parameters"};
-					else
-						stack.set(lhs < rhs);
-				});
-				break;
-			case '>':
-				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
-					static_cast<void>(stack);
-					using Lhs = std::decay_t<decltype(lhs)>;
-					using Rhs = std::decay_t<decltype(rhs)>;
-					if constexpr (not std::same_as<Lhs, Rhs>)
-						throw std::invalid_argument{"Operands don't have the same type"};
-					else if constexpr (not std::totally_ordered<Lhs>)
-						throw std::invalid_argument{"Operator > used on non totally ordered type"};
-					else if constexpr (not Type::Present<bool, ReturnType, SupportedTypes...>)
-						throw std::invalid_argument{"Type bool missing in template parameters"};
-					else
-						stack.set(lhs > rhs);
-				});
-				break;
-			case '&':
-				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
-					static_cast<void>(stack);
-					using Lhs = std::decay_t<decltype(lhs)>;
-					using Rhs = std::decay_t<decltype(rhs)>;
-					if constexpr (not std::same_as<Lhs, Rhs>)
-						throw std::invalid_argument{"Operands don't have the same type"};
-					else if constexpr (not std::is_arithmetic_v<Lhs>)
-						throw std::invalid_argument{"Operator & used on non arithmetic type"};
-					else
-						stack.push(static_cast<Lhs>(lhs & rhs));
-				});
-				break;
-			case '|':
-				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
-					static_cast<void>(stack);
-					using Lhs = std::decay_t<decltype(lhs)>;
-					using Rhs = std::decay_t<decltype(rhs)>;
-					if constexpr (not std::same_as<Lhs, Rhs>)
-						throw std::invalid_argument{"Operands don't have the same type"};
-					else if constexpr (not std::is_arithmetic_v<Lhs>)
-						throw std::invalid_argument{"Operator | used on non arithmetic type"};
-					else
-						stack.push(static_cast<Lhs>(lhs | rhs));
-				});
-				break;
-			case '^':
-				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
-					static_cast<void>(stack);
-					using Lhs = std::decay_t<decltype(lhs)>;
-					using Rhs = std::decay_t<decltype(rhs)>;
-					if constexpr (not std::same_as<Lhs, Rhs>)
-						throw std::invalid_argument{"Operands don't have the same type"};
-					else if constexpr (not std::is_arithmetic_v<Lhs>)
-						throw std::invalid_argument{"Operator ^ used on non arithmetic type"};
-					else
-						stack.push(static_cast<Lhs>(lhs ^ rhs));
-				});
-				break;
-			case '+':
-				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
-					static_cast<void>(stack);
-					using Lhs = std::decay_t<decltype(lhs)>;
-					using Rhs = std::decay_t<decltype(rhs)>;
-					if constexpr (not std::same_as<Lhs, Rhs>)
-						throw std::invalid_argument{"Operands don't have the same type"};
-					else if constexpr (not std::is_arithmetic_v<Lhs>)
-						throw std::invalid_argument{"Operator + used on non arithmetic type"};
-					else if constexpr (not Type::Present<decltype(lhs + rhs), ReturnType, SupportedTypes...>)
-						throw std::invalid_argument{"Type not supported"};
-					else
-						stack.push(lhs + rhs);
-				});
-				break;
-			case '-':
-				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
-					static_cast<void>(stack);
-					using Lhs = std::decay_t<decltype(lhs)>;
-					using Rhs = std::decay_t<decltype(rhs)>;
-					if constexpr (not std::same_as<Lhs, Rhs>)
-						throw std::invalid_argument{"Operands don't have the same type"};
-					else if constexpr (not std::is_arithmetic_v<Lhs>)
-						throw std::invalid_argument{"Operator - used on non arithmetic type"};
-					else if constexpr (not Type::Present<decltype(lhs - rhs), ReturnType, SupportedTypes...>)
-						throw std::invalid_argument{"Type not supported"};
-					else
-						stack.push(lhs - rhs);
-				});
-				break;
+
 			case '*':
-				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
-					static_cast<void>(stack);
-					using Lhs = std::decay_t<decltype(lhs)>;
-					using Rhs = std::decay_t<decltype(rhs)>;
-					if constexpr (not std::same_as<Lhs, Rhs>)
-						throw std::invalid_argument{"Operands don't have the same type"};
-					else if constexpr (not std::is_arithmetic_v<Lhs>)
-						throw std::invalid_argument{"Operator * used on non arithmetic type"};
-					else
-						stack.push(static_cast<Lhs>(lhs * rhs));
-				});
+				if (auto newPosition = stack.template pop<std::size_t>(); not newPosition) [[unlikely]]
+					return std::unexpected{newPosition.error()};
+				else
+					position = newPosition.value();
 				break;
-			case '/':
-				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
-					static_cast<void>(stack);
-					using Lhs = std::decay_t<decltype(lhs)>;
-					using Rhs = std::decay_t<decltype(rhs)>;
-					if constexpr (not std::same_as<Lhs, Rhs>)
-						throw std::invalid_argument{"Operands don't have the same type"};
-					else if constexpr (not std::is_arithmetic_v<Lhs>)
-						throw std::invalid_argument{"Operator / used on non arithmetic type"};
-					else if (rhs == Rhs{})
-						throw std::logic_error{"Division by zero not allowed"};
-					else if constexpr (Math::Divisible<Lhs, Rhs> and not Type::Present<bool, Lhs, Rhs>)
-						stack.push(static_cast<Lhs>(lhs / rhs));
-					else
-						throw std::logic_error{"Not divisible types"};
-				});
+
+			case ';':
+				if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
+					return std::unexpected{identifier.error()};
+				else if (identifier.value() < nbFunctions)
+				{
+					stack.dump();
+					if constexpr (nbFunctions == 0)
+						return std::unexpected{"No function available"sv};
+					else if (auto result = Type::Tuple::visitAt(functions, identifier.value(), [&stack](auto& function) { return stack.call(function); });
+						not result)
+						return std::unexpected{result.error()};
+				}
+				else if (identifier.value() >= nbFunctions + nbReferences) [[unlikely]]
+					return std::unexpected{"Identifier too large"sv};
+				else if constexpr (nbReferences == 0)
+					return std::unexpected{"No reference defined"sv};
+				else if (auto result = Type::Tuple::visitAt(references, identifier.value(), [&stack](auto& reference) { stack.push(reference.get()); }); not result)
+					return std::unexpected{result.error()};
 				break;
-			case '%':
-				getOperands(stack, [&stack](auto&& lhs, auto&& rhs) -> void {
-					static_cast<void>(stack);
-					using Lhs = std::decay_t<decltype(lhs)>;
-					using Rhs = std::decay_t<decltype(rhs)>;
-					if constexpr (not std::same_as<Lhs, Rhs>)
-						throw std::invalid_argument{"Operands don't have the same type"};
-					else if constexpr (not std::is_arithmetic_v<Lhs>)
-						throw std::invalid_argument{"Operator % used on non arithmetic type"};
-					else if (rhs == Rhs{})
-						throw std::logic_error{"Division by zero not allowed"};
-					else if constexpr (Math::Divisible<Lhs, Rhs> and not Type::Present<bool, Lhs, Rhs>)
-						stack.push(static_cast<Lhs>(lhs % rhs));
-					else
-						throw std::logic_error{"Not divisible types"};
-				});
-				break;
-			case '\\':
-				stack.top([&stack, &source, &instructionPointer](auto&& value) -> void {
-					using Value = std::decay_t<decltype(value)>;
-					using Char = decltype(source[0]);
-					if constexpr (not std::is_constructible_v<Value, Char>)
-						throw std::logic_error{"Incorrect type"};
-					else
-						stack.set(static_cast<Value>(value + static_cast<Value>(source[++instructionPointer])));
-				});
-				break;
-			default:
-				if (auto c = instruction; c >= '0' and c <= '9')
-					stack.top([&stack, c](auto&& value) -> void {
-						using Value = std::decay_t<decltype(value)>;
-						if constexpr (not std::is_arithmetic_v<Value>)
-							throw std::logic_error{"Arithmetic operation used on non arithmetic type"};
+
+			case '^':
+				if (auto variableId = stack.template pop<std::size_t>(); not variableId) [[unlikely]]
+					return std::unexpected{variableId.error()};
+				else if (variableId.value() >= nbReferences) [[unlikely]]
+					return std::unexpected{"Variable identifier too large"sv};
+				else if constexpr (nbReferences > 0)
+					if (auto result = Type::Tuple::visitAt(references, variableId.value(), [&stack](auto& reference) -> std::expected<void, std::string_view> {
+						if (auto result = stack.get<typename std::remove_reference_t<decltype(reference)>::type>(); not result) [[unlikely]]
+							return std::unexpected{result.error()};
 						else
-							stack.set(static_cast<Value>(value * 10 + static_cast<Value>(c - '0')));
+							reference.get() = std::move(result.value());
+						return {};
 					});
+						not result)
+						return std::unexpected{result.error()};
 				break;
+
+			case '<':
+				if (auto key = stack.template pop<std::size_t>(); not key) [[unlikely]]
+					return std::unexpected{key.error()};
+				else if (auto value = stack.template pop<std::size_t>(); not value) [[unlikely]]
+					return std::unexpected{value.error()};
+				else
+					registers[key.value()] = value.value();
+				break;
+
+			case '>':
+				if (auto key = stack.template get<std::size_t>(); not key) [[unlikely]]
+					return std::unexpected{key.error()};
+				else if (registers.contains(key.value())) [[likely]]
+					stack.set(registers[key.value()]);
+				else
+					return std::unexpected{"Unknown register key"sv};
+				break;
+
+			case '_':
+				if (auto result = stack.template pop<std::size_t>(); not result) [[unlikely]]
+					return std::unexpected{result.error()};
+				else
+					registers.erase(result.value());
+				break;
+
+			case '\\': ++position; break;
+
+			case '!':
+				if (auto result = stack.template get<std::size_t>(); not result) [[unlikely]]
+					return std::unexpected{result.error()};
+				else
+					stack.set<std::size_t>(not result.value());
+				break;
+
+			case '?':
+				if (auto condition = stack.template get<std::size_t>(sizeof(std::size_t)); not condition) [[unlikely]]
+					return std::unexpected{condition.error()};
+				else if (auto newPosition = stack.template pop<std::size_t>(); not newPosition) [[unlikely]]
+					return std::unexpected{newPosition.error()};
+				else if (not condition.value())
+					position = newPosition.value();
+				stack.drop(sizeof(std::size_t));
+				break;
+
+			case 'S':
+				if (auto lhs = stack.template get<std::size_t>(sizeof(std::size_t)); not lhs) [[unlikely]]
+					return std::unexpected{lhs.error()};
+				else
+				{
+					stack.set(stack.template get<std::size_t>().value(), sizeof(std::size_t));
+					stack.set(lhs.value());
+					break;
+				}
+
+			case 'X': return {};
+
+			case '+':
+				if (auto lhs = stack.template pop<std::size_t>(); not lhs) [[unlikely]]
+					return std::unexpected{lhs.error()};
+				else if (auto rhs = stack.template get<std::size_t>(); not rhs) [[unlikely]]
+					return std::unexpected{rhs.error()};
+				else
+					stack.set(lhs.value() + rhs.value());
+				break;
+
+			case '-':
+				if (auto lhs = stack.template pop<std::size_t>(); not lhs) [[unlikely]]
+					return std::unexpected{lhs.error()};
+				else if (auto rhs = stack.template get<std::size_t>(); not rhs) [[unlikely]]
+					return std::unexpected{rhs.error()};
+				else
+					stack.set(lhs.value() - rhs.value());
+				break;
+
+			case ',': stack.dump(); break;
+
+			default:
+				if (instruction >= '0' and instruction <= '9')
+				{
+					if (auto result = stack.template get<std::size_t>(); not result) [[unlikely]]
+						return std::unexpected{result.error()};
+					else
+						stack.set(result.value() * 10 + static_cast<std::size_t>(instruction - '0'));
+				}
 			}
-		}
-		return stack.template top<ReturnType>();
+
+		return {};
 	}
 }

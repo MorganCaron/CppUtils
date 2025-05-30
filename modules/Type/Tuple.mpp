@@ -1,0 +1,47 @@
+export module CppUtils.Type.Tuple;
+
+import std;
+import CppUtils.Type.Concept;
+
+export namespace CppUtils::Type::Tuple
+{
+	inline constexpr auto visitAt(auto&& tuple, std::size_t index, auto&& function)
+	{
+		using namespace std::literals;
+
+		using Tuple = std::remove_reference_t<decltype(tuple)>;
+		static_assert(Specializes<std::remove_cvref_t<Tuple>, std::tuple>);
+		static_assert(std::tuple_size_v<Tuple> != 0);
+
+		using Function = std::decay_t<decltype(function)>;
+
+		using FunctionResult = std::invoke_result_t<Function, decltype(std::get<0>(tuple))>;
+		constexpr auto isExpectedWithStringViewError = []() constexpr {
+			if constexpr (not Specializes<FunctionResult, std::expected>)
+				return false;
+			else
+				return std::is_same_v<typename FunctionResult::error_type, std::string_view>;
+		}();
+		using ExpectedResult = std::conditional_t<isExpectedWithStringViewError, FunctionResult, std::expected<FunctionResult, std::string_view>>;
+
+		if (index >= std::tuple_size_v<Tuple>)
+			return ExpectedResult{std::unexpected{"CppUtils::Type::visitAt: index out of range"sv}};
+
+		static constexpr auto visitors = []<std::size_t... Is>(std::index_sequence<Is...>) {
+			return std::array<FunctionResult (*)(Tuple&, const Function&), std::tuple_size_v<Tuple>>{
+				(+[](Tuple& tuple, const Function& function) -> FunctionResult {
+				return std::invoke(function, std::get<Is>(tuple));
+			})...};
+		}(std::make_index_sequence<std::tuple_size_v<Tuple>>());
+
+		if constexpr (isExpectedWithStringViewError)
+			return visitors[index](tuple, function);
+		else if constexpr (std::is_same_v<FunctionResult, void>)
+		{
+			visitors[index](tuple, function);
+			return ExpectedResult{};
+		}
+		else
+			return ExpectedResult{visitors[index](tuple, function)};
+	}
+}

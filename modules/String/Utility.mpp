@@ -7,6 +7,12 @@ import CppUtils.String.Concept;
 
 export namespace CppUtils::String
 {
+	template<StringView T>
+	using StringFrom = std::basic_string<typename T::value_type>;
+
+	template<String T>
+	using StringViewFrom = std::basic_string_view<typename T::value_type>;
+
 	[[nodiscard]] inline constexpr auto isEscapable(char c) noexcept -> bool
 	{
 		switch (c)

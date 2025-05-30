@@ -7,7 +7,7 @@ import CppUtils.Type.Concept;
 export namespace CppUtils::String
 {
 	template<class T>
-	concept Char = Type::Present<T, char, wchar_t, char8_t, char16_t, char32_t>;
+	concept Char = Type::IsOneOf<T, char, wchar_t, char8_t, char16_t, char32_t>;
 
 	template<class T>
 	concept String = Type::Specializes<T, std::basic_string>;

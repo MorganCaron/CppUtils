@@ -10,7 +10,7 @@
 
 namespace CppUtils::Language::Parser
 {
-	template<typename Element = char>
+	template<class Element = char>
 	struct Cursor final
 	{
 		std::span<const Element> data;

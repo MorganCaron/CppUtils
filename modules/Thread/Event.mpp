@@ -1,0 +1,37 @@
+export module CppUtils.Thread.Event;
+
+import std;
+
+export namespace CppUtils::Thread
+{
+	class Event final
+	{
+	public:
+		void wait()
+		{
+			auto lock = std::unique_lock{m_mutex};
+			m_conditionVariable.wait(lock, [this]() { return m_triggered; });
+			m_triggered = false;
+		}
+
+		void notify()
+		{
+			{
+				auto lock = std::unique_lock{m_mutex};
+				m_triggered = true;
+			}
+			m_conditionVariable.notify_all();
+		}
+
+		void reset()
+		{
+			auto lock = std::unique_lock{m_mutex};
+			m_triggered = false;
+		}
+
+	private:
+		std::mutex m_mutex;
+		std::condition_variable m_conditionVariable;
+		bool m_triggered = false;
+	};
+}

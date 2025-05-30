@@ -1,0 +1,61 @@
+export module CppUtils.Type.Mapping;
+
+export namespace CppUtils::Type
+{
+	template<auto Lhs, auto Rhs>
+	struct Pair final
+	{
+		static constexpr auto lhs = Lhs;
+		static constexpr auto rhs = Rhs;
+	};
+
+	template<class... Pairs>
+	struct Mapping final
+	{
+		static_assert(sizeof...(Pairs) > 0);
+		Mapping() = delete;
+
+		template<auto Lhs>
+		[[nodiscard]] static inline consteval auto toRhs() noexcept
+		{
+			return toRhsImpl<Lhs, Pairs...>();
+		}
+
+		template<auto Rhs>
+		[[nodiscard]] static inline consteval auto toLhs() noexcept
+		{
+			return toLhsImpl<Rhs, Pairs...>();
+		}
+
+	private:
+		template<auto Lhs, class First, class... Rest>
+		[[nodiscard]] static inline consteval auto toRhsImpl() noexcept
+		{
+			if constexpr (First::lhs == Lhs)
+				return First::rhs;
+			else
+				return toRhsImpl<Lhs, Rest...>();
+		}
+
+		template<auto>
+		[[nodiscard]] static inline consteval auto toRhsImpl() noexcept
+		{
+			static_assert([] { return false; }(), "Lhs not found");
+		}
+
+		template<auto Rhs, class First, class... Rest>
+		[[nodiscard]] static inline consteval auto toLhsImpl() noexcept
+		{
+			if constexpr (First::rhs == Rhs)
+				return First::lhs;
+			else
+				return toLhsImpl<Rhs, Rest...>();
+		}
+
+		template<auto>
+		[[nodiscard]] static inline consteval auto toLhsImpl() noexcept
+		{
+			static_assert([] { return false; }(), "Rhs not found");
+		}
+	};
+}
