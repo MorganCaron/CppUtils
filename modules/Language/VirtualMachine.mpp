@@ -5,6 +5,8 @@ import CppUtils.Container;
 import CppUtils.Type;
 import CppUtils.String.Concept;
 
+// Ribosome
+
 export namespace CppUtils::Language::VirtualMachine
 {
 	template<class... Funcs>
@@ -35,7 +37,7 @@ export namespace CppUtils::Language::VirtualMachine
 		constexpr auto nbReferences = std::tuple_size_v<std::remove_cvref_t<decltype(references)>>;
 
 		auto stack = Container::Stack{};
-		auto registers = std::unordered_map<std::size_t, std::size_t>{}; // constexpr en C++26
+		auto registers = std::unordered_map<std::size_t, std::size_t>{}; // constexpr en C++23
 
 		auto skipComment = [&source](std::size_t& position) -> void {
 			while (++position < std::size(source) and source[position] != '/' and source[position] != '\n') {}
@@ -110,19 +112,26 @@ export namespace CppUtils::Language::VirtualMachine
 			case ';':
 				if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
 					return std::unexpected{identifier.error()};
-				else if (identifier.value() < nbFunctions)
+				else if constexpr (nbFunctions == 0)
+					return std::unexpected{"No function defined"sv};
+				else if (identifier.value() >= nbFunctions) [[unlikely]]
+					return std::unexpected{"Function identifier too large"sv};
+				else
 				{
 					stack.dump();
-					if constexpr (nbFunctions == 0)
-						return std::unexpected{"No function available"sv};
-					else if (auto result = Type::Tuple::visitAt(functions, identifier.value(), [&stack](auto& function) { return stack.call(function); });
+					if (auto result = Type::Tuple::visitAt(functions, identifier.value(), [&stack](auto& function) { return stack.call(function); });
 						not result)
 						return std::unexpected{result.error()};
 				}
-				else if (identifier.value() >= nbFunctions + nbReferences) [[unlikely]]
-					return std::unexpected{"Identifier too large"sv};
+				break;
+
+			case '\'':
+				if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
+					return std::unexpected{identifier.error()};
 				else if constexpr (nbReferences == 0)
 					return std::unexpected{"No reference defined"sv};
+				else if (identifier.value() >= nbReferences) [[unlikely]]
+					return std::unexpected{"Reference identifier too large"sv};
 				else if (auto result = Type::Tuple::visitAt(references, identifier.value(), [&stack](auto& reference) { stack.push(reference.get()); }); not result)
 					return std::unexpected{result.error()};
 				break;
