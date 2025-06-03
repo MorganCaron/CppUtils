@@ -38,6 +38,7 @@ export namespace CppUtils::Language::VirtualMachine
 
 		auto stack = Container::Stack{};
 		auto registers = std::unordered_map<std::size_t, std::size_t>{}; // constexpr en C++23
+		auto lastStackPositions = std::stack<std::size_t>{};
 
 		auto skipComment = [&source](std::size_t& position) -> void {
 			while (++position < std::size(source) and source[position] != '/' and source[position] != '\n') {}
@@ -78,9 +79,12 @@ export namespace CppUtils::Language::VirtualMachine
 				position = oldPosition;
 				break;
 			}
-			case '/': skipComment(position); break;
 
-			case ')':
+			case '/':
+				skipComment(position);
+				break;
+
+			case '~':
 				if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
 					return std::unexpected{identifier.error()};
 				else if (identifier.value() < std::tuple_size_v<Functions>) [[unlikely]]
@@ -93,6 +97,15 @@ export namespace CppUtils::Language::VirtualMachine
 					return std::unexpected{size.error()};
 				else if (auto result = stack.drop(size.value()); not result) [[unlikely]]
 					return result;
+				break;
+
+			case '(':
+				lastStackPositions.push(std::size(stack));
+				break;
+
+			case ')':
+				stack.push(lastStackPositions.top());
+				lastStackPositions.pop();
 				break;
 
 			case '#':
@@ -110,26 +123,26 @@ export namespace CppUtils::Language::VirtualMachine
 				break;
 
 			case ';':
-				if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
-					return std::unexpected{identifier.error()};
-				else if constexpr (nbFunctions == 0)
+				if constexpr (nbFunctions == 0)
 					return std::unexpected{"No function defined"sv};
-				else if (identifier.value() >= nbFunctions) [[unlikely]]
+				else if (auto functionId = stack.template pop<std::size_t>(); not functionId) [[unlikely]]
+					return std::unexpected{functionId.error()};
+				else if (functionId.value() >= nbFunctions) [[unlikely]]
 					return std::unexpected{"Function identifier too large"sv};
-				else
-				{
-					stack.dump();
-					if (auto result = Type::Tuple::visitAt(functions, identifier.value(), [&stack](auto& function) { return stack.call(function); });
-						not result)
-						return std::unexpected{result.error()};
-				}
+				else if (auto argumentsPosition = stack.template pop<std::size_t>(); not argumentsPosition) [[unlikely]]
+					return std::unexpected{argumentsPosition.error()};
+				else if (argumentsPosition.value() > std::size(stack)) [[unlikely]]
+					return std::unexpected{"Arguments position too high"sv};
+				else if (auto result = Type::Tuple::visitAt(functions, functionId.value(), [&stack, functionOffset = std::size(stack) - argumentsPosition.value()](auto& function) { return stack.call(function, functionOffset); });
+					not result) [[unlikely]]
+					return std::unexpected{result.error()};
 				break;
 
 			case '\'':
-				if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
-					return std::unexpected{identifier.error()};
-				else if constexpr (nbReferences == 0)
+				if constexpr (nbReferences == 0)
 					return std::unexpected{"No reference defined"sv};
+				else if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
+					return std::unexpected{identifier.error()};
 				else if (identifier.value() >= nbReferences) [[unlikely]]
 					return std::unexpected{"Reference identifier too large"sv};
 				else if (auto result = Type::Tuple::visitAt(references, identifier.value(), [&stack](auto& reference) { stack.push(reference.get()); }); not result)
@@ -137,12 +150,13 @@ export namespace CppUtils::Language::VirtualMachine
 				break;
 
 			case '^':
-				if (auto variableId = stack.template pop<std::size_t>(); not variableId) [[unlikely]]
-					return std::unexpected{variableId.error()};
-				else if (variableId.value() >= nbReferences) [[unlikely]]
+				if constexpr (nbReferences == 0)
+					return std::unexpected{"No reference defined"sv};
+				else if (auto referenceId = stack.template pop<std::size_t>(); not referenceId) [[unlikely]]
+					return std::unexpected{referenceId.error()};
+				else if (referenceId.value() >= nbReferences) [[unlikely]]
 					return std::unexpected{"Variable identifier too large"sv};
-				else if constexpr (nbReferences > 0)
-					if (auto result = Type::Tuple::visitAt(references, variableId.value(), [&stack](auto& reference) -> std::expected<void, std::string_view> {
+				else if (auto result = Type::Tuple::visitAt(references, referenceId.value(), [&stack](auto& reference) -> std::expected<void, std::string_view> {
 						if (auto result = stack.get<typename std::remove_reference_t<decltype(reference)>::type>(); not result) [[unlikely]]
 							return std::unexpected{result.error()};
 						else

@@ -72,7 +72,7 @@ export namespace CppUtils::Container
 			return value;
 		}
 
-		inline constexpr auto call(auto&& function) -> std::expected<void, std::string_view>
+		inline constexpr auto call(auto&& function, std::size_t functionOffset = 0) -> std::expected<void, std::string_view>
 		{
 			using FunctionType = std::decay_t<decltype(function)>;
 			using FunctionInformations = Type::CallableTrait<FunctionType>;
@@ -85,7 +85,7 @@ export namespace CppUtils::Container
 			}.template operator()<ArgumentsTypes>(std::make_index_sequence<nbArguments>{});
 
 			auto arguments = [&]<std::size_t... I>(std::index_sequence<I...>) -> std::expected<ArgumentsTypes, std::string_view> {
-				auto offset = argumentsOffset;
+				auto offset = argumentsOffset + functionOffset;
 				auto success = std::expected<void, std::string_view>{};
 				auto arguments = ArgumentsTypes{[&]() {
 					using ArgumentType = std::tuple_element_t<I, ArgumentsTypes>;
@@ -109,7 +109,7 @@ export namespace CppUtils::Container
 			if constexpr (std::is_void_v<ReturnType>)
 				std::apply(std::forward<decltype(function)>(function), std::move(*arguments));
 			else
-				return set(std::apply(std::forward<decltype(function)>(function), std::move(*arguments)), argumentsOffset);
+				return set(std::apply(std::forward<decltype(function)>(function), std::move(*arguments)), argumentsOffset + functionOffset);
 			return {};
 		}
 
