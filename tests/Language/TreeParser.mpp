@@ -7,7 +7,7 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 {
 	inline auto _ = TestSuite{
 		"Language/TreeParser",
-		{"Logger"},
+		{"Logger", "Language/VirtualMachine"},
 		[](auto& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
