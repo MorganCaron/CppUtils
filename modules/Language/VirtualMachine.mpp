@@ -22,7 +22,7 @@ export namespace CppUtils::Language::VirtualMachine
 		return References{std::ref(variables)...};
 	}
 
-	template<class Functions = NoFunctions, class References = NoReferences>
+	template<class... Types, class Functions = NoFunctions, class References = NoReferences>
 	[[nodiscard]] inline /* constexpr */ auto execute(
 		String::StringView auto source,
 		const Functions& functions = NoFunctions{},
@@ -33,6 +33,7 @@ export namespace CppUtils::Language::VirtualMachine
 		static_assert(Type::Specializes<Functions, std::tuple>);
 		static_assert(Type::Specializes<References, std::tuple>);
 
+		constexpr auto types = std::make_tuple(Types{}...);
 		constexpr auto nbFunctions = std::tuple_size_v<std::remove_cvref_t<decltype(functions)>>;
 		constexpr auto nbReferences = std::tuple_size_v<std::remove_cvref_t<decltype(references)>>;
 
@@ -84,21 +85,6 @@ export namespace CppUtils::Language::VirtualMachine
 				skipComment(position);
 				break;
 
-			case '~':
-				if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
-					return std::unexpected{identifier.error()};
-				else if (identifier.value() < std::tuple_size_v<Functions>) [[unlikely]]
-					return std::unexpected{"Variable identifier too small"sv};
-				else if (identifier.value() >= std::tuple_size_v<Functions> + std::tuple_size_v<References>) [[unlikely]]
-					return std::unexpected{"Variable identifier too large"sv};
-				else if constexpr (nbReferences == 0)
-					return std::unexpected{"No reference defined"sv};
-				else if (auto size = Type::Tuple::visitAt(references, identifier.value(), [](auto& reference) { return sizeof(decltype(reference.get())); }); not size)
-					return std::unexpected{size.error()};
-				else if (auto result = stack.drop(size.value()); not result) [[unlikely]]
-					return result;
-				break;
-
 			case '(':
 				lastStackPositions.push(std::size(stack));
 				break;
@@ -138,14 +124,22 @@ export namespace CppUtils::Language::VirtualMachine
 					return std::unexpected{result.error()};
 				break;
 
-			case '\'':
+			case '"':
 				if constexpr (nbReferences == 0)
 					return std::unexpected{"No reference defined"sv};
 				else if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
 					return std::unexpected{identifier.error()};
 				else if (identifier.value() >= nbReferences) [[unlikely]]
 					return std::unexpected{"Reference identifier too large"sv};
-				else if (auto result = Type::Tuple::visitAt(references, identifier.value(), [&stack](auto& reference) { stack.push(reference.get()); }); not result)
+				else if (auto result = Type::Tuple::visitAt(references, identifier.value(), [&stack](auto& reference) -> std::expected<void, std::string_view> {
+					using ReferenceType = typename std::remove_reference_t<decltype(reference)>::type;
+					if constexpr (not std::is_trivially_copyable_v<ReferenceType>)
+						return std::unexpected{"Cannot copy a non-trivially copyable value"sv};
+					else
+						stack.push(reference.get());
+					return {};
+				});
+					not result)
 					return std::unexpected{result.error()};
 				break;
 
@@ -157,14 +151,19 @@ export namespace CppUtils::Language::VirtualMachine
 				else if (referenceId.value() >= nbReferences) [[unlikely]]
 					return std::unexpected{"Variable identifier too large"sv};
 				else if (auto result = Type::Tuple::visitAt(references, referenceId.value(), [&stack](auto& reference) -> std::expected<void, std::string_view> {
-						if (auto result = stack.get<typename std::remove_reference_t<decltype(reference)>::type>(); not result) [[unlikely]]
-							return std::unexpected{result.error()};
-						else
-							reference.get() = std::move(result.value());
-						return {};
-					});
-						not result)
+					using ReferenceType = typename std::remove_reference_t<decltype(reference)>::type;
+					if constexpr (std::is_const_v<ReferenceType>)
+						return std::unexpected{"A constant cannot be modified"sv};
+					else if constexpr (not std::is_trivially_copyable_v<ReferenceType>)
+						return std::unexpected{"Cannot copy a non-trivially copyable value"sv};
+					else if (auto result = stack.get<ReferenceType>(); not result) [[unlikely]]
 						return std::unexpected{result.error()};
+					else
+						reference.get() = std::move(result.value());
+					return {};
+				});
+					not result)
+					return std::unexpected{result.error()};
 				break;
 
 			case '<':
@@ -185,11 +184,69 @@ export namespace CppUtils::Language::VirtualMachine
 					return std::unexpected{"Unknown register key"sv};
 				break;
 
-			case '_':
-				if (auto result = stack.template pop<std::size_t>(); not result) [[unlikely]]
+			case '=':
+				if constexpr (sizeof...(Types) == 0)
+					return std::unexpected{"No type defined"sv};
+				else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
+					return std::unexpected{typeId.error()};
+				else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) -> std::expected<void, std::string_view> {
+					using Type = std::remove_cvref_t<decltype(value)>;
+					if (auto lhs = stack.get<Type>(sizeof(Type)); not lhs) [[unlikely]]
+						return std::unexpected{lhs.error()};
+					else if (auto rhs = stack.get<Type>(); not rhs) [[unlikely]]
+						return std::unexpected{rhs.error()};
+					else
+						return stack.set(lhs.value() == rhs.value(), sizeof(Type) * 2);
+				});
+					not result) [[unlikely]]
 					return std::unexpected{result.error()};
+				break;
+
+			case '&':
+				if (auto lhs = stack.get<bool>(sizeof(bool)); not lhs) [[unlikely]]
+					return std::unexpected{lhs.error()};
+				else if (auto rhs = stack.get<bool>(); not rhs) [[unlikely]]
+					return std::unexpected{rhs.error()};
+				else if (auto result = stack.set(lhs.value() and rhs.value(), sizeof(bool) * 2); not result) [[unlikely]]
+					return std::unexpected{result.error()};
+				break;
+
+			case '|':
+				if (auto lhs = stack.get<bool>(sizeof(bool)); not lhs) [[unlikely]]
+					return std::unexpected{lhs.error()};
+				else if (auto rhs = stack.get<bool>(); not rhs) [[unlikely]]
+					return std::unexpected{rhs.error()};
+				else if (auto result = stack.set(lhs.value() or rhs.value(), sizeof(bool) * 2); not result) [[unlikely]]
+					return std::unexpected{result.error()};
+				break;
+
+			case ':':
+				if constexpr (sizeof...(Types) == 0)
+					return std::unexpected{"No type defined"sv};
+				else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
+					return std::unexpected{typeId.error()};
+				else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [](const auto& value) { return value; });
+					not result) [[unlikely]]
+					return std::unexpected{result.error()};
+				break;
+
+			case '_':
+				if constexpr (sizeof...(Types) == 0)
+					return std::unexpected{"No type defined"sv};
+				else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
+					return std::unexpected{typeId.error()};
+				else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) {
+					return stack.drop(sizeof(std::remove_cvref_t<decltype(value)>));
+				});
+					not result) [[unlikely]]
+					return std::unexpected{result.error()};
+				break;
+
+			case '~':
+				if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
+					return std::unexpected{identifier.error()};
 				else
-					registers.erase(result.value());
+					registers.erase(identifier.value());
 				break;
 
 			case '\\': ++position; break;
@@ -210,16 +267,6 @@ export namespace CppUtils::Language::VirtualMachine
 					position = newPosition.value();
 				stack.drop(sizeof(std::size_t));
 				break;
-
-			case 'S':
-				if (auto lhs = stack.template get<std::size_t>(sizeof(std::size_t)); not lhs) [[unlikely]]
-					return std::unexpected{lhs.error()};
-				else
-				{
-					stack.set(stack.template get<std::size_t>().value(), sizeof(std::size_t));
-					stack.set(lhs.value());
-					break;
-				}
 
 			case 'X': return {};
 
@@ -242,6 +289,8 @@ export namespace CppUtils::Language::VirtualMachine
 				break;
 
 			case ',': stack.dump(); break;
+
+			case '\'': stack.set(source[++position]); break;
 
 			default:
 				if (instruction >= '0' and instruction <= '9')

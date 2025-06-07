@@ -13,7 +13,7 @@ export namespace CppUtils::Container
 		{
 			using ValueType = T;
 			ValueType value;
-			std::vector<Node> nodes = {};
+			std::vector<Node<T>> nodes = {};
 
 			[[nodiscard]] inline constexpr auto find(const ValueType& key) const noexcept -> auto
 			{
@@ -34,15 +34,15 @@ export namespace CppUtils::Container
 				return find(key) != std::cend(nodes);
 			}
 
-			[[nodiscard]] inline constexpr auto operator[](const ValueType& key) -> Node&
+			[[nodiscard]] inline constexpr auto operator[](const ValueType& key) -> Node<T>&
 			{
 				for (auto& node : nodes)
 					if (key == node.value)
 						return node;
-				return nodes.emplace_back(Node{key});
+				return nodes.emplace_back(Node<T>{key});
 			}
 
-			[[nodiscard]] inline constexpr auto operator[](const ValueType& key) const -> const Node&
+			[[nodiscard]] inline constexpr auto operator[](const ValueType& key) const -> const Node<T>&
 			{
 				const auto value = find(key);
 				if (value == std::cend(nodes))

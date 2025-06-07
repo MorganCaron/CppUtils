@@ -9,11 +9,60 @@ import CppUtils.Language.VirtualMachine;
 
 export namespace CppUtils::Language::TreeParser
 {
-	inline /* constexpr */ auto compile(String::StringView auto source) -> std::expected<Container::AST<typename decltype(source)::value_type>, std::string_view>
+	inline /* constexpr */ auto compile(const String::StringView auto& source) -> std::expected<Container::AST<typename std::remove_cvref_t<decltype(source)>::value_type>, std::string_view>
 	{
-		using CharT = decltype(source)::value_type;
-		return Container::AST<CharT>{};
+		using namespace std::literals;
+		namespace VM = CppUtils::Language::VirtualMachine;
+		using StringView = std::remove_cvref_t<decltype(source)>;
+		using CharT = StringView::value_type;
+
+		constexpr auto treeParser = u8R"(
+		@
+
+		@{.getChar#<@} / def getChar
+			)[0;
+		*
+
+		@{.isSpace#<@} / def isSpace
+
+		*
+
+		@{.skipSpaces#<@} / def skipSpaces
+			,
+		*
+
+		@{.parseKeyword#<@} / def parseKeyword
+			
+		*
+
+		@{.parseNode#<@} / def parseNode
+			/ [ ( {.getChar#>*} getChar();
+			{.skipSpaces#>*} / skipSpaces();
+			{.parseKeyword#>*} / parseKeyword();
+		*
+
+		@{.main#<@} / def main
+			{.parseNode#>*} / parseNode();
+		*
+
+		@{.main#>*} / main();
+		)"sv;
+
+		auto getChar = [](StringView string, std::size_t pos) -> CharT {
+			return string[pos];
+		};
+		auto compareChars = [](CharT lhs, CharT rhs) -> bool {
+			return lhs == rhs;
+		};
+
+		auto ast = Container::AST<CharT>{};
+		auto sourceLength = std::size(source);
+		auto result = VM::execute<CharT>(treeParser, VM::Functions{getChar, compareChars}, VM::makeReferences(source, sourceLength, ast));
+		if (not result)
+			return std::unexpected{result.error()};
+		return ast;
 	}
+
 	/*
 	template<class CharT>
 	inline auto compile(const std::basic_string_view<CharT> source) -> Container::AST<CharT>

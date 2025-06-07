@@ -27,7 +27,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 		});
 
 		suite.addTest("push-pop int", [&] {
-			constexpr auto source = u8",[0', [0~,"sv;
+			constexpr auto source = u8R"(,[0", [0~,)"sv;
 			auto number = 42;
 			auto result = VM::execute(source, VM::NoFunctions{}, VM::makeReferences(number));
 			if (not result)
@@ -36,7 +36,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 		});
 
 		suite.addTest("input output (int)", [&] {
-			constexpr auto source = u8"[0' [1^ [0~"sv;
+			constexpr auto source = u8R"([0" [1^ [0~)"sv;
 			auto input = 42;
 			auto output = 0;
 			auto result = VM::execute(source, VM::NoFunctions{}, VM::makeReferences(input, output));
@@ -47,7 +47,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 		});
 
 		suite.addTest("input output (char)", [&] {
-			constexpr auto source = u8"[0' [1^ [0~"sv;
+			constexpr auto source = u8R"([0" [1^ [0~)"sv;
 			auto input = 'A';
 			auto output = char{};
 			auto result = VM::execute(source, VM::NoFunctions{}, VM::makeReferences(input, output));
@@ -132,7 +132,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 			@
 
 			@{.add#<@} / def add
-				) [0; / return lhs + rhs;
+				)[0; / return lhs + rhs;
 			*
 
 			@{.print#<@} / def print

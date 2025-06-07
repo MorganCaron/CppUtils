@@ -19,6 +19,8 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 		suite.addTest("Empty source", [&] {
 			constexpr auto source = ""sv;
 			auto tree = Compiler::compile(source);
+			if (not tree)
+				Logger::print<"error">("{}", tree.error());
 			suite.expect(tree.has_value());
 			Logger::print("Tree:\n{}", tree.value());
 			auto expected = AST{
@@ -27,10 +29,24 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 			suite.expectEqual(tree.value(), expected);
 		});
 
+		suite.addTest("Spaces", [&] {
+			constexpr auto source = "   "sv;
+			auto tree = Compiler::compile(source);
+			if (not tree)
+				Logger::print<"error">("{}", tree.error());
+			suite.expect(tree.has_value());
+			Logger::print("Tree:\n{}", tree.value());
+			auto expected = AST{
+				Node{"root"_token},
+				String::makeHashTable<char>("root")};
+			suite.expectEqual(tree.value(), expected);
+		});
 		/*
 		suite.addTest("Single node", [&] {
 			constexpr auto source = "node"sv;
 			auto tree = Compiler::compile(source);
+			if (not tree)
+				Logger::print<"error">("{}", tree.error());
 			suite.expect(tree.has_value());
 			Logger::print("Tree:\n{}", tree.value());
 			auto expected = AST{
@@ -44,6 +60,8 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 				node
 			)"sv;
 			auto tree = Compiler::compile(source);
+			if (not tree)
+				Logger::print<"error">("{}", tree.error());
 			Logger::print("Tree:\n{}", tree);
 			auto expected = AST{
 				Node{"root"_token, {Node{"node"_token}}},
@@ -54,6 +72,8 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 		suite.addTest("Multiple nodes", [&] {
 			constexpr auto source = u"foo bar"sv;
 			auto tree = Compiler::compile(source);
+			if (not tree)
+				Logger::print<"error">("{}", tree.error());
 			Logger::print("Tree:\n{}", tree);
 			auto expected = AST{
 				Node{"root"_token, {Node{"foo"_token}, Node{"bar"_token}}},
@@ -66,6 +86,8 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 				Hello\ World!
 			)"sv;
 			auto tree = Compiler::compile(source);
+			if (not tree)
+				Logger::print<"error">("{}", tree.error());
 			Logger::print("Tree:\n{}", tree);
 			auto expected = AST{
 				Node{"root"_token, {Node{"Hello World!"_token}}},
@@ -76,6 +98,8 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 		suite.addTest("Empty node", [&] {
 			constexpr auto source = u"node{}"sv;
 			auto tree = Compiler::compile(source);
+			if (not tree)
+				Logger::print<"error">("{}", tree.error());
 			Logger::print("Tree:\n{}", tree);
 			auto expected = AST{
 				Node{"root"_token, {Node{"node"_token}}},
@@ -86,6 +110,8 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 		suite.addTest("Node with content", [&] {
 			constexpr auto source = u"parent{child0 child1}"sv;
 			auto tree = Compiler::compile(source);
+			if (not tree)
+				Logger::print<"error">("{}", tree.error());
 			Logger::print("Tree:\n{}", tree);
 			auto expected = AST{
 				Node{"root"_token, {Node{"parent"_token, {Node{"child0"_token}, Node{"child1"_token}}}}},
@@ -100,6 +126,8 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 				}
 			)"sv;
 			auto tree = Compiler::compile(source);
+			if (not tree)
+				Logger::print<"error">("{}", tree.error());
 			Logger::print("Tree:\n{}", tree);
 			auto expected = AST{
 				Node{"root"_token, {Node{"main"_token, {Node{"print"_token, {Node{"Hello World"_token}}}}}}},
