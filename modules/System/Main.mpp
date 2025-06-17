@@ -1,0 +1,7 @@
+export module CppUtils.System.Main;
+
+export namespace CppUtils
+{
+	constexpr auto exitSuccess = 0;
+	constexpr auto exitFailure = 1;
+}

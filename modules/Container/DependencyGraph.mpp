@@ -1,0 +1,127 @@
+export module CppUtils.Container.DependencyGraph;
+
+import std;
+
+export namespace CppUtils::Container
+{
+	template<class Key, class Value>
+	class DependencyGraph final
+	{
+	private:
+		enum class VisitState
+		{
+			NotVisited,
+			Visiting,
+			Visited
+		};
+
+	public:
+		using KeyType = Key;
+		using ValueType = Value;
+
+		struct Node final
+		{
+			Value value;
+			std::vector<Key> dependencies;
+		};
+
+		auto insert(const Key& key, Value&& value) -> void
+		{
+			m_nodes[key].value = std::move(value);
+		}
+
+		[[nodiscard]] auto operator[](const Key& key) const noexcept -> const Value&
+		{
+			return m_nodes[key].value;
+		}
+
+		[[nodiscard]] auto operator[](const Key& key) noexcept -> Value&
+		{
+			return m_nodes[key].value;
+		}
+
+		auto addDependency(const Key& key, const Key& dependency) -> void
+		{
+			m_nodes[key].dependencies.push_back(dependency);
+		}
+
+		auto removeDependency(const Key& key, const Key& dependency) -> void
+		{
+			std::erase(m_nodes[key].dependencies, dependency);
+		}
+
+		[[nodiscard]] auto getDependencies(const Key& key) const noexcept -> decltype(auto)
+		{
+			return m_nodes.at(key).dependencies;
+		}
+
+		[[nodiscard]] auto getDependencies(const Key& key) noexcept -> decltype(auto)
+		{
+			return m_nodes[key].dependencies;
+		}
+
+		auto hasCycle() -> bool
+		{
+			auto visited = std::unordered_map<Key, VisitState>{};
+
+			auto hasCycle = [&](this const auto& self, const Key& key) -> bool {
+				if (auto it = visited.find(key); it != std::cend(visited))
+				{
+					if (it->second == VisitState::Visiting)
+						return true;
+					if (it->second == VisitState::Visited)
+						return false;
+				}
+
+				visited[key] = VisitState::Visiting;
+
+				if (auto found = m_nodes.find(key); found != std::cend(m_nodes))
+					for (const auto& dep : found->second.dependencies)
+						if (self(dep))
+							return true;
+
+				visited[key] = VisitState::Visited;
+				return false;
+			};
+
+			for (const auto& [key, _] : m_nodes)
+				if (hasCycle(key))
+					return true;
+
+			return false;
+		}
+
+		auto forEach(auto&& function) -> std::expected<void, std::string_view>
+		{
+			using namespace std::literals;
+
+			auto visited = std::unordered_map<Key, VisitState>{};
+
+			auto visit = [&](this const auto& self, const Key& key) -> std::expected<void, std::string_view> {
+				if (visited[key] == VisitState::Visited)
+					return {};
+
+				if (visited[key] == VisitState::Visiting)
+					return std::unexpected{"Cycle detected"sv};
+
+				visited[key] = VisitState::Visiting;
+
+				for (const auto& dep : m_nodes[key].dependencies)
+					if (auto result = self(dep); not result) [[unlikely]]
+						return result;
+
+				function(m_nodes[key].value);
+				visited[key] = VisitState::Visited;
+				return {};
+			};
+
+			for (const auto& [key, _] : m_nodes)
+				if (auto result = visit(key); not result) [[unlikely]]
+					return result;
+			return {};
+		}
+
+	private:
+		std::unordered_map<Key, Node> m_nodes;
+	};
+}

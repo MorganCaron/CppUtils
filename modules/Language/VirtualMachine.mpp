@@ -225,7 +225,9 @@ export namespace CppUtils::Language::VirtualMachine
 					return std::unexpected{"No type defined"sv};
 				else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
 					return std::unexpected{typeId.error()};
-				else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) { return stack.push(value); });
+				else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) {
+					return stack.push(value);
+				});
 					not result) [[unlikely]]
 					return std::unexpected{result.error()};
 				break;

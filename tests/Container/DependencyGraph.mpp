@@ -1,0 +1,144 @@
+export module CppUtils.UnitTests.Container.DependencyGraph;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Container::DependencyGraph
+{
+	inline auto _ = TestSuite{"Container/DependencyGraph", {"UnitTest"}, [](auto& suite) {
+		using namespace std::literals;
+
+		suite.addTest("Empty graph", [&] {
+			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
+
+			suite.expect(not graph.hasCycle());
+		});
+
+		suite.addTest("One value", [&] {
+			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
+			graph.insert('A', 1);
+
+			suite.expectEqual(graph['A'], 1);
+
+			suite.expect(not graph.hasCycle());
+		});
+
+		suite.addTest("Erase value", [&] {
+			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
+			graph.insert('A', 1);
+			graph['A'] = 2,
+
+			suite.expectEqual(graph['A'], 2);
+
+			suite.expect(not graph.hasCycle());
+		});
+
+		suite.addTest("Add dependency", [&] {
+			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
+			graph.insert('A', 1);
+			graph.insert('B', 2);
+			graph.addDependency('A', 'B');
+
+			const auto& aDeps = graph.getDependencies('A');
+			const auto& bDeps = graph.getDependencies('B');
+
+			suite.expectEqual(std::size(aDeps), 1uz);
+			suite.expectEqual(aDeps[0], 'B');
+			suite.expect(std::empty(bDeps));
+
+			suite.expect(not graph.hasCycle());
+		});
+
+		suite.addTest("Remove dependency", [&] {
+			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
+			graph.insert('A', 1);
+			graph.insert('B', 2);
+			graph.addDependency('A', 'B');
+			graph.removeDependency('A', 'B');
+
+			const auto& aDeps = graph.getDependencies('A');
+			const auto& bDeps = graph.getDependencies('B');
+
+			suite.expect(std::empty(aDeps));
+			suite.expect(std::empty(bDeps));
+
+			suite.expect(not graph.hasCycle());
+		});
+
+		suite.addTest("Circular dependency (direct)", [&] {
+			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
+			graph.insert('A', 1);
+			graph.insert('B', 2);
+			graph.addDependency('A', 'B');
+			graph.addDependency('B', 'A');
+
+			const auto& aDeps = graph.getDependencies('A');
+			const auto& bDeps = graph.getDependencies('B');
+
+			suite.expectEqual(std::size(aDeps), 1uz);
+			suite.expectEqual(std::size(bDeps), 1uz);
+			suite.expectEqual(aDeps[0], 'B');
+			suite.expectEqual(bDeps[0], 'A');
+
+			suite.expect(graph.hasCycle());
+		});
+
+		suite.addTest("Circular dependency (indirect)", [&] {
+			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
+			graph.insert('A', 1);
+			graph.insert('B', 2);
+			graph.insert('C', 3);
+			graph.insert('D', 4);
+			graph.addDependency('A', 'B');
+			graph.addDependency('B', 'C');
+			graph.addDependency('C', 'D');
+			graph.addDependency('D', 'B');
+
+			const auto& aDeps = graph.getDependencies('A');
+			const auto& bDeps = graph.getDependencies('B');
+			const auto& cDeps = graph.getDependencies('C');
+			const auto& dDeps = graph.getDependencies('D');
+
+			suite.expectEqual(std::size(aDeps), 1uz);
+			suite.expectEqual(std::size(bDeps), 1uz);
+			suite.expectEqual(std::size(cDeps), 1uz);
+			suite.expectEqual(std::size(dDeps), 1uz);
+			suite.expectEqual(aDeps[0], 'B');
+			suite.expectEqual(bDeps[0], 'C');
+			suite.expectEqual(cDeps[0], 'D');
+			suite.expectEqual(dDeps[0], 'B');
+
+			suite.expect(graph.hasCycle());
+		});
+
+		suite.addTest("ForEach (without circular dependencies)", [&] {
+			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
+			graph.insert('A', 1);
+			graph.insert('B', 2);
+			graph.insert('C', 3);
+			graph.addDependency('A', 'B');
+			graph.addDependency('A', 'C');
+			graph.addDependency('B', 'C');
+
+			suite.expect(not graph.hasCycle());
+
+			graph.forEach([](const auto& value) -> void { std::println("{}", value); });
+		});
+
+		suite.addTest("ForEach (with circular dependencies)", [&] {
+			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
+			graph.insert('A', 1);
+			graph.insert('B', 2);
+			graph.insert('C', 3);
+			graph.insert('D', 4);
+			graph.addDependency('A', 'B');
+			graph.addDependency('B', 'C');
+			graph.addDependency('C', 'D');
+			graph.addDependency('D', 'B');
+
+			suite.expect(graph.hasCycle());
+
+			graph.forEach([](const auto& value) -> void { std::println("{}", value); });
+		});
+	}};
+}
