@@ -5,7 +5,7 @@ import std;
 export namespace CppUtils::Container
 {
 	template<class Key, class Value>
-	class DependencyGraph final
+	struct DependencyGraph final
 	{
 	private:
 		enum class VisitState
@@ -25,39 +25,51 @@ export namespace CppUtils::Container
 			std::vector<Key> dependencies;
 		};
 
+		[[nodiscard]] auto contains(const Key& key) const noexcept -> bool
+		{
+			return nodes.contains(key);
+		}
+
 		auto insert(const Key& key, Value&& value) -> void
 		{
-			m_nodes[key].value = std::move(value);
+			nodes[key].value = std::forward<Value>(value);
+		}
+
+		auto remove(const Key& key) -> void
+		{
+			nodes.erase(key);
+			for (auto& [_, node] : nodes)
+				std::erase(node.dependencies, key);
 		}
 
 		[[nodiscard]] auto operator[](const Key& key) const noexcept -> const Value&
 		{
-			return m_nodes[key].value;
+			return nodes[key].value;
 		}
 
 		[[nodiscard]] auto operator[](const Key& key) noexcept -> Value&
 		{
-			return m_nodes[key].value;
+			return nodes[key].value;
 		}
 
 		auto addDependency(const Key& key, const Key& dependency) -> void
 		{
-			m_nodes[key].dependencies.push_back(dependency);
+			nodes[key].dependencies.push_back(dependency);
 		}
 
 		auto removeDependency(const Key& key, const Key& dependency) -> void
 		{
-			std::erase(m_nodes[key].dependencies, dependency);
+			std::erase(nodes[key].dependencies, dependency);
 		}
 
 		[[nodiscard]] auto getDependencies(const Key& key) const noexcept -> decltype(auto)
 		{
-			return m_nodes.at(key).dependencies;
+			return nodes.at(key).dependencies;
 		}
 
 		[[nodiscard]] auto getDependencies(const Key& key) noexcept -> decltype(auto)
 		{
-			return m_nodes[key].dependencies;
+			return nodes[key].dependencies;
 		}
 
 		auto hasCycle() -> bool
@@ -75,7 +87,7 @@ export namespace CppUtils::Container
 
 				visited[key] = VisitState::Visiting;
 
-				if (auto found = m_nodes.find(key); found != std::cend(m_nodes))
+				if (auto found = nodes.find(key); found != std::cend(nodes))
 					for (const auto& dep : found->second.dependencies)
 						if (self(dep))
 							return true;
@@ -84,44 +96,46 @@ export namespace CppUtils::Container
 				return false;
 			};
 
-			for (const auto& [key, _] : m_nodes)
+			for (const auto& [key, _] : nodes)
 				if (hasCycle(key))
 					return true;
 
 			return false;
 		}
 
-		auto forEach(auto&& function) -> std::expected<void, std::string_view>
+		auto forEach(auto&& function) -> std::expected<void, std::string>
 		{
 			using namespace std::literals;
 
 			auto visited = std::unordered_map<Key, VisitState>{};
 
-			auto visit = [&](this const auto& self, const Key& key) -> std::expected<void, std::string_view> {
+			auto visit = [&](this const auto& self, const Key& key) -> std::expected<void, std::string> {
+				if (not nodes.contains(key))
+					return std::unexpected{std::format("Dependency {} not found", key)};
+
 				if (visited[key] == VisitState::Visited)
 					return {};
 
 				if (visited[key] == VisitState::Visiting)
-					return std::unexpected{"Cycle detected"sv};
+					return std::unexpected{std::format("Circular dependency on node {}", key)};
 
 				visited[key] = VisitState::Visiting;
 
-				for (const auto& dep : m_nodes[key].dependencies)
+				for (const auto& dep : nodes[key].dependencies)
 					if (auto result = self(dep); not result) [[unlikely]]
 						return result;
 
-				function(m_nodes[key].value);
+				function(key, nodes[key].value, nodes[key].dependencies);
 				visited[key] = VisitState::Visited;
 				return {};
 			};
 
-			for (const auto& [key, _] : m_nodes)
+			for (const auto& [key, _] : nodes)
 				if (auto result = visit(key); not result) [[unlikely]]
 					return result;
 			return {};
 		}
 
-	private:
-		std::unordered_map<Key, Node> m_nodes;
+		std::unordered_map<Key, Node> nodes;
 	};
 }

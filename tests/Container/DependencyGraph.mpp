@@ -14,23 +14,42 @@ export namespace CppUtils::UnitTest::Container::DependencyGraph
 			suite.expect(not graph.hasCycle());
 		});
 
-		suite.addTest("One value", [&] {
+		suite.addTest("One element", [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 
+			suite.expect(graph.contains('A'));
 			suite.expectEqual(graph['A'], 1);
-
-			suite.expect(not graph.hasCycle());
 		});
 
-		suite.addTest("Erase value", [&] {
+		suite.addTest("Remove element", [&] {
+			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
+			graph.insert('A', 1);
+			graph.remove('A');
+
+			suite.expect(not graph.contains('A'));
+		});
+
+		suite.addTest("Remove element with dependencies", [&] {
+			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
+			graph.insert('A', 1);
+			graph.insert('B', 2);
+			graph.addDependency('A', 'B');
+			graph.addDependency('B', 'A');
+			graph.remove('B');
+
+			suite.expect(not graph.contains('B'));
+			suite.expect(graph.contains('A'));
+			const auto& aDeps = graph.getDependencies('A');
+			suite.expect(std::empty(aDeps));
+		});
+
+		suite.addTest("Change value", [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 			graph['A'] = 2,
 
 			suite.expectEqual(graph['A'], 2);
-
-			suite.expect(not graph.hasCycle());
 		});
 
 		suite.addTest("Add dependency", [&] {
@@ -122,7 +141,9 @@ export namespace CppUtils::UnitTest::Container::DependencyGraph
 
 			suite.expect(not graph.hasCycle());
 
-			graph.forEach([](const auto& value) -> void { std::println("{}", value); });
+			graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
+				std::println("{}: {}", key, value);
+			});
 		});
 
 		suite.addTest("ForEach (with circular dependencies)", [&] {
@@ -138,7 +159,9 @@ export namespace CppUtils::UnitTest::Container::DependencyGraph
 
 			suite.expect(graph.hasCycle());
 
-			graph.forEach([](const auto& value) -> void { std::println("{}", value); });
+			graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
+				std::println("{}: {}", key, value);
+			});
 		});
 	}};
 }
