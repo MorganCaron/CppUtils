@@ -11,13 +11,9 @@ import CppUtils.Container;
 import CppUtils.Logger;
 import CppUtils.String;
 import CppUtils.Terminal;
-export import CppUtils.UnitTest.DummyObject;
+import CppUtils.System.Main;
 
-namespace
-{
-	inline constexpr auto exitSuccess = 0;
-	inline constexpr auto exitFailure = 1;
-}
+export import CppUtils.UnitTest.DummyObject;
 
 namespace CppUtils::UnitTest
 {

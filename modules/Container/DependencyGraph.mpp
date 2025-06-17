@@ -25,54 +25,54 @@ export namespace CppUtils::Container
 			std::vector<Key> dependencies;
 		};
 
-		[[nodiscard]] auto contains(const Key& key) const noexcept -> bool
+		[[nodiscard]] inline auto contains(const Key& key) const noexcept -> bool
 		{
 			return nodes.contains(key);
 		}
 
-		auto insert(const Key& key, Value&& value) -> void
+		inline auto insert(const Key& key, Value&& value) -> void
 		{
 			nodes[key].value = std::forward<Value>(value);
 		}
 
-		auto remove(const Key& key) -> void
+		inline auto remove(const Key& key) -> void
 		{
 			nodes.erase(key);
 			for (auto& [_, node] : nodes)
 				std::erase(node.dependencies, key);
 		}
 
-		[[nodiscard]] auto operator[](const Key& key) const noexcept -> const Value&
+		[[nodiscard]] inline auto operator[](const Key& key) const noexcept -> const Value&
 		{
 			return nodes[key].value;
 		}
 
-		[[nodiscard]] auto operator[](const Key& key) noexcept -> Value&
+		[[nodiscard]] inline auto operator[](const Key& key) noexcept -> Value&
 		{
 			return nodes[key].value;
 		}
 
-		auto addDependency(const Key& key, const Key& dependency) -> void
+		inline auto addDependency(const Key& key, const Key& dependency) -> void
 		{
 			nodes[key].dependencies.push_back(dependency);
 		}
 
-		auto removeDependency(const Key& key, const Key& dependency) -> void
+		inline auto removeDependency(const Key& key, const Key& dependency) -> void
 		{
 			std::erase(nodes[key].dependencies, dependency);
 		}
 
-		[[nodiscard]] auto getDependencies(const Key& key) const noexcept -> decltype(auto)
+		[[nodiscard]] inline auto getDependencies(const Key& key) const noexcept -> decltype(auto)
 		{
 			return nodes.at(key).dependencies;
 		}
 
-		[[nodiscard]] auto getDependencies(const Key& key) noexcept -> decltype(auto)
+		[[nodiscard]] inline auto getDependencies(const Key& key) noexcept -> decltype(auto)
 		{
 			return nodes[key].dependencies;
 		}
 
-		auto hasCycle() -> bool
+		[[nodiscard]] inline auto hasCycle() -> bool
 		{
 			auto visited = std::unordered_map<Key, VisitState>{};
 
@@ -103,7 +103,7 @@ export namespace CppUtils::Container
 			return false;
 		}
 
-		auto forEach(auto&& function) -> std::expected<void, std::string>
+		inline auto forEach(auto&& function) -> std::expected<void, std::string>
 		{
 			using namespace std::literals;
 
