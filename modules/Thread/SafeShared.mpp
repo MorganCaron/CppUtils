@@ -1,0 +1,29 @@
+export module CppUtils.Thread.SafeShared;
+
+import std;
+import CppUtils.Thread.SharedLocker;
+
+export namespace CppUtils::Thread
+{
+	template<class T>
+	class SafeShared final
+	{
+	public:
+		inline explicit SafeShared(auto&&... args):
+			m_locker{std::make_shared<SharedLocker<T>>(std::forward<decltype(args)>(args)...)}
+		{}
+
+		[[nodiscard]] inline auto uniqueAccess() -> auto
+		{
+			return m_locker->uniqueAccess();
+		}
+
+		[[nodiscard]] inline auto sharedAccess() const -> auto
+		{
+			return m_locker->sharedAccess();
+		}
+
+	private:
+		std::shared_ptr<SharedLocker<T>> m_locker;
+	};
+}

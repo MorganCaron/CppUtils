@@ -2,6 +2,7 @@ export module CppUtils.Thread;
 
 export import CppUtils.Thread.AsyncIStreamListener;
 export import CppUtils.Thread.Event;
+export import CppUtils.Thread.SafeShared;
 export import CppUtils.Thread.SharedLocker;
 export import CppUtils.Thread.SharedPtr;
 export import CppUtils.Thread.ThreadLoop;
