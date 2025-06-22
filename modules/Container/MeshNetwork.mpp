@@ -1,8 +1,9 @@
 export module CppUtils.Container.MeshNetwork;
 
 import std;
-import CppUtils.Thread.SharedLocker;
 import CppUtils.Container.NetworkPtr;
+import CppUtils.Container.SafeShared;
+import CppUtils.Thread.SharedLocker;
 
 export namespace CppUtils::Container
 {
@@ -29,7 +30,7 @@ export namespace CppUtils::Container
 			auto& branches = node0Accessor->value.branches;
 			auto& childs = branches[key1];
 			if (auto it = std::find_if(std::cbegin(childs), std::cend(childs), [&](const auto& child) -> bool {
-				return std::shared_ptr{child} == node1;
+				return SafeShared{child} == node1;
 			});
 				it != std::cend(childs))
 				childs.erase(it);

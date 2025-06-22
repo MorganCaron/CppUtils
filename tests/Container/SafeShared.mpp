@@ -1,0 +1,60 @@
+export module CppUtils.UnitTests.Container.SafeShared;
+
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Container::SafeShared
+{
+	inline auto _ = CppUtils::UnitTest::TestSuite{"Container/SafeShared", {"UnitTest", "Thread/SharedLocker"}, [](auto& suite) {
+		suite.addTest("Empty", [&] {
+			auto safeSharedString = CppUtils::Container::SafeShared<std::string>{};
+
+			suite.expect(not static_cast<bool>(safeSharedString));
+		});
+
+		suite.addTest("Unique access", [&] {
+			auto safeSharedString0 = CppUtils::Container::makeSafeShared<std::string>("Foo");
+			suite.expect(static_cast<bool>(safeSharedString0));
+
+			auto safeSharedString1 = safeSharedString0;
+			{
+				auto accessor = safeSharedString0->uniqueAccess();
+				suite.expect(accessor.value() == "Foo");
+				accessor.value() = "Bar";
+				suite.expect(accessor.value() == "Bar");
+			}
+			{
+				auto accessor = safeSharedString1->uniqueAccess();
+				suite.expect(accessor.value() == "Bar");
+			}
+		});
+
+		suite.addTest("Shared access", [&] {
+			auto safeSharedString0 = CppUtils::Container::makeSafeShared<std::string>("Foo");
+			auto safeSharedString1 = safeSharedString0;
+			{
+				auto accessor0 = safeSharedString0->sharedAccess();
+				auto accessor1 = safeSharedString0->sharedAccess();
+				auto accessor2 = safeSharedString1->sharedAccess();
+				auto accessor3 = safeSharedString1->sharedAccess();
+				suite.expect(accessor0.value() == "Foo");
+				suite.expect(accessor1.value() == "Foo");
+				suite.expect(accessor2.value() == "Foo");
+				suite.expect(accessor3.value() == "Foo");
+			}
+		});
+
+		suite.addTest("SafeWeak", [&] {
+			auto safeSharedString0 = CppUtils::Container::makeSafeShared<std::string>("Foo");
+			auto safeWeak = CppUtils::Container::SafeWeak{safeSharedString0};
+			suite.expect(not safeWeak.expired());
+
+			auto safeSharedString1 = safeWeak.lock();
+			{
+				auto accessor0 = safeSharedString0->sharedAccess();
+				auto accessor1 = safeSharedString1->sharedAccess();
+				suite.expect(accessor0.value() == "Foo");
+				suite.expect(accessor1.value() == "Foo");
+			}
+		});
+	}};
+}

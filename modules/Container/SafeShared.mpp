@@ -1,0 +1,20 @@
+export module CppUtils.Container.SafeShared;
+
+import std;
+import CppUtils.Thread.SharedLocker;
+import CppUtils.Thread.SharedPtr;
+
+export namespace CppUtils::Container
+{
+	template<class T>
+	using SafeShared = std::shared_ptr<Thread::SharedLocker<T>>;
+
+	template<class T>
+	inline auto makeSafeShared(auto&&... args) -> SafeShared<T>
+	{
+		return SafeShared{std::make_shared<Thread::SharedLocker<T>>(std::forward<decltype(args)>(args)...)};
+	}
+
+	template<class T>
+	using SafeWeak = std::weak_ptr<Thread::SharedLocker<T>>;
+}

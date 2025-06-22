@@ -6,6 +6,7 @@ export import CppUtils.Container.DependencyGraph;
 export import CppUtils.Container.MeshNetwork;
 export import CppUtils.Container.NetworkPtr;
 export import CppUtils.Container.Pair;
+export import CppUtils.Container.SafeShared;
 export import CppUtils.Container.Sequence;
 export import CppUtils.Container.Size2d;
 export import CppUtils.Container.Size3d;

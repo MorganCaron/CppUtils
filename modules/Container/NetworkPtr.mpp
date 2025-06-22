@@ -1,6 +1,7 @@
 export module CppUtils.Container.NetworkPtr;
 
 import std;
+import CppUtils.Container.SafeShared;
 import CppUtils.Thread.SharedLocker;
 import CppUtils.Thread.SharedPtr;
 
@@ -11,8 +12,8 @@ export namespace CppUtils::Container
 	{
 	public:
 		using Value = T;
-		using SharedPtr = std::shared_ptr<Thread::SharedLocker<NetworkPtr<T>>>;
-		using WeakPtr = std::weak_ptr<Thread::SharedLocker<NetworkPtr<T>>>;
+		using SharedPtr = SafeShared<NetworkPtr<T>>;
+		using WeakPtr = SafeWeak<NetworkPtr<T>>;
 
 	private:
 		explicit inline NetworkPtr(auto&&... args):
@@ -30,7 +31,7 @@ export namespace CppUtils::Container
 
 		[[nodiscard]] static inline auto make(auto&&... args) -> SharedPtr
 		{
-			auto ptr = std::make_shared<Thread::SharedLocker<NetworkPtr<T>>>(std::forward<decltype(args)>(args)...);
+			auto ptr = makeSafeShared<NetworkPtr<T>>(std::forward<decltype(args)>(args)...);
 			{
 				auto accessor = ptr->uniqueAccess();
 				accessor->setWeakThis(ptr);
@@ -40,7 +41,7 @@ export namespace CppUtils::Container
 
 		[[nodiscard]] static inline auto makeRoot(auto&&... args) -> SharedPtr
 		{
-			auto ptr = std::make_shared<Thread::SharedLocker<NetworkPtr<T>>>(std::forward<decltype(args)>(args)...);
+			auto ptr = makeSafeShared<NetworkPtr<T>>(std::forward<decltype(args)>(args)...);
 			{
 				auto accessor = ptr->uniqueAccess();
 				accessor->setWeakThis(ptr);
@@ -66,9 +67,9 @@ export namespace CppUtils::Container
 				m_distanceFromRoot = 0;
 		}
 
-		inline auto setWeakThis(const WeakPtr& ptr) -> void
+		inline auto setWeakThis(WeakPtr ptr) -> void
 		{
-			m_weak_this = ptr;
+			m_weak_this = std::move(ptr);
 		}
 
 		[[nodiscard]] inline auto getDistanceFromRoot() const -> std::size_t
@@ -89,7 +90,7 @@ export namespace CppUtils::Container
 			if (childAccessor->m_distanceFromRoot > m_distanceFromRoot)
 				m_children.push_back(childPtr);
 			else
-				m_children.push_back(std::weak_ptr{childPtr});
+				m_children.push_back(SafeWeak{childPtr});
 			childAccessor->m_parents.push_back(m_weak_this);
 		}
 
@@ -161,7 +162,7 @@ export namespace CppUtils::Container
 			if (std::holds_alternative<SharedPtr>(child))
 				sharedPtr = std::get<SharedPtr>(child);
 			else
-				sharedPtr = std::shared_ptr{std::get<WeakPtr>(child)};
+				sharedPtr = SharedPtr{std::get<WeakPtr>(child)};
 			return sharedPtr->uniqueAccess();
 		}
 

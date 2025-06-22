@@ -4,9 +4,13 @@ import std;
 
 export namespace CppUtils::Thread::SharedPtr
 {
-	// Sera remplacé par std::shared_ptr<T>::owner_equal en C++26
-	[[nodiscard]] inline auto ownerEqual(const auto& lhs, const auto& rhs) -> bool
+	[[nodiscard]] inline auto ownerEqual(const auto& lhs, const auto& rhs) noexcept -> bool
 	{
+		// C++26: std::shared_ptr<T>::owner_equal & std::weak_ptr<T>::owner_equal
+#if __has_cpp_attribute(__cpp_lib_smart_ptr_owner_equality)
+		return lhs.owner_equal(rhs);
+#else
 		return not lhs.owner_before(rhs) and not rhs.owner_before(lhs);
+#endif
 	}
 }
