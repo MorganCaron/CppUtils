@@ -58,8 +58,11 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto fruit = StringMeshNode::makeRoot("fruit");
 			auto apple = StringMeshNode::make("apple");
 			auto banana = StringMeshNode::make("banana");
-			StringMeshNode::Value::attach(fruit, "Elements", apple);
-			StringMeshNode::Value::attach(fruit, "Elements", banana);
+			{
+				auto fruitAccessor = fruit->uniqueAccess();
+				StringMeshNode::Value::attach(fruitAccessor, "Elements", apple);
+				StringMeshNode::Value::attach(fruitAccessor, "Elements", banana);
+			}
 
 			{
 				auto fruitAccessor = fruit->sharedAccess();
@@ -113,8 +116,11 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto fruit = StringMeshNode::makeRoot("fruit");
 			auto apple = StringMeshNode::make("apple");
 			auto banana = StringMeshNode::make("banana");
-			StringMeshNode::Value::attach(fruit, "Elements", apple);
-			StringMeshNode::Value::attach(fruit, "Elements", banana);
+			{
+				auto fruitAccessor = fruit->uniqueAccess();
+				StringMeshNode::Value::attach(fruitAccessor, "Elements", apple);
+				StringMeshNode::Value::attach(fruitAccessor, "Elements", banana);
+			}
 
 			{
 				auto fruitAccessor = fruit->sharedAccess();

@@ -14,12 +14,12 @@ export namespace CppUtils::Thread
 			m_value{std::cref(value)}
 		{}
 
-		[[nodiscard]] inline auto value() const& noexcept -> decltype(auto)
+		[[nodiscard]] inline auto value() const& noexcept -> const T&
 		{
 			return m_value.get();
 		}
 
-		[[nodiscard]] inline auto operator->() const& noexcept -> decltype(auto)
+		[[nodiscard]] inline auto operator->() const& noexcept -> const T*
 		{
 			return &value();
 		}
@@ -45,12 +45,12 @@ export namespace CppUtils::Thread
 			m_value{std::forward<decltype(args)>(args)...}
 		{}
 
-		[[nodiscard]] inline auto uniqueAccess() -> auto
+		[[nodiscard]] inline auto uniqueAccess() -> Accessor<T, std::shared_mutex>
 		{
 			return Accessor{m_mutex, m_value};
 		}
 
-		[[nodiscard]] inline auto sharedAccess() const -> auto
+		[[nodiscard]] inline auto sharedAccess() const -> ReadOnlyAccessor<T>
 		{
 			return ReadOnlyAccessor{m_mutex, m_value};
 		}

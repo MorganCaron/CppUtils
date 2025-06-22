@@ -13,12 +13,12 @@ export namespace CppUtils::Thread
 			m_value{std::ref(value)}
 		{}
 
-		[[nodiscard]] inline auto value() & noexcept -> decltype(auto)
+		[[nodiscard]] inline auto value() & noexcept -> T&
 		{
 			return m_value.get();
 		}
 
-		[[nodiscard]] inline auto operator->() & noexcept -> decltype(auto)
+		[[nodiscard]] inline auto operator->() & noexcept -> T*
 		{
 			return &value();
 		}
@@ -44,7 +44,7 @@ export namespace CppUtils::Thread
 			m_value{std::forward<decltype(args)>(args)...}
 		{}
 
-		[[nodiscard]] inline auto access() -> auto
+		[[nodiscard]] inline auto access() -> Accessor<T, std::mutex>
 		{
 			return Accessor{m_mutex, m_value};
 		}

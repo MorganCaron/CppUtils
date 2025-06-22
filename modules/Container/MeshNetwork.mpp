@@ -3,6 +3,7 @@ export module CppUtils.Container.MeshNetwork;
 import std;
 import CppUtils.Container.NetworkPtr;
 import CppUtils.Container.SafeShared;
+import CppUtils.Thread.UniqueLocker;
 import CppUtils.Thread.SharedLocker;
 
 export namespace CppUtils::Container
@@ -10,23 +11,29 @@ export namespace CppUtils::Container
 	template<class Key, class Value>
 	struct MeshNode final
 	{
-		using SharedPtr = NetworkPtr<MeshNode<Key, Value>>::SharedPtr;
-		using WeakPtr = NetworkPtr<MeshNode<Key, Value>>::WeakPtr;
+		using NetworkPtr = NetworkPtr<MeshNode<Key, Value>>;
+		using SharedPtr = NetworkPtr::SharedPtr;
+		using WeakPtr = NetworkPtr::WeakPtr;
+		using Accessor = NetworkPtr::Accessor;
 
 		explicit inline MeshNode(auto&&... args):
 			value{std::forward<decltype(args)>(args)...}
 		{}
 
-		static inline auto attach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
+		static inline auto attach(Accessor& node0Accessor, const Key& key1, SharedPtr& node1) -> void
 		{
-			auto node0Accessor = node0->uniqueAccess();
 			node0Accessor->attachChild(node1);
 			node0Accessor->value.branches[key1].push_back(node1);
 		}
 
-		static inline auto detach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
+		static inline auto attach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
 			auto node0Accessor = node0->uniqueAccess();
+			attach(node0Accessor, key1, node1);
+		}
+
+		static inline auto detach(Accessor& node0Accessor, const Key& key1, SharedPtr& node1) -> void
+		{
 			auto& branches = node0Accessor->value.branches;
 			auto& childs = branches[key1];
 			if (auto it = std::find_if(std::cbegin(childs), std::cend(childs), [&](const auto& child) -> bool {
@@ -39,9 +46,14 @@ export namespace CppUtils::Container
 			node0Accessor->detachChild(node1);
 		}
 
-		static inline auto detach(SharedPtr& node, const Key& key) -> void
+		static inline auto detach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
-			auto nodeAccessor = node->uniqueAccess();
+			auto node0Accessor = node0->uniqueAccess();
+			detach(node0Accessor, key1, node1);
+		}
+
+		static inline auto detach(Accessor& nodeAccessor, const Key& key) -> void
+		{
 			auto& branches = nodeAccessor->value.branches;
 			const auto& nodesToDetach = branches[key];
 			for (const auto& nodeToDetach : nodesToDetach)
@@ -50,6 +62,12 @@ export namespace CppUtils::Container
 				nodeAccessor->detachChild(sharedNode);
 			}
 			branches.erase(key);
+		}
+
+		static inline auto detach(SharedPtr& node, const Key& key) -> void
+		{
+			auto nodeAccessor = node->uniqueAccess();
+			detach(nodeAccessor, key);
 		}
 
 		static inline auto attach(const Key& key0, SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
