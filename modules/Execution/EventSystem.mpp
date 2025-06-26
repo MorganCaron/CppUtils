@@ -1,0 +1,61 @@
+export module CppUtils.Execution.EventSystem;
+
+import std;
+import CppUtils.Type.Callable;
+import CppUtils.String.Hash;
+
+export namespace CppUtils::Execution
+{
+	class EventSystem final
+	{
+		using GenericFunction = std::unique_ptr<void, void (*)(void*)>;
+		using Key = std::pair<String::Hash, std::type_index>;
+
+	public:
+		template<String::Hasher eventName = String::Hash{}>
+		inline auto emit(auto event) -> void
+		{
+			using Event = decltype(event);
+			auto lockGuard = std::shared_lock{m_mutex};
+
+			auto key = std::make_pair(static_cast<String::Hash>(eventName), std::type_index{typeid(Event)});
+			if (auto subscriberIt = m_subscribers.find(key); subscriberIt == std::cend(m_subscribers))
+				return;
+			else
+				for (auto& function : subscriberIt->second)
+					std::invoke(*static_cast<std::function<void(const Event&)>*>(function.get()), event);
+		}
+
+		template<String::Hasher eventName = String::Hash{}>
+		inline auto subscribe(auto&& function) -> void
+		{
+			using FunctionType = std::decay_t<decltype(function)>;
+			using FunctionInformations = Type::CallableTrait<FunctionType>;
+			using ArgumentsTypes = FunctionInformations::ArgumentsTypes;
+			constexpr auto nbArguments = std::tuple_size_v<ArgumentsTypes>;
+			static_assert(nbArguments == 1, "EventSystem: subscribed callable must take exactly one argument");
+			using Event = std::tuple_element_t<0, ArgumentsTypes>;
+
+			auto lockGuard = std::unique_lock{m_mutex};
+
+			auto key = std::make_pair(static_cast<String::Hash>(eventName), std::type_index{typeid(Event)});
+
+			using Function = std::function<void(const Event&)>;
+			auto functionPointer = std::make_unique<Function>(std::forward<decltype(function)>(function));
+			auto genericPointer = GenericFunction{functionPointer.release(), [](void* pointer) { delete static_cast<Function*>(pointer); }};
+			m_subscribers[key].emplace_back(std::move(genericPointer));
+		}
+
+	private:
+		struct PairHasher final
+		{
+			[[nodiscard]] inline auto operator()(const Key& key) const noexcept -> std::size_t
+			{
+				return std::hash<String::Hash>{}(key.first) ^ (key.second.hash_code() << 1);
+			}
+		};
+
+		std::shared_mutex m_mutex;
+		std::unordered_map<Key, std::vector<GenericFunction>, PairHasher> m_subscribers;
+	};
+}

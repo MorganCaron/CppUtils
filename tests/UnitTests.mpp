@@ -12,6 +12,7 @@ export import CppUtils.UnitTests.Container.Stack;
 export import CppUtils.UnitTests.Container.Tree;
 export import CppUtils.UnitTests.Container.TypedStack;
 export import CppUtils.UnitTests.Container.Vector;
+export import CppUtils.UnitTests.Execution.EventSystem;
 export import CppUtils.UnitTests.FileSystem.Directory;
 export import CppUtils.UnitTests.FileSystem.File;
 export import CppUtils.UnitTests.FileSystem.Watcher;

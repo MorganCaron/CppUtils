@@ -3,6 +3,7 @@ export module CppUtils;
 export import std;
 export import CppUtils.Chrono;
 export import CppUtils.Container;
+export import CppUtils.Execution;
 export import CppUtils.FileSystem;
 export import CppUtils.Language;
 export import CppUtils.ChronoLogger;

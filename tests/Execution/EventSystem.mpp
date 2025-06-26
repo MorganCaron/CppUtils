@@ -1,0 +1,99 @@
+export module CppUtils.UnitTests.Execution.EventSystem;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Execution::EventSystem
+{
+	inline auto _ = TestSuite{
+		"Execution/EventSystem", {"Logger"}, [](auto& suite) {
+		using namespace std::literals;
+		using Logger = CppUtils::Logger<"CppUtils">;
+
+		suite.addTest("Empty", [&] {
+			[[maybe_unused]] auto eventSystem = CppUtils::Execution::EventSystem{};
+		});
+
+		suite.addTest("Subscribe", [&] {
+			auto eventSystem = CppUtils::Execution::EventSystem{};
+
+			eventSystem.subscribe<>([&suite](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				suite.expect(false);
+			});
+		});
+
+		suite.addTest("Subscribe with name", [&] {
+			auto eventSystem = CppUtils::Execution::EventSystem{};
+
+			eventSystem.subscribe<"Ping">([&suite](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				suite.expect(false);
+			});
+		});
+
+		suite.addTest("Emit", [&] {
+			auto eventSystem = CppUtils::Execution::EventSystem{};
+			eventSystem.emit<>("ping"s);
+		});
+
+		suite.addTest("Emit", [&] {
+			auto eventSystem = CppUtils::Execution::EventSystem{};
+			eventSystem.emit<"Ping">("ping"s);
+		});
+
+		suite.addTest("Send/Receive", [&] {
+			auto eventSystem = CppUtils::Execution::EventSystem{};
+			auto expectPingReceived = ExpectedCall{};
+
+			eventSystem.subscribe<>([&expectPingReceived, &suite](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				expectPingReceived.call();
+				suite.expectEqual(message, "ping"sv);
+			});
+			eventSystem.emit<>("ping"s);
+
+			suite.expectCall(expectPingReceived);
+		});
+
+		suite.addTest("Send/Receive with name", [&] {
+			auto eventSystem = CppUtils::Execution::EventSystem{};
+			auto expectPingReceived = ExpectedCall{};
+
+			eventSystem.subscribe<"Ping">([&expectPingReceived, &suite](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				expectPingReceived.call();
+				suite.expectEqual(message, "ping"sv);
+			});
+			eventSystem.subscribe<"Other">([&suite](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				suite.expect(false);
+			});
+			eventSystem.emit<"Ping">("ping"s);
+
+			suite.expectCall(expectPingReceived);
+		});
+
+		suite.addTest("Cascade calls", [&] {
+			auto eventSystem = CppUtils::Execution::EventSystem{};
+			auto expectPingReceived = ExpectedCall{};
+			auto expectPongReceived = ExpectedCall{};
+
+			eventSystem.subscribe<"Ping">([&expectPingReceived, &suite, &eventSystem](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				expectPingReceived.call();
+				suite.expectEqual(message, "ping"sv);
+				eventSystem.emit<"Pong">("pong"s);
+			});
+			eventSystem.subscribe<"Pong">([&expectPongReceived, &suite](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				expectPongReceived.call();
+				suite.expectEqual(message, "pong"sv);
+			});
+			eventSystem.emit<"Ping">("ping"s);
+
+			suite.expectCall(expectPingReceived);
+			suite.expectCall(expectPongReceived);
+		});
+	}};
+}
