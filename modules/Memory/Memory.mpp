@@ -46,4 +46,13 @@ export namespace CppUtils::Memory
 			return static_cast<std::size_t>(size) * 1'024_Mio;
 		}
 	}
+
+	using namespace Literals;
+
+	static_assert(1_Ko == 1000);
+	static_assert(1_Mo == 1'000'000);
+	static_assert(1_Go == 1'000'000'000);
+	static_assert(1_Kio == 1024);
+	static_assert(1_Mio == 1'048'576);
+	static_assert(1_Gio == 1'073'741'824);
 }
