@@ -12,7 +12,7 @@ export namespace CppUtils::Container
 	template<class T>
 	inline auto makeSafeShared(auto&&... args) -> SafeShared<T>
 	{
-		return SafeShared{std::make_shared<Thread::SharedLocker<T>>(std::forward<decltype(args)>(args)...)};
+		return std::make_shared<Thread::SharedLocker<T>>(std::forward<decltype(args)>(args)...);
 	}
 
 	template<class T>

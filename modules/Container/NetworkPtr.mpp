@@ -92,7 +92,7 @@ export namespace CppUtils::Container
 			if (childAccessor->m_distanceFromRoot > m_distanceFromRoot)
 				m_children.push_back(childPtr);
 			else
-				m_children.push_back(SafeWeak{childPtr});
+				m_children.push_back(WeakPtr{childPtr});
 			childAccessor->m_parents.push_back(m_weak_this);
 		}
 
