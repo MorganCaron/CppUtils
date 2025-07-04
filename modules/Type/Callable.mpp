@@ -28,7 +28,7 @@ export namespace CppUtils::Type
 	{};
 
 	template<class Object, class Return, class... Args>
-	struct CallableTrait<Return (Object::*)(Args...)&>: CallableTrait<Return(Args...)>
+	struct CallableTrait<Return (Object::*)(Args...) &>: CallableTrait<Return(Args...)>
 	{};
 
 	template<class Object, class Return, class... Args>

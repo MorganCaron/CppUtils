@@ -84,7 +84,7 @@ namespace CppUtils::Language::ASM::VirtualMachine
 		++cursor.position;
 	}
 	*/
-	
+
 	/*template<class... Types>
 	inline void push(Parser::Cursor<Bytecode::Instruction<Types...>>& cursor, Context<Types...>& context)
 	{

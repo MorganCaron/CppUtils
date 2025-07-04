@@ -15,14 +15,14 @@ export namespace CppUtils::Language::Mapping
 		using AttributeType = Property;
 
 		String::Token token;
-		AttributeType StructType::*address;
+		AttributeType StructType::* address;
 		bool optional = false;
 		AttributeType defaultValue = AttributeType{};
 		std::function<AttributeType(std::string_view)> parsingFunction = {};
 	};
 
 	template<class Object, class Property>
-	Attribute(String::Token token, Property Object::*address, bool optional = false, Property defaultValue = Property{}, Property (*parsingFunction)(std::string_view) = {}) -> Attribute<Object, Property>;
+	Attribute(String::Token token, Property Object::* address, bool optional = false, Property defaultValue = Property{}, Property (*parsingFunction)(std::string_view) = {}) -> Attribute<Object, Property>;
 
 	template<class>
 	struct StructSchema;

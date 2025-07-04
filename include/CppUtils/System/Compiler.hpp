@@ -11,5 +11,5 @@
 #endif
 
 #if defined(COMPILER_MSVC)
-#	pragma warning(disable: 4251)
+#	pragma warning(disable: 4'251)
 #endif

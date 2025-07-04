@@ -1,11 +1,11 @@
 #pragma once
 
-#include <memory>
 #include <functional>
+#include <memory>
 #include <unordered_map>
 
-#include <CppUtils/Language/ASM/Lexer/Lexer.hpp>
 #include <CppUtils/Language/ASM/Compiler/Output.hpp>
+#include <CppUtils/Language/ASM/Lexer/Lexer.hpp>
 #include <CppUtils/Language/Compiler/Compiler.hpp>
 
 namespace CppUtils::Language::ASM::Compiler
@@ -13,7 +13,7 @@ namespace CppUtils::Language::ASM::Compiler
 	struct Context final
 	{
 		using Compiler = Language::Compiler::Compiler<Lexer::ASTNode, Context>;
-		
+
 		std::reference_wrapper<const Compiler> compiler;
 		std::reference_wrapper<Output> output;
 		Bytecode::Instruction* lastInstruction = nullptr;

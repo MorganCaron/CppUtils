@@ -213,9 +213,9 @@ export namespace CppUtils::Network
 		inline auto setSocketOption(NativeSocket socket, int level, int option, const void* value, std::size_t valueSize) const noexcept -> bool
 		{
 #if defined(OS_WINDOWS)
-			return not::setsockopt(socket, level, option, reinterpret_cast<const char*>(value), static_cast<int>(valueSize));
+			return not ::setsockopt(socket, level, option, reinterpret_cast<const char*>(value), static_cast<int>(valueSize));
 #else
-			return not::setsockopt(socket, level, option, value, static_cast<socklen_t>(valueSize));
+			return not ::setsockopt(socket, level, option, value, static_cast<socklen_t>(valueSize));
 #endif
 		}
 

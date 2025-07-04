@@ -49,10 +49,10 @@ export namespace CppUtils::Memory
 
 	using namespace Literals;
 
-	static_assert(1_Ko == 1000);
+	static_assert(1_Ko == 1'000);
 	static_assert(1_Mo == 1'000'000);
 	static_assert(1_Go == 1'000'000'000);
-	static_assert(1_Kio == 1024);
+	static_assert(1_Kio == 1'024);
 	static_assert(1_Mio == 1'048'576);
 	static_assert(1_Gio == 1'073'741'824);
 }

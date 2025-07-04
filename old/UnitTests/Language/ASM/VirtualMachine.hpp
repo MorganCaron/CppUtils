@@ -13,7 +13,8 @@ namespace CppUtils::UnitTests::Language::ASM::VirtualMachine
 			auto context = CppUtils::Language::ASM::VirtualMachine::Context{};
 			virtualMachine.run(R"(
 			nop
-			)"sv, context);
+			)"sv,
+				context);
 		});
 
 		addTest("Halt", [] {
@@ -21,7 +22,8 @@ namespace CppUtils::UnitTests::Language::ASM::VirtualMachine
 			auto context = CppUtils::Language::ASM::VirtualMachine::Context{};
 			virtualMachine.run(R"(
 			hlt
-			)"sv, context);
+			)"sv,
+				context);
 		});
 
 		/*
@@ -32,7 +34,7 @@ namespace CppUtils::UnitTests::Language::ASM::VirtualMachine
 			mov r0, 20
 			)"sv, context);
 		});
-		
+
 		addTest("Add", [] {
 			static const auto virtualMachine = CppUtils::Language::ASM::VirtualMachine::VirtualMachine{};
 			auto context = CppUtils::Language::ASM::VirtualMachine::Context{};
