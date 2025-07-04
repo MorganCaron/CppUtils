@@ -9,7 +9,7 @@ export namespace CppUtils::Random
 	{
 		static auto randomDevice = std::random_device{};
 		static auto engine = std::mt19937{randomDevice()};
-		static auto distribution = std::uniform_int_distribution<Integer>{min, max};
+		auto distribution = std::uniform_int_distribution<Integer>{min, max};
 		auto randomNumber = distribution(engine);
 		return randomNumber;
 	}
