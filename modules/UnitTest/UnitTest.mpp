@@ -178,6 +178,8 @@ namespace CppUtils::UnitTest
 
 	export struct TestSuite final
 	{
+		using Logger = CppUtils::Logger<"CppUtils">;
+
 		inline explicit TestSuite(const std::string& name, std::vector<std::string> prerequisites, std::function<void(TestSuite&)> function)
 		{
 			function(*this);
@@ -214,6 +216,49 @@ namespace CppUtils::UnitTest
 					sourceLocation.column(),
 					String::formatValue(lhs),
 					String::formatValue(rhs))};
+		}
+
+		template<class ExceptionType>
+		inline auto expectThrow(auto&& function, std::source_location sourceLocation = std::source_location::current()) -> void
+		{
+			try
+			{
+				function();
+				throw TestException{std::format("In {}\nAt line {}, column {}\nExpected throw of type {}, but no exception was thrown.",
+					sourceLocation.file_name(),
+					sourceLocation.line(),
+					sourceLocation.column(),
+					typeid(ExceptionType).name())};
+			}
+			catch (const ExceptionType&)
+			{
+				Logger::print<"success">("Expected exception caught.");
+			}
+			catch (const std::exception& exception)
+			{
+				throw TestException{std::format("In {}\nAt line {}, column {}\nExpected throw of type {}, but caught different exception: {}",
+					sourceLocation.file_name(),
+					sourceLocation.line(),
+					sourceLocation.column(),
+					typeid(ExceptionType).name(),
+					exception.what())};
+			}
+		}
+
+		inline auto expectNoThrow(auto&& function, std::source_location sourceLocation = std::source_location::current()) -> void
+		{
+			try
+			{
+				function();
+			}
+			catch (const std::exception& exception)
+			{
+				throw TestException{std::format("In {}\nAt line {}, column {}\nExpected no throw, but an exception was thrown: {}",
+					sourceLocation.file_name(),
+					sourceLocation.line(),
+					sourceLocation.column(),
+					exception.what())};
+			}
 		}
 
 		inline auto expectCall(ExpectedCall& expectedCall, const Chrono::Duration auto& timeout, std::source_location sourceLocation = std::source_location::current()) -> void

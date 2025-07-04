@@ -1,0 +1,55 @@
+export module CppUtils.UnitTests.System.Error;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::System::Error
+{
+	inline auto _ = TestSuite{"System/Error", {"UnitTest"}, [](auto& suite) {
+		suite.addTest("throwErrno", [&] {
+			suite.template expectThrow<std::runtime_error>([&] {
+				CppUtils::System::throwErrno(-1, "Test error");
+			});
+			suite.template expectNoThrow<>([&] {
+				CppUtils::System::throwErrno(0, "Test success");
+			});
+		});
+
+		suite.addTest("expectErrno", [&] {
+			{
+				auto result = CppUtils::System::expectErrno(-1, "Test error");
+				suite.expect(not result.has_value());
+			}
+			{
+				auto result = CppUtils::System::expectErrno(0, "Test success");
+				suite.expect(result.has_value());
+				suite.expectEqual(result.value(), 0);
+			}
+		});
+
+#if defined(OS_WINDOWS)
+		suite.addTest("throwLastError", [&] {
+			suite.template expectThrow<std::runtime_error>([&] {
+				CppUtils::System::throwLastError("Test last error");
+			});
+		});
+
+		suite.addTest("throwLastErrorIf", [&] {
+			suite.template expectThrow<std::runtime_error>([&] {
+				CppUtils::System::throwLastErrorIf(1, "Test last error if");
+			});
+			suite.template expectNoThrow<>([&] {
+				CppUtils::System::throwLastErrorIf(0, "Test last error if");
+			});
+		});
+
+		suite.addTest("expectNoError", [&] {
+			auto result = CppUtils::System::expectNoError(0, "Test no error");
+			suite.expect(result.has_value());
+			suite.expectEqual(result.value(), 0);
+			result = CppUtils::System::expectNoError(1, "Test no error");
+			suite.expect(not result.has_value());
+		});
+#endif
+	}};
+}
