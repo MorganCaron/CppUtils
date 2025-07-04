@@ -10,11 +10,23 @@ export namespace CppUtils::UnitTest
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 	public:
+		inline DummyObject() = default;
+		
 		explicit inline DummyObject(std::string name, std::size_t indentationLevel = 0):
 			m_name{std::move(name)},
 			m_indentationLevel{indentationLevel}
 		{
-			Logger::print("{}{}()\n", std::string(m_indentationLevel, '\t'), m_name);
+            Logger::print("{}{}()\n", std::string(m_indentationLevel, '\t'), m_name);
+        }
+
+		[[nodiscard]] inline auto getCopyCount() const -> std::size_t
+		{
+			return m_copyCount;
+		}
+
+		[[nodiscard]] inline auto getMoveCount() const -> std::size_t
+		{
+			return m_moveCount;
 		}
 
 		inline virtual ~DummyObject()
@@ -22,40 +34,50 @@ export namespace CppUtils::UnitTest
 			Logger::print("{}~{}()\n", std::string(m_indentationLevel, '\t'), m_name);
 		}
 
-		inline DummyObject(const DummyObject& other)
-		{
-			m_name = other.m_name;
-			m_indentationLevel = other.m_indentationLevel;
-			Logger::print("{}{}(const {}&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
-		}
+		inline DummyObject(const DummyObject& other):
+            m_name{other.m_name},
+            m_indentationLevel{other.m_indentationLevel},
+            m_copyCount{other.m_copyCount.load() + 1},
+            m_moveCount{other.m_moveCount.load()}
+        {
+            Logger::print("{}{}(const {}&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
+        }
 
-		inline DummyObject(DummyObject&& other)
-		{
-			m_name = other.m_name;
-			m_indentationLevel = other.m_indentationLevel;
-			other.m_name += " [invalid object]";
-			Logger::print("{}{}({}&&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
-		}
+		inline DummyObject(DummyObject&& other) noexcept:
+            m_name{std::move(other.m_name)},
+            m_indentationLevel{other.m_indentationLevel},
+            m_copyCount{other.m_copyCount.load()},
+            m_moveCount{other.m_moveCount.load() + 1}
+        {
+            other.m_name += " [invalid object]";
+            Logger::print("{}{}({}&&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
+        }
 
 		inline auto operator=(const DummyObject& rhs) -> DummyObject&
-		{
-			m_name = rhs.m_name;
-			m_indentationLevel = rhs.m_indentationLevel;
-			Logger::print("{}{}::operator=(const {}&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
-			return *this;
-		}
+        {
+            m_name = rhs.m_name;
+            m_indentationLevel = rhs.m_indentationLevel;
+            m_copyCount.store(rhs.m_copyCount.load() + 1);
+            m_moveCount.store(rhs.m_moveCount.load());
+            Logger::print("{}{}::operator=(const {}&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
+            return *this;
+        }
 
-		inline auto operator=(DummyObject&& rhs) -> DummyObject&
-		{
-			m_name = rhs.m_name;
-			m_indentationLevel = rhs.m_indentationLevel;
-			rhs.m_name += " [invalid object]";
-			Logger::print("{}{}::operator=({}&&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
-			return *this;
-		}
+		inline auto operator=(DummyObject&& rhs) noexcept -> DummyObject&
+        {
+            m_name = std::move(rhs.m_name);
+            m_indentationLevel = rhs.m_indentationLevel;
+            m_copyCount.store(rhs.m_copyCount.load());
+            m_moveCount.store(rhs.m_moveCount.load() + 1);
+            rhs.m_name += " [invalid object]";
+            Logger::print("{}{}::operator=({}&&)\n", std::string(m_indentationLevel, '\t'), m_name, m_name);
+            return *this;
+        }
 
 	private:
 		std::string m_name;
 		std::size_t m_indentationLevel;
+		std::atomic_size_t m_copyCount = 0;
+		std::atomic_size_t m_moveCount = 0;
 	};
 }
