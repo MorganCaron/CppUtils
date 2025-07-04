@@ -62,13 +62,18 @@ end)
 
 ### Build command
 ```console
-xmake f --toolchain=llvm --runtimes="c++_shared" [--sdk=/opt/llvm-git] [--enable_tests=y] --yes
+xmake f [--toolchain=llvm] --runtimes="c++_shared" [--sdk=/opt/llvm-git] [--enable_tests=y] --yes
 xmake [b|build] [-vD]
 ```
 
 ### Run tests
 ```console
 xmake [r|run]
+```
+
+### Watch tests
+```console
+xmake watch -r
 ```
 
 [![Contribute](https://img.shields.io/badge/-Contribute-blue?style=for-the-badge)](CONTRIBUTING.md)
