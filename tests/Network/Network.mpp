@@ -7,6 +7,7 @@ export namespace CppUtils::UnitTest::Network
 {
 	inline auto _ = TestSuite{
 		"Network", {"Logger", "Thread/TryAsync"}, [](auto& suite) {
+		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("Server Creation", [&] {
@@ -43,8 +44,6 @@ export namespace CppUtils::UnitTest::Network
 		});
 
 		suite.addTest("Accept connection", [&] {
-			using namespace std::chrono_literals;
-
 			auto serverisReady = CppUtils::Thread::Event{};
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
@@ -73,10 +72,40 @@ export namespace CppUtils::UnitTest::Network
 				throw serverResult.error();
 		});
 
-		/*
-		suite.addTest("Send/receive message (int)", [&] {
-			using namespace std::chrono_literals;
+		suite.addTest("Blocking", [&] {
+			auto serverisReady = CppUtils::Thread::Event{};
 
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				server.bind(8'080);
+				server.listen();
+				Logger::print("Server: Waiting for connections on port 8080...\n");
+				serverisReady.notify();
+				auto clientSocket = server.accept();
+				suite.expect(clientSocket.has_value());
+				Logger::print("Server: A new client has joined\n");
+				clientSocket->setBlocking(true);
+				Logger::print("Server: Blocking enabled\n");
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait();
+				auto client = CppUtils::Network::Client{};
+				Logger::print("Client: Attempting to connect...\n");
+				client.connect("", 8'080);
+				Logger::print("Client: Connected\n");
+				client.setBlocking(true);
+				Logger::print("Client: Blocking enabled\n");
+			});
+
+			if (auto clientResult = clientConnecting.get(); not clientResult.has_value())
+				throw clientResult.error();
+			if (auto serverResult = serverListening.get(); not serverResult.has_value())
+				throw serverResult.error();
+		});
+
+		suite.addTest("Send/receive message (int)", [&] {
 			auto serverisReady = CppUtils::Thread::Event{};
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
@@ -130,8 +159,6 @@ export namespace CppUtils::UnitTest::Network
 		});
 
 		suite.addTest("Send/receive message (std::string)", [&] {
-			using namespace std::chrono_literals;
-
 			auto serverisReady = CppUtils::Thread::Event{};
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
@@ -148,13 +175,16 @@ export namespace CppUtils::UnitTest::Network
 				clientSocket.setBlocking(true);
 				Logger::print("Server: Socket set to blocking mode\n");
 
-				auto message = clientSocket.receive<std::string>();
+				auto messageLength = clientSocket.receive<std::size_t>().value();
+				auto message = clientSocket.receive<std::string>(messageLength);
 				suite.expect(message.has_value());
-				Logger::print("Server: Message received: {}\n", message.value());
+				Logger::print("Server: Message received: \"{}\"\n", message.value());
 				suite.expectEqual(message.value(), "Hello server!");
 
-				clientSocket.send("Hello client!");
-				Logger::print(R"(Server: Message sent: "Hello client!"\n)");
+				auto messageToSend = "Hello client!"sv;
+				clientSocket.send(std::size(messageToSend));
+				clientSocket.send(messageToSend);
+				Logger::print("Server: Message sent: \"{}\"\n", messageToSend);
 
 				Logger::print("Server: Closing\n");
 			});
@@ -163,15 +193,19 @@ export namespace CppUtils::UnitTest::Network
 				serverisReady.wait();
 				auto client = CppUtils::Network::Client{};
 				Logger::print("Client: Attempting to connect...\n");
+				client.setBlocking(true);
 				client.connect("", 8'080);
 				Logger::print("Client: Connected\n");
 
-				client.send("Hello server!");
-				Logger::print(R"(Client: Message sent: "Hello server!"\n)");
+				auto message = "Hello server!"sv;
+				client.send(std::size(message));
+				client.send(message);
+				Logger::print("Client: Message sent: \"{}\"\n", message);
 
-				auto response = client.receive<std::string>();
+				auto responseLength = client.receive<std::size_t>().value();
+				auto response = client.receive<std::string>(responseLength);
 				suite.expect(response.has_value());
-				Logger::print("Client: Message received: {}\n", response.value());
+				Logger::print("Client: Message received: \"{}\"\n", response.value());
 				suite.expectEqual(response.value(), "Hello client!");
 
 				Logger::print("Client: Closing\n");
@@ -182,6 +216,5 @@ export namespace CppUtils::UnitTest::Network
 			if (auto serverResult = serverListening.get(); not serverResult.has_value())
 				throw serverResult.error();
 		});
-		*/
 	}};
 }

@@ -118,16 +118,52 @@ export namespace CppUtils::Network
 #endif
 
 		inline Socket(const Socket&) = delete;
-		inline Socket(Socket&&) noexcept = default;
+
+		inline Socket(Socket&& other) noexcept:
+			m_domain{other.m_domain},
+			m_isBlocking{other.m_isBlocking},
+			m_socket{other.m_socket}
+		{
+#if defined(OS_WINDOWS)
+			other.m_socket = INVALID_SOCKET;
+#else
+			other.m_socket = -1;
+#endif
+		}
+
 		inline auto operator=(const Socket&) -> Socket& = delete;
-		inline auto operator=(Socket&&) noexcept -> Socket& = default;
+
+		inline auto operator=(Socket&& other) noexcept -> Socket&
+		{
+			if (this != &other)
+			{
+#if defined(OS_WINDOWS)
+				if (m_socket != INVALID_SOCKET)
+					::closesocket(m_socket);
+#else
+				if (m_socket != -1)
+					::close(m_socket);
+#endif
+				m_domain = other.m_domain;
+				m_isBlocking = other.m_isBlocking;
+				m_socket = other.m_socket;
+#if defined(OS_WINDOWS)
+				other.m_socket = INVALID_SOCKET;
+#else
+				other.m_socket = -1;
+#endif
+			}
+			return *this;
+		}
 
 		virtual inline ~Socket()
 		{
 #if defined(OS_WINDOWS)
-			::closesocket(m_socket);
+			if (m_socket != INVALID_SOCKET)
+				::closesocket(m_socket);
 #elif defined(OS_LINUX)
-			::close(m_socket);
+			if (m_socket != -1)
+				::close(m_socket);
 #endif
 		}
 
@@ -159,10 +195,9 @@ export namespace CppUtils::Network
 			if (::ioctlsocket(m_socket, static_cast<long>(FIONBIO), &mode) != 0)
 				throw std::runtime_error{"CppUtils::Network::Socket::setBlocking: Failed to set blocking mode"};
 #elif defined(OS_LINUX)
-			auto flags = ::fcntl(m_socket, F_GETFL, 0);
+			auto flags = ::fcntl(m_socket, F_GETFL);
 			if (flags == -1)
 				throw std::runtime_error{"CppUtils::Network::Socket::setBlocking: Failed to get socket flags"};
-
 			if (enable)
 				flags &= ~O_NONBLOCK;
 			else
@@ -382,6 +417,8 @@ export namespace CppUtils::Network
 		[[nodiscard]] inline auto receive<std::string>(std::size_t bufferSize) -> std::optional<std::string>
 		{
 			auto buffer = receive<std::vector<std::byte>>(bufferSize);
+			if (not buffer.has_value())
+				return std::nullopt;
 			return std::string(reinterpret_cast<const char*>(std::data(buffer.value())), std::size(buffer.value()));
 		}
 
