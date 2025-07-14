@@ -72,5 +72,15 @@ export namespace CppUtils::System
 			return std::unexpected{"Failed to truncate file (ftruncate)"sv};
 		return fileDescriptor;
 	}
+
+	[[nodiscard]] inline auto mapSharedMemory(FileDescriptor& fileDescriptor, std::size_t size) -> std::expected<std::uint8_t*, std::string_view>
+	{
+		using namespace std::literals;
+		auto* data = static_cast<std::uint8_t*>(mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fileDescriptor.get(), 0));
+		if (data == MAP_FAILED)
+			return std::unexpected{"Failed to mmap"sv};
+		return data;
+	}
+
 #endif
 }
