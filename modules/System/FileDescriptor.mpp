@@ -48,6 +48,11 @@ export namespace CppUtils::System
 			return std::exchange(m_fileDescriptor, -1);
 		}
 
+		[[nodiscard]] inline constexpr auto isValid() noexcept -> bool
+		{
+			return m_fileDescriptor != -1;
+		}
+
 		inline auto close() -> void
 		{
 			if (m_fileDescriptor != -1)

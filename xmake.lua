@@ -36,8 +36,7 @@ if is_mode("debug") then
 	set_policy("build.sanitizer.undefined", true)
 end
 
-add_requires("wayland")
-add_requires("wayland-protocols")
+add_requires("wayland", "wayland-protocols")
 
 includes("xmake/rules/wayland-protocols.lua")
 

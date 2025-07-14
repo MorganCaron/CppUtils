@@ -1,0 +1,21 @@
+export module CppUtils.UnitTests.System;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::System
+{
+	inline auto _ = TestSuite{"System", {"UnitTest"}, [](auto& suite) {
+		suite.addTest("createSharedMemory", [&] {
+			auto fileDescriptor = CppUtils::System::createSharedMemory();
+			suite.expect(fileDescriptor.has_value());
+			suite.expect(fileDescriptor.value().isValid());
+		});
+
+		suite.addTest("allocateSharedMemory", [&] {
+			auto fileDescriptor = CppUtils::System::allocateSharedMemory(1'000);
+			suite.expect(fileDescriptor.has_value());
+			suite.expect(fileDescriptor.value().isValid());
+		});
+	}};
+}

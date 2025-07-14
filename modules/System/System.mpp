@@ -3,7 +3,11 @@ module;
 #include <CppUtils/System/OS.hpp>
 
 #if defined(OS_LINUX)
+#	include <errno.h>
 #	include <sys/mman.h>
+#	include <sys/stat.h>
+#	include <fcntl.h>
+#	include <unistd.h>
 #endif
 
 export module CppUtils.System;
@@ -19,9 +23,54 @@ export import CppUtils.System.Type;
 export namespace CppUtils::System
 {
 #if defined(OS_LINUX)
-	[[nodiscard]] inline auto createAnonymousFile(std::string_view name, unsigned int flags = 0) -> FileDescriptor
+	[[nodiscard]] inline auto createAnonymousFile(std::string_view filename, unsigned int flags = 0) -> FileDescriptor
 	{
-		return FileDescriptor{memfd_create(std::data(name), flags)};
+		return FileDescriptor{memfd_create(std::data(filename), flags)};
+	}
+
+	[[nodiscard]] inline auto createSharedMemory(std::string filename = "SharedMemory") -> std::expected<FileDescriptor, std::string_view>
+	{
+		using namespace std::literals;
+		auto fillRandomSuffix = [](std::string& filename) -> void {
+			using namespace std::chrono;
+			auto random = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+			for (auto i = 0uz; i < 6uz; ++i)
+			{
+				filename[std::size(filename) - 6 + i] = 'A' + static_cast<char>(random & 0b1111) + static_cast<char>((random & 0b1'0000) << 1); // Insère une lettre aléatoire parmi [A-Pa-p] (alphabet sur 32 caractères)
+				random >>= 5;
+			}
+		};
+		filename += "-XXXXXX";
+		auto retries = 100uz;
+		do
+		{
+			fillRandomSuffix(filename);
+			if (auto fileDescriptor = FileDescriptor{shm_open(std::data(filename), O_RDWR | O_CREAT | O_EXCL, 600)}; fileDescriptor.isValid())
+			{
+				shm_unlink(std::data(filename));
+				return fileDescriptor;
+			}
+		}
+		while (--retries > 0 and errno == EEXIST);
+		return std::unexpected{"Failed to create shared memory (shm_open)"sv};
+	}
+
+	[[nodiscard]] inline auto allocateSharedMemory(std::size_t size, std::string filename = "SharedMemory") -> std::expected<FileDescriptor, std::string_view>
+	{
+		using namespace std::literals;
+		auto fileDescriptor = createSharedMemory(filename);
+		if (not fileDescriptor)
+			return fileDescriptor;
+
+		auto result = 0;
+		do
+		{
+			result = ftruncate(fileDescriptor->get(), static_cast<off_t>(size));
+		}
+		while (result < 0 and errno == EINTR);
+		if (result < 0)
+			return std::unexpected{"Failed to truncate file (ftruncate)"sv};
+		return fileDescriptor;
 	}
 #endif
 }
