@@ -49,6 +49,7 @@ export import CppUtils.UnitTests.Pattern;
 export import CppUtils.UnitTests.Stl.Format;
 export import CppUtils.UnitTests.String.Encoding;
 export import CppUtils.UnitTests.String.Utility;
+export import CppUtils.UnitTests.System;
 export import CppUtils.UnitTests.System.Error;
 export import CppUtils.UnitTests.Terminal;
 export import CppUtils.UnitTests.Terminal.Canvas;
