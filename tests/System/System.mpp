@@ -13,9 +13,17 @@ export namespace CppUtils::UnitTest::System
 		});
 
 		suite.addTest("allocateSharedMemory", [&] {
-			auto fileDescriptor = CppUtils::System::allocateSharedMemory(1'000);
+			constexpr auto bufferSize = 1'000uz;
+			auto fileDescriptor = CppUtils::System::allocateSharedMemory(bufferSize);
 			suite.expect(fileDescriptor.has_value());
 			suite.expect(fileDescriptor.value().isValid());
+		});
+
+		suite.addTest("mapSharedMemory", [&] {
+			constexpr auto bufferSize = 1'000uz;
+			auto fileDescriptor = CppUtils::System::allocateSharedMemory(bufferSize);
+			auto data = CppUtils::System::mapSharedMemory(fileDescriptor.value(), bufferSize);
+			suite.expect(data.has_value());
 		});
 	}};
 }
