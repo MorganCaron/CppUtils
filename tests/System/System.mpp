@@ -19,11 +19,17 @@ export namespace CppUtils::UnitTest::System
 			suite.expect(fileDescriptor.value().isValid());
 		});
 
-		suite.addTest("mapSharedMemory", [&] {
+		suite.addTest("MappedSharedMemory", [&] {
 			constexpr auto bufferSize = 1'000uz;
 			auto fileDescriptor = CppUtils::System::allocateSharedMemory(bufferSize);
-			auto data = CppUtils::System::mapSharedMemory(fileDescriptor.value(), bufferSize);
-			suite.expect(data.has_value());
+			[[maybe_unused]] auto mappedSharedMemory = CppUtils::System::MappedSharedMemory(fileDescriptor.value(), bufferSize);
+		});
+
+		suite.addTest("MappedSharedMemory copy", [&] {
+			constexpr auto bufferSize = 1'000uz;
+			auto fileDescriptor = CppUtils::System::allocateSharedMemory(bufferSize);
+			auto mappedSharedMemory0 = CppUtils::System::MappedSharedMemory(fileDescriptor.value(), bufferSize);
+			[[maybe_unused]] auto mappedSharedMemory1 = std::move(mappedSharedMemory0);
 		});
 	}};
 }
