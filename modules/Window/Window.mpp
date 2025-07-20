@@ -24,6 +24,7 @@ import CppUtils.Logger;
 import CppUtils.Memory;
 import CppUtils.String;
 import CppUtils.System;
+import CppUtils.Window.Wayland;
 
 namespace CppUtils::Window
 {
@@ -32,48 +33,17 @@ namespace CppUtils::Window
 #if defined(OS_LINUX)
 	namespace Wayland
 	{
-		using Display = Memory::UniquePtrWithDestructor<wl_display>;
-		using Registry = Memory::UniquePtrWithDestructor<wl_registry>;
-		using Compositor = Memory::UniquePtrWithDestructor<wl_compositor>;
-		using SharedMemory = Memory::UniquePtrWithDestructor<wl_shm>;
-		using SharedMemoryPool = Memory::UniquePtrWithDestructor<wl_shm_pool>;
-		using Surface = Memory::UniquePtrWithDestructor<wl_surface>;
-		using ShellSurface = Memory::UniquePtrWithDestructor<xdg_surface>;
-		using TopLevel = Memory::UniquePtrWithDestructor<xdg_toplevel>;
-		using Buffer = Memory::UniquePtrWithDestructor<wl_buffer>;
-		using WmBase = Memory::UniquePtrWithDestructor<xdg_wm_base>;
-
-		struct Globals final
-		{
-			Display display = {nullptr, wl_display_disconnect};
-			Registry registry = {nullptr, wl_registry_destroy};
-			Compositor compositor = {nullptr, wl_compositor_destroy};
-			SharedMemory sharedMemory = {nullptr, wl_shm_destroy};
-			WmBase wmBase = {nullptr, xdg_wm_base_destroy};
-		};
-		inline auto globals = Wayland::Globals{};
-
-		using RegisterHandler = std::function<void(wl_registry*, std::uint32_t, std::uint32_t)>;
-
 		inline constexpr const auto bytesPerPixel = std::size_t{4};
 	}
 
-	template<class T>
-	inline auto makeHandlerPair(
-		const wl_interface& interface,
-		Memory::UniquePtrWithDestructor<T>& registerContainer,
-		std::uint32_t minVersion,
-		std::uint32_t maxVersion) -> std::pair<std::string_view, Wayland::RegisterHandler>
+	inline auto xdg_wm_base_ping([[maybe_unused]] void* data, xdg_wm_base* xdg_wm_base, std::uint32_t serial) -> void
 	{
-		return {
-			std::string_view{interface.name},
-			[&registerContainer, &interface, minVersion, maxVersion](auto* registry, auto id, auto serverVersion) -> void {
-			using namespace std::literals;
-			if (serverVersion < minVersion)
-				throw std::runtime_error{interface.name + " trop ancien"s};
-			registerContainer.reset(static_cast<T*>(wl_registry_bind(registry, id, &interface, std::min(serverVersion, maxVersion))));
-		}};
+		xdg_wm_base_pong(xdg_wm_base, serial);
 	}
+
+	inline const auto windowManagerBaseListener = xdg_wm_base_listener{
+		.ping = xdg_wm_base_ping,
+	};
 
 	inline auto global_registry_handler(
 		void* data,
@@ -82,11 +52,12 @@ namespace CppUtils::Window
 		const char* interface,
 		std::uint32_t version) noexcept -> void
 	{
-		auto& waylandGlobals = *static_cast<Wayland::Globals*>(data);
 		static const auto waylandRegistryHandlers = std::unordered_map<std::string_view, Wayland::RegisterHandler>{
-			makeHandlerPair(wl_compositor_interface, waylandGlobals.compositor, 3, 4),
-			makeHandlerPair(wl_shm_interface, waylandGlobals.sharedMemory, 1, 1),
-			makeHandlerPair(xdg_wm_base_interface, waylandGlobals.wmBase, 1, 1)};
+			Wayland::makeHandlerPair(wl_compositor_interface, Wayland::globals.compositor, 3, 4),
+			Wayland::makeHandlerPair(wl_shm_interface, Wayland::globals.sharedMemory, 1, 1),
+			Wayland::makeHandlerPair(xdg_wm_base_interface, Wayland::globals.windowManagerBase, 1, 1, [data]() -> void {
+			xdg_wm_base_add_listener(Wayland::globals.windowManagerBase.get(), &windowManagerBaseListener, data);
+		})};
 		auto interfaceName = std::string_view{interface};
 		if (const auto& iterator = waylandRegistryHandlers.find(interfaceName); iterator != std::cend(waylandRegistryHandlers))
 		{
@@ -105,15 +76,17 @@ namespace CppUtils::Window
 
 	inline const auto registryListener = wl_registry_listener{
 		.global = global_registry_handler,
-		.global_remove = global_registry_remover};
+		.global_remove = global_registry_remover,
+	};
 
-	inline auto wl_buffer_release([[maybe_unused]] void* data, wl_buffer* buffer) -> void
+	inline auto wl_buffer_release([[maybe_unused]] void* data, [[maybe_unused]] wl_buffer* buffer) -> void
 	{
-		wl_buffer_destroy(buffer);
+		// Todo: basculer sur la frame suivante
 	}
 
 	inline const auto bufferListener = wl_buffer_listener{
-		.release = wl_buffer_release};
+		.release = wl_buffer_release,
+	};
 
 	inline auto xdg_surface_configure(
 		void* data,
@@ -121,7 +94,8 @@ namespace CppUtils::Window
 		std::uint32_t serial) -> void;
 
 	inline const auto surfaceListener = xdg_surface_listener{
-		.configure = &Window::xdg_surface_configure};
+		.configure = &Window::xdg_surface_configure,
+	};
 #endif
 
 	export class Window final
@@ -137,7 +111,52 @@ namespace CppUtils::Window
 			IsCloseable = HasTitleBar | 0b1'0000
 		};
 
-	private:
+#if defined(OS_LINUX)
+		struct ImageStorage final
+		{
+			inline ImageStorage() = default;
+
+			inline explicit ImageStorage(Container::Size2d<std::size_t> size):
+				m_size{std::move(size)}
+			{
+				const auto strideSize = m_size.width * Wayland::bytesPerPixel;
+				const auto screenBufferSize = strideSize * m_size.height;
+				const auto bufferSize = screenBufferSize * 3; // triple buffering
+
+				m_fileDescriptor = System::FileDescriptor{System::allocateSharedMemory(bufferSize, "WaylandBuffer").value()};
+				pixels = System::MappedSharedMemory{m_fileDescriptor, bufferSize};
+				pool.reset(wl_shm_create_pool(Wayland::globals.sharedMemory.get(), m_fileDescriptor.get(), static_cast<std::int32_t>(bufferSize)));
+				buffer.reset(
+					wl_shm_pool_create_buffer(
+						pool.get(),
+						static_cast<std::int32_t>(screenBufferSize * 0),
+						static_cast<std::int32_t>(m_size.width),
+						static_cast<std::int32_t>(m_size.height),
+						static_cast<std::int32_t>(strideSize),
+						WL_SHM_FORMAT_ARGB8888)); // WL_SHM_FORMAT_XRGB8888
+
+				wl_buffer_add_listener(buffer.get(), &bufferListener, nullptr);
+			}
+
+			ImageStorage(ImageStorage&&) noexcept = default;
+			ImageStorage& operator=(ImageStorage&&) noexcept = default;
+
+			[[nodiscard]] inline auto getSize() const noexcept -> const auto&
+			{
+				return m_size;
+			}
+
+		private:
+			Container::Size2d<std::size_t> m_size;
+			System::FileDescriptor m_fileDescriptor;
+
+		public:
+			System::MappedSharedMemory pixels;
+			Wayland::SharedMemoryPool pool = {nullptr, wl_shm_pool_destroy};
+			Wayland::Buffer buffer = {nullptr, wl_buffer_destroy};
+		};
+#endif
+
 #if defined(OS_WINDOWS)
 		[[nodiscard]] static inline auto generateStyle(Style style) const noexcept -> DWORD
 		{
@@ -168,7 +187,6 @@ namespace CppUtils::Window
 			auto* display = Wayland::globals.display.get();
 			Wayland::globals.registry.reset(wl_display_get_registry(display));
 			wl_registry_add_listener(Wayland::globals.registry.get(), &registryListener, &Wayland::globals);
-			// wl_display_dispatch(display);
 			wl_display_roundtrip(display);
 			if (not Wayland::globals.compositor)
 				return std::unexpected{"Failed to find a Wayland compositor"s};
@@ -186,14 +204,14 @@ namespace CppUtils::Window
 			if (m_window == nullptr)
 				return std::unexpected{"Window creation failed."sv};
 #elif defined(OS_LINUX)
-			waylandSurface.reset(wl_compositor_create_surface(Wayland::globals.compositor.get()));
-			if (not waylandSurface)
+			surface.reset(wl_compositor_create_surface(Wayland::globals.compositor.get()));
+			if (not surface)
 				return std::unexpected{"Failed to create a Wayland surface"sv};
-			waylandShellSurface.reset(xdg_wm_base_get_xdg_surface(Wayland::globals.wmBase.get(), waylandSurface.get()));
-			if (not waylandShellSurface)
+			shellSurface.reset(xdg_wm_base_get_xdg_surface(Wayland::globals.windowManagerBase.get(), surface.get()));
+			if (not shellSurface)
 				return std::unexpected{"Failed to create a Wayland shell surface"sv};
-			xdg_surface_add_listener(waylandShellSurface.get(), &surfaceListener, this);
-			topLevel.reset(xdg_surface_get_toplevel(waylandShellSurface.get()));
+			xdg_surface_add_listener(shellSurface.get(), &surfaceListener, this);
+			topLevel.reset(xdg_surface_get_toplevel(shellSurface.get()));
 			xdg_toplevel_set_title(topLevel.get(), std::data(m_title));
 #endif
 			return {};
@@ -202,18 +220,26 @@ namespace CppUtils::Window
 	public:
 		inline Window(std::string title, Container::Size2d<std::size_t> size, Style style = Style{Style::IsMinimizable | Style::IsCloseable}):
 			m_title{std::move(title)},
-			m_size{std::move(size)},
-			m_style{style}
+			m_style{style},
+			m_size{size}
 		{
 			initWindowManager();
+			wl_display_roundtrip(Wayland::globals.display.get());
+			// m_imageStorage = ImageStorage{size};
 			openWindow();
+			wl_surface_commit(surface.get());
+			// wl_display_roundtrip(Wayland::globals.display.get());
+			// wl_display_dispatch(Wayland::globals.display.get());
+			wl_display_flush(Wayland::globals.display.get());
 		}
 
 		inline ~Window()
 		{
 #if defined(OS_WINDOWS)
+			/*
 			if (data != MAP_FAILED)
 				munmap(data, bufferSize);
+			*/
 #endif
 		}
 
@@ -233,7 +259,7 @@ namespace CppUtils::Window
 
 		inline auto setSize(Container::Size2d<std::size_t> size) noexcept -> void
 		{
-			m_size = std::move(size);
+			m_size = size;
 		}
 
 		[[nodiscard]] inline auto getSize() const noexcept -> const auto&
@@ -241,77 +267,63 @@ namespace CppUtils::Window
 			return m_size;
 		}
 
-		inline auto runLoop() -> void
+		[[nodiscard]] inline auto getPixels() const noexcept -> auto*
 		{
-			while (wl_display_dispatch(Wayland::globals.display.get()) != -1)
-			{
-				// Event loop
-			}
+			return reinterpret_cast<std::uint32_t*>(m_imageStorage.pixels.get());
 		}
 
-		inline auto draw(const Wayland::Buffer& buffer) -> void
+		inline auto runLoop() -> void
 		{
-			wl_surface_attach(waylandSurface.get(), buffer.get(), 0, 0);
-			// wl_surface_damage(waylandSurface.get(), 0, 0, std::numeric_limits<std::int32_t>::max(), std::numeric_limits<std::int32_t>::max());
-			wl_surface_commit(waylandSurface.get());
+			auto result = 0;
+			while ((result = wl_display_dispatch(Wayland::globals.display.get())) != -1)
+				std::cout << "Event received, result = " << result << std::endl;
+			std::cout << "Wayland dispatch exited with " << result << std::endl;
+		}
+
+		inline auto update() -> void
+		{
+			std::cout << "update" << std::endl;
+			wl_surface_attach(surface.get(), m_imageStorage.buffer.get(), 0, 0);
+			wl_surface_damage(surface.get(), 0, 0, std::numeric_limits<std::int32_t>::max(), std::numeric_limits<std::int32_t>::max());
+			wl_surface_commit(surface.get());
+			wl_display_flush(Wayland::globals.display.get());
 		}
 
 	private:
 		std::string m_title;
-		Container::Size2d<std::size_t> m_size;
 		[[maybe_unused]] Style m_style;
+		Container::Size2d<std::size_t> m_size;
 #if defined(OS_WINDOWS)
 		static inline constexpr auto windowClassName = L"Window";
 		HWND m_window;
 #elif defined(OS_LINUX)
-		Wayland::Surface waylandSurface = {nullptr, wl_surface_destroy};
-		Wayland::ShellSurface waylandShellSurface = {nullptr, xdg_surface_destroy};
+		Wayland::Surface surface = {nullptr, wl_surface_destroy};
+		Wayland::ShellSurface shellSurface = {nullptr, xdg_surface_destroy};
 		Wayland::TopLevel topLevel = {nullptr, xdg_toplevel_destroy};
-		Wayland::SharedMemoryPool waylandSharedMemoryPool = {nullptr, wl_shm_pool_destroy};
-		Wayland::Buffer waylandBuffer = {nullptr, wl_buffer_destroy};
+
+	public:
+		ImageStorage m_imageStorage;
 #endif
 	};
 
-	[[nodiscard]] inline auto drawFrame(Window& window) -> std::expected<Wayland::Buffer, std::string_view>
+	inline auto drawFrame(Window& window) -> void
 	{
-		const auto& windowSize = window.getSize();
-		const auto strideSize = windowSize.width * Wayland::bytesPerPixel;
-		const auto screenBufferSize = strideSize * windowSize.height;
-		const auto bufferSize = screenBufferSize * 2;
-		auto fileDescriptor = System::allocateSharedMemory(bufferSize, "WaylandBuffer");
-		if (not fileDescriptor)
-			return std::unexpected{fileDescriptor.error()};
-
-		auto data = System::mapSharedMemory(fileDescriptor.value(), bufferSize);
-		if (not data)
-			return std::unexpected{data.error()};
-
-		auto pool = Wayland::SharedMemoryPool{wl_shm_create_pool(Wayland::globals.sharedMemory.get(), fileDescriptor->get(), static_cast<std::int32_t>(bufferSize)), wl_shm_pool_destroy};
-		auto buffer = Wayland::Buffer{
-			wl_shm_pool_create_buffer(
-				pool.get(),
-				static_cast<std::int32_t>(screenBufferSize * 0),
-				static_cast<std::int32_t>(windowSize.width),
-				static_cast<std::int32_t>(windowSize.height),
-				static_cast<std::int32_t>(strideSize),
-				WL_SHM_FORMAT_ARGB8888), // WL_SHM_FORMAT_XRGB8888
-			wl_buffer_destroy};
-
-		// damier
-		std::memset(data.value(), 255, bufferSize);
-		auto* pixels = reinterpret_cast<std::uint32_t*>(data.value());
-		for (std::size_t y = 0; y < windowSize.height; ++y)
+		std::cout << "drawFrame" << std::endl;
+		const auto& imageSize = window.getSize();
+		if (not window.m_imageStorage.buffer)
 		{
-			for (std::size_t x = 0; x < windowSize.width; ++x)
-				if ((x + y / 8 * 8) % 16 < 8)
-					pixels[y * windowSize.width + x] = 0xFF'66'66'66;
-				else
-					pixels[y * windowSize.width + x] = 0xFF'EE'EE'EE;
+			std::cout << "ImageStorage" << std::endl;
+			window.m_imageStorage = Window::ImageStorage{imageSize};
 		}
-
-		munmap(data.value(), bufferSize);
-		wl_buffer_add_listener(buffer.get(), &bufferListener, nullptr);
-		return buffer;
+		auto* pixels = window.getPixels();
+		for (auto y = 0uz; y < imageSize.height; ++y)
+		{
+			for (auto x = 0uz; x < imageSize.width; ++x)
+				if ((x + y / 8 * 8) % 16 < 8)
+					pixels[y * imageSize.width + x] = 0xFF'66'66'66;
+				else
+					pixels[y * imageSize.width + x] = 0xFF'EE'EE'EE;
+		}
 	}
 
 	inline auto xdg_surface_configure(
@@ -319,12 +331,11 @@ namespace CppUtils::Window
 		xdg_surface* xdg_surface,
 		std::uint32_t serial) -> void
 	{
+		std::cout << "Surface configure !" << std::endl;
 		auto& window = *static_cast<Window*>(data);
 		xdg_surface_ack_configure(xdg_surface, serial);
 
-		auto buffer = drawFrame(window);
-		if (not buffer)
-			throw std::runtime_error{std::data(buffer.error())};
-		window.draw(buffer.value());
+		drawFrame(window);
+		window.update();
 	}
 }

@@ -73,14 +73,49 @@ export namespace CppUtils::System
 		return fileDescriptor;
 	}
 
-	[[nodiscard]] inline auto mapSharedMemory(FileDescriptor& fileDescriptor, std::size_t size) -> std::expected<std::uint8_t*, std::string_view>
+	struct MappedSharedMemory final
 	{
-		using namespace std::literals;
-		auto* data = static_cast<std::uint8_t*>(mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fileDescriptor.get(), 0));
-		if (data == MAP_FAILED)
-			return std::unexpected{"Failed to mmap"sv};
-		return data;
-	}
+		inline MappedSharedMemory() = default;
 
+		inline MappedSharedMemory(FileDescriptor& fileDescriptor, std::size_t size):
+			m_sharedMemory{static_cast<std::byte*>(mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fileDescriptor.get(), 0)), size}
+		{
+			if (std::data(m_sharedMemory) == MAP_FAILED)
+				throw std::runtime_error{"Failed to mmap"};
+		}
+
+		inline MappedSharedMemory(std::byte* data, std::size_t size):
+			m_sharedMemory{data, size}
+		{}
+
+		inline MappedSharedMemory(const MappedSharedMemory&) = delete;
+		inline MappedSharedMemory(MappedSharedMemory&& other) noexcept:
+			m_sharedMemory{std::exchange(other.m_sharedMemory, {})}
+		{}
+
+		inline MappedSharedMemory& operator=(const MappedSharedMemory&) = delete;
+		inline MappedSharedMemory& operator=(MappedSharedMemory&& other) noexcept
+		{
+			m_sharedMemory = std::exchange(other.m_sharedMemory, {});
+			return *this;
+		}
+
+		inline ~MappedSharedMemory()
+		{
+			munmap(std::data(m_sharedMemory), std::size(m_sharedMemory));
+		}
+
+		[[nodiscard]] inline auto get() const noexcept -> auto*
+		{
+			return std::data(m_sharedMemory);
+		}
+
+		[[nodiscard]] inline auto size() const noexcept -> auto
+		{
+			return std::size(m_sharedMemory);
+		}
+
+		std::span<std::byte> m_sharedMemory;
+	};
 #endif
 }

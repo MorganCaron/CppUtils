@@ -1,0 +1,76 @@
+module;
+
+#include <CppUtils/System/OS.hpp>
+
+#if defined(OS_LINUX)
+#	include <unistd.h>
+#	include <sys/types.h>
+#	include <sys/mman.h>
+
+#	include <wayland-client-core.h>
+#	include <wayland-client-protocol.h>
+#	include <xdg-shell.h>
+// #	include <wayland-cursor.h>
+#endif
+
+export module CppUtils.Window.Wayland;
+
+import std;
+
+import CppUtils.Container.Size2d;
+import CppUtils.Logger;
+import CppUtils.Memory;
+import CppUtils.String;
+import CppUtils.System;
+
+#if defined(OS_LINUX)
+export namespace CppUtils::Window::Wayland
+{
+	using Display = Memory::UniquePtrWithDestructor<wl_display>;
+	using Registry = Memory::UniquePtrWithDestructor<wl_registry>;
+	using Compositor = Memory::UniquePtrWithDestructor<wl_compositor>;
+	using SharedMemory = Memory::UniquePtrWithDestructor<wl_shm>;
+	using SharedMemoryPool = Memory::UniquePtrWithDestructor<wl_shm_pool>;
+	using Surface = Memory::UniquePtrWithDestructor<wl_surface>;
+	using ShellSurface = Memory::UniquePtrWithDestructor<xdg_surface>;
+	using TopLevel = Memory::UniquePtrWithDestructor<xdg_toplevel>;
+	using Buffer = Memory::UniquePtrWithDestructor<wl_buffer>;
+	using WindowManagerBase = Memory::UniquePtrWithDestructor<xdg_wm_base>;
+
+	struct Globals final
+	{
+		Display display = {nullptr, wl_display_disconnect};
+		Registry registry = {nullptr, wl_registry_destroy};
+		Compositor compositor = {nullptr, wl_compositor_destroy};
+		SharedMemory sharedMemory = {nullptr, wl_shm_destroy};
+		WindowManagerBase windowManagerBase = {nullptr, xdg_wm_base_destroy};
+	};
+	inline auto globals = Globals{};
+
+	using RegisterHandler = std::function<void(wl_registry*, std::uint32_t, std::uint32_t)>;
+
+	template<class T>
+	inline auto makeHandlerPair(
+		const wl_interface& interface,
+		Memory::UniquePtrWithDestructor<T>& registerContainer,
+		std::uint32_t minVersion,
+		std::uint32_t maxVersion,
+		std::function<void()>&& callback = {}) -> std::pair<std::string_view, RegisterHandler>
+	{
+		return {
+			std::string_view{interface.name},
+			[&registerContainer,
+				&interface,
+				minVersion,
+				maxVersion,
+				callback = std::forward<decltype(callback)>(callback)](auto* registry, auto id, auto serverVersion) -> void {
+			using namespace std::literals;
+			if (serverVersion < minVersion)
+				throw std::runtime_error{interface.name + " trop ancien"s};
+			registerContainer.reset(static_cast<T*>(wl_registry_bind(registry, id, &interface, std::min(serverVersion, maxVersion))));
+			if (callback)
+				callback();
+		}};
+	}
+}
+#endif
