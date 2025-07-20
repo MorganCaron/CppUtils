@@ -1,0 +1,366 @@
+export module CppUtils.Functional.LambdaCalculus;
+
+import std;
+import CppUtils.Type.Utility;
+
+export namespace CppUtils::Functional::LambdaCalculus
+{
+	namespace v1
+	{
+		inline constexpr auto True = [](auto x) { return [x](auto) { return x; }; };
+		inline constexpr auto False = [](auto) { return [](auto y) { return y; }; };
+
+		static_assert(True(true)(false) == true);
+		static_assert(False(true)(false) == false);
+		static_assert(std::same_as<std::remove_const_t<decltype(True(True)(False))>, std::remove_const_t<decltype(True)>>);
+		static_assert(std::same_as<std::remove_const_t<decltype(False(True)(False))>, std::remove_const_t<decltype(False)>>);
+
+		inline constexpr auto If = [](auto condition) { return [condition](auto t) { return [condition, t](auto f) { return condition(t)(f); }; }; };
+
+		static_assert(If(True)(true)(false) == true);
+		static_assert(If(False)(true)(false) == false);
+		static_assert(std::same_as<std::remove_const_t<decltype(If(True)(True)(False))>, std::remove_const_t<decltype(True)>>);
+		static_assert(std::same_as<std::remove_const_t<decltype(If(False)(True)(False))>, std::remove_const_t<decltype(False)>>);
+
+		inline constexpr auto And = [](auto lhs, auto rhs) { return If(lhs)(rhs)(False); };
+
+		static_assert(std::same_as<std::remove_const_t<decltype(And(False, False))>, std::remove_const_t<decltype(False)>>);
+		static_assert(std::same_as<std::remove_const_t<decltype(And(False, True))>, std::remove_const_t<decltype(False)>>);
+		static_assert(std::same_as<std::remove_const_t<decltype(And(True, False))>, std::remove_const_t<decltype(False)>>);
+		static_assert(std::same_as<std::remove_const_t<decltype(And(True, True))>, std::remove_const_t<decltype(True)>>);
+
+		inline constexpr auto Or = [](auto lhs, auto rhs) { return If(lhs)(True)(rhs); };
+
+		static_assert(std::same_as<std::remove_const_t<decltype(Or(False, False))>, std::remove_const_t<decltype(False)>>);
+		static_assert(std::same_as<std::remove_const_t<decltype(Or(False, True))>, std::remove_const_t<decltype(True)>>);
+		static_assert(std::same_as<std::remove_const_t<decltype(Or(True, False))>, std::remove_const_t<decltype(True)>>);
+		static_assert(std::same_as<std::remove_const_t<decltype(Or(True, True))>, std::remove_const_t<decltype(True)>>);
+
+		inline constexpr auto Not = [](auto value) { return If(value)(False)(True); };
+
+		static_assert(std::same_as<std::remove_const_t<decltype(Not(False))>, std::remove_const_t<decltype(True)>>);
+		static_assert(std::same_as<std::remove_const_t<decltype(Not(True))>, std::remove_const_t<decltype(False)>>);
+
+		static_assert(And(Not(False), Or(True, False))(true)(false) == true);
+		static_assert(std::same_as<std::remove_const_t<decltype(And(Not(False), Or(True, False))(True)(False))>, std::remove_const_t<decltype(True)>>);
+
+		inline constexpr auto Successor = [](auto n) { return [n](auto f) { return [n, f](auto x) { return f(n(f)(x)); }; }; };
+		inline constexpr auto Zero = False;
+		inline constexpr auto Count = [](auto c) { return c + 1; };
+
+		static_assert(not std::same_as<std::remove_const_t<decltype(Successor(Zero))>, std::remove_const_t<decltype(Zero)>>);
+		static_assert(Zero(Count)(0uz) == 0uz);
+		static_assert(Successor(Zero)(Count)(0uz) == 1uz);
+		static_assert(Successor(Successor(Zero))(Count)(0uz) == 2uz);
+
+		inline constexpr auto Add = [](auto lhs, auto rhs) { return lhs(Successor)(rhs); };
+
+		static_assert(std::same_as<std::remove_const_t<decltype(Add(Zero, Zero))>, std::remove_const_t<decltype(Zero)>>);
+		static_assert(Add(Zero, Zero)(Count)(0uz) == 0uz);
+
+		static_assert(std::same_as<std::remove_const_t<decltype(Add(Zero, Successor(Zero)))>, std::remove_const_t<decltype(Successor(Zero))>>);
+		static_assert(Add(Zero, Successor(Zero))(Count)(0uz) == 1uz);
+
+		static_assert(std::same_as<std::remove_const_t<decltype(Add(Successor(Zero), Successor(Zero)))>, std::remove_const_t<decltype(Successor(Successor(Zero)))>>);
+		static_assert(Add(Successor(Zero), Successor(Zero))(Count)(0uz) == 2uz);
+
+		inline constexpr auto Mult = [](auto lhs, auto rhs) { return [lhs, rhs](auto f) { return lhs(rhs(f)); }; };
+
+		static_assert(Mult(Successor(Successor(Zero)), Successor(Successor(Zero)))(Count)(0uz) == 4uz);
+	}
+
+	inline namespace v2
+	{
+		template<std::size_t Index> // De Bruijn index
+		struct Variable final
+		{};
+
+		template<class Body>
+		struct Lambda final
+		{};
+
+		template<class Function, class Argument>
+		struct Application final
+		{};
+
+		template<class Expression, class Value, std::size_t Depth>
+		struct Substitute final
+		{
+			using type = Expression;
+		};
+
+		template<std::size_t Index, class Value, std::size_t Depth>
+		struct Substitute<Variable<Index>, Value, Depth> final
+		{
+			using type = std::conditional_t<Index == Depth, Value, Variable<Index>>;
+		};
+
+		template<class Body, class Value, std::size_t Depth>
+		struct Substitute<Lambda<Body>, Value, Depth> final
+		{
+			using type = Lambda<typename Substitute<Body, Value, Depth + 1>::type>;
+		};
+
+		template<class Function, class Argument, class Value, std::size_t Depth>
+		struct Substitute<Application<Function, Argument>, Value, Depth> final
+		{
+			using type = Application<
+				typename Substitute<Function, Value, Depth>::type,
+				typename Substitute<Argument, Value, Depth>::type>;
+		};
+
+		static_assert(std::is_same_v<
+			typename Substitute<Variable<0>, Variable<42>, 0>::type,
+			Variable<42>>);
+		static_assert(std::is_same_v<
+			typename Substitute<Lambda<Variable<1>>, Variable<42>, 0>::type,
+			Lambda<Variable<42>>>);
+		static_assert(std::is_same_v<
+			typename Substitute<Lambda<Lambda<Variable<2>>>, Variable<42>, 0>::type,
+			Lambda<Lambda<Variable<42>>>>);
+		static_assert(std::is_same_v<
+			typename Substitute<Application<Lambda<Variable<1>>, Variable<21>>, Variable<42>, 0>::type,
+			Application<Lambda<Variable<42>>,
+				Variable<21>>>);
+		static_assert(std::is_same_v<
+			typename Substitute<Application<Lambda<Variable<21>>, Variable<0>>, Variable<42>, 0>::type,
+			Application<Lambda<Variable<21>>,
+				Variable<42>>>);
+
+		template<class Expression>
+		struct BetaReduction final
+		{
+			using type = Expression;
+		};
+
+		template<class Body, class Argument>
+		struct BetaReduction<Application<Lambda<Body>, Argument>> final
+		{
+			using type = typename Substitute<Body, Argument, 0>::type;
+		};
+
+		template<class Expression, class Argument0, class Argument1>
+		struct BetaReduction<Application<Application<Expression, Argument1>, Argument0>> final
+		{
+			using type = typename BetaReduction<Application<typename BetaReduction<Application<Expression, Argument1>>::type, Argument0>>::type;
+		};
+
+		static_assert(std::is_same_v<
+			typename BetaReduction<Variable<0>>::type,
+			Variable<0>>);
+		static_assert(std::is_same_v<
+			typename BetaReduction<Lambda<Variable<0>>>::type,
+			Lambda<Variable<0>>>);
+		static_assert(std::is_same_v<
+			typename BetaReduction<Application<Lambda<Variable<0>>, Variable<1>>>::type, // (λa.a)b
+			Variable<1> // b
+			>);
+		static_assert(std::is_same_v<
+			typename BetaReduction<Application<Lambda<Variable<1>>, Variable<2>>>::type, // (λa.b)c
+			Variable<1> // b
+			>);
+
+		template<class Expression>
+		struct NormalForm final
+		{
+		private:
+			using Reduced = BetaReduction<Expression>::type;
+
+		public:
+			using type = Type::LazyEvaluationType<not std::is_same_v<Expression, Reduced>, NormalForm, Reduced, std::type_identity<Reduced>>::type;
+		};
+
+		template<class Body>
+		struct NormalForm<Lambda<Body>> final
+		{
+			using type = Lambda<typename NormalForm<Body>::type>;
+		};
+
+		static_assert(std::is_same_v<
+			typename NormalForm<Variable<0>>::type, // a
+			Variable<0> // a
+			>);
+		static_assert(std::is_same_v<
+			typename NormalForm<Lambda<Variable<0>>>::type, // λa.a
+			Lambda<Variable<0>> // λa.a
+			>);
+		static_assert(std::is_same_v<
+			typename NormalForm<Application<Lambda<Variable<0>>, Variable<1>>>::type, // (λa.a)b
+			Variable<1> // b
+			>);
+		static_assert(std::is_same_v<
+			typename NormalForm<Application<Lambda<Variable<1>>, Variable<2>>>::type, // (λa.b)c
+			Variable<1> // b
+			>);
+
+		static_assert(std::is_same_v<
+			typename NormalForm<Application<Application<Lambda<Lambda<Variable<1>>>, Variable<2>>, Variable<3>>>::type, // (λb.λa.b)c d
+			Variable<2> // c
+			>);
+		static_assert(std::is_same_v<
+			typename NormalForm<Application<Application<Lambda<Lambda<Variable<0>>>, Variable<2>>, Variable<3>>>::type, // (λb.λa.a)c d
+			Variable<3> // d
+			>);
+		static_assert(std::is_same_v<
+			typename NormalForm<Application<Lambda<Variable<0>>, Lambda<Lambda<Variable<0>>>>>::type, // (λa.a)(λb.λa.a)
+			Lambda<Lambda<Variable<0>>> // λb.λa.a
+			>);
+		static_assert(std::is_same_v<
+			typename NormalForm<Application<Lambda<Variable<0>>, Lambda<Lambda<Variable<1>>>>>::type, // (λa.a)(λb.λa.b)
+			Lambda<Lambda<Variable<1>>> // λb.λa.b
+			>);
+
+		template<class Lhs, class Rhs>
+		inline constexpr bool areEqual = std::is_same_v<typename NormalForm<Lhs>::type, typename NormalForm<Rhs>::type>;
+
+		static_assert(areEqual<Application<Lambda<Variable<0>>, Variable<1>>, Variable<1>>); // (λa.a)b == b
+		static_assert(areEqual<Lambda<Application<Lambda<Variable<0>>, Variable<1>>>, Lambda<Variable<1>>>); // λb.(λa.a)b == λb.b
+
+		using False = Lambda<Lambda<Variable<0>>>; // F = λb.λa.a = λba.a
+		using True = Lambda<Lambda<Variable<1>>>; // T = λb.λa.b = λba.b
+
+		static_assert(not areEqual<True, False>);
+		static_assert(areEqual<True, True>);
+		static_assert(areEqual<False, False>);
+		static_assert(areEqual<True, Lambda<Lambda<Variable<1>>>>);
+		static_assert(areEqual<False, Lambda<Lambda<Variable<0>>>>);
+
+		// If = λb.λt.λf.b t f = λbtf.b t f
+		using If =
+			Lambda<
+				Lambda<
+					Lambda<
+						Application<
+							Application<Variable<2>, Variable<1>>,
+							Variable<0>>>>>;
+
+		// If T T F = T T F = T
+		// détail:
+		// If T T F = (λbtf.b t f)T T F = T T F = (λba.b)(λba.b)(λba.a) = (λa.(λba.b))(λba.a) = λba.b = T
+		static_assert(areEqual<
+			Application<
+				Application<
+					Application<If, True>,
+					True>,
+				False>,
+			True>);
+
+		// If F T F = F T F = F
+		// détail:
+		// If F T F = (λbtf.b t f)F T F = F T F = (λba.a)(λba.b)(λba.a) = (λa.a)(λba.a) = λba.a = F
+		static_assert(areEqual<
+			Application<
+				Application<
+					Application<If, False>,
+					True>,
+				False>,
+			False>);
+
+		// And = λab.If a b F
+		using And =
+			Lambda<
+				Lambda<
+					Application<
+						Application<
+							Application<If, Variable<1>>,
+							Variable<0>>,
+						False>>>;
+
+		static_assert(areEqual<Application<Application<And, False>, False>, False>); // And F F = (λab.If a b F) F F = If F F F = F
+		static_assert(areEqual<Application<Application<And, False>, True>, False>); // And F T = (λab.If a b F) F T = If F T F = F
+		static_assert(areEqual<Application<Application<And, True>, False>, False>); // And T F = (λab.If a b F) T F = If T F F = F
+		static_assert(areEqual<Application<Application<And, True>, True>, True>); // And T T = (λab.If a b F) T T = If T T F = T
+
+		// Or = λab.If a T b
+		using Or =
+			Lambda<
+				Lambda<
+					Application<
+						Application<
+							Application<If, Variable<1>>,
+							True>,
+						Variable<0>>>>;
+
+		static_assert(areEqual<Application<Application<Or, False>, False>, False>); // Or F F = (λab.If a T b) F F = If F T F = F
+		static_assert(areEqual<Application<Application<Or, False>, True>, True>); // Or F T = (λab.If a T b) F T = If F T T = T
+		static_assert(areEqual<Application<Application<Or, True>, False>, True>); // Or T F = (λab.If a T b) T F = If T T F = T
+		static_assert(areEqual<Application<Application<Or, True>, True>, True>); // Or T T = (λab.If a T b) T T = If T T T = T
+
+		// Not = λa.If a F T
+		using Not =
+			Lambda<
+				Application<
+					Application<
+						Application<If, Variable<0>>,
+						False>,
+					True>>;
+
+		static_assert(areEqual<Application<Not, False>, True>); // Not F = (λa.If a F T) F = If F F T = T
+		static_assert(areEqual<Application<Not, True>, False>); // Not T = (λa.If a F T) T = If T F T = F
+
+		template<class Expression>
+		struct Evaluate;
+
+		template<>
+		struct Evaluate<True>
+		{
+			static constexpr auto value = true;
+		};
+
+		template<>
+		struct Evaluate<False>
+		{
+			static constexpr auto value = false;
+		};
+
+		using Zero = False;
+		static_assert(areEqual<Zero, Lambda<Lambda<Variable<0>>>>);
+		/*
+		// Successor = λn.λf.λx.f((n f) x)
+		using Successor =
+			Lambda<
+				Lambda<
+					Lambda<
+						Application<
+							Variable<1>,
+							Application<
+								Application<Variable<2>, Variable<1>>,
+								Variable<0>>>>>>;
+
+		static_assert(areEqual<Application<Successor, Zero>, Lambda<Lambda<Application<Variable<1>, Variable<0>>>>>);
+
+		// Add = λm.λn.λf.λx.m f (n f x)
+		using Add =
+			Lambda<
+				Lambda<
+					Lambda<
+						Lambda<
+							Application<
+								Application<Variable<3>, Variable<1>>,
+								Application<
+									Application<Variable<2>, Variable<1>>,
+									Variable<0>>>>>>>;
+		static_assert(areEqual<
+			Application<Application<Add, Zero>, Zero>,
+			Zero>);
+		static_assert(areEqual<
+			Application<Application<Add, Zero>, Application<Successor, Zero>>,
+			Application<Successor, Zero>>);
+		static_assert(areEqual<
+			Application<Application<Add, Application<Successor, Zero>>, Application<Successor, Zero>>,
+			Application<Successor, Application<Successor, Zero>>>);
+
+		// Mult = λm.λn.λf. m (n f)
+		using Mult =
+			Lambda<
+				Lambda<
+					Lambda<
+						Application<
+							Variable<2>,
+							Application<Variable<1>, Variable<0>>>>>>;
+		static_assert(areEqual<
+			Application<Application<Mult, Application<Successor, Application<Successor, Zero>>>, Application<Successor, Application<Successor, Zero>>>,
+			Application<Successor, Application<Successor, Application<Successor, Application<Successor, Zero>>>>>); // Mult 2 2 = 4
+		*/
+	}
+}
