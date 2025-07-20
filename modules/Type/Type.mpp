@@ -6,5 +6,6 @@ export import CppUtils.Type.Enum;
 export import CppUtils.Type.Mapping;
 export import CppUtils.Type.MemberFunction;
 export import CppUtils.Type.Tuple;
+export import CppUtils.Type.Utility;
 export import CppUtils.Type.VariadicTemplate;
 export import CppUtils.Type.Variant;

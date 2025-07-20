@@ -1,0 +1,24 @@
+export module CppUtils.Type.Utility;
+
+import std;
+
+export namespace CppUtils::Type
+{
+	template<bool, template<class> class Then, class Arg, class Else>
+	struct LazyEvaluation
+	{
+		using type = Else;
+	};
+
+	template<template<class> class Then, class Arg, class Else>
+	struct LazyEvaluation<true, Then, Arg, Else>
+	{
+		using type = Then<Arg>;
+	};
+
+	template<bool Condition, template<class> class Then, class Arg, class Else>
+	using LazyEvaluationType = typename LazyEvaluation<Condition, Then, Arg, Else>::type;
+
+	static_assert(std::is_same_v<LazyEvaluationType<true, std::type_identity, int, char>, std::type_identity<int>>);
+	static_assert(std::is_same_v<LazyEvaluationType<false, std::type_identity, int, char>, char>);
+}
