@@ -5,6 +5,30 @@ do
 
 	-- Support des modules C++20
 	on_load(function(target)
+		local wayland_protocols_package = target:pkg("wayland-protocols")
+		if not wayland_protocols_package then
+			os.raise("wayland-protocols package not found")
+		end
+
+		local wayland_protocols_dir = path.join(wayland_protocols_package:installdir() or "/usr", "share", "wayland-protocols")
+		assert(os.isdir(wayland_protocols_dir), "wayland-protocols directory not found")
+
+		local protocols = {
+			{ "stable/xdg-shell/xdg-shell.xml" },
+			{ "unstable/xdg-decoration/xdg-decoration-unstable-v1.xml" },
+			{ "unstable/pointer-constraints/pointer-constraints-unstable-v1.xml" },
+			{ "unstable/relative-pointer/relative-pointer-unstable-v1.xml" },
+		}
+
+		for _, protocol in ipairs(protocols) do
+			local full = path.join(wayland_protocols_dir, protocol[1])
+			if os.exists(full) then
+				target:add("files", full, { rule = "wayland.protocols" })
+			else
+				print("Protocol not found: " .. protocol[1])
+			end
+		end
+
 		if target:rule("c++.build.modules.builder") then
 			local rule = target:rule("c++.build.modules.builder"):clone()
 			rule:add("deps", "wayland.protocols", { order = true })
