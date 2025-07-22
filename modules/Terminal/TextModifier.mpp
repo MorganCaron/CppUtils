@@ -17,8 +17,9 @@ export namespace CppUtils::Terminal
 #if defined(OS_LINUX) or defined(OS_MACOS)
 	namespace ANSIEscapeCode
 	{
-		[[maybe_unused]] inline constexpr auto Reset = "\x1B[0m"sv;
-		[[maybe_unused]] inline constexpr auto EraseCurrentLine = "\x1B[2K0E"sv;
+		[[maybe_unused]] inline constexpr auto Reset = "\x1B[0m"sv; // \x1B[39m\x1B[49m
+		[[maybe_unused]] inline constexpr auto EraseCurrentLine = "\x1B[2K\r"sv;
+		[[maybe_unused]] inline constexpr auto MoveCursorUp = "\x1B[1A"sv;
 	}
 #endif
 
@@ -79,10 +80,25 @@ export namespace CppUtils::Terminal
 		}
 #endif
 
-		static inline auto eraseCurrentLine([[maybe_unused]] std::ostream& stream) -> void
+		static inline auto eraseCurrentLine([[maybe_unused]] std::FILE* file) -> void
 		{
 #if defined(OS_LINUX) or defined(OS_MACOS)
-			stream << ANSIEscapeCode::EraseCurrentLine;
+			std::fwrite(
+				std::data(ANSIEscapeCode::EraseCurrentLine),
+				sizeof(decltype(ANSIEscapeCode::EraseCurrentLine)::value_type),
+				std::size(ANSIEscapeCode::EraseCurrentLine),
+				file);
+#endif
+		}
+
+		static inline auto moveCursorUp([[maybe_unused]] std::FILE* file) -> void
+		{
+#if defined(OS_LINUX) or defined(OS_MACOS)
+			std::fwrite(
+				std::data(ANSIEscapeCode::MoveCursorUp),
+				sizeof(decltype(ANSIEscapeCode::MoveCursorUp)::value_type),
+				std::size(ANSIEscapeCode::MoveCursorUp),
+				file);
 #endif
 		}
 

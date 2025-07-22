@@ -1,0 +1,89 @@
+module;
+
+#include <stdio.h>
+
+export module CppUtils.UnitTests.Terminal;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Terminal
+{
+	inline auto _ = TestSuite{"Terminal", {"UnitTest"}, [](auto& suite) {
+		using namespace std::chrono_literals;
+
+		suite.addTest("BackgroundColor", [&] {
+			auto applyBackgroundColor =
+				[](
+					std::string_view text,
+					CppUtils::Terminal::BackgroundColor::BackgroundColorEnum backgroundColor) -> void {
+				auto _ = CppUtils::Terminal::TextModifier{
+					stdout,
+					CppUtils::Terminal::TextColor::TextColorEnum::Default,
+					backgroundColor};
+				std::puts(std::data(text));
+			};
+
+			applyBackgroundColor("Default", CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Default);
+			applyBackgroundColor("Black", CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Black);
+			applyBackgroundColor("Red", CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Red);
+			applyBackgroundColor("Green", CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Green);
+			applyBackgroundColor("Yellow", CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Yellow);
+			applyBackgroundColor("Blue", CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Blue);
+			applyBackgroundColor("Magenta", CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Magenta);
+			applyBackgroundColor("Cyan", CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Cyan);
+			applyBackgroundColor("White", CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::White);
+		});
+
+		suite.addTest("TextColor", [&] {
+			auto applyTextColor =
+				[](
+					std::string_view text,
+					CppUtils::Terminal::TextColor::TextColorEnum textColor) -> void {
+				auto _ = CppUtils::Terminal::TextModifier{stdout, textColor};
+				std::puts(std::data(text));
+			};
+
+			applyTextColor("Default", CppUtils::Terminal::TextColor::TextColorEnum::Default);
+			applyTextColor("Black", CppUtils::Terminal::TextColor::TextColorEnum::Black);
+			applyTextColor("Red", CppUtils::Terminal::TextColor::TextColorEnum::Red);
+			applyTextColor("Green", CppUtils::Terminal::TextColor::TextColorEnum::Green);
+			applyTextColor("Yellow", CppUtils::Terminal::TextColor::TextColorEnum::Yellow);
+			applyTextColor("Blue", CppUtils::Terminal::TextColor::TextColorEnum::Blue);
+			applyTextColor("Magenta", CppUtils::Terminal::TextColor::TextColorEnum::Magenta);
+			applyTextColor("Cyan", CppUtils::Terminal::TextColor::TextColorEnum::Cyan);
+			applyTextColor("White", CppUtils::Terminal::TextColor::TextColorEnum::White);
+		});
+
+		suite.addTest("TextStyle", [&] {
+			auto applyTextStyle =
+				[](
+					std::string_view text,
+					CppUtils::Terminal::TextStyle::TextStyleEnum textStyle) -> void {
+				auto _ = CppUtils::Terminal::TextModifier{
+					stdout,
+					CppUtils::Terminal::TextColor::TextColorEnum::Default,
+					CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Default,
+					textStyle};
+				std::puts(std::data(text));
+			};
+
+			applyTextStyle("Bolder", CppUtils::Terminal::TextStyle::TextStyleEnum::Bolder);
+			applyTextStyle("Lighter", CppUtils::Terminal::TextStyle::TextStyleEnum::Lighter);
+			applyTextStyle("Italic", CppUtils::Terminal::TextStyle::TextStyleEnum::Italic);
+			applyTextStyle("Underline", CppUtils::Terminal::TextStyle::TextStyleEnum::Underline);
+		});
+
+		suite.addTest("eraseCurrentLine", [&] {
+			std::print("Hello World!");
+			CppUtils::Terminal::TextModifier::eraseCurrentLine(stdout);
+			std::println("Hello!");
+		});
+
+		suite.addTest("moveCursorUp", [&] {
+			std::println("Hello");
+			CppUtils::Terminal::TextModifier::moveCursorUp(stdout);
+			std::println("Hello World!");
+		});
+	}};
+}
