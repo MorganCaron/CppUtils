@@ -7,6 +7,7 @@
 ![Github Stars](https://img.shields.io/github/stars/MorganCaron/CppUtils?style=for-the-badge)
 ![Github Forks](https://img.shields.io/github/forks/MorganCaron/CppUtils?style=for-the-badge)
 ![Top Language](https://img.shields.io/github/languages/top/MorganCaron/CppUtils?style=for-the-badge)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/1605a5918fed43b1a87752cc9510a2e0)](https://app.codacy.com/gh/MorganCaron/CppUtils?utm_source=github.com&utm_medium=referral&utm_content=MorganCaron/CppUtils&utm_campaign=Badge_Grade)
 [![Discord](https://img.shields.io/discord/268838260153909249?label=Chat&logo=Discord&style=for-the-badge)](https://discord.gg/mxZvun4)
 [![License](https://img.shields.io/github/license/MorganCaron/CppUtils?style=for-the-badge)](https://github.com/MorganCaron/CppUtils/blob/master/LICENSE)
 
