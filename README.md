@@ -9,6 +9,7 @@
 ![Top Language](https://img.shields.io/github/languages/top/MorganCaron/CppUtils?style=for-the-badge)
 [![Discord](https://img.shields.io/discord/268838260153909249?label=Chat&logo=Discord&style=for-the-badge)](https://discord.gg/mxZvun4)
 [![License](https://img.shields.io/github/license/MorganCaron/CppUtils?style=for-the-badge)](https://github.com/MorganCaron/CppUtils/blob/master/LICENSE)
+![GitHub Sponsors](https://img.shields.io/github/sponsors/MorganCaron?style=for-the-badge)
 
 ### Project Health
 ![CI Windows](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-windows.yml?style=for-the-badge&logo=windows&logoColor=white&label=Windows)
@@ -16,7 +17,13 @@
 ![CI Linux](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-linux.yml?style=for-the-badge&logo=linux&logoColor=white&label=Linux)
 ![CI MacOS](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-macos.yml?style=for-the-badge&logo=macos&logoColor=white&label=MacOS)
 
+![Codacy grade](https://img.shields.io/codacy/grade/49d265d3b8934ec398322a0a82c71184?style=for-the-badge&logo=codacy)
+
 ---
+
+### Project Activity
+
+![Alt](https://repobeats.axiom.co/api/embed/5ee3902d41c9a270bed3f8aa8dba9dd6298fd5ef.svg "Repobeats analytics image")
 
 ### In this library you can find:
 
@@ -24,11 +31,11 @@
 - A [file modification listener](modules/FileSystem/Watcher.mpp)
 - Tools for creating parsers and compilers (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
 - Parsers and compilers for popular languages (CSS, INI, HTML, JSON, Markdown, XML) (Work in progress <img src="resources/loading.gif" width="12" height="12"/> )
-- A logger [logger](modules/Log/Logger.mpp) with a [file rotation system](modules/Log/LogRotate.mpp)
+- A [logger](modules/Log/Logger.mpp) with a [file rotation system](modules/Log/LogRotate.mpp)
 - [Benchmark tools](modules/Log/ChronoLogger.mpp)
 - [Hashing functions](modules/String/Hash.mpp)
 - Networking functions ([Server](modules/Network/Server.mpp)/[Client](modules/Network/Client.mpp))
-- [Color terminal writing](modules/Terminal/TextModifier.mpp)
+- Terminal UI tools ([canvas](modules/Terminal/Canvas.mpp), [input](modules/Terminal/RawTerminal.mpp), [colors/style](modules/Terminal/TextModifier.mpp))
 - Utilities for securing multithreaded accesses ([UniqueLocker](modules/Thread/UniqueLocker.mpp), [SharedLocker](modules/Thread/SharedLocker.mpp))
 - A [ThreadPool](modules/Thread/ThreadPool.mpp)
 - [Tools for writing unit tests](modules/UnitTest/UnitTest.mpp)
@@ -36,8 +43,6 @@
 - Many other functions
 
 The [unit tests](tests) serve as examples of how to use these functions.
-
-
 
 ## Getting Started
 
