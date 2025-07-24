@@ -139,12 +139,12 @@ namespace CppUtils::UnitTest
 				return exitSuccess;
 			}
 			{
-				[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
+				auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
 				Logger::print("The tests failed:\n");
 			}
 			if (nbSuccess > 0)
 				Logger::print<"success">("- {} successful tests", nbSuccess);
-			[[maybe_unused]] auto textModifier = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
+			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
 			if (nbSuccess == 0)
 				Logger::print("- 0 successful tests\n");
 			Logger::print("- {} failed tests\n", nbFail);

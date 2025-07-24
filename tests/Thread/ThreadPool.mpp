@@ -7,15 +7,15 @@ export namespace CppUtils::UnitTest::Thread::ThreadPool
 {
 	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/ThreadPool", {"UnitTest"}, [](auto& suite) {
 		suite.addTest("0 task / 1 thread", [&] {
-			[[maybe_unused]] auto threadPool = CppUtils::Thread::ThreadPool{1};
+			auto _ = CppUtils::Thread::ThreadPool{1};
 		});
 
 		suite.addTest("0 task / 2 threads", [&] {
-			[[maybe_unused]] auto threadPool = CppUtils::Thread::ThreadPool{2};
+			auto _ = CppUtils::Thread::ThreadPool{2};
 		});
 
 		suite.addTest("0 task / N threads", [&] {
-			[[maybe_unused]] auto threadPool = CppUtils::Thread::ThreadPool{};
+			auto _ = CppUtils::Thread::ThreadPool{};
 		});
 
 		suite.addTest("1 task with future.wait()", [&] {

@@ -40,7 +40,7 @@ export namespace CppUtils::Container
 		inline constexpr auto push(Type::TriviallyCopyable auto value) -> void
 		{
 			m_data.resize(std::size(m_data) + sizeof(decltype(value)), std::byte{0});
-			[[maybe_unused]] auto unused = set(value);
+			auto _ = set(value);
 		}
 
 		template<Type::TriviallyCopyable T>

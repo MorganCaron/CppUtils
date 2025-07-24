@@ -11,11 +11,11 @@ export namespace CppUtils::UnitTest::Network
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("Server Creation", [&] {
-			[[maybe_unused]] auto server = CppUtils::Network::Server{};
+			auto _ = CppUtils::Network::Server{};
 		});
 
 		suite.addTest("Client Creation", [&] {
-			[[maybe_unused]] auto client = CppUtils::Network::Client{};
+			auto _ = CppUtils::Network::Client{};
 		});
 
 		suite.addTest("Server: Bind IP", [&] {

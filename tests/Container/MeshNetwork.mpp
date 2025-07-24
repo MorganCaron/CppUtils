@@ -10,7 +10,7 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 		using StringMeshNode = CppUtils::Container::MeshNodePtr<std::string, std::string>;
 
 		suite.addTest("Initialization", [&] {
-			[[maybe_unused]] auto bananaNode = StringMeshNode::make("banana");
+			auto _ = StringMeshNode::make("banana");
 		});
 
 		suite.addTest("Access value", [&] {

@@ -11,11 +11,11 @@ export namespace CppUtils::UnitTest::Container::NetworkPtr
 		using StringNetworkPtr = CppUtils::Container::NetworkPtr<std::string>;
 
 		suite.addTest("Create root", [&] {
-			[[maybe_unused]] auto root = NetworkPtr::makeRoot("Root");
+			auto _ = NetworkPtr::makeRoot("Root");
 		});
 
 		suite.addTest("Create node", [&] {
-			[[maybe_unused]] auto node = NetworkPtr::make("Node");
+			auto _ = NetworkPtr::make("Node");
 		});
 
 		suite.addTest("Read value", [&] {

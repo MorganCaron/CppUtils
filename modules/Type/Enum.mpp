@@ -21,7 +21,7 @@ export namespace CppUtils::Type::Enum
 		auto string = "Unknown"sv;
 
 		[&]<std::size_t... I>(std::index_sequence<I...>) constexpr {
-			[[maybe_unused]] auto result = ((value == std::get<I>(Values<Enum>) and (string = Name<std::get<I>(Values<Enum>)>, true)) or ...);
+			auto _ = ((value == std::get<I>(Values<Enum>) and (string = Name<std::get<I>(Values<Enum>)>, true)) or ...);
 		}(std::make_index_sequence<nbValues>{});
 
 		return string;

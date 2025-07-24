@@ -36,8 +36,8 @@ export namespace CppUtils::Terminal
 			m_modify{true},
 			m_file{file}
 		{
-			[[maybe_unused]] auto text = TextColor::getTextColorCode(textColor);
-			[[maybe_unused]] auto background = BackgroundColor::getBackgroundColorCode(backgroundColor);
+			auto text = TextColor::getTextColorCode(textColor);
+			auto background = BackgroundColor::getBackgroundColorCode(backgroundColor);
 #if defined(OS_WINDOWS)
 			m_attributes = getTextColor(m_file);
 			SetConsoleTextAttribute(getTerminalHandle(m_file), static_cast<std::uint16_t>((background << 4) + text));
