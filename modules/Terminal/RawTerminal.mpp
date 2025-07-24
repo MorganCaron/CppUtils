@@ -1,0 +1,60 @@
+module;
+
+#include <CppUtils/System/Windows.hpp>
+
+#if defined(OS_MAC) or defined(OS_LINUX)
+#	include <unistd.h>
+#	include <termios.h>
+#endif
+
+export module CppUtils.Terminal.RawTerminal;
+
+import std;
+
+export namespace CppUtils::Terminal
+{
+#if defined(OS_MAC) or defined(OS_LINUX)
+	class RawTerminal final
+	{
+	public:
+		inline RawTerminal()
+		{
+			tcgetattr(STDIN_FILENO, &m_oldTerminalState);
+
+			auto rawTerminal = m_oldTerminalState;
+			rawTerminal.c_lflag &= static_cast<tcflag_t>(~(ICANON | ECHO));
+			tcsetattr(STDIN_FILENO, TCSANOW, &rawTerminal);
+		}
+
+		inline ~RawTerminal()
+		{
+			tcsetattr(STDIN_FILENO, TCSANOW, &m_oldTerminalState);
+		}
+
+		[[nodiscard]] inline auto readChar() const -> char
+		{
+			auto c = char{};
+			if (::read(STDIN_FILENO, &c, 1) == 1)
+				return c;
+			return '\0';
+		}
+
+		[[nodiscard]] inline auto read(char sentinel) const -> std::string
+		{
+			using namespace std::literals;
+
+			auto string = ""s;
+			auto c = readChar();
+			while (c != '\0' and c != sentinel)
+			{
+				string += c;
+				c = readChar();
+			}
+			return string;
+		}
+
+	private:
+		termios m_oldTerminalState;
+	};
+#endif
+}

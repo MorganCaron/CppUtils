@@ -16,6 +16,7 @@ import std;
 import CppUtils.Container.Size2d;
 import CppUtils.System.Type;
 import CppUtils.String.Concept;
+import CppUtils.Terminal.RawTerminal;
 
 export namespace CppUtils::Terminal
 {
@@ -78,59 +79,14 @@ export namespace CppUtils::Terminal
 	}
 #endif
 
-#if defined(OS_MAC) or defined(OS_LINUX)
-	class RawTerminal final
-	{
-	public:
-		inline RawTerminal()
-		{
-			tcgetattr(STDIN_FILENO, &m_oldTerminalState);
-
-			auto rawTerminal = m_oldTerminalState;
-			rawTerminal.c_lflag &= static_cast<tcflag_t>(~(ICANON | ECHO));
-			tcsetattr(STDIN_FILENO, TCSANOW, &rawTerminal);
-		}
-
-		inline ~RawTerminal()
-		{
-			tcsetattr(STDIN_FILENO, TCSANOW, &m_oldTerminalState);
-		}
-
-		[[nodiscard]] inline auto readChar() const -> char
-		{
-			auto c = char{};
-			if (::read(STDIN_FILENO, &c, 1) == 1)
-				return c;
-			return '\0';
-		}
-
-		[[nodiscard]] inline auto read(char sentinel) const -> std::string
-		{
-			using namespace std::literals;
-
-			auto string = ""s;
-			auto c = readChar();
-			while (c != '\0' and c != sentinel)
-			{
-				string += c;
-				c = readChar();
-			}
-			return string;
-		}
-
-	private:
-		termios m_oldTerminalState;
-	};
-#endif
-
-	inline auto getTerminalName() -> std::wstring
+	inline auto getTerminalTitle() -> std::wstring
 	{
 #if defined(OS_WINDOWS)
-		auto name = std::wstring{};
+		auto title = std::wstring{};
 		constexpr auto size = 256uz;
-		name.resize(size);
-		::GetConsoleTitleW(std::data(name), size);
-		return name;
+		title.resize(size);
+		::GetConsoleTitleW(std::data(title), size);
+		return title;
 #elif defined(OS_MAC) or defined(OS_LINUX)
 		using namespace std::literals;
 
@@ -145,33 +101,33 @@ export namespace CppUtils::Terminal
 #endif
 	}
 
-	inline auto setTerminalName(const String::GenericText auto& name) -> void
+	inline auto setTerminalTitle(const String::GenericText auto& title) -> void
 	{
 #if defined(OS_WINDOWS)
-		::SetConsoleTitleW(std::data(name));
+		::SetConsoleTitleW(std::data(title));
 #elif defined(OS_MAC) or defined(OS_LINUX)
-		std::print("\x1B]0;{}\a", name);
+		std::print("\x1B]0;{}\a", title);
 		std::fflush(stdout);
 #endif
 	}
 
 	template<class String>
-	class TerminalName final
+	class TerminalTitle final
 	{
 	public:
-		inline TerminalName(String name):
-			m_oldName{getTerminalName()}
+		inline TerminalTitle(String title):
+			m_oldTitle{getTerminalTitle()}
 		{
-			setTerminalName(name);
+			setTerminalTitle(title);
 		}
 
-		inline ~TerminalName()
+		inline ~TerminalTitle()
 		{
-			setTerminalName(m_oldName);
+			setTerminalTitle(m_oldTitle);
 		}
 
 	private:
-		String m_oldName;
+		String m_oldTitle;
 	};
 
 #if defined(OS_WINDOWS)

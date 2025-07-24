@@ -2,6 +2,7 @@ export module CppUtils.Terminal;
 
 export import CppUtils.Terminal.BackgroundColor;
 export import CppUtils.Terminal.Canvas;
+export import CppUtils.Terminal.RawTerminal;
 export import CppUtils.Terminal.TextColor;
 export import CppUtils.Terminal.TextModifier;
 export import CppUtils.Terminal.TextStyle;
