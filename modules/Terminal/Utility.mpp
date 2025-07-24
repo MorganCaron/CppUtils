@@ -7,6 +7,7 @@ module;
 #if defined(OS_MAC) or defined(OS_LINUX)
 #	include <sys/ioctl.h>
 #	include <unistd.h>
+#	include <termios.h>
 #endif
 
 export module CppUtils.Terminal.Utility;
@@ -14,6 +15,7 @@ export module CppUtils.Terminal.Utility;
 import std;
 import CppUtils.Container.Size2d;
 import CppUtils.System.Type;
+import CppUtils.String.Concept;
 
 export namespace CppUtils::Terminal
 {
@@ -73,6 +75,140 @@ export namespace CppUtils::Terminal
 		return Container::Size2d<>{
 			windowsSize.ws_col,
 			windowsSize.ws_row};
+	}
+#endif
+
+#if defined(OS_MAC) or defined(OS_LINUX)
+	class RawTerminal final
+	{
+	public:
+		inline RawTerminal()
+		{
+			tcgetattr(STDIN_FILENO, &m_oldTerminalState);
+
+			auto rawTerminal = m_oldTerminalState;
+			rawTerminal.c_lflag &= static_cast<tcflag_t>(~(ICANON | ECHO));
+			tcsetattr(STDIN_FILENO, TCSANOW, &rawTerminal);
+		}
+
+		inline ~RawTerminal()
+		{
+			tcsetattr(STDIN_FILENO, TCSANOW, &m_oldTerminalState);
+		}
+
+		[[nodiscard]] inline auto readChar() const -> char
+		{
+			auto c = char{};
+			if (::read(STDIN_FILENO, &c, 1) == 1)
+				return c;
+			return '\0';
+		}
+
+		[[nodiscard]] inline auto read(char sentinel) const -> std::string
+		{
+			using namespace std::literals;
+
+			auto string = ""s;
+			auto c = readChar();
+			while (c != '\0' and c != sentinel)
+			{
+				string += c;
+				c = readChar();
+			}
+			return string;
+		}
+
+	private:
+		termios m_oldTerminalState;
+	};
+#endif
+
+	inline auto getTerminalName() -> std::wstring
+	{
+#if defined(OS_WINDOWS)
+		auto name = std::wstring{};
+		constexpr auto size = 256uz;
+		name.resize(size);
+		::GetConsoleTitleW(std::data(name), size);
+		return name;
+#elif defined(OS_MAC) or defined(OS_LINUX)
+		using namespace std::literals;
+
+		auto rawTerminal = RawTerminal{};
+		std::fwrite("\033]21;?\a", 1, 7, stdout);
+		std::fflush(stdout);
+
+		const auto response = rawTerminal.read('\a');
+		if (constexpr auto prefix = "\033]21;"sv; response.starts_with(prefix))
+			return std::wstring{std::cbegin(response) + std::size(prefix), std::cend(response)};
+		return std::wstring{};
+#endif
+	}
+
+	inline auto setTerminalName(const String::GenericText auto& name) -> void
+	{
+#if defined(OS_WINDOWS)
+		::SetConsoleTitleW(std::data(name));
+#elif defined(OS_MAC) or defined(OS_LINUX)
+		std::print("\x1B]0;{}\a", name);
+		std::fflush(stdout);
+#endif
+	}
+
+	template<class String>
+	class TerminalName final
+	{
+	public:
+		inline TerminalName(String name):
+			m_oldName{getTerminalName()}
+		{
+			setTerminalName(name);
+		}
+
+		inline ~TerminalName()
+		{
+			setTerminalName(m_oldName);
+		}
+
+	private:
+		String m_oldName;
+	};
+
+#if defined(OS_WINDOWS)
+	[[nodiscard]] inline auto getCursorPosition() -> std::expected<Container::Size2d<>, std::string_view>
+	{
+		auto consoleScreenBufferInfo = CONSOLE_SCREEN_BUFFER_INFO{};
+		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleScreenBufferInfo);
+		return Container::Size2d<>{
+			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.X),
+			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Y)};
+	}
+#elif defined(OS_MAC) or defined(OS_LINUX)
+	[[nodiscard]] inline auto getCursorPosition() -> std::expected<Container::Size2d<>, std::string_view>
+	{
+		using namespace std::literals;
+
+		auto rawTerminal = RawTerminal{};
+		std::print("\x1b[6n");
+		std::fflush(stdout);
+
+		const auto response = rawTerminal.read('R');
+		auto rows = 0, columns = 0;
+		if (std::sscanf(response.c_str(), "\x1b[%d;%d", &rows, &columns) == 2)
+			return Container::Size2d<>{static_cast<std::size_t>(columns - 1), static_cast<std::size_t>(rows - 1)};
+		return std::unexpected{"Cursor position retrieval failure"sv};
+	}
+#endif
+
+#if defined(OS_WINDOWS)
+	inline auto setCursorPosition(Container::Size2d<> position) -> void
+	{
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{position.x, position.y});
+	}
+#elif defined(OS_MAC) or defined(OS_LINUX)
+	inline auto setCursorPosition([[maybe_unused]] Container::Size2d<> position) -> void
+	{
+		std::print("\x1b[{};{}H", position.y + 1, position.x + 1);
 	}
 #endif
 }

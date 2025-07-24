@@ -1,0 +1,69 @@
+module;
+
+#include <stdio.h>
+
+export module CppUtils.Terminal.Canvas;
+
+import std;
+import CppUtils.Container.Size2d;
+import CppUtils.Terminal.Utility;
+
+export namespace CppUtils::Terminal
+{
+	class Canvas final
+	{
+	public:
+		struct StyledSegment final
+		{
+			std::size_t begin, end;
+		};
+
+		inline Canvas(Container::Size2d<> size = getTerminalSize()):
+			m_size{size},
+			m_buffer{std::string(m_size.x * m_size.y, ' ')}
+		{
+			if (m_size.y == 0)
+				return;
+			std::print("{}", std::string(m_size.y - 1, '\n'));
+			update();
+		}
+
+		inline ~Canvas()
+		{
+			std::puts("");
+		}
+
+		[[nodiscard]] inline constexpr auto getSize() const noexcept
+		{
+			return m_size;
+		}
+
+		inline auto fill(char c) noexcept
+		{
+			m_buffer.assign(m_size.x * m_size.y, c);
+		}
+
+		inline auto update() -> void
+		{
+			{
+				auto cursorPosition = getTerminalSize();
+				cursorPosition.x = 0;
+				cursorPosition.y -= m_size.y;
+				setCursorPosition(cursorPosition);
+			}
+			const auto buffer = std::string_view{m_buffer};
+			for (auto lineNb = 0uz; lineNb < m_size.y;)
+			{
+				std::fwrite(std::data(buffer.substr(lineNb * m_size.y, m_size.x)), sizeof(decltype(m_buffer)::value_type), m_size.x, stdout);
+				if (++lineNb != m_size.y)
+					std::fwrite("\n", 1, 1, stdout);
+			}
+			std::fflush(stdout);
+		}
+
+	private:
+		Container::Size2d<> m_size;
+		std::string m_buffer;
+		std::vector<StyledSegment> m_attributes;
+	};
+}

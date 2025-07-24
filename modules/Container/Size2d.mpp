@@ -7,11 +7,15 @@ export namespace CppUtils::Container
 	template<std::unsigned_integral T = std::size_t>
 	struct Size2d
 	{
-		inline Size2d(T c_width, T c_height):
-			width{c_width},
-			height{c_height}
+		inline Size2d() = default;
+		inline Size2d(T c_x, T c_y):
+			x{c_x},
+			y{c_y}
 		{}
 
-		T width, height;
+		T x, y;
 	};
+
+	template<std::unsigned_integral T>
+	Size2d(T, T) -> Size2d<T>;
 }
