@@ -36,10 +36,17 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 			for (auto i = 0uz; i < 5; ++i)
 				for (auto c : chars)
 				{
-					std::this_thread::sleep_for(50ms);
+					std::this_thread::sleep_for(75ms);
 					canvas.fill(c);
 					canvas.update();
 				}
+		});
+
+		suite.addTest("Print", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2d<>{10, 5}};
+			canvas.fill('.');
+			canvas.print(CppUtils::Container::Size2d<>{1, 1}, "Hello World!");
+			canvas.update();
 		});
 
 		suite.addTest("Progress bar", [&] {

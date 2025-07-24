@@ -7,6 +7,8 @@ export module CppUtils.Terminal.Canvas;
 import std;
 import CppUtils.Container.Size2d;
 import CppUtils.Terminal.Utility;
+import CppUtils.Terminal.Size;
+import CppUtils.Terminal.Cursor;
 
 export namespace CppUtils::Terminal
 {
@@ -33,14 +35,31 @@ export namespace CppUtils::Terminal
 			std::puts("");
 		}
 
-		[[nodiscard]] inline constexpr auto getSize() const noexcept
+		[[nodiscard]] inline constexpr auto getSize() const noexcept -> const auto&
 		{
 			return m_size;
 		}
 
-		inline auto fill(char c) noexcept
+		inline auto fill(char c) noexcept -> void
 		{
 			m_buffer.assign(m_size.x * m_size.y, c);
+		}
+
+		[[nodiscard]] inline auto getOrigin() const noexcept -> auto
+		{
+			return Container::Size2d<>{0, getTerminalSize().y - m_size.y};
+		}
+
+		inline auto print(Container::Size2d<> position, std::string_view text) noexcept -> void
+		{
+			const auto offset = position.x + position.y * m_size.x;
+			if (offset >= std::size(m_buffer))
+				return;
+
+			std::copy_n(
+				std::cbegin(text),
+				std::min(std::size(text), std::size(m_buffer) - offset),
+				std::begin(m_buffer) + static_cast<std::ptrdiff_t>(offset));
 		}
 
 		inline auto update() -> void
@@ -54,7 +73,7 @@ export namespace CppUtils::Terminal
 			const auto buffer = std::string_view{m_buffer};
 			for (auto lineNb = 0uz; lineNb < m_size.y;)
 			{
-				std::fwrite(std::data(buffer.substr(lineNb * m_size.y, m_size.x)), sizeof(decltype(m_buffer)::value_type), m_size.x, stdout);
+				std::fwrite(std::data(buffer.substr(lineNb * m_size.x, m_size.x)), sizeof(decltype(m_buffer)::value_type), m_size.x, stdout);
 				if (++lineNb != m_size.y)
 					std::fwrite("\n", 1, 1, stdout);
 			}

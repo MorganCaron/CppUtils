@@ -1,0 +1,43 @@
+module;
+
+#include <CppUtils/System/Windows.hpp>
+
+export module CppUtils.Terminal.Handle;
+
+import std;
+import CppUtils.System.Type;
+
+export namespace CppUtils::Terminal
+{
+#if defined(OS_WINDOWS)
+	[[nodiscard]] inline auto getTerminalHandle(std::FILE* file) -> System::Handle
+	{
+		auto terminalHandle = System::InvalidHandle;
+		if (file == stdout)
+			terminalHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+		else if (file == stderr)
+			terminalHandle = GetStdHandle(STD_ERROR_HANDLE);
+		return terminalHandle;
+	}
+
+	[[nodiscard]] inline auto getTerminalHandle(std::ostream& stream) -> System::Handle
+	{
+		auto terminalHandle = System::InvalidHandle;
+		if (&stream == &std::cout)
+			terminalHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+		else if (&stream == &std::cerr)
+			terminalHandle = GetStdHandle(STD_ERROR_HANDLE);
+		return terminalHandle;
+	}
+#else
+	[[nodiscard]] inline auto getTerminalHandle([[maybe_unused]] std::FILE* file) -> System::Handle
+	{
+		return System::InvalidHandle;
+	}
+
+	[[nodiscard]] inline auto getTerminalHandle([[maybe_unused]] std::ostream& stream) -> System::Handle
+	{
+		return System::InvalidHandle;
+	}
+#endif
+}

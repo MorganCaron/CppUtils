@@ -1,0 +1,52 @@
+module;
+
+#include <cstdio>
+
+#include <CppUtils/System/Windows.hpp>
+
+export module CppUtils.Terminal.Cursor;
+
+import std;
+import CppUtils.Container.Size2d;
+import CppUtils.Terminal.RawTerminal;
+
+export namespace CppUtils::Terminal
+{
+#if defined(OS_WINDOWS)
+	[[nodiscard]] inline auto getCursorPosition() -> std::expected<Container::Size2d<>, std::string_view>
+	{
+		auto consoleScreenBufferInfo = CONSOLE_SCREEN_BUFFER_INFO{};
+		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleScreenBufferInfo);
+		return Container::Size2d<>{
+			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.X),
+			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Y)};
+	}
+#elif defined(OS_MAC) or defined(OS_LINUX)
+	[[nodiscard]] inline auto getCursorPosition() -> std::expected<Container::Size2d<>, std::string_view>
+	{
+		using namespace std::literals;
+
+		auto rawTerminal = RawTerminal{};
+		std::print("\x1b[6n");
+		std::fflush(stdout);
+
+		const auto response = rawTerminal.read('R');
+		auto rows = 0, columns = 0;
+		if (std::sscanf(response.c_str(), "\x1b[%d;%d", &rows, &columns) == 2)
+			return Container::Size2d<>{static_cast<std::size_t>(columns - 1), static_cast<std::size_t>(rows - 1)};
+		return std::unexpected{"Cursor position retrieval failure"sv};
+	}
+#endif
+
+#if defined(OS_WINDOWS)
+	inline auto setCursorPosition(Container::Size2d<> position) -> void
+	{
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{position.x, position.y});
+	}
+#elif defined(OS_MAC) or defined(OS_LINUX)
+	inline auto setCursorPosition([[maybe_unused]] Container::Size2d<> position) -> void
+	{
+		std::print("\x1b[{};{}H", position.y + 1, position.x + 1);
+	}
+#endif
+}

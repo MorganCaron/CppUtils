@@ -1,0 +1,67 @@
+module;
+
+#include <cstdio>
+
+#include <CppUtils/System/Windows.hpp>
+
+export module CppUtils.Terminal.Title;
+
+import std;
+import CppUtils.Terminal.RawTerminal;
+import CppUtils.String.Concept;
+import CppUtils.String.Utility;
+
+export namespace CppUtils::Terminal
+{
+	inline auto getTerminalTitle() -> auto
+	{
+#if defined(OS_WINDOWS)
+		auto title = std::wstring{};
+		constexpr auto size = 256uz;
+		title.resize(size);
+		::GetConsoleTitleW(std::data(title), size);
+		return title;
+#elif defined(OS_MAC) or defined(OS_LINUX)
+		/*
+		using namespace std::literals;
+
+		auto rawTerminal = RawTerminal{};
+		std::fwrite("\033]21;?\a", 1, 7, stdout);
+		std::fflush(stdout);
+
+		const auto response = rawTerminal.read('\a');
+		if (constexpr auto prefix = "\033]21;"sv; response.starts_with(prefix))
+			return std::string{std::cbegin(response) + std::size(prefix), std::cend(response)};
+		*/
+		return std::string{};
+#endif
+	}
+
+	inline auto setTerminalTitle(const String::GenericText auto& title) -> void
+	{
+#if defined(OS_WINDOWS)
+		::SetConsoleTitleW(std::data(title));
+#elif defined(OS_MAC) or defined(OS_LINUX)
+		std::print("\x1B]0;{}\a", title);
+		std::fflush(stdout);
+#endif
+	}
+
+	class Title final
+	{
+	public:
+		inline Title(const String::GenericText auto& title):
+			m_oldTitle{getTerminalTitle()}
+		{
+			setTerminalTitle(title);
+		}
+
+		inline ~Title()
+		{
+			setTerminalTitle(m_oldTitle);
+		}
+
+	private:
+		std::invoke_result_t<decltype(getTerminalTitle)> m_oldTitle;
+	};
+}

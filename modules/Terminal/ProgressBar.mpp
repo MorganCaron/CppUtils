@@ -1,0 +1,26 @@
+export module CppUtils.Terminal.ProgressBar;
+
+import std;
+import CppUtils.Container.Size2d;
+import CppUtils.Terminal.Canvas;
+import CppUtils.Terminal.Size;
+
+export namespace CppUtils::Terminal
+{
+	class ProgressBar final
+	{
+	public:
+		inline ProgressBar():
+			m_canvas{Container::Size2d<>{getTerminalSize().x, 3}}
+		{
+			setPercent(0);
+		}
+
+		inline auto setPercent([[maybe_unused]] std::size_t percent) -> void
+		{
+		}
+
+	private:
+		Canvas m_canvas;
+	};
+}

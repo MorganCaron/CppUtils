@@ -6,9 +6,7 @@ export module CppUtils.Logger;
 
 import std;
 import CppUtils.String;
-import CppUtils.Terminal.TextColor;
-import CppUtils.Terminal.TextModifier;
-import CppUtils.Terminal.Utility;
+import CppUtils.Terminal;
 
 // Todo: log le datetime
 // Todo: log le stacktrace ( https://en.cppreference.com/w/cpp/utility/stacktrace_entry )

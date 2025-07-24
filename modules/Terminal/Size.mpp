@@ -1,0 +1,36 @@
+module;
+
+#include <CppUtils/System/Windows.hpp>
+
+#if defined(OS_MAC) or defined(OS_LINUX)
+#	include <sys/ioctl.h>
+#	include <unistd.h>
+#endif
+
+export module CppUtils.Terminal.Size;
+
+import std;
+import CppUtils.Container.Size2d;
+
+export namespace CppUtils::Terminal
+{
+#if defined(OS_WINDOWS)
+	[[nodiscard]] inline auto getTerminalSize() -> Container::Size2d<>
+	{
+		auto consoleScreenBufferInfo = CONSOLE_SCREEN_BUFFER_INFO{};
+		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleScreenBufferInfo);
+		return Container::Size2d<>{
+			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Right - consoleScreenBufferInfo.srWindow.Left + 1),
+			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Bottom - consoleScreenBufferInfo.srWindow.Top + 1)};
+	}
+#elif defined(OS_MAC) or defined(OS_LINUX)
+	[[nodiscard]] inline auto getTerminalSize() -> Container::Size2d<>
+	{
+		auto windowsSize = winsize{};
+		ioctl(STDOUT_FILENO, TIOCGWINSZ, &windowsSize);
+		return Container::Size2d<>{
+			windowsSize.ws_col,
+			windowsSize.ws_row};
+	}
+#endif
+}
