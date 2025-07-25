@@ -31,6 +31,11 @@ export namespace CppUtils::Container
 		[[nodiscard]] inline constexpr auto width(this auto&& self) noexcept -> decltype(auto) { return self[0]; }
 		[[nodiscard]] inline constexpr auto height(this auto&& self) noexcept -> decltype(auto) { return self[1]; }
 
+		[[nodiscard]] friend inline constexpr auto operator==(const Vec2& lhs, const Vec2& rhs) noexcept -> bool
+		{
+			return lhs.m_values == rhs.m_values;
+		}
+
 		inline constexpr auto apply(this auto&& self, auto&& function) noexcept -> decltype(auto)
 		{
 			for (const auto axis : {0uz, 1uz})
