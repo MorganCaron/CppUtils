@@ -5,7 +5,7 @@ module;
 export module CppUtils.Terminal.Canvas;
 
 import std;
-import CppUtils.Container.Size2d;
+import CppUtils.Container.Size;
 import CppUtils.Terminal.Utility;
 import CppUtils.Terminal.Size;
 import CppUtils.Terminal.Cursor;
@@ -20,13 +20,13 @@ export namespace CppUtils::Terminal
 			std::size_t begin, end;
 		};
 
-		inline Canvas(Container::Size2d<> size = getTerminalSize()):
+		inline Canvas(Container::Size2 size = getTerminalSize()):
 			m_size{size},
-			m_buffer{std::string(m_size.x * m_size.y, ' ')}
+			m_buffer{std::string(m_size.width() * m_size.height(), ' ')}
 		{
-			if (m_size.y == 0)
+			if (m_size.width() == 0 or m_size.height() == 0)
 				return;
-			std::print("{}", std::string(m_size.y - 1, '\n'));
+			std::print("{}", std::string(m_size.height() - 1, '\n'));
 			update();
 		}
 
@@ -42,17 +42,17 @@ export namespace CppUtils::Terminal
 
 		inline auto fill(char c) noexcept -> void
 		{
-			m_buffer.assign(m_size.x * m_size.y, c);
+			m_buffer.assign(m_size.width() * m_size.height(), c);
 		}
 
 		[[nodiscard]] inline auto getOrigin() const noexcept -> auto
 		{
-			return Container::Size2d<>{0, getTerminalSize().y - m_size.y};
+			return Container::Size2{0, getTerminalSize().height() - m_size.height()};
 		}
 
-		inline auto print(Container::Size2d<> position, std::string_view text) noexcept -> void
+		inline auto print(Container::Size2 position, std::string_view text) noexcept -> void
 		{
-			const auto offset = position.x + position.y * m_size.x;
+			const auto offset = position.x() + position.y() * m_size.width();
 			if (offset >= std::size(m_buffer))
 				return;
 
@@ -66,22 +66,22 @@ export namespace CppUtils::Terminal
 		{
 			{
 				auto cursorPosition = getTerminalSize();
-				cursorPosition.x = 0;
-				cursorPosition.y -= m_size.y;
+				cursorPosition.x() = 0;
+				cursorPosition.y() -= m_size.height();
 				setCursorPosition(cursorPosition);
 			}
 			const auto buffer = std::string_view{m_buffer};
-			for (auto lineNb = 0uz; lineNb < m_size.y;)
+			for (auto lineNb = 0uz; lineNb < m_size.height();)
 			{
-				std::fwrite(std::data(buffer.substr(lineNb * m_size.x, m_size.x)), sizeof(decltype(m_buffer)::value_type), m_size.x, stdout);
-				if (++lineNb != m_size.y)
+				std::fwrite(std::data(buffer.substr(lineNb * m_size.width(), m_size.width())), sizeof(decltype(m_buffer)::value_type), m_size.width(), stdout);
+				if (++lineNb != m_size.height())
 					std::fwrite("\n", 1, 1, stdout);
 			}
 			std::fflush(stdout);
 		}
 
 	private:
-		Container::Size2d<> m_size;
+		Container::Size2 m_size;
 		std::string m_buffer;
 		std::vector<StyledSegment> m_attributes;
 	};

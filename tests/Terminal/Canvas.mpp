@@ -11,13 +11,13 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 
 		suite.addTest("Size", [&] {
 			{
-				auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2d<>{10, 5}};
+				auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 5}};
 				canvas.fill('/');
 				canvas.update();
 				std::this_thread::sleep_for(300ms);
 			}
 			{
-				auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2d<>{16, 9}};
+				auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{16, 9}};
 				canvas.fill('.');
 				canvas.update();
 				std::this_thread::sleep_for(300ms);
@@ -31,7 +31,7 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 		});
 
 		suite.addTest("Fill", [&] {
-			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2d<>{10, 5}};
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 5}};
 			const auto chars = "-\\|/"sv;
 			for (auto i = 0uz; i < 5; ++i)
 				for (auto c : chars)
@@ -43,9 +43,9 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 		});
 
 		suite.addTest("Print", [&] {
-			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2d<>{10, 5}};
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 5}};
 			canvas.fill('.');
-			canvas.print(CppUtils::Container::Size2d<>{1, 1}, "Hello World!");
+			canvas.print(CppUtils::Container::Size2{1, 1}, "Hello World!");
 			canvas.update();
 		});
 
@@ -59,7 +59,44 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 		});
 
 		suite.addTest("Bouncing ball", [&] {
-			std::this_thread::sleep_for(3s);
+			const auto terminalSize = CppUtils::Terminal::getTerminalSize();
+			auto canvasSize = terminalSize;
+			canvasSize.height() = canvasSize.width() * 1 / 3;
+			auto canvas = CppUtils::Terminal::Canvas{canvasSize};
+			auto ballPosition = CppUtils::Container::Vec2<float>{};
+			auto ballVelocity = CppUtils::Container::Vec2<float>{1.f, 1.f};
+			auto charPosition = CppUtils::Container::Size2{};
+
+			for (auto i = 0uz; i <= 500; ++i)
+			{
+				canvas.print(charPosition, ".");
+				auto previousBallPosition = ballPosition;
+				ballPosition += ballVelocity; // Energie cinétique
+				ballVelocity *= .997f; // Frottements de l'air
+				ballVelocity.y() += .05f; // Gravité
+
+				for (const auto axis : {0uz, 1uz})
+					if (const auto limit = static_cast<float>(canvasSize[axis]); ballPosition[axis] < 0.f or ballPosition[axis] > limit)
+					{
+						const auto total = ballPosition[axis] - previousBallPosition[axis];
+						const auto over = ballPosition[axis] - std::clamp(ballPosition[axis], 0.f, limit);
+						const auto ratio = 1.f - over / total;
+						ballPosition = previousBallPosition + ballVelocity * ratio;
+						previousBallPosition = ballPosition - ballVelocity * (1.0f - ratio);
+						ballVelocity[axis] = -ballVelocity[axis];
+						ballPosition += ballVelocity * (1.f - ratio);
+						ballVelocity[axis] *= .75f; // Friction
+						if (std::abs(ballVelocity[axis]) < .1f)
+							ballVelocity[axis] = 0.f; // Immobilisation par frottements
+					}
+
+				charPosition.x() = static_cast<std::size_t>(std::roundf(ballPosition.x()));
+				charPosition.y() = static_cast<std::size_t>(std::roundf(ballPosition.y()));
+				canvas.print(charPosition, "O");
+
+				canvas.update();
+				std::this_thread::sleep_for(10ms);
+			}
 		});
 	}};
 }

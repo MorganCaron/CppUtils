@@ -10,25 +10,25 @@ module;
 export module CppUtils.Terminal.Size;
 
 import std;
-import CppUtils.Container.Size2d;
+import CppUtils.Container.Size;
 
 export namespace CppUtils::Terminal
 {
 #if defined(OS_WINDOWS)
-	[[nodiscard]] inline auto getTerminalSize() -> Container::Size2d<>
+	[[nodiscard]] inline auto getTerminalSize() -> Container::Size2
 	{
 		auto consoleScreenBufferInfo = CONSOLE_SCREEN_BUFFER_INFO{};
 		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleScreenBufferInfo);
-		return Container::Size2d<>{
+		return Container::Size2{
 			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Right - consoleScreenBufferInfo.srWindow.Left + 1),
 			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Bottom - consoleScreenBufferInfo.srWindow.Top + 1)};
 	}
 #elif defined(OS_MAC) or defined(OS_LINUX)
-	[[nodiscard]] inline auto getTerminalSize() -> Container::Size2d<>
+	[[nodiscard]] inline auto getTerminalSize() -> Container::Size2
 	{
 		auto windowsSize = winsize{};
 		ioctl(STDOUT_FILENO, TIOCGWINSZ, &windowsSize);
-		return Container::Size2d<>{
+		return Container::Size2{
 			windowsSize.ws_col,
 			windowsSize.ws_row};
 	}

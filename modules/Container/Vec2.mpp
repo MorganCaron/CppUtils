@@ -1,0 +1,97 @@
+module;
+
+#include <cassert>
+
+export module CppUtils.Container.Vec2;
+
+import std;
+
+export namespace CppUtils::Container
+{
+	template<class T>
+	requires (std::integral<T> or std::floating_point<T>)
+	struct Vec2 final
+	{
+		inline constexpr Vec2() = default;
+
+		template<std::convertible_to<T>... Args>
+		requires (sizeof...(Args) == 2)
+		inline constexpr Vec2(Args&&... args):
+			m_values{static_cast<T>(args)...}
+		{}
+
+		[[nodiscard]] inline constexpr auto operator[](this auto&& self, std::size_t axis) noexcept -> decltype(auto)
+		{
+			assert(axis < 2);
+			return self.m_values[axis];
+		}
+
+		[[nodiscard]] inline constexpr auto x(this auto&& self) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto y(this auto&& self) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto width(this auto&& self) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto height(this auto&& self) noexcept -> decltype(auto) { return self[1]; }
+
+		inline constexpr auto apply(this auto&& self, auto&& function) noexcept -> decltype(auto)
+		{
+			for (const auto axis : {0uz, 1uz})
+				function(axis);
+			return self;
+		}
+
+		inline constexpr auto operator+=(const Vec2<T>& rhs) noexcept -> decltype(auto)
+		{
+			return apply([this, rhs](std::size_t axis) { m_values[axis] += rhs[axis]; });
+		}
+
+		inline constexpr auto operator-=(const Vec2<T>& rhs) noexcept -> decltype(auto)
+		{
+			return apply([this, rhs](std::size_t axis) { m_values[axis] -= rhs[axis]; });
+		}
+
+		inline constexpr auto operator*=(T value) noexcept -> decltype(auto)
+		{
+			return apply([this, value](std::size_t axis) { m_values[axis] *= value; });
+		}
+
+		inline constexpr auto operator/=(T value) noexcept -> decltype(auto)
+		{
+			return apply([this, value](std::size_t axis) { m_values[axis] /= value; });
+		}
+
+		std::array<T, 2> m_values;
+	};
+
+	template<class T>
+	Vec2(T, T) -> Vec2<T>;
+
+	template<class T>
+	[[nodiscard]] inline constexpr auto operator+(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept -> Vec2<T>
+	{
+		return auto{lhs} += rhs;
+	}
+
+	template<class T>
+	[[nodiscard]] inline constexpr auto operator-(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept -> Vec2<T>
+	{
+		return auto{lhs} -= rhs;
+	}
+
+	template<class T>
+	[[nodiscard]] inline constexpr auto operator*(const Vec2<T>& lhs, T value) noexcept -> Vec2<T>
+	{
+		return auto{lhs} *= value;
+	}
+
+	template<class T>
+	[[nodiscard]] inline constexpr auto operator*(T value, const Vec2<T>& rhs) noexcept -> Vec2<T>
+	{
+		return auto{rhs} += value;
+	}
+
+	template<class T>
+	[[nodiscard]] inline constexpr auto operator/(const Vec2<T>& lhs, T value) noexcept -> Vec2<T>
+	{
+		return auto{lhs} /= value;
+	}
+
+}

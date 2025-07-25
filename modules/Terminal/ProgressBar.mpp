@@ -1,7 +1,7 @@
 export module CppUtils.Terminal.ProgressBar;
 
 import std;
-import CppUtils.Container.Size2d;
+import CppUtils.Container.Size;
 import CppUtils.Terminal.Canvas;
 import CppUtils.Terminal.Size;
 
@@ -12,19 +12,19 @@ export namespace CppUtils::Terminal
 	public:
 		inline ProgressBar(std::string name = ""):
 			m_name{std::move(name)},
-			m_canvas{Container::Size2d<>{getTerminalSize().x, 1}}
+			m_canvas{Container::Size2{getTerminalSize().width(), 1}}
 		{
 			setPercent(0);
 		}
 
 		inline auto setPercent(std::size_t percent) -> void
 		{
-			if (m_canvas.getSize().x < std::size(m_name) - 9)
+			if (m_canvas.getSize().width() < std::size(m_name) - 9)
 				return;
-			auto width = m_canvas.getSize().x - std::size(m_name) - 9;
+			auto width = m_canvas.getSize().width() - std::size(m_name) - 9;
 			auto progress = percent * width / 100;
 			auto string = std::format("{} [{}{}] {:>3}% ", m_name, std::string(progress, '#'), std::string(width - progress, '.'), percent);
-			m_canvas.print(Container::Size2d<>{0, 0}, string);
+			m_canvas.print(Container::Size2{0, 0}, string);
 			m_canvas.update();
 		}
 

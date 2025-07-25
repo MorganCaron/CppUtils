@@ -1,0 +1,98 @@
+module;
+
+#include <cassert>
+
+export module CppUtils.Container.Vec3;
+
+import std;
+
+export namespace CppUtils::Container
+{
+	template<class T>
+	requires (std::integral<T> or std::floating_point<T>)
+	struct Vec3 final
+	{
+		inline constexpr Vec3() = default;
+
+		template<std::convertible_to<T>... Args>
+		requires (sizeof...(Args) == 3)
+		inline constexpr Vec3(Args&&... args):
+			m_values{static_cast<T>(args)...}
+		{}
+
+		[[nodiscard]] inline constexpr auto operator[](this auto&& self, std::size_t axis) noexcept -> decltype(auto)
+		{
+			assert(axis < 3);
+			return self.m_values[axis];
+		}
+
+		[[nodiscard]] inline constexpr auto x(this auto&& self) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto y(this auto&& self) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto z(this auto&& self) noexcept -> decltype(auto) { return self[2]; }
+		[[nodiscard]] inline constexpr auto width(this auto&& self) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto height(this auto&& self) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto depth(this auto&& self) noexcept -> decltype(auto) { return self[2]; }
+
+		inline constexpr auto apply(this auto&& self, auto&& function) noexcept -> decltype(auto)
+		{
+			for (const auto axis : {0uz, 1uz, 2uz})
+				function(axis);
+			return self;
+		}
+
+		inline constexpr auto operator+=(const Vec3<T>& rhs) noexcept -> decltype(auto)
+		{
+			return apply([this, rhs](std::size_t axis) { m_values[axis] += rhs[axis]; });
+		}
+
+		inline constexpr auto operator-=(const Vec3<T>& rhs) noexcept -> decltype(auto)
+		{
+			return apply([this, rhs](std::size_t axis) { m_values[axis] -= rhs[axis]; });
+		}
+
+		inline constexpr auto operator*=(T value) noexcept -> decltype(auto)
+		{
+			return apply([this, value](std::size_t axis) { m_values[axis] *= value; });
+		}
+
+		inline constexpr auto operator/=(T value) noexcept -> decltype(auto)
+		{
+			return apply([this, value](std::size_t axis) { m_values[axis] /= value; });
+		}
+
+		std::array<T, 3> m_values;
+	};
+
+	template<class T>
+	Vec3(T, T, T) -> Vec3<T>;
+
+	template<class T>
+	[[nodiscard]] inline constexpr auto operator+(const Vec3<T>& lhs, const Vec3<T>& rhs) noexcept -> Vec3<T>
+	{
+		return auto{lhs} += rhs;
+	}
+
+	template<class T>
+	[[nodiscard]] inline constexpr auto operator-(const Vec3<T>& lhs, const Vec3<T>& rhs) noexcept -> Vec3<T>
+	{
+		return auto{lhs} -= rhs;
+	}
+
+	template<class T>
+	[[nodiscard]] inline constexpr auto operator*(const Vec3<T>& lhs, T value) noexcept -> Vec3<T>
+	{
+		return auto{lhs} *= value;
+	}
+
+	template<class T>
+	[[nodiscard]] inline constexpr auto operator*(T value, const Vec3<T>& rhs) noexcept -> Vec3<T>
+	{
+		return auto{rhs} *= value;
+	}
+
+	template<class T>
+	[[nodiscard]] inline constexpr auto operator/(const Vec3<T>& lhs, T value) noexcept -> Vec3<T>
+	{
+		return auto{lhs} /= value;
+	}
+}

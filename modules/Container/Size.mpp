@@ -1,0 +1,11 @@
+export module CppUtils.Container.Size;
+
+import std;
+import CppUtils.Container.Vec2;
+import CppUtils.Container.Vec3;
+
+export namespace CppUtils::Container
+{
+	using Size2 = Vec2<std::size_t>;
+	using Size3 = Vec3<std::size_t>;
+}

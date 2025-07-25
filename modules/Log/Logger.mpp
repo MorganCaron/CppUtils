@@ -56,7 +56,7 @@ export namespace CppUtils
 		{
 			using namespace std::literals;
 			auto line = ""s;
-			auto terminalWidth = Terminal::getTerminalSize().x;
+			auto terminalWidth = Terminal::getTerminalSize().width();
 			for (auto i = 0uz; i < terminalWidth; ++i)
 				line += "─";
 			auto [textModifier, message] = format<logType>("");
@@ -69,7 +69,7 @@ export namespace CppUtils
 		{
 			using namespace std::literals;
 			auto line = ""s;
-			auto terminalWidth = Terminal::getTerminalSize().x;
+			auto terminalWidth = Terminal::getTerminalSize().width();
 			for (auto i = 0uz; i < terminalWidth; ++i)
 				line += "─";
 			auto [textModifier, message] = format<logType>("");
@@ -128,7 +128,7 @@ export namespace CppUtils
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Yellow},
-			std::format("{:^{}}\n{} ⚠\n", "🛆 WARNING 🛆", Terminal::getTerminalSize().x, message)};
+			std::format("{:^{}}\n{} ⚠\n", "🛆 WARNING 🛆", Terminal::getTerminalSize().width(), message)};
 	}
 
 	template<>
@@ -137,7 +137,7 @@ export namespace CppUtils
 	{
 		return {
 			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red},
-			std::format("{:^{}}\n{} ✕\n", "🛇 ERROR 🛇", Terminal::getTerminalSize().x, message)};
+			std::format("{:^{}}\n{} ✕\n", "🛇 ERROR 🛇", Terminal::getTerminalSize().width(), message)};
 	}
 
 	inline auto logException(const std::exception& exception, std::size_t depth = 0) -> void
