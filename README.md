@@ -46,7 +46,7 @@ The [unit tests](tests) serve as examples of how to use these functions.
 
 ## Getting Started
 
-A C++23 compliant compiler with std module support and XMake is needed to build CppUtils
+A C++26 compliant compiler with std module support and XMake is needed to build CppUtils
 
 This library is used in my C++ projects, but you can also use it in your projects.
 Just follow the installation steps and consult the documentation for each feature you need.

@@ -14,29 +14,29 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 				auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2d<>{10, 5}};
 				canvas.fill('/');
 				canvas.update();
-				std::this_thread::sleep_for(500ms);
+				std::this_thread::sleep_for(300ms);
 			}
 			{
 				auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2d<>{16, 9}};
 				canvas.fill('.');
 				canvas.update();
-				std::this_thread::sleep_for(500ms);
+				std::this_thread::sleep_for(300ms);
 			}
 			{
 				auto canvas = CppUtils::Terminal::Canvas{};
 				canvas.fill('#');
 				canvas.update();
-				std::this_thread::sleep_for(500ms);
+				std::this_thread::sleep_for(300ms);
 			}
 		});
 
 		suite.addTest("Fill", [&] {
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2d<>{10, 5}};
-			const auto chars = "-\\||/"sv;
+			const auto chars = "-\\|/"sv;
 			for (auto i = 0uz; i < 5; ++i)
 				for (auto c : chars)
 				{
-					std::this_thread::sleep_for(75ms);
+					std::this_thread::sleep_for(100ms);
 					canvas.fill(c);
 					canvas.update();
 				}
@@ -50,7 +50,12 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 		});
 
 		suite.addTest("Progress bar", [&] {
-			std::this_thread::sleep_for(3s);
+			auto progressBar = CppUtils::Terminal::ProgressBar{"Progress bar"};
+			for (auto i = 0uz; i <= 100; ++i)
+			{
+				progressBar.setPercent(i);
+				std::this_thread::sleep_for(20ms);
+			}
 		});
 
 		suite.addTest("Bouncing ball", [&] {
