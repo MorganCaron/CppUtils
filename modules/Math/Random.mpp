@@ -1,8 +1,8 @@
-export module CppUtils.Random;
+export module CppUtils.Math.Random;
 
 import std;
 
-export namespace CppUtils::Random
+export namespace CppUtils::Math
 {
 	template<std::integral Integer>
 	inline auto getRandomNumberInInterval(Integer min, Integer max) -> Integer

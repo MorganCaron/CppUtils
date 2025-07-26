@@ -1,10 +1,22 @@
 export module CppUtils.Math.Float;
 
 import std;
-import CppUtils.Math;
 
 export namespace CppUtils::Math
 {
+	// Plus utile en C++23 (std::abs constexpr)
+	[[nodiscard]] inline constexpr auto absolute(auto number) -> decltype(auto)
+	{
+		if constexpr (std::unsigned_integral<decltype(number)>)
+			return number;
+		else if constexpr (std::floating_point<decltype(number)>)
+			return number < 0 ? -number : number;
+		else
+			return number < 0 ?
+				static_cast<std::make_unsigned_t<decltype(number)>>(-number) :
+				static_cast<std::make_unsigned_t<decltype(number)>>(number);
+	}
+
 	template<std::floating_point Float>
 	[[nodiscard]] inline constexpr auto isEqual(Float lhs, Float rhs, Float epsilon = std::numeric_limits<Float>::epsilon()) noexcept -> bool
 	{

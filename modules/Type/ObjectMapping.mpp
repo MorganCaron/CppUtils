@@ -1,10 +1,10 @@
-export module CppUtils.Language.Mapping;
+export module CppUtils.Type.ObjectMapping;
 
 import std;
 
 import CppUtils.String;
 
-export namespace CppUtils::Language::Mapping
+export namespace CppUtils::Type::ObjectMapping
 {
 	template<class Object, class Property>
 	struct Attribute final
