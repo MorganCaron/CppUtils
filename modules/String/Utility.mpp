@@ -125,7 +125,7 @@ export namespace CppUtils::String
 		return rightTrimString(leftTrimString(stringView));
 	}
 
-	[[nodiscard]] inline auto getPrintableChar(char c) -> std::string
+	[[nodiscard]] inline auto getPrintableChar(Char auto c) -> std::string
 	{
 		using namespace std::literals;
 		return std::isprint(c) ? ("'"s + c + '\'') : std::to_string(c);

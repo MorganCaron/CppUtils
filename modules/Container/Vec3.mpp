@@ -9,7 +9,7 @@ import std;
 export namespace CppUtils::Container
 {
 	template<class T>
-	requires (std::integral<T> or std::floating_point<T>)
+	requires (std::is_arithmetic_v<T>)
 	struct Vec3 final
 	{
 		inline constexpr Vec3() = default;
