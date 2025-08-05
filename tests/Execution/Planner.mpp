@@ -1,0 +1,54 @@
+export module CppUtils.UnitTests.Execution.Planner;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Execution::Planner
+{
+	inline auto _ = TestSuite{
+		"Execution/Planner", {"UnitTest"}, [](auto& suite) {
+		using namespace std::chrono_literals;
+
+		suite.addTest("Schedule and execute", [&] {
+			auto planner = CppUtils::Execution::Planner{};
+			auto executed = std::atomic<bool>{false};
+
+			planner.schedule([&executed] {
+				executed = true;
+			}, 50ms);
+
+			std::this_thread::sleep_for(100ms);
+
+			suite.expect(executed.load());
+		});
+
+		suite.addTest("Cancel tasks on destruction", [&] {
+			auto executed = std::atomic<bool>{false};
+
+			{
+				auto planner = CppUtils::Execution::Planner{};
+
+				planner.schedule([&executed] {
+					executed = true;
+				}, 200ms);
+			}
+
+			std::this_thread::sleep_for(300ms);
+
+			suite.expect(not executed.load());
+		});
+
+		suite.addTest("Multiple tasks", [&] {
+			auto planner = CppUtils::Execution::Planner{};
+			auto counter = std::atomic<std::size_t>{0};
+
+			planner.schedule([&counter] { ++counter; }, 10ms);
+			planner.schedule([&counter] { ++counter; }, 20ms);
+			planner.schedule([&counter] { ++counter; }, 30ms);
+
+			std::this_thread::sleep_for(50ms);
+
+			suite.expectEqual(counter.load(), 3uz);
+		});
+	}};
+}

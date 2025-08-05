@@ -1,0 +1,37 @@
+export module CppUtils.Execution.Planner;
+
+import std;
+import CppUtils.Chrono;
+
+export namespace CppUtils::Execution
+{
+	class Planner final
+	{
+	public:
+		inline ~Planner()
+		{
+			m_active = false;
+			m_conditionVariable.notify_all();
+		}
+
+		inline auto schedule(auto&& function, CppUtils::Chrono::Duration auto delay) -> void
+		{
+			if (not m_active)
+				return;
+
+			m_threads.emplace_back(std::jthread{[this, function = std::forward<decltype(function)>(function), delay]() mutable -> void {
+				auto lockGuard = std::unique_lock{m_mutex};
+				if (m_conditionVariable.wait_for(lockGuard, delay, [this] { return not m_active.load(); }))
+					return;
+				if (m_active)
+					function();
+			}});
+		}
+
+	private:
+		std::atomic<bool> m_active = true;
+		std::vector<std::jthread> m_threads;
+		std::mutex m_mutex;
+		std::condition_variable m_conditionVariable;
+	};
+}
