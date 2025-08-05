@@ -95,5 +95,22 @@ export namespace CppUtils::UnitTest::Execution::EventSystem
 			suite.expectCall(expectPingReceived);
 			suite.expectCall(expectPongReceived);
 		});
+
+		suite.addTest("Multiple subscribers", [&] {
+			auto eventSystem = CppUtils::Execution::EventSystem{};
+			auto expect1 = ExpectedCall{};
+			auto expect2 = ExpectedCall{};
+
+			eventSystem.subscribe<"Event">([&expect1](std::nullptr_t) -> void {
+				expect1.call();
+			});
+			eventSystem.subscribe<"Event">([&expect2](std::nullptr_t) -> void {
+				expect2.call();
+			});
+			eventSystem.emit<"Event">(nullptr);
+
+			suite.expectCall(expect1);
+			suite.expectCall(expect2);
+		});
 	}};
 }
