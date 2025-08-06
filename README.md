@@ -38,6 +38,10 @@
 - [`TypedStack`](modules/Container/TypedStack.mpp) - Multi-type stack with exact object size layout, suitable for argument passing and VM stacks
 - [`Vec2`](modules/Container/Vec2.mpp) / [`Vec3`](modules/Container/Vec3.mpp) - 2D/3D math vectors with operators and common functions
 
+### 🚀 Execution
+- [`EventSystem`](modules/Execution/EventSystem.mpp) - Event system to subscribe functions and trigger actions by event name
+- [`Planner`](modules/Execution/Planner.mpp) - Simple scheduler to run delayed functions on separate threads
+
 ### 📁 File System
 - [`Watcher`](modules/FileSystem/Watcher.mpp) - File modification watcher
 
