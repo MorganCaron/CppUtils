@@ -53,8 +53,8 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 
 		suite.addTest("Watch file creation", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto expectCreateFile = ExpectedCall{};
-				auto expectCloseFile = ExpectedCall{};
+				auto expectCreateFile = std::atomic<bool>{false};
+				auto expectCloseFile = std::atomic<bool>{false};
 				auto filePath = directory / "test.tmp";
 
 				auto watcher = CppUtils::FileSystem::Watcher{};
@@ -70,7 +70,7 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 						const std::filesystem::path& eventFilePath) -> void {
 					suite.expectEqual(event, CppUtils::FileSystem::Event::Created);
 					suite.expectEqual(eventFilePath, filePath);
-					expectCreateFile.call();
+					expectCreateFile = true;
 				});
 				watcher.onEvent(CppUtils::FileSystem::Event::CloseWrite,
 					[&suite, &expectCloseFile, &filePath](
@@ -78,18 +78,19 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 						const std::filesystem::path& eventFilePath) -> void {
 					suite.expectEqual(event, CppUtils::FileSystem::Event::CloseWrite);
 					suite.expectEqual(eventFilePath, filePath);
-					expectCloseFile.call();
+					expectCloseFile = true;
 				});
 
 				CppUtils::FileSystem::String::write(directory / "test.tmp", "Hello World!");
-				suite.expectCall(expectCreateFile, 100ms);
-				suite.expectCall(expectCloseFile, 100ms);
+				std::this_thread::sleep_for(100ms);
+				suite.expect(expectCreateFile);
+				suite.expect(expectCloseFile);
 			}};
 		});
 
 		suite.addTest("Watch file modification", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto expectModifyFile = ExpectedCall{};
+				auto expectModifyFile = std::atomic<bool>{false};
 				auto filePath = directory / "test.tmp";
 				CppUtils::FileSystem::String::write(filePath, "Foo");
 
@@ -106,17 +107,18 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 						const std::filesystem::path& eventFilePath) -> void {
 					suite.expectEqual(event, CppUtils::FileSystem::Event::CloseWrite);
 					suite.expectEqual(eventFilePath, filePath);
-					expectModifyFile.call();
+					expectModifyFile = true;
 				});
 
 				CppUtils::FileSystem::String::write(filePath, "Bar");
-				suite.expectCall(expectModifyFile, 100ms);
+				std::this_thread::sleep_for(100ms);
+				suite.expect(expectModifyFile);
 			}};
 		});
 
 		suite.addTest("Watch file modification in a directory", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto expectModifyFile = ExpectedCall{};
+				auto expectModifyFile = std::atomic<bool>{false};
 				auto filePath = directory / "test.tmp";
 				CppUtils::FileSystem::String::write(filePath, "Foo");
 
@@ -133,17 +135,18 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 						const std::filesystem::path& eventFilePath) -> void {
 					suite.expectEqual(event, CppUtils::FileSystem::Event::CloseWrite);
 					suite.expectEqual(eventFilePath, filePath);
-					expectModifyFile.call();
+					expectModifyFile = true;
 				});
 
 				CppUtils::FileSystem::String::write(filePath, "Bar");
-				suite.expectCall(expectModifyFile, 100ms);
+				std::this_thread::sleep_for(100ms);
+				suite.expect(expectModifyFile);
 			}};
 		});
 
 		suite.addTest("Watch file deletion", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto expectDeleteFile = ExpectedCall{};
+				auto expectDeleteFile = std::atomic<bool>{false};
 				auto filePath = directory / "test.tmp";
 				CppUtils::FileSystem::String::write(filePath, "Hello World!");
 
@@ -160,11 +163,12 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 						const std::filesystem::path& eventFilePath) -> void {
 					suite.expectEqual(event, CppUtils::FileSystem::Event::Deleted);
 					suite.expectEqual(eventFilePath, filePath);
-					expectDeleteFile.call();
+					expectDeleteFile = true;
 				});
 
 				std::filesystem::remove(filePath);
-				suite.expectCall(expectDeleteFile, 100ms);
+				std::this_thread::sleep_for(100ms);
+				suite.expect(expectDeleteFile);
 			}};
 		});
 	}};

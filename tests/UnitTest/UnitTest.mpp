@@ -19,15 +19,6 @@ export namespace CppUtils::UnitTest
 			suite.expectEqual("test"sv, "test"sv);
 		});
 
-		suite.addTest("ExpectedCall", [&] {
-			auto expectCall = ExpectedCall{};
-			auto function = [&expectCall] {
-				expectCall.call();
-			};
-			function();
-			suite.expectCall(expectCall);
-		});
-
 		suite.addTest("DummyObject - No Copy No Move", [&] {
 			auto object = DummyObject{"DummyObject"};
 			suite.expectEqual(object.getCopyCount(), 0uz);

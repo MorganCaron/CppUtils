@@ -19,26 +19,26 @@ export namespace CppUtils::UnitTest::Thread::ThreadPool
 		});
 
 		suite.addTest("1 task with future.wait()", [&] {
-			auto expectCall = ExpectedCall{};
+			auto called = std::atomic<bool>{false};
 			{
 				auto threadPool = CppUtils::Thread::ThreadPool{};
-				auto future = threadPool.call([&expectCall] {
-					expectCall.call();
+				auto future = threadPool.call([&called] {
+					called = true;
 				});
 				future.wait();
 			}
-			suite.expectCall(expectCall);
+			suite.expect(called);
 		});
 
 		suite.addTest("1 task without future.wait()", [&] {
-			auto expectCall = ExpectedCall{};
+			auto called = std::atomic<bool>{false};
 			{
 				auto threadPool = CppUtils::Thread::ThreadPool{};
-				auto future = threadPool.call([&expectCall] {
-					expectCall.call();
+				auto future = threadPool.call([&called] {
+					called = true;
 				});
 			}
-			suite.expectCall(expectCall);
+			suite.expect(called);
 		});
 	}};
 }
