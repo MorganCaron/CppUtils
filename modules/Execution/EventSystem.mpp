@@ -8,14 +8,13 @@ export namespace CppUtils::Execution
 {
 	class EventSystem final
 	{
-		using GenericFunction = std::unique_ptr<void, void (*)(void*)>;
 		using Key = std::pair<String::Hash, std::type_index>;
 
 	public:
 		template<String::Hasher eventName = String::Hash{}>
-		inline auto emit(auto event) -> void
+		inline auto emit(const auto& event) -> void
 		{
-			using Event = decltype(event);
+			using Event = std::remove_cvref_t<decltype(event)>;
 			auto lockGuard = std::shared_lock{m_mutex};
 
 			auto key = std::make_pair(static_cast<String::Hash>(eventName), std::type_index{typeid(Event)});
@@ -23,7 +22,7 @@ export namespace CppUtils::Execution
 				return;
 			else
 				for (auto& function : subscriberIt->second)
-					std::invoke(*static_cast<std::function<void(const Event&)>*>(function.get()), event);
+					function(std::addressof(event));
 		}
 
 		template<String::Hasher eventName = String::Hash{}>
@@ -34,16 +33,16 @@ export namespace CppUtils::Execution
 			using ArgumentsTypes = FunctionInformations::ArgumentsTypes;
 			constexpr auto nbArguments = std::tuple_size_v<ArgumentsTypes>;
 			static_assert(nbArguments == 1, "EventSystem: subscribed callable must take exactly one argument");
-			using Event = std::tuple_element_t<0, ArgumentsTypes>;
+			using Event = std::remove_cvref_t<std::tuple_element_t<0, ArgumentsTypes>>;
 
 			auto lockGuard = std::unique_lock{m_mutex};
-
 			auto key = std::make_pair(static_cast<String::Hash>(eventName), std::type_index{typeid(Event)});
 
-			using Function = std::function<void(const Event&)>;
-			auto functionPointer = std::make_unique<Function>(std::forward<decltype(function)>(function));
-			auto genericPointer = GenericFunction{functionPointer.release(), [](void* pointer) { delete static_cast<Function*>(pointer); }};
-			m_subscribers[key].emplace_back(std::move(genericPointer));
+			m_subscribers[key].emplace_back(
+				[function = std::forward<decltype(function)>(function)](const void* baseEvent) -> void {
+				const Event& event = *static_cast<const Event*>(baseEvent);
+				function(event);
+			});
 		}
 
 	private:
@@ -56,6 +55,6 @@ export namespace CppUtils::Execution
 		};
 
 		std::shared_mutex m_mutex;
-		std::unordered_map<Key, std::vector<GenericFunction>, PairHasher> m_subscribers;
+		std::unordered_map<Key, std::vector<std::function<void(const void*)>>, PairHasher> m_subscribers;
 	};
 }
