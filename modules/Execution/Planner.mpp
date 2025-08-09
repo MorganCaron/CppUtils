@@ -14,13 +14,14 @@ export namespace CppUtils::Execution
 			m_conditionVariable.notify_all();
 		}
 
-		inline auto schedule(auto&& function, CppUtils::Chrono::Duration auto delay) -> void
+		inline auto schedule(auto&& function, const CppUtils::Chrono::Duration auto& delay) -> void
 		{
 			if (not m_active)
 				return;
 
+			auto lockGuard = std::unique_lock{m_mutex};
 			m_threads.emplace_back(std::jthread{[this, function = std::forward<decltype(function)>(function), delay]() mutable -> void {
-				auto lockGuard = std::unique_lock{m_mutex};
+				auto lockGuard = std::unique_lock{m_conditionVariableMutex};
 				if (m_conditionVariable.wait_for(lockGuard, delay, [this] { return not m_active.load(); }))
 					return;
 				if (m_active)
@@ -29,9 +30,10 @@ export namespace CppUtils::Execution
 		}
 
 	private:
-		std::atomic<bool> m_active = true;
-		std::vector<std::jthread> m_threads;
 		std::mutex m_mutex;
+		std::atomic_bool m_active = true;
+		std::vector<std::jthread> m_threads;
+		std::mutex m_conditionVariableMutex;
 		std::condition_variable m_conditionVariable;
 	};
 }

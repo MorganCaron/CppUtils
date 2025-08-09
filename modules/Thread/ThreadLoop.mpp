@@ -43,7 +43,8 @@ export namespace CppUtils::Thread
 				try
 				{
 					while (not stopToken.stop_requested())
-						data->function();
+						if (data->function)
+							data->function();
 					return;
 				}
 				catch (const std::exception& exception)

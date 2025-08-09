@@ -52,29 +52,29 @@ export namespace CppUtils::Container
 			return ptr;
 		}
 
-		[[nodiscard]] inline auto isRoot() const -> bool
+		[[nodiscard]] inline auto isRoot() const noexcept -> bool
 		{
 			return m_isRoot;
 		}
 
-		[[nodiscard]] inline auto isTemporary() const -> bool
+		[[nodiscard]] inline auto isTemporary() const noexcept -> bool
 		{
 			return not m_isRoot and std::empty(m_parents);
 		}
 
-		inline auto setRoot(bool isRoot) -> void
+		inline auto setRoot(bool isRoot) noexcept -> void
 		{
 			m_isRoot = isRoot;
 			if (m_isRoot)
 				m_distanceFromRoot = 0;
 		}
 
-		inline auto setWeakThis(WeakPtr ptr) -> void
+		inline auto setWeakThis(WeakPtr ptr) noexcept -> void
 		{
 			m_weak_this = std::move(ptr);
 		}
 
-		[[nodiscard]] inline auto getDistanceFromRoot() const -> std::size_t
+		[[nodiscard]] inline auto getDistanceFromRoot() const noexcept -> std::size_t
 		{
 			return m_distanceFromRoot;
 		}

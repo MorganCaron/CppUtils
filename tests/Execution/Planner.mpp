@@ -11,7 +11,7 @@ export namespace CppUtils::UnitTest::Execution::Planner
 
 		suite.addTest("Schedule and execute", [&] {
 			auto planner = CppUtils::Execution::Planner{};
-			auto executed = std::atomic<bool>{false};
+			auto executed = std::atomic_bool{false};
 
 			planner.schedule([&executed] {
 				executed = true;
@@ -23,7 +23,7 @@ export namespace CppUtils::UnitTest::Execution::Planner
 		});
 
 		suite.addTest("Cancel tasks on destruction", [&] {
-			auto executed = std::atomic<bool>{false};
+			auto executed = std::atomic_bool{false};
 
 			{
 				auto planner = CppUtils::Execution::Planner{};
@@ -40,7 +40,7 @@ export namespace CppUtils::UnitTest::Execution::Planner
 
 		suite.addTest("Multiple tasks", [&] {
 			auto planner = CppUtils::Execution::Planner{};
-			auto counter = std::atomic<std::size_t>{0};
+			auto counter = std::atomic_size_t{0};
 
 			planner.schedule([&counter] { ++counter; }, 10ms);
 			planner.schedule([&counter] { ++counter; }, 20ms);
