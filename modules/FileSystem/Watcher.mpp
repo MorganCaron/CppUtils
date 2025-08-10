@@ -53,14 +53,14 @@ export namespace CppUtils::FileSystem
 				m_event.events = EPOLLIN | EPOLLET;
 				m_event.data.fd = m_inotify;
 				System::throwErrno(
-					epoll_ctl(m_eventPoll, EPOLL_CTL_ADD, m_inotify, &m_event),
+					epoll_ctl(m_eventPoll, EPOLL_CTL_ADD, m_inotify, std::addressof(m_event)),
 					"Can't add inotify file descriptor to epoll");
 			}
 			{
 				m_stopEvent.events = EPOLLIN | EPOLLET;
 				m_stopEvent.data.fd = m_stopPipe.read;
 				System::throwErrno(
-					epoll_ctl(m_eventPoll, EPOLL_CTL_ADD, m_stopPipe.read, &m_stopEvent),
+					epoll_ctl(m_eventPoll, EPOLL_CTL_ADD, m_stopPipe.read, std::addressof(m_stopEvent)),
 					"Can't add pipe file descriptor to epoll");
 			}
 #elif defined(OS_MACOS)
@@ -137,7 +137,7 @@ export namespace CppUtils::FileSystem
 					auto eventFileDescriptor = m_events[i].data.fd;
 					if (eventFileDescriptor == m_stopPipe.read)
 						continue;
-					length = read(eventFileDescriptor, &buffer, std::size(buffer));
+					length = read(eventFileDescriptor, std::addressof(buffer), std::size(buffer));
 					if (length == -1 and errno == EINTR)
 						break;
 				}
@@ -241,7 +241,7 @@ export namespace CppUtils::FileSystem
 		{
 #if defined(OS_LINUX)
 			auto value = std::uint8_t{0};
-			write(m_stopPipe.write, &value, 1uz);
+			write(m_stopPipe.write, std::addressof(value), 1uz);
 #endif
 		}
 

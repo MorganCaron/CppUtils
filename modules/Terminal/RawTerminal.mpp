@@ -19,22 +19,22 @@ export namespace CppUtils::Terminal
 	public:
 		inline RawTerminal()
 		{
-			tcgetattr(STDIN_FILENO, &m_oldTerminalState);
+			tcgetattr(STDIN_FILENO, std::addressof(m_oldTerminalState));
 
 			auto rawTerminal = m_oldTerminalState;
 			rawTerminal.c_lflag &= static_cast<tcflag_t>(~(ICANON | ECHO));
-			tcsetattr(STDIN_FILENO, TCSANOW, &rawTerminal);
+			tcsetattr(STDIN_FILENO, TCSANOW, std::addressof(rawTerminal));
 		}
 
 		inline ~RawTerminal()
 		{
-			tcsetattr(STDIN_FILENO, TCSANOW, &m_oldTerminalState);
+			tcsetattr(STDIN_FILENO, TCSANOW, std::addressof(m_oldTerminalState));
 		}
 
 		[[nodiscard]] inline auto readChar() const -> char
 		{
 			auto c = char{};
-			if (::read(STDIN_FILENO, &c, 1) == 1)
+			if (::read(STDIN_FILENO, std::addressof(c), 1) == 1)
 				return c;
 			return '\0';
 		}

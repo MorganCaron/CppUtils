@@ -33,7 +33,7 @@ export namespace CppUtils::Container
 			if (offset + sizeof(decltype(value)) > std::size(m_data)) [[unlikely]]
 				return std::unexpected{"Stack underflow"sv};
 			auto* destination = std::data(m_data) + std::size(m_data) - offset - sizeof(decltype(value));
-			std::memcpy(destination, &value, sizeof(decltype(value)));
+			std::memcpy(destination, std::addressof(value), sizeof(decltype(value)));
 			return {};
 		}
 
@@ -50,7 +50,7 @@ export namespace CppUtils::Container
 			if (offset + sizeof(T) > std::size(m_data)) [[unlikely]]
 				return std::unexpected{"Stack underflow"sv};
 			auto value = T{};
-			std::memcpy(&value, std::data(m_data) + std::size(m_data) - offset - sizeof(T), sizeof(T));
+			std::memcpy(std::addressof(value), std::data(m_data) + std::size(m_data) - offset - sizeof(T), sizeof(T));
 			return value;
 		}
 

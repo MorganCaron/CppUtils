@@ -33,7 +33,7 @@ namespace CppUtils::Language::IR::VirtualMachine
 			else if (instruction.name == "$STR")
 				programMemory.push(reinterpret_cast<std::uintptr_t>(compilerOutput.stringConstants.data() + instruction.value));
 			else
-				programMemory.push(reinterpret_cast<std::uintptr_t>(&instruction.name));
+				programMemory.push(reinterpret_cast<std::uintptr_t>(std::addressof(instruction.name)));
 			programMemory.registerFile[instruction.parametersId.at(0)] = isNumber ? instruction.value : programMemory.registerVariables.stackPointer;
 			programMemory.goToNextInstruction();
 		}

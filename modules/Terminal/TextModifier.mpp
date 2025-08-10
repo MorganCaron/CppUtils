@@ -53,7 +53,7 @@ export namespace CppUtils::Terminal
 
 		inline ~TextModifier()
 		{
-			if (!m_modify)
+			if (not m_modify)
 				return;
 #if defined(OS_WINDOWS)
 			SetConsoleTextAttribute(getTerminalHandle(m_file), m_attributes);
@@ -66,7 +66,7 @@ export namespace CppUtils::Terminal
 		[[nodiscard]] inline static auto getTextColor(std::FILE* file) -> std::uint16_t
 		{
 			CONSOLE_SCREEN_BUFFER_INFO info;
-			if (!GetConsoleScreenBufferInfo(getTerminalHandle(file), &info))
+			if (not GetConsoleScreenBufferInfo(getTerminalHandle(file), std::addressof(info)))
 				return 0;
 			return info.wAttributes;
 		}
@@ -74,7 +74,7 @@ export namespace CppUtils::Terminal
 		[[nodiscard]] static inline auto getTextColor(std::ostream& stream) -> std::uint16_t
 		{
 			CONSOLE_SCREEN_BUFFER_INFO info;
-			if (!GetConsoleScreenBufferInfo(getTerminalHandle(stream), &info))
+			if (not GetConsoleScreenBufferInfo(getTerminalHandle(stream), std::addressof(info)))
 				return 0;
 			return info.wAttributes;
 		}

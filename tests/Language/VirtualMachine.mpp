@@ -256,7 +256,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 		suite.addTest("external pointer", [&] {
 			constexpr auto source = u8"(:0, 1;R"sv;
 			constexpr auto number = 42;
-			auto result = VM::execute<int, std::size_t, const int*>(source, &number);
+			auto result = VM::execute<int, std::size_t, const int*>(source, std::addressof(number));
 			suite.expectEqual(result, number);
 		});
 
@@ -277,7 +277,7 @@ export namespace CppUtils::UnitTest::Language::VirtualMachine
 		suite.addTest("external member function", [&] {
 			constexpr auto source = u8"(0, 1;, 2;)"sv;
 			constexpr auto input = u8"Hello World!"sv;
-			auto result = VM::execute<std::size_t, const std::u8string_view*>(source, &input, &std::u8string_view::size);
+			auto result = VM::execute<std::size_t, const std::u8string_view*>(source, std::addressof(input), &std::u8string_view::size);
 			suite.expectEqual(result, std::size(input));
 		});
 

@@ -23,9 +23,9 @@ export namespace CppUtils::Terminal
 	[[nodiscard]] inline auto getTerminalHandle(std::ostream& stream) -> System::Handle
 	{
 		auto terminalHandle = System::InvalidHandle;
-		if (&stream == &std::cout)
+		if (std::addressof(stream) == std::addressof(std::cout))
 			terminalHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-		else if (&stream == &std::cerr)
+		else if (std::addressof(stream) == std::addressof(std::cerr))
 			terminalHandle = GetStdHandle(STD_ERROR_HANDLE);
 		return terminalHandle;
 	}

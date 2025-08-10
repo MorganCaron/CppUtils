@@ -44,7 +44,7 @@ export namespace CppUtils::FileSystem
 			auto file = std::ofstream{filePath, std::ios::binary};
 			if (not file.is_open())
 				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
-			file.write(reinterpret_cast<const char*>(&buffer), sizeof(buffer));
+			file.write(reinterpret_cast<const char*>(std::addressof(buffer)), sizeof(buffer));
 		}
 
 		template<class T>
@@ -54,7 +54,7 @@ export namespace CppUtils::FileSystem
 			if (not file.is_open())
 				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
 			auto buffer = T{};
-			file.read(reinterpret_cast<char*>(&buffer), sizeof(buffer));
+			file.read(reinterpret_cast<char*>(std::addressof(buffer)), sizeof(buffer));
 			return buffer;
 		}
 

@@ -34,7 +34,7 @@ export namespace CppUtils::Network
 #endif
 				throw std::runtime_error{"CppUtils::Network::Client::connect: Invalid socket handle"};
 			throwErrno(
-				::connect(nativeHandle(), reinterpret_cast<sockaddr*>(&address.storage), address.length),
+				::connect(nativeHandle(), reinterpret_cast<sockaddr*>(std::addressof(address.storage)), address.length),
 				"CppUtils::Network::Client::connect");
 		}
 	};

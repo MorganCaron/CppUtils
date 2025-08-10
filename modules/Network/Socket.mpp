@@ -30,7 +30,7 @@ export namespace CppUtils::Network
 		inline WindowsSocketApi()
 		{
 			WSADATA m_windowsSocketApiData;
-			if (::WSAStartup(MAKEWORD(2, 2), &m_windowsSocketApiData) != 0)
+			if (::WSAStartup(MAKEWORD(2, 2), std::addressof(m_windowsSocketApiData)) != 0)
 				throw std::runtime_error{"Failed to initialize Winsock"};
 		}
 
@@ -61,9 +61,9 @@ export namespace CppUtils::Network
 #endif
 
 #if defined(OS_WINDOWS)
-	inline constexpr auto throwErrno = &WindowsSocketApi::throwErrno;
+	inline constexpr auto throwErrno = std::addressof(WindowsSocketApi::throwErrno);
 #elif defined(OS_LINUX)
-	inline constexpr auto throwErrno = &System::throwErrno;
+	inline constexpr auto throwErrno = std::addressof(System::throwErrno);
 #endif
 
 	class Socket
@@ -183,7 +183,7 @@ export namespace CppUtils::Network
 		inline auto setReuseAddress(bool enable) const -> void
 		{
 			auto value = enable ? 1 : 0;
-			if (not setSocketOption(m_socket, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(value)))
+			if (not setSocketOption(m_socket, SOL_SOCKET, SO_REUSEADDR, std::addressof(value), sizeof(value)))
 				throw std::runtime_error{"CppUtils::Network::Socket::setReuseAddress: Failed to set SO_REUSEADDR option"};
 		}
 
@@ -192,7 +192,7 @@ export namespace CppUtils::Network
 			m_isBlocking = enable;
 #if defined(OS_WINDOWS)
 			auto mode = enable ? u_long{0} : u_long{1};
-			if (::ioctlsocket(m_socket, static_cast<long>(FIONBIO), &mode) != 0)
+			if (::ioctlsocket(m_socket, static_cast<long>(FIONBIO), std::addressof(mode)) != 0)
 				throw std::runtime_error{"CppUtils::Network::Socket::setBlocking: Failed to set blocking mode"};
 #elif defined(OS_LINUX)
 			auto flags = ::fcntl(m_socket, F_GETFL);
@@ -211,7 +211,7 @@ export namespace CppUtils::Network
 		{
 #if defined(OS_WINDOWS)
 			auto mode = u_long{};
-			::ioctlsocket(m_socket, static_cast<long>(FIONBIO), &mode);
+			::ioctlsocket(m_socket, static_cast<long>(FIONBIO), std::addressof(mode));
 			return mode == 0;
 #elif defined(OS_LINUX)
 			int flags = ::fcntl(m_socket, F_GETFL, 0);
@@ -225,8 +225,8 @@ export namespace CppUtils::Network
 		{
 			using namespace std::chrono_literals;
 			auto readSet = fd_set{};
-			FD_ZERO(&readSet);
-			FD_SET(m_socket, &readSet);
+			FD_ZERO(std::addressof(readSet));
+			FD_SET(m_socket, std::addressof(readSet));
 
 			auto timeValue = timeval{};
 			timeValue.tv_sec = std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
@@ -237,7 +237,7 @@ export namespace CppUtils::Network
 			// @see https://stackoverflow.com/questions/72759272/how-to-deal-with-socket-in-select-method
 			auto result = -1;
 #else
-			auto result = select(m_socket + 1, &readSet, nullptr, nullptr, &timeValue);
+			auto result = select(m_socket + 1, std::addressof(readSet), nullptr, nullptr, std::addressof(timeValue));
 #endif
 			if (result < 0)
 				throw std::runtime_error{"CppUtils::Network::Socket::isReadyForRead: Select failed"};
@@ -271,26 +271,26 @@ export namespace CppUtils::Network
 			auto address = Address{};
 			if (m_domain == Domain::IPV4)
 			{
-				auto* ipv4 = reinterpret_cast<sockaddr_in*>(&address.storage);
+				auto* ipv4 = reinterpret_cast<sockaddr_in*>(std::addressof(address.storage));
 				ipv4->sin_family = AF_INET;
 				ipv4->sin_port = ::htons(port);
 
 				if (ip.empty())
 					ipv4->sin_addr.s_addr = INADDR_ANY;
-				else if (::inet_pton(AF_INET, std::data(ip), &ipv4->sin_addr) <= 0)
+				else if (::inet_pton(AF_INET, std::data(ip), std::addressof(ipv4->sin_addr)) <= 0)
 					throw std::invalid_argument{"CppUtils::Network::Socket::makeAddress: Invalid IPv4 address"};
 
 				address.length = sizeof(sockaddr_in);
 			}
 			else if (m_domain == Domain::IPV6)
 			{
-				auto* ipv6 = reinterpret_cast<sockaddr_in6*>(&address.storage);
+				auto* ipv6 = reinterpret_cast<sockaddr_in6*>(std::addressof(address.storage));
 				ipv6->sin6_family = AF_INET6;
 				ipv6->sin6_port = ::htons(port);
 
 				if (ip.empty())
 					ipv6->sin6_addr = in6addr_any;
-				else if (::inet_pton(AF_INET6, std::data(ip), &ipv6->sin6_addr) <= 0)
+				else if (::inet_pton(AF_INET6, std::data(ip), std::addressof(ipv6->sin6_addr)) <= 0)
 					throw std::invalid_argument{"CppUtils::Network::Socket::makeAddress: Invalid IPv6 address"};
 
 				address.length = sizeof(sockaddr_in6);
@@ -304,9 +304,9 @@ export namespace CppUtils::Network
 		inline auto send(const CppUtils::Type::TriviallyCopyable auto& data) -> void
 		{
 #ifdef OS_WINDOWS
-			if (::send(m_socket, std::bit_cast<const char*>(&data), sizeof(decltype(data)), 0) < 0)
+			if (::send(m_socket, std::bit_cast<const char*>(std::addressof(data)), sizeof(decltype(data)), 0) < 0)
 #else
-			if (::send(m_socket, std::bit_cast<const void*>(&data), sizeof(decltype(data)), 0) < 0)
+			if (::send(m_socket, std::bit_cast<const void*>(std::addressof(data)), sizeof(decltype(data)), 0) < 0)
 #endif
 				throw std::runtime_error{"CppUtils::Network::Socket::send: Send failed"};
 		}
@@ -364,7 +364,7 @@ export namespace CppUtils::Network
 			auto data = T{};
 			for (auto totalBytesReceived = 0uz; totalBytesReceived < sizeof(T);)
 			{
-				auto bytesReceived = ::recv(m_socket, reinterpret_cast<char*>(&data) + totalBytesReceived, sizeof(T) - totalBytesReceived, 0);
+				auto bytesReceived = ::recv(m_socket, reinterpret_cast<char*>(std::addressof(data)) + totalBytesReceived, sizeof(T) - totalBytesReceived, 0);
 				if (bytesReceived < 0)
 				{
 #if defined(OS_WINDOWS)

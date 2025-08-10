@@ -32,7 +32,7 @@ export namespace CppUtils::Terminal
 
 		const auto response = rawTerminal.read('R');
 		auto rows = 0, columns = 0;
-		if (std::sscanf(response.c_str(), "\x1b[%d;%d", &rows, &columns) == 2)
+		if (std::sscanf(response.c_str(), "\x1b[%d;%d", std::addressof(rows), std::addressof(columns)) == 2)
 			return Container::Size2{columns - 1, rows - 1};
 		return std::unexpected{"Cursor position retrieval failure"sv};
 	}
