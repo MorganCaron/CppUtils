@@ -20,7 +20,7 @@ export namespace CppUtils::Thread
 
 		[[nodiscard]] inline auto operator->() & noexcept -> T*
 		{
-			return &value();
+			return std::addressof(value());
 		}
 
 		[[nodiscard]] inline auto getLockGuard() & noexcept -> auto&
@@ -31,6 +31,35 @@ export namespace CppUtils::Thread
 	private:
 		mutable std::unique_lock<Mutex> m_lockGuard;
 		std::reference_wrapper<T> m_value;
+	};
+
+	template<class T, class Mutex>
+	class Accessor<const T, Mutex> final
+	{
+	public:
+		inline explicit Accessor(Mutex& mutex, const T& value):
+			m_lockGuard{mutex},
+			m_value{std::cref(value)}
+		{}
+
+		[[nodiscard]] inline auto value() & noexcept -> const T&
+		{
+			return m_value.get();
+		}
+
+		[[nodiscard]] inline auto operator->() & noexcept -> const T*
+		{
+			return std::addressof(value());
+		}
+
+		[[nodiscard]] inline auto getLockGuard() & noexcept -> auto&
+		{
+			return m_lockGuard;
+		}
+
+	private:
+		std::unique_lock<Mutex> m_lockGuard;
+		std::reference_wrapper<const T> m_value;
 	};
 
 	template<class Mutex, class T>
@@ -44,13 +73,23 @@ export namespace CppUtils::Thread
 			m_value{std::forward<decltype(args)>(args)...}
 		{}
 
-		[[nodiscard]] inline auto access() -> Accessor<T, std::mutex>
+		[[nodiscard]] inline auto access() & -> Accessor<T, std::mutex>
+		{
+			return Accessor{m_mutex, m_value};
+		}
+
+		inline auto access() const& -> Accessor<const T, std::mutex>
+		{
+			return Accessor{m_mutex, m_value};
+		}
+
+		inline auto access() const&& -> Accessor<const T, std::mutex>
 		{
 			return Accessor{m_mutex, m_value};
 		}
 
 	private:
-		std::mutex m_mutex;
+		mutable std::mutex m_mutex;
 		T m_value;
 	};
 

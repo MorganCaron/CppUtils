@@ -6,11 +6,9 @@ export namespace CppUtils::UnitTest::Thread::UniqueLocker
 {
 	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/UniqueLocker", {"UnitTest"}, [](auto& suite) {
 		suite.addTest("Access", [&] {
-			auto lockedString = CppUtils::Thread::UniqueLocker<std::string>{"Foo"};
-			{
-				auto accessor = lockedString.access();
-				suite.expect(accessor.value() == "Foo");
-			}
+			auto lockedString = CppUtils::Thread::UniqueLocker<std::string>{"Test"};
+			auto accessor = lockedString.access();
+			suite.expect(accessor.value() == "Test");
 		});
 
 		suite.addTest("Test mutex", [&] {
@@ -32,6 +30,24 @@ export namespace CppUtils::UnitTest::Thread::UniqueLocker
 			}
 			auto accessor = lockedNumber.access();
 			suite.expectEqual(accessor.value(), iterations * 2);
+		});
+
+		suite.addTest("Const access", [&] {
+			const auto constLockedString = CppUtils::Thread::UniqueLocker<std::string>{"Test"};
+			auto accessor = constLockedString.access();
+			suite.expect(accessor.value() == "Test");
+		});
+
+		suite.addTest("Const& access", [&] {
+			const auto& constLockedString = CppUtils::Thread::UniqueLocker<std::string>{"Test"};
+			auto accessor = constLockedString.access();
+			suite.expect(accessor.value() == "Test");
+		});
+
+		suite.addTest("Const&& access", [&] {
+			const auto&& constLockedString = CppUtils::Thread::UniqueLocker<std::string>{"Test"};
+			auto accessor = constLockedString.access();
+			suite.expect(accessor.value() == "Test");
 		});
 	}};
 }

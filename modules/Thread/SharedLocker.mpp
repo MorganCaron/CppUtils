@@ -21,7 +21,7 @@ export namespace CppUtils::Thread
 
 		[[nodiscard]] inline auto operator->() const& noexcept -> const T*
 		{
-			return &value();
+			return std::addressof(value());
 		}
 
 		[[nodiscard]] inline auto getLockGuard() const& noexcept -> auto&
