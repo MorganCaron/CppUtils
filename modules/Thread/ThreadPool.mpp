@@ -1,7 +1,7 @@
 export module CppUtils.Thread.ThreadPool;
 
 import std;
-
+import CppUtils.Logger;
 import CppUtils.Thread.ThreadLoop;
 import CppUtils.Thread.UniqueLocker;
 
@@ -9,7 +9,7 @@ export namespace CppUtils::Thread
 {
 	class ThreadPool final
 	{
-	private:
+		using Logger = Logger<"CppUtils">;
 		using Task = std::function<void()>;
 
 	public:
@@ -18,24 +18,34 @@ export namespace CppUtils::Thread
 		{
 			m_workers.reserve(m_numberThreads);
 			for (auto i = 0uz; i < m_numberThreads; ++i)
-				m_workers.emplace_back(std::bind(&ThreadPool::workerThread, this), std::bind(&ThreadPool::interruptFunction, this)).start();
+				m_workers.emplace_back(
+							 [this] { workerThread(); },
+							 [this] { m_startWorkingCondition.notify_all(); },
+							 [this](std::exception_ptr exceptionPointer) { handleError(exceptionPointer); })
+					.start();
 		}
+
+		ThreadPool(const ThreadPool&) = delete;
+		ThreadPool& operator=(const ThreadPool&) = delete;
+		ThreadPool(ThreadPool&&) = delete;
+		ThreadPool& operator=(ThreadPool&&) = delete;
 
 		~ThreadPool()
 		{
 			for (auto& worker : m_workers)
 				worker.requestStop();
+			m_startWorkingCondition.notify_all();
 			for (auto& worker : m_workers)
 				worker.stop();
 		}
 
-		template<typename Func, typename... Args>
+		template<class Func, class... Args>
 		inline auto call(Func&& function, Args&&... args) -> std::future<std::invoke_result_t<Func, Args...>>
 		{
 			using ReturnType = std::invoke_result_t<Func, Args...>;
 			auto task = std::make_shared<std::packaged_task<ReturnType()>>(std::bind(
-				std::forward<decltype(function)>(function),
-				std::forward<decltype(args)>(args)...));
+				std::forward<Func>(function),
+				std::forward<Args>(args)...));
 			auto future = task->get_future();
 			{
 				auto tasksQueueAccessor = m_tasksQueue.access();
@@ -47,11 +57,17 @@ export namespace CppUtils::Thread
 
 		inline auto waitUntilFinished() -> void
 		{
-			auto lockGuard = std::unique_lock{m_standByMutex};
+			auto lockGuard = std::unique_lock{m_waitingMutex};
 			if (m_activeWorkers != 0 and not isTasksQueueEmpty())
-				m_standByCondition.wait(lockGuard, [this] {
+				m_waitUntilFinishedCondition.wait(lockGuard, [this] {
 					return m_activeWorkers == 0 and isTasksQueueEmpty();
 				});
+		}
+
+		inline auto setOnError(std::function<void(std::exception_ptr)> onError) noexcept -> void
+		{
+			auto lockGuard = std::unique_lock{m_onErrorMutex};
+			m_onError = std::move(onError);
 		}
 
 	private:
@@ -61,6 +77,14 @@ export namespace CppUtils::Thread
 			return std::empty(tasksQueueAccessor.value());
 		}
 
+		[[nodiscard]] inline auto isStopRequested() const noexcept -> bool
+		{
+			for (const auto& worker : m_workers)
+				if (worker.isStopRequested())
+					return true;
+			return false;
+		}
+
 		inline auto workerThread() -> void
 		{
 			if (isTasksQueueEmpty())
@@ -68,31 +92,65 @@ export namespace CppUtils::Thread
 				auto tasksQueueAccessor = m_tasksQueue.access();
 				m_startWorkingCondition.wait(tasksQueueAccessor.getLockGuard());
 			}
-			if (isTasksQueueEmpty())
-				return;
-			++m_activeWorkers;
+
 			auto task = Task{};
 			{
 				auto tasksQueueAccessor = m_tasksQueue.access();
+				if (std::empty(tasksQueueAccessor.value()))
+					return;
 				task = std::move(tasksQueueAccessor->front());
 				tasksQueueAccessor->pop();
 			}
-			task();
-			if (--m_activeWorkers == 0)
-				m_standByCondition.notify_all();
+
+			m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
+			try
+			{
+				task();
+			}
+			catch (...)
+			{
+				handleError(std::current_exception());
+			}
+			m_activeWorkers.fetch_sub(1, std::memory_order_relaxed);
+
+			if (m_activeWorkers.load(std::memory_order_relaxed) == 0 and isTasksQueueEmpty())
+			{
+				auto lockGuard = std::lock_guard{m_waitingMutex};
+				m_waitUntilFinishedCondition.notify_all();
+			}
 		}
 
-		inline auto interruptFunction() -> void
+		inline auto handleError(std::exception_ptr exceptionPointer) noexcept -> void
 		{
-			m_startWorkingCondition.notify_all();
+			if (auto lockGuard = std::shared_lock{m_onErrorMutex}; m_onError)
+			{
+				try
+				{
+					m_onError(exceptionPointer);
+				}
+				catch (const std::exception& exception)
+				{
+					Logger::print<"error">("ThreadPool: onError threw an exception: {}", exception.what());
+				}
+				catch (...)
+				{
+					Logger::print<"error">("ThreadPool: onError threw a non-std exception");
+				}
+			}
 		}
 
+	private:
 		std::size_t m_numberThreads;
 		std::atomic_size_t m_activeWorkers = 0;
-		mutable UniqueLocker<std::queue<Task>> m_tasksQueue;
+
 		std::condition_variable m_startWorkingCondition;
-		std::mutex m_standByMutex;
-		std::condition_variable m_standByCondition;
 		std::vector<ThreadLoop> m_workers;
+		UniqueLocker<std::queue<Task>> m_tasksQueue;
+
+		std::mutex m_waitingMutex;
+		std::condition_variable m_waitUntilFinishedCondition;
+
+		mutable std::shared_mutex m_onErrorMutex;
+		std::function<void(std::exception_ptr)> m_onError;
 	};
 }

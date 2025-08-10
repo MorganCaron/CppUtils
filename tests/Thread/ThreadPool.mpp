@@ -6,6 +6,8 @@ import CppUtils;
 export namespace CppUtils::UnitTest::Thread::ThreadPool
 {
 	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/ThreadPool", {"UnitTest"}, [](auto& suite) {
+		using Logger = CppUtils::Logger<"CppUtils">;
+
 		suite.addTest("0 task / 1 thread", [&] {
 			auto _ = CppUtils::Thread::ThreadPool{1};
 		});
@@ -39,6 +41,32 @@ export namespace CppUtils::UnitTest::Thread::ThreadPool
 				});
 			}
 			suite.expect(called);
+		});
+
+		suite.addTest("Error handling", [&] {
+			auto threadPool = CppUtils::Thread::ThreadPool{};
+			auto called = std::atomic_bool{false};
+			threadPool.setOnError([&suite, &called](std::exception_ptr exceptionPointer) {
+				called = true;
+				try
+				{
+					if (exceptionPointer)
+						std::rethrow_exception(exceptionPointer);
+				}
+				catch (const std::exception& exception)
+				{
+					Logger::print<"error">("ThreadPool: Unhandled exception: {}", exception.what());
+					suite.expectEqual(exception.what(), "Test error");
+				}
+				catch (...)
+				{
+					Logger::print<"error">("ThreadPool: Unhandled non-std exception");
+				}
+			});
+			auto future = threadPool.call([] {
+				throw std::runtime_error{"Test error"};
+			});
+			future.wait();
 		});
 	}};
 }
