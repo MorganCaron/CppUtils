@@ -28,14 +28,12 @@ add_rules(
 	"mode.check",
 	"mode.profile",
 	"mode.coverage",
-	"mode.valgrind",
-	"mode.asan",
-	"mode.tsan",
-	"mode.lsan",
-	"mode.ubsan")
+	"mode.valgrind")
 
-option("enable_tests")
-option("enable_moduleonly", {default = true})
+option("enable_moduleonly", {default = true, category = "Build CppUtils", description = "Module only"})
+option("sanitize_memory", {default = false, category = "Build CppUtils/Sanitizer", description = "Enable ASan + LSan + UBSan"})
+option("sanitize_thread", {default = false, category = "Build CppUtils/Sanitizer", description = "Enable TSan"})
+option("enable_tests", {default = true, description = "Enable Unit Tests"})
 
 target("CppUtils", function()
 	if get_config("enable_moduleonly") then
@@ -48,6 +46,16 @@ target("CppUtils", function()
 	add_includedirs("include", { public = true })
 	add_headerfiles("include/(CppUtils/**.hpp)")
 	add_headerfiles("include/(Stl/**.hpp)")
+
+	if get_config("sanitize_memory") then
+		set_policy("build.sanitizer.address", true) -- ASAN
+		set_policy("build.sanitizer.leak", true) -- LSan
+		set_policy("build.sanitizer.undefined", true) -- UBSan
+	end
+
+	if get_config("sanitize_thread") then
+		set_policy("build.sanitizer.thread", true) -- TSan
+	end
 end)
 
 if has_config("enable_tests") then

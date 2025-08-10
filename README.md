@@ -126,15 +126,22 @@ target("YourProject", function()
 end)
 ```
 
-### Contribute
+### Configure the build via the xmake menu
+```console
+xmake f [--toolchain=llvm] --runtimes="c++_shared" [--sdk=/opt/llvm-git] --menu
+```
+
+### Configure the build manually
+```console
+xmake f [--toolchain=llvm] --runtimes="c++_shared" [--sdk=/opt/llvm-git] [-y|--yes] [--enable_tests=y] [--sanitize_memory=y] [--sanitize_thread=y]
+```
 
 ### Build command
 ```console
-xmake f [--toolchain=llvm] --runtimes="c++_shared" [--sdk=/opt/llvm-git] [--enable_tests=y] --yes
 xmake [b|build] [-vD]
 ```
 
-### Run tests
+### Build & Run tests
 ```console
 xmake [r|run]
 ```
@@ -143,6 +150,8 @@ xmake [r|run]
 ```console
 xmake watch -r
 ```
+
+### Contribute
 
 [![Contribute](https://img.shields.io/badge/-Contribute-blue?style=for-the-badge)](CONTRIBUTING.md)
 
