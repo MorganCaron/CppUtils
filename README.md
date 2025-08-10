@@ -83,7 +83,7 @@
 ### 🚦 Multithreading & Synchronization
 - [`Event`](modules/Thread/Event.mpp) - An event for thread synchronization
 - [`SharedLocker`](modules/Thread/SharedLocker.mpp) - Scoped lock wrapper with shared or exclusive mode
-- [`ThreadLoop`](modules/Thread/ThreadLoop.mpp) - Thread loop with exception propagation
+- [`ThreadLoop`](modules/Thread/ThreadLoop.mpp) - Thread loop with exception handling
 - [`ThreadPool`](modules/Thread/ThreadPool.mpp) - Fixed-size thread pool for parallel task execution
 - [`TryAsync`](modules/Thread/TryAsync.mpp) - Launches a function asynchronously, forwards exception to caller
 - [`UniqueLocker`](modules/Thread/UniqueLocker.mpp) - Scoped exclusive lock wrapper

@@ -7,90 +7,162 @@ export namespace CppUtils::Thread
 {
 	class ThreadLoop final
 	{
+		using Logger = Logger<"CppUtils">;
+
 	public:
 		inline ThreadLoop() = delete;
 
-		inline explicit ThreadLoop(std::function<void()> function, std::function<void()> interruptFunction = nullptr, auto&&... args):
-			m_data{std::make_unique<Data>(std::bind(function, std::forward<decltype(args)>(args)...), std::move(interruptFunction))}
+		inline explicit ThreadLoop(std::function<void()> function,
+			std::function<void()> interruptFunction = nullptr,
+			std::function<void(std::exception_ptr)> onError = nullptr) noexcept:
+			m_function{std::move(function)},
+			m_interruptFunction{std::move(interruptFunction)},
+			m_onError{std::move(onError)}
 		{}
 
 		inline ThreadLoop(const ThreadLoop&) = delete;
-		inline ThreadLoop(ThreadLoop&& src) noexcept:
-			m_data{std::move(src.m_data)}
-		{}
 		inline auto operator=(const ThreadLoop&) -> ThreadLoop& = delete;
-		inline auto operator=(ThreadLoop&& rhs) noexcept -> ThreadLoop&
+
+		inline ThreadLoop(ThreadLoop&& other) noexcept
 		{
-			m_data = std::move(rhs.m_data);
+			auto lockGuard = std::unique_lock{other.m_mutex};
+			m_function = std::move(other.m_function);
+			m_interruptFunction = std::move(other.m_interruptFunction);
+			m_onError = std::move(other.m_onError);
+			m_thread = std::move(other.m_thread);
+		}
+
+		inline auto operator=(ThreadLoop&& other) noexcept -> ThreadLoop&
+		{
+			if (this == std::addressof(other))
+				return *this;
+			auto lockGuard = std::scoped_lock{m_mutex, other.m_mutex};
+			m_function = std::move(other.m_function);
+			m_interruptFunction = std::move(other.m_interruptFunction);
+			m_onError = std::move(other.m_onError);
+			m_thread = std::move(other.m_thread);
 			return *this;
 		}
 
-		inline ~ThreadLoop() noexcept(false)
+		inline ~ThreadLoop() noexcept
 		{
-			if (m_data)
-				stop();
+			stop();
 		}
 
 		[[nodiscard]] inline auto isRunning() const noexcept -> bool
 		{
-			return m_data->thread.joinable() and not m_data->exceptionOccurred.load();
+			auto lockGuard = std::unique_lock{m_mutex};
+			return m_thread.joinable();
+		}
+
+		inline auto setInterruptFunction(std::function<void()> interruptFunction) noexcept -> void
+		{
+			auto lockGuard = std::unique_lock{m_mutex};
+			m_interruptFunction = std::move(interruptFunction);
+		}
+
+		inline auto setOnError(std::function<void(std::exception_ptr)> onError) noexcept -> void
+		{
+			auto lockGuard = std::unique_lock{m_mutex};
+			m_onError = std::move(onError);
 		}
 
 		inline auto start() -> void
 		{
-			m_data->exceptionOccurred = false;
-			m_data->thread = std::jthread{[data = m_data.get()](std::stop_token stopToken) -> void {
-				try
+			auto lockGuard = std::unique_lock{m_mutex};
+			if (m_thread.joinable())
+				return;
+
+			m_thread = std::jthread{[function = m_function, interruptFunction = m_interruptFunction, onError = m_onError](std::stop_token stopToken) mutable -> void {
+				while (not stopToken.stop_requested())
 				{
-					while (not stopToken.stop_requested())
-						if (data->function)
-							data->function();
-					return;
+					try
+					{
+						if (function)
+							function();
+					}
+					catch (...)
+					{
+						if (onError)
+						{
+							try
+							{
+								onError(std::current_exception());
+							}
+							catch (const std::exception& exception)
+							{
+								Logger::print<"error">("ThreadLoop: onError threw an exception: {}", exception.what());
+							}
+							catch (...)
+							{
+								Logger::print<"error">("ThreadLoop: onError threw a non-std exception");
+							}
+						}
+						else
+						{
+							Logger::print<"error">("ThreadLoop: Unhandled exception");
+						}
+					}
 				}
-				catch (const std::exception& exception)
-				{
-					logException(std::runtime_error{std::format("Exception occurred during thread execution:\n{}\nThread execution is interrupted", exception.what())});
-				}
-				catch (...)
-				{
-					Logger<"CppUtils">::print<"error">("Exception occurred during thread execution.\nThread execution is interrupted");
-				}
-				data->exceptionOccurred = true;
 			}};
 		}
 
 		inline auto isStopRequested() const -> bool
 		{
-			return m_data->thread.get_stop_token().stop_requested();
+			auto lockGuard = std::unique_lock{m_mutex};
+			if (not m_thread.joinable())
+				return false;
+			return m_thread.get_stop_token().stop_requested();
 		}
 
 		inline auto requestStop() -> void
 		{
-			if (not isRunning() or isStopRequested())
+			auto lockGuard = std::unique_lock{m_mutex};
+			if (not m_thread.joinable() or m_thread.get_stop_token().stop_requested())
 				return;
-			m_data->thread.request_stop();
+			m_thread.request_stop();
 		}
 
-		inline auto stop() -> void
+		inline auto stop() noexcept -> void
 		{
-			if (m_data->exceptionOccurred.load())
-				throw std::runtime_error{"Exception occurred during thread execution"};
-			if (not isRunning())
-				return;
-			requestStop();
-			if (m_data->interruptFunction)
-				m_data->interruptFunction();
-			m_data->thread.join();
+			try
+			{
+				auto lockGuard = std::unique_lock{m_mutex};
+				if (not m_thread.joinable() or m_thread.get_stop_token().stop_requested())
+					return;
+				m_thread.request_stop();
+				if (m_interruptFunction)
+				{
+					auto interruptFunction = m_interruptFunction;
+					lockGuard.unlock();
+					try
+					{
+						interruptFunction();
+					}
+					catch (...)
+					{
+						Logger::print<"error">("ThreadLoop: interruptFunction threw during stop");
+					}
+					lockGuard.lock();
+				}
+				if (m_thread.joinable())
+					m_thread.join();
+			}
+			catch (const std::exception& exception)
+			{
+				Logger::print<"error">("Exception in ThreadLoop::stop(): {}", exception.what());
+			}
+			catch (...)
+			{
+				Logger::print<"error">("Unknown exception in ThreadLoop::stop()");
+			}
 		}
 
 	private:
-		struct Data final
-		{
-			std::function<void()> function;
-			std::function<void()> interruptFunction;
-			std::atomic_bool exceptionOccurred = false;
-			std::jthread thread;
-		};
-		std::unique_ptr<Data> m_data;
+		mutable std::mutex m_mutex;
+		std::function<void()> m_function;
+		std::function<void()> m_interruptFunction;
+		std::function<void(std::exception_ptr)> m_onError;
+		std::jthread m_thread;
 	};
 }

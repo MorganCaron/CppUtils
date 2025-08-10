@@ -7,6 +7,7 @@ export namespace CppUtils::UnitTest::Thread::ThreadLoop
 {
 	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/ThreadLoop", {"UnitTest"}, [](auto& suite) {
 		using namespace std::chrono_literals;
+		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("isRunning", [&] {
 			auto threadLoop = CppUtils::Thread::ThreadLoop{[] {}};
@@ -34,6 +35,38 @@ export namespace CppUtils::UnitTest::Thread::ThreadLoop
 			auto accessor = lockedNumber.access();
 			auto nb = accessor.value();
 			suite.expectEqual(nb, 10uz);
+		});
+
+		suite.addTest("onError callback", [&] {
+			auto onErrorCalled = std::atomic_bool{false};
+
+			auto threadLoop = CppUtils::Thread::ThreadLoop{[] {
+				static auto count = 0;
+				if (++count == 1)
+					throw std::runtime_error{"Exception"};
+			}, nullptr, [&](std::exception_ptr exceptionPointer) {
+				onErrorCalled = true;
+				try
+				{
+					if (exceptionPointer)
+						std::rethrow_exception(exceptionPointer);
+				}
+				catch (const std::exception& exception)
+				{
+					suite.expectEqual(std::string{exception.what()}, "Exception");
+					throw std::runtime_error{"onError fail"};
+				}
+			}};
+
+			Logger::print<"detail">("Normal error message:");
+			threadLoop.start();
+			std::this_thread::sleep_for(50ms);
+
+			suite.expect(onErrorCalled);
+
+			suite.expect(threadLoop.isRunning());
+			threadLoop.stop();
+			suite.expect(not threadLoop.isRunning());
 		});
 	}};
 }
