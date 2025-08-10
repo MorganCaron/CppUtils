@@ -33,7 +33,7 @@ add_rules(
 option("enable_moduleonly", {default = true, category = "Build CppUtils", description = "Module only"})
 option("sanitize_memory", {default = false, category = "Build CppUtils/Sanitizer", description = "Enable ASan + LSan + UBSan"})
 option("sanitize_thread", {default = false, category = "Build CppUtils/Sanitizer", description = "Enable TSan"})
-option("enable_tests", {default = true, description = "Enable Unit Tests"})
+option("enable_tests", {default = false, description = "Enable Unit Tests"})
 
 target("CppUtils", function()
 	if get_config("enable_moduleonly") then
