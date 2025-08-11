@@ -6,6 +6,7 @@ import CppUtils;
 export namespace CppUtils::UnitTest::Thread::ThreadPool
 {
 	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/ThreadPool", {"UnitTest"}, [](auto& suite) {
+		using namespace std::chrono_literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("0 task / 1 thread", [&] {
@@ -32,13 +33,14 @@ export namespace CppUtils::UnitTest::Thread::ThreadPool
 			suite.expect(called);
 		});
 
-		suite.addTest("1 task without future.wait()", [&] {
+		suite.addTest("waitUntilFinished", [&] {
 			auto called = std::atomic_bool{false};
 			{
 				auto threadPool = CppUtils::Thread::ThreadPool{};
-				auto future = threadPool.call([&called] {
+				threadPool.call([&called] {
 					called = true;
 				});
+				threadPool.waitUntilFinished();
 			}
 			suite.expect(called);
 		});

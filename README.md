@@ -143,12 +143,12 @@ xmake [b|build] [-vD]
 
 ### Build & Run tests
 ```console
-xmake [r|run]
+xmake [r|run] [-d|--debug]
 ```
 
 ### Watch tests
 ```console
-xmake watch -r
+xmake watch -r [-d|--debug]
 ```
 
 ### Contribute

@@ -36,7 +36,7 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 			for (auto i = 0uz; i < 5; ++i)
 				for (auto c : chars)
 				{
-					std::this_thread::sleep_for(100ms);
+					std::this_thread::sleep_for(50ms);
 					canvas.fill(c);
 					canvas.update();
 				}
@@ -54,7 +54,7 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 			for (auto i = 0uz; i <= 100; ++i)
 			{
 				progressBar.setPercent(i);
-				std::this_thread::sleep_for(20ms);
+				std::this_thread::sleep_for(5ms);
 			}
 		});
 
@@ -95,7 +95,7 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 				canvas.print(charPosition, "O");
 
 				canvas.update();
-				std::this_thread::sleep_for(10ms);
+				std::this_thread::sleep_for(5ms);
 			}
 		});
 	}};

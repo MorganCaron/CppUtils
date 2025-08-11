@@ -25,12 +25,12 @@ export namespace CppUtils::Thread
 					.start();
 		}
 
-		ThreadPool(const ThreadPool&) = delete;
-		ThreadPool& operator=(const ThreadPool&) = delete;
-		ThreadPool(ThreadPool&&) = delete;
-		ThreadPool& operator=(ThreadPool&&) = delete;
+		inline ThreadPool(const ThreadPool&) = delete;
+		inline ThreadPool& operator=(const ThreadPool&) = delete;
+		inline ThreadPool(ThreadPool&&) = delete;
+		inline ThreadPool& operator=(ThreadPool&&) = delete;
 
-		~ThreadPool()
+		inline ~ThreadPool()
 		{
 			for (auto& worker : m_workers)
 				worker.requestStop();
@@ -57,8 +57,8 @@ export namespace CppUtils::Thread
 
 		inline auto waitUntilFinished() -> void
 		{
-			auto lockGuard = std::unique_lock{m_waitingMutex};
-			if (m_activeWorkers != 0 and not isTasksQueueEmpty())
+			if (auto lockGuard = std::unique_lock{m_waitingMutex};
+				m_activeWorkers != 0 or not isTasksQueueEmpty())
 				m_waitUntilFinishedCondition.wait(lockGuard, [this] {
 					return m_activeWorkers == 0 and isTasksQueueEmpty();
 				});
@@ -77,14 +77,6 @@ export namespace CppUtils::Thread
 			return std::empty(tasksQueueAccessor.value());
 		}
 
-		[[nodiscard]] inline auto isStopRequested() const noexcept -> bool
-		{
-			for (const auto& worker : m_workers)
-				if (worker.isStopRequested())
-					return true;
-			return false;
-		}
-
 		inline auto workerThread() -> void
 		{
 			if (isTasksQueueEmpty())
@@ -93,6 +85,7 @@ export namespace CppUtils::Thread
 				m_startWorkingCondition.wait(tasksQueueAccessor.getLockGuard());
 			}
 
+			m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
 			auto task = Task{};
 			{
 				auto tasksQueueAccessor = m_tasksQueue.access();
@@ -101,8 +94,6 @@ export namespace CppUtils::Thread
 				task = std::move(tasksQueueAccessor->front());
 				tasksQueueAccessor->pop();
 			}
-
-			m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
 			try
 			{
 				task();
