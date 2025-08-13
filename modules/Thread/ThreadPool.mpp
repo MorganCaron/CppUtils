@@ -32,6 +32,7 @@ export namespace CppUtils::Thread
 
 		inline ~ThreadPool()
 		{
+			m_stopRequested = true;
 			for (auto& worker : m_workers)
 				worker.requestStop();
 			m_startWorkingCondition.notify_all();
@@ -79,21 +80,22 @@ export namespace CppUtils::Thread
 
 		inline auto workerThread() -> void
 		{
-			if (isTasksQueueEmpty())
-			{
-				auto tasksQueueAccessor = m_tasksQueue.access();
-				m_startWorkingCondition.wait(tasksQueueAccessor.getLockGuard());
-			}
-
-			m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
 			auto task = Task{};
+
 			{
 				auto tasksQueueAccessor = m_tasksQueue.access();
+				m_startWorkingCondition.wait(tasksQueueAccessor.getLockGuard(), [this, &tasksQueueAccessor] {
+					return not std::empty(tasksQueueAccessor.value()) or m_stopRequested.load(std::memory_order_relaxed);
+				});
+
 				if (std::empty(tasksQueueAccessor.value()))
 					return;
+
 				task = std::move(tasksQueueAccessor->front());
 				tasksQueueAccessor->pop();
 			}
+
+			m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
 			try
 			{
 				task();
@@ -143,5 +145,6 @@ export namespace CppUtils::Thread
 
 		mutable std::shared_mutex m_onErrorMutex;
 		std::function<void(std::exception_ptr)> m_onError;
+		std::atomic<bool> m_stopRequested = false;
 	};
 }
