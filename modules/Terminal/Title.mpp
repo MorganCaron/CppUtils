@@ -21,7 +21,7 @@ export namespace CppUtils::Terminal
 		title.resize(size);
 		::GetConsoleTitleW(std::data(title), size);
 		return title;
-#elif defined(OS_MAC) or defined(OS_LINUX)
+#elif defined(OS_LINUX) or defined(OS_MACOS)
 		/*
 		using namespace std::literals;
 
@@ -41,7 +41,7 @@ export namespace CppUtils::Terminal
 	{
 #if defined(OS_WINDOWS)
 		::SetConsoleTitleW(std::data(title));
-#elif defined(OS_MAC) or defined(OS_LINUX)
+#elif defined(OS_LINUX) or defined(OS_MACOS)
 		std::print("\x1B]0;{}\a", title);
 		std::fflush(stdout);
 #endif
