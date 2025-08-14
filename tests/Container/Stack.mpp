@@ -82,7 +82,7 @@ export namespace CppUtils::UnitTest::Container::Stack
 			auto getNumber = []() -> std::size_t {
 				return 42uz;
 			};
-			stack.call(+getNumber);
+			auto _ = stack.call(+getNumber);
 			{
 				auto result = stack.pop<std::size_t>();
 				suite.expect(result.has_value());
@@ -97,7 +97,7 @@ export namespace CppUtils::UnitTest::Container::Stack
 				std::println("{}", nb);
 			};
 			stack.push(42uz);
-			stack.call(print);
+			auto _ = stack.call(print);
 		});
 
 		suite.addTest("Call function: (std::size_t, std::size_t) -> std::size_t", [&] {
@@ -108,8 +108,8 @@ export namespace CppUtils::UnitTest::Container::Stack
 			auto add = [](std::size_t lhs, std::size_t rhs) -> std::size_t {
 				return lhs + rhs;
 			};
-			stack.call(add);
-			stack.drop(sizeof(std::size_t) * 2);
+			auto _ = stack.call(add);
+			auto _ = stack.drop(sizeof(std::size_t) * 2);
 			{
 				auto result = stack.pop<std::size_t>();
 				suite.expect(result.has_value());
@@ -129,15 +129,15 @@ export namespace CppUtils::UnitTest::Container::Stack
 			auto print = [](std::size_t nb) -> void {
 				std::println("{}", nb);
 			};
-			stack.call(add);
-			stack.drop(sizeof(std::size_t) * 2);
+			auto _ = stack.call(add);
+			auto _ = stack.drop(sizeof(std::size_t) * 2);
 			{
 				auto result = stack.get<std::size_t>();
 				suite.expect(result.has_value());
 				suite.expectEqual(result.value(), 42uz);
 			}
-			stack.call(print);
-			stack.drop(sizeof(std::size_t));
+			auto _ = stack.call(print);
+			auto _ = stack.drop(sizeof(std::size_t));
 			suite.expect(std::empty(stack));
 		});
 	}};

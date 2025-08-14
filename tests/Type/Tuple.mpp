@@ -16,7 +16,7 @@ export namespace CppUtils::UnitTest::Type::Tuple
 			};
 
 			auto tuple = std::make_tuple(1, "Hello World!");
-			CppUtils::Type::Tuple::visitAt(tuple, 1, function);
+			auto _ = CppUtils::Type::Tuple::visitAt(tuple, 1, function);
 
 			suite.expect(called);
 		});

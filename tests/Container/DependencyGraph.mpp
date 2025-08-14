@@ -141,7 +141,7 @@ export namespace CppUtils::UnitTest::Container::DependencyGraph
 
 			suite.expect(not graph.hasCycle());
 
-			graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
+			auto _ = graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
 				std::println("{}: {}", key, value);
 			});
 		});
@@ -159,7 +159,7 @@ export namespace CppUtils::UnitTest::Container::DependencyGraph
 
 			suite.expect(graph.hasCycle());
 
-			graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
+			auto _ = graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
 				std::println("{}: {}", key, value);
 			});
 		});

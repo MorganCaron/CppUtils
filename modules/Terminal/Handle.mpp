@@ -2,6 +2,8 @@ module;
 
 #include <CppUtils/System/Windows.hpp>
 
+#include <cstdio>
+
 export module CppUtils.Terminal.Handle;
 
 import std;
