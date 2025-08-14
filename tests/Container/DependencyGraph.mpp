@@ -7,6 +7,7 @@ export namespace CppUtils::UnitTest::Container::DependencyGraph
 {
 	inline auto _ = TestSuite{"Container/DependencyGraph", {"UnitTest"}, [](auto& suite) {
 		using namespace std::literals;
+		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("Empty graph", [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
@@ -141,9 +142,9 @@ export namespace CppUtils::UnitTest::Container::DependencyGraph
 
 			suite.expect(not graph.hasCycle());
 
-			auto _ = graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
-				std::println("{}: {}", key, value);
-			});
+			suite.expect(graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
+				Logger::print("{}: {}\n", key, value);
+			}).has_value());
 		});
 
 		suite.addTest("ForEach (with circular dependencies)", [&] {
@@ -159,9 +160,11 @@ export namespace CppUtils::UnitTest::Container::DependencyGraph
 
 			suite.expect(graph.hasCycle());
 
-			auto _ = graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
-				std::println("{}: {}", key, value);
+			auto result = graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
+				Logger::print("{}: {}\n", key, value);
 			});
+			suite.expect(not result);
+			Logger::print("Error: {}\n", result.error());
 		});
 	}};
 }

@@ -30,8 +30,8 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 					suite.expect(false);
 				});
 #else
-        auto &_ = suite;
-#warning "TODO onEvent not implemented for this platform"
+				auto& _ = suite;
+#	warning "TODO onEvent not implemented for this platform"
 #endif
 				std::this_thread::sleep_for(10ms);
 			}};
@@ -52,8 +52,8 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 					suite.expect(false);
 				});
 #else
-        auto &_ = suite;
-#warning "TODO onEvent not implemented for this platform"
+				auto& _ = suite;
+#	warning "TODO onEvent not implemented for this platform"
 #endif
 				std::this_thread::sleep_for(10ms);
 			}};
@@ -98,7 +98,7 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 					expectCloseFile = true;
 				});
 #else
-#warning "TODO onEvent not implemented for this platform"
+#	warning "TODO onEvent not implemented for this platform"
 #endif
 
 				CppUtils::FileSystem::String::write(directory / "test.tmp", "Hello World!");
@@ -131,7 +131,7 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 					expectModifyFile = true;
 				});
 #else
-#warning "TODO onEvent not implemented for this platform"
+#	warning "TODO onEvent not implemented for this platform"
 #endif
 
 				CppUtils::FileSystem::String::write(filePath, "Bar");
@@ -163,7 +163,7 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 					expectModifyFile = true;
 				});
 #else
-#warning "TODO onEvent not implemented for this platform"
+#	warning "TODO onEvent not implemented for this platform"
 #endif
 
 				CppUtils::FileSystem::String::write(filePath, "Bar");
@@ -195,7 +195,7 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 					expectDeleteFile = true;
 				});
 #else
-#warning "TODO onEvent not implemented for this platform"
+#	warning "TODO onEvent not implemented for this platform"
 #endif
 
 				std::filesystem::remove(filePath);

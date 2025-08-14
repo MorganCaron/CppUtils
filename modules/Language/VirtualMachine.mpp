@@ -178,10 +178,10 @@ export namespace CppUtils::Language::VirtualMachine
 			case '>':
 				if (auto key = stack.template get<std::size_t>(); not key) [[unlikely]]
 					return std::unexpected{key.error()};
-				else if (registers.contains(key.value())) [[likely]] {
-					auto _ = stack.set(registers[key.value()]);
-				} else
+				else if (not registers.contains(key.value())) [[unlikely]]
 					return std::unexpected{"Unknown register key"sv};
+				else if (auto result = stack.set(registers[key.value()]); not result) [[unlikely]]
+					return result;
 				break;
 
 			case '=':
@@ -253,58 +253,68 @@ export namespace CppUtils::Language::VirtualMachine
 
 			case '\\': ++position; break;
 
-			case '!': {
-				if (auto result = stack.template get<std::size_t>(); not result) [[unlikely]]
-					return std::unexpected{result.error()};
-				else
-					auto _ = stack.set<std::size_t>(not result.value());
+			case '!':
+			{
+				if (auto getResult = stack.template get<std::size_t>(); not getResult) [[unlikely]]
+					return std::unexpected{getResult.error()};
+				else if (auto setResult = stack.set<std::size_t>(not getResult.value()); not setResult) [[unlikely]]
+					return setResult;
 				break;
 			}
 
-			case '?': {
+			case '?':
+			{
 				if (auto condition = stack.template get<std::size_t>(sizeof(std::size_t)); not condition) [[unlikely]]
 					return std::unexpected{condition.error()};
 				else if (auto newPosition = stack.template pop<std::size_t>(); not newPosition) [[unlikely]]
 					return std::unexpected{newPosition.error()};
 				else if (not condition.value())
 					position = newPosition.value();
-				auto _ = stack.drop(sizeof(std::size_t));
+				if (auto result = stack.drop(sizeof(std::size_t)); not result) [[unlikely]]
+					return result;
 				break;
 			}
 
 			case 'X': return {};
 
-			case '+': {
+			case '+':
+			{
 				if (auto lhs = stack.template pop<std::size_t>(); not lhs) [[unlikely]]
 					return std::unexpected{lhs.error()};
 				else if (auto rhs = stack.template get<std::size_t>(); not rhs) [[unlikely]]
 					return std::unexpected{rhs.error()};
-				else
-					auto _ = stack.set(lhs.value() + rhs.value());
+				else if (auto result = stack.set(lhs.value() + rhs.value()); not result) [[unlikely]]
+					return result;
 				break;
 			}
 
-			case '-': {
+			case '-':
+			{
 				if (auto lhs = stack.template pop<std::size_t>(); not lhs) [[unlikely]]
 					return std::unexpected{lhs.error()};
 				else if (auto rhs = stack.template get<std::size_t>(); not rhs) [[unlikely]]
 					return std::unexpected{rhs.error()};
-				else
-					auto _ = stack.set(lhs.value() - rhs.value());
+				else if (auto result = stack.set(lhs.value() - rhs.value()); not result) [[unlikely]]
+					return result;
 				break;
 			}
 
 			case ',': stack.dump(); break;
 
-			case '\'': { auto _ = stack.set(source[++position]); break; }
+			case '\'':
+			{
+				if (auto result = stack.set(source[++position]); not result) [[unlikely]]
+					return result;
+				break;
+			}
 
 			default:
 				if (instruction >= '0' and instruction <= '9')
 				{
-					if (auto result = stack.template get<std::size_t>(); not result) [[unlikely]]
-						return std::unexpected{result.error()};
-					else
-						auto _ = stack.set(result.value() * 10 + static_cast<std::size_t>(instruction - '0'));
+					if (auto getResult = stack.template get<std::size_t>(); not getResult) [[unlikely]]
+						return std::unexpected{getResult.error()};
+					else if (auto setResult = stack.set(getResult.value() * 10 + static_cast<std::size_t>(instruction - '0')); not setResult) [[unlikely]]
+						return setResult;
 				}
 				break;
 			}

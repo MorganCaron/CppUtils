@@ -10,7 +10,7 @@ export namespace CppUtils::Container
 	using SafeShared = std::shared_ptr<Thread::SharedLocker<T>>;
 
 	template<class T>
-	inline auto makeSafeShared(auto&&... args) -> SafeShared<T>
+	[[nodiscard]] inline auto makeSafeShared(auto&&... args) -> SafeShared<T>
 	{
 		return std::make_shared<Thread::SharedLocker<T>>(std::forward<decltype(args)>(args)...);
 	}
