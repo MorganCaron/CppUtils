@@ -49,10 +49,16 @@ jobs:
       if: ${{ matrix.compiler.name == 'Latest Clang' }}
       uses: MorganCaron/latest-clang-action@master
 
-    - name: Compile
+    - name: Update xmake repository
+      run: xmake repo --update
+
+    - name: Configure & Install dependencies
       run: |
-        xmake f ${{ matrix.compiler.xmake-toolchain }} --runtimes="c++_shared" --enable_tests=y --yes
-        xmake build -vD
+        xmake f ${{ matrix.compiler.xmake-toolchain }} --runtimes="c++_shared" --enable_tests=y -v --yes
+
+    - name: Build
+      run: |
+        xmake build -v
 
     - name: Run tests
       run: |

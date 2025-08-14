@@ -2,7 +2,7 @@ module;
 
 #include <CppUtils/System/Windows.hpp>
 
-#if defined(OS_MAC) or defined(OS_LINUX)
+#if defined(OS_LINUX) or defined(OS_MACOS)
 #	include <unistd.h>
 #	include <termios.h>
 #endif
@@ -13,7 +13,7 @@ import std;
 
 export namespace CppUtils::Terminal
 {
-#if defined(OS_MAC) or defined(OS_LINUX)
+#if defined(OS_LINUX) or defined(OS_MACOS)
 	class RawTerminal final
 	{
 	public:

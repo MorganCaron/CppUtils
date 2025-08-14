@@ -17,22 +17,25 @@ jobs:
         }
     steps:
     - uses: actions/checkout@v4
+
+    - uses: tecolicom/actions-use-homebrew-tools@v1
+      with:
+        tools: llvm ninja cmake
+
     - uses: xmake-io/github-action-setup-xmake@v1
       with:
         xmake-version: branch@master
 
-    - name: Install LLVM
-      if: ${{ matrix.compiler.name == 'Clang' }}
-      run: |
-        brew install llvm
+    - name: Update xmake repository
+      run: xmake repo --update
 
-    - name: Compile
-      env:
-        CC: ${{ matrix.compiler.cc }}
-        CXX: ${{ matrix.compiler.cxx }}
+    - name: Configure & Install dependencies
       run: |
-        xmake f --enable_tests=y --yes
-        xmake build -vD
+        xmake f --toolchain=llvm --sdk="$(brew --prefix)/opt/llvm/" --runtimes="c++_shared" --enable_tests=y -v --yes
+
+    - name: Build
+      run: |
+        xmake build -v
 
     - name: Run tests
       run: |

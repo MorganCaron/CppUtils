@@ -21,7 +21,7 @@ export namespace CppUtils::Terminal
 			consoleScreenBufferInfo.srWindow.Left,
 			consoleScreenBufferInfo.srWindow.Top};
 	}
-#elif defined(OS_MAC) or defined(OS_LINUX)
+#elif defined(OS_LINUX) or defined(OS_MACOS)
 	[[nodiscard]] inline auto getCursorPosition() -> std::expected<Container::Size2, std::string_view>
 	{
 		using namespace std::literals;
@@ -43,7 +43,7 @@ export namespace CppUtils::Terminal
 	{
 		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{static_cast<SHORT>(position.x()), static_cast<SHORT>(position.y())});
 	}
-#elif defined(OS_MAC) or defined(OS_LINUX)
+#elif defined(OS_LINUX) or defined(OS_MACOS)
 	inline auto setCursorPosition([[maybe_unused]] Container::Size2 position) -> void
 	{
 		std::print("\x1b[{};{}H", position.y() + 1, position.x() + 1);

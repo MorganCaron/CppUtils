@@ -10,6 +10,7 @@ module;
 #	include <sys/inotify.h>
 #elif defined(OS_MACOS)
 #	include <sys/event.h>
+#	include <CoreServices/CoreServices.h>
 #endif
 
 export module CppUtils.FileSystem.Watcher;
@@ -259,7 +260,7 @@ export namespace CppUtils::FileSystem
 		Container::BidirectionalMap<std::filesystem::path, WatchDescriptor> m_watchDescriptors;
 		std::vector<std::pair<Event, SubscribeFunction>> m_subscribedFunctions;
 #elif defined(OS_MACOS)
-		FSEventStreamRef m_filesystemEventStream;
+		[[maybe_unused]] FSEventStreamRef m_filesystemEventStream;
 #endif
 	};
 }

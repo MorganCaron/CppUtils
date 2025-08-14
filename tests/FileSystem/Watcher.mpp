@@ -9,30 +9,24 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::FileSystem::Watcher
 {
+#if defined(OS_LINUX)
 	inline auto _ = TestSuite{
 		"FileSystem/Watcher",
 		{"Logger", "FileSystem/Directory", "FileSystem/File"},
 		[](auto& suite) {
 		using namespace std::chrono_literals;
-#if defined(OS_LINUX)
 		using Logger = CppUtils::Logger<"CppUtils">;
-#endif
 
 		suite.addTest("No file", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
 				auto watcher = CppUtils::FileSystem::Watcher{};
 				watcher.watch(directory / "test.tmp");
-#if defined(OS_LINUX)
 				watcher.onEvent(
 					[&suite](
 						[[maybe_unused]] CppUtils::FileSystem::Event event,
 						[[maybe_unused]] const std::filesystem::path& filePath) -> void {
 					suite.expect(false);
 				});
-#else
-				auto& _ = suite;
-#	warning "TODO onEvent not implemented for this platform"
-#endif
 				std::this_thread::sleep_for(10ms);
 			}};
 		});
@@ -44,17 +38,12 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 
 				auto watcher = CppUtils::FileSystem::Watcher{};
 				watcher.watch(filePath);
-#if defined(OS_LINUX)
 				watcher.onEvent(
 					[&suite](
 						[[maybe_unused]] CppUtils::FileSystem::Event event,
 						[[maybe_unused]] const std::filesystem::path& filePath) -> void {
 					suite.expect(false);
 				});
-#else
-				auto& _ = suite;
-#	warning "TODO onEvent not implemented for this platform"
-#endif
 				std::this_thread::sleep_for(10ms);
 			}};
 		});
@@ -75,7 +64,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 
 				auto watcher = CppUtils::FileSystem::Watcher{};
 				watcher.watch(directory);
-#if defined(OS_LINUX)
 				watcher.onEvent(
 					[](CppUtils::FileSystem::Event event,
 						const std::filesystem::path& filePath) -> void {
@@ -97,9 +85,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 					suite.expectEqual(eventFilePath, filePath);
 					expectCloseFile = true;
 				});
-#else
-#	warning "TODO onEvent not implemented for this platform"
-#endif
 
 				CppUtils::FileSystem::String::write(directory / "test.tmp", "Hello World!");
 				std::this_thread::sleep_for(100ms);
@@ -116,7 +101,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 
 				auto watcher = CppUtils::FileSystem::Watcher{};
 				watcher.watch(filePath);
-#if defined(OS_LINUX)
 				watcher.onEvent(
 					[](CppUtils::FileSystem::Event event,
 						const std::filesystem::path& filePath) -> void {
@@ -130,9 +114,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 					suite.expectEqual(eventFilePath, filePath);
 					expectModifyFile = true;
 				});
-#else
-#	warning "TODO onEvent not implemented for this platform"
-#endif
 
 				CppUtils::FileSystem::String::write(filePath, "Bar");
 				std::this_thread::sleep_for(100ms);
@@ -148,7 +129,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 
 				auto watcher = CppUtils::FileSystem::Watcher{};
 				watcher.watch(directory);
-#if defined(OS_LINUX)
 				watcher.onEvent(
 					[](CppUtils::FileSystem::Event event,
 						const std::filesystem::path& filePath) -> void {
@@ -162,9 +142,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 					suite.expectEqual(eventFilePath, filePath);
 					expectModifyFile = true;
 				});
-#else
-#	warning "TODO onEvent not implemented for this platform"
-#endif
 
 				CppUtils::FileSystem::String::write(filePath, "Bar");
 				std::this_thread::sleep_for(100ms);
@@ -180,7 +157,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 
 				auto watcher = CppUtils::FileSystem::Watcher{};
 				watcher.watch(directory);
-#if defined(OS_LINUX)
 				watcher.onEvent(
 					[](CppUtils::FileSystem::Event event,
 						const std::filesystem::path& filePath) -> void {
@@ -194,9 +170,6 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 					suite.expectEqual(eventFilePath, filePath);
 					expectDeleteFile = true;
 				});
-#else
-#	warning "TODO onEvent not implemented for this platform"
-#endif
 
 				std::filesystem::remove(filePath);
 				std::this_thread::sleep_for(100ms);
@@ -204,4 +177,7 @@ export namespace CppUtils::UnitTest::FileSystem::Watcher
 			}};
 		});
 	}};
+#else
+#	warning "TODO onEvent not implemented for this platform"
+#endif
 }
