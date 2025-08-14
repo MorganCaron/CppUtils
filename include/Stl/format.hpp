@@ -4,6 +4,8 @@
 #include <locale>
 #include <stdexcept>
 
+#include <string>
+
 #if __has_include(<string_view>)
 #	include <string_view>
 

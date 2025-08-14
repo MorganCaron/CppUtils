@@ -18,8 +18,8 @@ export namespace CppUtils::Terminal
 		auto consoleScreenBufferInfo = CONSOLE_SCREEN_BUFFER_INFO{};
 		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &consoleScreenBufferInfo);
 		return Container::Size2{
-			consoleScreenBufferInfo.srWindow.X,
-			consoleScreenBufferInfo.srWindow.Y};
+			consoleScreenBufferInfo.srWindow.Left,
+			consoleScreenBufferInfo.srWindow.Top};
 	}
 #elif defined(OS_MAC) or defined(OS_LINUX)
 	[[nodiscard]] inline auto getCursorPosition() -> std::expected<Container::Size2, std::string_view>
@@ -41,7 +41,7 @@ export namespace CppUtils::Terminal
 #if defined(OS_WINDOWS)
 	inline auto setCursorPosition(Container::Size2 position) -> void
 	{
-		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{position.x(), position.y()});
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{static_cast<SHORT>(position.x()), static_cast<SHORT>(position.y())});
 	}
 #elif defined(OS_MAC) or defined(OS_LINUX)
 	inline auto setCursorPosition([[maybe_unused]] Container::Size2 position) -> void

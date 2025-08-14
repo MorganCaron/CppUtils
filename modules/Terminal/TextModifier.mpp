@@ -9,6 +9,7 @@ import CppUtils.Terminal.BackgroundColor;
 import CppUtils.Terminal.Utility;
 import CppUtils.Terminal.TextColor;
 import CppUtils.Terminal.TextStyle;
+import CppUtils.Terminal.Handle;
 
 export namespace CppUtils::Terminal
 {

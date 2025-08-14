@@ -364,7 +364,12 @@ export namespace CppUtils::Network
 			auto data = T{};
 			for (auto totalBytesReceived = 0uz; totalBytesReceived < sizeof(T);)
 			{
-				auto bytesReceived = ::recv(m_socket, reinterpret_cast<char*>(std::addressof(data)) + totalBytesReceived, sizeof(T) - totalBytesReceived, 0);
+#if defined(OS_WINDOWS)
+				const auto size = static_cast<int>(sizeof(T) - totalBytesReceived);
+#else
+				const auto size = sizeof(T) - totalBytesReceived;
+#endif
+				auto bytesReceived = ::recv(m_socket, reinterpret_cast<char*>(std::addressof(data)) + totalBytesReceived, size, 0);
 				if (bytesReceived < 0)
 				{
 #if defined(OS_WINDOWS)

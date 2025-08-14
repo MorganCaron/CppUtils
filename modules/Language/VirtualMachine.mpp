@@ -97,7 +97,7 @@ export namespace CppUtils::Language::VirtualMachine
 			case '#':
 				if (auto startPosition = stack.template get<std::size_t>(); not startPosition) [[unlikely]]
 					return std::unexpected{startPosition.error()};
-				else if (auto result = stack.set(std::hash<decltype(source)>{}(decltype(source){std::cbegin(source) + startPosition.value() + 1, std::cbegin(source) + position - 1})); not result) [[unlikely]]
+				else if (auto result = stack.set(std::hash<decltype(source)>{}(decltype(source){std::cbegin(source) + static_cast<long long>(startPosition.value() + 1), std::cbegin(source) + static_cast<long long>(position - 1)})); not result) [[unlikely]]
 					return result;
 				break;
 
@@ -178,9 +178,9 @@ export namespace CppUtils::Language::VirtualMachine
 			case '>':
 				if (auto key = stack.template get<std::size_t>(); not key) [[unlikely]]
 					return std::unexpected{key.error()};
-				else if (registers.contains(key.value())) [[likely]]
-					stack.set(registers[key.value()]);
-				else
+				else if (registers.contains(key.value())) [[likely]] {
+					auto _ = stack.set(registers[key.value()]);
+				} else
 					return std::unexpected{"Unknown register key"sv};
 				break;
 
@@ -253,46 +253,50 @@ export namespace CppUtils::Language::VirtualMachine
 
 			case '\\': ++position; break;
 
-			case '!':
+			case '!': {
 				if (auto result = stack.template get<std::size_t>(); not result) [[unlikely]]
 					return std::unexpected{result.error()};
 				else
-					stack.set<std::size_t>(not result.value());
+					auto _ = stack.set<std::size_t>(not result.value());
 				break;
+			}
 
-			case '?':
+			case '?': {
 				if (auto condition = stack.template get<std::size_t>(sizeof(std::size_t)); not condition) [[unlikely]]
 					return std::unexpected{condition.error()};
 				else if (auto newPosition = stack.template pop<std::size_t>(); not newPosition) [[unlikely]]
 					return std::unexpected{newPosition.error()};
 				else if (not condition.value())
 					position = newPosition.value();
-				stack.drop(sizeof(std::size_t));
+				auto _ = stack.drop(sizeof(std::size_t));
 				break;
+			}
 
 			case 'X': return {};
 
-			case '+':
+			case '+': {
 				if (auto lhs = stack.template pop<std::size_t>(); not lhs) [[unlikely]]
 					return std::unexpected{lhs.error()};
 				else if (auto rhs = stack.template get<std::size_t>(); not rhs) [[unlikely]]
 					return std::unexpected{rhs.error()};
 				else
-					stack.set(lhs.value() + rhs.value());
+					auto _ = stack.set(lhs.value() + rhs.value());
 				break;
+			}
 
-			case '-':
+			case '-': {
 				if (auto lhs = stack.template pop<std::size_t>(); not lhs) [[unlikely]]
 					return std::unexpected{lhs.error()};
 				else if (auto rhs = stack.template get<std::size_t>(); not rhs) [[unlikely]]
 					return std::unexpected{rhs.error()};
 				else
-					stack.set(lhs.value() - rhs.value());
+					auto _ = stack.set(lhs.value() - rhs.value());
 				break;
+			}
 
 			case ',': stack.dump(); break;
 
-			case '\'': stack.set(source[++position]); break;
+			case '\'': { auto _ = stack.set(source[++position]); break; }
 
 			default:
 				if (instruction >= '0' and instruction <= '9')
@@ -300,8 +304,9 @@ export namespace CppUtils::Language::VirtualMachine
 					if (auto result = stack.template get<std::size_t>(); not result) [[unlikely]]
 						return std::unexpected{result.error()};
 					else
-						stack.set(result.value() * 10 + static_cast<std::size_t>(instruction - '0'));
+						auto _ = stack.set(result.value() * 10 + static_cast<std::size_t>(instruction - '0'));
 				}
+				break;
 			}
 
 		return {};
