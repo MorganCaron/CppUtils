@@ -30,6 +30,7 @@ add_rules(
 	"mode.coverage",
 	"mode.valgrind")
 
+option("compiler_verbose", {default = false, category = "Build CppUtils", description = "Verbose the compiler output"})
 option("enable_moduleonly", {default = true, category = "Build CppUtils", description = "Module only"})
 option("sanitize_memory", {default = false, category = "Build CppUtils/Sanitizer", description = "Enable ASan + LSan + UBSan"})
 option("sanitize_thread", {default = false, category = "Build CppUtils/Sanitizer", description = "Enable TSan"})
@@ -46,6 +47,12 @@ target("CppUtils", function()
 	add_includedirs("include", { public = true })
 	add_headerfiles("include/(CppUtils/**.hpp)")
 	add_headerfiles("include/(Stl/**.hpp)")
+
+	if get_config("compiler_verbose") then
+		add_cflags("-v")
+		add_cxxflags("-v")
+		add_ldflags("-v")
+	end
 
 	if get_config("sanitize_memory") then
 		set_policy("build.sanitizer.address", true) -- ASAN
