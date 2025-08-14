@@ -1,0 +1,24 @@
+export module CppUtils.Math.Endian;
+
+import std;
+
+export namespace CppUtils::Math
+{
+	template<std::integral T>
+	[[nodiscard]] inline constexpr auto toBigEndian(T value) -> T
+	{
+		if constexpr (std::endian::native == std::endian::big)
+			return value;
+		else
+			return std::byteswap(value);
+	}
+
+	template<std::integral T>
+	[[nodiscard]] inline constexpr auto toLittleEndian(T value) -> T
+	{
+		if constexpr (std::endian::native == std::endian::little)
+			return value;
+		else
+			return std::byteswap(value);
+	}
+}

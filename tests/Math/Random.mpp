@@ -1,0 +1,19 @@
+export module CppUtils.UnitTests.Math.Random;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Math::Random
+{
+	inline auto _ = TestSuite{"Random", {"UnitTest"}, [](auto& suite) {
+		suite.addTest("getRandomNumberInInterval", [&] {
+			constexpr auto min = 1;
+			constexpr auto max = 10;
+			for (int i = 0; i < 100; ++i)
+			{
+				auto randomNumber = CppUtils::Math::getRandomNumberInInterval(min, max);
+				suite.expect(randomNumber >= min and randomNumber <= max);
+			}
+		});
+	}};
+}

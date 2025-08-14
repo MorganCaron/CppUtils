@@ -1,0 +1,21 @@
+export module CppUtils.UnitTests.Math.Endian;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Math::Endian
+{
+	inline auto _ = TestSuite{"Endian", {"UnitTest"}, [](auto& suite) {
+		constexpr auto value = std::uint32_t{0x12'34'56'78u};
+
+		suite.addTest("toBigEndian", [&] {
+			constexpr auto expectedBig = (std::endian::native == std::endian::big) ? 0x12'34'56'78u : 0x78'56'34'12u;
+			suite.expectEqual(CppUtils::Math::toBigEndian(value), expectedBig);
+		});
+
+		suite.addTest("toLittleEndian", [&] {
+			constexpr auto expectedLittle = (std::endian::native == std::endian::little) ? 0x12'34'56'78u : 0x78'56'34'12u;
+			suite.expectEqual(CppUtils::Math::toLittleEndian(value), expectedLittle);
+		});
+	}};
+}

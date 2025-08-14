@@ -17,6 +17,7 @@ module;
 export module CppUtils.Network.Socket;
 
 import std;
+import CppUtils.Math.Endian;
 import CppUtils.System.Error;
 import CppUtils.Type.Concept;
 import CppUtils.Chrono.Concept;
@@ -273,7 +274,7 @@ export namespace CppUtils::Network
 			{
 				auto* ipv4 = reinterpret_cast<sockaddr_in*>(std::addressof(address.storage));
 				ipv4->sin_family = AF_INET;
-				ipv4->sin_port = ::htons(port);
+				ipv4->sin_port = Math::toBigEndian(port);
 
 				if (ip.empty())
 					ipv4->sin_addr.s_addr = INADDR_ANY;
@@ -286,7 +287,7 @@ export namespace CppUtils::Network
 			{
 				auto* ipv6 = reinterpret_cast<sockaddr_in6*>(std::addressof(address.storage));
 				ipv6->sin6_family = AF_INET6;
-				ipv6->sin6_port = ::htons(port);
+				ipv6->sin6_port = Math::toBigEndian(port);
 
 				if (ip.empty())
 					ipv6->sin6_addr = in6addr_any;
