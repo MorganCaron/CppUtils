@@ -58,6 +58,9 @@ export namespace CppUtils::Thread
 	private:
 		mutable std::shared_mutex m_mutex;
 		T m_value;
+
+		template<class... Lockers>
+		friend struct MultipleAccessor;
 	};
 
 	template<class T>

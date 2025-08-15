@@ -91,8 +91,26 @@ export namespace CppUtils::Thread
 	private:
 		mutable std::mutex m_mutex;
 		T m_value;
+
+		template<class... Lockers>
+		friend struct MultipleAccessor;
 	};
 
 	template<class T>
 	UniqueLocker(T) -> UniqueLocker<T>;
+
+	template<class... Lockers>
+	struct MultipleAccessor final
+	{
+		MultipleAccessor(Lockers&... lockers):
+			m_lockGuard{lockers.m_mutex...},
+			values{std::tie(lockers.m_value...)}
+		{}
+
+	private:
+		std::scoped_lock<decltype(std::declval<Lockers>().m_mutex)...> m_lockGuard;
+
+	public:
+		std::tuple<decltype(std::declval<Lockers>().m_value)&...> values;
+	};
 }

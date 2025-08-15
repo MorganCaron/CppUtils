@@ -49,5 +49,15 @@ export namespace CppUtils::UnitTest::Thread::UniqueLocker
 			auto accessor = constLockedString.access();
 			suite.expect(accessor.value() == "Test");
 		});
+
+		suite.addTest("MultipleAccessor", [&] {
+			auto lockedString1 = CppUtils::Thread::UniqueLocker<std::string>{"Foo"};
+			auto lockedString2 = CppUtils::Thread::UniqueLocker<std::string>{"Bar"};
+			{
+				auto accessor = CppUtils::Thread::MultipleAccessor{lockedString1, lockedString2};
+				suite.expect(std::get<0>(accessor.values) == "Foo");
+				suite.expect(std::get<1>(accessor.values) == "Bar");
+			}
+		});
 	}};
 }
