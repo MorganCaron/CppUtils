@@ -179,6 +179,38 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			}
 		});
 
+		suite.addTest("Bilateral attachment (reverse order)", [&] {
+			auto fruit = StringMeshNode::makeRoot("fruit");
+			auto apple = StringMeshNode::make("apple");
+			StringMeshNode::Value::attach("Elements", apple, "Categories", fruit);
+			{
+				auto fruitAccessor = fruit->sharedAccess();
+				const auto& fruitBranches = fruitAccessor->value.branches;
+				const auto& fruits = fruitBranches.at("Elements");
+				suite.expect(std::size(fruits) == 1);
+				auto firstFruit = StringMeshNode::SharedPtr{fruits[0]};
+				auto appleAccessor = firstFruit->sharedAccess();
+				const auto& appleName = appleAccessor->value.value;
+				const auto& fruitName = fruitAccessor->value.value;
+				Logger::print("{} is a {}\n", appleName, fruitName);
+				suite.expect(appleName == "apple");
+				suite.expect(fruitName == "fruit");
+			}
+			{
+				auto appleAccessor = apple->sharedAccess();
+				const auto& appleBranches = appleAccessor->value.branches;
+				const auto& appleCategories = appleBranches.at("Categories");
+				suite.expect(std::size(appleCategories) == 1);
+				auto firstCategory = StringMeshNode::SharedPtr{appleCategories[0]};
+				auto fruitAccessor = firstCategory->sharedAccess();
+				const auto& appleName = appleAccessor->value.value;
+				const auto& fruitName = fruitAccessor->value.value;
+				Logger::print("{} is a {}\n", appleName, fruitName);
+				suite.expect(appleName == "apple");
+				suite.expect(fruitName == "fruit");
+			}
+		});
+
 		suite.addTest("Many", [&] {
 			auto fruit = StringMeshNode::makeRoot("fruit");
 			auto banana = StringMeshNode::make("banana");

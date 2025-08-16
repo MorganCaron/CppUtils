@@ -89,7 +89,8 @@
 - [`SharedLocker`](modules/Thread/SharedLocker.mpp) - RAII wrapper holding a value with shared/exclusive access
 - [`Accessor`](modules/Thread/UniqueLocker.mpp) - RAII accessor for reading/writing an `UniqueLocker` or exclusive access to a `SharedLocker`
 - [`ReadOnlyAccessor`](modules/Thread/SharedLocker.mpp) - RAII accessor for shared (non-exclusive) reading of a `SharedLocker`, allowing parallel access
-- [`MultipleAccessor`](modules/Thread/UniqueLocker.mpp) - RAII accessor for multiple lockers, locking them simultaneously to prevent data races
+- [`MultipleAccessor`](modules/Thread/UniqueLocker.mpp) - RAII accessor for multiple lockers, safely acquiring them to avoid deadlocks and data races
+
 
 ### 🏷️ Type
 - [`Concept`](modules/Type/Concept.mpp) - Extensions to `<type_traits>` and `<concepts>` providing additional compile-time checks and utilities

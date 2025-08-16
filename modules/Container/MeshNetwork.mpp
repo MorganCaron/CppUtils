@@ -72,8 +72,16 @@ export namespace CppUtils::Container
 
 		static inline auto attach(const Key& key0, SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
-			attach(node0, key1, node1);
-			attach(node1, key0, node0);
+			if (node0->sharedAccess()->getDistanceFromRoot() == std::numeric_limits<std::size_t>::max())
+			{
+				attach(node1, key0, node0);
+				attach(node0, key1, node1);
+			}
+			else
+			{
+				attach(node0, key1, node1);
+				attach(node1, key0, node0);
+			}
 		}
 
 		static inline auto detach(const Key& key0, SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
