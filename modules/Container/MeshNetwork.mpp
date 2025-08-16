@@ -20,54 +20,54 @@ export namespace CppUtils::Container
 			value{std::forward<decltype(args)>(args)...}
 		{}
 
-		static inline auto attach(Accessor& node0Accessor, const Key& key1, SharedPtr& node1) -> void
-		{
-			node0Accessor->attachChild(node1);
-			node0Accessor->value.branches[key1].push_back(node1);
-		}
-
 		static inline auto attach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
-			auto node0Accessor = node0->uniqueAccess();
-			attach(node0Accessor, key1, node1);
-		}
+			auto accessor = CppUtils::Thread::MultipleAccessor{*node0, *node1};
+			auto& node0Ref = std::get<0>(accessor.values);
+			auto& node1Ref = std::get<1>(accessor.values);
 
-		static inline auto detach(Accessor& node0Accessor, const Key& key1, SharedPtr& node1) -> void
-		{
-			auto& branches = node0Accessor->value.branches;
-			auto& childs = branches[key1];
-			if (auto it = std::find_if(std::cbegin(childs), std::cend(childs), [&](const auto& child) -> bool {
-				return SafeShared{child} == node1;
-			});
-				it != std::cend(childs))
-				childs.erase(it);
-			if (std::empty(childs))
-				branches.erase(key1);
-			node0Accessor->detachChild(node1);
+			node0Ref.attachChild(node1, node1Ref);
+			node0Ref.value.branches[key1].push_back(node1);
 		}
 
 		static inline auto detach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
-			auto node0Accessor = node0->uniqueAccess();
-			detach(node0Accessor, key1, node1);
-		}
+			auto accessor = CppUtils::Thread::MultipleAccessor{*node0, *node1};
+			auto& node0Ref = std::get<0>(accessor.values);
+			auto& node1Ref = std::get<1>(accessor.values);
 
-		static inline auto detach(Accessor& nodeAccessor, const Key& key) -> void
-		{
-			auto& branches = nodeAccessor->value.branches;
-			const auto& nodesToDetach = branches[key];
-			for (const auto& nodeToDetach : nodesToDetach)
+			auto& branches = node0Ref.value.branches;
+			if (auto branchIt = branches.find(key1); branchIt != std::cend(branches))
 			{
-				auto sharedNode = nodeToDetach.lock();
-				nodeAccessor->detachChild(sharedNode);
+				auto& childs = branchIt->second;
+				if (auto childIt = std::find_if(std::cbegin(childs), std::cend(childs), [&](const auto& child) -> bool {
+					return SafeShared{child} == node1;
+				});
+					childIt != std::cend(childs))
+					childs.erase(childIt);
+				if (std::empty(childs))
+					branches.erase(branchIt);
 			}
-			branches.erase(key);
+			node0Ref.detachChild(node1, node1Ref);
 		}
 
 		static inline auto detach(SharedPtr& node, const Key& key) -> void
 		{
-			auto nodeAccessor = node->uniqueAccess();
-			detach(nodeAccessor, key);
+			const auto nodesToDetach = [&node, &key] -> std::vector<WeakPtr> {
+				auto nodeAccessor = node->uniqueAccess();
+				auto& branches = nodeAccessor->value.branches;
+				auto branch = branches[key];
+				branches.erase(key);
+				return branch;
+			}();
+			for (const auto& nodeToDetach : nodesToDetach)
+				if (auto sharedNode = nodeToDetach.lock())
+				{
+					auto accessor = CppUtils::Thread::MultipleAccessor{*node, *sharedNode};
+					auto& parentRef = std::get<0>(accessor.values);
+					auto& childRef = std::get<1>(accessor.values);
+					parentRef.detachChild(sharedNode, childRef);
+				}
 		}
 
 		static inline auto attach(const Key& key0, SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void

@@ -42,8 +42,10 @@ export namespace CppUtils::UnitTest::Container::NetworkPtr
 			auto root = NetworkPtr::makeRoot("Root");
 			{
 				auto branch = NetworkPtr::make("Branch", 1uz);
-				auto rootAccessor = root->uniqueAccess();
-				rootAccessor->attachChild(branch);
+				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
+				auto& rootRef = std::get<0>(accessor.values);
+				auto& branchRef = std::get<1>(accessor.values);
+				rootRef.attachChild(branch, branchRef);
 			}
 			Logger::print("Persistance de Branch\n");
 		});
@@ -52,12 +54,18 @@ export namespace CppUtils::UnitTest::Container::NetworkPtr
 			auto root = NetworkPtr::makeRoot("Root");
 			{
 				auto branch = NetworkPtr::make("Branch", 1uz);
-				auto rootAccessor = root->uniqueAccess();
-				rootAccessor->attachChild(branch);
+				{
+					auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
+					auto& rootRef = std::get<0>(accessor.values);
+					auto& branchRef = std::get<1>(accessor.values);
+					rootRef.attachChild(branch, branchRef);
+				}
 				{
 					auto leaf = NetworkPtr::make("Leaf", 2uz);
-					auto branchAccessor = branch->uniqueAccess();
-					branchAccessor->attachChild(leaf);
+					auto accessor = CppUtils::Thread::MultipleAccessor{*branch, *leaf};
+					auto& branchRef = std::get<0>(accessor.values);
+					auto& leafRef = std::get<1>(accessor.values);
+					branchRef.attachChild(leaf, leafRef);
 				}
 				Logger::print("Persistance de Leaf\n");
 			}
@@ -68,15 +76,24 @@ export namespace CppUtils::UnitTest::Container::NetworkPtr
 			auto root = NetworkPtr::makeRoot("Root");
 			{
 				auto branch = NetworkPtr::make("Branch", 1uz);
-				auto rootAccessor = root->uniqueAccess();
-				rootAccessor->attachChild(branch);
+				{
+					auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
+					auto& rootRef = std::get<0>(accessor.values);
+					auto& branchRef = std::get<1>(accessor.values);
+					rootRef.attachChild(branch, branchRef);
+				}
 				{
 					auto leaf = NetworkPtr::make("Leaf", 2uz);
-					auto branchAccessor = branch->uniqueAccess();
-					branchAccessor->attachChild(leaf);
+					auto accessor = CppUtils::Thread::MultipleAccessor{*branch, *leaf};
+					auto& branchRef = std::get<0>(accessor.values);
+					auto& leafRef = std::get<1>(accessor.values);
+					branchRef.attachChild(leaf, leafRef);
 				}
 				Logger::print("Persistance de Leaf\n");
-				rootAccessor->detachChild(branch);
+				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
+				auto& rootRef = std::get<0>(accessor.values);
+				auto& branchRef = std::get<1>(accessor.values);
+				rootRef.detachChild(branch, branchRef);
 			}
 			Logger::print("Non-persistance de Branch\n");
 		});
@@ -86,14 +103,18 @@ export namespace CppUtils::UnitTest::Container::NetworkPtr
 			auto branch = CppUtils::Container::SafeShared<NetworkPtr>{};
 			{
 				branch = NetworkPtr::make("Branch", 1uz);
-				auto rootAccessor = root->uniqueAccess();
-				rootAccessor->attachChild(branch);
+				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
+				auto& rootRef = std::get<0>(accessor.values);
+				auto& branchRef = std::get<1>(accessor.values);
+				rootRef.attachChild(branch, branchRef);
 			}
 			Logger::print("Persistance de Branch\n");
 			{
-				auto branchAccessor = branch->uniqueAccess();
+				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
+				auto& rootRef = std::get<0>(accessor.values);
+				auto& branchRef = std::get<1>(accessor.values);
 				Logger::print("Création d'une boucle\n");
-				branchAccessor->attachChild(root);
+				branchRef.attachChild(root, rootRef);
 			}
 			Logger::print("Libération de la boucle\n");
 		});

@@ -79,24 +79,23 @@ export namespace CppUtils::Container
 			return m_distanceFromRoot;
 		}
 
-		inline auto attachChild(SharedPtr& childPtr) -> void
+		inline auto attachChild(SharedPtr& childPtr, NetworkPtr& childValue) -> void
 		{
 			if (m_distanceFromRoot == std::numeric_limits<std::size_t>::max())
 				throw std::logic_error{"Root node not found"};
-			auto childAccessor = childPtr->uniqueAccess();
-			if (not childAccessor->isRoot())
-				if (std::empty(childAccessor->m_parents) or
-					childAccessor->m_distanceFromRoot > m_distanceFromRoot + 1)
-					childAccessor->m_distanceFromRoot = m_distanceFromRoot + 1;
+			if (not childValue.isRoot())
+				if (std::empty(childValue.m_parents) or
+					childValue.m_distanceFromRoot > m_distanceFromRoot + 1)
+					childValue.m_distanceFromRoot = m_distanceFromRoot + 1;
 
-			if (childAccessor->m_distanceFromRoot > m_distanceFromRoot)
+			if (childValue.m_distanceFromRoot > m_distanceFromRoot)
 				m_children.push_back(childPtr);
 			else
 				m_children.push_back(WeakPtr{childPtr});
-			childAccessor->m_parents.push_back(m_weak_this);
+			childValue.m_parents.push_back(m_weak_this);
 		}
 
-		inline auto detachChild(SharedPtr& childPtr) -> void
+		inline auto detachChild(SharedPtr& childPtr, NetworkPtr& childValue) -> void
 		{
 			if (auto thisPtr = m_weak_this.lock(); thisPtr)
 				if (auto childIt = std::find_if(std::cbegin(m_children), std::cend(m_children), [&childPtr](const auto& child) -> bool {
@@ -108,8 +107,7 @@ export namespace CppUtils::Container
 				{
 					auto mustUpdateDistance = std::holds_alternative<SharedPtr>(*childIt);
 					m_children.erase(childIt);
-					auto childAccessor = childPtr->uniqueAccess();
-					auto& parents = childAccessor->m_parents;
+					auto& parents = childValue.m_parents;
 					if (auto parentIt = std::find_if(
 							std::cbegin(parents),
 							std::cend(parents),
@@ -120,7 +118,7 @@ export namespace CppUtils::Container
 					{
 						parents.erase(parentIt);
 						if (mustUpdateDistance)
-							childAccessor->updateDistance(m_distanceFromRoot);
+							childValue.updateDistance(m_distanceFromRoot);
 					}
 				}
 		}
@@ -128,12 +126,17 @@ export namespace CppUtils::Container
 		inline auto detachChildren() -> void
 		{
 			for (auto& child : m_children)
-				if (std::holds_alternative<SharedPtr>(child))
-					detachChild(std::get<SharedPtr>(child));
-				else
+				if (auto childPtr = std::visit([](auto&& pointer) -> SharedPtr {
+					if constexpr (std::is_same_v<std::decay_t<decltype(pointer)>, SharedPtr>)
+						return pointer;
+					else
+						return pointer.lock();
+				}, child))
 				{
-					auto sharedPtr = std::get<WeakPtr>(child).lock();
-					detachChild(sharedPtr);
+					if (not childPtr)
+						continue;
+					auto accessor = childPtr->uniqueAccess();
+					detachChild(childPtr, accessor.value());
 				}
 		}
 
@@ -141,8 +144,10 @@ export namespace CppUtils::Container
 		{
 			if (auto thisPtr = m_weak_this.lock(); thisPtr)
 			{
-				auto accessor = parent->uniqueAccess();
-				accessor->detachChild(thisPtr);
+				auto accessor = Thread::MultipleAccessor{*parent, *thisPtr};
+				auto& parentRef = std::get<0>(accessor.values);
+				auto& childRef = std::get<1>(accessor.values);
+				parentRef.detachChild(thisPtr, childRef);
 			}
 		}
 
@@ -152,8 +157,10 @@ export namespace CppUtils::Container
 				for (const auto& parentWeak : m_parents)
 					if (auto parent = parentWeak.lock())
 					{
-						auto accessor = parent->uniqueAccess();
-						accessor->detachChild(thisPtr);
+						auto accessor = Thread::MultipleAccessor{*parent, *thisPtr};
+						auto& parentRef = std::get<0>(accessor.values);
+						auto& childRef = std::get<1>(accessor.values);
+						parentRef.detachChild(thisPtr, childRef);
 					}
 		}
 
