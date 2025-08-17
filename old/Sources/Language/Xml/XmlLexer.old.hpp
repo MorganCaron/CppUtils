@@ -19,7 +19,7 @@ namespace CppUtils::Language::Xml
 				}))};
 				if (string.empty())
 					return false;
-				parentNode.get().childs.emplace_back(Parser::ASTNode<Type::Token, std::string>{std::move(string)});
+				parentNode.get().children.emplace_back(Parser::ASTNode<Type::Token, std::string>{std::move(string)});
 				return true;
 			};
 
@@ -30,10 +30,10 @@ namespace CppUtils::Language::Xml
 
 			static const auto closingTagValidator = [](auto& context) -> bool {
 				auto& parentNode = context.parentNode.get();
-				const auto& closingTag = parentNode.childs.back().value;
+				const auto& closingTag = parentNode.children.back().value;
 				if (closingTag != parentNode.value)
 					return false;
-				parentNode.childs.pop_back();
+				parentNode.children.pop_back();
 				return true;
 			};
 

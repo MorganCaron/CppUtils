@@ -33,13 +33,13 @@ namespace CppUtils::UnitTests::Language::Xml::XmlLexer
 
 			EXPECT(xmlTree.exists("ul"_token));
 			const auto& ul = xmlTree.at("ul"_token);
-			EXPECT(ul.childs.size() == 3);
-			for (const auto& li : ul.childs)
+			EXPECT(ul.children.size() == 3);
+			for (const auto& li : ul.children)
 				EXPECT(li.value == "li"_token);
-			EXPECT(ul.childs.at(0).childs.size() == 1);
-			EXPECT(ul.childs.at(0).getChildValue() == "First"s);
-			EXPECT(ul.childs.at(1).getChildValue() == "Second"s);
-			EXPECT(ul.childs.at(2).getChildValue() == "Third"s);
+			EXPECT(ul.children.at(0).children.size() == 1);
+			EXPECT(ul.children.at(0).getChildValue() == "First"s);
+			EXPECT(ul.children.at(1).getChildValue() == "Second"s);
+			EXPECT(ul.children.at(2).getChildValue() == "Third"s);
 		});
 
 		addTest("Attributes", [] {

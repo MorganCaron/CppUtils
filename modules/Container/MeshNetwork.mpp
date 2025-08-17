@@ -39,13 +39,13 @@ export namespace CppUtils::Container
 			auto& branches = node0Ref.value.branches;
 			if (auto branchIt = branches.find(key1); branchIt != std::cend(branches))
 			{
-				auto& childs = branchIt->second;
-				if (auto childIt = std::find_if(std::cbegin(childs), std::cend(childs), [&](const auto& child) -> bool {
+				auto& children = branchIt->second;
+				if (auto childIt = std::find_if(std::cbegin(children), std::cend(children), [&](const auto& child) -> bool {
 					return SafeShared{child} == node1;
 				});
-					childIt != std::cend(childs))
-					childs.erase(childIt);
-				if (std::empty(childs))
+					childIt != std::cend(children))
+					children.erase(childIt);
+				if (std::empty(children))
 					branches.erase(branchIt);
 			}
 			node0Ref.detachChild(node1, node1Ref);

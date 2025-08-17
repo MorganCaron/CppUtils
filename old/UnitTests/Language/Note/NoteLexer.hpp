@@ -18,7 +18,7 @@ namespace CppUtils::UnitTests::Language::Note::NoteLexer
 			CppUtils::Log::TreeNodeLogger::log(noteTree);
 
 			EXPECT(noteTree.exists("Label"_token));
-			EXPECT(noteTree.at("Label"_token).childs.size() == 1);
+			EXPECT(noteTree.at("Label"_token).children.size() == 1);
 			EXPECT(noteTree.at("Label"_token).getChildValue() == "Text"s);
 		});
 
@@ -32,7 +32,7 @@ namespace CppUtils::UnitTests::Language::Note::NoteLexer
 			CppUtils::Log::TreeNodeLogger::log(noteTree);
 
 			EXPECT(noteTree.exists("Category"_token));
-			EXPECT(noteTree.at("Category"_token).childs.size() == 2);
+			EXPECT(noteTree.at("Category"_token).children.size() == 2);
 			EXPECT(noteTree.at("Category"_token).getChildValue(0) == "Title"_token);
 			EXPECT(noteTree.at("Category"_token).at("Title"_token).getChildValue() == "Label"s);
 			EXPECT(noteTree.at("Category"_token).getChildValue(1) == "Description"_token);
@@ -53,7 +53,7 @@ namespace CppUtils::UnitTests::Language::Note::NoteLexer
 			CppUtils::Log::TreeNodeLogger::log(noteTree);
 
 			EXPECT(noteTree.exists("Category"_token));
-			EXPECT(noteTree.at("Category"_token).childs.size() == 2);
+			EXPECT(noteTree.at("Category"_token).children.size() == 2);
 			EXPECT(noteTree.at("Category"_token).getChildValue(0) == "Title"_token);
 			EXPECT(noteTree.at("Category"_token).at("Title"_token).getChildValue() == "Label"s);
 			EXPECT(noteTree.at("Category"_token).getChildValue(1) == "Description"_token);
@@ -72,12 +72,12 @@ namespace CppUtils::UnitTests::Language::Note::NoteLexer
 			)"_note;
 			CppUtils::Log::TreeNodeLogger::log(noteTree);
 
-			EXPECT(noteTree.childs.size() == 2);
+			EXPECT(noteTree.children.size() == 2);
 			EXPECT(noteTree.exists("Category1"_token));
 			EXPECT(noteTree.exists("Category2"_token));
-			EXPECT(noteTree.at("Category2"_token).childs.size() == 2);
+			EXPECT(noteTree.at("Category2"_token).children.size() == 2);
 			EXPECT(noteTree.at("Category2"_token).getChildValue(0) == "Empty"_token);
-			EXPECT(noteTree.at("Category2"_token).at("Empty"_token).childs.empty());
+			EXPECT(noteTree.at("Category2"_token).at("Empty"_token).children.empty());
 			EXPECT(noteTree.at("Category2"_token).getChildValue(1) == "Content"_token);
 			EXPECT(noteTree.at("Category2"_token).at("Content"_token).getChildValue() == "Text"s);
 		});

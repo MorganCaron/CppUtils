@@ -23,7 +23,7 @@ namespace CppUtils::Language::IR::Compiler
 
 		static void compileComma(const Lexer::ASTNode& astNode, Context& context)
 		{
-			for (const auto& child : astNode.childs)
+			for (const auto& child : astNode.children)
 				context.compiler.get().compile(child, context);
 		}
 
@@ -51,9 +51,9 @@ namespace CppUtils::Language::IR::Compiler
 		{
 			using namespace Type::Literals;
 			const auto lhsIsDeref = (astNode.getChildValue(0) == "deref"_token);
-			context.compiler.get().compile(lhsIsDeref ? astNode.childs.at(0).childs.at(0) : astNode.childs.at(0), context);
+			context.compiler.get().compile(lhsIsDeref ? astNode.children.at(0).children.at(0) : astNode.children.at(0), context);
 			const auto lhs = context.returnRegister;
-			context.compiler.get().compile(astNode.childs.at(1), context);
+			context.compiler.get().compile(astNode.children.at(1), context);
 			const auto rhs = context.returnRegister;
 			context.returnRegister = lhs;
 			context.addInstruction(context.createInstruction(lhsIsDeref ? "write"_token : "copy"_token, lhs, rhs));
@@ -62,9 +62,9 @@ namespace CppUtils::Language::IR::Compiler
 		static void compileEq(const Lexer::ASTNode& astNode, Context& context)
 		{
 			using namespace Type::Literals;
-			context.compiler.get().compile(astNode.childs.at(0), context);
+			context.compiler.get().compile(astNode.children.at(0), context);
 			const auto lhs = context.returnRegister;
-			context.compiler.get().compile(astNode.childs.at(1), context);
+			context.compiler.get().compile(astNode.children.at(1), context);
 			const auto rhs = context.returnRegister;
 			context.returnRegister = lhs;
 			context.addInstruction(context.createInstruction("eq"_token, lhs, rhs));
@@ -73,9 +73,9 @@ namespace CppUtils::Language::IR::Compiler
 		static void compileAdd(const Lexer::ASTNode& astNode, Context& context)
 		{
 			using namespace Type::Literals;
-			context.compiler.get().compile(astNode.childs.at(0), context);
+			context.compiler.get().compile(astNode.children.at(0), context);
 			const auto lhs = context.returnRegister;
-			context.compiler.get().compile(astNode.childs.at(1), context);
+			context.compiler.get().compile(astNode.children.at(1), context);
 			const auto rhs = context.returnRegister;
 			context.returnRegister = lhs;
 			context.addInstruction(context.createInstruction("add"_token, lhs, rhs));
@@ -84,9 +84,9 @@ namespace CppUtils::Language::IR::Compiler
 		static void compileSub(const Lexer::ASTNode& astNode, Context& context)
 		{
 			using namespace Type::Literals;
-			context.compiler.get().compile(astNode.childs.at(0), context);
+			context.compiler.get().compile(astNode.children.at(0), context);
 			const auto lhs = context.returnRegister;
-			context.compiler.get().compile(astNode.childs.at(1), context);
+			context.compiler.get().compile(astNode.children.at(1), context);
 			const auto rhs = context.returnRegister;
 			context.returnRegister = lhs;
 			context.addInstruction(context.createInstruction("sub"_token, lhs, rhs));
@@ -94,22 +94,22 @@ namespace CppUtils::Language::IR::Compiler
 
 		static void compileLabel(const Lexer::ASTNode& astNode, Context& context)
 		{
-			const auto& label = std::get<Type::Token>(astNode.childs.at(1).value);
+			const auto& label = std::get<Type::Token>(astNode.children.at(1).value);
 			context.addFunction(label, 0);
-			context.compiler.get().compile(astNode.childs.at(2), context);
+			context.compiler.get().compile(astNode.children.at(2), context);
 		}
 
 		static void compileRet(const Lexer::ASTNode& astNode, Context& context)
 		{
 			using namespace Type::Literals;
-			context.compiler.get().compile(astNode.childs.at(0), context);
+			context.compiler.get().compile(astNode.children.at(0), context);
 			context.addInstruction(context.createInstruction("ret"_token, context.returnRegister));
 		}
 
 		static void compileDeref(const Lexer::ASTNode& astNode, Context& context)
 		{
 			using namespace Type::Literals;
-			context.compiler.get().compile(astNode.childs.at(0), context);
+			context.compiler.get().compile(astNode.children.at(0), context);
 			context.addInstruction(context.createInstruction("read"_token, context.returnRegister));
 		}
 
@@ -120,7 +120,7 @@ namespace CppUtils::Language::IR::Compiler
 			const auto returnRegister = context.newRegister(), functionLabel = context.newRegister();
 			context.addInstruction(context.createInstruction(functionLabel, functionName.name));
 			auto parameters = std::vector<std::uintptr_t>{returnRegister, functionLabel};
-			std::transform(astNode.childs.begin() + 1, astNode.childs.end(), std::back_inserter(parameters), [&context](const auto& astNode) -> std::uintptr_t {
+			std::transform(astNode.children.begin() + 1, astNode.children.end(), std::back_inserter(parameters), [&context](const auto& astNode) -> std::uintptr_t {
 				context.compiler.get().compile(astNode, context);
 				return context.returnRegister;
 			});
@@ -131,10 +131,10 @@ namespace CppUtils::Language::IR::Compiler
 		static void compileIf(const Lexer::ASTNode& astNode, Context& context)
 		{
 			using namespace Type::Literals;
-			context.compiler.get().compile(astNode.childs.at(0), context);
+			context.compiler.get().compile(astNode.children.at(0), context);
 			auto* ifnz = context.createInstruction("ifnz"_token, context.returnRegister);
 			context.addInstruction(ifnz);
-			context.compiler.get().compile(astNode.childs.at(1), context);
+			context.compiler.get().compile(astNode.children.at(1), context);
 			ifnz->conditionInstruction = ifnz->nextInstruction;
 			auto* nop = context.createInstruction();
 			context.addInstruction(nop);
@@ -144,10 +144,10 @@ namespace CppUtils::Language::IR::Compiler
 		static void compileWhile(const Lexer::ASTNode& astNode, Context& context)
 		{
 			using namespace Type::Literals;
-			context.compiler.get().compile(astNode.childs.at(0), context);
+			context.compiler.get().compile(astNode.children.at(0), context);
 			auto* ifnz = context.createInstruction("ifnz"_token, context.returnRegister);
 			context.addInstruction(ifnz);
-			context.compiler.get().compile(astNode.childs.at(1), context);
+			context.compiler.get().compile(astNode.children.at(1), context);
 			ifnz->conditionInstruction = ifnz->nextInstruction;
 			auto* endThen = context.lastInstruction;
 			auto* nop = context.createInstruction();

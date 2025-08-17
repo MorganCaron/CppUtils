@@ -114,10 +114,10 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 				}
 			}
 			)"_json;
-			EXPECT(iniTree.childs.size() == 3);
-			EXPECT(iniTree.childs[0] == jsonTree.childs.at(0));
-			EXPECT(iniTree.childs[1].at("Numbers"_token).childs.size() == 8);
-			EXPECT(iniTree.childs[2].at("Booleans"_token).childs.size() == 2);
+			EXPECT(iniTree.children.size() == 3);
+			EXPECT(iniTree.children[0] == jsonTree.children.at(0));
+			EXPECT(iniTree.children[1].at("Numbers"_token).children.size() == 8);
+			EXPECT(iniTree.children[2].at("Booleans"_token).children.size() == 2);
 		});
 	}
 }

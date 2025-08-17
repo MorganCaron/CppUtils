@@ -39,7 +39,7 @@ namespace CppUtils::Language::ASM::Compiler
 		{
 			using namespace Type::Literals;
 			const auto lhs = std::get<std::uintptr_t>(astNode.getChildValue(0));
-			context.compiler.get().compile(astNode.childs.at(1), context);
+			context.compiler.get().compile(astNode.children.at(1), context);
 			const auto rhs = context.returnRegister;
 			context.addInstruction(context.createInstruction("move"_token, lhs, rhs));
 		}
@@ -48,14 +48,14 @@ namespace CppUtils::Language::ASM::Compiler
 		{
 			using namespace Type::Literals;
 			const auto lhs = std::get<std::uintptr_t>(astNode.getChildValue(0));
-			context.compiler.get().compile(astNode.childs.at(1), context);
+			context.compiler.get().compile(astNode.children.at(1), context);
 			const auto rhs = context.returnRegister;
 			context.addInstruction(context.createInstruction("add"_token, lhs, rhs));
 		}
 
 		static void compileLabel(const Lexer::ASTNode& astNode, Context& context)
 		{
-			context.compiler.get().compile(astNode.childs.at(1), context);
+			context.compiler.get().compile(astNode.children.at(1), context);
 		}
 	};
 }

@@ -41,7 +41,7 @@ namespace CppUtils::Language::IR::Compiler
 			auto output = Output{};
 			buildStrings(astNode, output.stringConstants);
 			auto context = Context{m_compiler, std::ref(output)};
-			m_compiler.compile(astNode.childs, context);
+			m_compiler.compile(astNode.children, context);
 			return output;
 		}
 

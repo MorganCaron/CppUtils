@@ -34,7 +34,7 @@ namespace CppUtils::Language::ASM::Compiler
 			auto astNode = Lexer::parse(src);
 			auto output = Output{};
 			auto context = Context{m_compiler, std::ref(output)};
-			m_compiler.compile(astNode.childs, context);
+			m_compiler.compile(astNode.children, context);
 			return output;
 		}
 

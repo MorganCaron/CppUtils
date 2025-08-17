@@ -58,8 +58,8 @@ export namespace CppUtils::Language::Parameters
 			const auto src = String::concatenateStringsWithSeparator(argumentVector, " ");
 			const auto commandTree = m_grammarLexer.parseLanguage("main"_token, src);
 			auto parameters = std::map<std::string, std::string>{};
-			for (const auto& command : commandTree.childs)
-				parameters[std::string{std::get<Type::Token>(command.getChildValue(0)).name}] = (command.childs.size() == 2 ? std::get<std::string>(command.getChildValue(1)) : "");
+			for (const auto& command : commandTree.children)
+				parameters[std::string{std::get<Type::Token>(command.getChildValue(0)).name}] = (command.children.size() == 2 ? std::get<std::string>(command.getChildValue(1)) : "");
 			return parameters;
 		}
 

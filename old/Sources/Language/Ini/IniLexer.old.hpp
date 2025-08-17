@@ -29,7 +29,7 @@ namespace CppUtils::Language::Ini
 				}))};
 				if (string.empty())
 					return false;
-				parentNode.get().childs.emplace_back(Parser::ASTNode<Type::Token, bool, float, std::string>{std::move(string)});
+				parentNode.get().children.emplace_back(Parser::ASTNode<Type::Token, bool, float, std::string>{std::move(string)});
 				return true;
 			};
 
