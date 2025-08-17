@@ -44,9 +44,17 @@ export namespace CppUtils::Thread
 		inline auto call(Func&& function, Args&&... args) -> std::future<std::invoke_result_t<Func, Args...>>
 		{
 			using ReturnType = std::invoke_result_t<Func, Args...>;
-			auto task = std::make_shared<std::packaged_task<ReturnType()>>(std::bind(
-				std::forward<Func>(function),
-				std::forward<Args>(args)...));
+			auto task = std::make_shared<std::packaged_task<ReturnType()>>([this, function = std::forward<Func>(function), ... args = std::forward<Args>(args)]() {
+				try
+				{
+					std::invoke(function, std::move(args)...);
+				}
+				catch (...)
+				{
+					handleError(std::current_exception());
+					throw;
+				}
+			});
 			auto future = task->get_future();
 			{
 				auto tasksQueueAccessor = m_tasksQueue.access();
@@ -96,14 +104,7 @@ export namespace CppUtils::Thread
 			}
 
 			m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
-			try
-			{
-				task();
-			}
-			catch (...)
-			{
-				handleError(std::current_exception());
-			}
+			task();
 			m_activeWorkers.fetch_sub(1, std::memory_order_relaxed);
 
 			if (m_activeWorkers.load(std::memory_order_relaxed) == 0 and isTasksQueueEmpty())
@@ -113,7 +114,7 @@ export namespace CppUtils::Thread
 			}
 		}
 
-		inline auto handleError(std::exception_ptr exceptionPointer) noexcept -> void
+		inline auto handleError(std::exception_ptr exceptionPointer) const noexcept -> void
 		{
 			if (auto lockGuard = std::shared_lock{m_onErrorMutex}; m_onError)
 			{

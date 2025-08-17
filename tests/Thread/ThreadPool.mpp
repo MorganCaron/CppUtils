@@ -6,6 +6,7 @@ import CppUtils;
 export namespace CppUtils::UnitTest::Thread::ThreadPool
 {
 	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/ThreadPool", {"UnitTest"}, [](auto& suite) {
+		using namespace std::literals;
 		using namespace std::chrono_literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 
@@ -45,30 +46,50 @@ export namespace CppUtils::UnitTest::Thread::ThreadPool
 			suite.expect(called);
 		});
 
-		suite.addTest("Error handling", [&] {
+		suite.addTest("Error handling with future", [&] {
+			auto threadPool = CppUtils::Thread::ThreadPool{};
+			auto future = threadPool.call([] {
+				throw std::runtime_error{"Test error"};
+			});
+
+			auto called = std::atomic_bool{false};
+			try
+			{
+				future.get();
+			}
+			catch (const std::exception& exception)
+			{
+				called = true;
+				Logger::print<"error">("ThreadPool: Unhandled exception: {}", exception.what());
+				suite.expectEqual(exception.what(), "Test error"sv);
+			}
+			suite.expect(called);
+		});
+
+		suite.addTest("Error handling without future", [&] {
 			auto threadPool = CppUtils::Thread::ThreadPool{};
 			auto called = std::atomic_bool{false};
 			threadPool.setOnError([&suite, &called](std::exception_ptr exceptionPointer) {
 				called = true;
 				try
 				{
-					if (exceptionPointer)
-						std::rethrow_exception(exceptionPointer);
+					std::rethrow_exception(exceptionPointer);
 				}
 				catch (const std::exception& exception)
 				{
 					Logger::print<"error">("ThreadPool: Unhandled exception: {}", exception.what());
-					suite.expectEqual(exception.what(), "Test error");
+					suite.expectEqual(exception.what(), "Test error"sv);
 				}
 				catch (...)
 				{
 					Logger::print<"error">("ThreadPool: Unhandled non-std exception");
 				}
 			});
-			auto future = threadPool.call([] {
+			threadPool.call([] {
 				throw std::runtime_error{"Test error"};
 			});
-			future.wait();
+			threadPool.waitUntilFinished();
+			suite.expect(called);
 		});
 	}};
 }
