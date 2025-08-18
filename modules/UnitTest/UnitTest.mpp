@@ -108,13 +108,13 @@ namespace CppUtils::UnitTest
 			auto successfulTests = std::vector<std::string>{};
 			auto failedTests = std::vector<std::string>{};
 
-			if (auto result = m_testSuites.forEach([&](const auto& name, const auto& tests, const auto& dependencies) -> void {
+			if (auto result = m_testSuites.forEach([&](const auto& name, const auto& tests, const auto& dependencies) -> bool {
 				if (std::empty(tests))
 				{
 					Logger::print<"warning">("No tests found in test suite {}", name);
 					testSuiteIsSuccess[name] = true;
 					successfulTests.push_back(name);
-					return;
+					return not settings.fastAbort;
 				}
 
 				for (const auto& dependency : dependencies)
@@ -124,6 +124,7 @@ namespace CppUtils::UnitTest
 				auto result = std::ranges::all_of(tests, [&](const auto& test) { return executeTest(test, settings); });
 				testSuiteIsSuccess[name] = result;
 				(result ? successfulTests : failedTests).push_back(name);
+				return result or not settings.fastAbort;
 			});
 				not result)
 				Logger::print<"error">("The tests cannot be run: {}", result.error());

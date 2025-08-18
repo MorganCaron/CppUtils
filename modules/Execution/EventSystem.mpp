@@ -12,7 +12,7 @@ export namespace CppUtils::Execution
 
 	public:
 		template<String::Hasher eventName = String::Hash{}>
-		inline auto emit(const auto& event) -> void
+		inline auto emit(const auto& event = nullptr) -> void
 		{
 			using Event = std::remove_cvref_t<decltype(event)>;
 			auto lockGuard = std::shared_lock{m_mutex};
