@@ -1,6 +1,7 @@
 export module CppUtils.Container.DependencyGraph;
 
 import std;
+import CppUtils.Type.Concept;
 
 export namespace CppUtils::Container
 {
@@ -103,18 +104,18 @@ export namespace CppUtils::Container
 			return false;
 		}
 
-		inline auto forEach(auto&& function) -> std::expected<void, std::string>
+		inline auto forEach(auto&& function) -> std::expected<bool, std::string>
 		{
 			using namespace std::literals;
 
 			auto visited = std::unordered_map<Key, VisitState>{};
 
-			auto visit = [&](this const auto& self, const Key& key) -> std::expected<void, std::string> {
+			auto visit = [&](this const auto& self, const Key& key) -> std::expected<bool, std::string> {
 				if (not nodes.contains(key))
 					return std::unexpected{std::format("Dependency {} not found", key)};
 
 				if (visited[key] == VisitState::Visited)
-					return {};
+					return true;
 
 				if (visited[key] == VisitState::Visiting)
 					return std::unexpected{std::format("Circular dependency on node {}", key)};
@@ -124,16 +125,34 @@ export namespace CppUtils::Container
 				for (const auto& dep : nodes[key].dependencies)
 					if (auto result = self(dep); not result) [[unlikely]]
 						return result;
+					else if (*result == false)
+						return false;
 
-				function(key, nodes[key].value, nodes[key].dependencies);
+				if constexpr (std::is_same_v<std::invoke_result_t<decltype(function), const Key&, Value&, std::vector<Key>&>, void>)
+					function(key, nodes[key].value, nodes[key].dependencies);
+				else if constexpr (std::is_same_v<std::invoke_result_t<decltype(function), const Key&, Value&, std::vector<Key>&>, bool>)
+				{
+					if (not function(key, nodes[key].value, nodes[key].dependencies))
+						return false;
+				}
+				else if constexpr (Type::Specializes<std::invoke_result_t<decltype(function), const Key&, Value&, std::vector<Key>&>, std::expected>)
+				{
+					if (auto result = function(key, nodes[key].value, nodes[key].dependencies); not result)
+						return std::unexpected(result.error());
+					else if constexpr (std::same_as<typename decltype(result)::value_type, bool>)
+						if (*result == false)
+							return false;
+				}
 				visited[key] = VisitState::Visited;
-				return {};
+				return true;
 			};
 
 			for (const auto& [key, _] : nodes)
 				if (auto result = visit(key); not result) [[unlikely]]
 					return result;
-			return {};
+				else if (*result == false)
+					return false;
+			return true;
 		}
 
 		std::unordered_map<Key, Node> nodes;

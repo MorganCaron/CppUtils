@@ -166,5 +166,23 @@ export namespace CppUtils::UnitTest::Container::DependencyGraph
 			suite.expect(not result);
 			Logger::print("Error: {}\n", result.error());
 		});
+
+		suite.addTest("ForEach (interruption)", [&] {
+			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
+			graph.insert('A', 1);
+			graph.insert('B', 2);
+			graph.addDependency('A', 'B');
+
+			auto count = 0uz;
+			auto result = graph.forEach([&](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> bool {
+				Logger::print("{}: {}\n", key, value);
+				++count;
+				return false;
+			});
+
+			suite.expect(result.has_value());
+			suite.expect(not *result);
+			suite.expectEqual(count, 1uz);
+		});
 	}};
 }
