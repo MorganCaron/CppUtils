@@ -39,15 +39,15 @@ export namespace CppUtils::Container
 				for (auto& node : nodes)
 					if (key == node.value)
 						return node;
-				return nodes.emplace_back(Node<T>{key});
+				return nodes.emplace_back(key);
 			}
 
 			[[nodiscard]] inline constexpr auto operator[](const ValueType& key) const -> const Node<T>&
 			{
-				const auto value = find(key);
-				if (value == std::cend(nodes))
+				if (const auto value = find(key); value == std::cend(nodes)) [[unlikely]]
 					throw std::out_of_range{"The Node does not contain the requested child."};
-				return *value;
+				else
+					return *value;
 			}
 
 			[[nodiscard]] inline constexpr auto getNodesWithValue(const ValueType& filterValue) const

@@ -1,6 +1,7 @@
 export module CppUtils.Language.VirtualMachine;
 
 import std;
+import CppUtils.String;
 import CppUtils.Container;
 import CppUtils.Type;
 import CppUtils.String.Concept;
@@ -9,316 +10,494 @@ import CppUtils.String.Concept;
 
 export namespace CppUtils::Language::VirtualMachine
 {
-	template<class... Funcs>
-	using Functions = std::tuple<Funcs...>;
-	using NoFunctions = Functions<>;
-
-	template<class... Refs>
-	using References = std::tuple<std::reference_wrapper<Refs>...>;
-	using NoReferences = References<>;
-
-	[[nodiscard]] inline auto makeReferences(auto&... variables) noexcept
+	inline namespace v1
 	{
-		return References{std::ref(variables)...};
-	}
+		template<class... Funcs>
+		using Functions = std::tuple<Funcs...>;
+		using NoFunctions = Functions<>;
 
-	template<class... Types, class Functions = NoFunctions, class References = NoReferences>
-	[[nodiscard]] inline /* constexpr */ auto execute(
-		String::StringView auto source,
-		const Functions& functions = NoFunctions{},
-		References&& references = NoReferences{})
-		-> std::expected<void, std::string_view>
-	{
-		using namespace std::literals;
-		static_assert(Type::Specializes<Functions, std::tuple>);
-		static_assert(Type::Specializes<References, std::tuple>);
+		template<class... Refs>
+		using References = std::tuple<std::reference_wrapper<Refs>...>;
+		using NoReferences = References<>;
 
-		constexpr auto types = std::make_tuple(Types{}...);
-		constexpr auto nbFunctions = std::tuple_size_v<std::remove_cvref_t<decltype(functions)>>;
-		constexpr auto nbReferences = std::tuple_size_v<std::remove_cvref_t<decltype(references)>>;
+		[[nodiscard]] inline auto makeReferences(auto&... variables) noexcept
+		{
+			return References{std::ref(variables)...};
+		}
 
-		auto stack = Container::Stack{};
-		auto registers = std::unordered_map<std::size_t, std::size_t>{}; // constexpr en C++23
-		auto lastStackPositions = std::stack<std::size_t>{};
+		template<Type::DefaultConstructible... Types, class Functions = NoFunctions, class References = NoReferences>
+		[[nodiscard]] inline /* constexpr */ auto execute(
+			String::StringView auto source,
+			const Functions& functions = NoFunctions{},
+			References&& references = NoReferences{})
+			-> std::expected<void, std::string_view>
+		{
+			using namespace std::literals;
+			static_assert(Type::Specializes<Functions, std::tuple>);
+			static_assert(Type::Specializes<References, std::tuple>);
 
-		auto skipComment = [&source](std::size_t& position) -> void {
-			while (++position < std::size(source) and source[position] != '/' and source[position] != '\n') {}
-		};
+			constexpr auto types = std::make_tuple(Types{}...);
+			constexpr auto nbFunctions = std::tuple_size_v<std::remove_cvref_t<decltype(functions)>>;
+			constexpr auto nbReferences = std::tuple_size_v<std::remove_cvref_t<decltype(references)>>;
 
-		for (auto position = 0uz; position < std::size(source); ++position)
-			switch (auto instruction = source[position]; instruction)
-			{
-			case '@':
-				do
-					++position;
-				while (position < std::size(source) and source[position] != '@');
-				break;
+			auto stack = Container::Stack{};
+			auto registers = std::unordered_map<std::size_t, std::size_t>{}; // constexpr en C++23
+			auto lastStackPositions = std::stack<std::size_t>{};
 
-			case '[': stack.push(0uz); break;
+			auto skipComment = [&source](std::size_t& position) -> void {
+				while (++position < std::size(source) and source[position] != '/' and source[position] != '\n') {}
+			};
 
-			case ']':
-				if (auto result = stack.drop(sizeof(std::size_t)); not result) [[unlikely]]
-					return result;
-				break;
-
-			case '.': stack.push(position); break;
-
-			case '{':
-			{
-				auto oldPosition = position++;
-				for (auto counter = 1uz; position < std::size(source) and counter > 0; ++position)
-					switch (auto instruction = source[position]; instruction)
-					{
-					case '\\': ++position; break;
-					case '{': ++counter; break;
-					case '}': --counter; break;
-					case '/': skipComment(position); break;
-					}
-				if (position >= std::size(source)) [[unlikely]]
-					return std::unexpected{"Missing '}'"sv};
-				stack.push(position - 1);
-				position = oldPosition;
-				break;
-			}
-
-			case '/':
-				skipComment(position);
-				break;
-
-			case '(':
-				lastStackPositions.push(std::size(stack));
-				break;
-
-			case ')':
-				stack.push(lastStackPositions.top());
-				lastStackPositions.pop();
-				break;
-
-			case '#':
-				if (auto startPosition = stack.template get<std::size_t>(); not startPosition) [[unlikely]]
-					return std::unexpected{startPosition.error()};
-				else if (auto result = stack.set(std::hash<decltype(source)>{}(decltype(source){std::cbegin(source) + static_cast<long long>(startPosition.value() + 1), std::cbegin(source) + static_cast<long long>(position - 1)})); not result) [[unlikely]]
-					return result;
-				break;
-
-			case '*':
-				if (auto newPosition = stack.template pop<std::size_t>(); not newPosition) [[unlikely]]
-					return std::unexpected{newPosition.error()};
-				else
-					position = newPosition.value();
-				break;
-
-			case ';':
-				if constexpr (nbFunctions == 0)
-					return std::unexpected{"No function defined"sv};
-				else if (auto functionId = stack.template pop<std::size_t>(); not functionId) [[unlikely]]
-					return std::unexpected{functionId.error()};
-				else if (functionId.value() >= nbFunctions) [[unlikely]]
-					return std::unexpected{"Function identifier too large"sv};
-				else if (auto argumentsPosition = stack.template pop<std::size_t>(); not argumentsPosition) [[unlikely]]
-					return std::unexpected{argumentsPosition.error()};
-				else if (argumentsPosition.value() > std::size(stack)) [[unlikely]]
-					return std::unexpected{"Arguments position too high"sv};
-				else if (auto result = Type::Tuple::visitAt(functions, functionId.value(), [&stack, functionOffset = std::size(stack) - argumentsPosition.value()](auto& function) { return stack.call(function, functionOffset); });
-					not result) [[unlikely]]
-					return std::unexpected{result.error()};
-				break;
-
-			case '"':
-				if constexpr (nbReferences == 0)
-					return std::unexpected{"No reference defined"sv};
-				else if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
-					return std::unexpected{identifier.error()};
-				else if (identifier.value() >= nbReferences) [[unlikely]]
-					return std::unexpected{"Reference identifier too large"sv};
-				else if (auto result = Type::Tuple::visitAt(references, identifier.value(), [&stack](auto& reference) -> std::expected<void, std::string_view> {
-					using ReferenceType = typename std::remove_reference_t<decltype(reference)>::type;
-					if constexpr (not std::is_trivially_copyable_v<ReferenceType>)
-						return std::unexpected{"Cannot copy a non-trivially copyable value"sv};
-					else
-						stack.push(reference.get());
-					return {};
-				});
-					not result)
-					return std::unexpected{result.error()};
-				break;
-
-			case '^':
-				if constexpr (nbReferences == 0)
-					return std::unexpected{"No reference defined"sv};
-				else if (auto referenceId = stack.template pop<std::size_t>(); not referenceId) [[unlikely]]
-					return std::unexpected{referenceId.error()};
-				else if (referenceId.value() >= nbReferences) [[unlikely]]
-					return std::unexpected{"Variable identifier too large"sv};
-				else if (auto result = Type::Tuple::visitAt(references, referenceId.value(), [&stack](auto& reference) -> std::expected<void, std::string_view> {
-					using ReferenceType = typename std::remove_reference_t<decltype(reference)>::type;
-					if constexpr (std::is_const_v<ReferenceType>)
-						return std::unexpected{"A constant cannot be modified"sv};
-					else if constexpr (not std::is_trivially_copyable_v<ReferenceType>)
-						return std::unexpected{"Cannot copy a non-trivially copyable value"sv};
-					else if (auto result = stack.get<ReferenceType>(); not result) [[unlikely]]
-						return std::unexpected{result.error()};
-					else
-						reference.get() = std::move(result.value());
-					return {};
-				});
-					not result)
-					return std::unexpected{result.error()};
-				break;
-
-			case '<':
-				if (auto key = stack.template pop<std::size_t>(); not key) [[unlikely]]
-					return std::unexpected{key.error()};
-				else if (auto value = stack.template pop<std::size_t>(); not value) [[unlikely]]
-					return std::unexpected{value.error()};
-				else
-					registers[key.value()] = value.value();
-				break;
-
-			case '>':
-				if (auto key = stack.template get<std::size_t>(); not key) [[unlikely]]
-					return std::unexpected{key.error()};
-				else if (not registers.contains(key.value())) [[unlikely]]
-					return std::unexpected{"Unknown register key"sv};
-				else if (auto result = stack.set(registers[key.value()]); not result) [[unlikely]]
-					return result;
-				break;
-
-			case '=':
-				if constexpr (sizeof...(Types) == 0)
-					return std::unexpected{"No type defined"sv};
-				else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
-					return std::unexpected{typeId.error()};
-				else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) -> std::expected<void, std::string_view> {
-					using Type = std::remove_cvref_t<decltype(value)>;
-					if (auto lhs = stack.get<Type>(sizeof(Type)); not lhs) [[unlikely]]
-						return std::unexpected{lhs.error()};
-					else if (auto rhs = stack.get<Type>(); not rhs) [[unlikely]]
-						return std::unexpected{rhs.error()};
-					else
-						return stack.set(lhs.value() == rhs.value(), sizeof(Type) * 2);
-				});
-					not result) [[unlikely]]
-					return std::unexpected{result.error()};
-				break;
-
-			case '&':
-				if (auto lhs = stack.get<bool>(sizeof(bool)); not lhs) [[unlikely]]
-					return std::unexpected{lhs.error()};
-				else if (auto rhs = stack.get<bool>(); not rhs) [[unlikely]]
-					return std::unexpected{rhs.error()};
-				else if (auto result = stack.set(lhs.value() and rhs.value(), sizeof(bool) * 2); not result) [[unlikely]]
-					return std::unexpected{result.error()};
-				break;
-
-			case '|':
-				if (auto lhs = stack.get<bool>(sizeof(bool)); not lhs) [[unlikely]]
-					return std::unexpected{lhs.error()};
-				else if (auto rhs = stack.get<bool>(); not rhs) [[unlikely]]
-					return std::unexpected{rhs.error()};
-				else if (auto result = stack.set(lhs.value() or rhs.value(), sizeof(bool) * 2); not result) [[unlikely]]
-					return std::unexpected{result.error()};
-				break;
-
-			case ':':
-				if constexpr (sizeof...(Types) == 0)
-					return std::unexpected{"No type defined"sv};
-				else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
-					return std::unexpected{typeId.error()};
-				else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) {
-					return stack.push(value);
-				});
-					not result) [[unlikely]]
-					return std::unexpected{result.error()};
-				break;
-
-			case '_':
-				if constexpr (sizeof...(Types) == 0)
-					return std::unexpected{"No type defined"sv};
-				else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
-					return std::unexpected{typeId.error()};
-				else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) {
-					return stack.drop(sizeof(std::remove_cvref_t<decltype(value)>));
-				});
-					not result) [[unlikely]]
-					return std::unexpected{result.error()};
-				break;
-
-			case '~':
-				if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
-					return std::unexpected{identifier.error()};
-				else
-					registers.erase(identifier.value());
-				break;
-
-			case '\\': ++position; break;
-
-			case '!':
-			{
-				if (auto getResult = stack.template get<std::size_t>(); not getResult) [[unlikely]]
-					return std::unexpected{getResult.error()};
-				else if (auto setResult = stack.set<std::size_t>(not getResult.value()); not setResult) [[unlikely]]
-					return setResult;
-				break;
-			}
-
-			case '?':
-			{
-				if (auto condition = stack.template get<std::size_t>(sizeof(std::size_t)); not condition) [[unlikely]]
-					return std::unexpected{condition.error()};
-				else if (auto newPosition = stack.template pop<std::size_t>(); not newPosition) [[unlikely]]
-					return std::unexpected{newPosition.error()};
-				else if (not condition.value())
-					position = newPosition.value();
-				if (auto result = stack.drop(sizeof(std::size_t)); not result) [[unlikely]]
-					return result;
-				break;
-			}
-
-			case 'X': return {};
-
-			case '+':
-			{
-				if (auto lhs = stack.template pop<std::size_t>(); not lhs) [[unlikely]]
-					return std::unexpected{lhs.error()};
-				else if (auto rhs = stack.template get<std::size_t>(); not rhs) [[unlikely]]
-					return std::unexpected{rhs.error()};
-				else if (auto result = stack.set(lhs.value() + rhs.value()); not result) [[unlikely]]
-					return result;
-				break;
-			}
-
-			case '-':
-			{
-				if (auto lhs = stack.template pop<std::size_t>(); not lhs) [[unlikely]]
-					return std::unexpected{lhs.error()};
-				else if (auto rhs = stack.template get<std::size_t>(); not rhs) [[unlikely]]
-					return std::unexpected{rhs.error()};
-				else if (auto result = stack.set(lhs.value() - rhs.value()); not result) [[unlikely]]
-					return result;
-				break;
-			}
-
-			case ',': stack.dump(); break;
-
-			case '\'':
-			{
-				if (auto result = stack.set(source[++position]); not result) [[unlikely]]
-					return result;
-				break;
-			}
-
-			default:
-				if (instruction >= '0' and instruction <= '9')
+			for (auto position = 0uz; position < std::size(source); ++position)
+				switch (auto instruction = source[position]; instruction)
 				{
+				case '@':
+					do
+						++position;
+					while (position < std::size(source) and source[position] != '@');
+					break;
+
+				case '[': stack.push(0uz); break;
+
+				case ']':
+					if (auto result = stack.drop(sizeof(std::size_t)); not result) [[unlikely]]
+						return result;
+					break;
+
+				case '.': stack.push(position); break;
+
+				case '{':
+				{
+					auto oldPosition = position++;
+					for (auto counter = 1uz; position < std::size(source) and counter > 0; ++position)
+						switch (auto instruction = source[position]; instruction)
+						{
+						case '\\': ++position; break;
+						case '{': ++counter; break;
+						case '}': --counter; break;
+						case '/': skipComment(position); break;
+						}
+					if (position >= std::size(source)) [[unlikely]]
+						return std::unexpected{"Missing '}'"sv};
+					stack.push(position - 1);
+					position = oldPosition;
+					break;
+				}
+
+				case '/':
+					skipComment(position);
+					break;
+
+				case '(':
+					lastStackPositions.push(std::size(stack));
+					break;
+
+				case ')':
+					stack.push(lastStackPositions.top());
+					lastStackPositions.pop();
+					break;
+
+				case '#':
+					using SourceT = std::decay_t<decltype(source)>;
+					if (auto startPosition = stack.template get<std::size_t>(); not startPosition) [[unlikely]]
+						return std::unexpected{startPosition.error()};
+					else if (auto result = stack.set(std::hash<decltype(source)>{}(SourceT{
+								 std::next(std::begin(source), static_cast<std::ptrdiff_t>(startPosition.value() + 1)),
+								 std::next(std::begin(source), static_cast<std::ptrdiff_t>(position - 1))}));
+						not result) [[unlikely]]
+						return result;
+					break;
+
+				case '*':
+					if (auto newPosition = stack.template pop<std::size_t>(); not newPosition) [[unlikely]]
+						return std::unexpected{newPosition.error()};
+					else
+						position = newPosition.value();
+					break;
+
+				case ';':
+					if constexpr (nbFunctions == 0)
+						return std::unexpected{"No function defined"sv};
+					else if (auto functionId = stack.template pop<std::size_t>(); not functionId) [[unlikely]]
+						return std::unexpected{functionId.error()};
+					else if (functionId.value() >= nbFunctions) [[unlikely]]
+						return std::unexpected{"Function identifier too large"sv};
+					else if (auto argumentsPosition = stack.template pop<std::size_t>(); not argumentsPosition) [[unlikely]]
+						return std::unexpected{argumentsPosition.error()};
+					else if (argumentsPosition.value() > std::size(stack)) [[unlikely]]
+						return std::unexpected{"Arguments position too high"sv};
+					else if (auto result = Type::Tuple::visitAt(functions, functionId.value(), [&stack, functionOffset = std::size(stack) - argumentsPosition.value()](auto& function) { return stack.call(function, functionOffset); });
+						not result) [[unlikely]]
+						return std::unexpected{result.error()};
+					break;
+
+				case '"':
+					if constexpr (nbReferences == 0)
+						return std::unexpected{"No reference defined"sv};
+					else if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
+						return std::unexpected{identifier.error()};
+					else if (identifier.value() >= nbReferences) [[unlikely]]
+						return std::unexpected{"Reference identifier too large"sv};
+					else if (auto result = Type::Tuple::visitAt(references, identifier.value(), [&stack](auto& reference) -> std::expected<void, std::string_view> {
+						using ReferenceType = typename std::remove_reference_t<decltype(reference)>::type;
+						if constexpr (not std::is_trivially_copyable_v<ReferenceType>)
+							return std::unexpected{"Cannot copy a non-trivially copyable value"sv};
+						else
+							stack.push(reference.get());
+						return {};
+					});
+						not result)
+						return std::unexpected{result.error()};
+					break;
+
+				case '^':
+					if constexpr (nbReferences == 0)
+						return std::unexpected{"No reference defined"sv};
+					else if (auto referenceId = stack.template pop<std::size_t>(); not referenceId) [[unlikely]]
+						return std::unexpected{referenceId.error()};
+					else if (referenceId.value() >= nbReferences) [[unlikely]]
+						return std::unexpected{"Variable identifier too large"sv};
+					else if (auto result = Type::Tuple::visitAt(references, referenceId.value(), [&stack](auto& reference) -> std::expected<void, std::string_view> {
+						using ReferenceType = typename std::remove_reference_t<decltype(reference)>::type;
+						if constexpr (std::is_const_v<ReferenceType>)
+							return std::unexpected{"A constant cannot be modified"sv};
+						else if constexpr (not std::is_trivially_copyable_v<ReferenceType>)
+							return std::unexpected{"Cannot copy a non-trivially copyable value"sv};
+						else if (auto result = stack.get<ReferenceType>(); not result) [[unlikely]]
+							return std::unexpected{result.error()};
+						else
+							reference.get() = std::move(result.value());
+						return {};
+					});
+						not result)
+						return std::unexpected{result.error()};
+					break;
+
+				case '<':
+					if (auto key = stack.template pop<std::size_t>(); not key) [[unlikely]]
+						return std::unexpected{key.error()};
+					else if (auto value = stack.template pop<std::size_t>(); not value) [[unlikely]]
+						return std::unexpected{value.error()};
+					else
+						registers[key.value()] = value.value();
+					break;
+
+				case '>':
+					if (auto key = stack.template get<std::size_t>(); not key) [[unlikely]]
+						return std::unexpected{key.error()};
+					else if (not registers.contains(key.value())) [[unlikely]]
+						return std::unexpected{"Unknown register key"sv};
+					else if (auto result = stack.set(registers[key.value()]); not result) [[unlikely]]
+						return result;
+					break;
+
+				case '=':
+					if constexpr (sizeof...(Types) == 0)
+						return std::unexpected{"No type defined"sv};
+					else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
+						return std::unexpected{typeId.error()};
+					else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) -> std::expected<void, std::string_view> {
+						using Type = std::remove_cvref_t<decltype(value)>;
+						if (auto lhs = stack.get<Type>(sizeof(Type)); not lhs) [[unlikely]]
+							return std::unexpected{lhs.error()};
+						else if (auto rhs = stack.get<Type>(); not rhs) [[unlikely]]
+							return std::unexpected{rhs.error()};
+						else
+							return stack.set(lhs.value() == rhs.value(), sizeof(Type) * 2);
+					});
+						not result) [[unlikely]]
+						return std::unexpected{result.error()};
+					break;
+
+				case '&':
+					if (auto lhs = stack.get<bool>(sizeof(bool)); not lhs) [[unlikely]]
+						return std::unexpected{lhs.error()};
+					else if (auto rhs = stack.get<bool>(); not rhs) [[unlikely]]
+						return std::unexpected{rhs.error()};
+					else if (auto result = stack.set(lhs.value() and rhs.value(), sizeof(bool) * 2); not result) [[unlikely]]
+						return std::unexpected{result.error()};
+					break;
+
+				case '|':
+					if (auto lhs = stack.get<bool>(sizeof(bool)); not lhs) [[unlikely]]
+						return std::unexpected{lhs.error()};
+					else if (auto rhs = stack.get<bool>(); not rhs) [[unlikely]]
+						return std::unexpected{rhs.error()};
+					else if (auto result = stack.set(lhs.value() or rhs.value(), sizeof(bool) * 2); not result) [[unlikely]]
+						return std::unexpected{result.error()};
+					break;
+
+				case ':':
+					if constexpr (sizeof...(Types) == 0)
+						return std::unexpected{"No type defined"sv};
+					else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
+						return std::unexpected{typeId.error()};
+					else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) {
+						return stack.push(value);
+					});
+						not result) [[unlikely]]
+						return std::unexpected{result.error()};
+					break;
+
+				case '_':
+					if constexpr (sizeof...(Types) == 0)
+						return std::unexpected{"No type defined"sv};
+					else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
+						return std::unexpected{typeId.error()};
+					else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) {
+						return stack.drop(sizeof(std::remove_cvref_t<decltype(value)>));
+					});
+						not result) [[unlikely]]
+						return std::unexpected{result.error()};
+					break;
+
+				case '~':
+					if (auto identifier = stack.template pop<std::size_t>(); not identifier) [[unlikely]]
+						return std::unexpected{identifier.error()};
+					else
+						registers.erase(identifier.value());
+					break;
+
+				case '\\': ++position; break;
+
+				case '!':
 					if (auto getResult = stack.template get<std::size_t>(); not getResult) [[unlikely]]
 						return std::unexpected{getResult.error()};
-					else if (auto setResult = stack.set(getResult.value() * 10 + static_cast<std::size_t>(instruction - '0')); not setResult) [[unlikely]]
+					else if (auto setResult = stack.set<std::size_t>(not getResult.value()); not setResult) [[unlikely]]
 						return setResult;
-				}
-				break;
-			}
+					break;
 
-		return {};
+				case '?':
+					if (auto condition = stack.template get<std::size_t>(sizeof(std::size_t)); not condition) [[unlikely]]
+						return std::unexpected{condition.error()};
+					else if (auto newPosition = stack.template pop<std::size_t>(); not newPosition) [[unlikely]]
+						return std::unexpected{newPosition.error()};
+					else if (not condition.value())
+						position = newPosition.value();
+					if (auto result = stack.drop(sizeof(std::size_t)); not result) [[unlikely]]
+						return result;
+					break;
+
+				case 'X': return {};
+
+				case '+':
+					if (auto lhs = stack.template pop<std::size_t>(); not lhs) [[unlikely]]
+						return std::unexpected{lhs.error()};
+					else if (auto rhs = stack.template get<std::size_t>(); not rhs) [[unlikely]]
+						return std::unexpected{rhs.error()};
+					else if (auto result = stack.set(lhs.value() + rhs.value()); not result) [[unlikely]]
+						return result;
+					break;
+
+				case '-':
+					if (auto lhs = stack.template pop<std::size_t>(); not lhs) [[unlikely]]
+						return std::unexpected{lhs.error()};
+					else if (auto rhs = stack.template get<std::size_t>(); not rhs) [[unlikely]]
+						return std::unexpected{rhs.error()};
+					else if (auto result = stack.set(lhs.value() - rhs.value()); not result) [[unlikely]]
+						return result;
+					break;
+
+				case ',': stack.dump(); break;
+
+				case '\'':
+					if (auto result = stack.set(source[++position]); not result) [[unlikely]]
+						return result;
+					break;
+
+				default:
+					if (instruction >= '0' and instruction <= '9')
+					{
+						if (auto getResult = stack.template get<std::size_t>(); not getResult) [[unlikely]]
+							return std::unexpected{getResult.error()};
+						else if (auto setResult = stack.set(getResult.value() * 10 + static_cast<std::size_t>(instruction - '0')); not setResult) [[unlikely]]
+							return setResult;
+					}
+					break;
+				}
+
+			return {};
+		}
+	}
+
+	namespace v2
+	{
+		template<class CharT = char>
+		struct Context final
+		{
+			Container::ASTNode<CharT> rootAst;
+			std::vector<std::reference_wrapper<Container::ASTNode<CharT>>> scopes = {std::ref(rootAst)};
+			std::size_t sourcePosition = 0;
+			std::size_t instructionPosition = 0;
+		};
+
+		using Symbol = String::Token;
+
+		[[nodiscard]] inline constexpr auto makeDefinition(Symbol symbol, const String::StringView auto& source) -> Container::ASTNode<typename decltype(source)::value_type>
+		{
+			using ASTNode = Container::ASTNode<typename decltype(source)::value_type>;
+			auto lexemes = std::vector<ASTNode>{};
+			for (const auto c : source)
+				lexemes.emplace_back(static_cast<Symbol>(c));
+			return {symbol, std::move(lexemes)};
+		}
+
+		template<String::StringView Source, auto&&... lambdas>
+		inline constexpr auto execute(
+			const Source& source,
+			std::function<void(Symbol)> inspector = nullptr,
+			Symbol instruction = ' ',
+			Context<typename Source::value_type>&& context = Context<typename Source::value_type>{
+				.rootAst = {0uz, {makeDefinition(' ', Source{u"(r*,e?)"})}}}) -> std::expected<void, std::string_view>
+		{
+			using namespace std::literals;
+			using Context = Context<typename Source::value_type>;
+			using ASTNode = Container::ASTNode<typename Source::value_type>;
+			if (inspector)
+				inspector(instruction);
+			const auto pop = [](auto& vector) { auto last = std::move(vector.back()); vector.pop_back(); return last; };
+			static constexpr auto functions = []<std::size_t... Is>(std::index_sequence<Is...>) {
+				using Function = std::function<std::expected<void, std::string_view>(Context&)>;
+				if constexpr (sizeof...(lambdas) == 0)
+					return std::array<Function, 0>{};
+				else
+					return std::array<Function, sizeof...(lambdas)>{
+						(+[](Context& context) -> std::expected<void, std::string_view> {
+						return std::invoke(lambdas...[Is], context);
+					})...};
+			}(std::make_index_sequence<sizeof...(lambdas)>());
+			auto& [rootAst, scopes, sourcePosition, instructionPosition] = context;
+			auto scope = scopes.back();
+			auto& stack = rootAst['_'].nodes;
+			auto grammar = [instruction, &scopes]() -> std::reference_wrapper<ASTNode> {
+				const auto range = scopes | std::views::reverse;
+				auto it = std::ranges::find_if(range, [instruction](const auto scope) -> bool { return scope.get().exists(instruction); });
+				return it != std::ranges::end(range) ? *it : scopes.front();
+			}();
+			if (not grammar.get().exists(instruction))
+				switch (instruction)
+				{
+				case ':':
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					if (auto symbol = pop(stack).value; not std::empty(stack))
+						scope.get()[symbol].nodes = std::move(stack);
+					else if (auto it = std::ranges::find_if(scope.get().nodes, [symbol](const auto& node) -> bool { return node.value == symbol; }); it != std::cend(scope.get().nodes))
+						scope.get().nodes.erase(it);
+					break;
+				case '.': stack.emplace_back(0uz); break;
+				case '*':
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					if (auto result = execute<lambdas...>(source, inspector, pop(stack).value, std::move(context)); not result) [[unlikely]]
+						return result;
+					break;
+				case ';':
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					if (auto functionId = pop(stack).value; functionId >= std::size(functions)) [[unlikely]]
+						return std::unexpected{"Function id out of range"sv};
+					else if (auto result = functions[functionId](context); not result) [[unlikely]]
+						return result;
+					break;
+				case ',': ++sourcePosition; break;
+				case '+':
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					if (auto rhs = pop(stack).value; std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					else
+						stack.back().value += rhs;
+					break;
+				case '-':
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					if (auto rhs = pop(stack).value; std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					else
+						stack.back().value -= rhs;
+					break;
+				case '(': stack.emplace_back(instructionPosition); break;
+				case ')':
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					instructionPosition = pop(stack).value - 1;
+					break;
+				case '[': stack.emplace_back(sourcePosition); break;
+				case ']':
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					sourcePosition = pop(stack).value;
+					break;
+				case '{':
+				{
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					scopes.push_back(std::ref(scope.get()[pop(stack).value]));
+					break;
+				}
+				case '}': scopes.pop_back(); break;
+				case '#':
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					if (auto startPosition = pop(stack).value + 1; startPosition >= std::size(source) or sourcePosition - 1 >= std::size(source)) [[unlikely]]
+						return std::unexpected{"Syntax error: hash section out of range"sv};
+					stack.emplace_back(std::hash<Source>{}(Source{
+						std::next(std::cbegin(source), static_cast<Source::difference_type>(pop(stack).value + 1)),
+						std::next(std::cbegin(source), static_cast<Source::difference_type>(sourcePosition - 1))}));
+					break;
+				case 'r':
+					if (sourcePosition >= std::size(source)) [[unlikely]]
+						return std::unexpected{"Syntax error: unexpected end of code"sv};
+					else
+						stack.emplace_back(static_cast<std::size_t>(source[sourcePosition]));
+					break;
+				case 'e': stack.emplace_back(sourcePosition < std::size(source)); break;
+				case '=':
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					stack.back().value = (stack.back().value = pop(stack).value);
+					break;
+				case '<':
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					stack.back().value = (stack.back().value < pop(stack).value);
+					break;
+				case '>':
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					stack.back().value = (stack.back().value > pop(stack).value);
+					break;
+				case '!': stack.back().value = not stack.back().value; break;
+				case '?':
+					if (std::empty(stack)) [[unlikely]]
+						return std::unexpected{"Stack underflow"sv};
+					if (not pop(stack).value)
+						++instructionPosition;
+					break;
+				case 'x': return std::unexpected{"Syntax error"sv};
+				case '0': stack.emplace_back(0); break;
+				default:
+					if (instruction >= '0' and instruction <= '9')
+					{
+						if (std::empty(stack)) [[unlikely]]
+							return std::unexpected{"Stack underflow"sv};
+						stack.back().value = stack.back().value * 10 + static_cast<std::size_t>(pop(stack).value - '0');
+					}
+					break;
+				}
+			else
+			{
+				auto lexemes = std::ref(grammar.get()[instruction].nodes);
+				for (instructionPosition = 0uz; instructionPosition < std::size(lexemes.get()); ++instructionPosition)
+				{
+					auto lexeme = lexemes.get()[instructionPosition].value;
+					if (auto result = execute<lambdas...>(source, inspector, lexeme, std::move(context)); not result) [[unlikely]]
+						return result;
+					lexemes = std::ref(grammar.get()[instruction].nodes);
+				}
+			}
+			return {};
+		}
 	}
 }
