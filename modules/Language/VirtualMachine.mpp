@@ -436,7 +436,11 @@ export namespace CppUtils::Language::VirtualMachine
 					scopes.push_back(std::ref(scope.get()[pop(stack).value]));
 					break;
 				}
-				case '}': scopes.pop_back(); break;
+				case '}':
+					if (std::empty(scopes)) [[unlikely]]
+						return std::unexpected{"Scope underflow"sv};
+					scopes.pop_back();
+					break;
 				case '#':
 					if (std::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};

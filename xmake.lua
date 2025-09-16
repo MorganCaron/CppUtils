@@ -1,7 +1,7 @@
 set_project("CppUtils")
 set_version("0.0.0", {build = "%Y%m%d%H%M"})
 set_license("LGPL3")
-set_languages("clatest", "cxxlatest")
+set_languages("c++26")
 set_warnings("allextra", "pedantic", "error")
 add_cxflags("clang::-Wno-error=#warnings", "clang::-Wconversion", "clang::-Wfatal-errors", "clang::-Wno-deprecated-declarations -Wno-unknown-attributes")
 add_cxflags("clang::-fcolor-diagnostics", "clang::-fansi-escape-codes", "gcc::-fdiagnostics-color=always")

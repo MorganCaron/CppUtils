@@ -7,15 +7,23 @@ export namespace CppUtils::Container::Vector
 	template<class T>
 	inline auto merge(std::vector<T>& dest, const std::vector<T>& src) -> void
 	{
-		dest.reserve(dest.size() + src.size());
-		dest.insert(dest.end(), src.begin(), src.end());
+		dest.reserve(std::size(dest) + std::size(src));
+		dest.insert(std::cend(dest), std::begin(src), std::end(src));
 	}
 
 	[[nodiscard]] inline auto merge(auto&&... containers) -> decltype(auto)
 	{
 		using ValueType = typename std::common_type_t<std::decay_t<decltype(*std::begin(containers))>...>;
 		auto result = std::vector<ValueType>{};
-		(result.insert(std::end(result), std::make_move_iterator(std::begin(containers)), std::make_move_iterator(std::end(containers))), ...);
+		(result.insert(std::cend(result), std::make_move_iterator(std::begin(containers)), std::make_move_iterator(std::end(containers))), ...);
 		return result;
+	}
+
+	template<class T>
+	[[nodiscard]] inline auto popBack(std::vector<T>& vector) -> T
+	{
+		auto value = std::move(vector.back());
+		vector.pop_back();
+		return value;
 	}
 }

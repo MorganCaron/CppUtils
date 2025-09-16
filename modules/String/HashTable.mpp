@@ -14,7 +14,7 @@ export namespace CppUtils::String
 	template<Char CharT>
 	[[nodiscard]] inline auto makeHashTable(Text<CharT> auto&&... texts) -> decltype(auto)
 	{
-		return HashTable<CharT>{std::make_pair(String::hash(texts), std::forward<decltype(texts)>(texts))...};
+		return HashTable<CharT>{std::make_pair(hash(texts), std::forward<decltype(texts)>(texts))...};
 	}
 
 	template<Char CharT>
@@ -24,7 +24,7 @@ export namespace CppUtils::String
 
 		if (tokenNames.contains(token))
 		{
-			if (const auto& name = tokenNames.at(token); !std::empty(name))
+			if (const auto& name = tokenNames.at(token); not std::empty(name))
 				return std::format("{}", name);
 			else
 				return std::format(R"("")");
@@ -34,8 +34,8 @@ export namespace CppUtils::String
 			auto c = static_cast<char>(token);
 			if (std::isprint(c))
 				return std::format("{} '{}'", token, c);
-			if (String::isEscapable(c))
-				return std::format(R"({} \'{}')", token, String::unescape(c));
+			if (isEscapable(c))
+				return std::format(R"({} \'{}')", token, unescape(c));
 		}
 		return std::format("{}", token);
 	}

@@ -21,4 +21,16 @@ export namespace CppUtils::Type
 
 	static_assert(std::is_same_v<LazyEvaluationType<true, std::type_identity, int, char>, std::type_identity<int>>);
 	static_assert(std::is_same_v<LazyEvaluationType<false, std::type_identity, int, char>, char>);
+
+	template<class T>
+	inline constexpr auto preferPassByRef = sizeof(T) > sizeof(void*) or std::is_class_v<T> or std::is_union_v<T> or std::is_array_v<T> or std::is_function_v<T>;
+
+	template<class T>
+	inline constexpr auto preferPassByValue = not preferPassByRef<T>;
+
+	template<class T>
+	using In = std::conditional_t<preferPassByValue<T>, T, const T&>;
+
+	static_assert(std::is_same_v<In<int>, int>);
+	static_assert(std::is_same_v<In<std::string>, const std::string&>);
 }

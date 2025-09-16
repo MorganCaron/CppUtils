@@ -13,7 +13,8 @@ export namespace CppUtils::String
 	{
 		auto result = 0xcb'f2'9c'e4'84'22'23'25u;
 		for (const auto& c : sv)
-			result = (static_cast<Hash>(c) ^ result) * 0x1'00'00'00'01'b3u;
+			if (c)
+				result = (static_cast<Hash>(c) ^ result) * 0x1'00'00'00'01'b3u;
 		return result;
 	}
 

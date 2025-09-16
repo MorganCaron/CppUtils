@@ -23,13 +23,13 @@ export namespace CppUtils::Type
 	};
 
 	template<class T, template<class...> class IncompleteType>
-	inline constexpr bool isSpecializationOf = false;
+	inline constexpr auto isSpecializationOf = false;
 
 	template<template<class...> class IncompleteType, class... Args>
-	inline constexpr bool isSpecializationOf<IncompleteType<Args...>, IncompleteType> = true;
+	inline constexpr auto isSpecializationOf<IncompleteType<Args...>, IncompleteType> = true;
 
 	template<class T, template<class...> class IncompleteType>
-	concept Specializes = isSpecializationOf<T, IncompleteType>;
+	concept Specializes = isSpecializationOf<std::remove_cvref_t<T>, IncompleteType>;
 
 	template<class T>
 	concept Function = std::is_function_v<T>;
@@ -41,7 +41,7 @@ export namespace CppUtils::Type
 	static_assert(not HasReturnValue<void()>);
 
 	template<class T>
-	inline constexpr bool isFunctionPointer = std::is_pointer_v<T> and std::is_function_v<std::remove_pointer_t<T>>;
+	inline constexpr auto isFunctionPointer = std::is_pointer_v<T> and std::is_function_v<std::remove_pointer_t<T>>;
 
 	template<class T>
 	concept FunctionPointer = isFunctionPointer<T>;
