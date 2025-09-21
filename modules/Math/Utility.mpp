@@ -1,4 +1,4 @@
-export module CppUtils.Math.Float;
+export module CppUtils.Math.Utility;
 
 import std;
 
@@ -16,6 +16,15 @@ export namespace CppUtils::Math
 				static_cast<std::make_unsigned_t<decltype(number)>>(-number) :
 				static_cast<std::make_unsigned_t<decltype(number)>>(number);
 	}
+
+	static_assert(absolute(0) == 0u);
+	static_assert(absolute(1) == 1u);
+	static_assert(absolute(-1) == 1u);
+	static_assert(absolute(0.0) == 0.0);
+	static_assert(absolute(1.5) == 1.5);
+	static_assert(absolute(-1.5) == 1.5);
+	static_assert(absolute(0u) == 0u);
+	static_assert(absolute(1u) == 1u);
 
 	template<std::floating_point Float>
 	[[nodiscard]] inline constexpr auto isEqual(Float lhs, Float rhs, Float epsilon = std::numeric_limits<Float>::epsilon()) noexcept -> bool
@@ -38,4 +47,19 @@ export namespace CppUtils::Math
 	{
 		return std::round(number * static_cast<decltype(number)>(nbDecimals)) / static_cast<decltype(number)>(nbDecimals);
 	}
+
+	[[nodiscard]] inline constexpr auto isBetween(auto value, auto low, auto high) noexcept -> bool
+	{
+		return low <= value and value <= high;
+	}
+
+	static_assert(isBetween(5, 0, 10));
+	static_assert(not isBetween(-5, 0, 10));
+	static_assert(not isBetween(15, 0, 10));
+	static_assert(isBetween(5.0, 0.0, 10.0));
+	static_assert(not isBetween(-5.0, 0.0, 10.0));
+	static_assert(not isBetween(15.0, 0.0, 10.0));
+	static_assert(isBetween(5.0f, 0.0f, 10.0f));
+	static_assert(not isBetween(-5.0f, 0.0f, 10.0f));
+	static_assert(not isBetween(15.0f, 0.0f, 10.0f));
 }

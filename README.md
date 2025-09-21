@@ -60,8 +60,8 @@
 - [`ChronoLogger`](modules/Log/ChronoLogger.mpp) - RAII timer that logs elapsed time at scope exit
 
 ### 🧮 Math
-- [`Float`](modules/Math/Float.mpp) - Floating-point comparison with epsilon tolerance
 - [`Random`](modules/Math/Random.mpp) - Pseudorandom number generation
+- [`Utility`](modules/Math/Utility.mpp) - Floating-point comparison with epsilon tolerance
 
 ### 🔠 String
 - [`Hash`](modules/String/Hash.mpp) - Hashing utilities for strings

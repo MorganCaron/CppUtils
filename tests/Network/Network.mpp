@@ -44,7 +44,7 @@ export namespace CppUtils::UnitTest::Network
 		});
 
 		suite.addTest("Accept connection", [&] {
-			auto serverisReady = CppUtils::Thread::Event{};
+			auto serverisReady = CppUtils::Execution::Event{};
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
@@ -73,7 +73,7 @@ export namespace CppUtils::UnitTest::Network
 		});
 
 		suite.addTest("Blocking", [&] {
-			auto serverisReady = CppUtils::Thread::Event{};
+			auto serverisReady = CppUtils::Execution::Event{};
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
@@ -106,7 +106,7 @@ export namespace CppUtils::UnitTest::Network
 		});
 
 		suite.addTest("Send/receive message (int)", [&] {
-			auto serverisReady = CppUtils::Thread::Event{};
+			auto serverisReady = CppUtils::Execution::Event{};
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
@@ -159,7 +159,7 @@ export namespace CppUtils::UnitTest::Network
 		});
 
 		suite.addTest("Send/receive message (std::string)", [&] {
-			auto serverisReady = CppUtils::Thread::Event{};
+			auto serverisReady = CppUtils::Execution::Event{};
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};

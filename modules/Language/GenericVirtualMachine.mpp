@@ -29,14 +29,14 @@ export namespace CppUtils::Language
 		Context context = {};
 
 		template<auto&&... functions>
-		inline constexpr auto execute(Type::Specializes<Cursor> auto&& cursor, const ASTNode& instruction = ASTNode{String::hash("main")}) -> std::expected<void, std::string>
+		inline constexpr auto execute(Type::Specializes<Cursor> auto&& cursor, const ASTNode& instruction = ASTNode{String::hash("main")}) -> std::expected<GenericVirtualMachine<Context, interpreter, inspector>, std::string>
 		{
 			if constexpr (not std::same_as<decltype(inspector), std::nullptr_t>)
 				if (auto result = inspector(cursor, instruction, context); not result)
-					return result;
+					return std::unexpected{std::move(result.error())};
 			if (auto result = interpreter.template operator()<functions...>(cursor, instruction, *this); not result)
-				return result;
-			return {};
+				return std::unexpected{std::move(result.error())};
+			return *this;
 		}
 	};
 }

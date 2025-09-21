@@ -25,7 +25,7 @@ export namespace CppUtils::Language::Homoiconic
 			{
 				const auto& lexeme = lexemes.get()[instructionPosition];
 				if (auto result = virtualMachine.template execute<functions...>(cursor, lexeme); not result) [[unlikely]]
-					return result;
+					return std::unexpected{std::move(result.error())};
 				lexemes = std::ref(grammar.get()[instructionToken].nodes);
 			}
 		}
@@ -74,17 +74,17 @@ export namespace CppUtils::Language::Homoiconic
 	template<auto inspector = nullptr>
 	using VirtualMachine = GenericVirtualMachine<Context, interpreter, inspector>;
 
-	constexpr auto printInstruction = [](const Type::Specializes<Cursor> auto&, const ASTNode& instruction, Context& context) -> std::expected<void, std::string> {
+	inline constexpr auto printInstruction = [](const Type::Specializes<Cursor> auto&, const ASTNode& instruction, Context& context) -> std::expected<void, std::string> {
 		std::println("{}", String::getNameOrValue(instruction.value, context.hashTable));
 		return {};
 	};
 
-	constexpr auto executeInstruction = [](Type::Specializes<Cursor> auto& cursor, auto& virtualMachine) -> std::expected<void, std::string> {
+	inline constexpr auto executeInstruction = [](Type::Specializes<Cursor> auto& cursor, auto& virtualMachine) -> std::expected<void, std::string> {
 		virtualMachine.template execute<>(cursor, ASTNode{static_cast<Symbol>(cursor.getCurrent())});
 		return {};
 	};
 
-	constexpr auto advanceCursor = [](Type::Specializes<Cursor> auto& cursor, [[maybe_unused]] auto& virtualMachine) -> std::expected<void, std::string> {
+	inline constexpr auto advanceCursor = [](Type::Specializes<Cursor> auto& cursor, [[maybe_unused]] auto& virtualMachine) -> std::expected<void, std::string> {
 		++cursor.position;
 		return {};
 	};

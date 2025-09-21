@@ -1,8 +1,8 @@
-export module CppUtils.Thread.Event;
+export module CppUtils.Execution.Event;
 
 import std;
 
-export namespace CppUtils::Thread
+export namespace CppUtils::Execution
 {
 	class Event final
 	{
