@@ -1,0 +1,52 @@
+export module CppUtils.Terminal.Area:WritableAreaView;
+
+import std;
+import :AreaBuffer;
+import :Viewport;
+
+export namespace CppUtils::Terminal
+{
+	class WritableAreaView final
+	{
+	public:
+		WritableAreaView(AreaBuffer& areaBuffer, Viewport viewport):
+			m_areaBuffer{areaBuffer},
+			m_viewport{viewport}
+		{}
+
+		[[nodiscard]] inline auto getSubView(Viewport viewport) noexcept -> std::expected<WritableAreaView, std::string>
+		{
+			if (not m_viewport.contains(viewport))
+				return std::unexpected{"New viewport is out of bounds"};
+			return WritableAreaView{m_areaBuffer, viewport};
+		}
+
+		inline auto applyArea(const AreaBuffer& areaBuffer, Viewport viewport) noexcept -> void
+		{
+			if (not m_viewport.contains(viewport))
+				return;
+			const auto& viewportPosition = viewport.getPosition();
+			viewport.forEach([this, &areaBuffer, &viewportPosition](const auto& position) noexcept -> void {
+				m_areaBuffer.setChar(position, areaBuffer.getChar(position - viewportPosition));
+			});
+		}
+
+		inline auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void
+		{
+			if (not m_viewport.contains(position))
+				return;
+			m_areaBuffer.setChar(m_viewport.getPosition() + position, c);
+		}
+
+		inline auto fill(const CharAttributes& c) noexcept -> void
+		{
+			m_viewport.forEach([this, &c](const auto& position) noexcept -> void {
+				m_areaBuffer.setChar(position, c);
+			});
+		}
+
+	private:
+		AreaBuffer& m_areaBuffer;
+		Viewport m_viewport;
+	};
+}

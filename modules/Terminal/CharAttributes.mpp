@@ -1,0 +1,16 @@
+export module CppUtils.Terminal.CharAttributes;
+
+import CppUtils.Terminal.TextStyle;
+import CppUtils.Terminal.TextColor;
+import CppUtils.Terminal.BackgroundColor;
+
+export namespace CppUtils::Terminal
+{
+	struct CharAttributes final
+	{
+		char character = ' ';
+		TextStyle::TextStyleEnum textStyle = TextStyle::TextStyleEnum{0};
+		TextColor::TextColorEnum textColor = TextColor::TextColorEnum::Default;
+		BackgroundColor::BackgroundColorEnum backgroundColor = BackgroundColor::BackgroundColorEnum::Default;
+	};
+}

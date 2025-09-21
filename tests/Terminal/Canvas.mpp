@@ -5,41 +5,64 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Terminal::Canvas
 {
-	inline auto _ = TestSuite{"Terminal/Canvas", {"UnitTest"}, [](auto& suite) {
+	inline auto _ = TestSuite{"Terminal/Canvas", {"UnitTest", "Execution/Planner"}, [](auto& suite) {
 		using namespace std::literals;
 		using namespace std::chrono_literals;
 
 		suite.addTest("Size", [&] {
 			{
-				auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 5}};
+				auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{10, 5}};
 				canvas.fill('/');
-				canvas.update();
+				canvas.print();
 				std::this_thread::sleep_for(300ms);
 			}
 			{
-				auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{16, 9}};
+				auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{16, 9}};
 				canvas.fill('.');
-				canvas.update();
+				canvas.print();
 				std::this_thread::sleep_for(300ms);
 			}
 			{
-				auto canvas = CppUtils::Terminal::Canvas{};
+				auto canvas = CppUtils::Terminal::v2::Canvas{};
 				canvas.fill('#');
-				canvas.update();
+				canvas.print();
 				std::this_thread::sleep_for(300ms);
 			}
 		});
 
 		suite.addTest("Fill", [&] {
-			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 5}};
+			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{10, 5}};
 			const auto chars = "-\\|/"sv;
 			for (auto i = 0uz; i < 5; ++i)
 				for (auto c : chars)
 				{
 					std::this_thread::sleep_for(50ms);
 					canvas.fill(c);
-					canvas.update();
+					canvas.print();
 				}
+		});
+
+		suite.addTest("Fill with planner", [&] {
+			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{10, 5}};
+			auto planner = CppUtils::Execution::Planner{};
+			const auto chars = "-\\|/"sv;
+			auto loop = 0uz, frame = 0uz;
+			auto updateFrame = [&](this const auto& self) -> void {
+				canvas.fill(chars[frame++]);
+				canvas.print();
+				if (frame == std::size(chars))
+				{
+					frame = 0;
+					if (++loop == 5)
+					{
+						canvas.stop();
+						return;
+					}
+				}
+				planner.schedule(self, 50ms);
+			};
+			updateFrame();
+			canvas.wait();
 		});
 
 		suite.addTest("Print", [&] {

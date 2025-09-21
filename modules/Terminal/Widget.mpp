@@ -1,0 +1,13 @@
+export module CppUtils.Terminal.Area:Widget;
+
+import :WritableAreaView;
+
+export namespace CppUtils::Terminal
+{
+	class Widget
+	{
+	public:
+		inline virtual ~Widget() = default;
+		virtual auto draw(WritableAreaView& view) noexcept -> void = 0;
+	};
+}

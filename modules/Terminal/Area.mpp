@@ -1,0 +1,70 @@
+export module CppUtils.Terminal.Area;
+
+import std;
+import CppUtils.Container.Size;
+import :AreaBuffer;
+export import CppUtils.Terminal.CharAttributes;
+export import :Widget;
+export import :Viewport;
+export import :WritableAreaView;
+
+export namespace CppUtils::Terminal
+{
+	class Area: public AreaBuffer, public Widget
+	{
+	public:
+		inline Area(const Container::Size2& size, const Viewport& viewport = {{0, 0}, {0, 0}}):
+			AreaBuffer{size},
+			m_viewport{viewport}
+		{}
+
+		inline auto addWidget(std::unique_ptr<Widget> widget) -> void
+		{
+			m_widget = std::move(widget);
+		}
+
+		inline auto requestFullRender() noexcept -> void
+		{
+			m_fullRenderRequested = true;
+		}
+
+		inline auto setViewport(const Viewport& viewport) noexcept -> void
+		{
+			m_viewport = viewport;
+			requestFullRender();
+		}
+
+		[[nodiscard]] inline auto getViewport() const noexcept -> const auto&
+		{
+			return m_viewport;
+		}
+
+		inline auto fill(char c) noexcept -> void
+		{
+			fill(CharAttributes{c});
+		}
+
+		inline auto fill(const CharAttributes& c) noexcept -> void
+		{
+			auto view = WritableAreaView{*this, m_viewport};
+			view.fill(c);
+			requestFullRender();
+		}
+
+		inline auto draw([[maybe_unused]] WritableAreaView& view) noexcept -> void override final
+		{
+			if (not m_widget)
+				return;
+			auto selfView = WritableAreaView{*this, m_viewport};
+			m_widget->draw(selfView);
+			// Draw scrollbars
+			// Apply to view (applique la portion délimitée par viewport du buffer sur view)
+			// view.applyArea(m_widget->getBuffer(), m_viewport);
+		}
+
+	protected:
+		bool m_fullRenderRequested = true;
+		Viewport m_viewport;
+		std::unique_ptr<Widget> m_widget;
+	};
+}

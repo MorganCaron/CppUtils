@@ -9,80 +9,196 @@ import CppUtils.Container.Size;
 import CppUtils.Terminal.Utility;
 import CppUtils.Terminal.Size;
 import CppUtils.Terminal.Cursor;
+import CppUtils.Terminal.Area;
+import CppUtils.Terminal.TextStyle;
+import CppUtils.Terminal.TextColor;
+import CppUtils.Terminal.BackgroundColor;
+import CppUtils.Execution.Event;
 
 export namespace CppUtils::Terminal
 {
-	class Canvas final
+	inline namespace v1
 	{
-	public:
-		struct StyledSegment final
+		class Canvas final
 		{
-			std::size_t begin, end;
+		public:
+			struct StyledSegment final
+			{
+				std::size_t begin, end;
+			};
+
+			inline Canvas(const Container::Size2& size = getTerminalSize()):
+				m_size{size},
+				m_buffer{std::string(m_size.width() * m_size.height(), ' ')}
+			{
+				if (m_size.width() == 0 or m_size.height() == 0)
+					return;
+				std::print("{}", std::string(m_size.height() - 1, '\n'));
+				update();
+			}
+
+			inline ~Canvas()
+			{
+				std::puts("");
+			}
+
+			[[nodiscard]] inline constexpr auto getSize() const noexcept -> const auto&
+			{
+				return m_size;
+			}
+
+			inline auto fill(char c) noexcept -> void
+			{
+				m_buffer.assign(m_size.width() * m_size.height(), c);
+			}
+
+			[[nodiscard]] inline auto getOrigin() const noexcept -> auto
+			{
+				return Container::Size2{0, getTerminalSize().height() - m_size.height()};
+			}
+
+			inline auto print(const Container::Size2& position, std::string_view text) noexcept -> void
+			{
+				const auto offset = position.x() + position.y() * m_size.width();
+				if (offset >= std::size(m_buffer))
+					return;
+
+				std::copy_n(
+					std::cbegin(text),
+					std::min(std::size(text), std::size(m_buffer) - offset),
+					std::begin(m_buffer) + static_cast<std::ptrdiff_t>(offset));
+			}
+
+			inline auto update() -> void
+			{
+				{
+					auto cursorPosition = getTerminalSize();
+					cursorPosition.x() = 0;
+					cursorPosition.y() -= m_size.height();
+					setCursorPosition(cursorPosition);
+				}
+				const auto buffer = std::string_view{m_buffer};
+				for (auto lineNb = 0uz; lineNb < m_size.height();)
+				{
+					std::fwrite(std::data(buffer.substr(lineNb * m_size.width(), m_size.width())), sizeof(decltype(m_buffer)::value_type), m_size.width(), stdout);
+					if (++lineNb != m_size.height())
+						std::fwrite("\n", 1, 1, stdout);
+				}
+				std::fflush(stdout);
+			}
+
+		private:
+			Container::Size2 m_size;
+			std::string m_buffer;
+			std::vector<StyledSegment> m_attributes;
 		};
+	}
 
-		inline Canvas(Container::Size2 size = getTerminalSize()):
-			m_size{size},
-			m_buffer{std::string(m_size.width() * m_size.height(), ' ')}
+	namespace v2
+	{
+		class Canvas final: public Area
 		{
-			if (m_size.width() == 0 or m_size.height() == 0)
-				return;
-			std::print("{}", std::string(m_size.height() - 1, '\n'));
-			update();
-		}
+			using Area::draw;
 
-		inline ~Canvas()
-		{
-			std::puts("");
-		}
+		public:
+			inline Canvas(const Container::Size2& size = getTerminalSize(), const std::optional<Viewport>& viewportOpt = std::nullopt):
+				Area{size, viewportOpt.value_or(Viewport{size, {0, 0}})},
+				m_previousBuffer{size}
+			{}
 
-		[[nodiscard]] inline constexpr auto getSize() const noexcept -> const auto&
-		{
-			return m_size;
-		}
-
-		inline auto fill(char c) noexcept -> void
-		{
-			m_buffer.assign(m_size.width() * m_size.height(), c);
-		}
-
-		[[nodiscard]] inline auto getOrigin() const noexcept -> auto
-		{
-			return Container::Size2{0, getTerminalSize().height() - m_size.height()};
-		}
-
-		inline auto print(Container::Size2 position, std::string_view text) noexcept -> void
-		{
-			const auto offset = position.x() + position.y() * m_size.width();
-			if (offset >= std::size(m_buffer))
-				return;
-
-			std::copy_n(
-				std::cbegin(text),
-				std::min(std::size(text), std::size(m_buffer) - offset),
-				std::begin(m_buffer) + static_cast<std::ptrdiff_t>(offset));
-		}
-
-		inline auto update() -> void
-		{
+			inline auto applyDifferences() noexcept -> void
 			{
-				auto cursorPosition = getTerminalSize();
-				cursorPosition.x() = 0;
-				cursorPosition.y() -= m_size.height();
-				setCursorPosition(cursorPosition);
-			}
-			const auto buffer = std::string_view{m_buffer};
-			for (auto lineNb = 0uz; lineNb < m_size.height();)
-			{
-				std::fwrite(std::data(buffer.substr(lineNb * m_size.width(), m_size.width())), sizeof(decltype(m_buffer)::value_type), m_size.width(), stdout);
-				if (++lineNb != m_size.height())
-					std::fwrite("\n", 1, 1, stdout);
-			}
-			std::fflush(stdout);
-		}
+				using namespace std::literals;
+				auto terminalSize = getTerminalSize();
+				auto stringBuffer = ""s;
+				auto needFlush = false;
+				auto lastAttributes = CharAttributes{};
+				m_viewport.forEach([&](const auto& position) noexcept {
+					const auto& currentChar = getChar(position);
+					const auto& previousChar = m_previousBuffer.getChar(position);
 
-	private:
-		Container::Size2 m_size;
-		std::string m_buffer;
-		std::vector<StyledSegment> m_attributes;
-	};
+					auto needUpdateText = currentChar.character != previousChar.character;
+					auto needUpdateTextStyle = currentChar.textStyle != lastAttributes.textStyle;
+					auto needUpdateTextColor = currentChar.textColor != lastAttributes.textColor;
+					auto needUpdateBackgroundColor = currentChar.backgroundColor != lastAttributes.backgroundColor;
+
+					if (needUpdateText or needUpdateTextStyle or needUpdateTextColor or needUpdateBackgroundColor)
+					{
+						if (std::empty(stringBuffer))
+							setCursorPosition(Container::Size2{position.x(), terminalSize.height() - m_viewport.getSize().height() + position.y() - 1});
+						if (needUpdateTextStyle)
+						{
+							stringBuffer += TextStyle::getTextStyleCode(currentChar.textStyle);
+							lastAttributes.textStyle = currentChar.textStyle;
+						}
+						if (needUpdateTextColor)
+						{
+							stringBuffer += TextColor::getTextColorCode(currentChar.textColor);
+							lastAttributes.textColor = currentChar.textColor;
+						}
+						if (needUpdateBackgroundColor)
+						{
+							stringBuffer += BackgroundColor::getBackgroundColorCode(currentChar.backgroundColor);
+							lastAttributes.backgroundColor = currentChar.backgroundColor;
+						}
+						stringBuffer += currentChar.character;
+						m_previousBuffer.setChar(position, currentChar);
+						if (not std::empty(stringBuffer) and position.x() + 1 == m_viewport.getSize().width())
+							stringBuffer += '\n';
+					}
+					else if (not std::empty(stringBuffer))
+					{
+						std::fwrite(std::data(stringBuffer), sizeof(decltype(stringBuffer)::value_type), std::size(stringBuffer), stdout);
+						stringBuffer.clear();
+						needFlush = true;
+					}
+				});
+				if (not std::empty(stringBuffer))
+				{
+					std::fwrite(std::data(stringBuffer), sizeof(decltype(stringBuffer)::value_type), std::size(stringBuffer), stdout);
+					needFlush = true;
+				}
+				if (needFlush)
+					std::fflush(stdout);
+				setCursorPosition(getTerminalSize());
+			}
+
+			inline auto print() noexcept -> void
+			{
+				if (m_widget)
+				{
+					auto view = WritableAreaView{*this, m_viewport};
+					m_widget->draw(view);
+				}
+				if (m_forceReprint)
+				{
+					std::print("{}", std::string(m_viewport.getSize().height(), '\n'));
+					m_forceReprint = false;
+				}
+				applyDifferences();
+			}
+
+			inline auto reprint() noexcept -> void
+			{
+				m_forceReprint = true;
+				print();
+			}
+
+			inline auto wait() noexcept -> void
+			{
+				print();
+				m_stopEvent.wait();
+			}
+
+			inline auto stop() noexcept -> void
+			{
+				m_stopEvent.notify();
+			}
+
+		private:
+			bool m_forceReprint = true;
+			AreaBuffer m_previousBuffer;
+			Execution::Event m_stopEvent;
+		};
+	}
 }

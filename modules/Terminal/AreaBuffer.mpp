@@ -1,0 +1,52 @@
+export module CppUtils.Terminal.Area:AreaBuffer;
+
+import std;
+import CppUtils.Container.Size;
+import CppUtils.Terminal.CharAttributes;
+
+export namespace CppUtils::Terminal
+{
+	class AreaBuffer
+	{
+	public:
+		using Line = std::vector<CharAttributes>;
+		using Buffer = std::vector<Line>;
+
+		inline AreaBuffer(const Container::Size2& size)
+		{
+			setSize(size);
+		}
+
+		inline auto setSize(const Container::Size2& size) noexcept -> void
+		{
+			m_size = size;
+			m_buffer = Buffer{m_size.height(), Line{m_size.width()}};
+		}
+
+		[[nodiscard]] inline auto getSize() const noexcept -> const auto&
+		{
+			return m_size;
+		}
+
+		[[nodiscard]] inline auto getChar(const Container::Size2& position) const noexcept -> const CharAttributes&
+		{
+			return m_buffer[position.y()][position.x()];
+		}
+
+		inline auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void
+		{
+			if (position.x() >= m_size.width() or position.y() >= m_size.height())
+				return;
+			m_buffer[position.y()][position.x()] = c;
+		}
+
+		auto getBuffer() const noexcept -> const auto&
+		{
+			return m_buffer;
+		}
+
+	private:
+		Buffer m_buffer;
+		Container::Size2 m_size;
+	};
+}

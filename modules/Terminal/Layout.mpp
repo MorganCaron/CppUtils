@@ -1,0 +1,27 @@
+export module CppUtils.Terminal.Layout;
+
+import std;
+import CppUtils.Terminal.Area;
+
+export namespace CppUtils::Terminal
+{
+	class Layout: public Widget
+	{
+	public:
+		inline virtual ~Layout() = default;
+
+		inline auto addWidget(std::unique_ptr<Widget> widget) -> void
+		{
+			m_widgets.emplace_back(std::move(widget));
+		}
+
+		inline auto draw(WritableAreaView& view) noexcept -> void override final
+		{
+			for (const auto& widget : m_widgets)
+				widget->draw(view);
+		}
+
+	private:
+		std::vector<std::unique_ptr<Widget>> m_widgets;
+	};
+}
