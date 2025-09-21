@@ -4,12 +4,31 @@ module;
 
 export module CppUtils.Terminal.Utility;
 
+import CppUtils.System.Type;
+import CppUtils.System.Error;
+import CppUtils.Terminal.Handle;
+
 export namespace CppUtils::Terminal
 {
 	inline auto setConsoleOutputUTF8() -> void
 	{
 #if defined(OS_WINDOWS)
 		SetConsoleOutputCP(CP_UTF8);
+#endif
+	}
+
+	inline auto enableAnsi() -> void
+	{
+#if defined(OS_WINDOWS)
+		auto outputHandle = getTerminalHandle(stdout);
+		if (outputHandle == System::InvalidHandle)
+			return;
+
+		auto mode = DWORD{0};
+		if (not GetConsoleMode(outputHandle, std::addressof(mode)))
+			throwLastError("CppUtils::Terminal::enableAnsi: GetConsoleMode failed");
+
+		SetConsoleMode(outputHandle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 #endif
 	}
 }

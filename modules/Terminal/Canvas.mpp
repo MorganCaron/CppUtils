@@ -33,7 +33,7 @@ export namespace CppUtils::Terminal
 			{
 				if (m_size.width() == 0 or m_size.height() == 0)
 					return;
-				std::print("{}", std::string(m_size.height() - 1, '\n'));
+				std::print("{}", std::string(m_size.height(), '\n'));
 				update();
 			}
 
@@ -101,10 +101,13 @@ export namespace CppUtils::Terminal
 			using Area::draw;
 
 		public:
-			inline Canvas(const Container::Size2& size = getTerminalSize(), const std::optional<Viewport>& viewportOpt = std::nullopt):
-				Area{size, viewportOpt.value_or(Viewport{size, {0, 0}})},
+			inline Canvas(const Container::Size2& size = getTerminalSize(), const std::optional<Viewport>& optionalViewport = std::nullopt):
+				Area{size, optionalViewport.value_or(Viewport{size, {0, 0}})},
 				m_previousBuffer{size}
-			{}
+			{
+				setConsoleOutputUTF8();
+				enableAnsi();
+			}
 
 			inline auto applyDifferences() noexcept -> void
 			{
@@ -125,7 +128,7 @@ export namespace CppUtils::Terminal
 					if (needUpdateText or needUpdateTextStyle or needUpdateTextColor or needUpdateBackgroundColor)
 					{
 						if (std::empty(stringBuffer))
-							setCursorPosition(Container::Size2{position.x(), terminalSize.height() - m_viewport.getSize().height() + position.y() - 1});
+							setCursorPosition({position.x(), terminalSize.height() - m_viewport.getSize().height() + position.y()});
 						if (needUpdateTextStyle)
 						{
 							stringBuffer += TextStyle::getTextStyleCode(currentChar.textStyle);
@@ -160,7 +163,7 @@ export namespace CppUtils::Terminal
 				}
 				if (needFlush)
 					std::fflush(stdout);
-				setCursorPosition(getTerminalSize());
+				setCursorPosition({0, getTerminalSize().height()});
 			}
 
 			inline auto print() noexcept -> void
@@ -190,7 +193,7 @@ export namespace CppUtils::Terminal
 				m_stopEvent.wait();
 			}
 
-			inline auto stop() noexcept -> void
+			inline auto close() noexcept -> void
 			{
 				m_stopEvent.notify();
 			}

@@ -55,7 +55,7 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 					frame = 0;
 					if (++loop == 5)
 					{
-						canvas.stop();
+						canvas.close();
 						return;
 					}
 				}

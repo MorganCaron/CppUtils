@@ -33,7 +33,7 @@ export namespace CppUtils::Terminal
 		const auto response = rawTerminal.read('R');
 		auto rows = 0, columns = 0;
 		if (std::sscanf(response.c_str(), "\x1b[%d;%d", std::addressof(rows), std::addressof(columns)) == 2)
-			return Container::Size2{columns - 1, rows - 1};
+			return Container::Size2{columns, rows};
 		return std::unexpected{"Cursor position retrieval failure"sv};
 	}
 #endif
@@ -46,7 +46,7 @@ export namespace CppUtils::Terminal
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 	inline auto setCursorPosition([[maybe_unused]] Container::Size2 position) -> void
 	{
-		std::print("\x1b[{};{}H", position.y() + 1, position.x() + 1);
+		std::print("\x1b[{};{}H", position.y(), position.x());
 	}
 #endif
 }
