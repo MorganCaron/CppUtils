@@ -1,0 +1,148 @@
+export module CppUtils.Thread.Planner;
+
+import std;
+import CppUtils.Chrono.Concept;
+import CppUtils.Thread.UniqueLocker;
+import CppUtils.Thread.SharedLocker;
+import CppUtils.Thread.ThreadLoop;
+
+export namespace CppUtils::Thread
+{
+	class Planner final
+	{
+		using Clock = std::chrono::steady_clock;
+		using TimePoint = Clock::time_point;
+		using Task = std::function<void()>;
+
+		struct Item final
+		{
+			TimePoint time;
+			Task task;
+			std::atomic_bool cancelled = false;
+		};
+
+		struct Compare final
+		{
+			auto operator()(const std::shared_ptr<Item>& a,
+				const std::shared_ptr<Item>& b) const noexcept -> bool
+			{
+				return a->time < b->time;
+			}
+		};
+
+		using Set = std::multiset<std::shared_ptr<Item>, Compare>;
+		using Map = std::unordered_map<std::size_t, std::shared_ptr<Item>>;
+
+	public:
+		inline Planner():
+			m_loop{
+				[this] { runLoop(); },
+				[this] { m_condition.notify_all(); }}
+		{
+			m_loop.start();
+		}
+
+		inline ~Planner() noexcept
+		{
+			cancelAll();
+			m_loop.requestStop();
+		}
+
+		inline auto schedule(Task task, TimePoint when) -> std::size_t
+		{
+			auto id = m_nextId++;
+			auto item = std::make_shared<Item>(when, std::move(task));
+			{
+				auto mapAccessor = m_set.access();
+				mapAccessor->insert(item);
+			}
+			{
+				auto mapAccessor = m_map.access();
+				mapAccessor->emplace(id, item);
+			}
+			m_condition.notify_all();
+			return id;
+		}
+
+		inline auto schedule(Task task, Chrono::Duration auto delay) -> std::size_t
+		{
+			return schedule(std::move(task), Clock::now() + delay);
+		}
+
+		inline auto waitUntilFinished() -> void
+		{
+			auto setAccessor = m_set.access();
+			m_condition.wait(setAccessor.getLockGuard(), [&setAccessor] {
+				return std::empty(setAccessor.value());
+			});
+		}
+
+		inline auto cancel(std::size_t id) -> void
+		{
+			auto mapAccessor = m_map.access();
+			if (auto it = mapAccessor->find(id); it != std::end(mapAccessor.value()))
+			{
+				it->second->cancelled = true;
+				mapAccessor->erase(it);
+			}
+		}
+
+		inline auto cancelAll() -> void
+		{
+			auto mapAccessor = m_map.access();
+			for (auto& [_, item] : mapAccessor.value())
+				item->cancelled = true;
+			mapAccessor->clear();
+			{
+				auto setAccessor = m_set.access();
+				setAccessor->clear();
+			}
+			m_condition.notify_all();
+		}
+
+	private:
+		inline auto runLoop() -> void
+		{
+			auto setAccessor = m_set.access();
+
+			if (std::empty(setAccessor.value()))
+			{
+				m_condition.notify_all();
+				m_condition.wait(setAccessor.getLockGuard(), [this, &setAccessor] {
+					return not std::empty(setAccessor.value()) or m_loop.isStopRequested();
+				});
+				return;
+			}
+
+			auto item = *std::begin(setAccessor.value());
+
+			if (item->cancelled)
+			{
+				setAccessor->erase(std::begin(setAccessor.value()));
+				return;
+			}
+
+			if (item->time > Clock::now())
+			{
+				m_condition.wait_until(setAccessor.getLockGuard(), item->time);
+				return;
+			}
+
+			setAccessor->erase(std::begin(setAccessor.value()));
+			if (item->cancelled)
+				return;
+
+			setAccessor.getLockGuard().unlock();
+			std::invoke(item->task);
+			setAccessor.getLockGuard().lock();
+		}
+
+	private:
+		std::atomic_size_t m_nextId = 0;
+		UniqueLocker<Set> m_set;
+		UniqueLocker<Map> m_map;
+
+		std::condition_variable m_condition;
+		ThreadLoop m_loop;
+	};
+}

@@ -1,0 +1,74 @@
+export module CppUtils.UnitTests.Thread.Planner;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Thread::Planner
+{
+	inline auto _ = TestSuite{
+		"Thread/Planner", {"UnitTest"}, []([[maybe_unused]] auto& suite) {
+		using namespace std::chrono_literals;
+
+		suite.addTest("Initialize Planner", [&] {
+			auto planner = CppUtils::Thread::Planner{};
+
+			planner.waitUntilFinished();
+		});
+
+		suite.addTest("Schedule and execute", [&] {
+			auto planner = CppUtils::Thread::Planner{};
+			auto executed = std::atomic_bool{false};
+
+			planner.schedule([&executed] {
+				executed = true;
+			}, 100ms);
+
+			planner.waitUntilFinished();
+
+			suite.expect(executed.load());
+		});
+
+		suite.addTest("Recursive scheduling", [&] {
+			auto planner = CppUtils::Thread::Planner{};
+			auto counter = std::atomic_size_t{0};
+
+			planner.schedule([&planner, &counter] {
+				++counter;
+				planner.schedule([&counter] {
+					++counter;
+				}, 100ms);
+			}, 100ms);
+
+			planner.waitUntilFinished();
+
+			suite.expectEqual(counter.load(), 2uz);
+		});
+
+		suite.addTest("Cancel tasks on destruction", [&] {
+			auto executed = std::atomic_bool{false};
+
+			{
+				auto planner = CppUtils::Thread::Planner{};
+
+				planner.schedule([&executed] {
+					executed = true;
+				}, 100ms);
+			}
+
+			suite.expect(not executed.load());
+		});
+
+		suite.addTest("Multiple tasks", [&] {
+			auto planner = CppUtils::Thread::Planner{};
+			auto counter = std::atomic_size_t{0};
+
+			planner.schedule([&counter] { ++counter; }, 100ms);
+			planner.schedule([&counter] { ++counter; }, 200ms);
+			planner.schedule([&counter] { ++counter; }, 300ms);
+
+			planner.waitUntilFinished();
+
+			suite.expectEqual(counter.load(), 3uz);
+		});
+	}};
+}

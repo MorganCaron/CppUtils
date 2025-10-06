@@ -1,5 +1,6 @@
 export module CppUtils.Thread;
 
+export import CppUtils.Thread.Planner;
 export import CppUtils.Thread.SharedLocker;
 export import CppUtils.Thread.SharedPtr;
 export import CppUtils.Thread.ThreadLoop;

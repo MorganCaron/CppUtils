@@ -39,8 +39,8 @@
 - [`Vec2`](modules/Container/Vec2.mpp) / [`Vec3`](modules/Container/Vec3.mpp) - 2D/3D math vectors with operators and common functions
 
 ### 🚀 Execution
+- [`Event`](modules/Execution/Event.mpp) - An event for thread synchronization
 - [`EventSystem`](modules/Execution/EventSystem.mpp) - Event system to subscribe functions and trigger actions by event name
-- [`Planner`](modules/Execution/Planner.mpp) - Simple scheduler to run delayed functions on separate threads
 
 ### 📁 File System
 - [`Watcher`](modules/FileSystem/Watcher.mpp) - File modification watcher
@@ -81,7 +81,7 @@
 - [`Title`](modules/Terminal/Title.mpp) - Terminal title utilities
 
 ### 🚦 Multithreading & Synchronization
-- [`Event`](modules/Thread/Event.mpp) - An event for thread synchronization
+- [`Planner`](modules/Thread/Planner.mpp) - Simple scheduler to run delayed functions on separate threads
 - [`ThreadLoop`](modules/Thread/ThreadLoop.mpp) - Thread loop with exception handling
 - [`ThreadPool`](modules/Thread/ThreadPool.mpp) - Fixed-size thread pool for parallel task execution
 - [`TryAsync`](modules/Thread/TryAsync.mpp) - Launches a function asynchronously, forwards exception to caller
