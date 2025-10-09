@@ -1,0 +1,169 @@
+export module CppUtils.Thread.Scheduler;
+
+import std;
+import CppUtils.Chrono.Concept;
+import CppUtils.Thread.UniqueLocker;
+import CppUtils.Thread.SharedLocker;
+import CppUtils.Thread.ThreadLoop;
+
+export namespace CppUtils::Thread
+{
+	class Scheduler final
+	{
+	public:
+		using Clock = std::chrono::steady_clock;
+		using TimePoint = Clock::time_point;
+
+	private:
+		using Task = std::function<void()>;
+
+		struct Item final
+		{
+			std::size_t id;
+			TimePoint time;
+			Task task;
+			std::atomic_bool cancelled = false;
+		};
+
+		struct Compare final
+		{
+			inline auto operator()(const std::shared_ptr<Item>& a,
+				const std::shared_ptr<Item>& b) const noexcept -> bool
+			{
+				return a->time < b->time;
+			}
+		};
+
+		struct Items final
+		{
+			using Set = std::multiset<std::shared_ptr<Item>, Compare>;
+			using Map = std::unordered_map<std::size_t, std::shared_ptr<Item>>;
+
+			Set set;
+			Map map;
+		};
+
+	public:
+		inline Scheduler(Clock::duration step = Clock::duration::zero()):
+			m_step{step},
+			m_loop{
+				[this] { runLoop(); },
+				[this] { m_condition.notify_all(); }}
+		{
+			m_loop.start();
+		}
+
+		inline ~Scheduler() noexcept
+		{
+			cancelAll();
+			m_loop.requestStop();
+		}
+
+		inline auto schedule(Task task, TimePoint when) -> std::size_t
+		{
+			auto item = std::make_shared<Item>(m_nextId.fetch_add(1, std::memory_order_relaxed), when, std::move(task));
+			auto accessor = m_items.access();
+			auto& [set, map] = accessor.value();
+			set.insert(item);
+			map.emplace(item->id, item);
+			m_condition.notify_one();
+			return item->id;
+		}
+
+		inline auto schedule(Task task, Chrono::Duration auto delay) -> std::size_t
+		{
+			return schedule(std::move(task), Clock::now() + delay);
+		}
+
+		inline auto waitUntilFinished() -> void
+		{
+			auto accessor = m_items.access();
+			m_condition.wait(accessor.getLockGuard(), [&accessor] {
+				return std::empty(accessor.value().set);
+			});
+		}
+
+		inline auto cancel(std::size_t id) -> void
+		{
+			auto accessor = m_items.access();
+			auto& [set, map] = accessor.value();
+			if (auto it = map.find(id); it != std::end(map))
+			{
+				it->second->cancelled = true;
+				map.erase(it);
+			}
+		}
+
+		inline auto cancelAll() -> void
+		{
+			auto accessor = m_items.access();
+			auto& [set, map] = accessor.value();
+			for (auto& [_, item] : map)
+				item->cancelled = true;
+			map.clear();
+			set.clear();
+			m_condition.notify_all();
+		}
+
+	private:
+		inline auto runLoop() -> void
+		{
+			auto accessor = m_items.access();
+			auto& [set, map] = accessor.value();
+
+			if (std::empty(set))
+			{
+				m_condition.notify_all();
+				m_condition.wait(accessor.getLockGuard(), [this, &accessor] {
+					return not std::empty(accessor.value().set) or m_loop.isStopRequested();
+				});
+				return;
+			}
+
+			auto first = *std::begin(set);
+
+			if (first->time > Clock::now())
+			{
+				m_condition.wait_until(accessor.getLockGuard(), first->time, [&] {
+					return m_loop.isStopRequested() or first->cancelled or first->time <= Clock::now();
+				});
+				return;
+			}
+
+			map.erase(first->id);
+			set.erase(first);
+			if (not first->cancelled)
+			{
+				accessor.getLockGuard().unlock();
+				std::invoke(first->task);
+				accessor.getLockGuard().lock();
+			}
+
+			if (m_step == Clock::duration::zero())
+				return;
+
+			const auto endTime = first->time + m_step;
+			for (auto it = std::begin(set); it != std::end(set) and (*it)->time <= endTime; ++it)
+			{
+				auto item = *it;
+				++it;
+				map.erase(item->id);
+				set.erase(item);
+				if (not item->cancelled)
+				{
+					accessor.getLockGuard().unlock();
+					std::invoke(item->task);
+					accessor.getLockGuard().lock();
+				}
+			}
+		}
+
+	private:
+		std::atomic_size_t m_nextId = 0;
+		Clock::duration m_step;
+		UniqueLocker<Items> m_items;
+
+		std::condition_variable m_condition;
+		ThreadLoop m_loop;
+	};
+}

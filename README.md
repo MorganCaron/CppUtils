@@ -81,7 +81,7 @@
 - [`Title`](modules/Terminal/Title.mpp) - Terminal title utilities
 
 ### 🚦 Multithreading & Synchronization
-- [`Planner`](modules/Thread/Planner.mpp) - Simple scheduler to run delayed functions on separate threads
+- [`Scheduler`](modules/Thread/Scheduler.mpp) - Simple scheduler to run delayed functions on separate threads
 - [`ThreadLoop`](modules/Thread/ThreadLoop.mpp) - Thread loop with exception handling
 - [`ThreadPool`](modules/Thread/ThreadPool.mpp) - Fixed-size thread pool for parallel task execution
 - [`TryAsync`](modules/Thread/TryAsync.mpp) - Launches a function asynchronously, forwards exception to caller

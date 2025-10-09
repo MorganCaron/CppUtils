@@ -31,7 +31,7 @@ export import CppUtils.UnitTests.String.Utility;
 export import CppUtils.UnitTests.System.Error;
 export import CppUtils.UnitTests.Terminal.Canvas;
 export import CppUtils.UnitTests.Terminal;
-export import CppUtils.UnitTests.Thread.Planner;
+export import CppUtils.UnitTests.Thread.Scheduler;
 export import CppUtils.UnitTests.Thread.SharedLocker;
 export import CppUtils.UnitTests.Thread.ThreadLoop;
 export import CppUtils.UnitTests.Thread.ThreadPool;
