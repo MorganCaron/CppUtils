@@ -5,7 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Terminal::Canvas
 {
-	inline auto _ = TestSuite{"Terminal/Canvas", {"UnitTest", "Execution/Planner"}, [](auto& suite) {
+	inline auto _ = TestSuite{"Terminal/Canvas", {"UnitTest", "Thread/Scheduler"}, [](auto& suite) {
 		using namespace std::literals;
 		using namespace std::chrono_literals;
 
@@ -42,9 +42,9 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 				}
 		});
 
-		suite.addTest("Fill with planner", [&] {
+		suite.addTest("Fill with scheduler", [&] {
 			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{10, 5}};
-			auto planner = CppUtils::Thread::Planner{};
+			auto scheduler = CppUtils::Thread::Scheduler{};
 			const auto chars = "-\\|/"sv;
 			auto loop = 0uz, frame = 0uz;
 			auto updateFrame = [&](this const auto& self) -> void {
@@ -59,7 +59,7 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 						return;
 					}
 				}
-				planner.schedule(self, 50ms);
+				scheduler.schedule(self, 50ms);
 			};
 			updateFrame();
 			canvas.wait();

@@ -95,6 +95,7 @@ BinPackParameters: false
 BinPackArguments: false
 BreakAfterAttributes: Never
 BreakBeforeTernaryOperators: false
+BreakBeforeBinaryOperators: NonAssignment
 BreakInheritanceList: AfterColon
 BreakConstructorInitializers: AfterColon
 

@@ -143,12 +143,11 @@ export namespace CppUtils::Thread
 				return;
 
 			const auto endTime = first->time + m_step;
-			for (auto it = std::begin(set); it != std::end(set) and (*it)->time <= endTime; ++it)
+			for (auto it = std::begin(set); it != std::end(set) and (*it)->time <= endTime;)
 			{
 				auto item = *it;
-				++it;
+				it = set.erase(it);
 				map.erase(item->id);
-				set.erase(item);
 				if (not item->cancelled)
 				{
 					accessor.getLockGuard().unlock();
