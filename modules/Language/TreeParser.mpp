@@ -28,11 +28,11 @@ export namespace CppUtils::Language::TreeParser
 		*
 
 		@{.skipSpaces#<@} / def skipSpaces
-			,
+			
 		*
 
 		@{.parseKeyword#<@} / def parseKeyword
-			
+
 		*
 
 		@{.parseNode#<@} / def parseNode
@@ -54,10 +54,17 @@ export namespace CppUtils::Language::TreeParser
 		auto compareChars = [](CharT lhs, CharT rhs) -> bool {
 			return lhs == rhs;
 		};
+		auto addNode = [](Container::AST<CharT>* ast, StringView source, std::size_t start, std::size_t end) {
+			if (start < end)
+			{
+				auto keyword = source.substr(start, end - start);
+				ast->root.nodes.emplace_back(String::hash(keyword));
+			}
+		};
 
 		auto ast = Container::AST<CharT>{};
 		auto sourceLength = std::size(source);
-		auto result = VM::execute<CharT>(treeParser, VM::Functions{getChar, compareChars}, VM::makeReferences(source, sourceLength, ast));
+		auto result = VM::execute<CharT>(treeParser, VM::Functions{getChar, compareChars, addNode}, VM::makeReferences(source, sourceLength, ast));
 		if (not result)
 			return std::unexpected{result.error()};
 		return ast;

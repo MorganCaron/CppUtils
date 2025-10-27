@@ -51,6 +51,7 @@
 ### 🔣 Languages (Parsers, Compilers, VM)
 - Tools to create parsers and compilers (CSS, INI, HTML, JSON, Markdown, XML) (work in progress <img src="resources/loading.gif" width="12" height="12"/>)
 - [`CLikeCompiler`](modules/Language/CLikeCompiler.mpp) - Compiler for C-inspired language
+- [`MetaCircularEvaluator`](modules/Language/MetaCircularEvaluator.mpp) - Homoiconic meta-circular evaluator with extensible reflexivity
 - [`TreeParser`](modules/Language/TreeParser.mpp) - Tree parser (work in progress <img src="resources/loading.gif" width="12" height="12"/>)
 - [`VirtualMachine`](modules/Language/VirtualMachine.mpp) - Generic virtual machine
 

@@ -1,6 +1,6 @@
 export module CppUtils.Language;
 
+export import CppUtils.Language.AST;
 export import CppUtils.Language.TreeParser;
 export import CppUtils.Language.VirtualMachine;
-export import CppUtils.Language.GenericVirtualMachine;
-export import CppUtils.Language.HomoiconicVirtualMachine;
+export import CppUtils.Language.MetaCircularEvaluator;

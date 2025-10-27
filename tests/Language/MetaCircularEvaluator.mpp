@@ -1,0 +1,63 @@
+export module CppUtils.UnitTests.Language.MetaCircularEvaluator;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Language::MetaCircularEvaluator
+{
+	inline auto _ = TestSuite{
+		"Language/MetaCircularEvaluator",
+		{"Logger", "Container/Tree"},
+		[](auto& suite) {
+		using namespace std::literals;
+		using namespace CppUtils::String::Literals;
+		using Logger = CppUtils::Logger<"CppUtils">;
+
+		suite.addTest("Empty source", [&] {
+			auto interpreter = CppUtils::Language::MetaCircularEvaluator{};
+			constexpr auto source = ""sv;
+			auto cursor = CppUtils::String::Cursor{source};
+			auto result = interpreter(cursor);
+			if (not result)
+				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+
+			suite.expect(result.has_value());
+			suite.expect(std::empty(interpreter.getScope().nodes));
+		});
+
+		suite.addTest("Parse token", [&] {
+			auto interpreter = CppUtils::Language::MetaCircularEvaluator{};
+			constexpr auto source = "parent"sv;
+			auto cursor = CppUtils::String::Cursor{source};
+			auto result = interpreter(cursor);
+			if (not result)
+				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+
+			suite.expect(result.has_value());
+			suite.expectEqual(std::size(interpreter.getScope().nodes), 1uz);
+			suite.expectEqual(interpreter.getScope().nodes.front().value, "parent"_token);
+			suite.expectEqual(std::size(interpreter.getScope().nodes.front().nodes), 0uz);
+		});
+
+		suite.addTest("Parse tree", [&] {
+			auto interpreter = CppUtils::Language::MetaCircularEvaluator{};
+			constexpr auto source = R"(
+				parent {
+					child1
+					child2
+				}
+			)"sv;
+			auto cursor = CppUtils::String::Cursor{source};
+			auto result = interpreter(cursor);
+			if (not result)
+				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+
+			suite.expect(result.has_value());
+			suite.expectEqual(std::size(interpreter.getScope().nodes), 1uz);
+			suite.expectEqual(interpreter.getScope().nodes.front().value, "parent"_token);
+			suite.expectEqual(std::size(interpreter.getScope().nodes.front().nodes), 2uz);
+			suite.expectEqual(interpreter.getScope().nodes.front().nodes.at(0).value, "child1"_token);
+			suite.expectEqual(interpreter.getScope().nodes.front().nodes.at(1).value, "child2"_token);
+		});
+	}};
+}

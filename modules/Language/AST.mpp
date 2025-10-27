@@ -1,0 +1,9 @@
+export module CppUtils.Language.AST;
+
+import CppUtils.Container.Tree;
+import CppUtils.String;
+
+export namespace CppUtils::Language
+{
+	using ASTNode = Container::Tree::Node<String::Token>;
+}

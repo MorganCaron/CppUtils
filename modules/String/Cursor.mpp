@@ -1,0 +1,20 @@
+export module CppUtils.String.Cursor;
+
+import std;
+
+import CppUtils.String.Concept;
+
+export namespace CppUtils::String
+{
+	template<String::StringView Source>
+	struct Cursor final
+	{
+		Source source;
+		std::size_t position = 0;
+
+		[[nodiscard]] inline auto getCurrent() -> const auto&
+		{
+			return source[position];
+		}
+	};
+}
