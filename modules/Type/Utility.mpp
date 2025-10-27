@@ -29,7 +29,7 @@ export namespace CppUtils::Type
 	inline constexpr auto preferPassByValue = not preferPassByRef<T>;
 
 	template<class T>
-	using In = std::conditional_t<preferPassByValue<T>, T, const T&>;
+	using In = std::conditional_t<preferPassByRef<T>, const T&, T>;
 
 	static_assert(std::is_same_v<In<int>, int>);
 	static_assert(std::is_same_v<In<std::string>, const std::string&>);

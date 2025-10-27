@@ -1,12 +1,16 @@
 export module CppUtils.Terminal;
 
+export import CppUtils.Terminal.Area;
 export import CppUtils.Terminal.BackgroundColor;
 export import CppUtils.Terminal.Canvas;
+export import CppUtils.Terminal.CharAttributes;
 export import CppUtils.Terminal.Cursor;
 export import CppUtils.Terminal.Handle;
+export import CppUtils.Terminal.Layout;
 export import CppUtils.Terminal.ProgressBar;
 export import CppUtils.Terminal.RawTerminal;
 export import CppUtils.Terminal.Size;
+export import CppUtils.Terminal.Spinner;
 export import CppUtils.Terminal.TextColor;
 export import CppUtils.Terminal.TextModifier;
 export import CppUtils.Terminal.TextStyle;

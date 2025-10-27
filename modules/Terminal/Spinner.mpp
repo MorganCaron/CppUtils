@@ -1,0 +1,50 @@
+export module CppUtils.Terminal.Spinner;
+
+import std;
+import CppUtils.Terminal.Area;
+import CppUtils.Container.Size;
+import CppUtils.Chrono.Concept;
+
+export namespace CppUtils::Terminal
+{
+	template<Chrono::Duration Duration = std::chrono::milliseconds>
+	class Spinner final: public Widget
+	{
+	public:
+		inline Spinner(const Container::Size2& size, std::vector<AreaBuffer>&& frames, const Duration& duration = std::chrono::milliseconds{100}):
+			m_size{size},
+			m_frames{std::move(frames)},
+			m_duration{duration}
+		{}
+
+		inline auto editFrame(std::size_t frame, AreaBuffer&& buffer) noexcept -> void
+		{
+			if (frame >= std::size(m_frames))
+				return;
+			m_frames[frame] = std::move(buffer);
+		}
+
+		inline auto draw(WritableAreaView& view) noexcept -> void
+		{
+			if (std::empty(m_frames))
+				return;
+			view.applyArea(m_frames[m_frame]);
+			if (++m_frame == std::size(m_frames))
+				m_frame = 0;
+		}
+
+		[[nodiscard]] inline constexpr auto getSize() const noexcept -> const auto&
+		{
+			return m_size;
+		}
+
+	private:
+		Container::Size2 m_size;
+		std::size_t m_frame = 0;
+		std::vector<AreaBuffer> m_frames;
+		Duration m_duration;
+	};
+
+	template<Chrono::Duration Duration>
+	Spinner(const Container::Size2& size, std::vector<AreaBuffer::Buffer>&& frames, const Duration& duration) -> Spinner<Duration>;
+}

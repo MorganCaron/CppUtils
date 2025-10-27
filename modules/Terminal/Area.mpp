@@ -2,7 +2,7 @@ export module CppUtils.Terminal.Area;
 
 import std;
 import CppUtils.Container.Size;
-import :AreaBuffer;
+export import :AreaBuffer;
 export import CppUtils.Terminal.CharAttributes;
 export import :Widget;
 export import :Viewport;

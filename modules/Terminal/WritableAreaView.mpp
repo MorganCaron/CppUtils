@@ -11,7 +11,7 @@ export namespace CppUtils::Terminal
 	public:
 		WritableAreaView(AreaBuffer& areaBuffer, Viewport viewport):
 			m_areaBuffer{areaBuffer},
-			m_viewport{viewport}
+			m_viewport{std::move(viewport)}
 		{}
 
 		[[nodiscard]] inline auto getSubView(Viewport viewport) noexcept -> std::expected<WritableAreaView, std::string>
@@ -29,6 +29,11 @@ export namespace CppUtils::Terminal
 			viewport.forEach([this, &areaBuffer, &viewportPosition](const auto& position) noexcept -> void {
 				m_areaBuffer.setChar(position, areaBuffer.getChar(position - viewportPosition));
 			});
+		}
+
+		inline auto applyArea(const AreaBuffer& areaBuffer) noexcept -> void
+		{
+			applyArea(areaBuffer, m_viewport);
 		}
 
 		inline auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void

@@ -12,10 +12,18 @@ export namespace CppUtils::Terminal
 		using Line = std::vector<CharAttributes>;
 		using Buffer = std::vector<Line>;
 
-		inline AreaBuffer(const Container::Size2& size)
-		{
-			setSize(size);
-		}
+		inline AreaBuffer(const Container::Size2& size, CharAttributes defaultCharAttributes = {}):
+			AreaBuffer{size, Buffer{size.height(), Line{size.width(), defaultCharAttributes}}}
+		{}
+
+		inline AreaBuffer(const Container::Size2& size, char defaultChar):
+			AreaBuffer{size, CharAttributes{defaultChar}}
+		{}
+
+		inline AreaBuffer(const Container::Size2& size, Buffer&& buffer):
+			m_size{size},
+			m_buffer{std::move(buffer)}
+		{}
 
 		inline auto setSize(const Container::Size2& size) noexcept -> void
 		{
@@ -46,7 +54,7 @@ export namespace CppUtils::Terminal
 		}
 
 	private:
-		Buffer m_buffer;
 		Container::Size2 m_size;
+		Buffer m_buffer;
 	};
 }

@@ -14,6 +14,8 @@ import CppUtils.Terminal.TextStyle;
 import CppUtils.Terminal.TextColor;
 import CppUtils.Terminal.BackgroundColor;
 import CppUtils.Execution.Event;
+import CppUtils.Thread.Scheduler;
+import CppUtils.Execution.EventSystem;
 
 export namespace CppUtils::Terminal
 {
@@ -202,6 +204,8 @@ export namespace CppUtils::Terminal
 			bool m_forceReprint = true;
 			AreaBuffer m_previousBuffer;
 			Execution::Event m_stopEvent;
+			Thread::Scheduler m_scheduler;
+			Execution::EventSystem m_eventSystem;
 		};
 	}
 }

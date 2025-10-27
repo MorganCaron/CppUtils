@@ -10,36 +10,36 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 		using namespace std::chrono_literals;
 
 		suite.addTest("Initialize Scheduler", [&] {
-			auto Scheduler = CppUtils::Thread::Scheduler{};
+			auto scheduler = CppUtils::Thread::Scheduler{};
 
-			Scheduler.waitUntilFinished();
+			scheduler.waitUntilFinished();
 		});
 
 		suite.addTest("Schedule and execute", [&] {
-			auto Scheduler = CppUtils::Thread::Scheduler{};
+			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto executed = std::atomic_bool{false};
 
-			Scheduler.schedule([&executed] {
+			scheduler.schedule([&executed] {
 				executed = true;
 			}, 100ms);
 
-			Scheduler.waitUntilFinished();
+			scheduler.waitUntilFinished();
 
 			suite.expect(executed.load());
 		});
 
 		suite.addTest("Recursive scheduling", [&] {
-			auto Scheduler = CppUtils::Thread::Scheduler{};
+			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto counter = std::atomic_size_t{0};
 
-			Scheduler.schedule([&Scheduler, &counter] {
+			scheduler.schedule([&scheduler, &counter] {
 				++counter;
-				Scheduler.schedule([&counter] {
+				scheduler.schedule([&counter] {
 					++counter;
 				}, 100ms);
 			}, 100ms);
 
-			Scheduler.waitUntilFinished();
+			scheduler.waitUntilFinished();
 
 			suite.expectEqual(counter.load(), 2uz);
 		});
@@ -48,9 +48,9 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 			auto executed = std::atomic_bool{false};
 
 			{
-				auto Scheduler = CppUtils::Thread::Scheduler{};
+				auto scheduler = CppUtils::Thread::Scheduler{};
 
-				Scheduler.schedule([&executed] {
+				scheduler.schedule([&executed] {
 					executed = true;
 				}, 100ms);
 			}
@@ -59,58 +59,58 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 		});
 
 		suite.addTest("Multiple tasks", [&] {
-			auto Scheduler = CppUtils::Thread::Scheduler{};
+			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto counter = std::atomic_size_t{0};
 
-			Scheduler.schedule([&counter] { ++counter; }, 100ms);
-			Scheduler.schedule([&counter] { ++counter; }, 200ms);
-			Scheduler.schedule([&counter] { ++counter; }, 300ms);
+			scheduler.schedule([&counter] { ++counter; }, 100ms);
+			scheduler.schedule([&counter] { ++counter; }, 200ms);
+			scheduler.schedule([&counter] { ++counter; }, 300ms);
 
-			Scheduler.waitUntilFinished();
+			scheduler.waitUntilFinished();
 
 			suite.expectEqual(counter.load(), 3uz);
 		});
 
 		suite.addTest("Cancel specific task", [&] {
-			auto Scheduler = CppUtils::Thread::Scheduler{};
+			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto number = std::atomic_size_t{0};
 
-			Scheduler.schedule([&number] { ++number; }, 0ms);
-			const auto id = Scheduler.schedule([&number] { number += 0b10; }, 250ms);
-			Scheduler.schedule([&number] { number += 0b100; }, 500ms);
+			scheduler.schedule([&number] { ++number; }, 0ms);
+			const auto id = scheduler.schedule([&number] { number += 0b10; }, 250ms);
+			scheduler.schedule([&number] { number += 0b100; }, 500ms);
 
-			Scheduler.cancel(id);
+			scheduler.cancel(id);
 
-			Scheduler.waitUntilFinished();
+			scheduler.waitUntilFinished();
 
 			suite.expectEqual(number.load(), 5uz);
 		});
 
 		suite.addTest("Cancel all tasks", [&] {
-			auto Scheduler = CppUtils::Thread::Scheduler{};
+			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto number = std::atomic_size_t{0};
 
-			Scheduler.schedule([&number] { ++number; }, 0ms);
-			Scheduler.schedule([&number] { number += 0b10; }, 250ms);
-			Scheduler.schedule([&number] { number += 0b100; }, 500ms);
+			scheduler.schedule([&number] { ++number; }, 0ms);
+			scheduler.schedule([&number] { number += 0b10; }, 250ms);
+			scheduler.schedule([&number] { number += 0b100; }, 500ms);
 
-			Scheduler.cancelAll();
+			scheduler.cancelAll();
 
-			Scheduler.waitUntilFinished();
+			scheduler.waitUntilFinished();
 
 			suite.expectEqual(number.load(), 0uz);
 		});
 
 		suite.addTest("Order of execution", [&] {
-			auto Scheduler = CppUtils::Thread::Scheduler{};
+			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto executionOrder = std::vector<std::size_t>{};
 			auto record = [&](std::size_t value) { executionOrder.push_back(value); };
 
-			Scheduler.schedule([&] { record(1); }, 100ms);
-			Scheduler.schedule([&] { record(2); }, 50ms);
-			Scheduler.schedule([&] { record(3); }, 200ms);
+			scheduler.schedule([&] { record(1); }, 100ms);
+			scheduler.schedule([&] { record(2); }, 50ms);
+			scheduler.schedule([&] { record(3); }, 200ms);
 
-			Scheduler.waitUntilFinished();
+			scheduler.waitUntilFinished();
 
 			suite.expectEqual(executionOrder[0], 2uz);
 			suite.expectEqual(executionOrder[1], 1uz);
@@ -120,17 +120,17 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 		suite.addTest("Without bucketing", [&] {
 			using Clock = CppUtils::Thread::Scheduler::Clock;
 			using TimePoint = CppUtils::Thread::Scheduler::TimePoint;
-			auto Scheduler = CppUtils::Thread::Scheduler{};
+			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto times = std::vector<TimePoint>{};
 
 			auto record = [&](TimePoint timePoint) { times.push_back(timePoint); };
 
-			Scheduler.schedule([&] { record(Clock::now()); }, 100ms);
-			Scheduler.schedule([&] { record(Clock::now()); }, 250ms);
-			Scheduler.schedule([&] { record(Clock::now()); }, 300ms);
-			Scheduler.schedule([&] { record(Clock::now()); }, 700ms);
+			scheduler.schedule([&] { record(Clock::now()); }, 100ms);
+			scheduler.schedule([&] { record(Clock::now()); }, 250ms);
+			scheduler.schedule([&] { record(Clock::now()); }, 300ms);
+			scheduler.schedule([&] { record(Clock::now()); }, 700ms);
 
-			Scheduler.waitUntilFinished();
+			scheduler.waitUntilFinished();
 
 			suite.expect(times[1] - times[0] > 100ms);
 			suite.expect(times[2] - times[1] < 100ms);
@@ -140,17 +140,17 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 		suite.addTest("With bucketing", [&] {
 			using Clock = CppUtils::Thread::Scheduler::Clock;
 			using TimePoint = CppUtils::Thread::Scheduler::TimePoint;
-			auto Scheduler = CppUtils::Thread::Scheduler{200ms};
+			auto scheduler = CppUtils::Thread::Scheduler{200ms};
 			auto times = std::vector<TimePoint>{};
 
 			auto record = [&](TimePoint timePoint) { times.push_back(timePoint); };
 
-			Scheduler.schedule([&] { record(Clock::now()); }, 100ms);
-			Scheduler.schedule([&] { record(Clock::now()); }, 250ms);
-			Scheduler.schedule([&] { record(Clock::now()); }, 300ms);
-			Scheduler.schedule([&] { record(Clock::now()); }, 700ms);
+			scheduler.schedule([&] { record(Clock::now()); }, 100ms);
+			scheduler.schedule([&] { record(Clock::now()); }, 250ms);
+			scheduler.schedule([&] { record(Clock::now()); }, 300ms);
+			scheduler.schedule([&] { record(Clock::now()); }, 700ms);
 
-			Scheduler.waitUntilFinished();
+			scheduler.waitUntilFinished();
 
 			suite.expect(times[1] - times[0] < 100ms);
 			suite.expect(times[2] - times[1] > 100ms);
