@@ -42,32 +42,6 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 				}
 		});
 
-		/*
-		suite.addTest("Fill with scheduler", [&] {
-			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{10, 5}};
-			auto scheduler = CppUtils::Thread::Scheduler{};
-			const auto chars = "-\\|/"sv;
-			auto loop = 0uz, frame = 0uz;
-			auto updateFrame = [&](this const auto& self) -> void {
-				canvas.fill(chars[frame++]);
-				canvas.print();
-				if (frame == std::size(chars))
-				{
-					frame = 0;
-					if (++loop == 5)
-					{
-						canvas.close();
-						return;
-					}
-				}
-				scheduler.schedule(self, 50ms);
-			};
-			updateFrame();
-			scheduler.waitUntilFinished();
-			canvas.wait();
-		});
-		*/
-
 		suite.addTest("Spinner", [&] {
 			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{1, 1}};
 			auto frames = std::vector<CppUtils::Terminal::AreaBuffer>{

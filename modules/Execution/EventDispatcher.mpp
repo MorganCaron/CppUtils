@@ -1,4 +1,4 @@
-export module CppUtils.Execution.EventSystem;
+export module CppUtils.Execution.EventDispatcher;
 
 import std;
 import CppUtils.Type.Callable;
@@ -6,17 +6,15 @@ import CppUtils.String.Hash;
 
 export namespace CppUtils::Execution
 {
-	class EventSystem final
+	class EventDispatcher final
 	{
 		using Key = std::pair<String::Hash, std::type_index>;
 
 	public:
-		template<String::Hasher eventName = String::Hash{}>
-		inline auto emit(const auto& event = nullptr) -> void
+		template<String::Hasher eventName = String::Hash{}, class Event = std::nullptr_t>
+		inline auto emit(const Event& event = nullptr) -> void
 		{
-			using Event = std::remove_cvref_t<decltype(event)>;
 			auto lockGuard = std::shared_lock{m_mutex};
-
 			auto key = std::make_pair(static_cast<String::Hash>(eventName), std::type_index{typeid(Event)});
 			if (auto subscriberIt = m_subscribers.find(key); subscriberIt == std::cend(m_subscribers))
 				return;
@@ -32,7 +30,7 @@ export namespace CppUtils::Execution
 			using FunctionInformations = Type::CallableTrait<FunctionType>;
 			using ArgumentsTypes = FunctionInformations::ArgumentsTypes;
 			constexpr auto nbArguments = std::tuple_size_v<ArgumentsTypes>;
-			static_assert(nbArguments == 1, "EventSystem: subscribed callable must take exactly one argument");
+			static_assert(nbArguments == 1, "EventDispatcher: subscribed callable must take exactly one argument");
 			using Event = std::remove_cvref_t<std::tuple_element_t<0, ArgumentsTypes>>;
 
 			auto lockGuard = std::unique_lock{m_mutex};

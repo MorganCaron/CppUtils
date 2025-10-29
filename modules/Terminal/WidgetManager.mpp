@@ -1,0 +1,15 @@
+export module CppUtils.Terminal.Area:WidgetManager;
+
+import std;
+
+import CppUtils.Thread.Scheduler;
+import CppUtils.Execution.EventDispatcher;
+
+export namespace CppUtils::Terminal
+{
+	struct WidgetManager final
+	{
+		Thread::Scheduler scheduler = {std::chrono::milliseconds{10}};
+		Execution::EventDispatcher eventDispatcher;
+	};
+}

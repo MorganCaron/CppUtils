@@ -31,6 +31,8 @@ export namespace CppUtils::Terminal
 			view.applyArea(m_frames[m_frame]);
 			if (++m_frame == std::size(m_frames))
 				m_frame = 0;
+			drawFinished();
+			requestUpdate(m_duration);
 		}
 
 		[[nodiscard]] inline constexpr auto getSize() const noexcept -> const auto&

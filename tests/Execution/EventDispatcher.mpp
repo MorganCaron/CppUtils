@@ -1,0 +1,116 @@
+export module CppUtils.UnitTests.Execution.EventDispatcher;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Execution::EventDispatcher
+{
+	inline auto _ = TestSuite{
+		"Execution/EventDispatcher", {"Logger"}, [](auto& suite) {
+		using namespace std::literals;
+		using Logger = CppUtils::Logger<"CppUtils">;
+
+		suite.addTest("Empty", [&] {
+			auto _ = CppUtils::Execution::EventDispatcher{};
+		});
+
+		suite.addTest("Subscribe", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+
+			eventDispatcher.subscribe<>([&suite](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				suite.expect(false);
+			});
+		});
+
+		suite.addTest("Subscribe with name", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+
+			eventDispatcher.subscribe<"Ping">([&suite](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				suite.expect(false);
+			});
+		});
+
+		suite.addTest("Emit", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+			eventDispatcher.emit<>("ping"s);
+		});
+
+		suite.addTest("Emit", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+			eventDispatcher.emit<"Ping">("ping"s);
+		});
+
+		suite.addTest("Send/Receive", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+			auto expectPingReceived = std::atomic_bool{false};
+
+			eventDispatcher.subscribe<>([&expectPingReceived, &suite](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				expectPingReceived = true;
+				suite.expectEqual(message, "ping"sv);
+			});
+			eventDispatcher.emit<>("ping"s);
+
+			suite.expect(expectPingReceived);
+		});
+
+		suite.addTest("Send/Receive with name", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+			auto expectPingReceived = std::atomic_bool{false};
+
+			eventDispatcher.subscribe<"Ping">([&expectPingReceived, &suite](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				expectPingReceived = true;
+				suite.expectEqual(message, "ping"sv);
+			});
+			eventDispatcher.subscribe<"Other">([&suite](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				suite.expect(false);
+			});
+			eventDispatcher.emit<"Ping">("ping"s);
+
+			suite.expect(expectPingReceived);
+		});
+
+		suite.addTest("Cascade calls", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+			auto expectPingReceived = std::atomic_bool{false};
+			auto expectPongReceived = std::atomic_bool{false};
+
+			eventDispatcher.subscribe<"Ping">([&expectPingReceived, &suite, &eventDispatcher](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				expectPingReceived = true;
+				suite.expectEqual(message, "ping"sv);
+				eventDispatcher.emit<"Pong">("pong"s);
+			});
+			eventDispatcher.subscribe<"Pong">([&expectPongReceived, &suite](const std::string& message) -> void {
+				Logger::print("{}\n", message);
+				expectPongReceived = true;
+				suite.expectEqual(message, "pong"sv);
+			});
+			eventDispatcher.emit<"Ping">("ping"s);
+
+			suite.expect(expectPingReceived);
+			suite.expect(expectPongReceived);
+		});
+
+		suite.addTest("Multiple subscribers", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+			auto expect1 = std::atomic_bool{false};
+			auto expect2 = std::atomic_bool{false};
+
+			eventDispatcher.subscribe<"Event">([&expect1](std::nullptr_t) -> void {
+				expect1 = true;
+			});
+			eventDispatcher.subscribe<"Event">([&expect2](std::nullptr_t) -> void {
+				expect2 = true;
+			});
+			eventDispatcher.emit<"Event">();
+
+			suite.expect(expect1);
+			suite.expect(expect2);
+		});
+	}};
+}

@@ -13,9 +13,6 @@ import CppUtils.Terminal.Area;
 import CppUtils.Terminal.TextStyle;
 import CppUtils.Terminal.TextColor;
 import CppUtils.Terminal.BackgroundColor;
-import CppUtils.Execution.Event;
-import CppUtils.Thread.Scheduler;
-import CppUtils.Execution.EventSystem;
 
 export namespace CppUtils::Terminal
 {
@@ -107,6 +104,10 @@ export namespace CppUtils::Terminal
 				Area{size, optionalViewport.value_or(Viewport{size, {0, 0}})},
 				m_previousBuffer{size}
 			{
+				m_widgetManager.eventDispatcher.subscribe<"RequestUpdate">([this](std::nullptr_t) -> void {
+					print();
+				});
+				setWidgetManager(m_widgetManager);
 				setConsoleOutputUTF8();
 				enableAnsi();
 			}
@@ -175,37 +176,31 @@ export namespace CppUtils::Terminal
 					auto view = WritableAreaView{*this, m_viewport};
 					m_widget->draw(view);
 				}
-				if (m_forceReprint)
+				if (m_firstPrint)
 				{
 					std::print("{}", std::string(m_viewport.getSize().height(), '\n'));
-					m_forceReprint = false;
+					m_firstPrint = false;
 				}
 				applyDifferences();
-			}
-
-			inline auto reprint() noexcept -> void
-			{
-				m_forceReprint = true;
-				print();
 			}
 
 			inline auto wait() noexcept -> void
 			{
 				print();
-				m_stopEvent.wait();
+				m_stopEvent.wait(false);
 			}
 
 			inline auto close() noexcept -> void
 			{
-				m_stopEvent.notify();
+				m_stopEvent.store(true, std::memory_order_release);
+				m_stopEvent.notify_all();
 			}
 
 		private:
-			bool m_forceReprint = true;
+			bool m_firstPrint = true;
+			std::atomic_bool m_stopEvent = false;
 			AreaBuffer m_previousBuffer;
-			Execution::Event m_stopEvent;
-			Thread::Scheduler m_scheduler;
-			Execution::EventSystem m_eventSystem;
+			WidgetManager m_widgetManager;
 		};
 	}
 }

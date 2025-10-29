@@ -44,7 +44,7 @@ export namespace CppUtils::UnitTest::Network
 		});
 
 		suite.addTest("Accept connection", [&] {
-			auto serverisReady = CppUtils::Execution::Event{};
+			auto serverisReady = std::atomic_bool{false};
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
@@ -52,14 +52,15 @@ export namespace CppUtils::UnitTest::Network
 				server.bind(8'080);
 				server.listen();
 				Logger::print("Server: Waiting for connections on port 8080...\n");
-				serverisReady.notify();
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
 				auto clientSocket = server.accept();
 				suite.expect(clientSocket.has_value());
 				Logger::print("Server: A new client has joined\n");
 			});
 
 			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
-				serverisReady.wait();
+				serverisReady.wait(false);
 				auto client = CppUtils::Network::Client{};
 				Logger::print("Client: Attempting to connect...\n");
 				client.connect("", 8'080);
@@ -73,7 +74,7 @@ export namespace CppUtils::UnitTest::Network
 		});
 
 		suite.addTest("Blocking", [&] {
-			auto serverisReady = CppUtils::Execution::Event{};
+			auto serverisReady = std::atomic_bool{false};
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
@@ -81,7 +82,8 @@ export namespace CppUtils::UnitTest::Network
 				server.bind(8'080);
 				server.listen();
 				Logger::print("Server: Waiting for connections on port 8080...\n");
-				serverisReady.notify();
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
 				auto clientSocket = server.accept();
 				suite.expect(clientSocket.has_value());
 				Logger::print("Server: A new client has joined\n");
@@ -90,7 +92,7 @@ export namespace CppUtils::UnitTest::Network
 			});
 
 			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
-				serverisReady.wait();
+				serverisReady.wait(false);
 				auto client = CppUtils::Network::Client{};
 				Logger::print("Client: Attempting to connect...\n");
 				client.connect("", 8'080);
@@ -106,7 +108,7 @@ export namespace CppUtils::UnitTest::Network
 		});
 
 		suite.addTest("Send/receive message (int)", [&] {
-			auto serverisReady = CppUtils::Execution::Event{};
+			auto serverisReady = std::atomic_bool{false};
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
@@ -114,7 +116,8 @@ export namespace CppUtils::UnitTest::Network
 				server.bind(8'080);
 				server.listen();
 				Logger::print("Server: Waiting for connections on port 8080...\n");
-				serverisReady.notify();
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
 
 				auto clientSocket = server.accept().value();
 				Logger::print("Server: A new client has joined\n");
@@ -134,7 +137,7 @@ export namespace CppUtils::UnitTest::Network
 			});
 
 			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
-				serverisReady.wait();
+				serverisReady.wait(false);
 				auto client = CppUtils::Network::Client{};
 				Logger::print("Client: Attempting to connect...\n");
 				client.setBlocking(true);
@@ -159,7 +162,7 @@ export namespace CppUtils::UnitTest::Network
 		});
 
 		suite.addTest("Send/receive message (std::string)", [&] {
-			auto serverisReady = CppUtils::Execution::Event{};
+			auto serverisReady = std::atomic_bool{false};
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
@@ -167,7 +170,8 @@ export namespace CppUtils::UnitTest::Network
 				server.bind(8'080);
 				server.listen();
 				Logger::print("Server: Waiting for connections on port 8080...\n");
-				serverisReady.notify();
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
 
 				auto clientSocket = server.accept().value();
 				Logger::print("Server: A new client has joined\n");
@@ -190,7 +194,7 @@ export namespace CppUtils::UnitTest::Network
 			});
 
 			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
-				serverisReady.wait();
+				serverisReady.wait(false);
 				auto client = CppUtils::Network::Client{};
 				Logger::print("Client: Attempting to connect...\n");
 				client.setBlocking(true);

@@ -1,13 +1,44 @@
 export module CppUtils.Terminal.Area:Widget;
 
+import std;
+
+import :WidgetManager;
 import :WritableAreaView;
+import CppUtils.Chrono.Concept;
 
 export namespace CppUtils::Terminal
 {
 	class Widget
 	{
 	public:
-		inline virtual ~Widget() = default;
+		virtual ~Widget() = default;
 		virtual auto draw(WritableAreaView& view) noexcept -> void = 0;
+
+		inline auto drawFinished() noexcept -> void
+		{
+			m_needUpdate = false;
+		}
+
+		inline auto setWidgetManager(WidgetManager& widgetManager) noexcept -> void
+		{
+			m_widgetManagerRef = widgetManager;
+		}
+
+		[[nodiscard]] inline auto getWidgetManager() -> WidgetManager&
+		{
+			return m_widgetManagerRef.value().get();
+		}
+
+		inline auto requestUpdate(Chrono::Duration auto delay = std::chrono::milliseconds{10}) -> void
+		{
+			getWidgetManager().scheduler.schedule([this]() -> void {
+				m_needUpdate = true;
+				getWidgetManager().eventDispatcher.emit<"RequestUpdate">();
+			}, delay);
+		}
+
+	private:
+		std::atomic_bool m_needUpdate = true;
+		std::optional<std::reference_wrapper<WidgetManager>> m_widgetManagerRef = std::nullopt;
 	};
 }

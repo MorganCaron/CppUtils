@@ -40,7 +40,7 @@
 
 ### 🚀 Execution
 - [`Event`](modules/Execution/Event.mpp) - An event for thread synchronization
-- [`EventSystem`](modules/Execution/EventSystem.mpp) - Event system to subscribe functions and trigger actions by event name
+- [`EventDispatcher`](modules/Execution/EventDispatcher.mpp) - Event system to subscribe functions and trigger actions by event name
 
 ### 📁 File System
 - [`Watcher`](modules/FileSystem/Watcher.mpp) - File modification watcher
