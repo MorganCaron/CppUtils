@@ -1,0 +1,61 @@
+export module CppUtils.Terminal.Area:DynamicAreaBuffer;
+
+import std;
+import CppUtils.Container.Size;
+import CppUtils.Terminal.AreaBuffer;
+import CppUtils.Terminal.CharAttributes;
+
+export namespace CppUtils::Terminal
+{
+	class DynamicAreaBuffer: public AreaBuffer
+	{
+	public:
+		using Line = std::vector<CharAttributes>;
+		using Buffer = std::vector<Line>;
+
+		inline DynamicAreaBuffer(const Container::Size2& size, CharAttributes defaultCharAttributes = {}):
+			DynamicAreaBuffer{size, Buffer{size.height(), Line{size.width(), defaultCharAttributes}}}
+		{}
+
+		inline DynamicAreaBuffer(const Container::Size2& size, char defaultChar):
+			DynamicAreaBuffer{size, CharAttributes{defaultChar}}
+		{}
+
+		inline DynamicAreaBuffer(const Container::Size2& size, Buffer&& buffer):
+			m_size{size},
+			m_buffer{std::move(buffer)}
+		{}
+
+		inline auto setSize(const Container::Size2& size) noexcept -> void
+		{
+			m_size = size;
+			m_buffer = Buffer{m_size.height(), Line{m_size.width()}};
+		}
+
+		[[nodiscard]] inline auto getSize() const noexcept -> const auto&
+		{
+			return m_size;
+		}
+
+		[[nodiscard]] virtual auto getChar(const Container::Size2& position) const noexcept -> const CharAttributes&
+		{
+			return m_buffer[position.y()][position.x()];
+		}
+
+		inline auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void
+		{
+			if (position.x() >= m_size.width() or position.y() >= m_size.height())
+				return;
+			m_buffer[position.y()][position.x()] = c;
+		}
+
+		[[nodiscard]] inline auto getBuffer() const noexcept -> const auto&
+		{
+			return m_buffer;
+		}
+
+	private:
+		Container::Size2 m_size;
+		Buffer m_buffer;
+	};
+}

@@ -1,0 +1,56 @@
+export module CppUtils.Terminal.FixedAreaBuffer;
+
+import std;
+import CppUtils.Container.Size;
+import CppUtils.Terminal.AreaBuffer;
+import CppUtils.Terminal.CharAttributes;
+
+export namespace CppUtils::Terminal
+{
+	template<std::size_t Width, std::size_t Height>
+	class FixedAreaBuffer final: public AreaBuffer
+	{
+	public:
+		using Line = std::array<CharAttributes, Width>;
+		using Buffer = std::array<Line, Height>;
+		static constexpr auto size = Container::Size2{Width, Height};
+
+		inline constexpr FixedAreaBuffer(CharAttributes defaultCharAttributes = {}):
+			m_buffer{[](auto v) constexpr -> Buffer {
+				auto line = Line{};
+				line.fill(v);
+				auto buffer = Buffer{};
+				buffer.fill(line);
+				return buffer;
+			}(defaultCharAttributes)}
+		{}
+
+		inline constexpr FixedAreaBuffer(char defaultChar):
+			FixedAreaBuffer{CharAttributes{defaultChar}}
+		{}
+
+		inline constexpr FixedAreaBuffer(Buffer buffer):
+			m_buffer{buffer}
+		{}
+
+		[[nodiscard]] virtual constexpr auto getChar(const Container::Size2& position) const noexcept -> const CharAttributes&
+		{
+			return m_buffer[position.y()][position.x()];
+		}
+
+		inline constexpr auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void
+		{
+			if (position.x() >= size.width() or position.y() >= size.height())
+				return;
+			m_buffer[position.y()][position.x()] = c;
+		}
+
+		[[nodiscard]] inline constexpr auto getBuffer() const noexcept -> const auto&
+		{
+			return m_buffer;
+		}
+
+	private:
+		Buffer m_buffer;
+	};
+}

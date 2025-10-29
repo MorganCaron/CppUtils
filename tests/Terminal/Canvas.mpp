@@ -44,12 +44,12 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 
 		suite.addTest("Spinner", [&] {
 			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{1, 1}};
-			auto frames = std::vector<CppUtils::Terminal::AreaBuffer>{
-				{CppUtils::Container::Size2{1, 1}, '-'},
-				{CppUtils::Container::Size2{1, 1}, '\\'},
-				{CppUtils::Container::Size2{1, 1}, '|'},
-				{CppUtils::Container::Size2{1, 1}, '/'}};
-			canvas.addWidget(std::make_unique<CppUtils::Terminal::Spinner<>>(CppUtils::Container::Size2{1, 1}, std::move(frames)));
+			constexpr auto frames = std::array{
+				CppUtils::Terminal::FixedAreaBuffer<1, 1>{'-'},
+				CppUtils::Terminal::FixedAreaBuffer<1, 1>{'\\'},
+				CppUtils::Terminal::FixedAreaBuffer<1, 1>{'|'},
+				CppUtils::Terminal::FixedAreaBuffer<1, 1>{'/'}};
+			canvas.addWidget(std::make_unique<CppUtils::Terminal::Spinner<1, 1, 4>>(frames));
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			scheduler.schedule([&canvas]() mutable {
 				canvas.close();

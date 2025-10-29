@@ -3,7 +3,7 @@ export module CppUtils.Terminal.Area;
 import std;
 import CppUtils.Container.Size;
 export import CppUtils.Terminal.CharAttributes;
-export import :AreaBuffer;
+export import :DynamicAreaBuffer;
 export import :Viewport;
 export import :Widget;
 export import :WidgetManager;
@@ -11,11 +11,11 @@ export import :WritableAreaView;
 
 export namespace CppUtils::Terminal
 {
-	class Area: public Widget, public AreaBuffer
+	class Area: public Widget, public DynamicAreaBuffer
 	{
 	public:
 		inline Area(const Container::Size2& size, const Viewport& viewport = {{0, 0}, {0, 0}}):
-			AreaBuffer{size},
+			DynamicAreaBuffer{size},
 			m_viewport{viewport}
 		{}
 
@@ -41,16 +41,21 @@ export namespace CppUtils::Terminal
 			return m_viewport;
 		}
 
-		inline auto fill(char c) noexcept -> void
-		{
-			fill(CharAttributes{c});
-		}
-
 		inline auto fill(const CharAttributes& c) noexcept -> void
 		{
 			auto view = WritableAreaView{*this, m_viewport};
 			view.fill(c);
 			requestFullRender();
+		}
+
+		inline auto fill(char c) noexcept -> void
+		{
+			fill(CharAttributes{c});
+		}
+
+		inline auto clear() noexcept -> void
+		{
+			fill(' ');
 		}
 
 		inline auto draw([[maybe_unused]] WritableAreaView& view) noexcept -> void override final

@@ -1,15 +1,16 @@
 export module CppUtils.Terminal.Area:WritableAreaView;
 
 import std;
-import :AreaBuffer;
+import :DynamicAreaBuffer;
 import :Viewport;
+import CppUtils.Terminal.AreaBuffer;
 
 export namespace CppUtils::Terminal
 {
 	class WritableAreaView final
 	{
 	public:
-		WritableAreaView(AreaBuffer& areaBuffer, Viewport viewport):
+		WritableAreaView(DynamicAreaBuffer& areaBuffer, Viewport viewport):
 			m_areaBuffer{areaBuffer},
 			m_viewport{std::move(viewport)}
 		{}
@@ -51,7 +52,7 @@ export namespace CppUtils::Terminal
 		}
 
 	private:
-		AreaBuffer& m_areaBuffer;
+		DynamicAreaBuffer& m_areaBuffer;
 		Viewport m_viewport;
 	};
 }

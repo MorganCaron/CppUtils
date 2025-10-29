@@ -4,25 +4,22 @@ import std;
 import CppUtils.Terminal.Area;
 import CppUtils.Container.Size;
 import CppUtils.Chrono.Concept;
+export import CppUtils.Terminal.FixedAreaBuffer;
 
 export namespace CppUtils::Terminal
 {
-	template<Chrono::Duration Duration = std::chrono::milliseconds>
+	template<std::size_t Width, std::size_t Height, std::size_t NbFrames, Chrono::Duration Duration = std::chrono::milliseconds>
 	class Spinner final: public Widget
 	{
 	public:
-		inline Spinner(const Container::Size2& size, std::vector<AreaBuffer>&& frames, const Duration& duration = std::chrono::milliseconds{50}):
-			m_size{size},
-			m_frames{std::move(frames)},
+		using Frame = FixedAreaBuffer<Width, Height>;
+		using Frames = std::array<Frame, NbFrames>;
+		static constexpr auto size = Frame::size;
+
+		inline Spinner(const Frames& frames, const Duration& duration = std::chrono::milliseconds{50}):
+			m_frames{frames},
 			m_duration{duration}
 		{}
-
-		inline auto editFrame(std::size_t frame, AreaBuffer&& buffer) noexcept -> void
-		{
-			if (frame >= std::size(m_frames))
-				return;
-			m_frames[frame] = std::move(buffer);
-		}
 
 		inline auto draw(WritableAreaView& view) noexcept -> void
 		{
@@ -35,18 +32,12 @@ export namespace CppUtils::Terminal
 			requestUpdate(m_duration);
 		}
 
-		[[nodiscard]] inline constexpr auto getSize() const noexcept -> const auto&
-		{
-			return m_size;
-		}
-
 	private:
-		Container::Size2 m_size;
 		std::size_t m_frame = 0;
-		std::vector<AreaBuffer> m_frames;
+		const Frames& m_frames;
 		Duration m_duration;
 	};
 
-	template<Chrono::Duration Duration>
-	Spinner(const Container::Size2& size, std::vector<AreaBuffer::Buffer>&& frames, const Duration& duration) -> Spinner<Duration>;
+	template<std::size_t Width, std::size_t Height, std::size_t NbFrames, Chrono::Duration Duration = std::chrono::milliseconds>
+	Spinner(std::array<FixedAreaBuffer<Width, Height>, NbFrames>&& frames, const Duration& duration = std::chrono::milliseconds{50}) -> Spinner<Width, Height, NbFrames, Duration>;
 }
