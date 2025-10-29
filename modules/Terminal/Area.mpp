@@ -21,7 +21,7 @@ export namespace CppUtils::Terminal
 
 		inline auto addWidget(std::unique_ptr<Widget> widget) -> void
 		{
-			widget->setWidgetManager(m_widgetManager);
+			widget->setWidgetManager(getWidgetManager());
 			m_widget = std::move(widget);
 		}
 
@@ -69,6 +69,5 @@ export namespace CppUtils::Terminal
 		bool m_fullRenderRequested = true;
 		Viewport m_viewport;
 		std::unique_ptr<Widget> m_widget;
-		WidgetManager m_widgetManager;
 	};
 }

@@ -49,12 +49,11 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 				{CppUtils::Container::Size2{1, 1}, '\\'},
 				{CppUtils::Container::Size2{1, 1}, '|'},
 				{CppUtils::Container::Size2{1, 1}, '/'}};
-			canvas.addWidget(std::make_unique<CppUtils::Terminal::Spinner<>>(CppUtils::Container::Size2{1, 1}, std::move(frames), 100ms));
+			canvas.addWidget(std::make_unique<CppUtils::Terminal::Spinner<>>(CppUtils::Container::Size2{1, 1}, std::move(frames)));
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			scheduler.schedule([&canvas]() mutable {
 				canvas.close();
-			}, 250ms);
-			scheduler.waitUntilFinished();
+			}, 1s);
 			canvas.wait();
 		});
 
