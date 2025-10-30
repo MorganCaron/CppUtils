@@ -7,133 +7,115 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 {
 	inline auto _ = TestSuite{
 		"Language/TreeParser",
-		{"Logger", "Language/VirtualMachine"},
+		{"Logger", "Container/Tree", "Language/MetaCircularEvaluator"},
 		[](auto& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
-		namespace Compiler = CppUtils::Language::TreeParser;
-		using AST = CppUtils::Container::AST<>;
-		using Node = CppUtils::Container::ASTNode<>;
 
 		suite.addTest("Empty source", [&] {
+			auto interpreter = CppUtils::Language::TreeParser{};
 			constexpr auto source = ""sv;
-			auto tree = Compiler::compile(source);
-			if (not tree)
-				Logger::print<"error">("{}", tree.error());
-			suite.expect(tree.has_value());
-			Logger::print("Tree:\n{}", tree.value());
-			auto expected = AST{
-				Node{"root"_token},
-				String::makeHashTable<char>("root")};
-			suite.expectEqual(tree.value(), expected);
-		});
+			auto cursor = CppUtils::String::Cursor{source};
 
-		suite.addTest("Spaces", [&] {
-			constexpr auto source = "   "sv;
-			auto tree = Compiler::compile(source);
-			if (not tree)
-				Logger::print<"error">("{}", tree.error());
-			suite.expect(tree.has_value());
-			Logger::print("Tree:\n{}", tree.value());
-			auto expected = AST{
-				Node{"root"_token},
-				String::makeHashTable<char>("root")};
-			suite.expectEqual(tree.value(), expected);
-		});
-		/*
-		suite.addTest("Single node", [&] {
-			constexpr auto source = "node"sv;
-			auto tree = Compiler::compile(source);
-			if (not tree)
-				Logger::print<"error">("{}", tree.error());
-			suite.expect(tree.has_value());
-			Logger::print("Tree:\n{}", tree.value());
-			auto expected = AST{
-				Node{"root"_token, {Node{"node"_token}}},
-				String::makeHashTable<char>("root", "node")};
-			suite.expectEqual(tree.value(), expected);
+			auto result = interpreter(cursor);
+			if (not result)
+				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+
+			suite.expect(result.has_value());
+			suite.expect(std::empty(interpreter.getScope().nodes));
 		});
 
 		suite.addTest("Whitespaces", [&] {
-			constexpr auto source = uR"(
-				node
+			auto interpreter = CppUtils::Language::TreeParser{};
+			constexpr auto source = R"(
+
 			)"sv;
-			auto tree = Compiler::compile(source);
-			if (not tree)
-				Logger::print<"error">("{}", tree.error());
-			Logger::print("Tree:\n{}", tree);
-			auto expected = AST{
-				Node{"root"_token, {Node{"node"_token}}},
-				String::makeHashTable<char>("root", "node")};
-			suite.expectEqual(tree, expected);
+			auto cursor = CppUtils::String::Cursor{source};
+
+			auto result = interpreter(cursor);
+			if (not result)
+				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+
+			suite.expect(result.has_value());
+			suite.expect(std::empty(interpreter.getScope().nodes));
 		});
 
-		suite.addTest("Multiple nodes", [&] {
-			constexpr auto source = u"foo bar"sv;
-			auto tree = Compiler::compile(source);
-			if (not tree)
-				Logger::print<"error">("{}", tree.error());
-			Logger::print("Tree:\n{}", tree);
-			auto expected = AST{
-				Node{"root"_token, {Node{"foo"_token}, Node{"bar"_token}}},
-				String::makeHashTable<char>("root", "foo", "bar")};
-			suite.expectEqual(tree, expected);
-		});
+		suite.addTest("Parse token", [&] {
+			auto interpreter = CppUtils::Language::TreeParser{};
+			constexpr auto source = "parent"sv;
+			auto cursor = CppUtils::String::Cursor{source};
 
-		suite.addTest("Escaped chars", [&] {
-			constexpr auto source = uR"(
-				Hello\ World!
-			)"sv;
-			auto tree = Compiler::compile(source);
-			if (not tree)
-				Logger::print<"error">("{}", tree.error());
-			Logger::print("Tree:\n{}", tree);
-			auto expected = AST{
-				Node{"root"_token, {Node{"Hello World!"_token}}},
-				String::makeHashTable<char>("root", "Hello World!")};
-			suite.expectEqual(tree, expected);
+			auto result = interpreter(cursor);
+			if (not result)
+				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+
+			suite.expect(result.has_value());
+			const auto& scopeNodes = interpreter.getScope().nodes;
+			suite.expectEqual(std::size(scopeNodes), 1uz);
+			suite.expectEqual(scopeNodes.front().value, "parent"_token);
+			suite.expectEqual(std::size(scopeNodes.front().nodes), 0uz);
 		});
 
 		suite.addTest("Empty node", [&] {
-			constexpr auto source = u"node{}"sv;
-			auto tree = Compiler::compile(source);
-			if (not tree)
-				Logger::print<"error">("{}", tree.error());
-			Logger::print("Tree:\n{}", tree);
-			auto expected = AST{
-				Node{"root"_token, {Node{"node"_token}}},
-				String::makeHashTable<char>("root", "node")};
-			suite.expectEqual(tree, expected);
+			auto interpreter = CppUtils::Language::TreeParser{};
+			constexpr auto source = "parent{}"sv;
+			auto cursor = CppUtils::String::Cursor{source};
+
+			auto result = interpreter(cursor);
+			if (not result)
+				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+
+			suite.expect(result.has_value());
+			const auto& scopeNodes = interpreter.getScope().nodes;
+			suite.expectEqual(std::size(scopeNodes), 1uz);
+			suite.expectEqual(scopeNodes.front().value, "parent"_token);
+			suite.expectEqual(std::size(scopeNodes.front().nodes), 0uz);
 		});
 
-		suite.addTest("Node with content", [&] {
-			constexpr auto source = u"parent{child0 child1}"sv;
-			auto tree = Compiler::compile(source);
-			if (not tree)
-				Logger::print<"error">("{}", tree.error());
-			Logger::print("Tree:\n{}", tree);
-			auto expected = AST{
-				Node{"root"_token, {Node{"parent"_token, {Node{"child0"_token}, Node{"child1"_token}}}}},
-				String::makeHashTable<char>("root", "parent", "child0", "child1")};
-			suite.expectEqual(tree, expected);
+		suite.addTest("Escaped char", [&] {
+			// Todo
+			[[maybe_unused]] constexpr auto source = R"(Hello\ World{})"sv;
+		});
+
+		suite.addTest("Parse value", [&] {
+			auto interpreter = CppUtils::Language::TreeParser{};
+			constexpr auto source = R"(
+				'a
+			)"sv;
+			auto cursor = CppUtils::String::Cursor{source};
+
+			auto result = interpreter(cursor);
+			if (not result)
+				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+
+			suite.expect(result.has_value());
+			const auto& scopeNodes = interpreter.getScope().nodes;
+			suite.expectEqual(std::size(scopeNodes), 1uz);
+			suite.expectEqual(scopeNodes.front().value, static_cast<String::Token>('a'));
 		});
 
 		suite.addTest("Nested nodes", [&] {
-			constexpr auto source = uR"(
-				main{
-					print{ string{Hello\ World} }
+			auto interpreter = CppUtils::Language::TreeParser{};
+			constexpr auto source = R"(
+				parent {
+					child1
+					child2
 				}
 			)"sv;
-			auto tree = Compiler::compile(source);
-			if (not tree)
-				Logger::print<"error">("{}", tree.error());
-			Logger::print("Tree:\n{}", tree);
-			auto expected = AST{
-				Node{"root"_token, {Node{"main"_token, {Node{"print"_token, {Node{"Hello World"_token}}}}}}},
-				String::makeHashTable<char>("root", "print", "Hello World!")};
-			suite.expectEqual(tree, expected);
+			auto cursor = CppUtils::String::Cursor{source};
+
+			auto result = interpreter(cursor);
+			if (not result)
+				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+
+			suite.expect(result.has_value());
+			const auto& scopeNodes = interpreter.getScope().nodes;
+			suite.expectEqual(std::size(scopeNodes), 1uz);
+			suite.expectEqual(scopeNodes.front().value, "parent"_token);
+			suite.expectEqual(std::size(scopeNodes.front().nodes), 2uz);
+			suite.expectEqual(scopeNodes.front().nodes.at(0).value, "child1"_token);
+			suite.expectEqual(scopeNodes.front().nodes.at(1).value, "child2"_token);
 		});
-		*/
 	}};
 }

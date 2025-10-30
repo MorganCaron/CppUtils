@@ -12,67 +12,81 @@ export namespace CppUtils::UnitTest::Language::MetaCircularEvaluator
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
+		using MetaCircularEvaluator = CppUtils::Language::MetaCircularEvaluator;
+		using Cursor = CppUtils::Language::MetaCircularEvaluator::Cursor;
+		using ASTNode = CppUtils::Language::ASTNode;
 
 		suite.addTest("Empty source", [&] {
-			auto interpreter = CppUtils::Language::MetaCircularEvaluator{};
+			auto interpreter = MetaCircularEvaluator{};
 			constexpr auto source = ""sv;
-			auto cursor = CppUtils::String::Cursor{source};
-			auto result = interpreter(cursor);
-			if (not result)
-				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+			auto cursor = Cursor{source};
 
-			suite.expect(result.has_value());
-			suite.expect(std::empty(interpreter.getScope().nodes));
-		});
-
-		suite.addTest("Parse token", [&] {
-			auto interpreter = CppUtils::Language::MetaCircularEvaluator{};
-			constexpr auto source = "parent"sv;
-			auto cursor = CppUtils::String::Cursor{source};
 			auto result = interpreter(cursor);
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
 			suite.expect(result.has_value());
 			suite.expectEqual(std::size(interpreter.getScope().nodes), 1uz);
-			suite.expectEqual(interpreter.getScope().nodes.front().value, "parent"_token);
-			suite.expectEqual(std::size(interpreter.getScope().nodes.front().nodes), 0uz);
 		});
 
-		suite.addTest("Parse value", [&] {
-			auto interpreter = CppUtils::Language::MetaCircularEvaluator{};
-			constexpr auto source = R"(
-				'a
-			)"sv;
-			auto cursor = CppUtils::String::Cursor{source};
+		suite.addTest("Call function", [&] {
+			auto interpreter = MetaCircularEvaluator{};
+			constexpr auto source = ""sv;
+			auto cursor = Cursor{source};
+
+			interpreter.functions["test"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				scopeNodes.emplace_back(42uz);
+				return {};
+			};
+			// clang-format off
+			interpreter.rootAst = {0uz, {
+				ASTNode{"main"_token, {
+					ASTNode{"call"_token, {ASTNode{"test"_token}}}
+				}}
+			}};
+			// clang-format on
 			auto result = interpreter(cursor);
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
 			suite.expect(result.has_value());
-			suite.expectEqual(std::size(interpreter.getScope().nodes), 1uz);
-			suite.expectEqual(interpreter.getScope().nodes.front().value, static_cast<String::Token>('a'));
+			const auto& scopeNodes = interpreter.getScope().nodes;
+			suite.expectEqual(std::size(scopeNodes), 2uz);
+			suite.expectEqual(scopeNodes.at(0).value, "main"_token);
+			suite.expectEqual(scopeNodes.at(1).value, 42uz);
 		});
 
-		suite.addTest("Parse tree", [&] {
-			auto interpreter = CppUtils::Language::MetaCircularEvaluator{};
-			constexpr auto source = R"(
-				parent {
-					child1
-					child2
-				}
-			)"sv;
-			auto cursor = CppUtils::String::Cursor{source};
+		suite.addTest("Call lexeme", [&] {
+			auto interpreter = MetaCircularEvaluator{};
+			constexpr auto source = ""sv;
+			auto cursor = Cursor{source};
+
+			interpreter.functions["test"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				scopeNodes.emplace_back(42uz);
+				return {};
+			};
+			// clang-format off
+			interpreter.rootAst = {0uz, {
+				ASTNode{"main"_token, {
+					ASTNode{"test"_token}
+				}},
+				ASTNode{"test"_token, {
+					ASTNode{"call"_token, {ASTNode{"test"_token}}}
+				}}
+			}};
+			// clang-format on
 			auto result = interpreter(cursor);
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
 			suite.expect(result.has_value());
-			suite.expectEqual(std::size(interpreter.getScope().nodes), 1uz);
-			suite.expectEqual(interpreter.getScope().nodes.front().value, "parent"_token);
-			suite.expectEqual(std::size(interpreter.getScope().nodes.front().nodes), 2uz);
-			suite.expectEqual(interpreter.getScope().nodes.front().nodes.at(0).value, "child1"_token);
-			suite.expectEqual(interpreter.getScope().nodes.front().nodes.at(1).value, "child2"_token);
+			const auto& scopeNodes = interpreter.getScope().nodes;
+			suite.expectEqual(std::size(scopeNodes), 3uz);
+			suite.expectEqual(scopeNodes.at(0).value, "main"_token);
+			suite.expectEqual(scopeNodes.at(1).value, static_cast<String::Token>("test"_token));
+			suite.expectEqual(scopeNodes.at(2).value, 42uz);
 		});
 	}};
 }

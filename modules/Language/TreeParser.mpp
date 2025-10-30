@@ -1,201 +1,481 @@
 export module CppUtils.Language.TreeParser;
 
 import std;
-import CppUtils.Memory;
-import CppUtils.String.Hash;
-import CppUtils.String.Concept;
-import CppUtils.Container.Tree;
-import CppUtils.Language.VirtualMachine;
+import CppUtils.Container.Vector;
+import CppUtils.String;
+import CppUtils.Type;
+import CppUtils.Language.AST;
+import CppUtils.Language.MetaCircularEvaluator;
 
-export namespace CppUtils::Language::TreeParser
+export namespace CppUtils::Language
 {
-	inline /* constexpr */ auto compile(const String::StringView auto& source) -> std::expected<Container::AST<typename std::remove_cvref_t<decltype(source)>::value_type>, std::string_view>
+	struct TreeParser: public MetaCircularEvaluator
 	{
-		using namespace std::literals;
-		namespace VM = CppUtils::Language::VirtualMachine;
-		using StringView = std::remove_cvref_t<decltype(source)>;
-		using CharT = StringView::value_type;
+		TreeParser()
+		{
+			using namespace std::literals;
+			using namespace String::Literals;
 
-		constexpr auto treeParser = u8R"(
-		@
+			functions["abort"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator&) -> std::expected<void, std::string_view> {
+				return std::unexpected{"Abort"};
+			};
+			functions["return"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				context.exit = true;
+				return {};
+			};
+			functions["syntaxError"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator&) -> std::expected<void, std::string_view> {
+				return std::unexpected{"Syntax error"};
+			};
+			functions["enter"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scope = context.getScope();
+				auto& scopeNodes = scope.nodes;
+				if (std::empty(scopeNodes)) [[unlikely]]
+					return std::unexpected{"Missing scope token"};
+				auto targetNodeId = scopeNodes.back().value;
+				if (instruction.exists("delete"_token))
+					scopeNodes.pop_back();
+				context.scopes.push_back(std::ref(scope[targetNodeId]));
+				return {};
+			};
+			functions["leave"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				if (std::size(context.scopes) <= 1)
+					return std::unexpected("Cannot leave the global scope");
+				context.scopes.pop_back();
+				return {};
+			};
 
-		@{.getChar#<@} / def getChar
-			)[0;
-		*
+			functions["new"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				if (std::empty(instruction.nodes))
+					scopeNodes.emplace_back(0);
+				else
+					scopeNodes.push_back(instruction.nodes.front());
+				return {};
+			};
+			functions["delete"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scope = context.getScope();
+				auto& scopeNodes = scope.nodes;
+				if (std::empty(scopeNodes)) [[unlikely]]
+					return std::unexpected{"No node to delete"};
+				if (std::empty(instruction.nodes))
+					scopeNodes.pop_back();
+				else if (auto it = scope.find(instruction.nodes.front().value); it != std::cend(scopeNodes))
+					scopeNodes.erase(it);
+				return {};
+			};
+			functions["clear"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				context.getScope().nodes.clear();
+				return {};
+			};
+			functions["="_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				if (std::empty(scopeNodes)) [[unlikely]]
+					return std::unexpected{"No node to edit"};
+				if (std::empty(instruction.nodes)) [[unlikely]]
+					return std::unexpected{"No value to set"};
+				scopeNodes.back().value = instruction.nodes.front().value;
+				return {};
+			};
+			functions["exists"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				if (std::empty(scopeNodes)) [[unlikely]]
+					return std::unexpected{"No function to search"};
+				scopeNodes.emplace_back(context.functions.contains(scopeNodes.back().value));
+				return {};
+			};
 
-		@{.isSpace#<@} / def isSpace
+			functions["readChar"_token] = [](Cursor& cursor, const ASTNode&, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				if (cursor.position >= std::size(cursor.source))
+					return std::unexpected{"Out of string"};
+				scopeNodes.emplace_back(static_cast<String::Token>(cursor.getCurrent()));
+				return {};
+			};
+			functions["getCursorPosition"_token] = [](Cursor& cursor, const ASTNode&, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				if (std::empty(cursor.source)) [[unlikely]]
+					return std::unexpected{"Empty source"};
+				if (cursor.position >= std::size(cursor.source)) [[unlikely]]
+					return std::unexpected{"End of string"};
+				scopeNodes.emplace_back(static_cast<String::Token>(cursor.position));
+				return {};
+			};
+			functions["stepCursorForward"_token] = [](Cursor& cursor, const ASTNode&, MetaCircularEvaluator&) -> std::expected<void, std::string_view> {
+				++cursor.position;
+				return {};
+			};
+			functions["stepCursorBackward"_token] = [](Cursor& cursor, const ASTNode&, MetaCircularEvaluator&) -> std::expected<void, std::string_view> {
+				--cursor.position;
+				return {};
+			};
+			functions["isEndOfString"_token] = [](Cursor& cursor, const ASTNode&, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				scopeNodes.emplace_back(cursor.position >= std::size(cursor.source));
+				return {};
+			};
+			functions["hash"_token] = [](Cursor& cursor, const ASTNode&, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				if (std::size(scopeNodes) < 2) [[unlikely]]
+					return std::unexpected{R"(Missing arguments in the "hash" instruction)"};
+				const auto length = Container::Vector::popBack(scopeNodes).value;
+				const auto startPosition = Container::Vector::popBack(scopeNodes).value;
+				if (startPosition + length > std::size(cursor.source)) [[unlikely]]
+					return std::unexpected{R"(Out of string)"};
+				scopeNodes.emplace_back(String::hash(cursor.source.substr(startPosition, length)));
+				return {};
+			};
 
-		*
+			static constexpr auto unaryOperator = [](auto operation, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				if (std::empty(scopeNodes)) [[unlikely]]
+					return std::unexpected{"Missing argument"};
+				scopeNodes.emplace_back(operation(Container::Vector::popBack(scopeNodes).value));
+				return {};
+			};
 
-		@{.skipSpaces#<@} / def skipSpaces
-			
-		*
-
-		@{.parseKeyword#<@} / def parseKeyword
-
-		*
-
-		@{.parseNode#<@} / def parseNode
-			[0: [0" [0 ( {.getChar#>*} ]] / getChar();
-			{.skipSpaces#>*} / skipSpaces();
-			{.parseKeyword#>*} / parseKeyword();
-		*
-
-		@{.main#<@} / def main
-			{.parseNode#>*} / parseNode();
-		*
-
-		@{.main#>*} / main();
-		)"sv;
-
-		auto getChar = [](StringView string, std::size_t pos) -> CharT {
-			return string[pos];
-		};
-		auto compareChars = [](CharT lhs, CharT rhs) -> bool {
-			return lhs == rhs;
-		};
-		auto addNode = [](Container::AST<CharT>* ast, StringView source, std::size_t start, std::size_t end) {
-			if (start < end)
-			{
-				auto keyword = source.substr(start, end - start);
-				ast->root.nodes.emplace_back(String::hash(keyword));
-			}
-		};
-
-		auto ast = Container::AST<CharT>{};
-		auto sourceLength = std::size(source);
-		auto result = VM::execute<CharT>(treeParser, VM::Functions{getChar, compareChars, addNode}, VM::makeReferences(source, sourceLength, ast));
-		if (not result)
-			return std::unexpected{result.error()};
-		return ast;
-	}
-
-	/*
-	template<class CharT>
-	inline auto compile(const std::basic_string_view<CharT> source) -> Container::AST<CharT>
-	{
-		using namespace std::literals;
-		constexpr auto treeCompiler = uR"(
-				main(): Container::AST<CharT>* 10§{
-					(0 (0, 2, 0, 0C # register0 = 0; (source position)
-					(:N # arg0 = new Container::AST<CharT>();
-						(26@ # buildNode(arg0);
-					X # return arg0;
+			static constexpr auto binaryOperator = [](auto operation, const ASTNode& instruction, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				auto lhs = String::Token{};
+				auto rhs = String::Token{};
+				if (auto rhsNode = instruction.find("rhs"_token); rhsNode != std::cend(instruction.nodes))
+				{
+					if (std::empty(scopeNodes)) [[unlikely]]
+						return std::unexpected{"Missing lhs"};
+					lhs = scopeNodes.back().value;
+					rhs = rhsNode->nodes.front().value;
 				}
-
-				getSourceSize(): size 11§{
-					(1; (2;) # return source.size();
+				else
+				{
+					if (std::size(scopeNodes) < 2) [[unlikely]]
+						return std::unexpected{"Missing operands"};
+					lhs = scopeNodes[std::size(scopeNodes) - 2].value;
+					rhs = scopeNodes.back().value;
+					if (not instruction.exists("keepRhs"_token))
+						scopeNodes.pop_back();
 				}
+				if (instruction.exists("erase"_token))
+					scopeNodes.back().value = operation(lhs, rhs);
+				else
+					scopeNodes.emplace_back(operation(lhs, rhs));
+				return {};
+			};
 
-				getSourcePosition(): size 12§{
-					(0, 0, 0, 2C # return position;
-				}
+			functions["and"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::logical_and{}, instruction, context); };
+			functions["or"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::logical_or{}, instruction, context); };
+			functions["not"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator& context) { return unaryOperator(std::logical_not{}, context); };
 
-				incrementSourcePosition(): void 13§{
-					(0, 5, 1, 0+ (0, 2, 0, 0C) # position += 1;
-				}
+			functions["=="_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::equal_to{}, instruction, context); };
+			functions["!="_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::not_equal_to{}, instruction, context); };
+			functions[">"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::greater{}, instruction, context); };
+			functions["<"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::less{}, instruction, context); };
+			functions[">="_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::greater_equal{}, instruction, context); };
+			functions["<="_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::less_equal{}, instruction, context); };
 
-				isEndOfFile(): bool 14§{
-					((12@, ((11@, <! # return getSourcePosition() >= getSourceSize();
-				}
+			functions["+"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::plus{}, instruction, context); };
+			functions["-"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::minus{}, instruction, context); };
+			functions["*"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::multiplies{}, instruction, context); };
+			functions["/"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::divides{}, instruction, context); };
+			functions["%"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::modulus{}, instruction, context); };
 
-				getChar(): char 15§{
-					(1; ((12@ (3;)) # return source.at(getSourcePosition());
-				}
+			functions["&"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::bit_and{}, instruction, context); };
+			functions["|"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::bit_or{}, instruction, context); };
+			functions["^"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::bit_xor{}, instruction, context); };
+			functions["!"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator& context) { return unaryOperator(std::bit_not{}, context); };
 
-				isSpace(): bool 16§{
-					(3:(15@ S # char = getChar();
-						(1, 6, 3:\ , 0=! # if (char == ' ')
-							(0, 10, 0? )(2:1} # return true;
-						(2:(1, 6, 3:9, 0=! # if (char == '\t')
-							(0, 10, 0? )(2:1} # return true;
-						(2:(1, 6, 3:10, 0=! # if (char == '\n')
-							(0, 10, 0? )(2:1} # return true;
-					)
-					(2:} # return false;
+			static constexpr auto condition = [](auto operation, Cursor& cursor, const ASTNode& instruction, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				if (std::empty(scopeNodes)) [[unlikely]]
+					return std::unexpected{"condition: No value to check"};
+				if (operation(scopeNodes.back().value))
+				{
+					auto lexemes = std::ref(instruction.nodes);
+					for (auto instructionPosition = 0uz; not context.exit and instructionPosition < std::size(lexemes.get()); ++instructionPosition)
+					{
+						const auto& lexeme = lexemes.get()[instructionPosition];
+						if (auto result = context(cursor, lexeme); not result) [[unlikely]]
+							return result;
+						lexemes = std::ref(instruction.nodes);
+					}
 				}
+				return {};
+			};
 
-				skipSpaces(): void 17§{
-					§ # while
-						(2:(14@, 0, 19, 5? # not isEndOfFile()
-						(2:(16@!, 0, 19, 5? # and isSpace() {
-						(13@ # incrementSourcePosition();
-					(18¤§ # }
-				}
+			functions["if"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaCircularEvaluator& context) { return condition(std::identity{}, cursor, instruction, context); };
+			functions["else"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaCircularEvaluator& context) { return condition(std::logical_not{}, cursor, instruction, context); };
 
-				addNode(size): void 20§{
-					(S # token
-						(1; # source
-							S # startPosition
-							((12@, 0, 0, 6- # length = getSourcePosition() - startPosition;
-							(4; # token = tokenize(source, startPosition, length);
-							)))} # return token;
+			functions["while"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				if (std::empty(instruction.nodes)) [[unlikely]]
+					return std::unexpected{"while: No condition to execute"};
+				if (auto result = context(cursor, instruction.nodes.front()); not result) [[unlikely]]
+					return result;
+				if (context.exit)
+					return {};
+				if (std::empty(scopeNodes)) [[unlikely]]
+					return std::unexpected{"while: No value to check"};
+				while (Container::Vector::popBack(scopeNodes).value)
+				{
+					auto lexemes = std::ref(instruction.nodes);
+					for (auto instructionPosition = 1uz; instructionPosition < std::size(lexemes.get()); ++instructionPosition)
+					{
+						const auto& lexeme = lexemes.get()[instructionPosition];
+						if (auto result = context(cursor, lexeme); not result) [[unlikely]]
+							return result;
+						if (context.exit)
+							return {};
+						lexemes = std::ref(instruction.nodes);
+					}
+					if (auto result = context(cursor, instruction.nodes.front()); not result) [[unlikely]]
+						return result;
+					if (context.exit)
+						return {};
+					if (std::empty(scopeNodes)) [[unlikely]]
+						return std::unexpected{"while: No value to check"};
 				}
+				return {};
+			};
+			functions["doWhile"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				if (std::empty(instruction.nodes)) [[unlikely]]
+					return std::unexpected{"doWhile: No condition to execute"};
+				do
+				{
+					auto lexemes = std::ref(instruction.nodes);
+					for (auto instructionPosition = 0uz; instructionPosition < std::size(lexemes.get()); ++instructionPosition)
+					{
+						const auto& lexeme = lexemes.get()[instructionPosition];
+						if (auto result = context(cursor, lexeme); not result) [[unlikely]]
+							return result;
+						lexemes = std::ref(instruction.nodes);
+					}
+					if (context.exit)
+						return {};
+					if (std::empty(scopeNodes)) [[unlikely]]
+						return std::unexpected{"doWhile: No value to check"};
+				}
+				while (Container::Vector::popBack(scopeNodes).value);
+				return {};
+			};
+			functions["optional"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				auto lastPosition = cursor.position;
+				auto lexemes = std::ref(instruction.nodes);
+				for (auto instructionPosition = 0uz; instructionPosition < std::size(lexemes.get()); ++instructionPosition)
+				{
+					const auto& lexeme = lexemes.get()[instructionPosition];
+					if (auto result = context(cursor, lexeme); not result)
+					{
+						cursor.position = lastPosition;
+						scopeNodes.emplace_back(0);
+						return {};
+					}
+					if (context.exit)
+						return {};
+					lexemes = std::ref(instruction.nodes);
+				}
+				scopeNodes.emplace_back(1);
+				return {};
+			};
 
-				isEndOfKeyword(): bool 21§{
-					(14@! # if isEndOfFile()
-						(0, 10, 0? (2:1} # return true;
-					(2:(16@! # if isSpace()
-						(0, 10, 0? (2:1} # return true;
-					(3:(15@ # char = getChar();
-						(2:(1, 6, 3:123, 0=! # if (char == '{')
-							(0, 10, 0? )(2:1} # return true;
-						(2:(1, 6, 3:125, 0=! # if (char == '}')
-							(0, 10, 0? )(2:1} # return true;
-					)
-					(2:} # return false;
-				}
-
-				parseKeyword(): void 22§{
-					((12@ # startPosition = getSourcePosition();
-						§ (2:(21@, 0, 24, 5? # while (not isEndOfKeyword()) {
-							(13@ # incrementSourcePosition();
-						(23¤§ # }
-						(20@I} # return addNode(startPosition);
-				}
-
-				parseAccolades(): void 25§{
-					(17@ # skipSpaces();
-					(2:(14@! # if isEndOfFile()
-						(0, 10, 0? } # return;
-					(3:(15@ # char = getChar();
-						(2:(1, 6, 3:123, 0= # if (char != '{')
-							(0, 10, 0? )} # return;
-					)
-					(13@ # incrementSourcePosition();
-					(26@ # buildNode();
-					(17@ # skipSpaces();
-					(3:(15@ # char = getChar();
-						(2:(1, 6, 3:125, 0= # if (char != '}')
-							(0, 10, 0? X # exit;
-					)
-				}
-
-				buildNode(TokenTree* node): void 26§{
-					(17@ # skipSpaces();
-					§ (2:(14@, 0, 28, 5? # while (not isEndOfFile()) {
-						(22@ # parseKeyword();
-						(25@ # parseAccolades();
-						(17@ # skipSpaces();
-					(27¤§ # }
-				}
-				)"sv;
-		auto compiler = CallStackCompiler::compile(treeCompiler);
-		constexpr auto tokenize = [](const decltype(source)* source, std::size_t begin, std::size_t length) -> std::size_t {
-			return static_cast<std::size_t>(String::hash(source->substr(begin, length)));
-		};
-		return Memory::moveRawPointer(VirtualMachine::execute<
-			Container::AST<CharT>*,
-			std::size_t,
-			bool,
-			CharT,
-			const decltype(source)*,
-			std::basic_string<CharT>*>(
-			compiler,
-			&source,
-			&decltype(source)::size,
-			&decltype(source)::at,
-			+tokenize));
-	}
-	*/
+			// clang-format off
+			rootAst = {0uz, {
+				ASTNode{"main"_token, {
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{"stack"_token}}}}},
+					ASTNode{"call"_token, {ASTNode{"enter"_token}}},
+					ASTNode{"treeParser"_token}
+				}},
+				ASTNode{"treeParser"_token, {
+					ASTNode{"parseTreeNodes"_token},
+					ASTNode{"skipSpaces"_token},
+					ASTNode{"call"_token, {ASTNode{"isEndOfString"_token}}},
+					ASTNode{"call"_token, {ASTNode{"else"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"syntaxError"_token}}}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}}
+				}},
+				ASTNode{"parseTreeNodes"_token, {
+					ASTNode{"call"_token, {ASTNode{"doWhile"_token, {
+						ASTNode{"call"_token, {ASTNode{"optional"_token, {ASTNode{"parseTreeNode"_token}}}}},
+					}}}}
+				}},
+				ASTNode{"parseTreeNode"_token, {
+					ASTNode{"skipSpaces"_token},
+					ASTNode{"call"_token, {ASTNode{"readChar"_token}}},
+					ASTNode{"isValueChar"_token},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"stepCursorForward"_token}}},
+						ASTNode{"parseValue"_token}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"else"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"parseToken"_token}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"enter"_token}}},
+					ASTNode{"call"_token, {ASTNode{"optional"_token, {
+						ASTNode{"parseOpeningBrace"_token},
+						ASTNode{"parseTreeNodes"_token},
+						ASTNode{"parseClosingBrace"_token},
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"leave"_token}}}
+				}},
+				ASTNode{"isSpace"_token, {
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{' '}}}}},
+					ASTNode{"call"_token, {ASTNode{"=="_token}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {ASTNode{"call"_token, {ASTNode{"return"_token}}}}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'\f'}}}}},
+					ASTNode{"call"_token, {ASTNode{"=="_token}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {ASTNode{"call"_token, {ASTNode{"return"_token}}}}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'\n'}}}}},
+					ASTNode{"call"_token, {ASTNode{"=="_token}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {ASTNode{"call"_token, {ASTNode{"return"_token}}}}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'\r'}}}}},
+					ASTNode{"call"_token, {ASTNode{"=="_token}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {ASTNode{"call"_token, {ASTNode{"return"_token}}}}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'\t'}}}}},
+					ASTNode{"call"_token, {ASTNode{"=="_token}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {ASTNode{"call"_token, {ASTNode{"return"_token}}}}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'\v'}}}}},
+					ASTNode{"call"_token, {ASTNode{"=="_token}}},
+					ASTNode{"call"_token, {ASTNode{"return"_token}}}
+				}},
+				ASTNode{"skipSpaces"_token, {
+					ASTNode{"call"_token, {ASTNode{"isEndOfString"_token}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"return"_token}}}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"readChar"_token}}},
+					ASTNode{"call"_token, {ASTNode{"while"_token, {
+						ASTNode{"isSpace"_token},
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"stepCursorForward"_token}}},
+						ASTNode{"call"_token, {ASTNode{"isEndOfString"_token}}},
+						ASTNode{"call"_token, {ASTNode{"if"_token, {
+							ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+							ASTNode{"call"_token, {ASTNode{"return"_token}}}
+						}}}},
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"readChar"_token}}},
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}}
+				}},
+				ASTNode{"isValueChar"_token, {
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'\''}}}}},
+					ASTNode{"call"_token, {ASTNode{"=="_token}}},
+					ASTNode{"call"_token, {ASTNode{"return"_token}}}
+				}},
+				ASTNode{"parseValue"_token, {
+					ASTNode{"call"_token, {ASTNode{"readChar"_token}}},
+					ASTNode{"call"_token, {ASTNode{"stepCursorForward"_token}}}
+				}},
+				ASTNode{"isTokenChar"_token, {
+					ASTNode{"isSpace"_token},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {
+						ASTNode{"call"_token, {ASTNode{"not"_token}}},
+						ASTNode{"call"_token, {ASTNode{"return"_token}}}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'{'}}}}},
+					ASTNode{"call"_token, {ASTNode{"=="_token}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {
+						ASTNode{"call"_token, {ASTNode{"not"_token}}},
+						ASTNode{"call"_token, {ASTNode{"return"_token}}}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'}'}}}}},
+					ASTNode{"call"_token, {ASTNode{"!="_token}}},
+					ASTNode{"call"_token, {ASTNode{"return"_token}}}
+				}},
+				ASTNode{"countTokenLength"_token, {
+					ASTNode{"call"_token, {ASTNode{"new"_token}}},
+					ASTNode{"call"_token, {ASTNode{"isEndOfString"_token}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"syntaxError"_token}}}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"readChar"_token}}},
+					ASTNode{"call"_token, {ASTNode{"while"_token, {
+						ASTNode{"isTokenChar"_token},
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"+"_token, {ASTNode{"rhs"_token, {ASTNode{1}}}, ASTNode{"erase"_token}}}}},
+						ASTNode{"call"_token, {ASTNode{"stepCursorForward"_token}}},
+						ASTNode{"call"_token, {ASTNode{"isEndOfString"_token}}},
+						ASTNode{"call"_token, {ASTNode{"if"_token, {
+							ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+							ASTNode{"call"_token, {ASTNode{"return"_token}}}
+						}}}},
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"readChar"_token}}}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}}
+				}},
+				ASTNode{"parseToken"_token, {
+					ASTNode{"call"_token, {ASTNode{"getCursorPosition"_token}}},
+					ASTNode{"countTokenLength"_token},
+					ASTNode{"call"_token, {ASTNode{"=="_token, {ASTNode{"rhs"_token, {ASTNode{0}}}}}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"syntaxError"_token}}}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"hash"_token}}}
+				}},
+				ASTNode{"parseOpeningBrace"_token, {
+					ASTNode{"skipSpaces"_token},
+					ASTNode{"call"_token, {ASTNode{"isEndOfString"_token}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"syntaxError"_token}}}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"readChar"_token}}},
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'{'}}}}},
+					ASTNode{"call"_token, {ASTNode{"!="_token}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"syntaxError"_token}}}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"stepCursorForward"_token}}}
+				}},
+				ASTNode{"parseClosingBrace"_token, {
+					ASTNode{"skipSpaces"_token},
+					ASTNode{"call"_token, {ASTNode{"isEndOfString"_token}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"syntaxError"_token}}}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"readChar"_token}}},
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'}'}}}}},
+					ASTNode{"call"_token, {ASTNode{"!="_token}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"syntaxError"_token}}}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"stepCursorForward"_token}}}
+				}}
+			}};
+			// clang-format on
+		}
+	};
 }
