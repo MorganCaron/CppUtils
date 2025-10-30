@@ -82,7 +82,7 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 			auto ballVelocity = CppUtils::Container::Vec2<float>{1.f, 1.f};
 			auto charPosition = CppUtils::Container::Size2{};
 
-			for (auto i = 0uz; i <= 500; ++i)
+			for (auto i = 0uz; i <= 500uz; ++i)
 			{
 				canvas.print(charPosition, ".");
 				auto previousBallPosition = ballPosition;

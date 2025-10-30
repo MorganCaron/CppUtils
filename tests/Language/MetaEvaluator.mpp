@@ -1,23 +1,23 @@
-export module CppUtils.UnitTests.Language.MetaCircularEvaluator;
+export module CppUtils.UnitTests.Language.MetaEvaluator;
 
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Language::MetaCircularEvaluator
+export namespace CppUtils::UnitTest::Language::MetaEvaluator
 {
 	inline auto _ = TestSuite{
-		"Language/MetaCircularEvaluator",
+		"Language/MetaEvaluator",
 		{"Logger", "Container/Tree"},
 		[](auto& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
-		using MetaCircularEvaluator = CppUtils::Language::MetaCircularEvaluator;
-		using Cursor = CppUtils::Language::MetaCircularEvaluator::Cursor;
+		using MetaEvaluator = CppUtils::Language::MetaEvaluator;
+		using Cursor = CppUtils::Language::MetaEvaluator::Cursor;
 		using ASTNode = CppUtils::Language::ASTNode;
 
 		suite.addTest("Empty source", [&] {
-			auto interpreter = MetaCircularEvaluator{};
+			auto interpreter = MetaEvaluator{};
 			constexpr auto source = ""sv;
 			auto cursor = Cursor{source};
 
@@ -30,11 +30,11 @@ export namespace CppUtils::UnitTest::Language::MetaCircularEvaluator
 		});
 
 		suite.addTest("Call function", [&] {
-			auto interpreter = MetaCircularEvaluator{};
+			auto interpreter = MetaEvaluator{};
 			constexpr auto source = ""sv;
 			auto cursor = Cursor{source};
 
-			interpreter.functions["test"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+			interpreter.functions["test"_token] = [](Cursor&, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				scopeNodes.emplace_back(42uz);
 				return {};
@@ -58,11 +58,11 @@ export namespace CppUtils::UnitTest::Language::MetaCircularEvaluator
 		});
 
 		suite.addTest("Call lexeme", [&] {
-			auto interpreter = MetaCircularEvaluator{};
+			auto interpreter = MetaEvaluator{};
 			constexpr auto source = ""sv;
 			auto cursor = Cursor{source};
 
-			interpreter.functions["test"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+			interpreter.functions["test"_token] = [](Cursor&, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				scopeNodes.emplace_back(42uz);
 				return {};

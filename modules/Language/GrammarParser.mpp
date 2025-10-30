@@ -1,0 +1,32 @@
+export module CppUtils.Language.GrammarParser;
+
+import std;
+import CppUtils.Language.ASTParser;
+import CppUtils.Logger;
+import CppUtils.String;
+
+export namespace CppUtils::Language
+{
+	struct GrammarParser: public ASTParser
+	{
+		GrammarParser()
+		{
+			using namespace std::literals;
+			using Logger = Logger<"CppUtils">;
+
+			constexpr auto source = R"(
+				enter { call{enter} }
+				leave { call{leave} }
+				delete { call{delete} }
+				readChar { call{readChar} }
+				stepCursorForward { call{stepCursorForward} }
+				
+				declarations
+			)"sv;
+
+			auto cursor = CppUtils::String::Cursor{source};
+			if (auto result = operator()(cursor); not result)
+				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+		}
+	};
+}

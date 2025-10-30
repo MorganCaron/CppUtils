@@ -1,20 +1,32 @@
-export module CppUtils.UnitTests.Language.TreeParser;
+export module CppUtils.UnitTests.Language.ASTParser;
 
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Language::TreeParser
+export namespace CppUtils::UnitTest::Language::ASTParser
 {
 	inline auto _ = TestSuite{
-		"Language/TreeParser",
-		{"Logger", "Container/Tree", "Language/MetaCircularEvaluator"},
+		"Language/ASTParser",
+		{"Logger", "Container/Tree", "Language/MetaEvaluator"},
 		[](auto& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 
+		static constexpr auto addStack = [](CppUtils::Language::ASTParser& interpreter) {
+			using ASTNode = CppUtils::Language::ASTNode;
+			auto& mainNode = interpreter.rootAst["main"_token];
+			// clang-format off
+			mainNode.nodes.insert(std::begin(mainNode.nodes), {
+				ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{"stack"_token}}}}},
+				ASTNode{"call"_token, {ASTNode{"enter"_token}}}
+			});
+			// clang-format on
+		};
+
 		suite.addTest("Empty source", [&] {
-			auto interpreter = CppUtils::Language::TreeParser{};
+			auto interpreter = CppUtils::Language::ASTParser{};
+			addStack(interpreter);
 			constexpr auto source = ""sv;
 			auto cursor = CppUtils::String::Cursor{source};
 
@@ -27,7 +39,8 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 		});
 
 		suite.addTest("Whitespaces", [&] {
-			auto interpreter = CppUtils::Language::TreeParser{};
+			auto interpreter = CppUtils::Language::ASTParser{};
+			addStack(interpreter);
 			constexpr auto source = R"(
 
 			)"sv;
@@ -42,7 +55,8 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 		});
 
 		suite.addTest("Parse token", [&] {
-			auto interpreter = CppUtils::Language::TreeParser{};
+			auto interpreter = CppUtils::Language::ASTParser{};
+			addStack(interpreter);
 			constexpr auto source = "parent"sv;
 			auto cursor = CppUtils::String::Cursor{source};
 
@@ -58,7 +72,8 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 		});
 
 		suite.addTest("Empty node", [&] {
-			auto interpreter = CppUtils::Language::TreeParser{};
+			auto interpreter = CppUtils::Language::ASTParser{};
+			addStack(interpreter);
 			constexpr auto source = "parent{}"sv;
 			auto cursor = CppUtils::String::Cursor{source};
 
@@ -79,9 +94,10 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 		});
 
 		suite.addTest("Parse value", [&] {
-			auto interpreter = CppUtils::Language::TreeParser{};
+			auto interpreter = CppUtils::Language::ASTParser{};
+			addStack(interpreter);
 			constexpr auto source = R"(
-				'a
+				'a'
 			)"sv;
 			auto cursor = CppUtils::String::Cursor{source};
 
@@ -96,7 +112,8 @@ export namespace CppUtils::UnitTest::Language::TreeParser
 		});
 
 		suite.addTest("Nested nodes", [&] {
-			auto interpreter = CppUtils::Language::TreeParser{};
+			auto interpreter = CppUtils::Language::ASTParser{};
+			addStack(interpreter);
 			constexpr auto source = R"(
 				parent {
 					child1

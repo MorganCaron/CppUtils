@@ -1,4 +1,4 @@
-export module CppUtils.Language.MetaCircularEvaluator;
+export module CppUtils.Language.MetaEvaluator;
 
 import std;
 import CppUtils.String;
@@ -6,7 +6,7 @@ import CppUtils.Language.AST;
 
 export namespace CppUtils::Language
 {
-	struct MetaCircularEvaluator
+	struct MetaEvaluator
 	{
 		using Cursor = String::Cursor<std::string_view>;
 
@@ -42,6 +42,8 @@ export namespace CppUtils::Language
 					return result;
 				if (not grammar.get().exists(instruction.value)) [[unlikely]]
 					return {};
+				if (not grammar.get().exists(instruction.value)) [[unlikely]]
+					return std::unexpected{"Unknown lexeme"};
 				lexemes = std::ref(grammar.get()[instruction.value].nodes);
 			}
 			exit = false;
@@ -53,7 +55,7 @@ export namespace CppUtils::Language
 			return scopes.back().get();
 		}
 
-		std::unordered_map<String::Token, std::function<std::expected<void, std::string_view>(Cursor&, const ASTNode&, MetaCircularEvaluator&)>> functions;
+		std::unordered_map<String::Token, std::function<std::expected<void, std::string_view>(Cursor&, const ASTNode&, MetaEvaluator&)>> functions;
 		ASTNode rootAst = {0uz, {ASTNode{String::hash("main")}}};
 		std::vector<std::reference_wrapper<ASTNode>> scopes = {std::ref(rootAst)};
 		bool exit = false;

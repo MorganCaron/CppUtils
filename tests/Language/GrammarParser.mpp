@@ -1,0 +1,28 @@
+export module CppUtils.UnitTests.Language.GrammarParser;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Language::GrammarParser
+{
+	inline auto _ = TestSuite{
+		"Language/GrammarParser",
+		{"Language/ASTParser"},
+		[](auto& suite) {
+		using namespace std::literals;
+		using namespace CppUtils::String::Literals;
+		using Logger = CppUtils::Logger<"CppUtils">;
+
+		suite.addTest("Empty source", [&] {
+			auto interpreter = CppUtils::Language::GrammarParser{};
+			constexpr auto source = ""sv;
+			auto cursor = CppUtils::String::Cursor{source};
+
+			auto result = interpreter(cursor);
+			if (not result)
+				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+
+			suite.expect(result.has_value());
+		});
+	}};
+}
