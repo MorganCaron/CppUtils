@@ -8,7 +8,7 @@ import CppUtils.Language.AST;
 
 export namespace CppUtils::Language
 {
-	struct MetaCircularEvaluator final
+	struct MetaCircularEvaluator
 	{
 		using Cursor = String::Cursor<std::string_view>;
 
@@ -183,11 +183,11 @@ export namespace CppUtils::Language
 			functions["^"_token] = [](Cursor&, const ASTNode& instruction, MetaCircularEvaluator& context) { return binaryOperator(std::bit_xor{}, instruction, context); };
 			functions["!"_token] = [](Cursor&, const ASTNode&, MetaCircularEvaluator& context) { return unaryOperator(std::bit_not{}, context); };
 
-			functions["if"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
+			static constexpr auto condition = [](auto operation, Cursor& cursor, const ASTNode& instruction, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				if (std::empty(scopeNodes)) [[unlikely]]
-					return std::unexpected{"if: No value to check"};
-				if (scopeNodes.back().value)
+					return std::unexpected{"condition: No value to check"};
+				if (operation(scopeNodes.back().value))
 				{
 					auto lexemes = std::ref(instruction.nodes);
 					for (auto instructionPosition = 0uz; not context.exit and instructionPosition < std::size(lexemes.get()); ++instructionPosition)
@@ -200,6 +200,10 @@ export namespace CppUtils::Language
 				}
 				return {};
 			};
+
+			functions["if"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaCircularEvaluator& context) { return condition(std::identity{}, cursor, instruction, context); };
+			functions["else"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaCircularEvaluator& context) { return condition(std::logical_not{}, cursor, instruction, context); };
+
 			functions["while"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				if (std::empty(instruction.nodes)) [[unlikely]]
@@ -285,8 +289,7 @@ export namespace CppUtils::Language
 					ASTNode{"parseTreeNodes"_token},
 					ASTNode{"skipSpaces"_token},
 					ASTNode{"call"_token, {ASTNode{"isEndOfString"_token}}},
-					ASTNode{"call"_token, {ASTNode{"not"_token}}},
-					ASTNode{"call"_token, {ASTNode{"if"_token, {
+					ASTNode{"call"_token, {ASTNode{"else"_token, {
 						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
 						ASTNode{"call"_token, {ASTNode{"syntaxError"_token}}}
 					}}}},
@@ -298,7 +301,20 @@ export namespace CppUtils::Language
 					}}}}
 				}},
 				ASTNode{"parseTreeNode"_token, {
-					ASTNode{"parseToken"_token},
+					ASTNode{"skipSpaces"_token},
+					ASTNode{"call"_token, {ASTNode{"readChar"_token}}},
+					ASTNode{"isValueChar"_token},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"stepCursorForward"_token}}},
+						ASTNode{"parseValue"_token}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"else"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"parseToken"_token}
+					}}}},
 					ASTNode{"call"_token, {ASTNode{"enter"_token}}},
 					ASTNode{"call"_token, {ASTNode{"optional"_token, {
 						ASTNode{"parseOpeningBrace"_token},
@@ -355,6 +371,15 @@ export namespace CppUtils::Language
 					}}}},
 					ASTNode{"call"_token, {ASTNode{"delete"_token}}}
 				}},
+				ASTNode{"isValueChar"_token, {
+					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'\''}}}}},
+					ASTNode{"call"_token, {ASTNode{"=="_token}}},
+					ASTNode{"call"_token, {ASTNode{"return"_token}}}
+				}},
+				ASTNode{"parseValue"_token, {
+					ASTNode{"call"_token, {ASTNode{"readChar"_token}}},
+					ASTNode{"call"_token, {ASTNode{"stepCursorForward"_token}}}
+				}},
 				ASTNode{"isTokenChar"_token, {
 					ASTNode{"isSpace"_token},
 					ASTNode{"call"_token, {ASTNode{"if"_token, {
@@ -370,8 +395,7 @@ export namespace CppUtils::Language
 					}}}},
 					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
 					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'}'}}}}},
-					ASTNode{"call"_token, {ASTNode{"=="_token}}},
-					ASTNode{"call"_token, {ASTNode{"not"_token}}},
+					ASTNode{"call"_token, {ASTNode{"!="_token}}},
 					ASTNode{"call"_token, {ASTNode{"return"_token}}}
 				}},
 				ASTNode{"countTokenLength"_token, {
@@ -399,7 +423,6 @@ export namespace CppUtils::Language
 					ASTNode{"call"_token, {ASTNode{"delete"_token}}}
 				}},
 				ASTNode{"parseToken"_token, {
-					ASTNode{"skipSpaces"_token},
 					ASTNode{"call"_token, {ASTNode{"getCursorPosition"_token}}},
 					ASTNode{"countTokenLength"_token},
 					ASTNode{"call"_token, {ASTNode{"=="_token, {ASTNode{"rhs"_token, {ASTNode{0}}}}}}},
@@ -422,8 +445,7 @@ export namespace CppUtils::Language
 					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
 					ASTNode{"call"_token, {ASTNode{"readChar"_token}}},
 					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'{'}}}}},
-					ASTNode{"call"_token, {ASTNode{"=="_token}}},
-					ASTNode{"call"_token, {ASTNode{"not"_token}}},
+					ASTNode{"call"_token, {ASTNode{"!="_token}}},
 					ASTNode{"call"_token, {ASTNode{"if"_token, {
 						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
 						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
@@ -443,8 +465,7 @@ export namespace CppUtils::Language
 					ASTNode{"call"_token, {ASTNode{"delete"_token}}},
 					ASTNode{"call"_token, {ASTNode{"readChar"_token}}},
 					ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{'}'}}}}},
-					ASTNode{"call"_token, {ASTNode{"=="_token}}},
-					ASTNode{"call"_token, {ASTNode{"not"_token}}},
+					ASTNode{"call"_token, {ASTNode{"!="_token}}},
 					ASTNode{"call"_token, {ASTNode{"if"_token, {
 						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
 						ASTNode{"call"_token, {ASTNode{"delete"_token}}},

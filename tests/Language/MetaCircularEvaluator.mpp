@@ -39,6 +39,21 @@ export namespace CppUtils::UnitTest::Language::MetaCircularEvaluator
 			suite.expectEqual(std::size(interpreter.getScope().nodes.front().nodes), 0uz);
 		});
 
+		suite.addTest("Parse value", [&] {
+			auto interpreter = CppUtils::Language::MetaCircularEvaluator{};
+			constexpr auto source = R"(
+				'a
+			)"sv;
+			auto cursor = CppUtils::String::Cursor{source};
+			auto result = interpreter(cursor);
+			if (not result)
+				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+
+			suite.expect(result.has_value());
+			suite.expectEqual(std::size(interpreter.getScope().nodes), 1uz);
+			suite.expectEqual(interpreter.getScope().nodes.front().value, static_cast<String::Token>('a'));
+		});
+
 		suite.addTest("Parse tree", [&] {
 			auto interpreter = CppUtils::Language::MetaCircularEvaluator{};
 			constexpr auto source = R"(
