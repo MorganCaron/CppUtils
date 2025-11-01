@@ -15,11 +15,21 @@ export namespace CppUtils::Language
 			using Logger = Logger<"CppUtils">;
 
 			constexpr auto source = R"(
+				lowLevelGrammarParser {
 				enter { call{enter} }
 				leave { call{leave} }
 				delete { call{delete} }
 				readChar { call{readChar} }
 				stepCursorForward { call{stepCursorForward} }
+				}
+
+				return { call{leave} }
+
+				temp {
+					return
+				}
+				call{enter}
+				call{={run}}
 				
 				declarations
 			)"sv;

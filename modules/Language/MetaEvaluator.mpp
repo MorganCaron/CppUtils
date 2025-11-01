@@ -10,6 +10,13 @@ export namespace CppUtils::Language
 	{
 		using Cursor = String::Cursor<std::string_view>;
 
+		[[nodiscard]] inline constexpr auto exists(String::Token instruction) const noexcept -> bool
+		{
+			const auto range = scopes | std::views::reverse;
+			auto it = std::ranges::find_if(range, [instruction](const auto scope) -> bool { return scope.get().exists(instruction); });
+			return it != std::ranges::end(range);
+		}
+
 		[[nodiscard]] inline constexpr auto operator()(
 			Cursor& cursor,
 			const ASTNode& instruction = ASTNode{String::hash("main")})

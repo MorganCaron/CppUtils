@@ -37,6 +37,11 @@ export namespace CppUtils::Language
 				context.scopes.push_back(std::ref(scope[targetNodeId]));
 				return {};
 			};
+			functions["enterInLast"_token] = [](Cursor&, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scope = context.getScope();
+				context.scopes.push_back(std::ref(scope.nodes.back()));
+				return {};
+			};
 			functions["leave"_token] = [](Cursor&, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
 				if (std::size(context.scopes) <= 1)
 					return std::unexpected("Cannot leave the global scope");
@@ -76,11 +81,33 @@ export namespace CppUtils::Language
 				scopeNodes.back().value = instruction.nodes.front().value;
 				return {};
 			};
-			functions["exists"_token] = [](Cursor&, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["exists"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				if (std::empty(scopeNodes)) [[unlikely]]
-					return std::unexpected{"No function to search"};
-				scopeNodes.emplace_back(context.functions.contains(scopeNodes.back().value));
+				auto nodeId = String::Token{};
+				if (std::empty(instruction.nodes))
+				{
+					if (std::empty(scopeNodes)) [[unlikely]]
+						return std::unexpected{"No node to search"};
+					nodeId = scopeNodes.back().value;
+				}
+				else
+					nodeId = instruction.nodes.front().value;
+				scopeNodes.emplace_back(context.functions.contains(nodeId));
+				return {};
+			};
+			functions["functionExists"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+				auto& scopeNodes = context.getScope().nodes;
+				auto nodeId = String::Token{};
+				if (std::empty(instruction.nodes))
+				{
+					if (std::empty(scopeNodes)) [[unlikely]]
+						return std::unexpected{"No function to search"};
+					nodeId = scopeNodes.back().value;
+				}
+				else
+					nodeId = instruction.nodes.front().value;
+				auto exists = context.exists(nodeId);
+				scopeNodes.emplace_back(exists);
 				return {};
 			};
 
@@ -201,7 +228,7 @@ export namespace CppUtils::Language
 			};
 
 			functions["if"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaEvaluator& context) { return condition(std::identity{}, cursor, instruction, context); };
-			functions["else"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaEvaluator& context) { return condition(std::logical_not{}, cursor, instruction, context); };
+			functions["ifNot"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaEvaluator& context) { return condition(std::logical_not{}, cursor, instruction, context); };
 
 			functions["while"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
@@ -297,16 +324,29 @@ export namespace CppUtils::Language
 			rootAst = {0uz, {
 				ASTNode{"main"_token, {
 					ASTNode{"call"_token, {ASTNode{"doWhile"_token, {
+						ASTNode{"callRun"_token},
 						ASTNode{"grammar"_token},
 						ASTNode{"call"_token, {ASTNode{"isEndOfString"_token}}},
 						ASTNode{"call"_token, {ASTNode{"not"_token}}}
-					}}}}
+					}}}},
+					ASTNode{"callRun"_token}
+				}},
+				ASTNode{"callRun"_token, {
+					ASTNode{"call"_token, {ASTNode{"functionExists"_token, {ASTNode{"run"_token}}}}},
+					ASTNode{"call"_token, {ASTNode{"if"_token, {
+						ASTNode{"call"_token, {ASTNode{"delete"_token}}},
+						ASTNode{"run"_token},
+						ASTNode{"call"_token, {ASTNode{"return"_token}}}
+					}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}}
 				}},
 				ASTNode{"grammar"_token, {
-					ASTNode{"treeParser"_token}
+					ASTNode{"skipSpaces"_token},
+					ASTNode{"call"_token, {ASTNode{"optional"_token, {ASTNode{"treeParser"_token}}}}},
+					ASTNode{"call"_token, {ASTNode{"delete"_token}}}
 				}},
 				ASTNode{"treeParser"_token, {
-					ASTNode{"parseTreeNodes"_token},
+					ASTNode{"parseTreeNode"_token},
 					ASTNode{"skipSpaces"_token}
 				}},
 				ASTNode{"parseTreeNodes"_token, {
@@ -320,7 +360,7 @@ export namespace CppUtils::Language
 						ASTNode{"parseValue"_token},
 						ASTNode{"parseToken"_token}
 					}}}},
-					ASTNode{"call"_token, {ASTNode{"enter"_token}}},
+					ASTNode{"call"_token, {ASTNode{"enterInLast"_token}}},
 					ASTNode{"call"_token, {ASTNode{"optional"_token, {
 						ASTNode{"parseOpeningBrace"_token},
 						ASTNode{"parseTreeNodes"_token},
