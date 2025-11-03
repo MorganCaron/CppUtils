@@ -156,5 +156,36 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 			suite.expect(times[2] - times[1] > 100ms);
 			suite.expect(times[3] - times[2] > 200ms);
 		});
+
+		suite.addTest("Schedule events in reverse order", [&] {
+			auto scheduler = CppUtils::Thread::Scheduler{};
+			auto executionOrder = std::vector<std::size_t>{};
+			auto record = [&](std::size_t value) { executionOrder.push_back(value); };
+
+			scheduler.schedule([&] { record(2); }, 200ms);
+			scheduler.schedule([&] { record(1); }, 100ms);
+
+			scheduler.waitUntilFinished();
+
+			suite.expectEqual(executionOrder.size(), 2uz);
+			suite.expectEqual(executionOrder[0], 1uz);
+			suite.expectEqual(executionOrder[1], 2uz);
+		});
+
+		suite.addTest("Schedule earlier task after later task", [&] {
+			auto scheduler = CppUtils::Thread::Scheduler{};
+			auto aExecuted = std::atomic_bool{false};
+			auto bExecuted = std::atomic_bool{false};
+
+			scheduler.schedule([&] { bExecuted = true; }, 200ms);
+			scheduler.schedule([&] { aExecuted = true; }, 100ms);
+
+			std::this_thread::sleep_for(150ms);
+			scheduler.cancelAll();
+
+			suite.expect(aExecuted.load());
+			suite.expect(not bExecuted.load());
+		});
 	}};
+
 }
