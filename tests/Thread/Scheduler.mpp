@@ -186,6 +186,21 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 			suite.expect(aExecuted.load());
 			suite.expect(not bExecuted.load());
 		});
+
+		suite.addTest("Stress test with many tasks", [&] {
+			auto scheduler = CppUtils::Thread::Scheduler{};
+			const auto numTasks = 100'000uz;
+			auto executedCount = std::atomic_size_t{0};
+
+			for (auto i = 0uz; i < numTasks; ++i)
+				scheduler.schedule([&] {
+					executedCount++;
+				}, std::chrono::milliseconds{CppUtils::Math::getRandomNumberInInterval(0, 9)});
+
+			scheduler.waitUntilFinished();
+
+			suite.expectEqual(executedCount.load(), numTasks);
+		});
 	}};
 
 }
