@@ -78,8 +78,8 @@ export namespace CppUtils::Thread
 		inline auto waitUntilFinished() -> void
 		{
 			auto accessor = m_items.access();
-			m_condition.wait(accessor.getLockGuard(), [&accessor] {
-				return std::empty(accessor.value().set);
+			m_condition.wait(accessor.getLockGuard(), [&] {
+				return std::empty(accessor.value().set) and m_processingTasks == 0;
 			});
 		}
 
@@ -108,52 +108,66 @@ export namespace CppUtils::Thread
 	private:
 		inline auto runLoop() -> void
 		{
-			auto accessor = m_items.access();
-			auto& [set, map] = accessor.value();
-
-			if (std::empty(set))
+			auto tasksToRun = std::vector<Task>{};
 			{
-				m_condition.notify_all();
-				m_condition.wait(accessor.getLockGuard(), [this, &accessor] {
-					return not std::empty(accessor.value().set) or m_loop.isStopRequested();
-				});
-				return;
-			}
+				auto accessor = m_items.access();
+				auto& [set, map] = accessor.value();
 
-			auto first = *std::begin(set);
-
-			if (first->time > Clock::now())
-			{
-				m_condition.wait_until(accessor.getLockGuard(), first->time, [&] {
-					return m_loop.isStopRequested() or first->cancelled or first->time <= Clock::now();
-				});
-				return;
-			}
-
-			map.erase(first->id);
-			set.erase(first);
-			if (not first->cancelled)
-			{
-				accessor.getLockGuard().unlock();
-				std::invoke(first->task);
-				accessor.getLockGuard().lock();
-			}
-
-			if (m_step == Clock::duration::zero())
-				return;
-
-			const auto endTime = first->time + m_step;
-			for (auto it = std::begin(set); it != std::end(set) and (*it)->time <= endTime;)
-			{
-				auto item = *it;
-				it = set.erase(it);
-				map.erase(item->id);
-				if (not item->cancelled)
+				if (std::empty(set))
 				{
-					accessor.getLockGuard().unlock();
-					std::invoke(item->task);
-					accessor.getLockGuard().lock();
+					m_condition.wait(accessor.getLockGuard(), [this, &accessor] {
+						return not std::empty(accessor.value().set) or m_loop.isStopRequested();
+					});
+					if (m_loop.isStopRequested())
+						return;
+					if (std::empty(set))
+					{
+						m_condition.notify_all();
+						return;
+					}
 				}
+
+				auto first = *std::begin(set);
+
+				if (first->time > Clock::now())
+				{
+					m_condition.wait_until(accessor.getLockGuard(), first->time, [&] {
+						return m_loop.isStopRequested() or first->cancelled or first->time <= Clock::now();
+					});
+					return;
+				}
+
+				const auto endTime = (m_step == Clock::duration::zero()) ? first->time : first->time + m_step;
+
+				for (auto it = std::begin(set); it != std::end(set);)
+				{
+					if ((*it)->time <= endTime)
+					{
+						if (not(*it)->cancelled)
+							tasksToRun.push_back(std::move((*it)->task));
+						map.erase((*it)->id);
+						it = set.erase(it);
+					}
+					else
+						++it;
+				}
+			}
+
+			if (tasksToRun.empty())
+				return;
+
+			m_processingTasks += std::size(tasksToRun);
+			for (const auto& task : tasksToRun)
+			{
+				std::invoke(task);
+				--m_processingTasks;
+			}
+
+			if (m_processingTasks == 0)
+			{
+				auto accessor = m_items.access();
+				if (std::empty(accessor.value().set))
+					m_condition.notify_all();
 			}
 		}
 
@@ -161,6 +175,7 @@ export namespace CppUtils::Thread
 		std::atomic_size_t m_nextId = 0;
 		Clock::duration m_step;
 		UniqueLocker<Items> m_items;
+		std::atomic_size_t m_processingTasks = 0;
 
 		std::condition_variable m_condition;
 		ThreadLoop m_loop;
