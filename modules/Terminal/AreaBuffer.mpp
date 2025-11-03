@@ -1,5 +1,6 @@
 export module CppUtils.Terminal.AreaBuffer;
 
+import std;
 import CppUtils.Container.Size;
 import CppUtils.Terminal.CharAttributes;
 
@@ -10,5 +11,38 @@ export namespace CppUtils::Terminal
 	public:
 		[[nodiscard]] virtual auto getChar(const Container::Size2& position) const noexcept -> const CharAttributes& = 0;
 		virtual auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void = 0;
+		[[nodiscard]] virtual auto getSize() const noexcept -> const Container::Size2& = 0;
+
+		[[nodiscard]] inline virtual auto toString() const -> std::string
+		{
+			auto result = std::string{};
+			for (auto y = 0uz; y < getSize().height(); ++y)
+			{
+				for (auto x = 0uz; x < getSize().width(); ++x)
+					result += getChar(CppUtils::Container::Size2{x, y}).character;
+				result += '\n';
+			}
+			return result;
+		}
+
+		inline auto printText(const Container::Size2& position, std::string_view text) noexcept -> void
+		{
+			auto currentX = position.x();
+			auto currentY = position.y();
+			for (auto i = 0uz; i < text.size(); ++i)
+			{
+				if (currentX >= getSize().width())
+				{
+					currentX = 0;
+					++currentY;
+				}
+				if (currentY >= getSize().height())
+					break;
+				auto charAttributes = CppUtils::Terminal::CharAttributes{};
+				charAttributes.character = static_cast<char>(text.at(i));
+				setChar(CppUtils::Container::Size2{currentX, currentY}, charAttributes);
+				++currentX;
+			}
+		}
 	};
 }

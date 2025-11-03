@@ -32,17 +32,17 @@ export namespace CppUtils::Terminal
 			m_buffer = Buffer{m_size.height(), Line{m_size.width()}};
 		}
 
-		[[nodiscard]] inline auto getSize() const noexcept -> const auto&
+		[[nodiscard]] inline auto getSize() const noexcept -> const Container::Size2& final
 		{
 			return m_size;
 		}
 
-		[[nodiscard]] virtual auto getChar(const Container::Size2& position) const noexcept -> const CharAttributes&
+		[[nodiscard]] auto getChar(const Container::Size2& position) const noexcept -> const CharAttributes& final
 		{
 			return m_buffer[position.y()][position.x()];
 		}
 
-		inline auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void
+		auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void final
 		{
 			if (position.x() >= m_size.width() or position.y() >= m_size.height())
 				return;

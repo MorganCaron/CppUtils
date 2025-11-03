@@ -57,11 +57,13 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 			canvas.wait();
 		});
 
-		suite.addTest("Print", [&] {
-			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 5}};
+		suite.addTest("Print text", [&] {
+			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{10, 5}};
 			canvas.fill('.');
-			canvas.print(CppUtils::Container::Size2{1, 1}, "Hello World!");
-			canvas.update();
+			canvas.printText(CppUtils::Container::Size2{1, 1}, "Hello World!");
+			canvas.print();
+
+			suite.expectEqual(canvas.toString(), "..........\n.Hello Wor\nld!.......\n..........\n..........\n"sv);
 		});
 
 		suite.addTest("Progress bar", [&] {
