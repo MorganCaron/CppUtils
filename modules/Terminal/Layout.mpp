@@ -10,9 +10,11 @@ export namespace CppUtils::Terminal
 	public:
 		virtual ~Layout() = default;
 
-		inline auto addWidget(std::unique_ptr<Widget> widget) -> void
+		template<std::derived_from<Widget> T>
+		inline auto addWidget(std::unique_ptr<T> widget) -> T&
 		{
-			m_widgets.emplace_back(std::move(widget));
+			widget->setWidgetManager(getWidgetManager());
+			return dynamic_cast<T&>(*m_widgets.emplace_back(std::move(widget)));
 		}
 
 		inline auto draw(WritableAreaView& view) noexcept -> void override final

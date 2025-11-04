@@ -67,12 +67,21 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 		});
 
 		suite.addTest("Progress bar", [&] {
-			auto progressBar = CppUtils::Terminal::ProgressBar{"Progress bar"};
-			for (auto i = 0uz; i <= 100; ++i)
+			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{50, 1}};
+			auto& progressBar = canvas.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Progress bar"));
+
+			auto scheduler = CppUtils::Thread::Scheduler{};
+			scheduler.schedule([&canvas]() mutable {
+				canvas.close();
+			}, 1s);
+
+			for (auto i = 0.f; i <= 100.f; i += 1.f)
 			{
 				progressBar.setPercent(i);
 				std::this_thread::sleep_for(5ms);
 			}
+
+			canvas.wait();
 		});
 
 		suite.addTest("Bouncing ball", [&] {

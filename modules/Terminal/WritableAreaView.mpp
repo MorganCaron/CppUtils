@@ -15,6 +15,25 @@ export namespace CppUtils::Terminal
 			m_viewport{std::move(viewport)}
 		{}
 
+		[[nodiscard]] inline auto getSize() const noexcept -> const auto&
+		{
+			return m_viewport.getSize();
+		}
+
+		inline auto printText(const Container::Size2& position, std::string_view text) noexcept -> void
+		{
+			auto currentPosition = position;
+			for (const auto c : text)
+			{
+				setChar(currentPosition, CharAttributes{c});
+				currentPosition.x()++;
+				if (currentPosition.x() >= getSize().width())
+				{
+					currentPosition.x() = 0;
+					currentPosition.y()++;
+				}
+			}
+		}
 		[[nodiscard]] inline auto getSubView(Viewport viewport) noexcept -> std::expected<WritableAreaView, std::string>
 		{
 			if (not m_viewport.contains(viewport))

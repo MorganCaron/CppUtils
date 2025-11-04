@@ -1,35 +1,39 @@
 export module CppUtils.Terminal.ProgressBar;
 
 import std;
+import CppUtils.Terminal.Area;
 import CppUtils.Container.Size;
-import CppUtils.Terminal.Canvas;
-import CppUtils.Terminal.Size;
 
 export namespace CppUtils::Terminal
 {
-	class ProgressBar final
+	class ProgressBar final: public Widget
 	{
 	public:
-		inline ProgressBar(std::string name = ""):
-			m_name{std::move(name)},
-			m_canvas{Container::Size2{getTerminalSize().width(), 1}}
+		inline ProgressBar(std::string title = ""):
+			m_title{std::move(title)}
+		{}
+
+		inline auto setPercent(float percent) noexcept -> void
 		{
-			setPercent(0);
+			using namespace std::chrono_literals;
+			m_percent = percent;
+			requestUpdate(10ms);
 		}
 
-		inline auto setPercent(std::size_t percent) -> void
+		inline auto draw(WritableAreaView& view) noexcept -> void final
 		{
-			if (m_canvas.getSize().width() < std::size(m_name) - 9)
-				return;
-			auto width = m_canvas.getSize().width() - std::size(m_name) - 9;
-			auto progress = percent * width / 100;
-			auto string = std::format("{} [{}{}] {:>3}% ", m_name, std::string(progress, '#'), std::string(width - progress, '.'), percent);
-			m_canvas.print(Container::Size2{0, 0}, string);
-			m_canvas.update();
+			const auto size = view.getSize();
+			const auto titleSize = std::size(m_title);
+			const auto barWidth = size.width() - titleSize - 2 - 5;
+			const auto progress = static_cast<std::size_t>(static_cast<float>(barWidth) * m_percent / 100.f);
+
+			auto text = std::format("{} [{}{}] {:>3}% ", m_title, std::string(progress, '#'), std::string(barWidth - progress, ' '), static_cast<std::size_t>(m_percent));
+			view.printText({0, 0}, text);
+			drawFinished();
 		}
 
 	private:
-		std::string m_name;
-		Canvas m_canvas;
+		std::string m_title;
+		std::atomic<float> m_percent = 0.f;
 	};
 }

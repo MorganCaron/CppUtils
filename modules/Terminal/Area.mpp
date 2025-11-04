@@ -19,10 +19,12 @@ export namespace CppUtils::Terminal
 			m_viewport{viewport}
 		{}
 
-		inline auto addWidget(std::unique_ptr<Widget> widget) -> void
+		template<std::derived_from<Widget> T>
+		inline auto addWidget(std::unique_ptr<T> widget) -> T&
 		{
 			widget->setWidgetManager(getWidgetManager());
 			m_widget = std::move(widget);
+			return dynamic_cast<T&>(*m_widget);
 		}
 
 		inline auto requestFullRender() noexcept -> void
