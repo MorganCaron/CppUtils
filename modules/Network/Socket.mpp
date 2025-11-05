@@ -393,8 +393,8 @@ export namespace CppUtils::Network
 		template<>
 		[[nodiscard]] inline auto receive<std::vector<std::byte>>(std::size_t bufferSize) -> std::optional<std::vector<std::byte>>
 		{
-			auto buffer = std::vector<std::byte>{bufferSize};
-			buffer.reserve(bufferSize);
+			auto buffer = std::vector<std::byte>{};
+			buffer.resize(bufferSize);
 			for (auto totalBytesReceived = 0uz; totalBytesReceived < bufferSize;)
 			{
 #if defined(OS_WINDOWS)

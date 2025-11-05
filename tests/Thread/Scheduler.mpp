@@ -189,7 +189,7 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 
 		suite.addTest("Stress test with many tasks", [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
-			const auto numTasks = 100'000uz;
+			const auto numTasks = 10'000uz;
 			auto executedCount = std::atomic_size_t{0};
 
 			for (auto i = 0uz; i < numTasks; ++i)

@@ -7,8 +7,10 @@ export namespace CppUtils::Math
 	template<std::integral Integer>
 	inline auto getRandomNumberInInterval(Integer min, Integer max) -> Integer
 	{
-		static auto randomDevice = std::random_device{};
-		static auto engine = std::mt19937{randomDevice()};
+		thread_local auto engine = [] {
+			static auto randomDevice = std::random_device{};
+			return std::mt19937{randomDevice() ^ std::hash<std::thread::id>{}(std::this_thread::get_id())};
+		}();
 		auto distribution = std::uniform_int_distribution<Integer>{min, max};
 		auto randomNumber = distribution(engine);
 		return randomNumber;

@@ -43,11 +43,6 @@ export namespace CppUtils::Math
 	static_assert(not isEqual(0.1 + 0.2, 0.29));
 	static_assert(not isEqual(0.1 + 0.2, 0.31));
 
-	[[nodiscard]] inline constexpr auto roundToNDecimals(std::floating_point auto number, std::size_t nbDecimals) -> decltype(number)
-	{
-		return std::round(number * static_cast<decltype(number)>(nbDecimals)) / static_cast<decltype(number)>(nbDecimals);
-	}
-
 	[[nodiscard]] inline constexpr auto isBetween(auto value, auto low, auto high) noexcept -> bool
 	{
 		return low <= value and value <= high;
