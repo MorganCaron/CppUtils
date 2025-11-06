@@ -32,5 +32,63 @@ export namespace CppUtils::UnitTest::LogRotate
 				suite.expect(std::filesystem::exists(logPath));
 			}};
 		});
+
+		suite.addTest("Full Log Rotation", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+				auto filePath = directory / "file.log";
+				auto filePath1 = directory / "file1.log";
+				auto filePath2 = directory / "file2.log";
+				auto filePath3 = directory / "file3.log";
+				auto options = LogRotateOptions{
+					.filePath = filePath,
+					.maxFiles = 3,
+					.maxSize = 10};
+
+				{
+					auto logFile = std::ofstream{filePath, std::ios::app};
+					Logger::print(logFile, "This is a long string to exceed the max size");
+				}
+
+				suite.expect(std::filesystem::exists(filePath));
+				suite.expect(not std::filesystem::exists(filePath1));
+
+				logRotate(options);
+
+				suite.expect(not std::filesystem::exists(filePath));
+				suite.expect(std::filesystem::exists(filePath1));
+
+				{
+					auto logFile = std::ofstream{filePath, std::ios::app};
+					Logger::print(logFile, "This is a long string to exceed the max size");
+				}
+
+				suite.expect(std::filesystem::exists(filePath));
+				suite.expect(std::filesystem::exists(filePath1));
+				suite.expect(not std::filesystem::exists(filePath2));
+
+				logRotate(options);
+
+				suite.expect(not std::filesystem::exists(filePath));
+				suite.expect(std::filesystem::exists(filePath1));
+				suite.expect(std::filesystem::exists(filePath2));
+
+				{
+					auto logFile = std::ofstream{filePath, std::ios::app};
+					Logger::print(logFile, "This is a long string to exceed the max size");
+				}
+
+				suite.expect(std::filesystem::exists(filePath));
+				suite.expect(std::filesystem::exists(filePath1));
+				suite.expect(std::filesystem::exists(filePath2));
+				suite.expect(not std::filesystem::exists(filePath3));
+
+				logRotate(options);
+
+				suite.expect(not std::filesystem::exists(filePath));
+				suite.expect(std::filesystem::exists(filePath1));
+				suite.expect(std::filesystem::exists(filePath2));
+				suite.expect(not std::filesystem::exists(filePath3));
+			}};
+		});
 	}};
 }

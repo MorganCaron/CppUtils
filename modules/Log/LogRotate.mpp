@@ -19,26 +19,23 @@ export namespace CppUtils
 	{
 		const auto& [filePath, maxFiles, maxSize] = options;
 
-		if (not std::filesystem::exists(filePath))
+		if (not std::filesystem::exists(filePath) or std::filesystem::file_size(filePath) < maxSize)
 			return;
 
-		if (std::filesystem::file_size(filePath) >= maxSize)
+		auto pathWithoutExtension = filePath.parent_path() / filePath.stem();
+		auto extension = filePath.extension();
+		auto newPath = pathWithoutExtension;
+		newPath += std::to_string(maxFiles - 1);
+		newPath += extension;
+		for (auto i = maxFiles - 1; i > 0;)
 		{
-			auto pathWithoutExtension = filePath.parent_path() / filePath.stem();
-			auto extension = filePath.extension();
-			auto newPath = pathWithoutExtension;
-			newPath += std::to_string(maxFiles - 1);
-			newPath += extension;
-			for (auto i = maxFiles - 1; i > 0;)
-			{
-				auto oldPath = pathWithoutExtension;
-				if (--i != 0)
-					oldPath += std::to_string(i);
-				oldPath += extension;
-				if (std::filesystem::exists(oldPath))
-					std::filesystem::rename(oldPath, newPath);
-				newPath = std::move(oldPath);
-			}
+			auto oldPath = pathWithoutExtension;
+			if (--i != 0)
+				oldPath += std::to_string(i);
+			oldPath += extension;
+			if (std::filesystem::exists(oldPath))
+				std::filesystem::rename(oldPath, newPath);
+			newPath = std::move(oldPath);
 		}
 	}
 }

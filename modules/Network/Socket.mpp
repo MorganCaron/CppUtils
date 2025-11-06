@@ -234,9 +234,7 @@ export namespace CppUtils::Network
 			timeValue.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(timeout % 1s).count();
 
 #ifdef OS_WINDOWS
-			// TODO make implementation for windows
-			// @see https://stackoverflow.com/questions/72759272/how-to-deal-with-socket-in-select-method
-			auto result = -1;
+			auto result = ::select(0, std::addressof(readSet), nullptr, nullptr, std::addressof(timeValue));
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 			auto result = select(m_socket + 1, std::addressof(readSet), nullptr, nullptr, std::addressof(timeValue));
 #endif

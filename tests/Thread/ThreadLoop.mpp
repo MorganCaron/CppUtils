@@ -54,7 +54,6 @@ export namespace CppUtils::UnitTest::Thread::ThreadLoop
 				catch (const std::exception& exception)
 				{
 					suite.expectEqual(std::string{exception.what()}, "Exception");
-					throw std::runtime_error{"onError fail"};
 				}
 			}};
 
