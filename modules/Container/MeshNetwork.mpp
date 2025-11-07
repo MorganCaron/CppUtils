@@ -48,7 +48,15 @@ export namespace CppUtils::Container
 				if (std::empty(children))
 					branches.erase(branchIt);
 			}
-			node0Ref.detachChild(node1, node1Ref);
+
+			if (auto hasRemainingLinks = std::any_of(std::cbegin(branches), std::cend(branches), [&](const auto& pair) -> bool {
+				const auto& children = pair.second;
+				return std::any_of(std::cbegin(children), std::cend(children), [&](const auto& child) -> bool {
+					return SafeShared{child} == node1;
+				});
+			});
+				not hasRemainingLinks)
+				node0Ref.detachChild(node1, node1Ref);
 		}
 
 		static inline auto detach(SharedPtr& node, const Key& key) -> void

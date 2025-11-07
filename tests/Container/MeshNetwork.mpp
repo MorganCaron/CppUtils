@@ -147,6 +147,42 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			}
 		});
 
+		suite.addTest("Detach child with multiple links", [&] {
+			auto elements = StringMeshNode::makeRoot("elements");
+			auto orange = StringMeshNode::make("orange");
+
+			StringMeshNode::Value::attach(elements, "color", orange);
+			StringMeshNode::Value::attach(elements, "fruit", orange);
+			{
+				auto elementAccessor = elements->sharedAccess();
+				const auto& branches = elementAccessor->value.branches;
+				suite.expectEqual(branches.count("color"), 1uz);
+				suite.expectEqual(branches.count("fruit"), 1uz);
+				suite.expectEqual(std::size(branches.at("color")), 1uz);
+				suite.expectEqual(std::size(branches.at("fruit")), 1uz);
+				suite.expectEqual(orange->sharedAccess()->getDistanceFromRoot(), 1uz);
+			}
+
+			StringMeshNode::Value::detach(elements, "color", orange);
+			{
+				auto elementAccessor = elements->sharedAccess();
+				const auto& branches = elementAccessor->value.branches;
+				suite.expectEqual(branches.count("color"), 0uz);
+				suite.expectEqual(branches.count("fruit"), 1uz);
+				suite.expectEqual(std::size(branches.at("fruit")), 1uz);
+				suite.expectEqual(orange->sharedAccess()->getDistanceFromRoot(), 1uz);
+			}
+
+			StringMeshNode::Value::detach(elements, "fruit", orange);
+			{
+				auto elementAccessor = elements->sharedAccess();
+				const auto& branches = elementAccessor->value.branches;
+				suite.expectEqual(branches.count("color"), 0uz);
+				suite.expectEqual(branches.count("fruit"), 0uz);
+				suite.expectEqual(orange->sharedAccess()->getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
+			}
+		});
+
 		suite.addTest("Bilateral attachment", [&] {
 			auto fruit = StringMeshNode::makeRoot("fruit");
 			auto apple = StringMeshNode::make("apple");
