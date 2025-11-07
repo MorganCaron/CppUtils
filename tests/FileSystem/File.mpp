@@ -47,7 +47,7 @@ export namespace CppUtils::UnitTest::FileSystem::File
 					CppUtils::FileSystem::Binary::write(filePath, originalValue);
 					auto fileContent = CppUtils::FileSystem::Binary::read<decltype(originalValue)>(filePath);
 					Logger::print("{}\n", fileContent);
-					suite.expect(fileContent == originalValue);
+					suite.expectEqual(fileContent, originalValue);
 				}};
 			});
 
@@ -61,7 +61,7 @@ export namespace CppUtils::UnitTest::FileSystem::File
 					auto vector = CppUtils::FileSystem::Binary::readVector<int>(filePath);
 					for (auto nb : vector)
 						Logger::print("{}\n", nb);
-					suite.expect(vector == originalVector);
+					suite.expectEqual(vector, originalVector);
 				}};
 			});
 		}};
@@ -79,7 +79,7 @@ export namespace CppUtils::UnitTest::FileSystem::File
 					CppUtils::FileSystem::String::write(filePath, originalString);
 					auto fileContent = CppUtils::FileSystem::String::read(filePath);
 					Logger::print("{}\n", fileContent);
-					suite.expect(fileContent == originalString);
+					suite.expectEqual(fileContent, originalString);
 				}};
 			});
 
@@ -92,7 +92,7 @@ export namespace CppUtils::UnitTest::FileSystem::File
 					CppUtils::FileSystem::String::append(filePath, secondString);
 					auto fileContent = CppUtils::FileSystem::String::read(filePath);
 					Logger::print("{}\n", fileContent);
-					suite.expect(fileContent == std::string{firstString} + secondString);
+					suite.expectEqual(fileContent, std::string{firstString} + secondString);
 				}};
 			});
 		}};

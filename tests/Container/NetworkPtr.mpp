@@ -22,7 +22,7 @@ export namespace CppUtils::UnitTest::Container::NetworkPtr
 			auto node = StringNetworkPtr::make("Node");
 			{
 				auto accessor = node->sharedAccess();
-				suite.expect(accessor->value == "Node");
+				suite.expectEqual(accessor->value, "Node");
 			}
 		});
 
@@ -34,7 +34,7 @@ export namespace CppUtils::UnitTest::Container::NetworkPtr
 			}
 			{
 				auto accessor = node->sharedAccess();
-				suite.expect(accessor->value == "Changed");
+				suite.expectEqual(accessor->value, "Changed");
 			}
 		});
 

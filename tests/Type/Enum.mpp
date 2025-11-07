@@ -51,19 +51,19 @@ export namespace CppUtils::UnitTest::Type::Enum
 {
 	inline auto _ = CppUtils::UnitTest::TestSuite{"Type/Enum", {"UnitTest"}, [](auto& suite) {
 		suite.addTest("Basic", [&] {
-			suite.expect(CppUtils::Type::Enum::toString(Enum1::A) == "A1");
-			suite.expect(CppUtils::Type::Enum::toString(Enum1::B) == "B1");
-			suite.expect(CppUtils::Type::Enum::toString(Enum1::C) == "C1");
+			suite.expectEqual(CppUtils::Type::Enum::toString(Enum1::A), "A1");
+			suite.expectEqual(CppUtils::Type::Enum::toString(Enum1::B), "B1");
+			suite.expectEqual(CppUtils::Type::Enum::toString(Enum1::C), "C1");
 		});
 
 		suite.addTest("Missing value", [&] {
-			suite.expect(CppUtils::Type::Enum::toString(Enum2::A) == "A2");
-			suite.expect(CppUtils::Type::Enum::toString(Enum2::B) == "Unknown");
+			suite.expectEqual(CppUtils::Type::Enum::toString(Enum2::A), "A2");
+			suite.expectEqual(CppUtils::Type::Enum::toString(Enum2::B), "Unknown");
 		});
 
 		suite.addTest("Missing name", [&] {
-			suite.expect(CppUtils::Type::Enum::toString(Enum3::A) == "A3");
-			suite.expect(CppUtils::Type::Enum::toString(Enum3::B) == "Unknown");
+			suite.expectEqual(CppUtils::Type::Enum::toString(Enum3::A), "A3");
+			suite.expectEqual(CppUtils::Type::Enum::toString(Enum3::B), "Unknown");
 		});
 	}};
 }

@@ -84,8 +84,7 @@ export namespace CppUtils::Container
 			if (m_distanceFromRoot == std::numeric_limits<std::size_t>::max())
 				throw std::logic_error{"Root node not found"};
 			if (not childValue.isRoot())
-				if (std::empty(childValue.m_parents) or
-					childValue.m_distanceFromRoot > m_distanceFromRoot + 1)
+				if (std::empty(childValue.m_parents) or childValue.m_distanceFromRoot > m_distanceFromRoot + 1)
 					childValue.m_distanceFromRoot = m_distanceFromRoot + 1;
 
 			if (childValue.m_distanceFromRoot > m_distanceFromRoot)

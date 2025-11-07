@@ -9,7 +9,7 @@ export namespace CppUtils::UnitTest::Thread::SharedLocker
 			auto lockedString = CppUtils::Thread::SharedLocker<std::string>{"Foo"};
 			{
 				auto accessor = lockedString.uniqueAccess();
-				suite.expect(accessor.value() == "Foo");
+				suite.expectEqual(accessor.value(), "Foo");
 			}
 		});
 
@@ -39,8 +39,8 @@ export namespace CppUtils::UnitTest::Thread::SharedLocker
 			{
 				auto accessor0 = lockedString.sharedAccess();
 				auto accessor1 = lockedString.sharedAccess();
-				suite.expect(accessor0.value() == "Foo");
-				suite.expect(accessor1.value() == "Foo");
+				suite.expectEqual(accessor0.value(), "Foo");
+				suite.expectEqual(accessor1.value(), "Foo");
 			}
 		});
 
@@ -49,8 +49,8 @@ export namespace CppUtils::UnitTest::Thread::SharedLocker
 			auto lockedString2 = CppUtils::Thread::SharedLocker<std::string>{"Bar"};
 			{
 				auto accessor = CppUtils::Thread::MultipleAccessor{lockedString1, lockedString2};
-				suite.expect(std::get<0>(accessor.values) == "Foo");
-				suite.expect(std::get<1>(accessor.values) == "Bar");
+				suite.expectEqual(std::get<0>(accessor.values), "Foo");
+				suite.expectEqual(std::get<1>(accessor.values), "Bar");
 			}
 		});
 
@@ -59,8 +59,8 @@ export namespace CppUtils::UnitTest::Thread::SharedLocker
 			auto lockedString2 = CppUtils::Thread::SharedLocker<std::string>{"Bar"};
 			{
 				auto accessor = CppUtils::Thread::MultipleAccessor{lockedString1, lockedString2};
-				suite.expect(std::get<0>(accessor.values) == "Foo");
-				suite.expect(std::get<1>(accessor.values) == "Bar");
+				suite.expectEqual(std::get<0>(accessor.values), "Foo");
+				suite.expectEqual(std::get<1>(accessor.values), "Bar");
 			}
 		});
 	}};

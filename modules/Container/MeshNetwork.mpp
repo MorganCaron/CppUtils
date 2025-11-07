@@ -22,7 +22,7 @@ export namespace CppUtils::Container
 
 		static inline auto attach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
-			auto accessor = CppUtils::Thread::MultipleAccessor{*node0, *node1};
+			auto accessor = Thread::MultipleAccessor{*node0, *node1};
 			auto& node0Ref = std::get<0>(accessor.values);
 			auto& node1Ref = std::get<1>(accessor.values);
 
@@ -32,7 +32,7 @@ export namespace CppUtils::Container
 
 		static inline auto detach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
 		{
-			auto accessor = CppUtils::Thread::MultipleAccessor{*node0, *node1};
+			auto accessor = Thread::MultipleAccessor{*node0, *node1};
 			auto& node0Ref = std::get<0>(accessor.values);
 			auto& node1Ref = std::get<1>(accessor.values);
 
@@ -71,7 +71,7 @@ export namespace CppUtils::Container
 			for (const auto& nodeToDetach : nodesToDetach)
 				if (auto sharedNode = nodeToDetach.lock())
 				{
-					auto accessor = CppUtils::Thread::MultipleAccessor{*node, *sharedNode};
+					auto accessor = Thread::MultipleAccessor{*node, *sharedNode};
 					auto& parentRef = std::get<0>(accessor.values);
 					auto& childRef = std::get<1>(accessor.values);
 					parentRef.detachChild(sharedNode, childRef);

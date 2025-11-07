@@ -18,13 +18,13 @@ export namespace CppUtils::UnitTest::Container::SafeShared
 			auto safeSharedString1 = safeSharedString0;
 			{
 				auto accessor = safeSharedString0->uniqueAccess();
-				suite.expect(accessor.value() == "Foo");
+				suite.expectEqual(accessor.value(), "Foo");
 				accessor.value() = "Bar";
-				suite.expect(accessor.value() == "Bar");
+				suite.expectEqual(accessor.value(), "Bar");
 			}
 			{
 				auto accessor = safeSharedString1->uniqueAccess();
-				suite.expect(accessor.value() == "Bar");
+				suite.expectEqual(accessor.value(), "Bar");
 			}
 		});
 
@@ -36,10 +36,10 @@ export namespace CppUtils::UnitTest::Container::SafeShared
 				auto accessor1 = safeSharedString0->sharedAccess();
 				auto accessor2 = safeSharedString1->sharedAccess();
 				auto accessor3 = safeSharedString1->sharedAccess();
-				suite.expect(accessor0.value() == "Foo");
-				suite.expect(accessor1.value() == "Foo");
-				suite.expect(accessor2.value() == "Foo");
-				suite.expect(accessor3.value() == "Foo");
+				suite.expectEqual(accessor0.value(), "Foo");
+				suite.expectEqual(accessor1.value(), "Foo");
+				suite.expectEqual(accessor2.value(), "Foo");
+				suite.expectEqual(accessor3.value(), "Foo");
 			}
 		});
 
@@ -52,8 +52,8 @@ export namespace CppUtils::UnitTest::Container::SafeShared
 			{
 				auto accessor0 = safeSharedString0->sharedAccess();
 				auto accessor1 = safeSharedString1->sharedAccess();
-				suite.expect(accessor0.value() == "Foo");
-				suite.expect(accessor1.value() == "Foo");
+				suite.expectEqual(accessor0.value(), "Foo");
+				suite.expectEqual(accessor1.value(), "Foo");
 			}
 		});
 	}};
