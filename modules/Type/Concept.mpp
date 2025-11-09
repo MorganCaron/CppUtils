@@ -66,4 +66,7 @@ export namespace CppUtils::Type
 
 	template<class Function, class... Args>
 	concept NotCallable = not Callable<Function, Args...>;
+
+	template<class T>
+	concept Numeric = std::integral<T> or std::floating_point<T>;
 }

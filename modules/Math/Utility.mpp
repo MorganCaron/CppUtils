@@ -1,6 +1,7 @@
 export module CppUtils.Math.Utility;
 
 import std;
+import CppUtils.Type.Concept;
 
 export namespace CppUtils::Math
 {
@@ -26,24 +27,8 @@ export namespace CppUtils::Math
 	static_assert(absolute(0u) == 0u);
 	static_assert(absolute(1u) == 1u);
 
-	template<std::floating_point Float>
-	[[nodiscard]] inline constexpr auto isEqual(Float lhs, Float rhs, Float epsilon = std::numeric_limits<Float>::epsilon()) noexcept -> bool
-	{
-		auto difference = absolute(lhs - rhs);
-		auto maximum = std::max(absolute(lhs), absolute(rhs));
-		if (maximum >= Float{1})
-			return difference <= epsilon * maximum;
-		else if (maximum > Float{0})
-			return difference / maximum <= epsilon;
-		return true;
-	}
-
-	static_assert(isEqual(0.0, 0.0));
-	static_assert(isEqual(0.1 + 0.2, 0.3));
-	static_assert(not isEqual(0.1 + 0.2, 0.29));
-	static_assert(not isEqual(0.1 + 0.2, 0.31));
-
-	[[nodiscard]] inline constexpr auto isBetween(auto value, auto low, auto high) noexcept -> bool
+	template<Type::Numeric T>
+	[[nodiscard]] inline constexpr auto isBetween(T value, T low, T high) noexcept -> bool
 	{
 		return low <= value and value <= high;
 	}
