@@ -1,0 +1,85 @@
+export module CppUtils.UnitTests.Container.MeshNetworkOperators;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Container::MeshNetworkOperators
+{
+	inline auto _ = TestSuite{"Container/MeshNetworkOperators", {"Container/MeshNetwork"}, [](auto& suite) {
+		using StringMeshNodePtr = CppUtils::Container::MeshNodePtr<std::string, std::string>;
+
+		suite.addTest("Attach (operator>>)", [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto child = StringMeshNodePtr::make("child");
+
+			root["branch"] >> child;
+
+			auto rootAccessor = root->sharedAccess();
+			const auto& branches = rootAccessor->value.branches;
+			suite.expectEqual(std::size(branches), 1uz);
+			const auto& children = branches.at("branch");
+			suite.expectEqual(std::size(children), 1uz);
+			auto childAccessor = child->sharedAccess();
+			suite.expectEqual(childAccessor->getDistanceFromRoot(), 1uz);
+		});
+
+		suite.addTest("Chaining (operator>>)", [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto child1 = StringMeshNodePtr::make("child1");
+			auto child2 = StringMeshNodePtr::make("child2");
+
+			root["branch1"] >> child1["branch2"] >> child2;
+
+			auto rootAccessor = root->sharedAccess();
+			const auto& rootBranches = rootAccessor->value.branches;
+			suite.expectEqual(std::size(rootBranches), 1uz);
+			auto child1Accessor = child1->sharedAccess();
+			const auto& child1Branches = child1Accessor->value.branches;
+			suite.expectEqual(std::size(child1Branches), 1uz);
+		});
+
+		suite.addTest("Unlink (operator-)", [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto child = StringMeshNodePtr::make("child");
+
+			root["branch"] >> child;
+			root["branch"] - child;
+
+			auto rootAccessor = root->sharedAccess();
+			const auto& branches = rootAccessor->value.branches;
+			suite.expect(std::empty(branches));
+		});
+
+		suite.addTest("Bidirectional link (operator&)", [&] {
+			auto fruit = StringMeshNodePtr::makeRoot("fruit");
+			auto apple = StringMeshNodePtr::make("apple");
+			fruit["elements"] & apple["category"];
+			{
+				auto fruitAccessor = fruit->sharedAccess();
+				const auto& fruitBranches = fruitAccessor->value.branches;
+				suite.expectEqual(std::size(fruitBranches), 1uz);
+				suite.expectEqual(std::size(fruitBranches.at("category")), 1uz);
+
+				auto appleAccessor = apple->sharedAccess();
+				const auto& appleBranches = appleAccessor->value.branches;
+				suite.expectEqual(std::size(appleBranches), 1uz);
+				suite.expectEqual(std::size(appleBranches.at("elements")), 1uz);
+			}
+		});
+
+		suite.addTest("Bidirectional unlink (operator/)", [&] {
+			auto fruit = StringMeshNodePtr::makeRoot("fruit");
+			auto apple = StringMeshNodePtr::make("apple");
+			fruit["elements"] & apple["category"];
+			fruit["elements"] / apple["category"];
+			{
+				auto fruitAccessor = fruit->sharedAccess();
+				const auto& fruitBranches = fruitAccessor->value.branches;
+				suite.expect(std::empty(fruitBranches));
+				auto appleAccessor = apple->sharedAccess();
+				const auto& appleBranches = appleAccessor->value.branches;
+				suite.expect(std::empty(appleBranches));
+			}
+		});
+	}};
+}

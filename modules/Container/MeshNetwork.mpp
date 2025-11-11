@@ -95,5 +95,98 @@ export namespace CppUtils::Container
 	};
 
 	template<class Key, class Value>
-	using MeshNodePtr = NetworkPtr<MeshNode<Key, Value>>;
+	class MeshNodePtr final
+	{
+	public:
+		using NodePtr = NetworkPtr<MeshNode<Key, Value>>;
+		using SharedPtr = NodePtr::SharedPtr;
+
+		class Branch final
+		{
+		public:
+			Branch(SharedPtr& self, const Key& key): m_self(self), m_key(key) {}
+
+			auto operator>>(MeshNodePtr<Key, Value>& other) -> MeshNodePtr<Key, Value>&
+			{
+				MeshNode<Key, Value>::attach(m_self, m_key, other.get());
+				return other;
+			}
+
+			auto operator>>(Branch&& otherBranch) -> Branch&&
+			{
+				MeshNode<Key, Value>::attach(m_self, m_key, otherBranch.m_self);
+				return std::move(otherBranch);
+			}
+
+			auto operator-(MeshNodePtr<Key, Value>& other) -> void
+			{
+				MeshNode<Key, Value>::detach(m_self, m_key, other.get());
+			}
+
+			auto operator&(const Branch& other) -> void
+			{
+				auto node1 = MeshNodePtr{m_self};
+				auto node2 = MeshNodePtr{other.m_self};
+				MeshNode<Key, Value>::attach(m_key, node1.get(), other.m_key, node2.get());
+			}
+
+			auto operator/(const Branch& other) -> void
+			{
+				auto node1 = MeshNodePtr{m_self};
+				auto node2 = MeshNodePtr{other.m_self};
+				MeshNode<Key, Value>::detach(m_key, node1.get(), other.m_key, node2.get());
+
+				auto& node1SharedLocker = *node1.get();
+				auto node1Accessor = node1SharedLocker.uniqueAccess();
+				auto& node2SharedLocker = *node2.get();
+				auto node2Accessor = node2SharedLocker.uniqueAccess();
+
+				auto& node2NetworkPtr = node2Accessor.value();
+				node1Accessor.operator->()->detachChild(node2.get(), node2NetworkPtr);
+
+				auto& node1NetworkPtr = node1Accessor.value();
+				node2Accessor.operator->()->detachChild(node1.get(), node1NetworkPtr);
+			}
+
+		private:
+			SharedPtr& m_self;
+			const Key& m_key;
+		};
+
+		[[nodiscard]] static auto makeRoot(auto&&... args) -> MeshNodePtr
+		{
+			return MeshNodePtr{NodePtr::makeRoot(std::forward<decltype(args)>(args)...)};
+		}
+
+		[[nodiscard]] static auto make(auto&&... args) -> MeshNodePtr
+		{
+			return MeshNodePtr{NodePtr::make(std::forward<decltype(args)>(args)...)};
+		}
+
+		MeshNodePtr(const SharedPtr& node): m_node(node) {}
+		MeshNodePtr(SharedPtr&& node): m_node(std::move(node)) {}
+
+		[[nodiscard]] auto operator[](const Key& key) -> Branch
+		{
+			return Branch{m_node, key};
+		}
+
+		[[nodiscard]] auto operator->()
+		{
+			return m_node.get();
+		}
+
+		[[nodiscard]] auto operator*()
+		{
+			return *m_node;
+		}
+
+		[[nodiscard]] auto get() -> SharedPtr&
+		{
+			return m_node;
+		}
+
+	private:
+		SharedPtr m_node;
+	};
 }
