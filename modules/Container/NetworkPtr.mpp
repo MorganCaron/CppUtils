@@ -229,4 +229,54 @@ export namespace CppUtils::Container
 		std::vector<std::variant<SharedPtr, WeakPtr>> m_children;
 		std::vector<WeakPtr> m_parents;
 	};
+
+	template<class T>
+	inline auto operator>>(
+		SafeShared<NetworkPtr<T>>& from,
+		SafeShared<NetworkPtr<T>>& to) -> SafeShared<NetworkPtr<T>>&
+	{
+		auto accessor = Thread::MultipleAccessor{*from, *to};
+		auto& fromValue = std::get<0>(accessor.values);
+		auto& toValue = std::get<1>(accessor.values);
+		fromValue.attachChild(to, toValue);
+		return to;
+	}
+
+	template<class T>
+	inline auto operator&(
+		SafeShared<NetworkPtr<T>>& lhs,
+		SafeShared<NetworkPtr<T>>& rhs) -> SafeShared<NetworkPtr<T>>&
+	{
+		auto accessor = Thread::MultipleAccessor{*lhs, *rhs};
+		auto& value1 = std::get<0>(accessor.values);
+		auto& value2 = std::get<1>(accessor.values);
+		value1.attachChild(rhs, value2);
+		value2.attachChild(lhs, value1);
+		return rhs;
+	}
+
+	template<class T>
+	inline auto operator-(
+		SafeShared<NetworkPtr<T>>& from,
+		SafeShared<NetworkPtr<T>>& to) -> SafeShared<NetworkPtr<T>>&
+	{
+		auto accessor = Thread::MultipleAccessor{*from, *to};
+		auto& fromValue = std::get<0>(accessor.values);
+		auto& toValue = std::get<1>(accessor.values);
+		fromValue.detachChild(to, toValue);
+		return to;
+	}
+
+	template<class T>
+	inline auto operator/(
+		SafeShared<NetworkPtr<T>>& lhs,
+		SafeShared<NetworkPtr<T>>& rhs) -> SafeShared<NetworkPtr<T>>&
+	{
+		auto accessor = Thread::MultipleAccessor{*lhs, *rhs};
+		auto& value1 = std::get<0>(accessor.values);
+		auto& value2 = std::get<1>(accessor.values);
+		value1.detachChild(rhs, value2);
+		value2.detachChild(lhs, value1);
+		return rhs;
+	}
 }
