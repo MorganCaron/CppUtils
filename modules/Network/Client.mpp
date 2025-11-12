@@ -6,6 +6,7 @@ module;
 #	include <winsock2.h>
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 #	include <sys/socket.h>
+#	include <cerrno>
 #endif
 
 export module CppUtils.Network.Client;
@@ -33,9 +34,15 @@ export namespace CppUtils::Network
 			if (nativeHandle() == -1)
 #endif
 				throw std::runtime_error{"CppUtils::Network::Client::connect: Invalid socket handle"};
-			throwErrno(
-				::connect(nativeHandle(), reinterpret_cast<sockaddr*>(std::addressof(address.storage)), address.length),
-				"CppUtils::Network::Client::connect");
+			if (::connect(nativeHandle(), reinterpret_cast<sockaddr*>(std::addressof(address.storage)), address.length) < 0)
+			{
+#if defined(OS_WINDOWS)
+				if (WSAGetLastError() != WSAEWOULDBLOCK)
+#elif defined(OS_LINUX) or defined(OS_MACOS)
+				if (errno != EINPROGRESS)
+#endif
+					throwErrno(-1, "CppUtils::Network::Client::connect");
+			}
 		}
 	};
 }

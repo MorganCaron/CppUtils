@@ -243,6 +243,26 @@ export namespace CppUtils::Network
 			return result > 0;
 		}
 
+		template<class T>
+		[[nodiscard]] inline auto getSocketOption(int level, int option) const -> T
+		{
+			auto value = T{};
+			if (not getSocketOption(m_socket, level, option, std::addressof(value), sizeof(T)))
+				throw std::runtime_error{"CppUtils::Network::Socket::getSocketOption: Failed to get socket option"};
+			return value;
+		}
+
+		[[nodiscard]] inline auto hasPendingError() const -> std::optional<int>
+		{
+			auto error = 0;
+			if (getSocketOption(m_socket, SOL_SOCKET, SO_ERROR, std::addressof(error), sizeof(error)))
+			{
+				if (error != 0)
+					return error;
+			}
+			return std::nullopt;
+		}
+
 	private:
 		inline auto setSocketOption(NativeSocket socket, int level, int option, const void* value, std::size_t valueSize) const noexcept -> bool
 		{
@@ -250,6 +270,17 @@ export namespace CppUtils::Network
 			return not ::setsockopt(socket, level, option, reinterpret_cast<const char*>(value), static_cast<int>(valueSize));
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 			return not ::setsockopt(socket, level, option, value, static_cast<socklen_t>(valueSize));
+#endif
+		}
+
+		[[nodiscard]] inline auto getSocketOption(NativeSocket socket, int level, int option, void* value, std::size_t valueSize) const noexcept -> bool
+		{
+#if defined(OS_WINDOWS)
+			auto length = static_cast<int>(valueSize);
+			return ::getsockopt(socket, level, option, reinterpret_cast<char*>(value), std::addressof(length)) == 0;
+#elif defined(OS_LINUX) or defined(OS_MACOS)
+			auto length = static_cast<socklen_t>(valueSize);
+			return ::getsockopt(socket, level, option, value, std::addressof(length)) == 0;
 #endif
 		}
 
@@ -374,9 +405,7 @@ export namespace CppUtils::Network
 #if defined(OS_WINDOWS)
 					if (WSAGetLastError() == WSAEWOULDBLOCK)
 #elif defined(OS_LINUX) or defined(OS_MACOS)
-					if (errno == EAGAIN)
-						continue;
-					if (errno == EWOULDBLOCK)
+					if (errno == EAGAIN or errno == EWOULDBLOCK)
 #endif
 						return std::nullopt;
 					throw makeReceiveError();
@@ -407,7 +436,7 @@ export namespace CppUtils::Network
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 					if (errno == EAGAIN or errno == EWOULDBLOCK)
 #endif
-						continue;
+						return std::nullopt;
 					throw makeReceiveError();
 				}
 				if (bytesReceived == 0)

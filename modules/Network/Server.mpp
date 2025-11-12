@@ -53,7 +53,7 @@ export namespace CppUtils::Network
 					return std::nullopt;
 				throw std::runtime_error{"CppUtils::Network::Server::accept: Accept failed"};
 			}
-#elif defined(OS_LINUX)
+#elif defined(OS_LINUX) or defined(OS_MACOS)
 			if (clientSocket < 0)
 			{
 				if (errno == EAGAIN or errno == EWOULDBLOCK)

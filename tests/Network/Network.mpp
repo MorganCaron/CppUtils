@@ -220,5 +220,133 @@ export namespace CppUtils::UnitTest::Network
 			if (auto serverResult = serverListening.get(); not serverResult.has_value())
 				throw serverResult.error();
 		});
+
+		suite.addTest("isReadyForRead: Data available", [&] {
+			auto serverisReady = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				server.bind(8'080);
+				server.listen();
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				auto clientSocket = server.accept().value();
+				clientSocket.send(123);
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				client.connect("", 8'080);
+				client.setBlocking(false);
+
+				suite.expect(client.isReadyForRead(5s));
+				auto data = client.receive<int>();
+				suite.expect(data.has_value());
+				suite.expectEqual(data.value(), 123);
+			});
+
+			if (auto clientResult = clientConnecting.get(); not clientResult.has_value())
+				throw clientResult.error();
+			if (auto serverResult = serverListening.get(); not serverResult.has_value())
+				throw serverResult.error();
+		});
+
+		suite.addTest("isReadyForRead: No data (timeout)", [&] {
+			auto serverisReady = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				server.bind(8'080);
+				server.listen();
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				[[maybe_unused]] auto clientSocket = server.accept().value();
+				std::this_thread::sleep_for(1s);
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				client.connect("", 8'080);
+				client.setBlocking(false);
+				std::this_thread::sleep_for(50ms);
+				suite.expect(not client.isReadyForRead(100ms));
+			});
+
+			if (auto clientResult = clientConnecting.get(); not clientResult.has_value())
+				throw clientResult.error();
+			if (auto serverResult = serverListening.get(); not serverResult.has_value())
+				throw serverResult.error();
+		});
+
+		suite.addTest("hasPendingError: No error", [&] {
+			auto serverisReady = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				server.bind(8'080);
+				server.listen();
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				[[maybe_unused]] auto clientSocket = server.accept().value();
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				client.connect("", 8'080);
+
+				suite.expect(not client.hasPendingError().has_value());
+			});
+
+			if (auto clientResult = clientConnecting.get(); not clientResult.has_value())
+				throw clientResult.error();
+			if (auto serverResult = serverListening.get(); not serverResult.has_value())
+				throw serverResult.error();
+		});
+
+		suite.addTest("hasPendingError: With error", [&] {
+			auto serverisReady = std::atomic_bool{false};
+			auto serverClosedConnection = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				server.bind(8'080);
+				server.listen();
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				[[maybe_unused]] auto clientSocket = server.accept().value();
+				serverClosedConnection.store(true, std::memory_order_release);
+				serverClosedConnection.notify_all();
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				client.connect("", 8'080);
+
+				serverClosedConnection.wait(false);
+				suite.template expectThrow<std::runtime_error>([&] {
+					client.send(1);
+				});
+
+				std::this_thread::sleep_for(50ms);
+				suite.expect(client.hasPendingError().has_value());
+			});
+
+			if (auto clientResult = clientConnecting.get(); not clientResult.has_value())
+				throw clientResult.error();
+			if (auto serverResult = serverListening.get(); not serverResult.has_value())
+				throw serverResult.error();
+		});
 	}};
 }
