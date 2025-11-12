@@ -98,8 +98,8 @@ export namespace CppUtils::Container
 	class MeshNodePtr final
 	{
 	public:
-		using NodePtr = NetworkPtr<MeshNode<Key, Value>>;
-		using SharedPtr = NodePtr::SharedPtr;
+		using NetworkPtr = NetworkPtr<MeshNode<Key, Value>>;
+		using SharedPtr = NetworkPtr::SharedPtr;
 
 		class Branch final
 		{
@@ -155,12 +155,12 @@ export namespace CppUtils::Container
 
 		[[nodiscard]] static auto makeRoot(auto&&... args) -> MeshNodePtr
 		{
-			return MeshNodePtr{NodePtr::makeRoot(std::forward<decltype(args)>(args)...)};
+			return MeshNodePtr{NetworkPtr::makeRoot(std::forward<decltype(args)>(args)...)};
 		}
 
 		[[nodiscard]] static auto make(auto&&... args) -> MeshNodePtr
 		{
-			return MeshNodePtr{NodePtr::make(std::forward<decltype(args)>(args)...)};
+			return MeshNodePtr{NetworkPtr::make(std::forward<decltype(args)>(args)...)};
 		}
 
 		MeshNodePtr(const SharedPtr& node): m_node(node) {}
