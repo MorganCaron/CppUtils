@@ -23,12 +23,12 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 		});
 
 		suite.addTest("Copy reference", [&] {
-			auto appleRef = std::optional<StringMeshNodePtr>{};
+			StringMeshNodePtr appleRef;
 			{
 				auto apple = StringMeshNodePtr::make("apple");
 				appleRef = apple;
 			}
-			auto accessor = (*appleRef)->sharedAccess();
+			auto accessor = appleRef->sharedAccess();
 			const auto& value = accessor->value.value;
 			Logger::print("{}\n", value);
 			suite.expectEqual(value, "apple");

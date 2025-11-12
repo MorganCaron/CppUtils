@@ -163,8 +163,14 @@ export namespace CppUtils::Container
 			return MeshNodePtr{NetworkPtr::make(std::forward<decltype(args)>(args)...)};
 		}
 
+		MeshNodePtr() = default;
 		MeshNodePtr(const SharedPtr& node): m_node(node) {}
 		MeshNodePtr(SharedPtr&& node): m_node(std::move(node)) {}
+
+		explicit operator bool() const noexcept
+		{
+			return m_node != nullptr;
+		}
 
 		[[nodiscard]] auto operator[](const Key& key) -> Branch
 		{
@@ -187,6 +193,6 @@ export namespace CppUtils::Container
 		}
 
 	private:
-		SharedPtr m_node;
+		SharedPtr m_node = nullptr;
 	};
 }
