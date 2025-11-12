@@ -10,6 +10,7 @@ import std;
 import CppUtils.Terminal.RawTerminal;
 import CppUtils.String.Concept;
 import CppUtils.String.Utility;
+import CppUtils.Terminal.TextModifier;
 
 export namespace CppUtils::Terminal
 {
@@ -42,7 +43,7 @@ export namespace CppUtils::Terminal
 #if defined(OS_WINDOWS)
 		::SetConsoleTitleW(std::data(title));
 #elif defined(OS_LINUX) or defined(OS_MACOS)
-		std::print("\x1B]0;{}\a", title);
+		std::print(Ansi::EscapeCode::SetTitle, title);
 		std::fflush(stdout);
 #endif
 	}

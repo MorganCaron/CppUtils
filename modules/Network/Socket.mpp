@@ -230,8 +230,8 @@ export namespace CppUtils::Network
 			FD_SET(m_socket, std::addressof(readSet));
 
 			auto timeValue = timeval{};
-			timeValue.tv_sec = std::chrono::duration_cast<std::chrono::seconds>(timeout).count();
-			timeValue.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(timeout % 1s).count();
+			timeValue.tv_sec = static_cast<long>(std::chrono::duration_cast<std::chrono::seconds>(timeout).count());
+			timeValue.tv_usec = static_cast<long>(std::chrono::duration_cast<std::chrono::microseconds>(timeout % 1s).count());
 
 #ifdef OS_WINDOWS
 			auto result = ::select(0, std::addressof(readSet), nullptr, nullptr, std::addressof(timeValue));

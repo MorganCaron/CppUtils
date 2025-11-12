@@ -1,9 +1,11 @@
 module;
 
 #include <CppUtils/System/Windows.hpp>
+#include <cstdio>
 
 export module CppUtils.Terminal.Utility;
 
+import std;
 import CppUtils.System.Type;
 import CppUtils.System.Error;
 import CppUtils.Terminal.Handle;
@@ -26,7 +28,7 @@ export namespace CppUtils::Terminal
 
 		auto mode = DWORD{0};
 		if (not GetConsoleMode(outputHandle, std::addressof(mode)))
-			throwLastError("CppUtils::Terminal::enableAnsi: GetConsoleMode failed");
+			System::throwLastError("CppUtils::Terminal::enableAnsi: GetConsoleMode failed");
 
 		SetConsoleMode(outputHandle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 #endif

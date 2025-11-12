@@ -9,6 +9,7 @@ export module CppUtils.Terminal.Cursor;
 import std;
 import CppUtils.Container.Size;
 import CppUtils.Terminal.RawTerminal;
+import CppUtils.Terminal.TextModifier;
 
 export namespace CppUtils::Terminal
 {
@@ -27,7 +28,7 @@ export namespace CppUtils::Terminal
 		using namespace std::literals;
 
 		auto rawTerminal = RawTerminal{};
-		std::print("\x1b[6n");
+		std::print("{}", Ansi::EscapeCode::GetCursorPosition);
 		std::fflush(stdout);
 
 		const auto response = rawTerminal.read('R');
@@ -46,7 +47,7 @@ export namespace CppUtils::Terminal
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 	inline auto setCursorPosition([[maybe_unused]] Container::Size2 position) -> void
 	{
-		std::print("\x1b[{};{}H", position.y(), position.x());
+		std::print(Ansi::EscapeCode::SetCursorPosition, position.y(), position.x());
 	}
 #endif
 }

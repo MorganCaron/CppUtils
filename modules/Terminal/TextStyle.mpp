@@ -17,8 +17,8 @@ export namespace CppUtils::Terminal::TextStyle
 		Italic,
 		Underline
 	};
-#if defined(OS_LINUX) or defined(OS_MACOS)
-	namespace ANSIEscapeCode
+
+	namespace Ansi::EscapeCode
 	{
 		[[maybe_unused]] inline constexpr auto Bolder = "\x1B[1m"sv;
 		[[maybe_unused]] inline constexpr auto Lighter = "\x1B[2m"sv;
@@ -31,16 +31,15 @@ export namespace CppUtils::Terminal::TextStyle
 		switch (textStyle)
 		{
 		case TextStyleEnum::Bolder:
-			return ANSIEscapeCode::Bolder;
+			return Ansi::EscapeCode::Bolder;
 		case TextStyleEnum::Lighter:
-			return ANSIEscapeCode::Lighter;
+			return Ansi::EscapeCode::Lighter;
 		case TextStyleEnum::Italic:
-			return ANSIEscapeCode::Italic;
+			return Ansi::EscapeCode::Italic;
 		case TextStyleEnum::Underline:
-			return ANSIEscapeCode::Underline;
+			return Ansi::EscapeCode::Underline;
 		default:
 			return "";
 		}
 	}
-#endif
 }

@@ -11,26 +11,37 @@ jobs:
       matrix:
         compiler:
         - {
-          name: "cl",
-          cc: "cl",
-          cxx: "cl"
+          name: "Clang",
+          cc: "clang",
+          cxx: "clang++",
+          xmake-toolchain: "--toolchain=llvm --sdk=\"$env:LLVM_PATH\""
         }
     steps:
     - uses: actions/checkout@v4
     - uses: xmake-io/github-action-setup-xmake@v1
       with:
         xmake-version: branch@master
-    - uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Install LLVM
+      uses: KyleMayes/install-llvm-action@master
       with:
-        toolset: "14.39"
-    - name: Compile
+        version: "21.1.3"
+
+    - name: Configure & Install dependencies
+      shell: pwsh
       env:
         CC: ${{ matrix.compiler.cc }}
         CXX: ${{ matrix.compiler.cxx }}
       run: |
-        xmake f --enable_tests=y --yes
-        xmake build -vD
+        xmake f ${{ matrix.compiler.xmake-toolchain }} --runtimes="c++_shared" --enable_tests=y -v --yes
+
+    - name: Build
+      shell: pwsh
+      run: |
+        xmake build -v
 
     - name: Run tests
+      shell: pwsh
       run: |
         xmake run
+

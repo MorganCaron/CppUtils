@@ -232,6 +232,8 @@ export namespace CppUtils::Language::VirtualMachine
 						return std::unexpected{"No type defined"sv};
 					else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
 						return std::unexpected{typeId.error()};
+					else if (typeId.value() >= std::tuple_size_v<decltype(types)>) [[unlikely]]
+						return std::unexpected{std::format("Instruction push: Type identifier {} out of range (max {})", typeId.value(), std::tuple_size_v<decltype(types)>)};
 					else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) {
 						return stack.push(value);
 					});
@@ -244,6 +246,8 @@ export namespace CppUtils::Language::VirtualMachine
 						return std::unexpected{"No type defined"sv};
 					else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
 						return std::unexpected{typeId.error()};
+					else if (typeId.value() >= std::tuple_size_v<decltype(types)>) [[unlikely]]
+						return std::unexpected{std::format("Instruction drop: Type identifier {} out of range (max {})", typeId.value(), std::tuple_size_v<decltype(types)>)};
 					else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) {
 						return stack.drop(sizeof(std::remove_cvref_t<decltype(value)>));
 					});

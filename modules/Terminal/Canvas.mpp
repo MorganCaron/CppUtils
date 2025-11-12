@@ -139,12 +139,12 @@ export namespace CppUtils::Terminal
 						}
 						if (needUpdateTextColor)
 						{
-							stringBuffer += TextColor::getTextColorCode(currentChar.textColor);
+							stringBuffer += TextColor::Ansi::getTextColorCode(currentChar.textColor);
 							lastAttributes.textColor = currentChar.textColor;
 						}
 						if (needUpdateBackgroundColor)
 						{
-							stringBuffer += BackgroundColor::getBackgroundColorCode(currentChar.backgroundColor);
+							stringBuffer += BackgroundColor::Ansi::getBackgroundColorCode(currentChar.backgroundColor);
 							lastAttributes.backgroundColor = currentChar.backgroundColor;
 						}
 						stringBuffer += currentChar.character;
