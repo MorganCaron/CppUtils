@@ -13,6 +13,7 @@ export import CppUtils.UnitTests.Container.Tree;
 export import CppUtils.UnitTests.Container.TypedStack;
 export import CppUtils.UnitTests.Container.Vector;
 export import CppUtils.UnitTests.Execution.EventDispatcher;
+export import CppUtils.UnitTests.Execution.ScopeGuard;
 export import CppUtils.UnitTests.FileSystem.Directory;
 export import CppUtils.UnitTests.FileSystem.File;
 export import CppUtils.UnitTests.FileSystem.Watcher;

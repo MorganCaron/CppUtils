@@ -1,0 +1,34 @@
+export module CppUtils.UnitTests.Execution.ScopeGuard;
+
+import CppUtils.Execution.ScopeGuard;
+import CppUtils.UnitTest;
+import std;
+
+export namespace CppUtils::UnitTest::Execution::ScopeGuard
+{
+	inline auto _ = CppUtils::UnitTest::TestSuite{"Execution/ScopeGuard", {"UnitTest"}, [](auto& suite) {
+		suite.addTest("Basic ScopeGuard", [&] {
+			auto called = false;
+			{
+				auto _ = CppUtils::Execution::ScopeGuard{[&]() {
+					called = true;
+				}};
+			}
+			suite.expect(called);
+		});
+
+		suite.addTest("ScopeGuard with Exception", [&] {
+			auto called = false;
+			try
+			{
+				auto _ = CppUtils::Execution::ScopeGuard{[&]() {
+					called = true;
+				}};
+				throw std::runtime_error("Test exception");
+			}
+			catch (const std::runtime_error&)
+			{}
+			suite.expect(called);
+		});
+	}};
+}

@@ -1,0 +1,25 @@
+export module CppUtils.Execution.ScopeGuard;
+
+import std;
+
+export namespace CppUtils::Execution
+{
+	class ScopeGuard final
+	{
+	public:
+		explicit ScopeGuard(std::function<void()> onExit) noexcept:
+			m_onExit{std::move(onExit)}
+		{}
+
+		ScopeGuard(const ScopeGuard&) = delete;
+		auto operator=(const ScopeGuard&) -> ScopeGuard& = delete;
+
+		~ScopeGuard() noexcept
+		{
+			m_onExit();
+		}
+
+	private:
+		std::function<void()> m_onExit;
+	};
+}

@@ -41,6 +41,7 @@
 ### 🚀 Execution
 - [`Event`](modules/Execution/Event.mpp) - An event for thread synchronization
 - [`EventDispatcher`](modules/Execution/EventDispatcher.mpp) - Event system to subscribe functions and trigger actions by event name
+- [`ScopeGuard`](modules/Execution/ScopeGuard.mpp) - RAII utility to execute a function when leaving a scope, ensuring resource cleanup
 
 ### 📁 File System
 - [`Watcher`](modules/FileSystem/Watcher.mpp) - File modification watcher
@@ -51,6 +52,7 @@
 ### 🔣 Languages (Parsers, Compilers, VM)
 - Tools to create parsers and compilers (CSS, INI, HTML, JSON, Markdown, XML) (work in progress <img src="resources/loading.gif" width="12" height="12"/>)
 - [`CLikeCompiler`](modules/Language/CLikeCompiler.mpp) - Compiler for C-inspired language
+- [`GrammarParser`](modules/Language/GrammarParser.mpp) - A parser for defining and interpreting custom grammars, used for building language parsers
 - [`MetaEvaluator`](modules/Language/MetaEvaluator.mpp) - Homoiconic meta-circular evaluator with extensible reflexivity
 - [`ASTParser`](modules/Language/ASTParser.mpp) - AST parser (work in progress <img src="resources/loading.gif" width="12" height="12"/>)
 - [`VirtualMachine`](modules/Language/VirtualMachine.mpp) - Generic virtual machine
