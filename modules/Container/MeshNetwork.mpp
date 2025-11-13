@@ -148,6 +148,28 @@ export namespace CppUtils::Container
 				node2Accessor.operator->()->detachChild(node1.get(), node1NetworkPtr);
 			}
 
+			[[nodiscard]] auto operator[](std::size_t index) const -> std::expected<MeshNodePtr, std::string_view>
+			{
+				using namespace std::literals;
+
+				if (not m_self)
+					return std::unexpected{"Invalid MeshNodePtr"sv};
+				auto sharedLocker = m_self->sharedAccess();
+				const auto& branches = sharedLocker->value.branches;
+				if (auto it = branches.find(m_key); it != std::cend(branches))
+				{
+					const auto& children = it->second;
+					if (index < std::size(children))
+						if (auto sharedChild = children[index].lock())
+							return MeshNodePtr{sharedChild};
+						else
+							return std::unexpected{"Failed to lock weak pointer for branch. Node might have been deleted"sv};
+					else
+						return std::unexpected{"Branch index out of bounds"sv};
+				}
+				return std::unexpected{"Branch key not found"sv};
+			}
+
 		private:
 			SharedPtr& m_self;
 			const Key& m_key;
@@ -200,28 +222,6 @@ export namespace CppUtils::Container
 				return std::unexpected{"Invalid MeshNodePtr"sv};
 			auto sharedLocker = m_node->sharedAccess();
 			return sharedLocker->value.value;
-		}
-
-		[[nodiscard]] auto getNode(const Key& key, std::size_t index = 0) const -> std::expected<MeshNodePtr, std::string_view>
-		{
-			using namespace std::literals;
-
-			if (not m_node)
-				return std::unexpected{"Invalid MeshNodePtr"sv};
-			auto sharedLocker = m_node->sharedAccess();
-			const auto& branches = sharedLocker->value.branches;
-			if (auto it = branches.find(key); it != std::cend(branches))
-			{
-				const auto& children = it->second;
-				if (index < std::size(children))
-					if (auto sharedChild = children[index].lock())
-						return MeshNodePtr{sharedChild};
-					else
-						return std::unexpected{"Failed to lock weak pointer for branch. Node might have been deleted"sv};
-				else
-					return std::unexpected{"Branch index out of bounds"sv};
-			}
-			return std::unexpected{"Branch key not found"sv};
 		}
 
 		[[nodiscard]] auto getNodes(const Key& key) const -> std::expected<std::vector<MeshNodePtr>, std::string_view>

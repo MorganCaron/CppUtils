@@ -390,7 +390,7 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto child = StringMeshNodePtr::make("child");
 			root["Children"] >> child;
 
-			auto childExpected = root.getNode("Children", 0);
+			auto childExpected = root["Children"][0];
 
 			suite.expect(childExpected.has_value());
 			suite.expectEqual(childExpected.value().getValue().value(), "child");
@@ -401,7 +401,7 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto child = StringMeshNodePtr::make("child");
 			root["Children"] >> child;
 
-			auto invalidKeyExpected = root.getNode("NonExistentBranch");
+			auto invalidKeyExpected = root["NonExistentBranch"][0];
 
 			suite.expect(not invalidKeyExpected.has_value());
 			suite.expectEqual(invalidKeyExpected.error(), "Branch key not found"sv);
@@ -412,7 +412,7 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto child = StringMeshNodePtr::make("child");
 			root["Children"] >> child;
 
-			auto invalidIndexExpected = root.getNode("Children", 1);
+			auto invalidIndexExpected = root["Children"][1];
 
 			suite.expect(not invalidIndexExpected.has_value());
 			suite.expectEqual(invalidIndexExpected.error(), "Branch index out of bounds"sv);
@@ -421,7 +421,7 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 		suite.addTest("Get node: Invalid node", [&] {
 			auto emptyNode = StringMeshNodePtr{};
 
-			auto emptyBranchExpected = emptyNode.getNode("Branch");
+			auto emptyBranchExpected = emptyNode["Branch"][0];
 
 			suite.expect(not emptyBranchExpected.has_value());
 			suite.expectEqual(emptyBranchExpected.error(), "Invalid MeshNodePtr"sv);
