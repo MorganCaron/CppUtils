@@ -6,6 +6,7 @@ import CppUtils;
 export namespace CppUtils::UnitTest::Container::MeshNetwork
 {
 	inline auto _ = TestSuite{"Container/MeshNetwork", {"Container/NetworkPtr"}, [](auto& suite) {
+		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 		using StringMeshNodePtr = CppUtils::Container::MeshNodePtr<std::string, std::string>;
 		using Node = StringMeshNodePtr::NetworkPtr::Value;
@@ -152,34 +153,34 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto elements = StringMeshNodePtr::makeRoot("elements");
 			auto orange = StringMeshNodePtr::make("orange");
 
-			Node::attach(elements.get(), "color", orange.get());
-			Node::attach(elements.get(), "fruit", orange.get());
+			Node::attach(elements.get(), "Color", orange.get());
+			Node::attach(elements.get(), "Fruit", orange.get());
 			{
 				auto elementAccessor = elements->sharedAccess();
 				const auto& branches = elementAccessor->value.branches;
-				suite.expectEqual(branches.count("color"), 1uz);
-				suite.expectEqual(branches.count("fruit"), 1uz);
-				suite.expectEqual(std::size(branches.at("color")), 1uz);
-				suite.expectEqual(std::size(branches.at("fruit")), 1uz);
+				suite.expectEqual(branches.count("Color"), 1uz);
+				suite.expectEqual(branches.count("Fruit"), 1uz);
+				suite.expectEqual(std::size(branches.at("Color")), 1uz);
+				suite.expectEqual(std::size(branches.at("Fruit")), 1uz);
 				suite.expectEqual(orange->sharedAccess()->getDistanceFromRoot(), 1uz);
 			}
 
-			Node::detach(elements.get(), "color", orange.get());
+			Node::detach(elements.get(), "Color", orange.get());
 			{
 				auto elementAccessor = elements->sharedAccess();
 				const auto& branches = elementAccessor->value.branches;
-				suite.expectEqual(branches.count("color"), 0uz);
-				suite.expectEqual(branches.count("fruit"), 1uz);
-				suite.expectEqual(std::size(branches.at("fruit")), 1uz);
+				suite.expectEqual(branches.count("Color"), 0uz);
+				suite.expectEqual(branches.count("Fruit"), 1uz);
+				suite.expectEqual(std::size(branches.at("Fruit")), 1uz);
 				suite.expectEqual(orange->sharedAccess()->getDistanceFromRoot(), 1uz);
 			}
 
-			Node::detach(elements.get(), "fruit", orange.get());
+			Node::detach(elements.get(), "Fruit", orange.get());
 			{
 				auto elementAccessor = elements->sharedAccess();
 				const auto& branches = elementAccessor->value.branches;
-				suite.expectEqual(branches.count("color"), 0uz);
-				suite.expectEqual(branches.count("fruit"), 0uz);
+				suite.expectEqual(branches.count("Color"), 0uz);
+				suite.expectEqual(branches.count("Fruit"), 0uz);
 				suite.expectEqual(orange->sharedAccess()->getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
 			}
 		});
@@ -298,12 +299,12 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto root = StringMeshNodePtr::makeRoot("root");
 			auto child = StringMeshNodePtr::make("child");
 
-			root["branch"] >> child;
+			root["Branch"] >> child;
 
 			auto rootAccessor = root->sharedAccess();
 			const auto& branches = rootAccessor->value.branches;
 			suite.expectEqual(std::size(branches), 1uz);
-			const auto& children = branches.at("branch");
+			const auto& children = branches.at("Branch");
 			suite.expectEqual(std::size(children), 1uz);
 			auto childAccessor = child->sharedAccess();
 			suite.expectEqual(childAccessor->getDistanceFromRoot(), 1uz);
@@ -314,7 +315,7 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto child1 = StringMeshNodePtr::make("child1");
 			auto child2 = StringMeshNodePtr::make("child2");
 
-			root["branch1"] >> child1["branch2"] >> child2;
+			root["Branch1"] >> child1["Branch2"] >> child2;
 
 			auto rootAccessor = root->sharedAccess();
 			const auto& rootBranches = rootAccessor->value.branches;
@@ -328,8 +329,8 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto root = StringMeshNodePtr::makeRoot("root");
 			auto child = StringMeshNodePtr::make("child");
 
-			root["branch"] >> child;
-			root["branch"] - child;
+			root["Branch"] >> child;
+			root["Branch"] - child;
 
 			auto rootAccessor = root->sharedAccess();
 			const auto& branches = rootAccessor->value.branches;
@@ -340,17 +341,17 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 
-			fruit["elements"] & apple["category"];
+			fruit["Elements"] & apple["Category"];
 			{
 				auto fruitAccessor = fruit->sharedAccess();
 				const auto& fruitBranches = fruitAccessor->value.branches;
 				suite.expectEqual(std::size(fruitBranches), 1uz);
-				suite.expectEqual(std::size(fruitBranches.at("category")), 1uz);
+				suite.expectEqual(std::size(fruitBranches.at("Category")), 1uz);
 
 				auto appleAccessor = apple->sharedAccess();
 				const auto& appleBranches = appleAccessor->value.branches;
 				suite.expectEqual(std::size(appleBranches), 1uz);
-				suite.expectEqual(std::size(appleBranches.at("elements")), 1uz);
+				suite.expectEqual(std::size(appleBranches.at("Elements")), 1uz);
 			}
 		});
 
@@ -358,8 +359,8 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 
-			fruit["elements"] & apple["category"];
-			fruit["elements"] / apple["category"];
+			fruit["Elements"] & apple["Category"];
+			fruit["Elements"] / apple["Category"];
 			{
 				auto fruitAccessor = fruit->sharedAccess();
 				const auto& fruitBranches = fruitAccessor->value.branches;
@@ -368,6 +369,96 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 				const auto& appleBranches = appleAccessor->value.branches;
 				suite.expect(std::empty(appleBranches));
 			}
+		});
+
+		suite.addTest("Get value", [&] {
+			auto node = StringMeshNodePtr::make("value");
+			auto expectedValue = node.getValue();
+			suite.expect(expectedValue.has_value());
+			suite.expectEqual(expectedValue.value(), "value");
+		});
+
+		suite.addTest("Get value: Invalid node", [&] {
+			auto emptyNode = StringMeshNodePtr{};
+			auto unexpectedValue = emptyNode.getValue();
+			suite.expect(not unexpectedValue.has_value());
+			suite.expectEqual(unexpectedValue.error(), "Invalid MeshNodePtr"sv);
+		});
+
+		suite.addTest("Get node", [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto child = StringMeshNodePtr::make("child");
+			root["Children"] >> child;
+
+			auto childExpected = root.getNode("Children", 0);
+
+			suite.expect(childExpected.has_value());
+			suite.expectEqual(childExpected.value().getValue().value(), "child");
+		});
+
+		suite.addTest("Get node: Non-existent branch", [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto child = StringMeshNodePtr::make("child");
+			root["Children"] >> child;
+
+			auto invalidKeyExpected = root.getNode("NonExistentBranch");
+
+			suite.expect(not invalidKeyExpected.has_value());
+			suite.expectEqual(invalidKeyExpected.error(), "Branch key not found"sv);
+		});
+
+		suite.addTest("Get node: Invalid index", [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto child = StringMeshNodePtr::make("child");
+			root["Children"] >> child;
+
+			auto invalidIndexExpected = root.getNode("Children", 1);
+
+			suite.expect(not invalidIndexExpected.has_value());
+			suite.expectEqual(invalidIndexExpected.error(), "Branch index out of bounds"sv);
+		});
+
+		suite.addTest("Get node: Invalid node", [&] {
+			auto emptyNode = StringMeshNodePtr{};
+
+			auto emptyBranchExpected = emptyNode.getNode("Branch");
+
+			suite.expect(not emptyBranchExpected.has_value());
+			suite.expectEqual(emptyBranchExpected.error(), "Invalid MeshNodePtr"sv);
+		});
+
+		suite.addTest("Get nodes", [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto child1 = StringMeshNodePtr::make("child1");
+			auto child2 = StringMeshNodePtr::make("child2");
+			root["Branch"] >> child1;
+			root["Branch"] >> child2;
+
+			auto expectedChildren = root.getNodes("Branch");
+
+			suite.expect(expectedChildren.has_value());
+			auto children = expectedChildren.value();
+			suite.expectEqual(std::size(children), 2uz);
+			suite.expectEqual(children[0].getValue().value(), "child1");
+			suite.expectEqual(children[1].getValue().value(), "child2");
+		});
+
+		suite.addTest("Get nodes: Non-existent branch", [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+
+			auto expectedNonExistent = root.getNodes("NonExistentBranch");
+
+			suite.expect(not expectedNonExistent.has_value());
+			suite.expectEqual(expectedNonExistent.error(), "Branch key not found"sv);
+		});
+
+		suite.addTest("Get nodes: Invalid node", [&] {
+			auto emptyNode = StringMeshNodePtr{};
+
+			auto result = emptyNode.getNodes("Branch");
+
+			suite.expect(not result.has_value());
+			suite.expectEqual(result.error(), "Invalid MeshNodePtr"sv);
 		});
 	}};
 }
