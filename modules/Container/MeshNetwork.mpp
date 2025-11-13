@@ -279,6 +279,14 @@ export namespace CppUtils::Container
 			return (self.m_node);
 		}
 
+		auto setValue(Value&& value) -> void
+		{
+			if (not m_node)
+				return;
+			auto uniqueLocker = m_node->uniqueAccess();
+			uniqueLocker->value.value = std::forward<Value>(value);
+		}
+
 		[[nodiscard]] auto getValue() const -> std::expected<Value, std::string_view>
 		{
 			using namespace std::literals;

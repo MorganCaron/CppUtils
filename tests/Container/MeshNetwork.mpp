@@ -373,16 +373,30 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 
 		suite.addTest("Get value", [&] {
 			auto node = StringMeshNodePtr::make("value");
+
 			auto expectedValue = node.getValue();
+
 			suite.expect(expectedValue.has_value());
 			suite.expectEqual(expectedValue.value(), "value");
 		});
 
 		suite.addTest("Get value: Invalid node", [&] {
 			auto emptyNode = StringMeshNodePtr{};
+
 			auto unexpectedValue = emptyNode.getValue();
+
 			suite.expect(not unexpectedValue.has_value());
 			suite.expectEqual(unexpectedValue.error(), "Invalid MeshNodePtr"sv);
+		});
+
+		suite.addTest("Set value", [&] {
+			auto node = StringMeshNodePtr::make("initial");
+
+			node.setValue("updated");
+
+			auto expectedValue = node.getValue();
+			suite.expect(expectedValue.has_value());
+			suite.expectEqual(expectedValue.value(), "updated");
 		});
 
 		suite.addTest("Get node", [&] {
