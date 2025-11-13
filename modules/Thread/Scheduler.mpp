@@ -135,8 +135,8 @@ export namespace CppUtils::Thread
 
 				if (first->time > Clock::now())
 				{
-					m_condition.wait_until(accessor.getLockGuard(), first->time, [&] {
-						return m_loop.isStopRequested() or first->cancelled or first->time <= Clock::now();
+					m_condition.wait_until(accessor.getLockGuard(), first->time, [&, first] {
+						return m_loop.isStopRequested() or first->cancelled or std::empty(set) or (*std::begin(set) != first) or first->time <= Clock::now();
 					});
 					return;
 				}
@@ -161,17 +161,12 @@ export namespace CppUtils::Thread
 				return;
 
 			m_processingTasks += std::size(tasksToRun);
-			auto _ = Execution::ScopeGuard{[&] {
-				if (m_processingTasks == 0)
-				{
-					auto accessor = m_items.access();
-					if (std::empty(accessor.value().set))
-						m_condition.notify_all();
-				}
-			}};
 			for (const auto& task : tasksToRun)
 			{
-				auto _ = Execution::ScopeGuard{[&] { --m_processingTasks; }};
+				auto _ = Execution::ScopeGuard{[this] {
+					if (--m_processingTasks == 0)
+						m_condition.notify_all();
+				}};
 				std::invoke(task);
 			}
 		}
