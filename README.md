@@ -13,7 +13,6 @@
 
 ### Project Health
 ![CI Windows](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-windows.yml?style=for-the-badge&logo=windows&logoColor=white&label=Windows)
-![CI Windows MSYS2](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-windows-msys2.yml?style=for-the-badge&logo=windows&logoColor=white&label=Windows%20MSYS2)
 ![CI Linux](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-linux.yml?style=for-the-badge&logo=linux&logoColor=white&label=Linux)
 ![CI MacOS](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-macos.yml?style=for-the-badge&logo=macos&logoColor=white&label=MacOS)
 
