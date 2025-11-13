@@ -201,6 +201,22 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 
 			suite.expectEqual(executedCount.load(), numTasks);
 		});
-	}};
 
+		suite.addTest("onError callback is invoked on exception", [&] {
+			auto onErrorInvoked = std::atomic_bool{false};
+			auto scheduler = CppUtils::Thread::Scheduler{
+				0ms,
+				[&](std::exception_ptr) {
+				onErrorInvoked = true;
+			}};
+
+			scheduler.schedule([] {
+				throw std::runtime_error{"Test exception"};
+			}, 10ms);
+
+			scheduler.waitUntilFinished();
+
+			suite.expect(onErrorInvoked.load());
+		});
+	}};
 }

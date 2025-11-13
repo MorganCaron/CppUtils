@@ -5,6 +5,7 @@ import CppUtils.Chrono.Concept;
 import CppUtils.Thread.UniqueLocker;
 import CppUtils.Thread.SharedLocker;
 import CppUtils.Thread.ThreadLoop;
+import CppUtils.Execution.ScopeGuard;
 
 export namespace CppUtils::Thread
 {
@@ -44,11 +45,14 @@ export namespace CppUtils::Thread
 		};
 
 	public:
-		inline Scheduler(Clock::duration step = Clock::duration::zero()):
+		inline Scheduler(
+			Clock::duration step = Clock::duration::zero(),
+			std::function<void(std::exception_ptr)> onError = nullptr):
 			m_step{step},
 			m_loop{
 				[this] { runLoop(); },
-				[this] { m_condition.notify_all(); }}
+				[this] { m_condition.notify_all(); },
+				std::move(onError)}
 		{
 			m_loop.start();
 		}
@@ -157,17 +161,18 @@ export namespace CppUtils::Thread
 				return;
 
 			m_processingTasks += std::size(tasksToRun);
+			auto _ = Execution::ScopeGuard{[&] {
+				if (m_processingTasks == 0)
+				{
+					auto accessor = m_items.access();
+					if (std::empty(accessor.value().set))
+						m_condition.notify_all();
+				}
+			}};
 			for (const auto& task : tasksToRun)
 			{
+				auto _ = Execution::ScopeGuard{[&] { --m_processingTasks; }};
 				std::invoke(task);
-				--m_processingTasks;
-			}
-
-			if (m_processingTasks == 0)
-			{
-				auto accessor = m_items.access();
-				if (std::empty(accessor.value().set))
-					m_condition.notify_all();
 			}
 		}
 
