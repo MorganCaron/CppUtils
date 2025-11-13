@@ -104,7 +104,9 @@ export namespace CppUtils::Container
 		class Branch final
 		{
 		public:
-			Branch(SharedPtr& self, const Key& key): m_self(self), m_key(key) {}
+			using ChildrenVector = std::vector<typename MeshNode<Key, Value>::WeakPtr>;
+
+			Branch(SharedPtr& self, const Key& key, ChildrenVector children): m_self(self), m_key(key), m_children(std::move(children)) {}
 
 			auto operator>>(MeshNodePtr<Key, Value>& other) -> MeshNodePtr<Key, Value>&
 			{
@@ -170,9 +172,65 @@ export namespace CppUtils::Container
 				return std::unexpected{"Branch key not found"sv};
 			}
 
+			class BranchIterator final
+			{
+			public:
+				using iterator_category = std::input_iterator_tag;
+				using value_type = MeshNodePtr<Key, Value>;
+				using difference_type = std::ptrdiff_t;
+				using pointer = value_type*;
+				using reference = value_type&;
+				using internal_iterator_type = std::vector<typename MeshNode<Key, Value>::WeakPtr>::const_iterator;
+
+				BranchIterator() = default;
+				BranchIterator(internal_iterator_type iterator): m_iterator{iterator} {}
+
+				[[nodiscard]] auto operator*() const -> MeshNodePtr<Key, Value>
+				{
+					return MeshNodePtr<Key, Value>{m_iterator->lock()};
+				}
+
+				auto operator++() -> BranchIterator&
+				{
+					++m_iterator;
+					return *this;
+				}
+
+				auto operator++(int) -> BranchIterator
+				{
+					BranchIterator temp = *this;
+					++(*this);
+					return temp;
+				}
+
+				[[nodiscard]] auto operator==(const BranchIterator& other) const -> bool
+				{
+					return m_iterator == other.m_iterator;
+				}
+
+				[[nodiscard]] auto operator!=(const BranchIterator& other) const -> bool
+				{
+					return !(*this == other);
+				}
+
+			private:
+				internal_iterator_type m_iterator;
+			};
+
+			[[nodiscard]] auto begin() const -> BranchIterator
+			{
+				return BranchIterator{std::cbegin(m_children)};
+			}
+
+			[[nodiscard]] auto end() const -> BranchIterator
+			{
+				return BranchIterator{std::cend(m_children)};
+			}
+
 		private:
 			SharedPtr& m_self;
 			const Key& m_key;
+			ChildrenVector m_children;
 		};
 
 		[[nodiscard]] static auto makeRoot(auto&&... args) -> MeshNodePtr
@@ -196,7 +254,14 @@ export namespace CppUtils::Container
 
 		[[nodiscard]] auto operator[](const Key& key) -> Branch
 		{
-			return Branch{m_node, key};
+			if (not m_node)
+				return Branch{m_node, key, {}};
+
+			auto sharedLocker = m_node->sharedAccess();
+			const auto& branches = sharedLocker->value.branches;
+			if (auto iterator = branches.find(key); iterator != std::cend(branches))
+				return Branch{m_node, key, iterator->second};
+			return Branch{m_node, key, {}};
 		}
 
 		[[nodiscard]] auto operator->(this auto&& self)
@@ -222,25 +287,6 @@ export namespace CppUtils::Container
 				return std::unexpected{"Invalid MeshNodePtr"sv};
 			auto sharedLocker = m_node->sharedAccess();
 			return sharedLocker->value.value;
-		}
-
-		[[nodiscard]] auto getNodes(const Key& key) const -> std::expected<std::vector<MeshNodePtr>, std::string_view>
-		{
-			using namespace std::literals;
-
-			if (not m_node)
-				return std::unexpected{"Invalid MeshNodePtr"sv};
-			auto sharedLocker = m_node->sharedAccess();
-			const auto& branches = sharedLocker->value.branches;
-			if (auto it = branches.find(key); it != std::cend(branches))
-			{
-				auto result = std::vector<MeshNodePtr>{};
-				for (const auto& weakChild : it->second)
-					if (auto sharedChild = weakChild.lock())
-						result.emplace_back(sharedChild);
-				return result;
-			}
-			return std::unexpected{"Branch key not found"sv};
 		}
 
 	private:

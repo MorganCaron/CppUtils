@@ -434,10 +434,10 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			root["Branch"] >> child1;
 			root["Branch"] >> child2;
 
-			auto expectedChildren = root.getNodes("Branch");
+			auto children = std::vector<StringMeshNodePtr>{};
+			for (const auto& child : root["Branch"])
+				children.push_back(child);
 
-			suite.expect(expectedChildren.has_value());
-			auto children = expectedChildren.value();
 			suite.expectEqual(std::size(children), 2uz);
 			suite.expectEqual(children[0].getValue().value(), "child1");
 			suite.expectEqual(children[1].getValue().value(), "child2");
@@ -446,19 +446,21 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 		suite.addTest("Get nodes: Non-existent branch", [&] {
 			auto root = StringMeshNodePtr::makeRoot("root");
 
-			auto expectedNonExistent = root.getNodes("NonExistentBranch");
+			auto children = std::vector<StringMeshNodePtr>{};
+			for (const auto& child : root["NonExistentBranch"])
+				children.push_back(child);
 
-			suite.expect(not expectedNonExistent.has_value());
-			suite.expectEqual(expectedNonExistent.error(), "Branch key not found"sv);
+			suite.expect(std::empty(children));
 		});
 
 		suite.addTest("Get nodes: Invalid node", [&] {
 			auto emptyNode = StringMeshNodePtr{};
 
-			auto result = emptyNode.getNodes("Branch");
+			auto children = std::vector<StringMeshNodePtr>{};
+			for (const auto& child : emptyNode["Branch"])
+				children.push_back(child);
 
-			suite.expect(not result.has_value());
-			suite.expectEqual(result.error(), "Invalid MeshNodePtr"sv);
+			suite.expect(std::empty(children));
 		});
 	}};
 }
