@@ -56,6 +56,31 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 			}
 		});
 
+		suite.addTest("Operator==: Equal nodes", [&] {
+			auto node1 = StringMeshNodePtr::make("test");
+			auto node2 = node1;
+			suite.expectEqual(node1, node2);
+		});
+
+		suite.addTest("Operator==: Unequal nodes", [&] {
+			auto node1 = StringMeshNodePtr::make("test1");
+			auto node2 = StringMeshNodePtr::make("test2");
+			suite.expect(node1 != node2);
+		});
+
+		suite.addTest("Operator==: Assigned nodes", [&] {
+			auto node1 = StringMeshNodePtr::make("test");
+			auto node2 = StringMeshNodePtr{};
+			node2 = node1;
+			suite.expectEqual(node1, node2);
+		});
+
+		suite.addTest("Operator==: Node and null", [&] {
+			auto node1 = StringMeshNodePtr::make("test");
+			auto node2 = StringMeshNodePtr{};
+			suite.expect(node1 != node2);
+		});
+
 		suite.addTest("Detach child", [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");

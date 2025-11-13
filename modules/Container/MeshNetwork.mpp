@@ -5,6 +5,7 @@ import CppUtils.Container.NetworkPtr;
 import CppUtils.Container.SafeShared;
 import CppUtils.Thread.UniqueLocker;
 import CppUtils.Thread.SharedLocker;
+import CppUtils.Thread.SharedPtr;
 
 export namespace CppUtils::Container
 {
@@ -295,6 +296,11 @@ export namespace CppUtils::Container
 				return std::unexpected{"Invalid MeshNodePtr"sv};
 			auto sharedLocker = m_node->sharedAccess();
 			return sharedLocker->value.value;
+		}
+
+		[[nodiscard]] auto operator==(const MeshNodePtr& other) const noexcept -> bool
+		{
+			return Thread::SharedPtr::ownerEqual(m_node, other.m_node);
 		}
 
 	private:
