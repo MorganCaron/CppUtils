@@ -265,6 +265,16 @@ export namespace CppUtils::Container
 			return Branch{m_node, key, {}};
 		}
 
+		[[nodiscard]] auto contains(const Key& key) const -> bool
+		{
+			if (not m_node)
+				return false;
+
+			auto sharedLocker = m_node->sharedAccess();
+			const auto& branches = sharedLocker->value.branches;
+			return branches.contains(key);
+		}
+
 		[[nodiscard]] auto operator->(this auto&& self)
 		{
 			return self.m_node.get();
