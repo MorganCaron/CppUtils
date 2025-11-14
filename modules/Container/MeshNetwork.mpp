@@ -102,76 +102,11 @@ export namespace CppUtils::Container
 		using NetworkPtr = NetworkPtr<MeshNode<Key, Value>>;
 		using SharedPtr = NetworkPtr::SharedPtr;
 
+		template<class NodePtrType>
 		class Branch final
 		{
 		public:
 			using ChildrenVector = std::vector<typename MeshNode<Key, Value>::WeakPtr>;
-
-			Branch(SharedPtr& self, const Key& key, ChildrenVector children): m_self(self), m_key(key), m_children(std::move(children)) {}
-
-			auto operator>>(MeshNodePtr<Key, Value>& other) -> MeshNodePtr<Key, Value>&
-			{
-				MeshNode<Key, Value>::attach(m_self, m_key, other.get());
-				return other;
-			}
-
-			auto operator>>(Branch&& otherBranch) -> Branch&&
-			{
-				MeshNode<Key, Value>::attach(m_self, m_key, otherBranch.m_self);
-				return std::move(otherBranch);
-			}
-
-			auto operator-(MeshNodePtr<Key, Value>& other) -> void
-			{
-				MeshNode<Key, Value>::detach(m_self, m_key, other.get());
-			}
-
-			auto operator&(const Branch& other) -> void
-			{
-				auto node1 = MeshNodePtr{m_self};
-				auto node2 = MeshNodePtr{other.m_self};
-				MeshNode<Key, Value>::attach(m_key, node1.get(), other.m_key, node2.get());
-			}
-
-			auto operator/(const Branch& other) -> void
-			{
-				auto node1 = MeshNodePtr{m_self};
-				auto node2 = MeshNodePtr{other.m_self};
-				MeshNode<Key, Value>::detach(m_key, node1.get(), other.m_key, node2.get());
-
-				auto& node1SharedLocker = *node1.get();
-				auto node1Accessor = node1SharedLocker.uniqueAccess();
-				auto& node2SharedLocker = *node2.get();
-				auto node2Accessor = node2SharedLocker.uniqueAccess();
-
-				auto& node2NetworkPtr = node2Accessor.value();
-				node1Accessor.operator->()->detachChild(node2.get(), node2NetworkPtr);
-
-				auto& node1NetworkPtr = node1Accessor.value();
-				node2Accessor.operator->()->detachChild(node1.get(), node1NetworkPtr);
-			}
-
-			[[nodiscard]] auto operator[](std::size_t index) const -> std::expected<MeshNodePtr, std::string_view>
-			{
-				using namespace std::literals;
-
-				if (not m_self)
-					return std::unexpected{"Invalid MeshNodePtr"sv};
-				auto sharedLocker = m_self->sharedAccess();
-				const auto& branches = sharedLocker->value.branches;
-				if (auto it = branches.find(m_key); it != std::cend(branches))
-				{
-					const auto& children = it->second;
-					if (index < std::size(children))
-						if (auto sharedChild = children[index].lock())
-							return MeshNodePtr{sharedChild};
-						else
-							return std::unexpected{"Failed to lock weak pointer for branch. Node might have been deleted"sv};
-					else
-						return std::unexpected{"Branch index out of bounds"sv};
-				}
-				return std::unexpected{"Branch key not found"sv};
-			}
 
 			class BranchIterator final
 			{
@@ -218,6 +153,9 @@ export namespace CppUtils::Container
 				internal_iterator_type m_iterator;
 			};
 
+			Branch(NodePtrType& self, const Key& key, ChildrenVector children): m_self(self), m_key(key), m_children(std::move(children))
+			{}
+
 			[[nodiscard]] auto begin() const -> BranchIterator
 			{
 				return BranchIterator{std::cbegin(m_children)};
@@ -228,8 +166,103 @@ export namespace CppUtils::Container
 				return BranchIterator{std::cend(m_children)};
 			}
 
+			[[nodiscard]] auto size() const -> std::size_t
+			{
+				return std::size(m_children);
+			}
+
+			[[nodiscard]] auto empty() const -> bool
+			{
+				return std::empty(m_children);
+			}
+
+			auto clear() -> void
+			{
+				if constexpr (not std::is_const_v<NodePtrType>)
+				{
+					for (const auto& weakChild : m_children)
+						if (auto child = weakChild.lock())
+							MeshNode<Key, Value>::detach(m_self.get(), m_key, child);
+				}
+				else
+					throw std::logic_error{"Cannot clear a const branch"};
+			}
+
+			auto erase() -> void
+			{
+				if constexpr (not std::is_const_v<NodePtrType>)
+					MeshNode<Key, Value>::detach(m_self.get(), m_key);
+				else
+					throw std::logic_error{"Cannot erase a const branch"};
+			}
+
+			auto operator>>(MeshNodePtr<Key, Value>& other) -> MeshNodePtr<Key, Value>&
+			{
+				if constexpr (not std::is_const_v<NodePtrType>)
+				{
+					MeshNode<Key, Value>::attach(m_self.get(), m_key, other.get());
+					return other;
+				}
+				else
+					throw std::logic_error{"Cannot attach to a const branch"};
+			}
+
+			auto operator>>(Branch<NodePtrType>&& otherBranch) -> Branch<NodePtrType>&&
+			{
+				if constexpr (not std::is_const_v<NodePtrType>)
+				{
+					MeshNode<Key, Value>::attach(m_self.get(), m_key, otherBranch.m_self.get());
+					return std::move(otherBranch);
+				}
+				else
+					throw std::logic_error{"Cannot attach to a const branch"};
+			}
+
+			auto operator-(MeshNodePtr<Key, Value>& other) -> void
+			{
+				if constexpr (not std::is_const_v<NodePtrType>)
+					MeshNode<Key, Value>::detach(m_self.get(), m_key, other.get());
+				else
+					throw std::logic_error{"Cannot detach from a const branch"};
+			}
+
+			auto operator&(const Branch<NodePtrType>& other) -> void
+			{
+				if constexpr (not std::is_const_v<NodePtrType>)
+				{
+					auto node1 = MeshNodePtr{m_self.get()};
+					auto node2 = MeshNodePtr{other.m_self.get()};
+					MeshNode<Key, Value>::attach(other.m_key, node1.get(), m_key, node2.get());
+				}
+				else
+					throw std::logic_error{"Cannot attach to a const branch"};
+			}
+
+			auto operator/(const Branch<NodePtrType>& other) -> void
+			{
+				if constexpr (not std::is_const_v<NodePtrType>)
+				{
+					auto node1 = MeshNodePtr{m_self.get()};
+					auto node2 = MeshNodePtr{other.m_self.get()};
+					MeshNode<Key, Value>::detach(other.m_key, node1.get(), m_key, node2.get());
+				}
+				else
+					throw std::logic_error{"Cannot detach from a const branch"};
+			}
+
+			[[nodiscard]] auto operator[](std::size_t index) const -> std::expected<MeshNodePtr, std::string_view>
+			{
+				using namespace std::literals;
+
+				if (index >= std::size(m_children))
+					return std::unexpected{"Branch index out of bounds"sv};
+				if (auto sharedChild = m_children[index].lock())
+					return MeshNodePtr{sharedChild};
+				return std::unexpected{"Failed to lock weak pointer for branch. Node might have been deleted"sv};
+			}
+
 		private:
-			SharedPtr& m_self;
+			NodePtrType& m_self;
 			const Key& m_key;
 			ChildrenVector m_children;
 		};
@@ -253,16 +286,26 @@ export namespace CppUtils::Container
 			return m_node != nullptr;
 		}
 
-		[[nodiscard]] auto operator[](const Key& key) -> Branch
+		[[nodiscard]] auto operator[](const Key& key) -> Branch<MeshNodePtr<Key, Value>>
 		{
 			if (not m_node)
-				return Branch{m_node, key, {}};
+				throw std::runtime_error{"Invalid MeshNodePtr: cannot access branch on a null node"};
+
+			auto uniqueLocker = m_node->uniqueAccess();
+			auto& branches = uniqueLocker->value.branches;
+			return Branch{*this, key, branches[key]};
+		}
+
+		[[nodiscard]] auto at(const Key& key) const -> Branch<const MeshNodePtr<Key, Value>>
+		{
+			if (not m_node)
+				throw std::runtime_error{"Invalid MeshNodePtr: cannot access branch on a null node"};
 
 			auto sharedLocker = m_node->sharedAccess();
 			const auto& branches = sharedLocker->value.branches;
 			if (auto iterator = branches.find(key); iterator != std::cend(branches))
-				return Branch{m_node, key, iterator->second};
-			return Branch{m_node, key, {}};
+				return Branch{*this, key, iterator->second};
+			throw std::out_of_range{"Key not found in MeshNodePtr branches"};
 		}
 
 		[[nodiscard]] auto contains(const Key& key) const -> bool
