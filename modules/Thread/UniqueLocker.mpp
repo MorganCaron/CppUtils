@@ -13,14 +13,16 @@ export namespace CppUtils::Thread
 			m_value{std::ref(value)}
 		{}
 
-		[[nodiscard]] inline auto value() & noexcept -> T&
+		template<class Self>
+		[[nodiscard]] inline auto value(this Self& self) noexcept -> decltype(auto)
 		{
-			return m_value.get();
+			return self.m_value.get();
 		}
 
-		[[nodiscard]] inline auto operator->() & noexcept -> T*
+		template<class Self>
+		[[nodiscard]] inline auto operator->(this Self& self) noexcept -> decltype(auto)
 		{
-			return std::addressof(value());
+			return std::addressof(self.value());
 		}
 
 		[[nodiscard]] inline auto getLockGuard() & noexcept -> auto&
@@ -42,14 +44,16 @@ export namespace CppUtils::Thread
 			m_value{std::cref(value)}
 		{}
 
-		[[nodiscard]] inline auto value() & noexcept -> const T&
+		template<class Self>
+		[[nodiscard]] inline auto value(this Self& self) noexcept -> decltype(auto)
 		{
-			return m_value.get();
+			return self.m_value.get();
 		}
 
-		[[nodiscard]] inline auto operator->() & noexcept -> const T*
+		template<class Self>
+		[[nodiscard]] inline auto operator->(this Self& self) noexcept -> decltype(auto)
 		{
-			return std::addressof(value());
+			return std::addressof(self.value());
 		}
 
 		[[nodiscard]] inline auto getLockGuard() & noexcept -> auto&
