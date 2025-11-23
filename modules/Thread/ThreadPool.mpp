@@ -1,6 +1,7 @@
 export module CppUtils.Thread.ThreadPool;
 
 import std;
+import CppUtils.Execution.ScopeGuard;
 import CppUtils.Logger;
 import CppUtils.Thread.ThreadLoop;
 import CppUtils.Thread.UniqueLocker;
@@ -13,8 +14,13 @@ export namespace CppUtils::Thread
 		using Task = std::function<void()>;
 
 	public:
-		explicit inline ThreadPool(std::size_t numberThreads = std::thread::hardware_concurrency()):
-			m_numberThreads{numberThreads}
+		explicit inline ThreadPool(
+			std::size_t numberThreads = std::thread::hardware_concurrency(),
+			std::function<void(std::exception_ptr)> onError = nullptr,
+			std::function<void()> finally = nullptr):
+			m_numberThreads{numberThreads},
+			m_onError{std::move(onError)},
+			m_finally{std::move(finally)}
 		{
 			m_workers.reserve(m_numberThreads);
 			for (auto i = 0uz; i < m_numberThreads; ++i)
@@ -44,6 +50,7 @@ export namespace CppUtils::Thread
 		{
 			using ReturnType = std::invoke_result_t<std::decay_t<decltype(function)>>;
 			auto task = std::make_shared<std::packaged_task<ReturnType()>>([this, function = std::forward<decltype(function)>(function)]() mutable {
+				auto _ = Execution::ScopeGuard{m_finally};
 				try
 				{
 					std::invoke(function);
@@ -146,5 +153,7 @@ export namespace CppUtils::Thread
 		mutable std::shared_mutex m_onErrorMutex;
 		std::function<void(std::exception_ptr)> m_onError;
 		std::atomic<bool> m_stopRequested = false;
+
+		std::function<void()> m_finally;
 	};
 }

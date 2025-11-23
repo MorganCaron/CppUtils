@@ -116,7 +116,10 @@ export namespace CppUtils::Container
 				using difference_type = std::ptrdiff_t;
 				using pointer = value_type*;
 				using reference = value_type&;
-				using internal_iterator_type = std::vector<typename MeshNode<Key, Value>::WeakPtr>::const_iterator;
+				using internal_iterator_type = std::conditional_t<
+					std::is_const_v<std::remove_reference_t<NodePtrType>>,
+					typename std::vector<typename MeshNode<Key, Value>::WeakPtr>::const_iterator,
+					typename std::vector<typename MeshNode<Key, Value>::WeakPtr>::iterator>;
 
 				BranchIterator() = default;
 				BranchIterator(internal_iterator_type iterator): m_iterator{iterator} {}
@@ -146,7 +149,7 @@ export namespace CppUtils::Container
 
 				[[nodiscard]] auto operator!=(const BranchIterator& other) const -> bool
 				{
-					return !(*this == other);
+					return not(*this == other);
 				}
 
 			private:
@@ -156,14 +159,14 @@ export namespace CppUtils::Container
 			Branch(NodePtrType& self, const Key& key, ChildrenVector children): m_self(self), m_key(key), m_children(std::move(children))
 			{}
 
-			[[nodiscard]] auto begin() const -> BranchIterator
+			[[nodiscard]] auto begin(this auto&& self) -> BranchIterator
 			{
-				return BranchIterator{std::cbegin(m_children)};
+				return BranchIterator{std::begin(self.m_children)};
 			}
 
-			[[nodiscard]] auto end() const -> BranchIterator
+			[[nodiscard]] auto end(this auto&& self) -> BranchIterator
 			{
-				return BranchIterator{std::cend(m_children)};
+				return BranchIterator{std::end(self.m_children)};
 			}
 
 			[[nodiscard]] auto size() const -> std::size_t

@@ -1,8 +1,7 @@
 export module CppUtils.UnitTests.Execution.ScopeGuard;
 
-import CppUtils.Execution.ScopeGuard;
-import CppUtils.UnitTest;
 import std;
+import CppUtils;
 
 export namespace CppUtils::UnitTest::Execution::ScopeGuard
 {

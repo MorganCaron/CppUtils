@@ -16,7 +16,8 @@ export namespace CppUtils::Execution
 
 		~ScopeGuard() noexcept
 		{
-			m_onExit();
+			if (m_onExit)
+				m_onExit();
 		}
 
 	private:

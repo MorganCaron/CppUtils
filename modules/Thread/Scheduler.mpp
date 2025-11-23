@@ -5,7 +5,7 @@ import CppUtils.Chrono.Concept;
 import CppUtils.Thread.UniqueLocker;
 import CppUtils.Thread.SharedLocker;
 import CppUtils.Thread.ThreadLoop;
-import CppUtils.Execution.ScopeGuard;
+import CppUtils.Thread.ThreadPool;
 
 export namespace CppUtils::Thread
 {
@@ -47,20 +47,32 @@ export namespace CppUtils::Thread
 	public:
 		inline Scheduler(
 			Clock::duration step = Clock::duration::zero(),
-			std::function<void(std::exception_ptr)> onError = nullptr):
+			std::size_t numberThreads = std::thread::hardware_concurrency(),
+			std::function<void(std::exception_ptr)> onError = nullptr,
+			std::function<void()> finally = nullptr):
 			m_step{step},
-			m_loop{
+			m_finally{std::move(finally)},
+			m_threadLoop{
 				[this] { runLoop(); },
 				[this] { m_condition.notify_all(); },
-				std::move(onError)}
+				onError},
+			m_threadPool{
+				numberThreads,
+				onError,
+				[this] {
+					if (m_finally)
+						m_finally();
+					if (--m_processingTasks == 0)
+						m_condition.notify_all();
+				}}
 		{
-			m_loop.start();
+			m_threadLoop.start();
 		}
 
 		inline ~Scheduler() noexcept
 		{
 			cancelAll();
-			m_loop.requestStop();
+			m_threadLoop.requestStop();
 		}
 
 		inline auto schedule(Task task, TimePoint when) -> std::size_t
@@ -120,9 +132,9 @@ export namespace CppUtils::Thread
 				if (std::empty(set))
 				{
 					m_condition.wait(accessor.getLockGuard(), [this, &accessor] {
-						return not std::empty(accessor.value().set) or m_loop.isStopRequested();
+						return not std::empty(accessor.value().set) or m_threadLoop.isStopRequested();
 					});
-					if (m_loop.isStopRequested())
+					if (m_threadLoop.isStopRequested())
 						return;
 					if (std::empty(set))
 					{
@@ -136,7 +148,7 @@ export namespace CppUtils::Thread
 				if (first->time > Clock::now())
 				{
 					m_condition.wait_until(accessor.getLockGuard(), first->time, [&, first] {
-						return m_loop.isStopRequested() or first->cancelled or std::empty(set) or (*std::begin(set) != first) or first->time <= Clock::now();
+						return m_threadLoop.isStopRequested() or first->cancelled or std::empty(set) or (*std::begin(set) != first) or first->time <= Clock::now();
 					});
 					return;
 				}
@@ -161,14 +173,10 @@ export namespace CppUtils::Thread
 				return;
 
 			m_processingTasks += std::size(tasksToRun);
-			for (const auto& task : tasksToRun)
-			{
-				auto _ = Execution::ScopeGuard{[this] {
-					if (--m_processingTasks == 0)
-						m_condition.notify_all();
-				}};
-				std::invoke(task);
-			}
+			for (auto&& task : tasksToRun)
+				m_threadPool.call([task = std::move(task)] {
+					std::invoke(task);
+				});
 		}
 
 	private:
@@ -177,7 +185,10 @@ export namespace CppUtils::Thread
 		UniqueLocker<Items> m_items;
 		std::atomic_size_t m_processingTasks = 0;
 
+		std::function<void()> m_finally;
+
 		std::condition_variable m_condition;
-		ThreadLoop m_loop;
+		ThreadLoop m_threadLoop;
+		ThreadPool m_threadPool;
 	};
 }
