@@ -1,0 +1,56 @@
+export module CppUtils.Thread.ScheduledEventDispatcher;
+
+import std;
+import CppUtils.Chrono.Concept;
+import CppUtils.Execution.EventDispatcher;
+import CppUtils.String.Hash;
+import CppUtils.Thread.Scheduler;
+
+export namespace CppUtils::Thread
+{
+	class ScheduledEventDispatcher final
+	{
+	public:
+		using Clock = std::chrono::steady_clock;
+		using TimePoint = Clock::time_point;
+
+		explicit ScheduledEventDispatcher(
+			Scheduler::Clock::duration step = std::chrono::milliseconds(10),
+			std::size_t numberThreads = std::thread::hardware_concurrency(),
+			std::function<void(std::exception_ptr)> onError = nullptr,
+			std::function<void()> finally = nullptr):
+			m_scheduler{step, numberThreads, std::move(onError), std::move(finally)}
+		{}
+
+		template<String::Hasher eventName = String::Hash{}>
+		inline auto subscribe(auto&& function) -> void
+		{
+			m_eventDispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));
+		}
+
+		template<String::Hasher eventName = String::Hash{}, class Event = std::nullptr_t, Chrono::Duration Delay = std::chrono::milliseconds>
+		inline auto emit(Event&& event = nullptr, Delay delay = std::chrono::milliseconds{0}) -> void
+		{
+			m_scheduler.schedule([this, event = std::forward<Event>(event)] {
+				m_eventDispatcher.emit<eventName>(event);
+			}, delay);
+		}
+
+		template<String::Hasher eventName = String::Hash{}, class Event>
+		inline auto emit(Event&& event, TimePoint when) -> void
+		{
+			m_scheduler.schedule([this, event = std::forward<Event>(event)] {
+				m_eventDispatcher.emit<eventName>(event);
+			}, when);
+		}
+
+		inline auto waitUntilFinished() -> void
+		{
+			m_scheduler.waitUntilFinished();
+		}
+
+	private:
+		Scheduler m_scheduler;
+		Execution::EventDispatcher m_eventDispatcher;
+	};
+}

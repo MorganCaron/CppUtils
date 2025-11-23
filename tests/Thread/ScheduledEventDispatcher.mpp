@@ -1,0 +1,39 @@
+export module CppUtils.UnitTests.Thread.ScheduledEventDispatcher;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Thread::ScheduledEventDispatcher
+{
+	inline auto _ = TestSuite{"Thread/ScheduledEventDispatcher", {"Execution/EventDispatcher", "Thread/Scheduler"}, [](auto& suite) {
+		using namespace std::chrono_literals;
+
+		suite.addTest("Immediate Emit", [&] {
+			auto dispatcher = CppUtils::Thread::ScheduledEventDispatcher{};
+			auto receivedValue = std::atomic_bool{};
+
+			dispatcher.subscribe<"Event">([&](bool value) {
+				receivedValue = value;
+			});
+			dispatcher.emit<"Event">(true);
+
+			dispatcher.waitUntilFinished();
+			suite.expectEqual(receivedValue.load(), true);
+		});
+
+		suite.addTest("Delayed Emit", [&] {
+			auto dispatcher = CppUtils::Thread::ScheduledEventDispatcher{};
+			auto receivedValue = std::atomic_bool{};
+
+			dispatcher.subscribe<"Event">([&](bool value) {
+				receivedValue = value;
+			});
+			dispatcher.emit<"Event">(true, 200ms);
+
+			std::this_thread::sleep_for(100ms);
+			suite.expectEqual(receivedValue.load(), false);
+			dispatcher.waitUntilFinished();
+			suite.expectEqual(receivedValue.load(), true);
+		});
+	}};
+}

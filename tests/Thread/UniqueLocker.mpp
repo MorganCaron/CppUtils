@@ -1,10 +1,11 @@
 export module CppUtils.UnitTests.Thread.UniqueLocker;
 
+import std;
 import CppUtils;
 
 export namespace CppUtils::UnitTest::Thread::UniqueLocker
 {
-	inline auto _ = CppUtils::UnitTest::TestSuite{"Thread/UniqueLocker", {"UnitTest"}, [](auto& suite) {
+	inline auto _ = TestSuite{"Thread/UniqueLocker", {"UnitTest"}, [](auto& suite) {
 		suite.addTest("Access", [&] {
 			auto lockedString = CppUtils::Thread::UniqueLocker<std::string>{"Test"};
 			auto accessor = lockedString.access();

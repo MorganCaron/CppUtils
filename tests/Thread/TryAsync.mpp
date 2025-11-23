@@ -2,7 +2,6 @@ export module CppUtils.UnitTests.Thread.TryAsync;
 
 import std;
 import CppUtils;
-import CppUtils.Thread.TryAsync;
 
 export namespace CppUtils::UnitTest::Thread
 {

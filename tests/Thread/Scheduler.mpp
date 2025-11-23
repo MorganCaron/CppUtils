@@ -5,8 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Thread::Scheduler
 {
-	inline auto _ = TestSuite{
-		"Thread/Scheduler", {"UnitTest"}, []([[maybe_unused]] auto& suite) {
+	inline auto _ = TestSuite{"Thread/Scheduler", {"UnitTest"}, []([[maybe_unused]] auto& suite) {
 		using namespace std::chrono_literals;
 
 		suite.addTest("Initialize Scheduler", [&] {

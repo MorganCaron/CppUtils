@@ -7,3 +7,4 @@ export import CppUtils.Thread.ThreadLoop;
 export import CppUtils.Thread.ThreadPool;
 export import CppUtils.Thread.TryAsync;
 export import CppUtils.Thread.UniqueLocker;
+export import CppUtils.Thread.ScheduledEventDispatcher;
