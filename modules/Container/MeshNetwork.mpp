@@ -264,6 +264,16 @@ export namespace CppUtils::Container
 				return std::unexpected{"Failed to lock weak pointer for branch. Node might have been deleted"sv};
 			}
 
+			[[nodiscard]] auto front() const -> std::expected<MeshNodePtr, std::string_view>
+			{
+				return (*this)[0];
+			}
+
+			[[nodiscard]] auto back() const -> std::expected<MeshNodePtr, std::string_view>
+			{
+				return (*this)[std::size(m_children) - 1];
+			}
+
 		private:
 			NodePtrType& m_self;
 			const Key& m_key;

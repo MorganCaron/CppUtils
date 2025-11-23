@@ -574,5 +574,31 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 				auto _ = invalidNode.at("Branch");
 			});
 		});
+
+		suite.addTest("Get first node", [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto child1 = StringMeshNodePtr::make("child1");
+			auto child2 = StringMeshNodePtr::make("child2");
+			root["Branch"] >> child1;
+			root["Branch"] >> child2;
+
+			auto childExpected = root["Branch"].front();
+
+			suite.expect(childExpected.has_value());
+			suite.expectEqual(childExpected.value().getValue().value(), "child1");
+		});
+
+		suite.addTest("Get last node", [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto child1 = StringMeshNodePtr::make("child1");
+			auto child2 = StringMeshNodePtr::make("child2");
+			root["Branch"] >> child1;
+			root["Branch"] >> child2;
+
+			auto childExpected = root["Branch"].back();
+
+			suite.expect(childExpected.has_value());
+			suite.expectEqual(childExpected.value().getValue().value(), "child2");
+		});
 	}};
 }
