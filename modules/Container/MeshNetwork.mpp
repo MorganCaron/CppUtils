@@ -309,16 +309,18 @@ export namespace CppUtils::Container
 			return Branch{*this, key, branches[key]};
 		}
 
-		[[nodiscard]] auto at(const Key& key) const -> Branch<const MeshNodePtr<Key, Value>>
+		[[nodiscard]] auto at(const Key& key) const -> std::expected<Branch<const MeshNodePtr<Key, Value>>, std::string_view>
 		{
+			using namespace std::literals;
+
 			if (not m_node)
-				throw std::runtime_error{"Invalid MeshNodePtr: cannot access branch on a null node"};
+				return std::unexpected{"Invalid MeshNodePtr: cannot access branch on a null node"sv};
 
 			auto sharedLocker = m_node->sharedAccess();
 			const auto& branches = sharedLocker->value.branches;
 			if (auto iterator = branches.find(key); iterator != std::cend(branches))
 				return Branch{*this, key, iterator->second};
-			throw std::out_of_range{"Key not found in MeshNodePtr branches"};
+			return std::unexpected{"Key not found in MeshNodePtr branches"sv};
 		}
 
 		[[nodiscard]] auto contains(const Key& key) const -> bool

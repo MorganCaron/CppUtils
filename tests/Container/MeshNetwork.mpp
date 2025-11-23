@@ -556,23 +556,24 @@ export namespace CppUtils::UnitTest::Container::MeshNetwork
 
 			const auto children = constRoot.at("Branch");
 
-			suite.expectEqual(std::size(children), 1uz);
-			suite.expectEqual(children[0]->getValue().value(), "child");
+			suite.expect(children.has_value());
+			suite.expectEqual(std::size(children.value()), 1uz);
+			suite.expectEqual(children.value()[0].value().getValue().value(), "child");
 		});
 
 		suite.addTest("at(): Non-existent branch", [&] {
 			const auto root = StringMeshNodePtr::makeRoot("root");
 
-			suite.template expectThrow<std::out_of_range>([&] {
-				auto _ = root.at("NonExistentBranch");
-			});
+			auto result = root.at("NonExistentBranch");
+			suite.expect(not result.has_value());
+			suite.expectEqual(result.error(), "Key not found in MeshNodePtr branches"sv);
 		});
 
 		suite.addTest("at(): Invalid node", [&] {
 			const auto invalidNode = StringMeshNodePtr{};
-			suite.template expectThrow<std::runtime_error>([&] {
-				auto _ = invalidNode.at("Branch");
-			});
+			auto result = invalidNode.at("Branch");
+			suite.expect(not result.has_value());
+			suite.expectEqual(result.error(), "Invalid MeshNodePtr: cannot access branch on a null node"sv);
 		});
 
 		suite.addTest("Get first node", [&] {
