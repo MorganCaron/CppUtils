@@ -1,0 +1,43 @@
+export module CppUtils.Thread.AsyncEventDispatcher;
+
+import std;
+import CppUtils.Execution.EventDispatcher;
+import CppUtils.String.Hash;
+import CppUtils.Thread.ThreadPool;
+
+export namespace CppUtils::Thread
+{
+	class AsyncEventDispatcher final
+	{
+	public:
+		explicit AsyncEventDispatcher(
+			std::size_t numberThreads = std::thread::hardware_concurrency(),
+			std::function<void(std::exception_ptr)> onError = nullptr,
+			std::function<void()> finally = nullptr):
+			m_threadPool{numberThreads, std::move(onError), std::move(finally)}
+		{}
+
+		template<String::Hasher eventName = String::Hash{}>
+		inline auto subscribe(auto&& function) -> void
+		{
+			m_eventDispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));
+		}
+
+		template<String::Hasher eventName = String::Hash{}, class Event = std::nullptr_t>
+		inline auto emit(Event&& event = nullptr) -> void
+		{
+			m_threadPool.call([this, event = std::forward<Event>(event)] {
+				m_eventDispatcher.emit<eventName>(event);
+			});
+		}
+
+		inline auto waitUntilFinished() -> void
+		{
+			m_threadPool.waitUntilFinished();
+		}
+
+	private:
+		ThreadPool m_threadPool;
+		Execution::EventDispatcher m_eventDispatcher;
+	};
+}
