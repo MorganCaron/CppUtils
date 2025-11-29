@@ -84,6 +84,8 @@
 
 ### 🚦 Multithreading & Synchronization
 - [`Scheduler`](modules/Thread/Scheduler.mpp) - Simple scheduler to run delayed functions on separate thread
+- [`ScheduledEventDispatcher`](modules/Thread/ScheduledEventDispatcher.mpp) - Dispatches events asynchronously with timed (delay/when) execution
+- [`AsyncEventDispatcher`](modules/Thread/AsyncEventDispatcher.mpp) - Event dispatcher that uses a ThreadPool for immediate asynchronous event execution
 - [`ThreadLoop`](modules/Thread/ThreadLoop.mpp) - Thread loop with exception handling
 - [`ThreadPool`](modules/Thread/ThreadPool.mpp) - Fixed-size thread pool for parallel task execution
 - [`TryAsync`](modules/Thread/TryAsync.mpp) - Launches a function asynchronously, forwards exception to caller

@@ -101,10 +101,10 @@ export namespace CppUtils::UnitTest::Execution::EventDispatcher
 			auto expect1 = std::atomic_bool{false};
 			auto expect2 = std::atomic_bool{false};
 
-			eventDispatcher.subscribe<"Event">([&expect1](std::nullptr_t) -> void {
+			eventDispatcher.subscribe<"Event">([&expect1]() -> void {
 				expect1 = true;
 			});
-			eventDispatcher.subscribe<"Event">([&expect2](std::nullptr_t) -> void {
+			eventDispatcher.subscribe<"Event">([&expect2]() -> void {
 				expect2 = true;
 			});
 			eventDispatcher.emit<"Event">();

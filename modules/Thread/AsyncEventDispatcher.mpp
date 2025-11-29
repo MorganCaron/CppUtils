@@ -23,11 +23,13 @@ export namespace CppUtils::Thread
 			m_eventDispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));
 		}
 
-		template<String::Hasher eventName = String::Hash{}, class Event = std::nullptr_t>
-		inline auto emit(Event&& event = nullptr) -> void
+		template<String::Hasher eventName = String::Hash{}, class... Args>
+		inline auto emit(Args&&... args) -> void
 		{
-			m_threadPool.call([this, event = std::forward<Event>(event)] {
-				m_eventDispatcher.emit<eventName>(event);
+			m_threadPool.call([this, payload = std::make_tuple(std::forward<Args>(args)...)] {
+				std::apply([this](const auto&... args) {
+					m_eventDispatcher.emit<eventName>(args...);
+				}, payload);
 			});
 		}
 

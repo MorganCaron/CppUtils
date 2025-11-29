@@ -11,36 +11,35 @@ export namespace CppUtils::Execution
 		using Key = std::pair<String::Hash, std::type_index>;
 
 	public:
-		template<String::Hasher eventName = String::Hash{}, class Event = std::nullptr_t>
-		inline auto emit(const Event& event = nullptr) -> void
+		template<String::Hasher eventName = String::Hash{}, class... Args>
+		inline auto emit(const Args&... args) -> void
 		{
 			auto lockGuard = std::shared_lock{m_mutex};
-			auto key = std::make_pair(static_cast<String::Hash>(eventName), std::type_index{typeid(Event)});
-			if (auto subscriberIt = m_subscribers.find(key); subscriberIt == std::cend(m_subscribers))
-				return;
-			else
+			using Tuple = std::tuple<std::remove_cvref_t<Args>...>;
+			auto key = std::make_pair(static_cast<String::Hash>(eventName), std::type_index{typeid(Tuple)});
+			if (auto subscriberIt = m_subscribers.find(key); subscriberIt != std::cend(m_subscribers))
+			{
+				auto payload = std::make_tuple(args...);
 				for (auto& function : subscriberIt->second)
-					function(std::addressof(event));
+					function(&payload);
+			}
 		}
 
 		template<String::Hasher eventName = String::Hash{}>
 		inline auto subscribe(auto&& function) -> void
 		{
 			using FunctionType = std::decay_t<decltype(function)>;
-			using FunctionInformations = Type::CallableTrait<FunctionType>;
-			using ArgumentsTypes = FunctionInformations::ArgumentsTypes;
-			constexpr auto nbArguments = std::tuple_size_v<ArgumentsTypes>;
-			static_assert(nbArguments == 1, "EventDispatcher: subscribed callable must take exactly one argument");
-			using Event = std::remove_cvref_t<std::tuple_element_t<0, ArgumentsTypes>>;
-
-			auto lockGuard = std::unique_lock{m_mutex};
-			auto key = std::make_pair(static_cast<String::Hash>(eventName), std::type_index{typeid(Event)});
-
-			m_subscribers[key].emplace_back(
-				[function = std::forward<decltype(function)>(function)](const void* baseEvent) -> void {
-				const Event& event = *static_cast<const Event*>(baseEvent);
-				function(event);
-			});
+			using ArgumentsTypes = typename Type::CallableTrait<FunctionType>::ArgumentsTypes;
+			[&]<class... Args>(std::tuple<Args...>*) {
+				using Tuple = std::tuple<std::remove_cvref_t<Args>...>;
+				auto lockGuard = std::unique_lock{m_mutex};
+				auto key = std::make_pair(static_cast<String::Hash>(eventName), std::type_index{typeid(Tuple)});
+				m_subscribers[key].emplace_back(
+					[function = std::forward<decltype(function)>(function)](const void* payload) -> void {
+					const auto& args = *static_cast<const Tuple*>(payload);
+					std::apply(function, args);
+				});
+			}(static_cast<ArgumentsTypes*>(nullptr));
 		}
 
 	private:

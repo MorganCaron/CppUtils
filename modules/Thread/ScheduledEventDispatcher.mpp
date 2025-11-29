@@ -28,20 +28,30 @@ export namespace CppUtils::Thread
 			m_eventDispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));
 		}
 
-		template<String::Hasher eventName = String::Hash{}, class Event = std::nullptr_t, Chrono::Duration Delay = std::chrono::milliseconds>
-		inline auto emit(Event&& event = nullptr, Delay delay = std::chrono::milliseconds{0}) -> void
+		template<String::Hasher eventName = String::Hash{}, class... Args, Chrono::Duration Delay = std::chrono::milliseconds>
+		inline auto emit(Delay delay, Args&&... args) -> void
 		{
-			m_scheduler.schedule([this, event = std::forward<Event>(event)] {
-				m_eventDispatcher.emit<eventName>(event);
+			m_scheduler.schedule([this, payload = std::make_tuple(std::forward<Args>(args)...)] {
+				std::apply([this](const auto&... args) {
+					m_eventDispatcher.emit<eventName>(args...);
+				}, payload);
 			}, delay);
 		}
 
-		template<String::Hasher eventName = String::Hash{}, class Event>
-		inline auto emit(Event&& event, TimePoint when) -> void
+		template<String::Hasher eventName = String::Hash{}, class... Args>
+		inline auto emit(TimePoint when, Args&&... args) -> void
 		{
-			m_scheduler.schedule([this, event = std::forward<Event>(event)] {
-				m_eventDispatcher.emit<eventName>(event);
+			m_scheduler.schedule([this, payload = std::make_tuple(std::forward<Args>(args)...)] {
+				std::apply([this](const auto&... args) {
+					m_eventDispatcher.emit<eventName>(args...);
+				}, payload);
 			}, when);
+		}
+
+		template<String::Hasher eventName = String::Hash{}, class... Args>
+		inline auto emit(Args&&... args) -> void
+		{
+			emit<eventName>(std::chrono::milliseconds{0}, std::forward<Args>(args)...);
 		}
 
 		inline auto waitUntilFinished() -> void
