@@ -169,7 +169,7 @@ export namespace CppUtils::Thread
 				}
 			}
 
-			if (tasksToRun.empty())
+			if (std::empty(tasksToRun))
 				return;
 
 			m_processingTasks += std::size(tasksToRun);

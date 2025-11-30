@@ -9,8 +9,7 @@ export namespace CppUtils::FileSystem
 		auto&& function,
 		bool recursively = false) -> void
 	{
-		if (not std::filesystem::exists(directoryPath) or
-			not std::filesystem::is_directory(directoryPath))
+		if (not std::filesystem::exists(directoryPath) or not std::filesystem::is_directory(directoryPath))
 			return;
 		if (recursively)
 		{

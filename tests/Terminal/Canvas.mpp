@@ -73,7 +73,7 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			scheduler.schedule([&canvas]() mutable {
 				canvas.close();
-			}, 1s);
+			}, 500ms);
 
 			for (auto i = 0.f; i <= 100.f; i += 1.f)
 			{

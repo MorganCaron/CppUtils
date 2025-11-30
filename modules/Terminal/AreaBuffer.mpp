@@ -11,7 +11,7 @@ export namespace CppUtils::Terminal
 	public:
 		[[nodiscard]] virtual auto getChar(const Container::Size2& position) const noexcept -> const CharAttributes& = 0;
 		virtual auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void = 0;
-		[[nodiscard]] virtual auto getSize() const noexcept -> const Container::Size2& = 0;
+		[[nodiscard]] virtual auto getSize() const noexcept -> Container::Size2 = 0;
 
 		[[nodiscard]] inline virtual auto toString() const -> std::string
 		{

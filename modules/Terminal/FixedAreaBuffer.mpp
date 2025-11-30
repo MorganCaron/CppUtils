@@ -15,7 +15,7 @@ export namespace CppUtils::Terminal
 		using Buffer = std::array<Line, Height>;
 		static constexpr auto size = Container::Size2{Width, Height};
 
-		[[nodiscard]] inline constexpr auto getSize() const noexcept -> const Container::Size2& override
+		[[nodiscard]] inline constexpr auto getSize() const noexcept -> Container::Size2 override
 		{
 			return size;
 		}

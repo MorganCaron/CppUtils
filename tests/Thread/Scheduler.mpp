@@ -103,7 +103,11 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 		suite.addTest("Order of execution", [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto executionOrder = std::vector<std::size_t>{};
-			auto record = [&](std::size_t value) { executionOrder.push_back(value); };
+			auto mutex = std::mutex{};
+			auto record = [&](std::size_t value) {
+				auto lock = std::unique_lock{mutex};
+				executionOrder.push_back(value);
+			};
 
 			scheduler.schedule([&] { record(1); }, 100ms);
 			scheduler.schedule([&] { record(2); }, 50ms);
@@ -121,8 +125,12 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 			using TimePoint = CppUtils::Thread::Scheduler::TimePoint;
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto times = std::vector<TimePoint>{};
+			auto mutex = std::mutex{};
 
-			auto record = [&](TimePoint timePoint) { times.push_back(timePoint); };
+			auto record = [&](TimePoint timePoint) {
+				auto lock = std::unique_lock{mutex};
+				times.push_back(timePoint);
+			};
 
 			scheduler.schedule([&] { record(Clock::now()); }, 100ms);
 			scheduler.schedule([&] { record(Clock::now()); }, 250ms);
@@ -141,8 +149,12 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 			using TimePoint = CppUtils::Thread::Scheduler::TimePoint;
 			auto scheduler = CppUtils::Thread::Scheduler{200ms};
 			auto times = std::vector<TimePoint>{};
+			auto mutex = std::mutex{};
 
-			auto record = [&](TimePoint timePoint) { times.push_back(timePoint); };
+			auto record = [&](TimePoint timePoint) {
+				auto lock = std::unique_lock{mutex};
+				times.push_back(timePoint);
+			};
 
 			scheduler.schedule([&] { record(Clock::now()); }, 100ms);
 			scheduler.schedule([&] { record(Clock::now()); }, 250ms);
@@ -159,7 +171,11 @@ export namespace CppUtils::UnitTest::Thread::Scheduler
 		suite.addTest("Schedule events in reverse order", [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto executionOrder = std::vector<std::size_t>{};
-			auto record = [&](std::size_t value) { executionOrder.push_back(value); };
+			auto mutex = std::mutex{};
+			auto record = [&](std::size_t value) {
+				auto lock = std::unique_lock{mutex};
+				executionOrder.push_back(value);
+			};
 
 			scheduler.schedule([&] { record(2); }, 200ms);
 			scheduler.schedule([&] { record(1); }, 100ms);

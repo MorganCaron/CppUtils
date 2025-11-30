@@ -171,6 +171,7 @@ export namespace CppUtils::Terminal
 
 			inline auto print() noexcept -> void
 			{
+				auto lock = std::scoped_lock{m_printMutex};
 				if (m_widget)
 				{
 					auto view = WritableAreaView{*this, m_viewport};
@@ -197,6 +198,7 @@ export namespace CppUtils::Terminal
 			}
 
 		private:
+			std::mutex m_printMutex;
 			bool m_firstPrint = true;
 			std::atomic_bool m_stopEvent = false;
 			DynamicAreaBuffer m_previousBuffer;
