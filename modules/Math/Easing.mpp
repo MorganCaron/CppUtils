@@ -1,0 +1,115 @@
+export module CppUtils.Math.Easing;
+
+import std;
+
+export namespace CppUtils::Math::Easing
+{
+	[[nodiscard]] constexpr auto inQuad(std::floating_point auto value) noexcept -> auto
+	{
+		return value * value;
+	}
+
+	[[nodiscard]] constexpr auto outQuad(std::floating_point auto value) noexcept -> auto
+	{
+		return value * (2 - value);
+	}
+
+	[[nodiscard]] constexpr auto inOutQuad(std::floating_point auto value) noexcept -> auto
+	{
+		return value < 0.5 ? 2 * value * value : -1 + (4 - 2 * value) * value;
+	}
+
+	[[nodiscard]] constexpr auto inCubic(std::floating_point auto value) noexcept -> auto
+	{
+		return value * value * value;
+	}
+
+	[[nodiscard]] constexpr auto outCubic(std::floating_point auto value) noexcept -> auto
+	{
+		auto temp = value - 1;
+		return temp * temp * temp + 1;
+	}
+
+	[[nodiscard]] constexpr auto inOutCubic(std::floating_point auto value) noexcept -> auto
+	{
+		if (value < 0.5)
+			return 4 * value * value * value;
+
+		auto temp = -2 * value + 2;
+		return 1 - (temp * temp * temp) / 2;
+	}
+
+	[[nodiscard]] constexpr auto inQuart(std::floating_point auto value) noexcept -> auto
+	{
+		return value * value * value * value;
+	}
+
+	[[nodiscard]] constexpr auto outQuart(std::floating_point auto value) noexcept -> auto
+	{
+		auto temp = value - 1;
+		return 1 - temp * temp * temp * temp;
+	}
+
+	[[nodiscard]] constexpr auto inOutQuart(std::floating_point auto value) noexcept -> auto
+	{
+		if (value < 0.5)
+			return 8 * value * value * value * value;
+
+		auto temp = -2 * value + 2;
+		return 1 - (temp * temp * temp * temp) / 2;
+	}
+
+	[[nodiscard]] constexpr auto inQuint(std::floating_point auto value) noexcept -> auto
+	{
+		return value * value * value * value * value;
+	}
+
+	[[nodiscard]] constexpr auto outQuint(std::floating_point auto value) noexcept -> auto
+	{
+		auto temp = value - 1;
+		return 1 + temp * temp * temp * temp * temp;
+	}
+
+	[[nodiscard]] constexpr auto inOutQuint(std::floating_point auto value) noexcept -> auto
+	{
+		if (value < 0.5)
+			return 16 * value * value * value * value * value;
+
+		auto temp = -2 * value + 2;
+		return 1 - (temp * temp * temp * temp * temp) / 2;
+	}
+
+	[[nodiscard]] constexpr auto inSine(std::floating_point auto value) noexcept -> auto
+	{
+		return 1 - std::cos((value * std::numbers::pi_v<decltype(value)>) / 2);
+	}
+
+	[[nodiscard]] constexpr auto outSine(std::floating_point auto value) noexcept -> auto
+	{
+		return std::sin((value * std::numbers::pi_v<decltype(value)>) / 2);
+	}
+
+	[[nodiscard]] constexpr auto inOutSine(std::floating_point auto value) noexcept -> auto
+	{
+		return -(std::cos(std::numbers::pi_v<decltype(value)> * value) - 1) / 2;
+	}
+
+	[[nodiscard]] constexpr auto inCirc(std::floating_point auto value) noexcept -> auto
+	{
+		return 1 - std::sqrt(1 - std::pow(value, 2));
+	}
+
+	[[nodiscard]] constexpr auto outCirc(std::floating_point auto value) noexcept -> auto
+	{
+		return std::sqrt(1 - (value - 1) * (value - 1));
+	}
+
+	[[nodiscard]] constexpr auto inOutCirc(std::floating_point auto value) noexcept -> auto
+	{
+		if (value < 0.5)
+			return (1 - std::sqrt(1 - 4 * value * value)) / 2;
+
+		auto temp = -2 * value + 2;
+		return (std::sqrt(1 - temp * temp) + 1) / 2;
+	}
+}

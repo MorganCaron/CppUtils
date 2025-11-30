@@ -62,6 +62,7 @@
 - [`ChronoLogger`](modules/Log/ChronoLogger.mpp) - RAII timer that logs elapsed time at scope exit
 
 ### 🧮 Math
+- [`Easing`](modules/Math/Easing.mpp) - Collection of easing functions for smooth animation
 - [`Random`](modules/Math/Random.mpp) - Pseudorandom number generation
 - [`Utility`](modules/Math/Utility.mpp) - Floating-point comparison with epsilon tolerance
 

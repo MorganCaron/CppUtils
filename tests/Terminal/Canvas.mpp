@@ -84,6 +84,30 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 			canvas.wait();
 		});
 
+		suite.addTest("Multiple Progress Bars", [&] {
+			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{50, 3}};
+			auto& layout = canvas.addWidget(std::make_unique<CppUtils::Terminal::Layout>());
+
+			auto& bar1 = layout.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Bar 1"));
+			auto& bar2 = layout.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Bar 2"));
+			auto& bar3 = layout.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Bar 3"));
+
+			auto scheduler = CppUtils::Thread::Scheduler{};
+			scheduler.schedule([&canvas]() mutable {
+				canvas.close();
+			}, 500ms);
+
+			for (auto i = 0.f; i <= 100.f; i += 2.f)
+			{
+				bar1.setPercent(i);
+				bar2.setPercent(CppUtils::Math::Easing::inQuad(i / 100.f) * 100.f);
+				bar3.setPercent(CppUtils::Math::Easing::outCubic(i / 100.f) * 100.f);
+				std::this_thread::sleep_for(5ms);
+			}
+
+			canvas.wait();
+		});
+
 		suite.addTest("Bouncing ball", [&] {
 			const auto terminalSize = CppUtils::Terminal::getTerminalSize();
 			auto canvasSize = terminalSize;

@@ -1,6 +1,7 @@
 export module CppUtils.Math;
 
 export import CppUtils.Math.Concept;
+export import CppUtils.Math.Easing;
 export import CppUtils.Math.Endian;
 export import CppUtils.Math.Random;
 export import CppUtils.Math.Utility;

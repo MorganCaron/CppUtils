@@ -21,7 +21,7 @@ export namespace CppUtils::Execution
 			{
 				auto payload = std::make_tuple(args...);
 				for (auto& function : subscriberIt->second)
-					function(&payload);
+					function(std::addressof(payload));
 			}
 		}
 
