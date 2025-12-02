@@ -20,11 +20,16 @@ export namespace CppUtils::Terminal
 			requestUpdate(10ms);
 		}
 
+		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 final
+		{
+			return Container::Size2{std::numeric_limits<std::size_t>::max(), 1};
+		}
+
 		inline auto draw(WritableAreaView& view) noexcept -> void final
 		{
-			const auto size = view.getSize();
+			const auto size = view.getViewport().getSize();
 			const auto titleSize = std::size(m_title);
-			const auto barWidth = size.width() - titleSize - 2 - 5;
+			const auto barWidth = size.width() - titleSize - 2 - 6;
 			const auto progress = static_cast<std::size_t>(static_cast<float>(barWidth) * m_percent / 100.f);
 
 			auto text = std::format("{} [{}{}] {:>3}% ", m_title, std::string(progress, '#'), std::string(barWidth - progress, ' '), static_cast<std::size_t>(m_percent));

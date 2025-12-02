@@ -21,6 +21,11 @@ export namespace CppUtils::Terminal
 			m_duration{duration}
 		{}
 
+		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 final
+		{
+			return size;
+		}
+
 		inline auto draw(WritableAreaView& view) noexcept -> void
 		{
 			if (std::empty(m_frames))

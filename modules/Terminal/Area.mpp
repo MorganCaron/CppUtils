@@ -43,6 +43,11 @@ export namespace CppUtils::Terminal
 			return m_viewport;
 		}
 
+		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 final
+		{
+			return DynamicAreaBuffer::getSize();
+		}
+
 		inline auto fill(const CharAttributes& c) noexcept -> void
 		{
 			auto view = WritableAreaView{*this, m_viewport};

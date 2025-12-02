@@ -15,9 +15,9 @@ export namespace CppUtils::Terminal
 			m_viewport{std::move(viewport)}
 		{}
 
-		[[nodiscard]] inline auto getSize() const noexcept -> const auto&
+		[[nodiscard]] inline auto getViewport() const noexcept -> const auto&
 		{
-			return m_viewport.getSize();
+			return m_viewport;
 		}
 
 		inline auto printText(const Container::Size2& position, std::string_view text) noexcept -> void
@@ -27,7 +27,7 @@ export namespace CppUtils::Terminal
 			{
 				setChar(currentPosition, CharAttributes{c});
 				currentPosition.x()++;
-				if (currentPosition.x() >= getSize().width())
+				if (currentPosition.x() >= getViewport().getSize().width())
 				{
 					currentPosition.x() = 0;
 					currentPosition.y()++;
@@ -58,9 +58,10 @@ export namespace CppUtils::Terminal
 
 		inline auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void
 		{
-			if (not m_viewport.contains(position))
+			const auto absolutePosition = m_viewport.getPosition() + position;
+			if (not m_viewport.contains(absolutePosition))
 				return;
-			m_areaBuffer.setChar(m_viewport.getPosition() + position, c);
+			m_areaBuffer.setChar(absolutePosition, c);
 		}
 
 		inline auto fill(const CharAttributes& c) noexcept -> void

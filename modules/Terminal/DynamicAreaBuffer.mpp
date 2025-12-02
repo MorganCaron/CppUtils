@@ -33,7 +33,7 @@ export namespace CppUtils::Terminal
 			m_buffer = Buffer{m_size.height(), Line{m_size.width()}};
 		}
 
-		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 final
+		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 override
 		{
 			auto lock = std::unique_lock{m_mutex};
 			return m_size;

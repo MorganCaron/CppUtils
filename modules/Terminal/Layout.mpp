@@ -1,6 +1,7 @@
 export module CppUtils.Terminal.Layout;
 
 import std;
+import CppUtils.Container.Size;
 import CppUtils.Terminal.Area;
 
 export namespace CppUtils::Terminal
@@ -8,6 +9,12 @@ export namespace CppUtils::Terminal
 	class Layout: public Widget
 	{
 	public:
+		enum class Direction
+		{
+			Horizontal,
+			Vertical
+		};
+
 		virtual ~Layout() = default;
 
 		template<std::derived_from<Widget> T>
@@ -17,11 +24,54 @@ export namespace CppUtils::Terminal
 			return dynamic_cast<T&>(*m_widgets.emplace_back(std::move(widget)));
 		}
 
+		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 final
+		{
+			auto totalSize = Container::Size2{0, 0};
+			for (const auto& widget : m_widgets)
+			{
+				if (direction == Direction::Horizontal)
+				{
+					totalSize.width() += widget->getSize().width();
+					totalSize.height() = std::max(totalSize.height(), widget->getSize().height());
+				}
+				else
+				{
+					totalSize.width() = std::max(totalSize.width(), widget->getSize().width());
+					totalSize.height() += widget->getSize().height();
+				}
+			}
+			return totalSize;
+		}
+
 		inline auto draw(WritableAreaView& view) noexcept -> void override final
 		{
+			auto origin = view.getViewport().getPosition();
+			auto size = view.getViewport().getSize();
 			for (const auto& widget : m_widgets)
-				widget->draw(view);
+			{
+				auto widgetSize = widget->getSize();
+				widgetSize.width() = std::min(widgetSize.width(), size.width());
+				widgetSize.height() = std::min(widgetSize.height(), size.height());
+
+				auto subview = view.getSubView(Viewport{widgetSize, origin});
+				if (not subview)
+					continue;
+				widget->draw(subview.value());
+
+				if (direction == Direction::Horizontal and size.width() < widgetSize.width())
+				{
+					origin.width() += widgetSize.width();
+					size.width() -= widgetSize.width();
+				}
+				else
+				{
+					origin.height() += widgetSize.height();
+					size.height() -= widgetSize.height();
+				}
+			}
 		}
+
+		Direction direction = Direction::Vertical;
 
 	private:
 		std::vector<std::unique_ptr<Widget>> m_widgets;

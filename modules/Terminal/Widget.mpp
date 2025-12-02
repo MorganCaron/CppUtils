@@ -12,6 +12,7 @@ export namespace CppUtils::Terminal
 	{
 	public:
 		virtual ~Widget() = default;
+		[[nodiscard]] virtual auto getSize() const noexcept -> Container::Size2 = 0;
 		virtual auto draw(WritableAreaView& view) noexcept -> void = 0;
 
 		inline auto drawFinished() noexcept -> void

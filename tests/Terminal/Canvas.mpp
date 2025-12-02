@@ -67,7 +67,8 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 		});
 
 		suite.addTest("Progress bar", [&] {
-			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{50, 1}};
+			const auto terminalWidth = CppUtils::Terminal::getTerminalSize().width();
+			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{terminalWidth, 1}};
 			auto& progressBar = canvas.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Progress bar"));
 
 			auto scheduler = CppUtils::Thread::Scheduler{};
@@ -85,7 +86,8 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 		});
 
 		suite.addTest("Multiple Progress Bars", [&] {
-			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{50, 3}};
+			const auto terminalWidth = CppUtils::Terminal::getTerminalSize().width();
+			auto canvas = CppUtils::Terminal::v2::Canvas{CppUtils::Container::Size2{terminalWidth, 3}};
 			auto& layout = canvas.addWidget(std::make_unique<CppUtils::Terminal::Layout>());
 
 			auto& bar1 = layout.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Bar 1"));
@@ -95,14 +97,14 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			scheduler.schedule([&canvas]() mutable {
 				canvas.close();
-			}, 500ms);
+			}, 1'000ms);
 
-			for (auto i = 0.f; i <= 100.f; i += 2.f)
+			for (auto i = 0.f; i <= 100.f; i += 1.f)
 			{
 				bar1.setPercent(i);
 				bar2.setPercent(CppUtils::Math::Easing::inQuad(i / 100.f) * 100.f);
 				bar3.setPercent(CppUtils::Math::Easing::outCubic(i / 100.f) * 100.f);
-				std::this_thread::sleep_for(5ms);
+				std::this_thread::sleep_for(10ms);
 			}
 
 			canvas.wait();
