@@ -1,0 +1,136 @@
+export module CppUtils.UnitTests.Container.Vec3;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Container::Vec3
+{
+	inline auto _ = TestSuite{"Container/Vec3", [](auto& suite) {
+		suite.addTest("Constructor & Accessors", [&] {
+			constexpr auto vec = CppUtils::Container::Vec3{1, 2, 3};
+
+			suite.expectEqual(vec.x(), 1);
+			suite.expectEqual(vec.y(), 2);
+			suite.expectEqual(vec.z(), 3);
+			suite.expectEqual(vec[0], 1);
+			suite.expectEqual(vec[1], 2);
+			suite.expectEqual(vec[2], 3);
+			suite.expectEqual(vec.width(), 1);
+			suite.expectEqual(vec.height(), 2);
+			suite.expectEqual(vec.depth(), 3);
+		});
+
+		suite.addTest("Comparison", [&] {
+			constexpr auto v1 = CppUtils::Container::Vec3{1, 2, 3};
+			constexpr auto v2 = CppUtils::Container::Vec3{1, 2, 3};
+			constexpr auto v3 = CppUtils::Container::Vec3{4, 5, 6};
+
+			suite.expectEqual(v1, v2);
+			suite.expect(v1 != v3);
+		});
+
+		suite.addTest("operator+=", [&] {
+			{
+				auto lhs = CppUtils::Container::Vec3{1, 2, 3};
+				constexpr auto rhs = CppUtils::Container::Vec3{4, 5, 6};
+
+				lhs += rhs;
+
+				suite.expectEqual(lhs, CppUtils::Container::Vec3{5, 7, 9});
+			}
+			{
+				auto vec = CppUtils::Container::Vec3{1, 2, 3};
+
+				vec += CppUtils::Container::Vec3{0.5, 0.5, 0.5};
+
+				suite.expectEqual(vec, CppUtils::Container::Vec3{1, 2, 3});
+			}
+			{
+				auto vec = CppUtils::Container::Vec3{1.5, 2.5, 3.5};
+
+				vec += CppUtils::Container::Vec3{2, 3, 4};
+
+				suite.expectEqual(vec, CppUtils::Container::Vec3{3.5, 5.5, 7.5});
+			}
+		});
+
+		suite.addTest("operator-=", [&] {
+			auto lhs = CppUtils::Container::Vec3{1, 2, 3};
+			constexpr auto rhs = CppUtils::Container::Vec3{4, 5, 6};
+
+			lhs -= rhs;
+
+			suite.expectEqual(lhs, CppUtils::Container::Vec3{-3, -3, -3});
+		});
+
+		suite.addTest("operator*=", [&] {
+			{
+				auto vec = CppUtils::Container::Vec3{1, 2, 3};
+
+				vec *= 2;
+
+				suite.expectEqual(vec, CppUtils::Container::Vec3{2, 4, 6});
+			}
+			{
+				auto vec = CppUtils::Container::Vec3{1.5, 2.5, 3.5};
+
+				vec *= 2.0;
+
+				suite.expectEqual(vec, CppUtils::Container::Vec3{3.0, 5.0, 7.0});
+			}
+			{
+				auto vec = CppUtils::Container::Vec3{3, 5, 7};
+
+				vec *= 0.5;
+
+				suite.expectEqual(vec, CppUtils::Container::Vec3{1, 2, 3});
+			}
+		});
+
+		suite.addTest("operator/=", [&] {
+			auto vec = CppUtils::Container::Vec3{2, 4, 6};
+
+			vec /= 2;
+
+			suite.expectEqual(vec, CppUtils::Container::Vec3{1, 2, 3});
+		});
+
+		suite.addTest("operator+", [&] {
+			constexpr auto intVec = CppUtils::Container::Vec3{1, 2, 3};
+			constexpr auto floatVec = CppUtils::Container::Vec3{3.0f, 4.0f, 5.0f};
+
+			constexpr auto result = intVec + floatVec;
+
+			static_assert(std::is_same_v<decltype(result), const CppUtils::Container::Vec3<float>>);
+			suite.expectEqual(result, CppUtils::Container::Vec3{4.0f, 6.0f, 8.0f});
+		});
+
+		suite.addTest("operator*", [&] {
+			constexpr auto intVec = CppUtils::Container::Vec3{1, 2, 3};
+
+			{
+				constexpr auto result = intVec * 1.5;
+
+				static_assert(std::is_same_v<decltype(result), const CppUtils::Container::Vec3<double>>);
+				suite.expectEqual(result, CppUtils::Container::Vec3{1.5, 3.0, 4.5});
+			}
+			{
+				constexpr auto result = 2.5 * intVec;
+
+				static_assert(std::is_same_v<decltype(result), const CppUtils::Container::Vec3<double>>);
+				suite.expectEqual(result, CppUtils::Container::Vec3{2.5, 5.0, 7.5});
+			}
+		});
+
+		suite.addTest("Formatting", [&] {
+			{
+				constexpr auto vec = CppUtils::Container::Vec3{1.5, 2.5, 3.5};
+				suite.expectEqual(std::format("{}", vec), "(1.5, 2.5, 3.5)");
+			}
+			{
+				constexpr auto vec = CppUtils::Container::Vec3{1.11, 2.22, 3.33};
+				suite.expectEqual(std::format("{:.1f}", vec), "(1.1, 2.2, 3.3)");
+			}
+		});
+	}};
+}

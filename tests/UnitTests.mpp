@@ -11,6 +11,8 @@ export import CppUtils.UnitTests.Container.Sequence;
 export import CppUtils.UnitTests.Container.Stack;
 export import CppUtils.UnitTests.Container.Tree;
 export import CppUtils.UnitTests.Container.TypedStack;
+export import CppUtils.UnitTests.Container.Vec2;
+export import CppUtils.UnitTests.Container.Vec3;
 export import CppUtils.UnitTests.Container.Vector;
 export import CppUtils.UnitTests.Execution.EventDispatcher;
 export import CppUtils.UnitTests.Execution.ScopeGuard;

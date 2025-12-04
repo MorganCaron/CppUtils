@@ -43,24 +43,26 @@ export namespace CppUtils::Container
 			return self;
 		}
 
-		inline constexpr auto operator+=(const Vec2<T>& rhs) noexcept -> decltype(auto)
+		template<class U>
+		inline constexpr auto operator+=(this auto&& self, const Vec2<U>& rhs) noexcept -> decltype(self)
 		{
-			return apply([this, rhs](std::size_t axis) { m_values[axis] += rhs[axis]; });
+			return self.apply([&](std::size_t axis) { self.m_values[axis] += static_cast<T>(rhs[axis]); });
 		}
 
-		inline constexpr auto operator-=(const Vec2<T>& rhs) noexcept -> decltype(auto)
+		template<class U>
+		inline constexpr auto operator-=(this auto&& self, const Vec2<U>& rhs) noexcept -> decltype(self)
 		{
-			return apply([this, rhs](std::size_t axis) { m_values[axis] -= rhs[axis]; });
+			return self.apply([&](std::size_t axis) { self.m_values[axis] -= static_cast<T>(rhs[axis]); });
 		}
 
-		inline constexpr auto operator*=(T value) noexcept -> decltype(auto)
+		inline constexpr auto operator*=(this auto&& self, auto value) noexcept -> decltype(self)
 		{
-			return apply([this, value](std::size_t axis) { m_values[axis] *= value; });
+			return self.apply([&](std::size_t axis) { self.m_values[axis] = static_cast<T>(self.m_values[axis] * value); });
 		}
 
-		inline constexpr auto operator/=(T value) noexcept -> decltype(auto)
+		inline constexpr auto operator/=(this auto&& self, auto value) noexcept -> decltype(self)
 		{
-			return apply([this, value](std::size_t axis) { m_values[axis] /= value; });
+			return self.apply([&](std::size_t axis) { self.m_values[axis] = static_cast<T>(self.m_values[axis] / value); });
 		}
 
 		std::array<T, 2> m_values;
@@ -69,34 +71,74 @@ export namespace CppUtils::Container
 	template<class T>
 	Vec2(T, T) -> Vec2<T>;
 
-	template<class T>
-	[[nodiscard]] inline constexpr auto operator+(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept -> Vec2<T>
+	template<class T, class U>
+	[[nodiscard]] inline constexpr auto operator+(const Vec2<T>& lhs, const Vec2<U>& rhs) noexcept
 	{
-		return auto{lhs} += rhs;
+		using Common = std::common_type_t<T, U>;
+		return Vec2<Common>{
+			static_cast<Common>(lhs.x()) + static_cast<Common>(rhs.x()),
+			static_cast<Common>(lhs.y()) + static_cast<Common>(rhs.y())};
+	}
+
+	template<class T, class U>
+	[[nodiscard]] inline constexpr auto operator-(const Vec2<T>& lhs, const Vec2<U>& rhs) noexcept
+	{
+		using Common = std::common_type_t<T, U>;
+		return Vec2<Common>{
+			static_cast<Common>(lhs.x()) - static_cast<Common>(rhs.x()),
+			static_cast<Common>(lhs.y()) - static_cast<Common>(rhs.y())};
 	}
 
 	template<class T>
-	[[nodiscard]] inline constexpr auto operator-(const Vec2<T>& lhs, const Vec2<T>& rhs) noexcept -> Vec2<T>
+	[[nodiscard]] inline constexpr auto operator*(const Vec2<T>& lhs, auto value) noexcept
 	{
-		return auto{lhs} -= rhs;
+		using Common = std::common_type_t<T, decltype(value)>;
+		return Vec2<Common>{
+			static_cast<Common>(lhs.x()) * static_cast<Common>(value),
+			static_cast<Common>(lhs.y()) * static_cast<Common>(value)};
 	}
 
 	template<class T>
-	[[nodiscard]] inline constexpr auto operator*(const Vec2<T>& lhs, T value) noexcept -> Vec2<T>
+	[[nodiscard]] inline constexpr auto operator*(auto value, const Vec2<T>& rhs) noexcept
 	{
-		return auto{lhs} *= value;
+		using Common = std::common_type_t<T, decltype(value)>;
+		return Vec2<Common>{
+			static_cast<Common>(value) * static_cast<Common>(rhs.x()),
+			static_cast<Common>(value) * static_cast<Common>(rhs.y())};
 	}
 
 	template<class T>
-	[[nodiscard]] inline constexpr auto operator*(T value, const Vec2<T>& rhs) noexcept -> Vec2<T>
+	[[nodiscard]] inline constexpr auto operator/(const Vec2<T>& lhs, auto value) noexcept
 	{
-		return auto{rhs} += value;
+		using Common = std::common_type_t<T, decltype(value)>;
+		return Vec2<Common>{
+			static_cast<Common>(lhs.x()) / static_cast<Common>(value),
+			static_cast<Common>(lhs.y()) / static_cast<Common>(value)};
 	}
+}
 
-	template<class T>
-	[[nodiscard]] inline constexpr auto operator/(const Vec2<T>& lhs, T value) noexcept -> Vec2<T>
+export namespace std
+{
+	template<class T, class CharT>
+	struct formatter<CppUtils::Container::Vec2<T>, CharT>
 	{
-		return auto{lhs} /= value;
-	}
+		formatter<T, CharT> m_formatter;
 
+		inline constexpr auto parse(auto& context)
+		{
+			return m_formatter.parse(context);
+		}
+
+		inline auto format(const CppUtils::Container::Vec2<T>& vec, auto& context) const
+		{
+			auto out = context.out();
+			out = std::format_to(out, "(");
+			context.advance_to(out);
+			out = m_formatter.format(vec.x(), context);
+			out = std::format_to(out, ", ");
+			context.advance_to(out);
+			out = m_formatter.format(vec.y(), context);
+			return std::format_to(out, ")");
+		}
+	};
 }
