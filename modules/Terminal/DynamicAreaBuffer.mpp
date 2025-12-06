@@ -14,7 +14,7 @@ export namespace CppUtils::Terminal
 		using Buffer = std::vector<Line>;
 
 		inline DynamicAreaBuffer(const Container::Size2& size, CharAttributes defaultCharAttributes = {}):
-			DynamicAreaBuffer{size, Buffer{size.height(), Line{size.width(), defaultCharAttributes}}}
+			DynamicAreaBuffer{size, Buffer(size.height(), Line(size.width(), defaultCharAttributes))}
 		{}
 
 		inline DynamicAreaBuffer(const Container::Size2& size, char defaultChar):
@@ -30,7 +30,7 @@ export namespace CppUtils::Terminal
 		{
 			auto lock = std::unique_lock{m_mutex};
 			m_size = size;
-			m_buffer = Buffer{m_size.height(), Line{m_size.width()}};
+			m_buffer = Buffer(m_size.height(), Line(m_size.width()));
 		}
 
 		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 override

@@ -1,0 +1,40 @@
+export module CppUtils.String.Encoding;
+
+import std;
+
+export namespace CppUtils::String
+{
+	inline auto toUtf8(char32_t codePoint, std::string&& string = {}) -> std::string
+	{
+		if (codePoint < 0x80)
+		{
+			string += static_cast<char>(codePoint);
+		}
+		else if (codePoint < 0x8'00)
+		{
+			string += static_cast<char>(0xC0 | (codePoint >> 6));
+			string += static_cast<char>(0x80 | (codePoint & 0x3F));
+		}
+		else if (codePoint < 0x1'00'00)
+		{
+			string += static_cast<char>(0xE0 | (codePoint >> 12));
+			string += static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F));
+			string += static_cast<char>(0x80 | (codePoint & 0x3F));
+		}
+		else if (codePoint < 0x11'00'00)
+		{
+			string += static_cast<char>(0xF0 | (codePoint >> 18));
+			string += static_cast<char>(0x80 | ((codePoint >> 12) & 0x3F));
+			string += static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F));
+			string += static_cast<char>(0x80 | (codePoint & 0x3F));
+		}
+		return string;
+	}
+
+	inline auto toUtf8(std::u32string_view unicodeString, std::string&& string = {}) -> std::string
+	{
+		for (const auto codePoint : unicodeString)
+			string = toUtf8(codePoint, std::move(string));
+		return string;
+	}
+}
