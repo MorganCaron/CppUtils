@@ -7,6 +7,7 @@ export module CppUtils.Terminal.Canvas;
 import std;
 import CppUtils.Container.Size;
 import CppUtils.Terminal.Utility;
+import CppUtils.String.Encoding;
 import CppUtils.Terminal.Size;
 import CppUtils.Terminal.Cursor;
 import CppUtils.Terminal.Area;
@@ -16,193 +17,114 @@ import CppUtils.Terminal.BackgroundColor;
 
 export namespace CppUtils::Terminal
 {
-	inline namespace v1
+	class Canvas final: public Area
 	{
-		class Canvas final
+		using Area::draw;
+
+	public:
+		inline Canvas(const Container::Size2& size = getTerminalSize(), const std::optional<Viewport>& optionalViewport = std::nullopt):
+			Area{size, optionalViewport.value_or(Viewport{size, {0, 0}})},
+			m_previousBuffer{size}
 		{
-		public:
-			struct StyledSegment final
-			{
-				std::size_t begin, end;
-			};
+			m_widgetManager.eventDispatcher.subscribe<"RequestUpdate">([this] {
+				print();
+			});
+			setWidgetManager(m_widgetManager);
+			setConsoleOutputUTF8();
+			enableAnsi();
+		}
 
-			inline Canvas(const Container::Size2& size = getTerminalSize()):
-				m_size{size},
-				m_buffer{std::string(m_size.width() * m_size.height(), ' ')}
-			{
-				if (m_size.width() == 0 or m_size.height() == 0)
-					return;
-				std::print("{}", std::string(m_size.height(), '\n'));
-				update();
-			}
-
-			inline ~Canvas()
-			{
-				std::puts("");
-			}
-
-			[[nodiscard]] inline constexpr auto getSize() const noexcept -> const auto&
-			{
-				return m_size;
-			}
-
-			inline auto fill(char c) noexcept -> void
-			{
-				m_buffer.assign(m_size.width() * m_size.height(), c);
-			}
-
-			[[nodiscard]] inline auto getOrigin() const noexcept -> auto
-			{
-				return Container::Size2{0, getTerminalSize().height() - m_size.height()};
-			}
-
-			inline auto print(const Container::Size2& position, std::string_view text) noexcept -> void
-			{
-				const auto offset = position.x() + position.y() * m_size.width();
-				if (offset >= std::size(m_buffer))
-					return;
-
-				std::copy_n(
-					std::cbegin(text),
-					std::min(std::size(text), std::size(m_buffer) - offset),
-					std::begin(m_buffer) + static_cast<std::ptrdiff_t>(offset));
-			}
-
-			inline auto update() -> void
-			{
-				{
-					auto cursorPosition = getTerminalSize();
-					cursorPosition.x() = 0;
-					cursorPosition.y() -= m_size.height();
-					setCursorPosition(cursorPosition);
-				}
-				const auto buffer = std::string_view{m_buffer};
-				for (auto lineNb = 0uz; lineNb < m_size.height();)
-				{
-					std::fwrite(std::data(buffer.substr(lineNb * m_size.width(), m_size.width())), sizeof(decltype(m_buffer)::value_type), m_size.width(), stdout);
-					if (++lineNb != m_size.height())
-						std::fwrite("\n", 1, 1, stdout);
-				}
-				std::fflush(stdout);
-			}
-
-		private:
-			Container::Size2 m_size;
-			std::string m_buffer;
-			std::vector<StyledSegment> m_attributes;
-		};
-	}
-
-	namespace v2
-	{
-		class Canvas final: public Area
+		inline auto applyDifferences() noexcept -> void
 		{
-			using Area::draw;
+			using namespace std::literals;
+			auto terminalSize = getTerminalSize();
+			auto stringBuffer = ""s;
+			auto needFlush = false;
+			auto lastAttributes = CharAttributes{};
+			m_viewport.forEach([&](const auto& position) noexcept {
+				const auto& currentChar = getChar(position);
+				const auto& previousChar = m_previousBuffer.getChar(position);
 
-		public:
-			inline Canvas(const Container::Size2& size = getTerminalSize(), const std::optional<Viewport>& optionalViewport = std::nullopt):
-				Area{size, optionalViewport.value_or(Viewport{size, {0, 0}})},
-				m_previousBuffer{size}
-			{
-				m_widgetManager.eventDispatcher.subscribe<"RequestUpdate">([this] {
-					print();
-				});
-				setWidgetManager(m_widgetManager);
-				setConsoleOutputUTF8();
-				enableAnsi();
-			}
+				auto needUpdateText = currentChar.character != previousChar.character;
+				auto needUpdateTextStyle = currentChar.textStyle != lastAttributes.textStyle;
+				auto needUpdateTextColor = currentChar.textColor != lastAttributes.textColor;
+				auto needUpdateBackgroundColor = currentChar.backgroundColor != lastAttributes.backgroundColor;
 
-			inline auto applyDifferences() noexcept -> void
-			{
-				using namespace std::literals;
-				auto terminalSize = getTerminalSize();
-				auto stringBuffer = ""s;
-				auto needFlush = false;
-				auto lastAttributes = CharAttributes{};
-				m_viewport.forEach([&](const auto& position) noexcept {
-					const auto& currentChar = getChar(position);
-					const auto& previousChar = m_previousBuffer.getChar(position);
-
-					auto needUpdateText = currentChar.character != previousChar.character;
-					auto needUpdateTextStyle = currentChar.textStyle != lastAttributes.textStyle;
-					auto needUpdateTextColor = currentChar.textColor != lastAttributes.textColor;
-					auto needUpdateBackgroundColor = currentChar.backgroundColor != lastAttributes.backgroundColor;
-
-					if (needUpdateText or needUpdateTextStyle or needUpdateTextColor or needUpdateBackgroundColor)
+				if (needUpdateText or needUpdateTextStyle or needUpdateTextColor or needUpdateBackgroundColor)
+				{
+					if (std::empty(stringBuffer))
+						setCursorPosition({position.x(), terminalSize.height() - m_viewport.getSize().height() + position.y()});
+					if (needUpdateTextStyle)
 					{
-						if (std::empty(stringBuffer))
-							setCursorPosition({position.x(), terminalSize.height() - m_viewport.getSize().height() + position.y()});
-						if (needUpdateTextStyle)
-						{
-							stringBuffer += TextStyle::getTextStyleCode(currentChar.textStyle);
-							lastAttributes.textStyle = currentChar.textStyle;
-						}
-						if (needUpdateTextColor)
-						{
-							stringBuffer += TextColor::Ansi::getTextColorCode(currentChar.textColor);
-							lastAttributes.textColor = currentChar.textColor;
-						}
-						if (needUpdateBackgroundColor)
-						{
-							stringBuffer += BackgroundColor::Ansi::getBackgroundColorCode(currentChar.backgroundColor);
-							lastAttributes.backgroundColor = currentChar.backgroundColor;
-						}
-						stringBuffer += currentChar.character;
-						m_previousBuffer.setChar(position, currentChar);
-						if (not std::empty(stringBuffer) and position.x() + 1 == m_viewport.getSize().width())
-							stringBuffer += '\n';
+						stringBuffer += TextStyle::getTextStyleCode(currentChar.textStyle);
+						lastAttributes.textStyle = currentChar.textStyle;
 					}
-					else if (not std::empty(stringBuffer))
+					if (needUpdateTextColor)
 					{
-						std::fwrite(std::data(stringBuffer), sizeof(decltype(stringBuffer)::value_type), std::size(stringBuffer), stdout);
-						stringBuffer.clear();
-						needFlush = true;
+						stringBuffer += TextColor::Ansi::getTextColorCode(currentChar.textColor);
+						lastAttributes.textColor = currentChar.textColor;
 					}
-				});
-				if (not std::empty(stringBuffer))
+					if (needUpdateBackgroundColor)
+					{
+						stringBuffer += BackgroundColor::Ansi::getBackgroundColorCode(currentChar.backgroundColor);
+						lastAttributes.backgroundColor = currentChar.backgroundColor;
+					}
+					if (currentChar.displayWidth > 0)
+						stringBuffer = String::toUtf8(currentChar.character, std::move(stringBuffer));
+					m_previousBuffer.setChar(position, currentChar);
+					if (not std::empty(stringBuffer) and position.x() + 1 == m_viewport.getSize().width())
+						stringBuffer += '\n';
+				}
+				else if (not std::empty(stringBuffer))
 				{
 					std::fwrite(std::data(stringBuffer), sizeof(decltype(stringBuffer)::value_type), std::size(stringBuffer), stdout);
+					stringBuffer.clear();
 					needFlush = true;
 				}
-				if (needFlush)
-					std::fflush(stdout);
-				setCursorPosition({0, getTerminalSize().height()});
-			}
-
-			inline auto print() noexcept -> void
+			});
+			if (not std::empty(stringBuffer))
 			{
-				auto lock = std::scoped_lock{m_printMutex};
-				if (m_widget)
-				{
-					auto view = WritableAreaView{*this, m_viewport};
-					m_widget->draw(view);
-				}
-				if (m_firstPrint)
-				{
-					std::print("{}", std::string(m_viewport.getSize().height(), '\n'));
-					m_firstPrint = false;
-				}
-				applyDifferences();
+				std::fwrite(std::data(stringBuffer), sizeof(decltype(stringBuffer)::value_type), std::size(stringBuffer), stdout);
+				needFlush = true;
 			}
+			if (needFlush)
+				std::fflush(stdout);
+			setCursorPosition({0, getTerminalSize().height()});
+		}
 
-			inline auto wait() noexcept -> void
+		inline auto print() noexcept -> void
+		{
+			auto lock = std::scoped_lock{m_printMutex};
+			if (m_widget)
 			{
-				print();
-				m_stopEvent.wait(false);
+				auto view = WritableAreaView{*this, m_viewport};
+				m_widget->draw(view);
 			}
-
-			inline auto close() noexcept -> void
+			if (m_firstPrint)
 			{
-				m_stopEvent.store(true, std::memory_order_release);
-				m_stopEvent.notify_all();
+				std::print("{}", std::string(m_viewport.getSize().height(), '\n'));
+				m_firstPrint = false;
 			}
+			applyDifferences();
+		}
 
-		private:
-			std::mutex m_printMutex;
-			bool m_firstPrint = true;
-			std::atomic_bool m_stopEvent = false;
-			DynamicAreaBuffer m_previousBuffer;
-			WidgetManager m_widgetManager;
-		};
-	}
+		inline auto wait() noexcept -> void
+		{
+			print();
+			m_stopEvent.wait(false);
+		}
+
+		inline auto close() noexcept -> void
+		{
+			m_stopEvent.store(true, std::memory_order_release);
+			m_stopEvent.notify_all();
+		}
+
+	private:
+		std::mutex m_printMutex;
+		bool m_firstPrint = true;
+		std::atomic_bool m_stopEvent = false;
+		DynamicAreaBuffer m_previousBuffer;
+		WidgetManager m_widgetManager;
+	};
 }

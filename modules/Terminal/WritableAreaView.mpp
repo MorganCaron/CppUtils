@@ -4,6 +4,7 @@ import std;
 import :DynamicAreaBuffer;
 import :Viewport;
 import CppUtils.Terminal.AreaBuffer;
+import CppUtils.Terminal.CharAttributes;
 
 export namespace CppUtils::Terminal
 {
@@ -20,18 +21,26 @@ export namespace CppUtils::Terminal
 			return m_viewport;
 		}
 
-		inline auto printText(const Container::Size2& position, std::string_view text) noexcept -> void
+		inline auto printText(Container::Size2 position, std::string_view text) noexcept -> void
 		{
-			auto currentPosition = position;
-			for (const auto c : text)
+			for (auto i = 0uz; i < std::size(text);)
 			{
-				setChar(currentPosition, CharAttributes{c});
-				currentPosition.x()++;
-				if (currentPosition.x() >= getViewport().getSize().width())
+				if (position.x() >= getViewport().getSize().width())
 				{
-					currentPosition.x() = 0;
-					currentPosition.y()++;
+					position.x() = 0;
+					++position.y();
 				}
+				if (position.y() >= getViewport().getSize().height())
+					break;
+
+				auto bytesConsumed = 0uz;
+				auto charAttributes = Terminal::CharAttributes{text.substr(i), bytesConsumed};
+				setChar(position, charAttributes);
+
+				if (charAttributes.displayWidth == 2 and position.x() + 1 < getViewport().getSize().width())
+					setChar(Container::Size2{position.x() + 1, position.y()}, Terminal::CharAttributes{U' ', 0});
+				position.x() += charAttributes.displayWidth;
+				i += bytesConsumed;
 			}
 		}
 		[[nodiscard]] inline auto getSubView(Viewport viewport) noexcept -> std::expected<WritableAreaView, std::string>

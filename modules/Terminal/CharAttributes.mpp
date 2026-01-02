@@ -1,16 +1,70 @@
 export module CppUtils.Terminal.CharAttributes;
 
+import std;
 import CppUtils.Terminal.TextStyle;
 import CppUtils.Terminal.TextColor;
 import CppUtils.Terminal.BackgroundColor;
+import CppUtils.String.Encoding;
 
 export namespace CppUtils::Terminal
 {
 	struct CharAttributes final
 	{
-		char character = ' ';
+		char32_t character = U' ';
 		TextStyle::TextStyleEnum textStyle = TextStyle::TextStyleEnum{0};
 		TextColor::TextColorEnum textColor = TextColor::TextColorEnum::Default;
 		BackgroundColor::BackgroundColorEnum backgroundColor = BackgroundColor::BackgroundColorEnum::Default;
+		std::size_t displayWidth = 1;
+
+		inline CharAttributes() = default;
+
+		inline CharAttributes(char32_t c, std::size_t width = 1):
+			character{c}, displayWidth{width}
+		{}
+
+		inline CharAttributes(char c):
+			character{static_cast<char32_t>(c)}, displayWidth{1}
+		{}
+
+		inline CharAttributes(
+			char32_t c,
+			TextColor::TextColorEnum textColor,
+			std::size_t displayWidth = 1):
+			character{c},
+			textColor{textColor},
+			displayWidth{displayWidth}
+		{}
+
+		inline CharAttributes(char32_t c,
+			TextColor::TextColorEnum textColor,
+			BackgroundColor::BackgroundColorEnum backgroundColor,
+			std::size_t displayWidth = 1):
+			character{c},
+			textColor{textColor},
+			backgroundColor{backgroundColor},
+			displayWidth{displayWidth}
+		{}
+
+		inline CharAttributes(char32_t c,
+			TextStyle::TextStyleEnum textStyle,
+			TextColor::TextColorEnum textColor,
+			BackgroundColor::BackgroundColorEnum backgroundColor,
+			std::size_t displayWidth = 1):
+			character{c},
+			textStyle{textStyle},
+			textColor{textColor},
+			backgroundColor{backgroundColor},
+			displayWidth{displayWidth}
+		{}
+
+		inline CharAttributes(std::string_view text, std::size_t& bytesConsumed):
+			character{U'?'},
+			displayWidth{1}
+		{
+			auto [codePoint, length] = CppUtils::String::toUtf32(text);
+			character = codePoint;
+			bytesConsumed = length;
+			displayWidth = CppUtils::String::getDisplayWidth(character);
+		}
 	};
 }

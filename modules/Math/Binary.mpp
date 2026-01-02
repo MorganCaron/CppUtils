@@ -1,0 +1,60 @@
+export module CppUtils.Math.Binary;
+
+import std;
+
+export namespace CppUtils::Math
+{
+	enum class HorizontalAlignment
+	{
+		Left = 0,
+		Center = 1,
+		Right = 2
+	};
+
+	template<class T>
+	[[nodiscard]] inline constexpr auto makeMask(std::size_t length, HorizontalAlignment alignment) noexcept -> T
+	{
+		constexpr auto totalBits = sizeof(T) * 8;
+
+		if (length >= totalBits)
+			return static_cast<T>(~T{0});
+
+		auto mask = static_cast<T>((T{1} << length) - T{1});
+
+		const auto shift = [&]() constexpr noexcept -> std::size_t {
+			switch (alignment)
+			{
+			case HorizontalAlignment::Left: return totalBits - length;
+			case HorizontalAlignment::Center: return (totalBits - length + 1) / 2;
+			case HorizontalAlignment::Right: return 0;
+			default: std::unreachable();
+			}
+		}();
+
+		return static_cast<T>(static_cast<std::make_unsigned_t<T>>(mask) << shift);
+	}
+
+	using CppUtils::Math::HorizontalAlignment;
+	using CppUtils::Math::makeMask;
+
+	static_assert(makeMask<std::uint8_t>(0, HorizontalAlignment::Left) == 0b0000'0000);
+	static_assert(makeMask<std::uint8_t>(1, HorizontalAlignment::Left) == 0b1000'0000);
+	static_assert(makeMask<std::uint8_t>(3, HorizontalAlignment::Left) == 0b1110'0000);
+	static_assert(makeMask<std::uint8_t>(3, HorizontalAlignment::Center) == 0b0011'1000);
+	static_assert(makeMask<std::uint8_t>(3, HorizontalAlignment::Right) == 0b0000'0111);
+	static_assert(makeMask<std::uint8_t>(8, HorizontalAlignment::Left) == 0b1111'1111);
+	static_assert(makeMask<std::uint8_t>(9, HorizontalAlignment::Right) == 0b1111'1111);
+
+	static_assert(makeMask<std::uint16_t>(0, HorizontalAlignment::Left) == 0b0000'0000'0000'0000);
+	static_assert(makeMask<std::uint16_t>(1, HorizontalAlignment::Left) == 0b1000'0000'0000'0000);
+	static_assert(makeMask<std::uint16_t>(4, HorizontalAlignment::Center) == 0b0000'0011'1100'0000);
+	static_assert(makeMask<std::uint16_t>(16, HorizontalAlignment::Right) == 0b1111'1111'1111'1111);
+	static_assert(makeMask<std::uint16_t>(20, HorizontalAlignment::Left) == 0b1111'1111'1111'1111);
+
+	static_assert(makeMask<std::uint32_t>(0, HorizontalAlignment::Right) == 0b0000'0000'0000'0000'0000'0000'0000'0000);
+	static_assert(makeMask<std::uint32_t>(8, HorizontalAlignment::Left) == 0b1111'1111'0000'0000'0000'0000'0000'0000);
+	static_assert(makeMask<std::uint32_t>(8, HorizontalAlignment::Center) == 0b0000'0000'0000'1111'1111'0000'0000'0000);
+	static_assert(makeMask<std::uint32_t>(8, HorizontalAlignment::Right) == 0b0000'0000'0000'0000'0000'0000'1111'1111);
+	static_assert(makeMask<std::uint32_t>(32, HorizontalAlignment::Left) == 0b1111'1111'1111'1111'1111'1111'1111'1111);
+	static_assert(makeMask<std::uint32_t>(40, HorizontalAlignment::Right) == 0b1111'1111'1111'1111'1111'1111'1111'1111);
+}

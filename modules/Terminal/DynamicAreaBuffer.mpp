@@ -50,6 +50,26 @@ export namespace CppUtils::Terminal
 			auto lock = std::unique_lock{m_mutex};
 			if (position.x() >= m_size.width() or position.y() >= m_size.height())
 				return;
+
+			if (position.x() + 1 == m_size.width() and c.displayWidth == 2)
+				return;
+
+			if (auto& oldChar = m_buffer[position.y()][position.x()];
+				oldChar.displayWidth == 2)
+			{
+				if (position.x() + 1 < m_size.width())
+					if (auto& nextChar = m_buffer[position.y()][position.x() + 1];
+						nextChar.displayWidth == 0)
+						nextChar = CharAttributes{' '};
+			}
+			else if (oldChar.displayWidth == 0)
+			{
+				if (position.x() > 0)
+					if (auto& previousChar = m_buffer[position.y()][position.x() - 1];
+						previousChar.displayWidth == 2)
+						previousChar = CharAttributes{' '};
+			}
+
 			m_buffer[position.y()][position.x()] = c;
 		}
 

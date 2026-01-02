@@ -65,7 +65,7 @@ export namespace CppUtils::Terminal
 			fill(' ');
 		}
 
-		inline auto draw([[maybe_unused]] WritableAreaView& view) noexcept -> void override final
+		inline auto draw([[maybe_unused]] WritableAreaView& view) noexcept -> void override
 		{
 			if (not m_widget)
 				return;

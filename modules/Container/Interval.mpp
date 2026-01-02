@@ -1,0 +1,33 @@
+export module CppUtils.Container.Interval;
+
+import std;
+import CppUtils.Type.Concept;
+
+export namespace CppUtils::Container
+{
+	template<class T>
+	struct Interval final
+	{
+		T first;
+		T last;
+	};
+
+	template<class T>
+	concept IntervalType = Type::Specializes<T, Interval>;
+
+	template<class T>
+	concept RangeOfIntervals = std::ranges::forward_range<T> and IntervalType<std::ranges::range_value_t<T>>;
+
+	[[nodiscard]] inline constexpr auto binarySearch(auto value, RangeOfIntervals auto&& intervals) noexcept -> std::ranges::iterator_t<decltype(intervals)>
+	{
+		if (const auto it = std::ranges::lower_bound(intervals, value, {}, &Interval<decltype(value)>::last);
+			it != std::ranges::cend(intervals) and value >= it->first)
+			return it;
+		return std::ranges::cend(intervals);
+	};
+
+	[[nodiscard]] inline constexpr auto isInside(auto value, RangeOfIntervals auto&& intervals) noexcept -> bool
+	{
+		return binarySearch(std::forward<decltype(value)>(value), std::forward<decltype(intervals)>(intervals)) != std::ranges::cend(intervals);
+	}
+}

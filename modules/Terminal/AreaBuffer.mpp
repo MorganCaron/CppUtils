@@ -3,6 +3,7 @@ export module CppUtils.Terminal.AreaBuffer;
 import std;
 import CppUtils.Container.Size;
 import CppUtils.Terminal.CharAttributes;
+import CppUtils.String.Encoding;
 
 export namespace CppUtils::Terminal
 {
@@ -19,29 +20,36 @@ export namespace CppUtils::Terminal
 			for (auto y = 0uz; y < getSize().height(); ++y)
 			{
 				for (auto x = 0uz; x < getSize().width(); ++x)
-					result += getChar(CppUtils::Container::Size2{x, y}).character;
+				{
+					const auto& charAttributes = getChar(Container::Size2{x, y});
+					if (charAttributes.displayWidth > 0)
+						result += String::toUtf8(charAttributes.character);
+				}
 				result += '\n';
 			}
 			return result;
 		}
 
-		inline auto printText(const Container::Size2& position, std::string_view text) noexcept -> void
+		inline auto printText(Container::Size2 position, std::string_view text) noexcept -> void
 		{
-			auto currentX = position.x();
-			auto currentY = position.y();
-			for (auto i = 0uz; i < text.size(); ++i)
+			for (auto i = 0uz; i < std::size(text);)
 			{
-				if (currentX >= getSize().width())
+				if (position.x() >= getSize().width())
 				{
-					currentX = 0;
-					++currentY;
+					position.x() = 0;
+					++position.y();
 				}
-				if (currentY >= getSize().height())
+				if (position.y() >= getSize().height())
 					break;
-				auto charAttributes = CppUtils::Terminal::CharAttributes{};
-				charAttributes.character = static_cast<char>(text.at(i));
-				setChar(CppUtils::Container::Size2{currentX, currentY}, charAttributes);
-				++currentX;
+
+				auto bytesConsumed = 0uz;
+				auto charAttributes = Terminal::CharAttributes{text.substr(i), bytesConsumed};
+				setChar(position, charAttributes);
+
+				if (charAttributes.displayWidth == 2 and position.x() + 1 < getSize().width())
+					setChar(Container::Size2{position.x() + 1, position.y()}, Terminal::CharAttributes{U' ', 0});
+				position.x() += charAttributes.displayWidth;
+				i += bytesConsumed;
 			}
 		}
 	};

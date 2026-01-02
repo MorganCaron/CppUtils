@@ -20,7 +20,7 @@ export namespace CppUtils::Terminal
 			m_needUpdate = false;
 		}
 
-		inline auto setWidgetManager(WidgetManager& widgetManager) noexcept -> void
+		virtual inline auto setWidgetManager(WidgetManager& widgetManager) noexcept -> void
 		{
 			m_widgetManagerRef = widgetManager;
 		}
@@ -28,6 +28,11 @@ export namespace CppUtils::Terminal
 		[[nodiscard]] inline auto getWidgetManager() -> WidgetManager&
 		{
 			return m_widgetManagerRef.value().get();
+		}
+
+		[[nodiscard]] inline auto hasWidgetManager() const noexcept -> bool
+		{
+			return m_widgetManagerRef.has_value();
 		}
 
 		inline auto requestUpdate(Chrono::Duration auto delay = std::chrono::milliseconds{10}) -> void
