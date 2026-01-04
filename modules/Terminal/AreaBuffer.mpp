@@ -40,7 +40,7 @@ export namespace CppUtils::Terminal
 					++position.y();
 				}
 				if (position.y() >= getSize().height())
-					break;
+					return;
 
 				auto bytesConsumed = 0uz;
 				auto charAttributes = Terminal::CharAttributes{text.substr(i), bytesConsumed};

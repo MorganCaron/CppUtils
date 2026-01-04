@@ -69,10 +69,14 @@ export namespace CppUtils::UnitTest::Terminal::Canvas
 		suite.addTest("Print Unicode", [&] {
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{15, 5}};
 			canvas.fill('-');
-			canvas.printText(CppUtils::Container::Size2{1, 1}, "😊");
+			canvas.printText(CppUtils::Container::Size2{0, 0}, "😊🤖🐸🐊🏊");
+			canvas.printText(CppUtils::Container::Size2{1, 1}, "🤖");
+			canvas.printText(CppUtils::Container::Size2{6, 2}, "🐸");
+			canvas.printText(CppUtils::Container::Size2{12, 3}, "🐊");
+			canvas.printText(CppUtils::Container::Size2{13, 4}, "🏊");
 			canvas.print();
 
-			suite.expectEqual(canvas.toString(), "---------------\n-😊------------\n---------------\n---------------\n---------------\n"sv);
+			suite.expectEqual(canvas.toString(), "😊🤖🐸🐊🏊-----\n-🤖------------\n------🐸-------\n------------🐊-\n-------------🏊\n"sv);
 		});
 
 		suite.addTest("Progress bar", [&] {

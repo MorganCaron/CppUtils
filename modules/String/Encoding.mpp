@@ -85,6 +85,7 @@ export namespace CppUtils::String
 
 	[[nodiscard]] inline constexpr auto getDisplayWidth(char32_t character) noexcept -> std::size_t
 	{
+		// https://en.wikipedia.org/wiki/Halfwidth_and_fullwidth_forms
 		// https://www.unicode.org/Public/UCD/latest/ucd/auxiliary/WordBreakProperty.txt
 		// https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c (Pas à jour, il manque les emojis 0x1F300..0x1FAFF. Reprendre la substance, l'améliorer et la mettre à jour)
 		using Interval = Container::Interval<char32_t>;
@@ -199,7 +200,10 @@ export namespace CppUtils::String
 		};
 		// clang-format on
 
-		return 1uz + Container::isInside(character, twoWidthCharactersIntervals);
+		if (Container::isInside(character, twoWidthCharactersIntervals))
+			return 2uz;
+
+		return 1uz;
 	}
 
 	[[nodiscard]] inline constexpr auto getDisplayWidth(std::u32string_view unicodeString) -> std::size_t

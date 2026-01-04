@@ -37,7 +37,9 @@ export namespace CppUtils::Terminal
 		inline auto applyDifferences() noexcept -> void
 		{
 			using namespace std::literals;
-			auto terminalSize = getTerminalSize();
+			const auto terminalSize = getTerminalSize();
+			const auto viewportSize = m_viewport.getSize();
+			const auto startLine = terminalSize.height() - viewportSize.height() - 1;
 			auto stringBuffer = ""s;
 			auto needFlush = false;
 			auto lastAttributes = CharAttributes{};
@@ -45,15 +47,15 @@ export namespace CppUtils::Terminal
 				const auto& currentChar = getChar(position);
 				const auto& previousChar = m_previousBuffer.getChar(position);
 
-				auto needUpdateText = currentChar.character != previousChar.character;
-				auto needUpdateTextStyle = currentChar.textStyle != lastAttributes.textStyle;
-				auto needUpdateTextColor = currentChar.textColor != lastAttributes.textColor;
-				auto needUpdateBackgroundColor = currentChar.backgroundColor != lastAttributes.backgroundColor;
+				const auto needUpdateText = currentChar.character != previousChar.character or currentChar.displayWidth != previousChar.displayWidth;
+				const auto needUpdateTextStyle = currentChar.textStyle != lastAttributes.textStyle;
+				const auto needUpdateTextColor = currentChar.textColor != lastAttributes.textColor;
+				const auto needUpdateBackgroundColor = currentChar.backgroundColor != lastAttributes.backgroundColor;
 
 				if (needUpdateText or needUpdateTextStyle or needUpdateTextColor or needUpdateBackgroundColor)
 				{
 					if (std::empty(stringBuffer))
-						setCursorPosition({position.x(), terminalSize.height() - m_viewport.getSize().height() + position.y()});
+						setCursorPosition({position.x(), startLine + position.y()});
 					if (needUpdateTextStyle)
 					{
 						stringBuffer += TextStyle::getTextStyleCode(currentChar.textStyle);
@@ -72,7 +74,7 @@ export namespace CppUtils::Terminal
 					if (currentChar.displayWidth > 0)
 						stringBuffer = String::toUtf8(currentChar.character, std::move(stringBuffer));
 					m_previousBuffer.setChar(position, currentChar);
-					if (not std::empty(stringBuffer) and position.x() + 1 == m_viewport.getSize().width())
+					if (not std::empty(stringBuffer) and position.x() + 1 == viewportSize.width())
 						stringBuffer += '\n';
 				}
 				else if (not std::empty(stringBuffer))
@@ -89,7 +91,7 @@ export namespace CppUtils::Terminal
 			}
 			if (needFlush)
 				std::fflush(stdout);
-			setCursorPosition({0, getTerminalSize().height()});
+			setCursorPosition({0, terminalSize.height() > 0 ? terminalSize.height() - 1 : 0});
 		}
 
 		inline auto print() noexcept -> void
