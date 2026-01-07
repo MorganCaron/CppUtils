@@ -7,10 +7,10 @@ export module CppUtils.UnitTests.FileSystem.Watcher;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::FileSystem::Watcher
+namespace CppUtils::UnitTest::FileSystem::Watcher
 {
 #if defined(OS_LINUX)
-	inline auto _ = TestSuite{
+	auto _ = TestSuite{
 		"FileSystem/Watcher",
 		{"Logger", "FileSystem/Directory", "FileSystem/File"},
 		[](auto& suite) {

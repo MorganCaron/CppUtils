@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.System.Error;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::System::Error
+namespace CppUtils::UnitTest::System::Error
 {
-	inline auto _ = TestSuite{"System/Error", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"System/Error", {"UnitTest"}, [](auto& suite) {
 		suite.addTest("throwErrno", [&] {
 			suite.template expectThrow<std::runtime_error>([&] {
 				CppUtils::System::throwErrno(-1, "Test error");

@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Math.Endian;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Math::Endian
+namespace CppUtils::UnitTest::Math::Endian
 {
-	inline auto _ = TestSuite{"Endian", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Endian", {"UnitTest"}, [](auto& suite) {
 		constexpr auto value = std::uint32_t{0x12'34'56'78u};
 
 		suite.addTest("toBigEndian", [&] {

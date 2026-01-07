@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Thread.ScheduledEventDispatcher;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Thread::ScheduledEventDispatcher
+namespace CppUtils::UnitTest::Thread::ScheduledEventDispatcher
 {
-	inline auto _ = TestSuite{"Thread/ScheduledEventDispatcher", {"Execution/EventDispatcher", "Thread/Scheduler"}, [](auto& suite) {
+	auto _ = TestSuite{"Thread/ScheduledEventDispatcher", {"Execution/EventDispatcher", "Thread/Scheduler"}, [](auto& suite) {
 		using namespace std::chrono_literals;
 
 		suite.addTest("Immediate Emit", [&] {

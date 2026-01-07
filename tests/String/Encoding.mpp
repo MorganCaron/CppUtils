@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.String.Encoding;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::String::Encoding
+namespace CppUtils::UnitTest::String::Encoding
 {
-	inline auto _ = TestSuite{"String/Encoding", {"Logger"}, [](auto& suite) {
+	auto _ = TestSuite{"String/Encoding", {"Logger"}, [](auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 

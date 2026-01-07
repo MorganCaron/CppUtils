@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Language.ASTParser;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Language::ASTParser
+namespace CppUtils::UnitTest::Language::ASTParser
 {
-	inline auto _ = TestSuite{
+	auto _ = TestSuite{
 		"Language/ASTParser",
 		{"Logger", "Container/Tree", "Language/MetaEvaluator"},
 		[](auto& suite) {

@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Execution.EventDispatcher;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Execution::EventDispatcher
+namespace CppUtils::UnitTest::Execution::EventDispatcher
 {
-	inline auto _ = TestSuite{
+	auto _ = TestSuite{
 		"Execution/EventDispatcher", {"Logger"}, [](auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;

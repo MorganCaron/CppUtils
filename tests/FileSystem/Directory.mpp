@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.FileSystem.Directory;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::FileSystem::Directory
+namespace CppUtils::UnitTest::FileSystem::Directory
 {
-	inline auto _ = TestSuite{"FileSystem/Directory", {"Logger"}, [](auto& suite) {
+	auto _ = TestSuite{"FileSystem/Directory", {"Logger"}, [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("TemporaryDirectory", [&] {

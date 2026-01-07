@@ -2,7 +2,7 @@ export module CppUtils.UnitTests.Type.Mapping;
 
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Type::Mapping
+namespace CppUtils::UnitTest::Type::Mapping
 {
 	using Map = ::CppUtils::Type::Mapping<
 		::CppUtils::Type::Pair<0, 100>,

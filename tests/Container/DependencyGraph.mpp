@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Container.DependencyGraph;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Container::DependencyGraph
+namespace CppUtils::UnitTest::Container::DependencyGraph
 {
-	inline auto _ = TestSuite{"Container/DependencyGraph", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Container/DependencyGraph", {"UnitTest"}, [](auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 

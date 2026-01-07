@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.UnitTest;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest
+namespace CppUtils::UnitTest
 {
-	inline auto _ = TestSuite{"UnitTest", [](auto& suite) {
+	auto _ = TestSuite{"UnitTest", [](auto& suite) {
 		suite.addTest("empty test", [] {});
 
 		suite.addTest("expect", [&] {

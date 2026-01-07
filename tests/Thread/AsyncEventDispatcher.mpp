@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Thread.AsyncEventDispatcher;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
+namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 {
-	inline auto _ = TestSuite{"Thread/AsyncEventDispatcher", {"Thread/ThreadPool", "Execution/EventDispatcher"}, [](auto& suite) {
+	auto _ = TestSuite{"Thread/AsyncEventDispatcher", {"Thread/ThreadPool", "Execution/EventDispatcher"}, [](auto& suite) {
 		suite.addTest("Emit and Wait", [&] {
 			auto dispatcher = CppUtils::Thread::AsyncEventDispatcher{};
 			std::atomic_bool received = false;

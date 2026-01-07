@@ -3,10 +3,10 @@ export module CppUtils.UnitTests.Language.LabelsCompiler;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Language::LabelsCompiler
+namespace CppUtils::UnitTest::Language::LabelsCompiler
 {
 	/*
-	inline auto _ = TestSuite{
+	auto _ = TestSuite{
 		"Language/LabelsCompiler",
 		{"Logger", "Language/VirtualMachine"},
 		[]([[maybe_unused]] auto& suite) {

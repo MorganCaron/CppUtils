@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Language.VirtualMachine;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Language::VirtualMachine
+namespace CppUtils::UnitTest::Language::VirtualMachine
 {
-	inline auto _ = TestSuite{
+	auto _ = TestSuite{
 		"Language/VirtualMachine",
 		{"Logger", "Container/Stack"},
 		[](auto& suite) {

@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Logger;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Logger
+namespace CppUtils::UnitTest::Logger
 {
-	inline auto _ = TestSuite{"Logger", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Logger", {"UnitTest"}, [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("In console", [] {

@@ -2,9 +2,9 @@ export module CppUtils.UnitTests.Container.SafeShared;
 
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Container::SafeShared
+namespace CppUtils::UnitTest::Container::SafeShared
 {
-	inline auto _ = CppUtils::UnitTest::TestSuite{"Container/SafeShared", {"UnitTest", "Thread/SharedLocker"}, [](auto& suite) {
+	auto _ = TestSuite{"Container/SafeShared", {"UnitTest", "Thread/SharedLocker"}, [](auto& suite) {
 		suite.addTest("Empty", [&] {
 			auto safeSharedString = CppUtils::Container::SafeShared<std::string>{};
 

@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Language.GrammarParser;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Language::GrammarParser
+namespace CppUtils::UnitTest::Language::GrammarParser
 {
-	inline auto _ = TestSuite{
+	auto _ = TestSuite{
 		"Language/GrammarParser",
 		{"Language/ASTParser"},
 		[](auto& suite) {

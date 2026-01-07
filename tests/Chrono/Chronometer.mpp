@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Chrono.Chronometer;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Chrono::Chronometer
+namespace CppUtils::UnitTest::Chrono::Chronometer
 {
-	inline auto _ = TestSuite{"Chrono", {"Logger"}, [](auto& suite) {
+	auto _ = TestSuite{"Chrono", {"Logger"}, [](auto& suite) {
 		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("Chronometer", [&] {

@@ -6,10 +6,10 @@ export module CppUtils.UnitTests.Stl.Format;
 
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Stl::Format
+namespace CppUtils::UnitTest::Stl::Format
 {
 	/*
-	inline auto _ = TestSuite{"Stl/Format", [](auto& suite) {
+	auto _ = TestSuite{"Stl/Format", [](auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 

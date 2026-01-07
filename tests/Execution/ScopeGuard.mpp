@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Execution.ScopeGuard;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Execution::ScopeGuard
+namespace CppUtils::UnitTest::Execution::ScopeGuard
 {
-	inline auto _ = CppUtils::UnitTest::TestSuite{"Execution/ScopeGuard", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Execution/ScopeGuard", {"UnitTest"}, [](auto& suite) {
 		suite.addTest("Basic ScopeGuard", [&] {
 			auto called = false;
 			{

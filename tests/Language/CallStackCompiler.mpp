@@ -3,10 +3,10 @@ export module CppUtils.UnitTests.Language.CallStackCompiler;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Language::CallStackCompiler
+namespace CppUtils::UnitTest::Language::CallStackCompiler
 {
 	/*
-	inline auto _ = TestSuite{
+	auto _ = TestSuite{
 		"Language/CallStackCompiler",
 		{"Logger", "Language/LabelsCompiler"},
 		[]([[maybe_unused]] auto& suite) {

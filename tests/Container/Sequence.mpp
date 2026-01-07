@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace
 {
-	[[nodiscard]] inline auto generateDifferenceVector(std::string_view string) -> std::vector<CppUtils::Container::Sequence::Difference>
+	[[nodiscard]] auto generateDifferenceVector(std::string_view string) -> std::vector<CppUtils::Container::Sequence::Difference>
 	{
 		auto result = std::vector<CppUtils::Container::Sequence::Difference>{};
 		result.reserve(string.size());
@@ -24,9 +24,9 @@ namespace
 	}
 }
 
-export namespace CppUtils::UnitTest::Container::Sequence
+namespace CppUtils::UnitTest::Container::Sequence
 {
-	inline auto _ = TestSuite{"Container/Sequence", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Container/Sequence", {"UnitTest"}, [](auto& suite) {
 		using namespace std::literals;
 
 		suite.addTest("string", [&] {

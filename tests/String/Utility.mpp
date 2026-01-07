@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.String.Utility;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::String::Utility
+namespace CppUtils::UnitTest::String::Utility
 {
-	inline auto _ = TestSuite{"String/Utility", {"Logger"}, [](auto& suite) {
+	auto _ = TestSuite{"String/Utility", {"Logger"}, [](auto& suite) {
 		using namespace std::literals;
 		using Logger = CppUtils::Logger<"CppUtils">;
 

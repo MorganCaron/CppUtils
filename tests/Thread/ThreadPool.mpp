@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Thread.ThreadPool;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Thread::ThreadPool
+namespace CppUtils::UnitTest::Thread::ThreadPool
 {
-	inline auto _ = TestSuite{"Thread/ThreadPool", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Thread/ThreadPool", {"UnitTest"}, [](auto& suite) {
 		using namespace std::literals;
 		using namespace std::chrono_literals;
 		using Logger = CppUtils::Logger<"CppUtils">;

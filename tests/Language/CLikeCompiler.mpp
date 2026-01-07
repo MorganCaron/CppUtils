@@ -3,10 +3,10 @@ export module CppUtils.UnitTests.Language.CLikeCompiler;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Language::CLikeCompiler
+namespace CppUtils::UnitTest::Language::CLikeCompiler
 {
 	/*
-	inline auto _ = TestSuite{
+	auto _ = TestSuite{
 		"Language/CLikeCompiler",
 		{"Logger", "Language/ASTParser"},
 		[]([[maybe_unused]] auto& suite) {

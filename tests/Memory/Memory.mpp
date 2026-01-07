@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Memory;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Memory
+namespace CppUtils::UnitTest::Memory
 {
-	inline auto _ = TestSuite{"Memory", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Memory", {"UnitTest"}, [](auto& suite) {
 		suite.addTest("moveRawPointer", [&] {
 			auto* ptr = new int{42};
 			auto value = CppUtils::Memory::moveRawPointer(ptr);

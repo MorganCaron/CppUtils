@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Container.Pair;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Container::Pair
+namespace CppUtils::UnitTest::Container::Pair
 {
-	inline auto _ = TestSuite{"Container/Pair", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Container/Pair", {"UnitTest"}, [](auto& suite) {
 		using namespace std::literals;
 
 		suite.addTest("Swap pair", [&] {

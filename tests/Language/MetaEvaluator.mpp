@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Language.MetaEvaluator;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Language::MetaEvaluator
+namespace CppUtils::UnitTest::Language::MetaEvaluator
 {
-	inline auto _ = TestSuite{
+	auto _ = TestSuite{
 		"Language/MetaEvaluator",
 		{"Logger", "Container/Tree"},
 		[](auto& suite) {

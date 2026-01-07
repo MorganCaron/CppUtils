@@ -3,6 +3,6 @@ export module CppUtils.UnitTests.Type.Callable;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Type
+namespace CppUtils::UnitTest::Type
 {
 }

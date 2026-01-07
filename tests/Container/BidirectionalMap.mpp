@@ -3,9 +3,9 @@ export module CppUtils.UnitTests.Container.BidirectionalMap;
 import std;
 import CppUtils;
 
-export namespace CppUtils::UnitTest::Container::BidirectionalMap
+namespace CppUtils::UnitTest::Container::BidirectionalMap
 {
-	inline auto _ = TestSuite{"Container/BidirectionalMap", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Container/BidirectionalMap", {"UnitTest"}, [](auto& suite) {
 		using namespace std::literals;
 
 		suite.addTest("Empty Map", [&] {
