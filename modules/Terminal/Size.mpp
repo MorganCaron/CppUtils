@@ -26,11 +26,12 @@ export namespace CppUtils::Terminal
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 	[[nodiscard]] inline auto getTerminalSize() -> Container::Size2
 	{
-		auto windowsSize = winsize{};
-		ioctl(STDOUT_FILENO, TIOCGWINSZ, std::addressof(windowsSize));
+		auto terminalSize = winsize{};
+		if (ioctl(STDOUT_FILENO, TIOCGWINSZ, std::addressof(terminalSize)) == -1)
+			return Container::Size2{0, 0};
 		return Container::Size2{
-			static_cast<std::size_t>(windowsSize.ws_col),
-			static_cast<std::size_t>(windowsSize.ws_row)};
+			static_cast<std::size_t>(terminalSize.ws_col),
+			static_cast<std::size_t>(terminalSize.ws_row)};
 	}
 #endif
 }

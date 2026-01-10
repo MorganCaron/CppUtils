@@ -29,10 +29,20 @@ export namespace CppUtils::Terminal
 		{
 			const auto size = view.getViewport().getSize();
 			const auto titleSize = std::size(m_title);
-			const auto barWidth = size.width() - titleSize - 2 - 6;
+			constexpr auto percentWidth = 5; // " 100%"
+			const auto titleAndPercentSize = titleSize + percentWidth;
+			if (size.width() < titleAndPercentSize)
+				return;
+			constexpr auto minBarWidth = 4; // " [#]"
+			if (size.width() < titleAndPercentSize + minBarWidth)
+			{
+				const auto text = std::format("{} {:>3}% ", m_title, static_cast<std::size_t>(m_percent));
+				view.printText({0, 0}, text);
+				return;
+			}
+			const auto barWidth = size.width() - (titleAndPercentSize + minBarWidth - 1);
 			const auto progress = static_cast<std::size_t>(static_cast<float>(barWidth) * m_percent / 100.f);
-
-			auto text = std::format("{} [{}{}] {:>3}% ", m_title, std::string(progress, '#'), std::string(barWidth - progress, ' '), static_cast<std::size_t>(m_percent));
+			const auto text = std::format("{} [{}{}] {:>3}% ", m_title, std::string(progress, '#'), std::string(barWidth - progress, ' '), static_cast<std::size_t>(m_percent));
 			view.printText({0, 0}, text);
 			drawFinished();
 		}

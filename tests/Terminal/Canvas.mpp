@@ -9,6 +9,24 @@ namespace CppUtils::UnitTest::Terminal::Canvas
 		using namespace std::literals;
 		using namespace std::chrono_literals;
 
+		suite.addTest("Canvas with 0x0 size", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{0, 0}};
+			canvas.fill('.');
+			canvas.print();
+		});
+
+		suite.addTest("Canvas with 0 height", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 0}};
+			canvas.fill('.');
+			canvas.print();
+		});
+
+		suite.addTest("Canvas with 0 width", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{0, 10}};
+			canvas.fill('.');
+			canvas.print();
+		});
+
 		suite.addTest("Size", [&] {
 			{
 				auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 5}};

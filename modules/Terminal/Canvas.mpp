@@ -39,7 +39,7 @@ export namespace CppUtils::Terminal
 			using namespace std::literals;
 			const auto terminalSize = getTerminalSize();
 			const auto viewportSize = m_viewport.getSize();
-			const auto startLine = terminalSize.height() - viewportSize.height() - 1;
+			const auto startLine = terminalSize.height() > viewportSize.height() ? terminalSize.height() - viewportSize.height() - 1 : 0;
 			auto stringBuffer = ""s;
 			auto needFlush = false;
 			auto lastAttributes = CharAttributes{};
@@ -91,7 +91,10 @@ export namespace CppUtils::Terminal
 			}
 			if (needFlush)
 				std::fflush(stdout);
-			setCursorPosition({0, terminalSize.height() > 0 ? terminalSize.height() - 1 : 0});
+			{
+				const auto terminalHeight = getTerminalSize().height();
+				setCursorPosition({0, terminalHeight > 0 ? terminalHeight - 1 : 0});
+			}
 		}
 
 		inline auto print() noexcept -> void
