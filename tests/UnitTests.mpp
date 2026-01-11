@@ -36,6 +36,7 @@ export import CppUtils.UnitTests.String.Encoding;
 export import CppUtils.UnitTests.String.Utility;
 export import CppUtils.UnitTests.System.Error;
 export import CppUtils.UnitTests.Terminal.Canvas;
+export import CppUtils.UnitTests.Terminal.Primitive;
 export import CppUtils.UnitTests.Terminal;
 export import CppUtils.UnitTests.Thread.AsyncEventDispatcher;
 export import CppUtils.UnitTests.Thread.ScheduledEventDispatcher;

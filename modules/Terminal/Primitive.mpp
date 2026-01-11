@@ -1,0 +1,209 @@
+export module CppUtils.Terminal.Primitive;
+
+import std;
+import CppUtils.Terminal.Area;
+import CppUtils.Terminal.CharAttributes;
+import CppUtils.Container.Size;
+
+export namespace CppUtils::Terminal
+{
+	inline auto drawLine(WritableAreaView& view, const Container::Size2& start, const Container::Size2& end, const CharAttributes& c) -> void
+	{
+		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_de_segment_de_Bresenham
+		auto x0 = static_cast<int>(start.x());
+		auto y0 = static_cast<int>(start.y());
+		const auto x1 = static_cast<int>(end.x());
+		const auto y1 = static_cast<int>(end.y());
+
+		const auto deltaX = std::abs(x1 - x0);
+		const auto deltaY = -std::abs(y1 - y0);
+		const auto stepX = x0 < x1 ? 1 : -1;
+		const auto stepY = y0 < y1 ? 1 : -1;
+		auto drift = deltaX + deltaY;
+
+		while (true)
+		{
+			view.setChar({static_cast<std::size_t>(x0), static_cast<std::size_t>(y0)}, c);
+			if (x0 == x1 and y0 == y1)
+				break;
+			auto doubleDrift = 2 * drift;
+			if (doubleDrift >= deltaY)
+			{
+				drift += deltaY;
+				x0 += stepX;
+			}
+			if (doubleDrift <= deltaX)
+			{
+				drift += deltaX;
+				y0 += stepY;
+			}
+		}
+	}
+
+	inline auto drawRectangle(WritableAreaView& view, const Container::Size2& topLeft, const Container::Size2& size, bool outline, const CharAttributes& c) -> void
+	{
+		if (size.width() == 0 or size.height() == 0)
+			return;
+
+		const auto x = topLeft.x();
+		const auto y = topLeft.y();
+		const auto width = size.width();
+		const auto height = size.height();
+
+		if (outline)
+		{
+			const auto topRight = Container::Size2{x + width - 1, y};
+			const auto bottomLeft = Container::Size2{x, y + height - 1};
+			const auto bottomRight = Container::Size2{x + width - 1, y + height - 1};
+
+			drawLine(view, topLeft, topRight, c);
+			drawLine(view, bottomLeft, bottomRight, c);
+			drawLine(view, topLeft, bottomLeft, c);
+			drawLine(view, topRight, bottomRight, c);
+		}
+		else
+			for (auto currentY = y; currentY < y + height; ++currentY)
+				for (auto currentX = x; currentX < x + width; ++currentX)
+					view.setChar({currentX, currentY}, c);
+	}
+
+	inline auto drawCircle(WritableAreaView& view, const Container::Size2& center, std::size_t radius, bool outline, const CharAttributes& c) -> void
+	{
+		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_d%27arc_de_cercle_de_Bresenham
+		auto centerX = static_cast<int>(center.x());
+		auto centerY = static_cast<int>(center.y());
+		auto signedRadius = static_cast<int>(radius);
+
+		auto x = 0;
+		auto y = signedRadius;
+		auto drift = 3 - 2 * signedRadius;
+
+		auto drawPoint = [&](int px, int py) {
+			if (px >= 0 and py >= 0)
+				view.setChar({static_cast<std::size_t>(px), static_cast<std::size_t>(py)}, c);
+		};
+
+		while (y >= x)
+		{
+			if (outline)
+			{
+				drawPoint(centerX + x, centerY + y);
+				drawPoint(centerX - x, centerY + y);
+				drawPoint(centerX + x, centerY - y);
+				drawPoint(centerX - x, centerY - y);
+				drawPoint(centerX + y, centerY + x);
+				drawPoint(centerX - y, centerY + x);
+				drawPoint(centerX + y, centerY - x);
+				drawPoint(centerX - y, centerY - x);
+			}
+			else
+			{
+				for (auto i = centerX - x; i <= centerX + x; ++i)
+				{
+					drawPoint(i, centerY + y);
+					drawPoint(i, centerY - y);
+				}
+				for (auto i = centerX - y; i <= centerX + y; ++i)
+				{
+					drawPoint(i, centerY + x);
+					drawPoint(i, centerY - x);
+				}
+			}
+
+			x++;
+			if (drift > 0)
+			{
+				y--;
+				drift = drift + 4 * (x - y) + 10;
+			}
+			else
+				drift = drift + 4 * x + 6;
+		}
+	}
+
+	inline auto drawEllipse(WritableAreaView& view, const Container::Size2& p1, const Container::Size2& p2, bool outline, const CharAttributes& c) -> void
+	{
+		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_d%27arc_de_cercle_de_Bresenham
+		auto x0 = static_cast<int>(p1.x());
+		auto y0 = static_cast<int>(p1.y());
+		auto x1 = static_cast<int>(p2.x());
+		auto y1 = static_cast<int>(p2.y());
+
+		if (x0 > x1)
+			std::swap(x0, x1);
+		if (y0 > y1)
+			std::swap(y0, y1);
+
+		auto width = std::abs(x1 - x0);
+		auto height = std::abs(y1 - y0);
+		auto isHeightOdd = height & 1;
+
+		auto deltaX = 4 * (1.0 - width) * height * height;
+		auto deltaY = 4.0 * (isHeightOdd + 1) * width * width;
+		auto drift = deltaX + deltaY + isHeightOdd * width * width;
+		auto doubleDrift = 0.0;
+
+		y0 += (height + 1) / 2;
+		y1 = y0 - isHeightOdd;
+		width *= 8 * width;
+		isHeightOdd = 8 * height * height;
+
+		auto drawPoint = [&](int px, int py) {
+			if (px >= 0 and py >= 0)
+				view.setChar({static_cast<std::size_t>(px), static_cast<std::size_t>(py)}, c);
+		};
+
+		do
+		{
+			if (outline)
+			{
+				drawPoint(x1, y0);
+				drawPoint(x0, y0);
+				drawPoint(x0, y1);
+				drawPoint(x1, y1);
+			}
+			else
+				for (auto x = x0; x <= x1; ++x)
+				{
+					drawPoint(x, y0);
+					drawPoint(x, y1);
+				}
+
+			doubleDrift = 2 * drift;
+			if (doubleDrift <= deltaY)
+			{
+				++y0;
+				--y1;
+				drift += deltaY += width;
+			}
+			if (doubleDrift >= deltaX || 2 * drift > deltaY)
+			{
+				++x0;
+				--x1;
+				drift += deltaX += isHeightOdd;
+			}
+		}
+		while (x0 <= x1);
+
+		while (y0 - y1 < height)
+		{
+			if (outline)
+			{
+				drawPoint(x0 - 1, y0);
+				drawPoint(x1 + 1, y0++);
+				drawPoint(x0 - 1, y1);
+				drawPoint(x1 + 1, y1--);
+			}
+			else
+			{
+				for (auto x = x0 - 1; x <= x1 + 1; ++x)
+				{
+					drawPoint(x, y0);
+					drawPoint(x, y1);
+				}
+				++y0;
+				--y1;
+			}
+		}
+	}
+}

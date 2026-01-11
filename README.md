@@ -67,6 +67,7 @@
 - [`Utility`](modules/Math/Utility.mpp) - Floating-point comparison with epsilon tolerance
 
 ### 🔠 String
+- [`Encoding`](modules/String/Encoding.mpp) - UTF-8 and UTF-32 conversion and character display width utilities
 - [`Hash`](modules/String/Hash.mpp) - Hashing utilities for strings
 
 ### 🌐 Networking
@@ -76,6 +77,7 @@
 ### 💻 Terminal
 - [`Canvas`](modules/Terminal/Canvas.mpp) - Terminal-based 2D drawing surface
 - [`Cursor`](modules/Terminal/Cursor.mpp) - Terminal cursor manipulation
+- [`Primitive`](modules/Terminal/Primitive.mpp) - Basic drawing primitives for terminal (lines, rectangles, circles, ellipses)
 - [`ProgressBar`](modules/Terminal/ProgressBar.mpp) - Dynamically updating terminal progress bar
 - [`RawTerminal`](modules/Terminal/RawTerminal.mpp) - Raw input handling (no buffering or echo)
 - [`Size`](modules/Terminal/Size.mpp) - Terminal size utilities

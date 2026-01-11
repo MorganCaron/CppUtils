@@ -8,6 +8,7 @@ export import CppUtils.Terminal.Cursor;
 export import CppUtils.Terminal.Handle;
 export import CppUtils.Terminal.Layout;
 export import CppUtils.Terminal.ProgressBar;
+export import CppUtils.Terminal.Primitive;
 export import CppUtils.Terminal.RawTerminal;
 export import CppUtils.Terminal.Size;
 export import CppUtils.Terminal.Spinner;

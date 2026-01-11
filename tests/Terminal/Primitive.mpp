@@ -1,0 +1,142 @@
+export module CppUtils.UnitTests.Terminal.Primitive;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Terminal::Primitive
+{
+	auto _ = TestSuite{"Terminal/Canvas/Primitive", {"UnitTest", "Terminal/Canvas"}, [](auto& suite) {
+		using namespace std::literals;
+
+		suite.addTest("Draw Line", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 10}};
+			auto view = CppUtils::Terminal::WritableAreaView{canvas, canvas.getViewport()};
+
+			CppUtils::Terminal::drawLine(view, {0, 0}, {9, 0}, CppUtils::Terminal::CharAttributes{'-'});
+			CppUtils::Terminal::drawLine(view, {0, 0}, {0, 9}, CppUtils::Terminal::CharAttributes{'|'});
+			CppUtils::Terminal::drawLine(view, {0, 0}, {9, 9}, CppUtils::Terminal::CharAttributes{'\\'});
+			canvas.print();
+
+			suite.expectEqual(static_cast<std::uint32_t>(canvas.getChar({5, 0}).character), static_cast<std::uint32_t>(U'-'));
+			suite.expectEqual(static_cast<std::uint32_t>(canvas.getChar({0, 5}).character), static_cast<std::uint32_t>(U'|'));
+			suite.expectEqual(static_cast<std::uint32_t>(canvas.getChar({5, 5}).character), static_cast<std::uint32_t>(U'\\'));
+		});
+
+		suite.addTest("Draw Rectangle Outline", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{20, 10}};
+			auto view = CppUtils::Terminal::WritableAreaView{canvas, canvas.getViewport()};
+
+			CppUtils::Terminal::drawRectangle(view, {1, 1}, {18, 8}, true, CppUtils::Terminal::CharAttributes{'#'});
+			canvas.print();
+
+			suite.expectEqual(canvas.getChar({1, 1}).character, U'#');
+			suite.expectEqual(canvas.getChar({18, 1}).character, U'#');
+			suite.expectEqual(canvas.getChar({1, 8}).character, U'#');
+			suite.expectEqual(canvas.getChar({18, 8}).character, U'#');
+
+			suite.expectEqual(canvas.getChar({10, 1}).character, U'#');
+			suite.expectEqual(canvas.getChar({10, 5}).character, U' ');
+		});
+
+		suite.addTest("Draw Rectangle Filled", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{20, 10}};
+			auto view = CppUtils::Terminal::WritableAreaView{canvas, canvas.getViewport()};
+
+			CppUtils::Terminal::drawRectangle(view, {1, 1}, {18, 8}, false, CppUtils::Terminal::CharAttributes{'#'});
+			canvas.print();
+
+			suite.expectEqual(canvas.getChar({10, 0}).character, U' ');
+			for (auto y = 1uz; y <= 8uz; ++y)
+				suite.expectEqual(canvas.getChar({10, y}).character, U'#');
+			suite.expectEqual(canvas.getChar({10, 9}).character, U' ');
+
+			suite.expectEqual(canvas.getChar({0, 5}).character, U' ');
+			for (auto x = 1uz; x <= 18uz; ++x)
+				suite.expectEqual(canvas.getChar({x, 5}).character, U'#');
+			suite.expectEqual(canvas.getChar({19, 5}).character, U' ');
+		});
+
+		suite.addTest("Draw Circle Outline", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{11, 11}};
+			auto view = CppUtils::Terminal::WritableAreaView{canvas, canvas.getViewport()};
+
+			CppUtils::Terminal::drawCircle(view, {5, 5}, 4, true, CppUtils::Terminal::CharAttributes{'O'});
+			canvas.print();
+
+			suite.expectEqual(canvas.getChar({5, 0}).character, U' ');
+			suite.expectEqual(canvas.getChar({5, 1}).character, U'O');
+			for (auto y = 2uz; y <= 8uz; ++y)
+				suite.expectEqual(canvas.getChar({5, y}).character, U' ');
+			suite.expectEqual(canvas.getChar({5, 9}).character, U'O');
+			suite.expectEqual(canvas.getChar({5, 10}).character, U' ');
+
+			suite.expectEqual(canvas.getChar({0, 5}).character, U' ');
+			suite.expectEqual(canvas.getChar({1, 5}).character, U'O');
+			for (auto x = 2uz; x <= 8uz; ++x)
+				suite.expectEqual(canvas.getChar({x, 5}).character, U' ');
+			suite.expectEqual(canvas.getChar({9, 5}).character, U'O');
+			suite.expectEqual(canvas.getChar({10, 5}).character, U' ');
+
+			suite.expectEqual(canvas.getChar({0, 0}).character, U' ');
+			suite.expectEqual(canvas.getChar({10, 10}).character, U' ');
+		});
+
+		suite.addTest("Draw Circle Filled", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{11, 11}};
+			auto view = CppUtils::Terminal::WritableAreaView{canvas, canvas.getViewport()};
+
+			CppUtils::Terminal::drawCircle(view, {5, 5}, 4, false, CppUtils::Terminal::CharAttributes{'#'});
+			canvas.print();
+
+			suite.expectEqual(canvas.getChar({5, 0}).character, U' ');
+			for (auto y = 1uz; y <= 9uz; ++y)
+				suite.expectEqual(canvas.getChar({5, y}).character, U'#');
+			suite.expectEqual(canvas.getChar({5, 10}).character, U' ');
+
+			suite.expectEqual(canvas.getChar({0, 5}).character, U' ');
+			for (auto x = 1uz; x <= 9uz; ++x)
+				suite.expectEqual(canvas.getChar({x, 5}).character, U'#');
+			suite.expectEqual(canvas.getChar({10, 5}).character, U' ');
+		});
+
+		suite.addTest("Draw Ellipse Outline", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{20, 10}};
+			auto view = CppUtils::Terminal::WritableAreaView{canvas, canvas.getViewport()};
+
+			CppUtils::Terminal::drawEllipse(view, {1, 1}, {18, 8}, true, CppUtils::Terminal::CharAttributes{'O'});
+			canvas.print();
+
+			suite.expectEqual(canvas.getChar({10, 0}).character, U' ');
+			suite.expectEqual(canvas.getChar({10, 1}).character, U'O');
+			for (auto y = 2uz; y <= 7uz; ++y)
+				suite.expectEqual(canvas.getChar({10, y}).character, U' ');
+			suite.expectEqual(canvas.getChar({10, 8}).character, U'O');
+			suite.expectEqual(canvas.getChar({10, 9}).character, U' ');
+
+			suite.expectEqual(canvas.getChar({0, 5}).character, U' ');
+			suite.expectEqual(canvas.getChar({1, 5}).character, U'O');
+			for (auto x = 2uz; x <= 17uz; ++x)
+				suite.expectEqual(canvas.getChar({x, 5}).character, U' ');
+			suite.expectEqual(canvas.getChar({18, 5}).character, U'O');
+			suite.expectEqual(canvas.getChar({19, 5}).character, U' ');
+		});
+
+		suite.addTest("Draw Ellipse Filled", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{20, 10}};
+			auto view = CppUtils::Terminal::WritableAreaView{canvas, canvas.getViewport()};
+
+			CppUtils::Terminal::drawEllipse(view, {1, 1}, {18, 8}, false, CppUtils::Terminal::CharAttributes{'#'});
+			canvas.print();
+
+			suite.expectEqual(canvas.getChar({10, 0}).character, U' ');
+			for (auto y = 1uz; y <= 8uz; ++y)
+				suite.expectEqual(canvas.getChar({10, y}).character, U'#');
+			suite.expectEqual(canvas.getChar({10, 9}).character, U' ');
+
+			suite.expectEqual(canvas.getChar({0, 5}).character, U' ');
+			for (auto x = 1uz; x <= 18uz; ++x)
+				suite.expectEqual(canvas.getChar({x, 5}).character, U'#');
+			suite.expectEqual(canvas.getChar({19, 5}).character, U' ');
+		});
+	}};
+}
