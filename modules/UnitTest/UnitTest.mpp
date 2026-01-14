@@ -28,7 +28,8 @@ namespace CppUtils::UnitTest
 	struct Test final
 	{
 		std::string name;
-		std::function<void()> function;
+		std::function<void(std::stop_token)> function;
+		std::chrono::seconds timeout = std::chrono::seconds{10};
 	};
 
 	class TestException: public std::runtime_error
@@ -72,7 +73,30 @@ namespace CppUtils::UnitTest
 				try
 				{
 					auto chronoLogger = Log::ChronoLogger{"Test", settings.verbose and settings.chrono};
-					test.function();
+					
+					auto promise = std::promise<void>{};
+					auto future = promise.get_future();
+
+					auto worker = std::jthread{[promise = std::move(promise), function = test.function](std::stop_token stopToken) mutable {
+						try
+						{
+							function(stopToken);
+							promise.set_value();
+						}
+						catch (...)
+						{
+							promise.set_exception(std::current_exception());
+						}
+					}};
+
+					if (future.wait_for(test.timeout) == std::future_status::timeout)
+					{
+						worker.request_stop();
+						worker.detach();
+						throw TestException{std::format("Test timed out after {}s", test.timeout.count())};
+					}
+
+					future.get();
 				}
 				catch (const TestException&)
 				{
@@ -176,9 +200,14 @@ namespace CppUtils::UnitTest
 			testRunner.addTestSuite(name, std::move(tests));
 		}
 
-		inline auto addTest(std::string name, std::function<void()> function) -> void
+		inline auto addTest(std::string name, std::function<void(std::stop_token)> function, std::chrono::seconds timeout = std::chrono::seconds{10}) -> void
 		{
-			tests.emplace_back(std::move(name), function);
+			tests.emplace_back(std::move(name), std::move(function), timeout);
+		}
+
+		inline auto addTest(std::string name, std::function<void()> function, std::chrono::seconds timeout = std::chrono::seconds{10}) -> void
+		{
+			tests.emplace_back(std::move(name), [function = std::move(function)](std::stop_token) { function(); }, timeout);
 		}
 
 		// Todo C++23: std::stacktrace stacktrace = std::current_stacktrace()
