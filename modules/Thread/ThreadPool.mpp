@@ -15,7 +15,7 @@ export namespace CppUtils::Thread
 
 	public:
 		explicit inline ThreadPool(
-			std::size_t numberThreads = std::thread::hardware_concurrency(),
+			std::size_t numberThreads = std::max(1uz, static_cast<std::size_t>(std::thread::hardware_concurrency())),
 			std::function<void(std::exception_ptr)> onError = nullptr,
 			std::function<void()> finally = nullptr):
 			m_numberThreads{numberThreads},
