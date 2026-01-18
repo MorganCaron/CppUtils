@@ -109,9 +109,6 @@ export namespace CppUtils::Thread
 
 		inline auto isStopRequested() const -> bool
 		{
-			auto lockGuard = std::unique_lock{m_mutex};
-			if (not m_thread.joinable())
-				return false;
 			return m_thread.get_stop_token().stop_requested();
 		}
 
@@ -127,14 +124,17 @@ export namespace CppUtils::Thread
 		{
 			try
 			{
-				auto lockGuard = std::unique_lock{m_mutex};
-				if (not m_thread.joinable() or m_thread.get_stop_token().stop_requested())
-					return;
-				m_thread.request_stop();
-				if (m_interruptFunction)
+				auto interruptFunction = std::function<void()>{};
 				{
-					auto interruptFunction = m_interruptFunction;
-					lockGuard.unlock();
+					auto lockGuard = std::unique_lock{m_mutex};
+					if (not m_thread.joinable() or m_thread.get_stop_token().stop_requested())
+						return;
+					m_thread.request_stop();
+					interruptFunction = m_interruptFunction;
+				}
+
+				if (interruptFunction)
+				{
 					try
 					{
 						interruptFunction();
@@ -143,7 +143,6 @@ export namespace CppUtils::Thread
 					{
 						Logger::print<"error">("ThreadLoop: interruptFunction threw during stop");
 					}
-					lockGuard.lock();
 				}
 				if (m_thread.joinable())
 					m_thread.join();

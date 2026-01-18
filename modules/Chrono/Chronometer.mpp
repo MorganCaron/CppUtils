@@ -32,7 +32,7 @@ export namespace CppUtils::Chrono
 			str += " " + std::to_string(microsec.count()) + "us";
 		if (ns.count() > 0)
 			str += " " + std::to_string(ns.count()) + "ns";
-		return !str.empty() ? str.substr(1) : "0ns";
+		return not std::empty(str) ? str.substr(1) : "0ns";
 	}
 
 	template<Clock Clock = std::chrono::high_resolution_clock>

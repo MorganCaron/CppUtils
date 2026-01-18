@@ -107,16 +107,17 @@ export namespace CppUtils::Thread
 
 				task = std::move(tasksQueueAccessor->front());
 				tasksQueueAccessor->pop();
+				m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
 			}
 
-			m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
 			task();
 			m_activeWorkers.fetch_sub(1, std::memory_order_relaxed);
 
-			if (m_activeWorkers.load(std::memory_order_relaxed) == 0 and isTasksQueueEmpty())
+			if (m_activeWorkers.load(std::memory_order_relaxed) == 0)
 			{
 				auto lockGuard = std::lock_guard{m_waitingMutex};
-				m_waitUntilFinishedCondition.notify_all();
+				if (isTasksQueueEmpty())
+					m_waitUntilFinishedCondition.notify_all();
 			}
 		}
 

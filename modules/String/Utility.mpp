@@ -78,14 +78,14 @@ export namespace CppUtils::String
 		[[nodiscard]] inline auto concatenateStringsWithSeparator(const std::vector<std::string>& strings, std::string_view separator) -> std::string
 		{
 			return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{}, [separator](const std::string& lhs, const std::string& rhs) {
-				return lhs.empty() ? rhs : (lhs + std::data(separator) + rhs);
+				return std::empty(lhs) ? rhs : (lhs + std::data(separator) + rhs);
 			});
 		}
 
 		[[nodiscard]] inline auto concatenateStringsWithSeparator(const std::vector<std::string_view>& strings, std::string_view separator) -> std::string
 		{
 			return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{}, [separator](std::string_view lhs, std::string_view rhs) {
-				return lhs.empty() ? std::string{rhs} : (std::string{lhs} + std::string{separator} + std::string{rhs});
+				return std::empty(lhs) ? std::string{rhs} : (std::string{lhs} + std::string{separator} + std::string{rhs});
 			});
 		}
 	}

@@ -8,7 +8,7 @@ namespace
 	[[nodiscard]] auto generateDifferenceVector(std::string_view string) -> std::vector<CppUtils::Container::Sequence::Difference>
 	{
 		auto result = std::vector<CppUtils::Container::Sequence::Difference>{};
-		result.reserve(string.size());
+		result.reserve(std::size(string));
 		for (const auto c : string)
 		{
 			switch (c)

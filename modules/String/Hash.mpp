@@ -29,7 +29,7 @@ export namespace CppUtils::String
 		inline constexpr Hasher(const CharT (&cString)[N]):
 			hash{CppUtils::String::hash(cString)}
 		{
-			std::copy(cString, cString + N, name.begin());
+			std::copy(cString, cString + N, std::begin(name));
 		}
 
 		[[nodiscard]] inline constexpr operator Hash() const noexcept

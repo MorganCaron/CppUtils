@@ -25,7 +25,7 @@ export namespace CppUtils::Network
 
 		inline auto connect(std::string_view ip, std::uint16_t port) const -> void
 		{
-			auto address = makeAddress(ip.empty() ? "127.0.0.1" : ip, port);
+			auto address = makeAddress(std::empty(ip) ? "127.0.0.1" : ip, port);
 			if (address.length == 0)
 				throw std::runtime_error{"CppUtils::Network::Client::connect: Invalid address length"};
 #if defined(OS_WINDOWS)

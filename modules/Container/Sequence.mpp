@@ -16,9 +16,9 @@ export namespace CppUtils::Container::Sequence
 	[[nodiscard]] inline auto getDifferences(std::span<const T> list0, std::span<const T> list1) -> std::vector<Difference>
 	{
 		auto differences = std::vector<Difference>{};
-		differences.reserve(std::max(list0.size(), list1.size()));
+		differences.reserve(std::max(std::size(list0), std::size(list1)));
 		auto i = 0uz, j = 0uz, diffLength = 0uz;
-		while (i < list0.size() and j < list1.size())
+		while (i < std::size(list0) and j < std::size(list1))
 		{
 			const auto& lhs = list0[i];
 			const auto& rhs = list1[j];
@@ -52,10 +52,10 @@ export namespace CppUtils::Container::Sequence
 			++i;
 			++j;
 		}
-		auto offsetList0 = list0.size() - i;
+		auto offsetList0 = std::size(list0) - i;
 		while (offsetList0--)
 			differences.emplace_back(Difference::Removed);
-		auto offsetList1 = list1.size() - j;
+		auto offsetList1 = std::size(list1) - j;
 		while (offsetList1--)
 			differences.emplace_back(Difference::Added);
 		return differences;
