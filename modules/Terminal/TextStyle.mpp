@@ -20,6 +20,7 @@ export namespace CppUtils::Terminal::TextStyle
 
 	namespace Ansi::EscapeCode
 	{
+		[[maybe_unused]] inline constexpr auto Reset = "\x1B[0m"sv;
 		[[maybe_unused]] inline constexpr auto Bolder = "\x1B[1m"sv;
 		[[maybe_unused]] inline constexpr auto Lighter = "\x1B[2m"sv;
 		[[maybe_unused]] inline constexpr auto Italic = "\x1B[3m"sv;

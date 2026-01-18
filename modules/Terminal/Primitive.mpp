@@ -7,6 +7,12 @@ import CppUtils.Container.Size;
 
 export namespace CppUtils::Terminal
 {
+	enum class PrimitiveStyle
+	{
+		Outline,
+		Filled
+	};
+
 	inline auto drawLine(WritableAreaView& view, const Container::Size2& start, const Container::Size2& end, const CharAttributes& c) -> void
 	{
 		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_de_segment_de_Bresenham
@@ -40,7 +46,7 @@ export namespace CppUtils::Terminal
 		}
 	}
 
-	inline auto drawRectangle(WritableAreaView& view, const Container::Size2& topLeft, const Container::Size2& size, bool outline, const CharAttributes& c) -> void
+	inline auto drawRectangle(WritableAreaView& view, const Container::Size2& topLeft, const Container::Size2& size, PrimitiveStyle style, const CharAttributes& c) -> void
 	{
 		if (size.width() == 0 or size.height() == 0)
 			return;
@@ -50,7 +56,7 @@ export namespace CppUtils::Terminal
 		const auto width = size.width();
 		const auto height = size.height();
 
-		if (outline)
+		if (style == PrimitiveStyle::Outline)
 		{
 			const auto topRight = Container::Size2{x + width - 1, y};
 			const auto bottomLeft = Container::Size2{x, y + height - 1};
@@ -67,7 +73,7 @@ export namespace CppUtils::Terminal
 					view.setChar({currentX, currentY}, c);
 	}
 
-	inline auto drawCircle(WritableAreaView& view, const Container::Size2& center, std::size_t radius, bool outline, const CharAttributes& c) -> void
+	inline auto drawCircle(WritableAreaView& view, const Container::Size2& center, std::size_t radius, PrimitiveStyle style, const CharAttributes& c) -> void
 	{
 		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_d%27arc_de_cercle_de_Bresenham
 		auto centerX = static_cast<int>(center.x());
@@ -85,7 +91,7 @@ export namespace CppUtils::Terminal
 
 		while (y >= x)
 		{
-			if (outline)
+			if (style == PrimitiveStyle::Outline)
 			{
 				drawPoint(centerX + x, centerY + y);
 				drawPoint(centerX - x, centerY + y);
@@ -121,7 +127,7 @@ export namespace CppUtils::Terminal
 		}
 	}
 
-	inline auto drawEllipse(WritableAreaView& view, const Container::Size2& p1, const Container::Size2& p2, bool outline, const CharAttributes& c) -> void
+	inline auto drawEllipse(WritableAreaView& view, const Container::Size2& p1, const Container::Size2& p2, PrimitiveStyle style, const CharAttributes& c) -> void
 	{
 		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_d%27arc_de_cercle_de_Bresenham
 		auto x0 = static_cast<int>(p1.x());
@@ -155,7 +161,7 @@ export namespace CppUtils::Terminal
 
 		do
 		{
-			if (outline)
+			if (style == PrimitiveStyle::Outline)
 			{
 				drawPoint(x1, y0);
 				drawPoint(x0, y0);
@@ -187,7 +193,7 @@ export namespace CppUtils::Terminal
 
 		while (y0 - y1 < height)
 		{
-			if (outline)
+			if (style == PrimitiveStyle::Outline)
 			{
 				drawPoint(x0 - 1, y0);
 				drawPoint(x1 + 1, y0++);

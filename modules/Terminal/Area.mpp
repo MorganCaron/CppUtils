@@ -16,7 +16,7 @@ export namespace CppUtils::Terminal
 	public:
 		inline Area(const Container::Size2& size, const Viewport& viewport = {{0, 0}, {0, 0}}):
 			DynamicAreaBuffer{size},
-			m_viewport{viewport}
+			m_viewport{(viewport.getSize().width() == 0 or viewport.getSize().height() == 0) ? Viewport{size} : viewport}
 		{}
 
 		template<std::derived_from<Widget> T>
@@ -27,15 +27,9 @@ export namespace CppUtils::Terminal
 			return dynamic_cast<T&>(*m_widget);
 		}
 
-		inline auto requestFullRender() noexcept -> void
-		{
-			m_fullRenderRequested = true;
-		}
-
 		inline auto setViewport(const Viewport& viewport) noexcept -> void
 		{
 			m_viewport = viewport;
-			requestFullRender();
 		}
 
 		[[nodiscard]] inline auto getViewport() const noexcept -> const auto&
@@ -48,11 +42,15 @@ export namespace CppUtils::Terminal
 			return DynamicAreaBuffer::getSize();
 		}
 
+		[[nodiscard]] inline auto getWritableView(std::optional<Viewport> viewport = std::nullopt) -> WritableAreaView
+		{
+			return WritableAreaView{*this, viewport.value_or(m_viewport)};
+		}
+
 		inline auto fill(const CharAttributes& c) noexcept -> void
 		{
-			auto view = WritableAreaView{*this, m_viewport};
+			auto view = getWritableView();
 			view.fill(c);
-			requestFullRender();
 		}
 
 		inline auto fill(char c) noexcept -> void
@@ -69,7 +67,7 @@ export namespace CppUtils::Terminal
 		{
 			if (not m_widget)
 				return;
-			auto selfView = WritableAreaView{*this, m_viewport};
+			auto selfView = getWritableView();
 			m_widget->draw(selfView);
 			// Draw scrollbars
 			// Apply to view (applique la portion délimitée par viewport du buffer sur view)
@@ -78,7 +76,6 @@ export namespace CppUtils::Terminal
 		}
 
 	protected:
-		bool m_fullRenderRequested = true;
 		Viewport m_viewport;
 		std::unique_ptr<Widget> m_widget;
 	};

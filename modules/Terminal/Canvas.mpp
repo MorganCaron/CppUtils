@@ -37,6 +37,8 @@ export namespace CppUtils::Terminal
 		inline auto applyDifferences() noexcept -> void
 		{
 			using namespace std::literals;
+			std::fwrite(std::data(TextStyle::Ansi::EscapeCode::Reset), sizeof(char), std::size(TextStyle::Ansi::EscapeCode::Reset), stdout);
+
 			const auto terminalSize = getTerminalSize();
 			const auto viewportSize = m_viewport.getSize();
 			const auto startLine = terminalSize.height() > viewportSize.height() ? terminalSize.height() - viewportSize.height() - 1 : 0;
@@ -47,12 +49,17 @@ export namespace CppUtils::Terminal
 				const auto& currentChar = getChar(position);
 				const auto& previousChar = m_previousBuffer.getChar(position);
 
-				const auto needUpdateText = currentChar.character != previousChar.character or currentChar.displayWidth != previousChar.displayWidth;
+				const auto cellChanged = currentChar.character != previousChar.character
+					or currentChar.displayWidth != previousChar.displayWidth
+					or currentChar.textStyle != previousChar.textStyle
+					or currentChar.textColor != previousChar.textColor
+					or currentChar.backgroundColor != previousChar.backgroundColor;
+
 				const auto needUpdateTextStyle = currentChar.textStyle != lastAttributes.textStyle;
 				const auto needUpdateTextColor = currentChar.textColor != lastAttributes.textColor;
 				const auto needUpdateBackgroundColor = currentChar.backgroundColor != lastAttributes.backgroundColor;
 
-				if (needUpdateText or needUpdateTextStyle or needUpdateTextColor or needUpdateBackgroundColor)
+				if (cellChanged)
 				{
 					if (std::empty(stringBuffer))
 						setCursorPosition({position.x(), startLine + position.y()});
@@ -102,7 +109,7 @@ export namespace CppUtils::Terminal
 			auto lock = std::scoped_lock{m_printMutex};
 			if (m_widget)
 			{
-				auto view = WritableAreaView{*this, m_viewport};
+				auto view = getWritableView();
 				m_widget->draw(view);
 			}
 			if (m_firstPrint)

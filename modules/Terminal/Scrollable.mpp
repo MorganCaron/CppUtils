@@ -1,0 +1,157 @@
+export module CppUtils.Terminal.Scrollable;
+
+import std;
+import CppUtils.Container.Size;
+export import CppUtils.Terminal.Area;
+import CppUtils.Terminal.CharAttributes;
+import CppUtils.Terminal.TextColor;
+import CppUtils.Terminal.BackgroundColor;
+
+export namespace CppUtils::Terminal
+{
+	class Scrollable: public Widget
+	{
+	public:
+		enum ScrollbarMode : std::uint8_t
+		{
+			None = 0b00,
+			Vertical = 0b01,
+			Horizontal = 0b10,
+			Both = Vertical | Horizontal
+		};
+
+		inline Scrollable(const Container::Size2& viewportSize, const Container::Size2& fullContentSize):
+			m_viewportBuffer{viewportSize},
+			m_fullContentArea{fullContentSize}
+		{}
+
+		template<std::derived_from<Widget> T>
+		inline auto addWidget(std::unique_ptr<T> widget) -> T&
+		{
+			return m_fullContentArea.addWidget(std::move(widget));
+		}
+
+		inline auto setScroll(const Container::Size2& position) noexcept -> void
+		{
+			m_scrollPosition = position;
+			requestUpdate(std::chrono::milliseconds{10});
+		}
+
+		[[nodiscard]] inline auto getScroll() const noexcept -> const Container::Size2&
+		{
+			return m_scrollPosition;
+		}
+
+		[[nodiscard]] inline auto getContentArea() noexcept -> Area&
+		{
+			return m_fullContentArea;
+		}
+
+		inline auto showScrollbars(std::uint8_t mode = ScrollbarMode::Both) noexcept -> void
+		{
+			m_scrollbarMode = mode;
+		}
+
+		[[nodiscard]] inline auto getScrollbarMode() const noexcept -> std::uint8_t
+		{
+			return m_scrollbarMode;
+		}
+
+		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 override
+		{
+			return m_viewportBuffer.getSize();
+		}
+
+		inline void setWidgetManager(WidgetManager& widgetManager) noexcept override
+		{
+			Widget::setWidgetManager(widgetManager);
+			m_fullContentArea.setWidgetManager(widgetManager);
+		}
+
+		inline auto draw(WritableAreaView& view) noexcept -> void override
+		{
+			{
+				auto fullContentAreaView = m_fullContentArea.getWritableView();
+				m_fullContentArea.draw(fullContentAreaView);
+			}
+
+			const auto& contentSize = m_fullContentArea.getSize();
+			const auto viewportSize = getSize();
+
+			const auto maxScrollX = (contentSize.width() > viewportSize.width()) ? contentSize.width() - viewportSize.width() : 0;
+			const auto maxScrollY = (contentSize.height() > viewportSize.height()) ? contentSize.height() - viewportSize.height() : 0;
+
+			if (m_scrollPosition.x() > maxScrollX)
+				m_scrollPosition.x() = maxScrollX;
+			if (m_scrollPosition.y() > maxScrollY)
+				m_scrollPosition.y() = maxScrollY;
+
+			Viewport{viewportSize}.forEach([&](const auto& position) {
+				const auto sourcePosition = position + m_scrollPosition;
+
+				if (sourcePosition.x() < contentSize.width() and sourcePosition.y() < contentSize.height())
+					m_viewportBuffer.setChar(position, m_fullContentArea.getChar(sourcePosition));
+				else
+					m_viewportBuffer.setChar(position, CharAttributes{U' '});
+			});
+
+			if (m_scrollbarMode != ScrollbarMode::None)
+			{
+				auto internalView = WritableAreaView{m_viewportBuffer};
+				drawScrollbars(internalView, contentSize, viewportSize, maxScrollX, maxScrollY);
+			}
+
+			view.applyArea(m_viewportBuffer);
+			drawFinished();
+		}
+
+	private:
+		inline auto drawScrollbars(WritableAreaView& view, const Container::Size2& contentSize, const Container::Size2& viewSize, std::size_t maxScrollX, std::size_t maxScrollY) -> void
+		{
+			const bool showVertical = (m_scrollbarMode & ScrollbarMode::Vertical) and (contentSize.height() > viewSize.height());
+			const bool showHorizontal = (m_scrollbarMode & ScrollbarMode::Horizontal) and (contentSize.width() > viewSize.width());
+
+			if (showVertical)
+			{
+				const auto barX = viewSize.width() - 1;
+				const auto heightForBar = showHorizontal ? viewSize.height() - 1 : viewSize.height();
+
+				for (auto y = 0uz; y < heightForBar; ++y)
+					view.setChar({barX, y}, CharAttributes{U'│', TextColor::TextColorEnum::White});
+
+				const auto ratio = static_cast<double>(heightForBar) / static_cast<double>(contentSize.height());
+				const auto thumbHeight = std::max(1uz, static_cast<std::size_t>(ratio * static_cast<double>(heightForBar)));
+				const auto scrollRatio = (maxScrollY > 0) ? static_cast<double>(m_scrollPosition.y()) / static_cast<double>(maxScrollY) : 0.0;
+				const auto thumbY = static_cast<std::size_t>(scrollRatio * static_cast<double>(heightForBar - thumbHeight));
+
+				for (auto i = 0uz; i < thumbHeight; ++i)
+					view.setChar({barX, thumbY + i}, CharAttributes{U'█', TextColor::TextColorEnum::White});
+			}
+
+			if (showHorizontal)
+			{
+				const auto barY = viewSize.height() - 1;
+				const auto widthForBar = showVertical ? viewSize.width() - 1 : viewSize.width();
+
+				for (auto x = 0uz; x < widthForBar; ++x)
+					view.setChar({x, barY}, CharAttributes{U'─', TextColor::TextColorEnum::White});
+
+				const auto ratio = static_cast<double>(widthForBar) / static_cast<double>(contentSize.width());
+				const auto thumbWidth = std::max(1uz, static_cast<std::size_t>(ratio * static_cast<double>(widthForBar)));
+				const auto scrollRatio = (maxScrollX > 0) ? static_cast<double>(m_scrollPosition.x()) / static_cast<double>(maxScrollX) : 0.0;
+				const auto thumbX = static_cast<std::size_t>(scrollRatio * static_cast<double>(widthForBar - thumbWidth));
+
+				for (auto i = 0uz; i < thumbWidth; ++i)
+					view.setChar({thumbX + i, barY}, CharAttributes{U'█', TextColor::TextColorEnum::White});
+			}
+
+			if (showVertical and showHorizontal)
+				view.setChar({viewSize.width() - 1, viewSize.height() - 1}, CharAttributes{U'┘', TextColor::TextColorEnum::White});
+		}
+
+		std::uint8_t m_scrollbarMode = ScrollbarMode::Both;
+		Container::Size2 m_scrollPosition{0, 0};
+		DynamicAreaBuffer m_viewportBuffer;
+		Area m_fullContentArea;
+	};
+}

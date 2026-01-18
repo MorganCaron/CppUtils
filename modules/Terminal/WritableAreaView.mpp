@@ -11,6 +11,10 @@ export namespace CppUtils::Terminal
 	class WritableAreaView final
 	{
 	public:
+		inline WritableAreaView(DynamicAreaBuffer& areaBuffer):
+			WritableAreaView{areaBuffer, Viewport{areaBuffer.getSize()}}
+		{}
+
 		WritableAreaView(DynamicAreaBuffer& areaBuffer, Viewport viewport):
 			m_areaBuffer{areaBuffer},
 			m_viewport{std::move(viewport)}
@@ -50,19 +54,29 @@ export namespace CppUtils::Terminal
 			return WritableAreaView{m_areaBuffer, viewport};
 		}
 
+		inline auto drawBuffer(const AreaBuffer& source, Container::Size2 destinationPosition, Viewport sourceViewport) noexcept -> void
+		{
+			const auto& sourceOrigin = sourceViewport.getPosition();
+			sourceViewport.forEach([&](const auto& absoluteSourcePosition) {
+				const auto offset = absoluteSourcePosition - sourceOrigin;
+				setChar(destinationPosition + offset, source.getChar(absoluteSourcePosition));
+			});
+		}
+
 		inline auto applyArea(const AreaBuffer& areaBuffer, Viewport viewport) noexcept -> void
 		{
-			if (not m_viewport.contains(viewport))
+			const auto intersection = Viewport::intersection(m_viewport, viewport);
+			if (intersection.getSize().width() == 0 or intersection.getSize().height() == 0)
 				return;
-			const auto& viewportPosition = viewport.getPosition();
-			viewport.forEach([this, &areaBuffer, &viewportPosition](const auto& position) noexcept -> void {
-				m_areaBuffer.setChar(position, areaBuffer.getChar(position - viewportPosition));
-			});
+
+			const auto offset = intersection.getPosition() - viewport.getPosition();
+			const auto relativeDestinationPosition = intersection.getPosition() - m_viewport.getPosition();
+			drawBuffer(areaBuffer, relativeDestinationPosition, Viewport{intersection.getSize(), offset});
 		}
 
 		inline auto applyArea(const AreaBuffer& areaBuffer) noexcept -> void
 		{
-			applyArea(areaBuffer, m_viewport);
+			drawBuffer(areaBuffer, {0, 0}, Viewport{m_viewport.getSize()});
 		}
 
 		inline auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void

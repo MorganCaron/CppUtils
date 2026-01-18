@@ -1,5 +1,6 @@
 export module CppUtils.Terminal.Area:Viewport;
 
+import std;
 import CppUtils.Container.Size;
 import CppUtils.Math.Utility;
 
@@ -8,42 +9,55 @@ export namespace CppUtils::Terminal
 	class Viewport final
 	{
 	public:
-		inline Viewport(const Container::Size2& size = {0, 0}, const Container::Size2& position = {0, 0}):
+		inline constexpr Viewport(const Container::Size2& size = {0, 0}, const Container::Size2& position = {0, 0}):
 			m_size{size},
 			m_position{position}
 		{}
 
-		[[nodiscard]] inline auto getSize() const noexcept -> const auto&
+		[[nodiscard]] friend constexpr auto operator==(const Viewport&, const Viewport&) noexcept -> bool = default;
+
+		[[nodiscard]] inline constexpr auto getSize() const noexcept -> const auto&
 		{
 			return m_size;
 		}
 
-		[[nodiscard]] inline auto getPosition() const noexcept -> const auto&
+		[[nodiscard]] inline constexpr auto getPosition() const noexcept -> const auto&
 		{
 			return m_position;
 		}
 
-		[[nodiscard]] inline auto getTopLeft() const noexcept -> const Container::Size2&
+		[[nodiscard]] inline constexpr auto getTopLeft() const noexcept -> const Container::Size2&
 		{
 			return m_position;
 		}
 
-		[[nodiscard]] inline auto getBottomRight() const noexcept -> Container::Size2
+		[[nodiscard]] inline constexpr auto getBottomRight() const noexcept -> Container::Size2
 		{
 			return {m_position.x() + m_size.width() - 1, m_position.y() + m_size.height() - 1};
 		}
 
-		[[nodiscard]] inline auto contains(const Container::Size2& point) const noexcept -> bool
+		[[nodiscard]] inline constexpr auto contains(const Container::Size2& point) const noexcept -> bool
 		{
 			auto topLeft = getTopLeft();
 			auto bottomRight = getBottomRight();
-			return Math::isBetween(point.x(), topLeft.x(), bottomRight.x()) and
-				Math::isBetween(point.y(), topLeft.y(), bottomRight.y());
+			return Math::isBetween(point.x(), topLeft.x(), bottomRight.x()) and Math::isBetween(point.y(), topLeft.y(), bottomRight.y());
 		}
 
-		[[nodiscard]] inline auto contains(const Viewport& viewport) const noexcept -> bool
+		[[nodiscard]] inline constexpr auto contains(const Viewport& viewport) const noexcept -> bool
 		{
 			return contains(viewport.getTopLeft()) and contains(viewport.getBottomRight());
+		}
+
+		[[nodiscard]] static inline constexpr auto intersection(const Viewport& lhs, const Viewport& rhs) noexcept -> Viewport
+		{
+			const auto x1 = std::max(lhs.getPosition().x(), rhs.getPosition().x());
+			const auto y1 = std::max(lhs.getPosition().y(), rhs.getPosition().y());
+			const auto x2 = std::min(lhs.getPosition().x() + lhs.getSize().width(), rhs.getPosition().x() + rhs.getSize().width());
+			const auto y2 = std::min(lhs.getPosition().y() + lhs.getSize().height(), rhs.getPosition().y() + rhs.getSize().height());
+
+			if (x1 < x2 and y1 < y2)
+				return Viewport{{x2 - x1, y2 - y1}, {x1, y1}};
+			return Viewport{{0, 0}, {0, 0}};
 		}
 
 		inline auto forEach(auto&& function) const noexcept -> void
@@ -56,6 +70,9 @@ export namespace CppUtils::Terminal
 	private:
 		Container::Size2 m_size, m_position;
 	};
+
+	static_assert(Viewport::intersection(Viewport{{10, 10}, {0, 0}}, Viewport{{10, 10}, {5, 5}}) == Viewport{{5, 5}, {5, 5}});
+	static_assert(Viewport::intersection(Viewport{{10, 10}, {0, 0}}, Viewport{{10, 10}, {10, 10}}) == Viewport{{0, 0}, {0, 0}});
 
 	[[nodiscard]] inline auto operator+(const Viewport& lhs, const Viewport& rhs) noexcept -> Viewport
 	{
