@@ -2,6 +2,7 @@ export module CppUtils.Thread.Scheduler;
 
 import std;
 import CppUtils.Chrono.Concept;
+import CppUtils.Execution.ScopeGuard;
 import CppUtils.Thread.UniqueLocker;
 import CppUtils.Thread.SharedLocker;
 import CppUtils.Thread.ThreadLoop;
@@ -31,17 +32,20 @@ export namespace CppUtils::Thread
 			inline auto operator()(const std::shared_ptr<Item>& a,
 				const std::shared_ptr<Item>& b) const noexcept -> bool
 			{
-				return a->time < b->time;
+				if (a->time != b->time)
+					return a->time < b->time;
+				return a->id < b->id;
 			}
 		};
 
 		struct Items final
 		{
-			using Set = std::multiset<std::shared_ptr<Item>, Compare>;
+			using Set = std::set<std::shared_ptr<Item>, Compare>;
 			using Map = std::unordered_map<std::size_t, std::shared_ptr<Item>>;
 
 			Set set;
 			Map map;
+			std::size_t processingTasks = 0;
 		};
 
 	public:
@@ -52,37 +56,43 @@ export namespace CppUtils::Thread
 			std::function<void()> finally = nullptr):
 			m_step{step},
 			m_finally{std::move(finally)},
-			m_threadLoop{
-				[this] { runLoop(); },
-				[this] { m_condition.notify_all(); },
-				onError},
 			m_threadPool{
 				numberThreads,
 				onError,
 				[this] {
+					auto _ = Execution::ScopeGuard{[&] {
+						auto accessor = m_items.access();
+						if (--accessor.value().processingTasks == 0)
+							m_finishedCondition.notify_all();
+					}};
 					if (m_finally)
 						m_finally();
-					if (--m_processingTasks == 0)
-						m_condition.notify_all();
-				}}
+				}},
+			m_threadLoop{
+				[this] { runLoop(); },
+				[this] {
+					m_workCondition.notify_all();
+					m_finishedCondition.notify_all();
+				},
+				onError}
 		{
 			m_threadLoop.start();
 		}
 
 		inline ~Scheduler() noexcept
 		{
-			cancelAll();
 			m_threadLoop.requestStop();
+			cancelAll();
 		}
 
 		inline auto schedule(Task task, TimePoint when) -> std::size_t
 		{
 			auto item = std::make_shared<Item>(m_nextId.fetch_add(1, std::memory_order_relaxed), when, std::move(task));
 			auto accessor = m_items.access();
-			auto& [set, map] = accessor.value();
+			auto& [set, map, processingTasks] = accessor.value();
 			set.insert(item);
 			map.emplace(item->id, item);
-			m_condition.notify_one();
+			m_workCondition.notify_all();
 			return item->id;
 		}
 
@@ -94,101 +104,103 @@ export namespace CppUtils::Thread
 		inline auto waitUntilFinished() -> void
 		{
 			auto accessor = m_items.access();
-			m_condition.wait(accessor.getLockGuard(), [&] {
-				return std::empty(accessor.value().set) and m_processingTasks == 0;
+			m_finishedCondition.wait(accessor.getLockGuard(), [&] {
+				return std::empty(accessor.value().set) and accessor.value().processingTasks == 0;
 			});
 		}
 
 		inline auto cancel(std::size_t id) -> void
 		{
 			auto accessor = m_items.access();
-			auto& [set, map] = accessor.value();
+			auto& [set, map, processingTasks] = accessor.value();
 			if (auto it = map.find(id); it != std::end(map))
 			{
 				it->second->cancelled = true;
+				set.erase(it->second);
 				map.erase(it);
+				m_workCondition.notify_all();
+				m_finishedCondition.notify_all();
 			}
 		}
 
 		inline auto cancelAll() -> void
 		{
 			auto accessor = m_items.access();
-			auto& [set, map] = accessor.value();
+			auto& [set, map, processingTasks] = accessor.value();
 			for (auto& [_, item] : map)
 				item->cancelled = true;
 			map.clear();
 			set.clear();
-			m_condition.notify_all();
+			m_workCondition.notify_all();
+			m_finishedCondition.notify_all();
 		}
 
 	private:
 		inline auto runLoop() -> void
 		{
-			auto tasksToRun = std::vector<Task>{};
+			auto tasksToRun = std::vector<std::shared_ptr<Item>>{};
 			{
 				auto accessor = m_items.access();
-				auto& [set, map] = accessor.value();
+				auto& [set, map, processingTasks] = accessor.value();
 
 				if (std::empty(set))
-				{
-					m_condition.wait(accessor.getLockGuard(), [this, &accessor] {
-						return not std::empty(accessor.value().set) or m_threadLoop.isStopRequested();
+					m_workCondition.wait(accessor.getLockGuard(), [this, &set] {
+						return not std::empty(set) or m_threadLoop.isStopRequested();
 					});
-					if (m_threadLoop.isStopRequested())
-						return;
-					if (std::empty(set))
-					{
-						m_condition.notify_all();
-						return;
-					}
-				}
+				else if (auto first = *std::begin(set); first->time > Clock::now())
+					m_workCondition.wait_until(accessor.getLockGuard(), first->time, [this, &set, first] {
+						return m_threadLoop.isStopRequested() or std::empty(set) or (*std::begin(set) != first) or ((*std::begin(set))->time <= Clock::now());
+					});
+
+				if (m_threadLoop.isStopRequested() or std::empty(set) or (*std::begin(set))->time > Clock::now())
+					return;
 
 				auto first = *std::begin(set);
-
-				if (first->time > Clock::now())
-				{
-					m_condition.wait_until(accessor.getLockGuard(), first->time, [&, first] {
-						return m_threadLoop.isStopRequested() or first->cancelled or std::empty(set) or (*std::begin(set) != first) or first->time <= Clock::now();
-					});
-					return;
-				}
-
 				const auto endTime = (m_step == Clock::duration::zero()) ? first->time : first->time + m_step;
 
 				for (auto it = std::begin(set); it != std::end(set);)
-				{
 					if ((*it)->time <= endTime)
 					{
-						if (not(*it)->cancelled)
-							tasksToRun.push_back(std::move((*it)->task));
+						tasksToRun.push_back(*it);
 						map.erase((*it)->id);
 						it = set.erase(it);
+						++accessor.value().processingTasks;
 					}
 					else
-						++it;
-				}
+						break;
+
+				if (std::empty(set))
+					m_finishedCondition.notify_all();
 			}
 
-			if (std::empty(tasksToRun))
-				return;
-
-			m_processingTasks += std::size(tasksToRun);
-			for (auto&& task : tasksToRun)
-				m_threadPool.call([task = std::move(task)] {
-					std::invoke(task);
-				});
+			for (auto&& item : tasksToRun)
+			{
+				try
+				{
+					m_threadPool.call([item] {
+						if (not item->cancelled)
+							std::invoke(item->task);
+					});
+				}
+				catch (...)
+				{
+					auto accessor = m_items.access();
+					if (--accessor.value().processingTasks == 0)
+						m_finishedCondition.notify_all();
+				}
+			}
 		}
 
 	private:
 		std::atomic_size_t m_nextId = 0;
 		Clock::duration m_step;
 		UniqueLocker<Items> m_items;
-		std::atomic_size_t m_processingTasks = 0;
 
 		std::function<void()> m_finally;
 
-		std::condition_variable m_condition;
-		ThreadLoop m_threadLoop;
+		std::condition_variable m_workCondition;
+		std::condition_variable m_finishedCondition;
 		ThreadPool m_threadPool;
+		ThreadLoop m_threadLoop;
 	};
 }
