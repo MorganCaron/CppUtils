@@ -91,5 +91,13 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 			threadPool.waitUntilFinished();
 			suite.expect(called);
 		});
+
+		suite.addTest("Task with return value", [&] {
+			auto threadPool = CppUtils::Thread::ThreadPool{};
+			auto future = threadPool.call([] {
+				return 42;
+			});
+			suite.expectEqual(future.get(), 42);
+		});
 	}};
 }

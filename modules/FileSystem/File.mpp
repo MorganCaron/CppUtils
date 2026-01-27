@@ -1,6 +1,7 @@
 export module CppUtils.FileSystem.File;
 
 import std;
+import CppUtils.Type;
 
 export namespace CppUtils::FileSystem
 {
@@ -37,7 +38,7 @@ export namespace CppUtils::FileSystem
 
 	namespace Binary
 	{
-		template<class T>
+		template<Type::TriviallyCopyable T>
 		inline auto write(const std::filesystem::path& filePath, const T& buffer) -> void
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
@@ -46,7 +47,7 @@ export namespace CppUtils::FileSystem
 			file.write(reinterpret_cast<const char*>(std::addressof(buffer)), sizeof(buffer));
 		}
 
-		template<class T>
+		template<Type::TriviallyCopyable T>
 		[[nodiscard]] inline auto read(const std::filesystem::path& filePath) -> T
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
@@ -57,7 +58,7 @@ export namespace CppUtils::FileSystem
 			return buffer;
 		}
 
-		template<class T>
+		template<Type::TriviallyCopyable T>
 		inline auto writeVector(const std::filesystem::path& filePath, const std::vector<T>& vector) -> void
 		{
 			auto file = std::ofstream{filePath, std::ios::binary};
@@ -66,7 +67,7 @@ export namespace CppUtils::FileSystem
 			file.write(reinterpret_cast<const char*>(std::data(vector)), static_cast<std::streamsize>(std::size(vector) * sizeof(T)));
 		}
 
-		template<class T>
+		template<Type::TriviallyCopyable T>
 		[[nodiscard]] inline auto readVector(const std::filesystem::path& filePath) -> std::vector<T>
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};

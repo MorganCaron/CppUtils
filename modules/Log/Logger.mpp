@@ -38,8 +38,7 @@ export namespace CppUtils
 		static inline auto print(std::ostream& ostream, std::format_string<Args...> fmt, Args&&... args) -> void
 		{
 			auto [textModifier, message] = format<logType>(std::format(fmt, std::forward<Args>(args)...));
-			// Todo C++23: std::print(ostream, "{}", std::move(message));
-			ostream << message;
+			std::print(ostream, "{}", std::move(message));
 		}
 
 		template<String::Hasher logType = String::Hash{}, class... Args>
@@ -62,8 +61,7 @@ export namespace CppUtils
 			for (auto i = 0uz; i < terminalWidth; ++i)
 				line += "─";
 			auto [textModifier, message] = format<logType>("");
-			// Todo C++23: std::print(ostream, "{}", std::move(line));
-			ostream << line << '\n';
+			std::print(ostream, "{}\n", std::move(line));
 		}
 
 		template<String::Hasher logType = String::Hash{}>

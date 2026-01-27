@@ -118,15 +118,24 @@ export namespace CppUtils::Container
 			std::puts("Memory dump:");
 			for (auto i = 0uz; i < std::size(m_data);)
 			{
-				std::print("{:#04x} ", static_cast<char>(m_data[i]));
+				std::print("{:#04x} ", static_cast<unsigned char>(m_data[i]));
 				if (++i % sizeof(std::size_t) == 0)
-					std::println(" ({} | {} -> {})",
-						*std::bit_cast<int*>(std::data(m_data) + i - sizeof(int) * 2),
-						*std::bit_cast<int*>(std::data(m_data) + i - sizeof(int)),
-						*std::bit_cast<std::size_t*>(std::data(m_data) + i - sizeof(std::size_t)));
+				{
+					auto int1 = 0;
+					auto int2 = 0;
+					auto sizeT = 0uz;
+					std::memcpy(std::addressof(int1), std::data(m_data) + i - sizeof(int) * 2, sizeof(int));
+					std::memcpy(std::addressof(int2), std::data(m_data) + i - sizeof(int), sizeof(int));
+					std::memcpy(std::addressof(sizeT), std::data(m_data) + i - sizeof(std::size_t), sizeof(std::size_t));
+					std::println(" ({} | {} -> {})", int1, int2, sizeT);
+				}
 			}
 			if (std::size(m_data) % sizeof(std::size_t) != 0 and std::size(m_data) % sizeof(int) == 0)
-				std::println("                     ({})", *std::bit_cast<int*>(std::data(m_data) + std::size(m_data) - sizeof(int)));
+			{
+				auto value = 0;
+				std::memcpy(std::addressof(value), std::data(m_data) + std::size(m_data) - sizeof(int), sizeof(int));
+				std::println("                     ({})", value);
+			}
 			std::puts("");
 		}
 

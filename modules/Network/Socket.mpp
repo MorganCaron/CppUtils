@@ -330,26 +330,16 @@ export namespace CppUtils::Network
 			return address;
 		}
 
-	public:
-		inline auto send(const CppUtils::Type::TriviallyCopyable auto& data) -> void
+		inline auto send(const void* data, std::size_t size) -> void
 		{
+			for (auto totalSent = 0uz; totalSent < size;)
+			{
 #ifdef OS_WINDOWS
-			if (::send(m_socket, std::bit_cast<const char*>(std::addressof(data)), sizeof(decltype(data)), 0) < 0)
+				auto bytesSent = ::send(m_socket, static_cast<const char*>(data) + totalSent, static_cast<int>(size - totalSent), 0);
 #elif defined(OS_LINUX) or defined(OS_MACOS)
-			if (::send(m_socket, std::bit_cast<const void*>(std::addressof(data)), sizeof(decltype(data)), 0) < 0)
+				auto bytesSent = ::send(m_socket, static_cast<const char*>(data) + totalSent, size - totalSent, 0);
 #endif
-				throw std::runtime_error{"CppUtils::Network::Socket::send: Send failed"};
-		}
-
-		inline auto send(const std::vector<std::byte>& data) -> void
-		{
-			for (auto totalSent = 0uz; totalSent < std::size(data);)
-#ifdef OS_WINDOWS
-				if (auto bytesSent = ::send(m_socket, std::bit_cast<const char*>(std::data(data)) + totalSent, static_cast<int>(std::size(data) - totalSent), 0);
-#elif defined(OS_LINUX) or defined(OS_MACOS)
-				if (auto bytesSent = ::send(m_socket, std::data(data) + totalSent, std::size(data) - totalSent, 0);
-#endif
-					bytesSent < 0)
+				if (bytesSent < 0)
 				{
 #if defined(OS_WINDOWS)
 					if (::WSAGetLastError() == WSAEWOULDBLOCK)
@@ -359,19 +349,24 @@ export namespace CppUtils::Network
 						continue;
 					throw std::runtime_error{"CppUtils::Network::Socket::send: Send failed"};
 				}
-				else
-					totalSent += static_cast<std::size_t>(bytesSent);
+				totalSent += static_cast<std::size_t>(bytesSent);
+			}
+		}
+
+	public:
+		inline auto send(const CppUtils::Type::TriviallyCopyable auto& data) -> void
+		{
+			send(std::addressof(data), sizeof(decltype(data)));
+		}
+
+		inline auto send(const std::vector<std::byte>& data) -> void
+		{
+			send(std::data(data), std::size(data));
 		}
 
 		inline auto send(std::string_view string) -> void
 		{
-#if defined(OS_WINDOWS)
-			if (::send(m_socket, std::data(string), static_cast<int>(std::size(string)), 0) < 0)
-#elif defined(OS_LINUX) or defined(OS_MACOS)
-			if (::send(m_socket, std::data(string), std::size(string), 0) < 0)
-#endif
-
-				throw std::runtime_error{"CppUtils::Network::Socket::send: Send failed"};
+			send(std::data(string), std::size(string));
 		}
 
 	private:

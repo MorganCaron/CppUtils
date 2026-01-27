@@ -22,20 +22,26 @@ export namespace CppUtils::System
 		explicit inline FileDescriptor(int fileDescriptor):
 			m_fileDescriptor{throwErrno(fileDescriptor)}
 		{}
-		FileDescriptor(const FileDescriptor&) = default;
+		FileDescriptor(const FileDescriptor&) = delete;
 		FileDescriptor(FileDescriptor&& other) noexcept:
 			m_fileDescriptor{std::exchange(other.m_fileDescriptor, -1)}
 		{}
-		FileDescriptor& operator=(const FileDescriptor&) = default;
+		FileDescriptor& operator=(const FileDescriptor&) = delete;
 		FileDescriptor& operator=(FileDescriptor&& rhs) noexcept
 		{
-			m_fileDescriptor = std::exchange(rhs.m_fileDescriptor, -1);
+			if (this != std::addressof(rhs))
+			{
+				if (m_fileDescriptor != -1)
+					::close(m_fileDescriptor);
+				m_fileDescriptor = std::exchange(rhs.m_fileDescriptor, -1);
+			}
 			return *this;
 		}
 
 		inline ~FileDescriptor()
 		{
-			close();
+			if (m_fileDescriptor != -1)
+				::close(m_fileDescriptor);
 		}
 
 		[[nodiscard]] inline constexpr auto get() const noexcept -> int

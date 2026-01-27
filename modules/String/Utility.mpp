@@ -102,21 +102,19 @@ export namespace CppUtils::String
 
 	[[nodiscard]] inline auto leftTrimString(std::string_view stringView) -> std::string_view
 	{
-		auto prefixLength = static_cast<std::size_t>(std::distance(std::cbegin(stringView),
-			std::find_if(std::cbegin(stringView), std::cend(stringView), [](char c) {
-			return !std::isspace(c);
-		})));
-		stringView.remove_prefix(prefixLength);
+		const auto it = std::ranges::find_if_not(stringView, [](const auto c) {
+			return std::isspace(static_cast<unsigned char>(c));
+		});
+		stringView.remove_prefix(static_cast<std::size_t>(std::ranges::distance(std::ranges::begin(stringView), it)));
 		return stringView;
 	}
 
 	[[nodiscard]] inline auto rightTrimString(std::string_view stringView) -> std::string_view
 	{
-		auto suffixLength = static_cast<std::size_t>(std::distance(std::crbegin(stringView),
-			std::find_if(std::crbegin(stringView), std::crend(stringView), [](char c) {
-			return !std::isspace(c);
-		})));
-		stringView.remove_suffix(suffixLength);
+		const auto it = std::find_if_not(std::rbegin(stringView), std::rend(stringView), [](const auto c) {
+			return std::isspace(static_cast<unsigned char>(c));
+		});
+		stringView.remove_suffix(static_cast<std::size_t>(std::ranges::distance(std::rbegin(stringView), it)));
 		return stringView;
 	}
 

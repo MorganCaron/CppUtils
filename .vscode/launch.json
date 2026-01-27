@@ -2,7 +2,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"command": "xmake build && xmake run",
+			"command": "xmake run",
 			"name": "Compile & Run Tests",
 			"request": "launch",
 			"type": "node-terminal"

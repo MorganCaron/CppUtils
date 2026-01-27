@@ -19,16 +19,36 @@ export namespace CppUtils::Terminal
 	public:
 		inline RawTerminal()
 		{
-			tcgetattr(STDIN_FILENO, std::addressof(m_oldTerminalState));
+			if (tcgetattr(STDIN_FILENO, std::addressof(m_oldTerminalState)))
+				return;
+			m_initialized = true;
 
 			auto rawTerminal = m_oldTerminalState;
 			rawTerminal.c_lflag &= static_cast<tcflag_t>(~(ICANON | ECHO));
 			tcsetattr(STDIN_FILENO, TCSANOW, std::addressof(rawTerminal));
 		}
 
+		RawTerminal(const RawTerminal&) = delete;
+		RawTerminal(RawTerminal&& other) noexcept:
+			m_oldTerminalState{other.m_oldTerminalState},
+			m_initialized{std::exchange(other.m_initialized, false)}
+		{}
+
+		RawTerminal& operator=(const RawTerminal&) = delete;
+		RawTerminal& operator=(RawTerminal&& rhs) noexcept
+		{
+			if (this != std::addressof(rhs))
+			{
+				m_oldTerminalState = rhs.m_oldTerminalState;
+				m_initialized = std::exchange(rhs.m_initialized, false);
+			}
+			return *this;
+		}
+
 		inline ~RawTerminal()
 		{
-			tcsetattr(STDIN_FILENO, TCSANOW, std::addressof(m_oldTerminalState));
+			if (m_initialized)
+				tcsetattr(STDIN_FILENO, TCSANOW, std::addressof(m_oldTerminalState));
 		}
 
 		[[nodiscard]] inline auto readChar() const -> char
@@ -55,6 +75,7 @@ export namespace CppUtils::Terminal
 
 	private:
 		termios m_oldTerminalState;
+		bool m_initialized = false;
 	};
 #endif
 }

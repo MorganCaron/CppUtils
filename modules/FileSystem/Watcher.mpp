@@ -132,13 +132,13 @@ export namespace CppUtils::FileSystem
 
 			for (auto i = 0uz; i < nbFileDescriptorsReady; ++i)
 			{
-				auto buffer = std::array<std::byte, 1'024>{};
+				auto buffer = std::array<std::byte, 4'096>{};
 				auto length = 0z;
 				{
 					auto eventFileDescriptor = m_events[i].data.fd;
 					if (eventFileDescriptor == m_stopPipe.read)
 						continue;
-					length = read(eventFileDescriptor, std::addressof(buffer), std::size(buffer));
+					length = read(eventFileDescriptor, std::data(buffer), std::size(buffer));
 					if (length == -1 and errno == EINTR)
 						break;
 				}

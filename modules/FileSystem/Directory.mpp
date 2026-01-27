@@ -55,7 +55,8 @@ export namespace CppUtils::FileSystem
 
 		inline ~TemporaryDirectory()
 		{
-			std::filesystem::remove_all(m_tempDirectory);
+			auto errorCode = std::error_code{};
+			std::filesystem::remove_all(m_tempDirectory, errorCode);
 		}
 
 		inline auto execute(auto&& function, auto&&... args) -> decltype(auto)

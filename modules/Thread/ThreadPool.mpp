@@ -49,11 +49,11 @@ export namespace CppUtils::Thread
 		inline auto call(auto&& function) -> std::future<std::invoke_result_t<std::decay_t<decltype(function)>>>
 		{
 			using ReturnType = std::invoke_result_t<std::decay_t<decltype(function)>>;
-			auto task = std::make_shared<std::packaged_task<ReturnType()>>([this, function = std::forward<decltype(function)>(function)]() mutable {
+			auto task = std::make_shared<std::packaged_task<ReturnType()>>([this, function = std::forward<decltype(function)>(function)]() mutable -> ReturnType {
 				auto _ = Execution::ScopeGuard{m_finally};
 				try
 				{
-					std::invoke(function);
+					return std::invoke(function);
 				}
 				catch (...)
 				{
