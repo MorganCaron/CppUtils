@@ -12,7 +12,6 @@ export namespace CppUtils::Language
 		GrammarParser()
 		{
 			using namespace std::literals;
-			using Logger = Logger<"CppUtils">;
 
 			constexpr auto source = R"(
 				lowLevelGrammarParser {
@@ -36,7 +35,7 @@ export namespace CppUtils::Language
 
 			auto cursor = CppUtils::String::Cursor{source};
 			if (auto result = operator()(cursor); not result)
-				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
+				Logger<"CppUtils">::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 		}
 	};
 }

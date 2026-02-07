@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::Pair
 {
-	auto _ = TestSuite{"Container/Pair", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Container/Pair", {"UnitTest"}, [](TestSuite& suite) {
 		using namespace std::literals;
 
 		suite.addTest("Swap pair", [&] {

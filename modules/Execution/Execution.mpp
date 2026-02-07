@@ -2,4 +2,5 @@ export module CppUtils.Execution;
 
 export import CppUtils.Execution.Event;
 export import CppUtils.Execution.EventDispatcher;
+export import CppUtils.Execution.EventQueue;
 export import CppUtils.Execution.ScopeGuard;

@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::Primitive
 {
-	auto _ = TestSuite{"Terminal/Canvas/Primitive", {"UnitTest", "Terminal/Canvas"}, [](auto& suite) {
+	auto _ = TestSuite{"Terminal/Canvas/Primitive", {"UnitTest", "Terminal/Canvas", "Container/Vec2"}, [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
 		suite.addTest("Draw Line", [&] {
@@ -20,7 +20,6 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 			suite.expectEqual(static_cast<std::uint32_t>(canvas.getChar({5, 0}).character), static_cast<std::uint32_t>(U'-'));
 			suite.expectEqual(static_cast<std::uint32_t>(canvas.getChar({0, 5}).character), static_cast<std::uint32_t>(U'|'));
 			suite.expectEqual(static_cast<std::uint32_t>(canvas.getChar({5, 5}).character), static_cast<std::uint32_t>(U'\\'));
-			std::this_thread::sleep_for(100ms);
 		});
 
 		suite.addTest("Draw Rectangle Outline", [&] {
@@ -37,7 +36,6 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 
 			suite.expectEqual(canvas.getChar({10, 1}).character, U'#');
 			suite.expectEqual(canvas.getChar({10, 5}).character, U' ');
-			std::this_thread::sleep_for(100ms);
 		});
 
 		suite.addTest("Draw Rectangle Filled", [&] {
@@ -56,7 +54,6 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 			for (auto x = 1uz; x <= 18uz; ++x)
 				suite.expectEqual(canvas.getChar({x, 5}).character, U'#');
 			suite.expectEqual(canvas.getChar({19, 5}).character, U' ');
-			std::this_thread::sleep_for(100ms);
 		});
 
 		suite.addTest("Draw Circle Outline", [&] {
@@ -82,7 +79,6 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 
 			suite.expectEqual(canvas.getChar({0, 0}).character, U' ');
 			suite.expectEqual(canvas.getChar({10, 10}).character, U' ');
-			std::this_thread::sleep_for(100ms);
 		});
 
 		suite.addTest("Draw Circle Filled", [&] {
@@ -101,7 +97,6 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 			for (auto x = 1uz; x <= 9uz; ++x)
 				suite.expectEqual(canvas.getChar({x, 5}).character, U'#');
 			suite.expectEqual(canvas.getChar({10, 5}).character, U' ');
-			std::this_thread::sleep_for(100ms);
 		});
 
 		suite.addTest("Draw Ellipse Outline", [&] {
@@ -124,7 +119,6 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 				suite.expectEqual(canvas.getChar({x, 5}).character, U' ');
 			suite.expectEqual(canvas.getChar({18, 5}).character, U'O');
 			suite.expectEqual(canvas.getChar({19, 5}).character, U' ');
-			std::this_thread::sleep_for(100ms);
 		});
 
 		suite.addTest("Draw Ellipse Filled", [&] {
@@ -143,7 +137,6 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 			for (auto x = 1uz; x <= 18uz; ++x)
 				suite.expectEqual(canvas.getChar({x, 5}).character, U'#');
 			suite.expectEqual(canvas.getChar({19, 5}).character, U' ');
-			std::this_thread::sleep_for(100ms);
 		});
 	}};
 }

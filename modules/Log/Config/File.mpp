@@ -1,0 +1,16 @@
+export module CppUtils.Log.Config.File;
+
+import std;
+import CppUtils.String;
+import CppUtils.Logger;
+import CppUtils.Log.FileSink;
+import CppUtils.LogRotate;
+
+export namespace CppUtils::Log
+{
+	template<String::Hasher name, String::Hasher logType = String::Hash{}>
+	inline auto addFileSink(LogRotateOptions options) -> void
+	{
+		Logger<name>::template subscribe<logType>(FileSink{std::move(options)});
+	}
+}

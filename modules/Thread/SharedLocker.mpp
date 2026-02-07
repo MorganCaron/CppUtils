@@ -5,6 +5,10 @@ import CppUtils.Thread.UniqueLocker;
 
 export namespace CppUtils::Thread
 {
+	/*
+		Classe RAII permet des accès multiples à une valeur en lecture seule.
+		Cette classe ne contient pas la valeur, seulement une référence vers celle-ci.
+	*/
 	template<class T>
 	class ReadOnlyAccessor final
 	{
@@ -37,6 +41,14 @@ export namespace CppUtils::Thread
 	template<class T>
 	ReadOnlyAccessor(std::shared_mutex&, const T&) -> ReadOnlyAccessor<T>;
 
+	/*
+		Classe conçue pour encapsuler une ressource avec son mutex, garantissant que l'accès à la ressource passe obligatoirement par un Accessor qui verrouille le mutex (principe de "Monitor Object").
+
+		En plus de la protection RAII apportée par std::shared_lock, permettant de libérer le mutex si une exception survient dans le scope du verrou,
+		cette approche permet à un getter de retourner la valeur protégée en l'accompagnant de son verrouillage (contenus dans un Accessor), assurant ainsi que la ressource est toujours accédée de manière sécurisée.
+
+		Cela apporte une sécurité accrue en empêchant structurellement les accès non verrouillés et rend l'intention explicite sur le caractère partagé de l'objet.
+	*/
 	template<class T>
 	class SharedLocker final
 	{

@@ -1,0 +1,33 @@
+module;
+
+#include <cstdio>
+
+export module CppUtils.Log.Config.Default;
+
+import std;
+import CppUtils.String;
+import CppUtils.Logger;
+import CppUtils.Execution.EventQueue;
+import CppUtils.Terminal.Size;
+import CppUtils.Terminal.TextColor;
+import CppUtils.Terminal.TextModifier;
+
+export namespace CppUtils
+{
+	template<>
+	inline void Logger<>::configure(Execution::EventQueue& eventQueue)
+	{
+		eventQueue.subscribe([](const std::string& message) {
+			std::println("{}", message);
+		});
+
+		eventQueue.subscribe<"color">([](Terminal::TextColor::TextColorEnum color, const std::string& message) {
+			auto _ = Terminal::TextModifier{stdout, color};
+			std::println("{}", message);
+		});
+
+		eventQueue.subscribe<"separator">([]() {
+			std::println("{:-^{}}", "", Terminal::getTerminalSize().width());
+		});
+	}
+}

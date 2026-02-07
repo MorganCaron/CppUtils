@@ -13,7 +13,6 @@ export namespace CppUtils::Language
 	{
 		ASTParser()
 		{
-			using namespace std::literals;
 			using namespace String::Literals;
 
 			functions["abort"_token] = [](Cursor&, const ASTNode&, MetaEvaluator&) -> std::expected<void, std::string_view> {

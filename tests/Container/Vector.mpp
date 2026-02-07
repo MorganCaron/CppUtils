@@ -5,8 +5,8 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::Vector
 {
-	auto _ = TestSuite{"Container/Vector", {"Logger"}, [](auto& suite) {
-		using Logger = CppUtils::Logger<"CppUtils">;
+	auto _ = TestSuite{"Container/Vector", {"Logger"}, [](TestSuite& suite) {
+		using Logger = TestSuite::Logger;
 
 		suite.addTest("merge", [&] {
 			const auto a = std::vector<std::string>{"a", "b"};
@@ -16,7 +16,7 @@ namespace CppUtils::UnitTest::Container::Vector
 			const auto vector = CppUtils::Container::Vector::merge(a, b, c, d);
 			suite.expectEqual(std::size(vector), 8uz);
 			for (const auto& string : vector)
-				Logger::print("{}\n", string);
+				Logger::print("{}", string);
 		});
 	}};
 }

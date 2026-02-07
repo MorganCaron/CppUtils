@@ -49,7 +49,7 @@ namespace CppUtils::Type::Enum
 
 namespace CppUtils::UnitTest::Type::Enum
 {
-	auto _ = TestSuite{"Type/Enum", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Type/Enum", {"UnitTest"}, [](TestSuite& suite) {
 		suite.addTest("Basic", [&] {
 			suite.expectEqual(CppUtils::Type::Enum::toString(Enum1::A), "A1");
 			suite.expectEqual(CppUtils::Type::Enum::toString(Enum1::B), "B1");

@@ -49,8 +49,6 @@ export namespace CppUtils::Language
 					return result;
 				if (not grammar.get().exists(instruction.value)) [[unlikely]]
 					return {};
-				if (not grammar.get().exists(instruction.value)) [[unlikely]]
-					return std::unexpected{"Unknown lexeme"};
 				lexemes = std::ref(grammar.get()[instruction.value].nodes);
 			}
 			exit = false;

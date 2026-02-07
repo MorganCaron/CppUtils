@@ -1,14 +1,15 @@
+module;
+
+#include <cstdio>
+
 export module CppUtils.Thread.ThreadLoop;
 
 import std;
-import CppUtils.Logger;
 
 export namespace CppUtils::Thread
 {
 	class ThreadLoop final
 	{
-		using Logger = Logger<"CppUtils">;
-
 	public:
 		inline ThreadLoop() = delete;
 
@@ -91,16 +92,16 @@ export namespace CppUtils::Thread
 							}
 							catch (const std::exception& exception)
 							{
-								Logger::print<"error">("ThreadLoop: onError threw an exception: {}", exception.what());
+								std::println(stderr, "ThreadLoop: onError threw an exception: {}", exception.what());
 							}
 							catch (...)
 							{
-								Logger::print<"error">("ThreadLoop: onError threw a non-std exception");
+								std::println(stderr, "ThreadLoop: onError threw a non-std exception");
 							}
 						}
 						else
 						{
-							Logger::print<"error">("ThreadLoop: Unhandled exception");
+							std::println(stderr, "ThreadLoop: Unhandled exception");
 						}
 					}
 				}
@@ -141,7 +142,7 @@ export namespace CppUtils::Thread
 					}
 					catch (...)
 					{
-						Logger::print<"error">("ThreadLoop: interruptFunction threw during stop");
+						std::println(stderr, "ThreadLoop: interruptFunction threw during stop");
 					}
 				}
 				if (m_thread.joinable())
@@ -149,11 +150,11 @@ export namespace CppUtils::Thread
 			}
 			catch (const std::exception& exception)
 			{
-				Logger::print<"error">("Exception in ThreadLoop::stop(): {}", exception.what());
+				std::println(stderr, "Exception in ThreadLoop::stop(): {}", exception.what());
 			}
 			catch (...)
 			{
-				Logger::print<"error">("Unknown exception in ThreadLoop::stop()");
+				std::println(stderr, "Unknown exception in ThreadLoop::stop()");
 			}
 		}
 

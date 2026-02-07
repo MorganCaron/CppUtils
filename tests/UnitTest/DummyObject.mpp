@@ -1,0 +1,79 @@
+export module CppUtils.UnitTests.UnitTest.DummyObject;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest
+{
+	auto _ = TestSuite{"UnitTest/DummyObject", [](TestSuite& suite) {
+		using Logger = TestSuite::Logger;
+
+		suite.addTest("No Copy No Move", [&] {
+			auto object = DummyObject{[](std::string_view message) { Logger::print<"info">("{}", message); }, "DummyObject"};
+			suite.expectEqual(object.getCopyCount(), 0uz);
+			suite.expectEqual(object.getMoveCount(), 0uz);
+		});
+
+		suite.addTest("Copy Construction", [&] {
+			auto object = DummyObject{[](std::string_view message) { Logger::print<"info">("{}", message); }, "DummyObject"};
+			auto copied = object;
+			suite.expectEqual(copied.getCopyCount(), 1uz);
+			suite.expectEqual(copied.getMoveCount(), 0uz);
+		});
+
+		suite.addTest("Move Construction", [&] {
+			auto object = DummyObject{[](std::string_view message) { Logger::print<"info">("{}", message); }, "DummyObject"};
+			auto moved = std::move(object);
+			suite.expectEqual(moved.getCopyCount(), 0uz);
+			suite.expectEqual(moved.getMoveCount(), 1uz);
+		});
+
+		suite.addTest("Copy Assignment", [&] {
+			auto object = DummyObject{[](std::string_view message) { Logger::print<"info">("{}", message); }, "DummyObject"};
+			auto target = DummyObject{[](std::string_view message) { Logger::print<"info">("{}", message); }, "Target"};
+			target = object;
+			suite.expectEqual(target.getCopyCount(), 1uz);
+			suite.expectEqual(target.getMoveCount(), 0uz);
+		});
+
+		suite.addTest("Move Assignment", [&] {
+			auto object = DummyObject{[](std::string_view message) { Logger::print<"info">("{}", message); }, "DummyObject"};
+			auto target = DummyObject{[](std::string_view message) { Logger::print<"info">("{}", message); }, "Target"};
+			target = std::move(object);
+			suite.expectEqual(target.getCopyCount(), 0uz);
+			suite.expectEqual(target.getMoveCount(), 1uz);
+		});
+
+		suite.addTest("Two Copies", [&] {
+			auto object = DummyObject{[](std::string_view message) { Logger::print<"info">("{}", message); }, "DummyObject"};
+			auto copy1 = object;
+			auto copy2 = copy1;
+			suite.expectEqual(copy2.getCopyCount(), 2uz);
+			suite.expectEqual(copy2.getMoveCount(), 0uz);
+		});
+
+		suite.addTest("Two Moves", [&] {
+			auto object = DummyObject{[](std::string_view message) { Logger::print<"info">("{}", message); }, "DummyObject"};
+			auto moved1 = std::move(object);
+			auto moved2 = std::move(moved1);
+			suite.expectEqual(moved2.getCopyCount(), 0uz);
+			suite.expectEqual(moved2.getMoveCount(), 2uz);
+		});
+
+		suite.addTest("Copy then Move", [&] {
+			auto object = DummyObject{[](std::string_view message) { Logger::print<"info">("{}", message); }, "DummyObject"};
+			auto copy = object;
+			auto moved = std::move(copy);
+			suite.expectEqual(moved.getCopyCount(), 1uz);
+			suite.expectEqual(moved.getMoveCount(), 1uz);
+		});
+
+		suite.addTest("Move then Copy", [&] {
+			auto object = DummyObject{[](std::string_view message) { Logger::print<"info">("{}", message); }, "DummyObject"};
+			auto moved = std::move(object);
+			auto copy = moved;
+			suite.expectEqual(copy.getCopyCount(), 1uz);
+			suite.expectEqual(copy.getMoveCount(), 1uz);
+		});
+	}};
+}

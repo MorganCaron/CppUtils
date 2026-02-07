@@ -33,40 +33,20 @@ export namespace CppUtils::Container
 			values{values}
 		{}
 
-#if defined(COMPILER_CLANG)
 		[[nodiscard]] constexpr inline auto begin(this auto&& self) -> decltype(auto)
 		{
 			return std::begin(self.values);
 		}
-#else
-		[[nodiscard]] constexpr inline auto begin() const -> decltype(auto)
-		{
-			return std::begin(values);
-		}
-		[[nodiscard]] inline constexpr auto begin() -> decltype(auto)
-		{
-			return std::begin(values);
-		}
-#endif
+
 		[[nodiscard]] constexpr inline auto cbegin() const -> decltype(auto)
 		{
 			return std::cbegin(values);
 		}
-#if defined(COMPILER_CLANG)
+
 		[[nodiscard]] constexpr inline auto end(this auto&& self) -> decltype(auto)
 		{
 			return std::end(self.values);
 		}
-#else
-		[[nodiscard]] constexpr inline auto end() const -> decltype(auto)
-		{
-			return std::end(values);
-		}
-		[[nodiscard]] inline constexpr auto end() -> decltype(auto)
-		{
-			return std::end(values);
-		}
-#endif
 		[[nodiscard]] constexpr inline auto cend() const -> decltype(auto)
 		{
 			return std::cend(values);

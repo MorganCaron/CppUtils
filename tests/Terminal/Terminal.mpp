@@ -9,7 +9,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal
 {
-	auto _ = TestSuite{"Terminal", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Terminal", {"UnitTest"}, [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
 		suite.addTest("BackgroundColor", [&] {

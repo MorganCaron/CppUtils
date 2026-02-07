@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::Scrollable
 {
-	auto _ = TestSuite{"Terminal/Scrollable", {"Terminal/Canvas", "Terminal/Canvas/Primitive"}, [](auto& suite) {
+	auto _ = TestSuite{"Terminal/Scrollable", {"Terminal/Canvas", "Terminal/Canvas/Primitive", "Container/Vec2"}, [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
 		suite.addTest("ScrollableCircle", [&] {

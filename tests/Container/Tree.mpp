@@ -5,19 +5,19 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::Tree
 {
-	auto _ = TestSuite{"Container/Tree", {"Logger"}, [](auto& suite) {
-		using Logger = CppUtils::Logger<"CppUtils">;
+	auto _ = TestSuite{"Container/Tree", {"Logger"}, [](TestSuite& suite) {
+		using Logger = TestSuite::Logger;
 		using StringTreeNode = CppUtils::Container::Tree::Node<std::string>;
 
 		suite.addTest("", [&] {
 			auto root = StringTreeNode{"Root"};
 			// CppUtils::Container::Tree::log(root);
-			Logger::print("{}\n", root.value);
+			Logger::print("{}", root.value);
 			suite.expectEqual(root.value, "Root");
 
 			root.nodes.emplace_back(StringTreeNode{"Branch0"});
 			root.nodes.emplace_back(StringTreeNode{"Branch1"});
-			Logger::print("{}\n", root.nodes[1].value);
+			Logger::print("{}", root.nodes[1].value);
 			suite.expectEqual(root.nodes[1].value, "Branch1");
 
 			auto& branch0 = root.nodes[0];

@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Math::Endian
 {
-	auto _ = TestSuite{"Endian", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Endian", {"UnitTest"}, [](TestSuite& suite) {
 		constexpr auto value = std::uint32_t{0x12'34'56'78u};
 
 		suite.addTest("toBigEndian", [&] {

@@ -16,7 +16,7 @@ auto start([[maybe_unused]] std::span<const std::string_view> args) -> int
 	}
 	catch (const std::exception& exception)
 	{
-		CppUtils::logException(exception);
+		CppUtils::logException<CppUtils::Logger<"UnitTests">>(exception);
 		return CppUtils::exitFailure;
 	}
 	return CppUtils::exitSuccess;

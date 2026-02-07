@@ -14,9 +14,15 @@ export namespace CppUtils::Execution
 		template<String::Hasher eventName = String::Hash{}, class... Args>
 		inline auto emit(const Args&... args) -> void
 		{
+			emit(static_cast<String::Hash>(eventName), args...);
+		}
+
+		template<class... Args>
+		inline auto emit(String::Hash eventName, const Args&... args) -> void
+		{
 			auto lockGuard = std::shared_lock{m_mutex};
 			using Tuple = std::tuple<std::remove_cvref_t<Args>...>;
-			auto key = std::make_pair(static_cast<String::Hash>(eventName), std::type_index{typeid(Tuple)});
+			auto key = std::make_pair(eventName, std::type_index{typeid(Tuple)});
 			if (auto subscriberIt = m_subscribers.find(key); subscriberIt != std::cend(m_subscribers))
 			{
 				auto payload = std::make_tuple(args...);
@@ -35,7 +41,7 @@ export namespace CppUtils::Execution
 				auto lockGuard = std::unique_lock{m_mutex};
 				auto key = std::make_pair(static_cast<String::Hash>(eventName), std::type_index{typeid(Tuple)});
 				m_subscribers[key].emplace_back(
-					[function = std::forward<decltype(function)>(function)](const void* payload) -> void {
+					[function = std::forward<decltype(function)>(function)](const void* payload) mutable -> void {
 					const auto& args = *static_cast<const Tuple*>(payload);
 					std::apply(function, args);
 				});

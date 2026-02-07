@@ -5,8 +5,8 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::FileSystem::File
 {
-	auto _ = TestSuite{"FileSystem/File", {"Logger", "FileSystem/Directory"}, [](auto& suite) {
-		using Logger = CppUtils::Logger<"CppUtils">;
+	auto _ = TestSuite{"FileSystem/File", {"Logger", "FileSystem/Directory"}, [](TestSuite& suite) {
+		using Logger = TestSuite::Logger;
 
 		suite.addTest("forFiles", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
@@ -14,7 +14,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 				CppUtils::FileSystem::String::write(directory / "file.log", "test");
 				auto filesCounter = 0u;
 				CppUtils::FileSystem::forFiles(directory, [&filesCounter](const auto& filePath) -> void {
-					Logger::print("{}\n", filePath.string());
+					Logger::print("{}", filePath.string());
 					++filesCounter;
 				});
 				suite.expectEqual(filesCounter, 2u);
@@ -27,7 +27,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 				CppUtils::FileSystem::String::write(directory / "file.log", "test");
 				auto filesCounter = 0u;
 				CppUtils::FileSystem::forFilesWithExtension(directory, ".log", [&filesCounter](const auto& filePath) -> void {
-					Logger::print("{}\n", filePath.string());
+					Logger::print("{}", filePath.string());
 					++filesCounter;
 				});
 				suite.expectEqual(filesCounter, 1u);
@@ -37,8 +37,8 @@ namespace CppUtils::UnitTest::FileSystem::File
 
 	namespace Binary
 	{
-		auto _ = TestSuite{"FileSystem/File/Binary", {"Logger", "FileSystem/Directory"}, [](auto& suite) {
-			using Logger = CppUtils::Logger<"CppUtils">;
+		auto _ = TestSuite{"FileSystem/File/Binary", {"Logger", "FileSystem/Directory"}, [](TestSuite& suite) {
+			using Logger = TestSuite::Logger;
 
 			suite.addTest("WriteRead", [&] {
 				CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
@@ -46,7 +46,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 					auto originalValue = 12'345;
 					CppUtils::FileSystem::Binary::write(filePath, originalValue);
 					auto fileContent = CppUtils::FileSystem::Binary::read<decltype(originalValue)>(filePath);
-					Logger::print("{}\n", fileContent);
+					Logger::print("{}", fileContent);
 					suite.expectEqual(fileContent, originalValue);
 				}};
 			});
@@ -60,7 +60,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 					CppUtils::FileSystem::Binary::writeVector(filePath, originalVector);
 					auto vector = CppUtils::FileSystem::Binary::readVector<int>(filePath);
 					for (auto nb : vector)
-						Logger::print("{}\n", nb);
+						Logger::print("{}", nb);
 					suite.expectEqual(vector, originalVector);
 				}};
 			});
@@ -69,8 +69,8 @@ namespace CppUtils::UnitTest::FileSystem::File
 
 	namespace String
 	{
-		auto _ = TestSuite{"FileSystem/File/String", {"Logger", "FileSystem/Directory"}, [](auto& suite) {
-			using Logger = CppUtils::Logger<"CppUtils">;
+		auto _ = TestSuite{"FileSystem/File/String", {"Logger", "FileSystem/Directory"}, [](TestSuite& suite) {
+			using Logger = TestSuite::Logger;
 
 			suite.addTest("WriteRead", [&] {
 				CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
@@ -78,7 +78,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 					auto originalString = "Hello World!";
 					CppUtils::FileSystem::String::write(filePath, originalString);
 					auto fileContent = CppUtils::FileSystem::String::read(filePath);
-					Logger::print("{}\n", fileContent);
+					Logger::print("{}", fileContent);
 					suite.expectEqual(fileContent, originalString);
 				}};
 			});
@@ -91,7 +91,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 					CppUtils::FileSystem::String::append(filePath, firstString);
 					CppUtils::FileSystem::String::append(filePath, secondString);
 					auto fileContent = CppUtils::FileSystem::String::read(filePath);
-					Logger::print("{}\n", fileContent);
+					Logger::print("{}", fileContent);
 					suite.expectEqual(fileContent, std::string{firstString} + secondString);
 				}};
 			});

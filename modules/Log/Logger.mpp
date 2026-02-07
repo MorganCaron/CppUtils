@@ -6,6 +6,8 @@ export module CppUtils.Logger;
 
 import std;
 import CppUtils.String;
+import CppUtils.Execution.EventQueue;
+import CppUtils.Pattern.Multiton;
 import CppUtils.Terminal.Size;
 import CppUtils.Terminal.TextColor;
 import CppUtils.Terminal.TextModifier;
@@ -18,145 +20,46 @@ export namespace CppUtils
 	template<String::Hasher loggerName = String::Hash{}>
 	struct Logger final
 	{
-		inline Logger() = delete;
-
-		struct Formatter final
+		[[nodiscard]] static inline auto& eventQueue() noexcept
 		{
-			Terminal::TextModifier textModifier;
-			std::string message;
-		};
-
-		template<String::Hasher logType = String::Hash{}>
-		static inline auto format(std::string_view message) -> Formatter
-		{
-			return {
-				Terminal::TextModifier{},
-				std::string{message}};
+			auto& eventQueue = Pattern::Multiton<Execution::EventQueue, loggerName>::get();
+			[[maybe_unused]] static auto _ = (configure(eventQueue), true);
+			return eventQueue;
 		}
 
+		static inline void configure(Execution::EventQueue& eventQueue);
+
 		template<String::Hasher logType = String::Hash{}, class... Args>
-		static inline auto print(std::ostream& ostream, std::format_string<Args...> fmt, Args&&... args) -> void
+		static inline auto emit(Args&&... args) -> void
 		{
-			auto [textModifier, message] = format<logType>(std::format(fmt, std::forward<Args>(args)...));
-			std::print(ostream, "{}", std::move(message));
+			eventQueue().template emit<logType>(std::forward<Args>(args)...);
+		}
+
+		template<class... Args>
+		static inline auto emit(String::Hash logType, Args&&... args) -> void
+		{
+			eventQueue().emit(logType, std::forward<Args>(args)...);
 		}
 
 		template<String::Hasher logType = String::Hash{}, class... Args>
 		static inline auto print(std::format_string<Args...> fmt, Args&&... args) -> void
 		{
-			using namespace String::Literals;
-			auto [textModifier, message] = format<logType>(std::format(fmt, std::forward<Args>(args)...));
-			if constexpr (logType == "error"_hash)
-				std::print(stderr, "{}", std::move(message));
-			else
-				std::print("{}", std::move(message));
+			emit<logType>(std::format(fmt, std::forward<Args>(args)...));
 		}
 
 		template<String::Hasher logType = String::Hash{}>
-		static inline auto printSeparator(std::ostream& ostream) -> void
+		static inline auto subscribe(auto&& function) -> void
 		{
-			using namespace std::literals;
-			auto line = ""s;
-			auto terminalWidth = Terminal::getTerminalSize().width();
-			for (auto i = 0uz; i < terminalWidth; ++i)
-				line += "─";
-			auto [textModifier, message] = format<logType>("");
-			std::print(ostream, "{}\n", std::move(line));
+			eventQueue().template subscribe<logType>(std::forward<decltype(function)>(function));
 		}
 
-		template<String::Hasher logType = String::Hash{}>
-		static inline auto printSeparator() -> void
+		static inline auto waitUntilFinished() -> void
 		{
-			using namespace std::literals;
-			auto line = ""s;
-			auto terminalWidth = Terminal::getTerminalSize().width();
-			for (auto i = 0uz; i < terminalWidth; ++i)
-				line += "─";
-			auto [textModifier, message] = format<logType>("");
-			std::print("{}\n", std::move(line));
+			eventQueue().waitUntilFinished();
 		}
 	};
 
-	template<>
-	template<>
-	inline auto Logger<"CppUtils">::format<"info">(std::string_view message) -> Formatter
-	{
-		return {
-			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Default},
-			std::format("{}\n", message)};
-	}
-
-	template<>
-	template<>
-	inline auto Logger<"CppUtils">::format<"important">(std::string_view message) -> Formatter
-	{
-		return {
-			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Cyan},
-			std::format("🛈 {}\n", message)};
-	}
-
-	template<>
-	template<>
-	inline auto Logger<"CppUtils">::format<"success">(std::string_view message) -> Formatter
-	{
-		return {
-			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Green},
-			std::format("{} ✓\n", message)};
-	}
-
-	template<>
-	template<>
-	inline auto Logger<"CppUtils">::format<"debug">(std::string_view message) -> Formatter
-	{
-		return {
-			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Magenta},
-			std::format("🛠 DEBUG: {}\n", message)};
-	}
-
-	template<>
-	template<>
-	inline auto Logger<"CppUtils">::format<"detail">(std::string_view message) -> Formatter
-	{
-		return {
-			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Blue},
-			std::format("{}\n", message)};
-	}
-
-	template<>
-	template<>
-	inline auto Logger<"CppUtils">::format<"warning">(std::string_view message) -> Formatter
-	{
-		return {
-			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Yellow},
-			std::format("{:^{}}\n{} ⚠\n", "🛆 WARNING 🛆", Terminal::getTerminalSize().width(), message)};
-	}
-
-	template<>
-	template<>
-	inline auto Logger<"CppUtils">::format<"error">(std::string_view message) -> Formatter
-	{
-		return {
-			Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red},
-			std::format("{:^{}}\n{} ✕\n", "🛇 ERROR 🛇", Terminal::getTerminalSize().width(), message)};
-	}
-
-	inline auto logException(const std::exception& exception, std::size_t depth = 0) -> void
-	{
-		using Logger = Logger<"CppUtils">;
-		if (depth == 0)
-			Logger::print<"error">("{}", exception.what());
-		auto _ = (depth == 0) ? Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red} : Terminal::TextModifier{};
-		if (depth > 0)
-			Logger::print("{}{}\n", std::string(depth * 2, ' '), exception.what());
-		try
-		{
-			std::rethrow_if_nested(exception);
-		}
-		catch (const std::exception& nestedException)
-		{
-			logException(nestedException, depth + 1);
-		}
-		catch (...)
-		{}
-	}
+	template<String::Hasher loggerName>
+	inline void Logger<loggerName>::configure(Execution::EventQueue&)
+	{}
 }

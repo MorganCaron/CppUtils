@@ -1,0 +1,27 @@
+export module CppUtils.UnitTests.Execution.EventQueue;
+
+import std;
+import CppUtils.Execution.EventQueue;
+import CppUtils.UnitTest;
+
+namespace CppUtils::UnitTest::Execution
+{
+	auto _ = TestSuite{"Execution/EventQueue", {"Execution/EventDispatcher", "Thread/UniqueLocker", "Thread/ThreadLoop", "Execution/ScopeGuard", "UnitTest"}, [](TestSuite& suite) {
+		suite.addTest("Local EventQueue emission", [&] {
+			auto queue = CppUtils::Execution::EventQueue{};
+			auto received = false;
+			auto valueReceived = 0;
+
+			queue.subscribe<"test">([&](int value) {
+				received = true;
+				valueReceived = value;
+			});
+
+			queue.emit<"test">(42);
+			queue.waitUntilFinished();
+
+			suite.expect(received);
+			suite.expectEqual(valueReceived, 42);
+		});
+	}};
+}

@@ -5,9 +5,9 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::String::Encoding
 {
-	auto _ = TestSuite{"String/Encoding", {"Logger"}, [](auto& suite) {
+	auto _ = TestSuite{"String/Encoding", {"Logger"}, [](TestSuite& suite) {
 		using namespace std::literals;
-		using Logger = CppUtils::Logger<"CppUtils">;
+		using Logger = TestSuite::Logger;
 
 		suite.addTest("toUtf8(char32_t)", [&] {
 			// 1 octet (0x00 - 0x7F)
@@ -15,11 +15,11 @@ namespace CppUtils::UnitTest::String::Encoding
 				static_assert(char32_t{0x24} == U'$');
 
 				auto result = CppUtils::String::toUtf8(char32_t{0x24});
-				Logger::print("toUtf8(0x24) -> {}\n", result);
+				Logger::print("toUtf8(0x24) -> {}", result);
 				suite.expectEqual(result, "\x24");
 
 				result = CppUtils::String::toUtf8(U'$');
-				Logger::print("toUtf8(U'$') -> {}\n", result);
+				Logger::print("toUtf8(U'$') -> {}", result);
 				suite.expectEqual(result, "\x24");
 			}
 
@@ -27,11 +27,11 @@ namespace CppUtils::UnitTest::String::Encoding
 				static_assert(char32_t{0x41} == U'A');
 
 				auto result = CppUtils::String::toUtf8(char32_t{0x41});
-				Logger::print("toUtf8(0x41) -> {}\n", result);
+				Logger::print("toUtf8(0x41) -> {}", result);
 				suite.expectEqual(result, "A");
 
 				result = CppUtils::String::toUtf8(U'A');
-				Logger::print("toUtf8(U'A') -> {}\n", result);
+				Logger::print("toUtf8(U'A') -> {}", result);
 				suite.expectEqual(result, "A");
 			}
 
@@ -40,11 +40,11 @@ namespace CppUtils::UnitTest::String::Encoding
 				static_assert(char32_t{0xA2} == U'¢');
 
 				auto result = CppUtils::String::toUtf8(char32_t{0xA2});
-				Logger::print("toUtf8(0xA2) -> {}\n", result);
+				Logger::print("toUtf8(0xA2) -> {}", result);
 				suite.expectEqual(result, "\xC2\xA2");
 
 				result = CppUtils::String::toUtf8(U'¢');
-				Logger::print("toUtf8(U'¢') -> {}\n", result);
+				Logger::print("toUtf8(U'¢') -> {}", result);
 				suite.expectEqual(result, "\xC2\xA2");
 			}
 
@@ -52,11 +52,11 @@ namespace CppUtils::UnitTest::String::Encoding
 				static_assert(char32_t{0x3'B1} == U'α');
 
 				auto result = CppUtils::String::toUtf8(char32_t{0x3'B1});
-				Logger::print("toUtf8(0x3B1) -> {}\n", result);
+				Logger::print("toUtf8(0x3B1) -> {}", result);
 				suite.expectEqual(result, "\xCE\xB1");
 
 				result = CppUtils::String::toUtf8(U'α');
-				Logger::print("toUtf8(U'α') -> {}\n", result);
+				Logger::print("toUtf8(U'α') -> {}", result);
 				suite.expectEqual(result, "\xCE\xB1");
 			}
 
@@ -65,11 +65,11 @@ namespace CppUtils::UnitTest::String::Encoding
 				static_assert(char32_t{0x20'AC} == U'€');
 
 				auto result = CppUtils::String::toUtf8(char32_t{0x20'AC});
-				Logger::print("toUtf8(0x20AC) -> {}\n", result);
+				Logger::print("toUtf8(0x20AC) -> {}", result);
 				suite.expectEqual(result, "\xE2\x82\xAC");
 
 				result = CppUtils::String::toUtf8(U'€');
-				Logger::print("toUtf8(U'€') -> {}\n", result);
+				Logger::print("toUtf8(U'€') -> {}", result);
 				suite.expectEqual(result, "\xE2\x82\xAC");
 			}
 
@@ -77,11 +77,11 @@ namespace CppUtils::UnitTest::String::Encoding
 				static_assert(char32_t{0x30'93} == U'ん');
 
 				auto result = CppUtils::String::toUtf8(char32_t{0x30'93});
-				Logger::print("toUtf8(0x3093) -> {}\n", result);
+				Logger::print("toUtf8(0x3093) -> {}", result);
 				suite.expectEqual(result, "\xE3\x82\x93");
 
 				result = CppUtils::String::toUtf8(U'ん');
-				Logger::print("toUtf8(U'ん') -> {}\n", result);
+				Logger::print("toUtf8(U'ん') -> {}", result);
 				suite.expectEqual(result, "\xE3\x82\x93");
 			}
 
@@ -90,11 +90,11 @@ namespace CppUtils::UnitTest::String::Encoding
 				static_assert(char32_t{0x1'03'48} == U'𐍈');
 
 				auto result = CppUtils::String::toUtf8(char32_t{0x1'03'48});
-				Logger::print("toUtf8(0x10348) -> {}\n", result);
+				Logger::print("toUtf8(0x10348) -> {}", result);
 				suite.expectEqual(result, "\xF0\x90\x8D\x88");
 
 				result = CppUtils::String::toUtf8(U'𐍈');
-				Logger::print("toUtf8(U'𐍈') -> {}\n", result);
+				Logger::print("toUtf8(U'𐍈') -> {}", result);
 				suite.expectEqual(result, "\xF0\x90\x8D\x88");
 			}
 
@@ -102,11 +102,11 @@ namespace CppUtils::UnitTest::String::Encoding
 				static_assert(char32_t{0x1'F6'00} == U'😀');
 
 				auto result = CppUtils::String::toUtf8(char32_t{0x1'F6'00});
-				Logger::print("toUtf8(0x1F600) -> {}\n", result);
+				Logger::print("toUtf8(0x1F600) -> {}", result);
 				suite.expectEqual(result, "\xF0\x9F\x98\x80");
 
 				result = CppUtils::String::toUtf8(U'😀');
-				Logger::print("toUtf8(U'😀') -> {}\n", result);
+				Logger::print("toUtf8(U'😀') -> {}", result);
 				suite.expectEqual(result, "\xF0\x9F\x98\x80");
 			}
 		});
@@ -115,71 +115,71 @@ namespace CppUtils::UnitTest::String::Encoding
 			// 1 octet
 			{
 				auto result = CppUtils::String::toUtf8(U"$"sv);
-				Logger::print("toUtf8(U\"$\") -> {}\n", result);
+				Logger::print("toUtf8(U\"$\") -> {}", result);
 				suite.expectEqual(result, "\x24");
 			}
 
 			{
 				auto result = CppUtils::String::toUtf8(U"A"sv);
-				Logger::print("toUtf8(U\"A\") -> {}\n", result);
+				Logger::print("toUtf8(U\"A\") -> {}", result);
 				suite.expectEqual(result, "A");
 			}
 
 			// 2 octet
 			{
 				auto result = CppUtils::String::toUtf8(U"¢"sv);
-				Logger::print("toUtf8(U\"¢\") -> {}\n", result);
+				Logger::print("toUtf8(U\"¢\") -> {}", result);
 				suite.expectEqual(result, "\xC2\xA2");
 			}
 
 			{
 				auto result = CppUtils::String::toUtf8(U"α"sv);
-				Logger::print("toUtf8(U\"α\") -> {}\n", result);
+				Logger::print("toUtf8(U\"α\") -> {}", result);
 				suite.expectEqual(result, "\xCE\xB1");
 			}
 
 			// 3 octet
 			{
 				auto result = CppUtils::String::toUtf8(U"€"sv);
-				Logger::print("toUtf8(U\"€\") -> {}\n", result);
+				Logger::print("toUtf8(U\"€\") -> {}", result);
 				suite.expectEqual(result, "\xE2\x82\xAC");
 			}
 
 			{
 				auto result = CppUtils::String::toUtf8(U"ん"sv);
-				Logger::print("toUtf8(U\"ん\") -> {}\n", result);
+				Logger::print("toUtf8(U\"ん\") -> {}", result);
 				suite.expectEqual(result, "\xE3\x82\x93");
 			}
 
 			// 4 octet
 			{
 				auto result = CppUtils::String::toUtf8(U"𐍈"sv);
-				Logger::print("toUtf8(U\"𐍈\") -> {}\n", result);
+				Logger::print("toUtf8(U\"𐍈\") -> {}", result);
 				suite.expectEqual(result, "\xF0\x90\x8D\x88");
 			}
 
 			{
 				auto result = CppUtils::String::toUtf8(U"😀"sv);
-				Logger::print("toUtf8(U\"😀\") -> {}\n", result);
+				Logger::print("toUtf8(U\"😀\") -> {}", result);
 				suite.expectEqual(result, "\xF0\x9F\x98\x80");
 			}
 
 			// Combined
 			{
 				auto result = CppUtils::String::toUtf8(U"Hello World!"sv);
-				Logger::print("toUtf8(U\"Hello World!\") -> {}\n", result);
+				Logger::print("toUtf8(U\"Hello World!\") -> {}", result);
 				suite.expectEqual(result, "Hello World!");
 			}
 
 			{
 				auto result = CppUtils::String::toUtf8(U"$A¢α€ん𐍈😀"sv);
-				Logger::print("toUtf8(U\"$A¢α€ん𐍈😀\") -> {}\n", result);
+				Logger::print("toUtf8(U\"$A¢α€ん𐍈😀\") -> {}", result);
 				suite.expectEqual(result, "$A\xC2\xA2\xCE\xB1\xE2\x82\xAC\xE3\x82\x93\xF0\x90\x8D\x88\xF0\x9F\x98\x80");
 			}
 
 			{
 				auto result = CppUtils::String::toUtf8(U"A€😀"sv);
-				Logger::print("toUtf8(U\"A€😀\") -> {}\n", result);
+				Logger::print("toUtf8(U\"A€😀\") -> {}", result);
 				suite.expectEqual(result, "A\xE2\x82\xAC\xF0\x9F\x98\x80");
 			}
 		});

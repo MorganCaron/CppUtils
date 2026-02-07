@@ -40,6 +40,7 @@
 ### 🚀 Execution
 - [`Event`](modules/Execution/Event.mpp) - An event for thread synchronization
 - [`EventDispatcher`](modules/Execution/EventDispatcher.mpp) - Event system to subscribe functions and trigger actions by event name
+- [`EventQueue`](modules/Execution/EventQueue.mpp) - Thread-safe event queue running on a dedicated thread for asynchronous event processing (preserves event order)
 - [`ScopeGuard`](modules/Execution/ScopeGuard.mpp) - RAII utility to execute a function when leaving a scope, ensuring resource cleanup
 
 ### 📁 File System
@@ -57,7 +58,8 @@
 - [`VirtualMachine`](modules/Language/VirtualMachine.mpp) - Generic virtual machine
 
 ### 📝 Logging & Benchmarking
-- [`Logger`](modules/Log/Logger.mpp) - Formattable logger with customizable log types and appearances
+- [`Logger`](modules/Log/Logger.mpp) - Asynchronous, configurable and formattable logger with support for colors and customizable log types
+- [`FileSink`](modules/Log/FileSink.mpp) - Pluggable sink for automated file logging with integrated rotation and file size management
 - [`LogRotate`](modules/Log/LogRotate.mpp) - Log file rotation based on maximum file size
 - [`ChronoLogger`](modules/Log/ChronoLogger.mpp) - RAII timer that logs elapsed time at scope exit
 
@@ -73,6 +75,10 @@
 ### 🌐 Networking
 - [`Client`](modules/Network/Client.mpp) - TCP client with synchronous and asynchronous modes
 - [`Server`](modules/Network/Server.mpp) - TCP server with multi-client support
+
+### 🧩 Patterns
+- [`Singleton`](modules/Pattern/Singleton.mpp) - Generic Meyers Singleton implementation (thread-safe and lazy)
+- [`Multiton`](modules/Pattern/Multiton.mpp) - Generic Multiton implementation based on the Meyers Singleton
 
 ### 💻 Terminal
 - [`Canvas`](modules/Terminal/Canvas.mpp) - Terminal-based 2D drawing surface
@@ -97,7 +103,6 @@
 - [`Accessor`](modules/Thread/UniqueLocker.mpp) - RAII accessor for reading/writing an `UniqueLocker` or exclusive access to a `SharedLocker`
 - [`ReadOnlyAccessor`](modules/Thread/SharedLocker.mpp) - RAII accessor for shared (non-exclusive) reading of a `SharedLocker`, allowing parallel access
 - [`MultipleAccessor`](modules/Thread/UniqueLocker.mpp) - RAII accessor for multiple lockers, safely acquiring them to avoid deadlocks and data races
-
 
 ### 🏷️ Type
 - [`Concept`](modules/Type/Concept.mpp) - Extensions to `<type_traits>` and `<concepts>` providing additional compile-time checks and utilities

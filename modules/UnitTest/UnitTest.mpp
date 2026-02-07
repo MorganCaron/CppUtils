@@ -9,6 +9,8 @@ import CppUtils.Chrono.Concept;
 import CppUtils.ChronoLogger;
 import CppUtils.Container;
 import CppUtils.Logger;
+import CppUtils.Log.Exception;
+import CppUtils.Log.Config.UnitTests;
 import CppUtils.String;
 import CppUtils.Terminal;
 import CppUtils.System.Main;
@@ -42,6 +44,8 @@ namespace CppUtils::UnitTest
 
 	class TestRunner final
 	{
+		using Logger = Logger<"UnitTests">;
+
 	public:
 		inline auto addTestSuite(const std::string& name, std::vector<Test> tests) -> void
 		{
@@ -59,21 +63,19 @@ namespace CppUtils::UnitTest
 
 		inline auto executeTest(const Test& test, const TestSettings& settings) const -> bool
 		{
-			using namespace std::literals;
-			using namespace String::Literals;
-			using Logger = Logger<"CppUtils">;
-
 			if (settings.verbose)
 			{
-				Logger::printSeparator<"detail">();
+				Logger::emit<"separator">();
 				Logger::print<"detail">("{}:", test.name);
 			}
 			try
 			{
 				try
 				{
-					auto chronoLogger = Log::ChronoLogger{"Test", settings.verbose and settings.chrono};
-					
+					auto chronoLogger = Log::ChronoLogger{[](std::string_view duration) {
+						Logger::print<"detail">("Test duration: {}", duration);
+					}, settings.verbose and settings.chrono};
+
 					auto promise = std::promise<void>{};
 					auto future = promise.get_future();
 
@@ -109,7 +111,7 @@ namespace CppUtils::UnitTest
 			}
 			catch (const std::exception& exception)
 			{
-				logException(exception);
+				logException<Logger>(exception);
 				return false;
 			}
 			if (settings.verbose)
@@ -119,8 +121,6 @@ namespace CppUtils::UnitTest
 
 		inline auto executeTests(TestSettings settings) -> int
 		{
-			using Logger = Logger<"CppUtils">;
-
 			auto testSuiteIsSuccess = std::unordered_map<std::string, bool>{};
 
 			const auto nbTests = std::ranges::fold_left(
@@ -131,6 +131,7 @@ namespace CppUtils::UnitTest
 
 			auto successfulTests = std::vector<std::string>{};
 			auto failedTests = std::vector<std::string>{};
+			auto skippedTests = std::vector<std::string>{};
 
 			if (auto result = m_testSuites.forEach([&](const auto& name, const auto& tests, const auto& dependencies) -> bool {
 				if (std::empty(tests))
@@ -143,7 +144,12 @@ namespace CppUtils::UnitTest
 
 				for (const auto& dependency : dependencies)
 					if (not testSuiteIsSuccess[dependency])
+					{
 						Logger::print<"warning">("Skipping test suite {} due to failed prerequisites in test suite {}", name, dependency);
+						testSuiteIsSuccess[name] = false;
+						skippedTests.push_back(name);
+						return not settings.fastAbort;
+					}
 
 				auto result = std::ranges::all_of(tests, [&](const auto& test) { return executeTest(test, settings); });
 				testSuiteIsSuccess[name] = result;
@@ -155,27 +161,41 @@ namespace CppUtils::UnitTest
 
 			auto nbSuccess = std::size(successfulTests);
 			auto nbFail = std::size(failedTests);
+			auto nbSkip = std::size(skippedTests);
 
-			Logger::printSeparator<"detail">();
+			Logger::emit<"separator">();
 			Logger::print<"detail">("Test results");
-			if (nbFail == 0)
+			if (nbFail == 0 and nbSkip == 0)
 			{
 				Logger::print<"success">("All tests passed successfully");
 				return exitSuccess;
 			}
-			{
-				auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
-				Logger::print("The tests failed:\n");
-			}
+			if (nbFail > 0)
+				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, "The tests failed:");
+			else
+				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, "Some tests were skipped:");
+
 			if (nbSuccess > 0)
 				Logger::print<"success">("- {} successful tests", nbSuccess);
-			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
 			if (nbSuccess == 0)
-				Logger::print("- 0 successful tests\n");
-			Logger::print("- {} failed tests\n", nbFail);
-			for (const auto& failedTest : failedTests)
-				Logger::print("  - {}\n", failedTest);
-			return exitFailure;
+				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, "- 0 successful tests");
+			
+			if (nbFail > 0)
+			{
+				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, std::format("- {} failed tests", nbFail));
+				for (const auto& failedTest : failedTests)
+					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, std::format("  - {}", failedTest));
+			}
+
+			if (nbSkip > 0)
+			{
+				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("- {} skipped tests (due to failed dependencies)", nbSkip));
+				for (const auto& skippedTest : skippedTests)
+					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("  - {}", skippedTest));
+			}
+
+			Logger::waitUntilFinished();
+			return nbFail == 0 ? exitSuccess : exitFailure;
 		}
 
 	private:
@@ -186,7 +206,7 @@ namespace CppUtils::UnitTest
 
 	export struct TestSuite final
 	{
-		using Logger = CppUtils::Logger<"CppUtils">;
+		using Logger = Logger<"UnitTests">;
 
 		inline explicit TestSuite(const std::string& name, std::vector<std::string> prerequisites, std::function<void(TestSuite&)> function)
 		{
@@ -245,7 +265,7 @@ namespace CppUtils::UnitTest
 			}
 			catch (const ExceptionType&)
 			{
-				Logger::print<"success">("Expected exception caught.");
+				Logger::emit<"success">("Expected exception caught.");
 			}
 			catch (const std::exception& exception)
 			{

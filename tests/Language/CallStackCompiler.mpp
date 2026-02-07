@@ -9,9 +9,9 @@ namespace CppUtils::UnitTest::Language::CallStackCompiler
 	auto _ = TestSuite{
 		"Language/CallStackCompiler",
 		{"Logger", "Language/LabelsCompiler"},
-		[]([[maybe_unused]] auto& suite) {
+		[](auto& suite) {
 		using namespace std::literals;
-		using Logger = CppUtils::Logger<"CppUtils">;
+		using Logger = TestSuite::Logger;
 		namespace VM = CppUtils::Language::VirtualMachine;
 		namespace Compiler = CppUtils::Language::CallStackCompiler;
 

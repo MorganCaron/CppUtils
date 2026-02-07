@@ -1,0 +1,4 @@
+export module CppUtils.Pattern;
+
+export import CppUtils.Pattern.Multiton;
+export import CppUtils.Pattern.Singleton;

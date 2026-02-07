@@ -1,0 +1,35 @@
+module;
+
+#include <cstdio>
+
+export module CppUtils.Log.Exception;
+
+import std;
+import CppUtils.Logger;
+import CppUtils.Log.Config.CppUtils;
+import CppUtils.Terminal.TextColor;
+import CppUtils.Terminal.TextModifier;
+
+export namespace CppUtils
+{
+	template<class Logger>
+	inline auto logException(const std::exception& exception) -> void
+	{
+		const auto buildMessage = [](this const auto& self, const std::exception& exception, std::size_t depth) -> std::string {
+			auto message = std::format("{}{}", std::string(depth * 2, ' '), exception.what());
+			try
+			{
+				std::rethrow_if_nested(exception);
+			}
+			catch (const std::exception& nestedException)
+			{
+				message += "\n" + self(nestedException, depth + 1);
+			}
+			catch (...)
+			{}
+			return message;
+		};
+
+		Logger::template print<"error">("{}", buildMessage(exception, 0));
+	}
+}

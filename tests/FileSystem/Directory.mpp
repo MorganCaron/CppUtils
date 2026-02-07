@@ -5,15 +5,15 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::FileSystem::Directory
 {
-	auto _ = TestSuite{"FileSystem/Directory", {"Logger"}, [](auto& suite) {
-		using Logger = CppUtils::Logger<"CppUtils">;
+	auto _ = TestSuite{"FileSystem/Directory", {"Logger"}, [](TestSuite& suite) {
+		using Logger = TestSuite::Logger;
 
 		suite.addTest("TemporaryDirectory", [&] {
 			auto functionCalled = false;
 			CppUtils::FileSystem::TemporaryDirectory{[&functionCalled, &suite](const auto& directory) -> void {
 				functionCalled = true;
 				suite.expect(std::filesystem::exists(directory));
-				Logger::print("{}\n", directory.string());
+				Logger::print("{}", directory.string());
 			}};
 			suite.expect(functionCalled);
 		});

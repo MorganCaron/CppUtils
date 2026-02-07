@@ -5,9 +5,20 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::ChronoLogger
 {
-	auto _ = TestSuite{"Log", {"Logger", "Chrono"}, [](auto& suite) {
+	auto _ = TestSuite{"Log", {"Logger", "Chrono"}, [](TestSuite& suite) {
+		using Logger = TestSuite::Logger;
+
 		suite.addTest("ChronoLogger", [&] {
-			auto chronoLogger = CppUtils::Log::ChronoLogger{"Test"};
+			auto chronoLogger = CppUtils::Log::ChronoLogger{[](std::string_view duration) {
+				Logger::emit<"info">("ChronoLogger duration: {}", duration);
+			}};
+			chronoLogger.stop();
+		});
+
+		suite.addTest("ChronoLogger with custom logger", [&] {
+			auto chronoLogger = CppUtils::Log::ChronoLogger{[](std::string_view duration) {
+				Logger::template emit<"info">("TestWithSuiteLogger duration: {}", duration);
+			}};
 			chronoLogger.stop();
 		});
 	}};

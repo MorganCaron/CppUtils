@@ -4,7 +4,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::SafeShared
 {
-	auto _ = TestSuite{"Container/SafeShared", {"UnitTest", "Thread/SharedLocker"}, [](auto& suite) {
+	auto _ = TestSuite{"Container/SafeShared", {"UnitTest", "Thread/SharedLocker"}, [](TestSuite& suite) {
 		suite.addTest("Empty", [&] {
 			auto safeSharedString = CppUtils::Container::SafeShared<std::string>{};
 

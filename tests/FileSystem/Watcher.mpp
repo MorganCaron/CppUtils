@@ -13,9 +13,9 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 	auto _ = TestSuite{
 		"FileSystem/Watcher",
 		{"Logger", "FileSystem/Directory", "FileSystem/File"},
-		[](auto& suite) {
+		[](TestSuite& suite) {
 		using namespace std::chrono_literals;
-		using Logger = CppUtils::Logger<"CppUtils">;
+		using Logger = TestSuite::Logger;
 
 		suite.addTest("No file", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
@@ -67,7 +67,7 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 				watcher.onEvent(
 					[](CppUtils::FileSystem::Event event,
 						const std::filesystem::path& filePath) -> void {
-					Logger::print("{}: {}\n", event, filePath.string());
+					Logger::print("{}: {}", event, filePath.string());
 				});
 				watcher.onEvent(CppUtils::FileSystem::Event::Created,
 					[&suite, &expectCreateFile, &filePath](
@@ -104,7 +104,7 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 				watcher.onEvent(
 					[](CppUtils::FileSystem::Event event,
 						const std::filesystem::path& filePath) -> void {
-					Logger::print("{}: {}\n", event, filePath.string());
+					Logger::print("{}: {}", event, filePath.string());
 				});
 				watcher.onEvent(CppUtils::FileSystem::Event::CloseWrite,
 					[&suite, &expectModifyFile, &filePath](
@@ -132,7 +132,7 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 				watcher.onEvent(
 					[](CppUtils::FileSystem::Event event,
 						const std::filesystem::path& filePath) -> void {
-					Logger::print("{}: {}\n", event, filePath.string());
+					Logger::print("{}: {}", event, filePath.string());
 				});
 				watcher.onEvent(CppUtils::FileSystem::Event::CloseWrite,
 					[&suite, &expectModifyFile, &filePath](
@@ -160,7 +160,7 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 				watcher.onEvent(
 					[](CppUtils::FileSystem::Event event,
 						const std::filesystem::path& filePath) -> void {
-					Logger::print("{}: {}\n", event, filePath.string());
+					Logger::print("{}: {}", event, filePath.string());
 				});
 				watcher.onEvent(CppUtils::FileSystem::Event::Deleted,
 					[&suite, &expectDeleteFile, &filePath](

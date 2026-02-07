@@ -5,9 +5,9 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::TypedStack
 {
-	auto _ = TestSuite{"Container/TypedStack", {"Logger"}, [](auto& suite) {
+	auto _ = TestSuite{"Container/TypedStack", {"Logger"}, [](TestSuite& suite) {
 		using namespace std::literals;
-		using Logger = CppUtils::Logger<"CppUtils">;
+		using Logger = TestSuite::Logger;
 
 		suite.addTest("Empty Stack", [&] {
 			auto stack = CppUtils::Container::TypedStack<int>{};
@@ -31,10 +31,10 @@ namespace CppUtils::UnitTest::Container::TypedStack
 
 			stack.print();
 
-			Logger::print("{}\n", stack.get<bool>(0));
-			Logger::print("{}\n", stack.get<int>(1));
-			Logger::print("{}\n", stack.get<float>(2));
-			Logger::print("{}\n", stack.get<std::string_view>(3));
+			Logger::print("{}", stack.get<bool>(0));
+			Logger::print("{}", stack.get<int>(1));
+			Logger::print("{}", stack.get<float>(2));
+			Logger::print("{}", stack.get<std::string_view>(3));
 		});
 
 		suite.addTest("push/top", [&] {
@@ -75,9 +75,9 @@ namespace CppUtils::UnitTest::Container::TypedStack
 			auto stack = CppUtils::Container::TypedStack<bool, int, float, std::string_view>{true, 42, 3.14f, "Hello World!"sv};
 
 			for (auto i = 0uz; i < std::size(stack); ++i)
-				stack.visit(i, [&stack, i](auto&& value) -> void {
+				stack.visit(i, [&](auto&& value) -> void {
 					stack.print(i);
-					Logger::print("{}\n", value);
+					Logger::print("{}", value);
 				});
 
 			suite.expectEqual(std::size(stack), 4uz);

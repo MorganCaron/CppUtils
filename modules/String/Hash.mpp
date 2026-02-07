@@ -56,6 +56,8 @@ export namespace CppUtils::String
 		std::array<CharT, N> name;
 	};
 
+	static_assert(Hasher{"Foo"}.hash == hash("Foo"));
+
 	namespace Literals
 	{
 		[[nodiscard]] inline constexpr auto operator""_hash(const char* cString, std::size_t size) noexcept -> Hash
@@ -67,6 +69,9 @@ export namespace CppUtils::String
 		{
 			return hash(std::string_view{cString, size});
 		}
+
+		static_assert("Foo"_hash == hash("Foo"));
+		static_assert("Foo"_token == hash("Foo"));
 
 		static_assert("Foo"_hash == "Foo"_hash);
 		static_assert("Foo"_hash != "Bar"_hash);

@@ -9,9 +9,8 @@ import CppUtils;
 namespace CppUtils::UnitTest::Stl::Format
 {
 	/*
-	auto _ = TestSuite{"Stl/Format", [](auto& suite) {
+	auto _ = TestSuite{"Stl/Format", [](TestSuite& suite) {
 		using namespace std::literals;
-		using Logger = CppUtils::Logger<"CppUtils">;
 
 		suite.addTest("empty string", [&] {
 			constexpr auto result = ::Stl::format("");

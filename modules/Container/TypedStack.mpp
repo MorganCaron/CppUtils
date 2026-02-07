@@ -173,9 +173,8 @@ export namespace CppUtils::Container
 				return std::array{+copyToDestinationImpl<SourceType, SupportedTypes>()...};
 			};
 
-			static constexpr auto copyFromSource = std::array<std::array<void (*)(TypedStack<SupportedTypes...>&, std::size_t, std::size_t), sizeof...(SupportedTypes)>, sizeof...(SupportedTypes)> {
-				copyToDestination.template operator()<SupportedTypes>()...
-			};
+			static constexpr auto copyFromSource = std::array<std::array<void (*)(TypedStack<SupportedTypes...>&, std::size_t, std::size_t), sizeof...(SupportedTypes)>, sizeof...(SupportedTypes)>{
+				copyToDestination.template operator()<SupportedTypes>()...};
 
 			if (sourcePosition >= size())
 				throw std::out_of_range{std::format("TypedStack::copy({}, {}) : Source out of range", sourcePosition, destinationPosition)};
@@ -207,7 +206,7 @@ export namespace CppUtils::Container
 
 		inline constexpr auto print() const -> void
 		{
-			Logger::printSeparator<"debug">();
+			Logger::emit<"separator">();
 			Logger::print<"debug">("Stack size: {} elements; {} bytes", size(), getByteSize());
 			for (auto i = size(); i > 0;)
 				print(--i);

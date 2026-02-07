@@ -5,11 +5,12 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Logger
 {
-	auto _ = TestSuite{"Logger", {"UnitTest"}, [](auto& suite) {
-		using Logger = CppUtils::Logger<"CppUtils">;
+	auto _ = TestSuite{"Logger", {"UnitTest"}, [](TestSuite& suite) {
+		using namespace std::literals;
+		using Logger = TestSuite::Logger;
 
-		suite.addTest("In console", [] {
-			Logger::print("Message\n");
+		suite.addTest("In console", [&] {
+			Logger::print("Message");
 
 			Logger::print<"info">("Information message");
 			Logger::print<"important">("Important message");
@@ -20,20 +21,16 @@ namespace CppUtils::UnitTest::Logger
 			Logger::print<"error">("Error message");
 		});
 
-		suite.addTest("In file", [] {
-			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
-				const auto logPath = directory / "test.tmp";
-				auto logFile = std::ofstream{logPath, std::ios::app};
+		suite.addTest("In file", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+				const auto logPath = directory / "test.log";
+				CppUtils::Log::addFileSink<"FileLogger">({.filePath = logPath});
 
-				Logger::print(logFile, "Message");
+				CppUtils::Logger<"FileLogger">::print("Message");
+				CppUtils::Logger<"FileLogger">::waitUntilFinished();
 
-				Logger::print<"info">(logFile, "Information message");
-				Logger::print<"important">(logFile, "Important message");
-				Logger::print<"success">(logFile, "Success message");
-				Logger::print<"debug">(logFile, "Debug message");
-				Logger::print<"detail">(logFile, "Detail message");
-				Logger::print<"warning">(logFile, "Warning message");
-				Logger::print<"error">(logFile, "Error message");
+				suite.expect(std::filesystem::exists(logPath));
+				suite.expectEqual(CppUtils::FileSystem::String::read(logPath), "Message"s);
 			}};
 		});
 	}};

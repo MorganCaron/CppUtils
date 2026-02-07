@@ -4,6 +4,10 @@ import std;
 
 export namespace CppUtils::Thread
 {
+	/*
+		Classe RAII fournissant un accès unique à une valeur (en lecture et écriture).
+		Cette classe ne contient pas la valeur, seulement une référence vers celle-ci.
+	*/
 	template<class T, class Mutex = std::mutex>
 	class Accessor final
 	{
@@ -35,6 +39,10 @@ export namespace CppUtils::Thread
 		std::reference_wrapper<T> m_value;
 	};
 
+	/*
+		Classe RAII fournissant un accès unique à une valeur (en lecture seule).
+		Cette classe ne contient pas la valeur, seulement une référence vers celle-ci.
+	*/
 	template<class T, class Mutex>
 	class Accessor<const T, Mutex> final
 	{
@@ -69,6 +77,14 @@ export namespace CppUtils::Thread
 	template<class Mutex, class T>
 	Accessor(Mutex&, T&) -> Accessor<T, Mutex>;
 
+	/*
+		Classe conçue pour encapsuler une ressource avec son mutex, garantissant que l'accès à la ressource passe obligatoirement par un Accessor qui verrouille le mutex (principe de "Monitor Object").
+
+		En plus de la protection RAII apportée par std::unique_lock, permettant de libérer le mutex si une exception survient dans le scope du verrou,
+		cette approche permet à un getter de retourner la valeur protégée en l'accompagnant de son verrouillage (contenus dans un Accessor), assurant ainsi que la ressource est toujours accédée de manière sécurisée.
+
+		Cela apporte une sécurité accrue en empêchant structurellement les accès non verrouillés et rend l'intention explicite sur le caractère partagé de l'objet.
+	*/
 	template<class T>
 	class UniqueLocker final
 	{
@@ -103,6 +119,10 @@ export namespace CppUtils::Thread
 	template<class T>
 	UniqueLocker(T) -> UniqueLocker<T>;
 
+	/*
+		Structure RAII permettant d'accéder simultanément à plusieurs ressources de manière sécurisée.
+		Elle verrouille tous les mutex associés de façon à prévenir les deadlocks.
+	*/
 	template<class... Lockers>
 	struct MultipleAccessor final
 	{

@@ -1,0 +1,36 @@
+export module CppUtils.Pattern.Multiton;
+
+import std;
+
+export namespace CppUtils::Pattern
+{
+	/*
+		Cette classe implémente le pattern "Meyers Singleton".
+		L'usage de singletons est fortement déconseillé (anti-pattern introduisant un état global).
+		En cas de réelle contrainte requierant l'usage d'un singleton, cette implémentation est la solution de référence en C++ moderne.
+
+		Avantages:
+		- Lazy initialization: L'instance n'est créée qu'au premier appel de get().
+		- Thread-safety: Garanti par le standard C++11 (si plusieurs threads appellent get() simultanément pour la première fois, l'initialisation de la variable statique est thread-safe).
+		- Life cycle: Destruction automatique et propre à la fin du programme.
+
+		La template de cette classe permet de créer plusieurs singletons indépendants en utilisant des clés différentes.
+	*/
+	template<class T, auto Key>
+	class Multiton final
+	{
+	public:
+		[[nodiscard]] static inline auto get() noexcept -> T&
+		{
+			static auto instance = T{};
+			return instance;
+		}
+
+		Multiton() = default;
+		Multiton(const Multiton&) = delete;
+		Multiton(Multiton&&) = delete;
+		auto operator=(const Multiton&) -> Multiton& = delete;
+		auto operator=(Multiton&&) -> Multiton& = delete;
+		~Multiton() = default;
+	};
+}

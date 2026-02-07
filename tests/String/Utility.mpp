@@ -5,15 +5,15 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::String::Utility
 {
-	auto _ = TestSuite{"String/Utility", {"Logger"}, [](auto& suite) {
+	auto _ = TestSuite{"String/Utility", {"Logger"}, [](TestSuite& suite) {
 		using namespace std::literals;
-		using Logger = CppUtils::Logger<"CppUtils">;
+		using Logger = TestSuite::Logger;
 
 		suite.addTest("concatenateStringsWithSeparator", [&] {
 			auto strings = std::vector{"A"sv, "B"sv, "C"sv};
 			auto string = CppUtils::String::concatenateStringsWithSeparator(strings, ", ");
 
-			Logger::print("{}\n", string);
+			Logger::print("{}", string);
 			suite.expectEqual(string, "A, B, C");
 		});
 
@@ -23,13 +23,13 @@ namespace CppUtils::UnitTest::String::Utility
 			auto rightTrimString = CppUtils::String::rightTrimString(string);
 			auto trimString = CppUtils::String::trimString(string);
 
-			Logger::print("\"{}\"\n", leftTrimString);
+			Logger::print(R"("{}")", leftTrimString);
 			suite.expectEqual(leftTrimString, "Hello World!\n \t ");
 
-			Logger::print("\"{}\"\n", rightTrimString);
+			Logger::print(R"("{}")", rightTrimString);
 			suite.expectEqual(rightTrimString, "\n \t Hello World!");
 
-			Logger::print("\"{}\"\n", trimString);
+			Logger::print(R"("{}")", trimString);
 			suite.expectEqual(trimString, "Hello World!");
 		});
 
@@ -37,7 +37,7 @@ namespace CppUtils::UnitTest::String::Utility
 			auto output = ""s;
 			for (char c = 0; c >= 0; ++c)
 				output += CppUtils::String::getPrintableChar(c) + ' ';
-			Logger::print("{}\n", output);
+			Logger::print("{}", output);
 		});
 
 		suite.addTest("getNumberLength", [&] {

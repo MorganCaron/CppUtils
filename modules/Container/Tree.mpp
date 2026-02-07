@@ -16,16 +16,9 @@ export namespace CppUtils::Container
 			ValueType value;
 			std::vector<Node<T>> nodes = {};
 
-			[[nodiscard]] inline constexpr auto find(const ValueType& key) const noexcept -> auto
+			[[nodiscard]] inline constexpr auto find(this auto&& self, const ValueType& key) noexcept -> auto
 			{
-				return std::ranges::find_if(nodes, [&key](const auto& node) -> bool {
-					return node.value == key;
-				});
-			}
-
-			[[nodiscard]] inline constexpr auto find(const ValueType& key) noexcept -> auto
-			{
-				return std::ranges::find_if(nodes, [&key](const auto& node) -> bool {
+				return std::ranges::find_if(self.nodes, [&key](const auto& node) -> bool {
 					return node.value == key;
 				});
 			}
@@ -35,18 +28,13 @@ export namespace CppUtils::Container
 				return find(key) != std::cend(nodes);
 			}
 
-			[[nodiscard]] inline constexpr auto operator[](const ValueType& key) -> Node<T>&
+			[[nodiscard]] inline constexpr auto operator[](this auto&& self, const ValueType& key) -> decltype(auto)
 			{
-				for (auto& node : nodes)
-					if (key == node.value)
-						return node;
-				return nodes.emplace_back(key);
-			}
-
-			[[nodiscard]] inline constexpr auto operator[](const ValueType& key) const -> const Node<T>&
-			{
-				if (const auto value = find(key); value == std::cend(nodes)) [[unlikely]]
-					throw std::out_of_range{"The Node does not contain the requested child."};
+				if (const auto value = self.find(key); value == std::end(self.nodes)) [[unlikely]]
+					if constexpr (std::is_const_v<std::remove_reference_t<decltype(self)>>)
+						throw std::out_of_range{"The Node does not contain the requested child."};
+					else
+						return self.nodes.emplace_back(key);
 				else
 					return *value;
 			}
@@ -158,8 +146,7 @@ export namespace CppUtils::Container
 namespace std
 {
 	template<class T, class CharT>
-	requires CppUtils::Type::Specializes<T, CppUtils::Container::Tree::Node> and
-		CppUtils::Type::Printable<typename T::ValueType>
+	requires CppUtils::Type::Specializes<T, CppUtils::Container::Tree::Node> and CppUtils::Type::Printable<typename T::ValueType>
 	struct formatter<T, CharT>
 	{
 		inline constexpr auto parse(std::format_parse_context& context) -> auto

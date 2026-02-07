@@ -2,15 +2,15 @@ export module CppUtils.ChronoLogger;
 
 import std;
 import CppUtils.Chrono;
-import CppUtils.Logger;
 
 export namespace CppUtils::Log
 {
+	template<class Callback>
 	class ChronoLogger final
 	{
 	public:
-		inline explicit ChronoLogger(std::string name, bool enabled = true):
-			m_name{std::move(name)},
+		inline explicit ChronoLogger(Callback callback, bool enabled = true):
+			m_callback{std::move(callback)},
 			m_enabled{enabled},
 			m_chrono{}
 		{}
@@ -22,33 +22,26 @@ export namespace CppUtils::Log
 
 		inline auto start() -> void
 		{
-			if (!m_enabled)
+			if (not m_enabled)
 				return;
 			m_chrono.start();
 		}
 
 		inline auto stop() -> void
 		{
-			using Logger = Logger<"CppUtils">;
-			if (!m_enabled)
+			if (not m_enabled)
 				return;
-			m_chrono.stop();
-			Logger::print<"detail">("{} duration: {}", m_name, CppUtils::Chrono::durationToString(m_chrono.getDuration()));
-		}
-
-		inline auto enable() noexcept -> void
-		{
-			m_enabled = true;
-		}
-
-		inline auto disable() noexcept -> void
-		{
 			m_enabled = false;
+			m_chrono.stop();
+			m_callback(Chrono::durationToString(m_chrono.getDuration()));
 		}
 
 	private:
-		std::string m_name;
+		Callback m_callback;
 		bool m_enabled;
 		Chrono::Chronometer<> m_chrono;
 	};
+
+	template<class Callback>
+	ChronoLogger(Callback, bool = true) -> ChronoLogger<Callback>;
 }

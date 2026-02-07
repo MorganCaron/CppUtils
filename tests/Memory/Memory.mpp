@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Memory
 {
-	auto _ = TestSuite{"Memory", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Memory", {"UnitTest"}, [](TestSuite& suite) {
 		suite.addTest("moveRawPointer", [&] {
 			auto* ptr = new int{42};
 			auto value = CppUtils::Memory::moveRawPointer(ptr);

@@ -5,8 +5,8 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Type::Tuple
 {
-	auto _ = TestSuite{"Type/Tuple", {"Logger"}, [](auto& suite) {
-		using Logger = CppUtils::Logger<"CppUtils">;
+	auto _ = TestSuite{"Type/Tuple", {"Logger"}, [](TestSuite& suite) {
+		using Logger = TestSuite::Logger;
 
 		suite.addTest("visitAt", [&] {
 			auto called = std::atomic_bool{false};

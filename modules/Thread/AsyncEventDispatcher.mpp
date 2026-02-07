@@ -11,26 +11,32 @@ export namespace CppUtils::Thread
 	{
 	public:
 		explicit AsyncEventDispatcher(
-			std::size_t numberThreads = std::thread::hardware_concurrency(),
+			std::size_t numberThreads = std::max(1uz, static_cast<std::size_t>(std::thread::hardware_concurrency())),
 			std::function<void(std::exception_ptr)> onError = nullptr,
 			std::function<void()> finally = nullptr):
 			m_threadPool{numberThreads, std::move(onError), std::move(finally)}
 		{}
 
+		template<String::Hasher eventName = String::Hash{}, class... Args>
+		inline auto emit(const Args&... args) -> void
+		{
+			emit(static_cast<String::Hash>(eventName), args...);
+		}
+
+		template<class... Args>
+		inline auto emit(String::Hash eventName, Args&&... args) -> void
+		{
+			m_threadPool.call([this, eventName, payload = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+				std::apply([this, eventName](auto&&... args) {
+					m_eventDispatcher.emit(eventName, std::forward<decltype(args)>(args)...);
+				}, std::move(payload));
+			});
+		}
+
 		template<String::Hasher eventName = String::Hash{}>
 		inline auto subscribe(auto&& function) -> void
 		{
 			m_eventDispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));
-		}
-
-		template<String::Hasher eventName = String::Hash{}, class... Args>
-		inline auto emit(Args&&... args) -> void
-		{
-			m_threadPool.call([this, payload = std::make_tuple(std::forward<Args>(args)...)] {
-				std::apply([this](const auto&... args) {
-					m_eventDispatcher.emit<eventName>(args...);
-				}, payload);
-			});
 		}
 
 		inline auto waitUntilFinished() -> void

@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::Title
 {
-	auto _ = TestSuite{"Terminal", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Terminal", {"UnitTest"}, [](TestSuite& suite) {
 		// using namespace std::literals;
 		// using namespace std::chrono_literals;
 

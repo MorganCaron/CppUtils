@@ -10,7 +10,6 @@ export namespace CppUtils::Thread
 {
 	class ThreadPool final
 	{
-		using Logger = Logger<"CppUtils">;
 		using Task = std::function<void()>;
 
 	public:
@@ -105,9 +104,9 @@ export namespace CppUtils::Thread
 				if (std::empty(tasksQueueAccessor.value()))
 					return;
 
+				m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
 				task = std::move(tasksQueueAccessor->front());
 				tasksQueueAccessor->pop();
-				m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
 			}
 
 			task();
@@ -131,11 +130,11 @@ export namespace CppUtils::Thread
 				}
 				catch (const std::exception& exception)
 				{
-					Logger::print<"error">("ThreadPool: onError threw an exception: {}", exception.what());
+					Logger<"CppUtils">::print<"error">("ThreadPool: onError threw an exception: {}", exception.what());
 				}
 				catch (...)
 				{
-					Logger::print<"error">("ThreadPool: onError threw a non-std exception");
+					Logger<"CppUtils">::print<"error">("ThreadPool: onError threw a non-std exception");
 				}
 			}
 		}

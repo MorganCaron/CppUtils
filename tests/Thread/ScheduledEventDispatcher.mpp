@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Thread::ScheduledEventDispatcher
 {
-	auto _ = TestSuite{"Thread/ScheduledEventDispatcher", {"Execution/EventDispatcher", "Thread/Scheduler"}, [](auto& suite) {
+	auto _ = TestSuite{"Thread/ScheduledEventDispatcher", {"Execution/EventDispatcher", "Thread/Scheduler"}, [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
 		suite.addTest("Immediate Emit", [&] {

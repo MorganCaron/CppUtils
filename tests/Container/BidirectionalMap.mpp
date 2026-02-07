@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::BidirectionalMap
 {
-	auto _ = TestSuite{"Container/BidirectionalMap", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Container/BidirectionalMap", {"UnitTest"}, [](TestSuite& suite) {
 		using namespace std::literals;
 
 		suite.addTest("Empty Map", [&] {

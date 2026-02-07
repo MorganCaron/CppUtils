@@ -43,14 +43,12 @@ export namespace CppUtils::Container
 				std::erase(node.dependencies, key);
 		}
 
-		[[nodiscard]] inline auto operator[](const Key& key) const noexcept -> const Value&
+		[[nodiscard]] inline auto operator[](this auto&& self, const Key& key) -> decltype(auto)
 		{
-			return nodes[key].value;
-		}
-
-		[[nodiscard]] inline auto operator[](const Key& key) noexcept -> Value&
-		{
-			return nodes[key].value;
+			if constexpr (std::is_const_v<std::remove_reference_t<decltype(self)>>)
+				return (self.nodes.at(key).value);
+			else
+				return (self.nodes[key].value);
 		}
 
 		inline auto addDependency(const Key& key, const Key& dependency) -> void
@@ -63,14 +61,12 @@ export namespace CppUtils::Container
 			std::erase(nodes[key].dependencies, dependency);
 		}
 
-		[[nodiscard]] inline auto getDependencies(const Key& key) const noexcept -> decltype(auto)
+		[[nodiscard]] inline auto getDependencies(this auto&& self, const Key& key) -> decltype(auto)
 		{
-			return nodes.at(key).dependencies;
-		}
-
-		[[nodiscard]] inline auto getDependencies(const Key& key) noexcept -> decltype(auto)
-		{
-			return nodes[key].dependencies;
+			if constexpr (std::is_const_v<std::remove_reference_t<decltype(self)>>)
+				return (self.nodes.at(key).dependencies);
+			else
+				return (self.nodes[key].dependencies);
 		}
 
 		[[nodiscard]] inline auto hasCycle() -> bool

@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Thread::SharedLocker
 {
-	auto _ = TestSuite{"Thread/SharedLocker", {"UnitTest", "Thread/UniqueLocker"}, [](auto& suite) {
+	auto _ = TestSuite{"Thread/SharedLocker", {"UnitTest", "Thread/UniqueLocker"}, [](TestSuite& suite) {
 		suite.addTest("Unique access", [&] {
 			auto lockedString = CppUtils::Thread::SharedLocker<std::string>{"Foo"};
 			{

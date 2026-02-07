@@ -5,89 +5,68 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::LogRotate
 {
-	auto _ = TestSuite{"LogRotate", {"Logger", "FileSystem/Directory"}, [](auto& suite) {
-		using Logger = CppUtils::Logger<"CppUtils">;
+	auto _ = TestSuite{"LogRotate", {"Logger", "FileSystem/Directory"}, [](TestSuite& suite) {
+		using namespace std::literals;
 
 		suite.addTest("Log Rotation", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto logPath = directory / "file.log";
-				auto options = LogRotateOptions{
+				const auto logPath = directory / "file.log";
+				CppUtils::Log::addFileSink<"TestRotate">(LogRotateOptions{
 					.filePath = logPath,
 					.maxFiles = 10,
-					.maxSize = 10};
-				{
-					auto logFile = std::ofstream{logPath, std::ios::app};
-					Logger::print(logFile, "Hello World!");
-				}
+					.maxSize = 10});
+
+				CppUtils::Logger<"TestRotate">::print("First message");
+				CppUtils::Logger<"TestRotate">::waitUntilFinished();
+
 				suite.expect(std::filesystem::exists(logPath));
 
-				logRotate(options);
-				suite.expect(std::filesystem::exists(directory / "file1.log"));
-				suite.expect(not std::filesystem::exists(logPath));
+				CppUtils::Logger<"TestRotate">::print("Second message"); // Triggers rotation
+				CppUtils::Logger<"TestRotate">::waitUntilFinished();
 
-				{
-					auto logFile = std::ofstream{logPath, std::ios::app};
-					Logger::print(logFile, "Hello World!");
-				}
+				const auto secondFilePath = directory / "file1.log";
+				suite.expect(std::filesystem::exists(secondFilePath));
 				suite.expect(std::filesystem::exists(logPath));
+				suite.expectEqual(CppUtils::FileSystem::String::read(secondFilePath), "First message"s);
+				suite.expectEqual(CppUtils::FileSystem::String::read(logPath), "Second message"s);
 			}};
 		});
 
 		suite.addTest("Full Log Rotation", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				auto filePath = directory / "file.log";
-				auto filePath1 = directory / "file1.log";
-				auto filePath2 = directory / "file2.log";
-				auto filePath3 = directory / "file3.log";
-				auto options = LogRotateOptions{
-					.filePath = filePath,
+				const auto logPath = directory / "file.log";
+				CppUtils::Log::addFileSink<"TestFullRotate">(LogRotateOptions{
+					.filePath = logPath,
 					.maxFiles = 3,
-					.maxSize = 10};
+					.maxSize = 10});
 
-				{
-					auto logFile = std::ofstream{filePath, std::ios::app};
-					Logger::print(logFile, "This is a long string to exceed the max size");
-				}
+				const auto longString = "This is a long string to exceed the max size"s;
 
-				suite.expect(std::filesystem::exists(filePath));
-				suite.expect(not std::filesystem::exists(filePath1));
+				CppUtils::Logger<"TestFullRotate">::print("{}", longString);
+				CppUtils::Logger<"TestFullRotate">::waitUntilFinished();
 
-				logRotate(options);
+				suite.expect(std::filesystem::exists(logPath));
 
-				suite.expect(not std::filesystem::exists(filePath));
-				suite.expect(std::filesystem::exists(filePath1));
+				CppUtils::Logger<"TestFullRotate">::print("{}", longString); // Triggers rotation
+				CppUtils::Logger<"TestFullRotate">::waitUntilFinished();
 
-				{
-					auto logFile = std::ofstream{filePath, std::ios::app};
-					Logger::print(logFile, "This is a long string to exceed the max size");
-				}
+				suite.expect(std::filesystem::exists(logPath));
+				suite.expect(std::filesystem::exists(directory / "file1.log"));
 
-				suite.expect(std::filesystem::exists(filePath));
-				suite.expect(std::filesystem::exists(filePath1));
-				suite.expect(not std::filesystem::exists(filePath2));
+				CppUtils::Logger<"TestFullRotate">::print("{}", longString); // Triggers rotation
+				CppUtils::Logger<"TestFullRotate">::waitUntilFinished();
 
-				logRotate(options);
+				suite.expect(std::filesystem::exists(logPath));
+				suite.expect(std::filesystem::exists(directory / "file1.log"));
+				suite.expect(std::filesystem::exists(directory / "file2.log"));
 
-				suite.expect(not std::filesystem::exists(filePath));
-				suite.expect(std::filesystem::exists(filePath1));
-				suite.expect(std::filesystem::exists(filePath2));
+				CppUtils::Logger<"TestFullRotate">::print("{}", longString); // Triggers rotation
+				CppUtils::Logger<"TestFullRotate">::waitUntilFinished();
 
-				{
-					auto logFile = std::ofstream{filePath, std::ios::app};
-					Logger::print(logFile, "This is a long string to exceed the max size");
-				}
-
-				suite.expect(std::filesystem::exists(filePath));
-				suite.expect(std::filesystem::exists(filePath1));
-				suite.expect(std::filesystem::exists(filePath2));
-				suite.expect(not std::filesystem::exists(filePath3));
-
-				logRotate(options);
-
-				suite.expect(not std::filesystem::exists(filePath));
-				suite.expect(std::filesystem::exists(filePath1));
-				suite.expect(std::filesystem::exists(filePath2));
-				suite.expect(not std::filesystem::exists(filePath3));
+				suite.expect(std::filesystem::exists(logPath));
+				suite.expect(std::filesystem::exists(directory / "file1.log"));
+				suite.expect(std::filesystem::exists(directory / "file2.log"));
+				suite.expect(not std::filesystem::exists(directory / "file3.log"));
 			}};
 		});
 	}};

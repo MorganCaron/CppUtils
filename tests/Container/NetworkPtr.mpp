@@ -5,19 +5,24 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::NetworkPtr
 {
-	auto _ = TestSuite{"Container/NetworkPtr", {"Logger"}, [](auto& suite) {
-		using Logger = CppUtils::Logger<"CppUtils">;
+	auto _ = TestSuite{"Container/NetworkPtr", {"Logger"}, [](TestSuite& suite) {
+		using Logger = TestSuite::Logger;
+		using DummyObject = CppUtils::UnitTest::DummyObject;
 		using NetworkPtr = CppUtils::Container::NetworkPtr<DummyObject>;
 		using StringNetworkPtr = CppUtils::Container::NetworkPtr<std::string>;
 
+		auto logger = [](std::string_view message) {
+			Logger::emit<"info">("{}", message);
+		};
+
 		suite.addTest("Create root", [&] {
-			auto root = NetworkPtr::makeRoot("Root");
+			auto root = NetworkPtr::makeRoot(logger, "Root");
 			auto accessor = root->sharedAccess();
 			suite.expectEqual(accessor->getDistanceFromRoot(), 0uz);
 		});
 
 		suite.addTest("Create node", [&] {
-			auto node = NetworkPtr::make("Node");
+			auto node = NetworkPtr::make(logger, "Node");
 			auto accessor = node->sharedAccess();
 			suite.expectEqual(accessor->getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
 		});
@@ -44,9 +49,9 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 		});
 
 		suite.addTest("Create branch", [&] {
-			auto root = NetworkPtr::makeRoot("Root");
+			auto root = NetworkPtr::makeRoot(logger, "Root");
 			{
-				auto branch = NetworkPtr::make("Branch", 1uz);
+				auto branch = NetworkPtr::make(logger, "Branch", 1uz);
 				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
 				auto& rootRef = std::get<0>(accessor.values);
 				auto& branchRef = std::get<1>(accessor.values);
@@ -54,13 +59,13 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 				rootRef.attachChild(branch, branchRef);
 				suite.expectEqual(branchRef.getDistanceFromRoot(), 1uz);
 			}
-			Logger::print("Persistance de Branch\n");
+			Logger::print("Persistance de Branch");
 		});
 
 		suite.addTest("Create leaf", [&] {
-			auto root = NetworkPtr::makeRoot("Root");
+			auto root = NetworkPtr::makeRoot(logger, "Root");
 			{
-				auto branch = NetworkPtr::make("Branch", 1uz);
+				auto branch = NetworkPtr::make(logger, "Branch", 1uz);
 				{
 					auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
 					auto& rootRef = std::get<0>(accessor.values);
@@ -70,7 +75,7 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 					suite.expectEqual(branchRef.getDistanceFromRoot(), 1uz);
 				}
 				{
-					auto leaf = NetworkPtr::make("Leaf", 2uz);
+					auto leaf = NetworkPtr::make(logger, "Leaf", 2uz);
 					auto accessor = CppUtils::Thread::MultipleAccessor{*branch, *leaf};
 					auto& branchRef = std::get<0>(accessor.values);
 					auto& leafRef = std::get<1>(accessor.values);
@@ -78,15 +83,15 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 					suite.expectEqual(branchRef.getDistanceFromRoot(), 1uz);
 					suite.expectEqual(leafRef.getDistanceFromRoot(), 2uz);
 				}
-				Logger::print("Persistance de Leaf\n");
+				Logger::print("Persistance de Leaf");
 			}
-			Logger::print("Persistance de Branch\n");
+			Logger::print("Persistance de Branch");
 		});
 
 		suite.addTest("Cut leaf", [&] {
-			auto root = NetworkPtr::makeRoot("Root");
+			auto root = NetworkPtr::makeRoot(logger, "Root");
 			{
-				auto leaf = NetworkPtr::make("Leaf", 1uz);
+				auto leaf = NetworkPtr::make(logger, "Leaf", 1uz);
 				{
 					auto accessor = CppUtils::Thread::MultipleAccessor{*root, *leaf};
 					auto& rootRef = std::get<0>(accessor.values);
@@ -95,7 +100,7 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 					rootRef.attachChild(leaf, leafRef);
 					suite.expectEqual(leafRef.getDistanceFromRoot(), 1uz);
 				}
-				Logger::print("Persistance de Leaf\n");
+				Logger::print("Persistance de Leaf");
 				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *leaf};
 				auto& rootRef = std::get<0>(accessor.values);
 				auto& leafRef = std::get<1>(accessor.values);
@@ -103,14 +108,14 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 				rootRef.detachChild(leaf, leafRef);
 				suite.expectEqual(leafRef.getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
 			}
-			Logger::print("Non-persistance de Leaf\n");
+			Logger::print("Non-persistance de Leaf");
 		});
 
 		suite.addTest("Cut branch with leaf", [&] {
-			auto root = NetworkPtr::makeRoot("Root");
+			auto root = NetworkPtr::makeRoot(logger, "Root");
 			{
-				auto branch = NetworkPtr::make("Branch", 1uz);
-				auto leaf = NetworkPtr::make("Leaf", 2uz);
+				auto branch = NetworkPtr::make(logger, "Branch", 1uz);
+				auto leaf = NetworkPtr::make(logger, "Leaf", 2uz);
 				{
 					auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
 					auto& rootRef = std::get<0>(accessor.values);
@@ -123,7 +128,7 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 					auto& leafRef = std::get<1>(accessor.values);
 					branchRef.attachChild(leaf, leafRef);
 				}
-				Logger::print("Persistance de Leaf\n");
+				Logger::print("Persistance de Leaf");
 				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
 				auto& rootRef = std::get<0>(accessor.values);
 				auto& branchRef = std::get<1>(accessor.values);
@@ -136,14 +141,14 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 					suite.expectEqual(leafAccessor->getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
 				}
 			}
-			Logger::print("Non-persistance de Branch\n");
+			Logger::print("Non-persistance de Branch");
 		});
 
 		suite.addTest("Bidirectional link", [&] {
-			auto root = NetworkPtr::makeRoot("Root");
+			auto root = NetworkPtr::makeRoot(logger, "Root");
 			auto branch = CppUtils::Container::SafeShared<NetworkPtr>{};
 			{
-				branch = NetworkPtr::make("Branch", 1uz);
+				branch = NetworkPtr::make(logger, "Branch", 1uz);
 				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
 				auto& rootRef = std::get<0>(accessor.values);
 				auto& branchRef = std::get<1>(accessor.values);
@@ -151,23 +156,23 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 				suite.expectEqual(rootRef.getDistanceFromRoot(), 0uz);
 				suite.expectEqual(branchRef.getDistanceFromRoot(), 1uz);
 			}
-			Logger::print("Persistance de Branch\n");
+			Logger::print("Persistance de Branch");
 			{
 				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
 				auto& rootRef = std::get<0>(accessor.values);
 				auto& branchRef = std::get<1>(accessor.values);
-				Logger::print("Création d'une boucle\n");
+				Logger::print("Création d'une boucle");
 				branchRef.attachChild(root, rootRef);
 				suite.expectEqual(rootRef.getDistanceFromRoot(), 0uz);
 				suite.expectEqual(branchRef.getDistanceFromRoot(), 1uz);
 			}
-			Logger::print("Libération de la boucle\n");
+			Logger::print("Libération de la boucle");
 		});
 
 		suite.addTest("Detach child with multiple links", [&] {
-			auto root = NetworkPtr::makeRoot("Root");
+			auto root = NetworkPtr::makeRoot(logger, "Root");
 			{
-				auto leaf = NetworkPtr::make("Leaf", 1uz);
+				auto leaf = NetworkPtr::make(logger, "Leaf", 1uz);
 				{
 					auto accessor = CppUtils::Thread::MultipleAccessor{*root, *leaf};
 					auto& rootRef = std::get<0>(accessor.values);
@@ -186,13 +191,13 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 					rootRef.detachChild(leaf, leafRef);
 					suite.expectEqual(leafRef.getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
 				}
-				Logger::print("Non-persistance de Leaf\n");
+				Logger::print("Non-persistance de Leaf");
 			}
-			Logger::print("Persistance de Branch\n");
+			Logger::print("Persistance de Branch");
 		});
 
 		suite.addTest("Attach and detach root on itself", [&] {
-			auto root = NetworkPtr::makeRoot("Root");
+			auto root = NetworkPtr::makeRoot(logger, "Root");
 			auto accessor = root->uniqueAccess();
 			accessor->attachChild(root, accessor.value());
 			suite.expectEqual(accessor->getDistanceFromRoot(), 0uz);
@@ -201,8 +206,8 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 		});
 
 		suite.addTest("Attach and detach node on itself", [&] {
-			auto root = NetworkPtr::makeRoot("Root");
-			auto node = NetworkPtr::make("Node", 1uz);
+			auto root = NetworkPtr::makeRoot(logger, "Root");
+			auto node = NetworkPtr::make(logger, "Node", 1uz);
 			{
 				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *node};
 				auto& rootRef = std::get<0>(accessor.values);
@@ -227,8 +232,8 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 		});
 
 		suite.addTest("Unidirectional link (operator>>)", [&] {
-			auto root = NetworkPtr::makeRoot("Root");
-			auto child = NetworkPtr::make("Child", 1uz);
+			auto root = NetworkPtr::makeRoot(logger, "Root");
+			auto child = NetworkPtr::make(logger, "Child", 1uz);
 
 			root >> child;
 
@@ -237,9 +242,9 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 		});
 
 		suite.addTest("Unidirectional link chaining (operator>>)", [&] {
-			auto root = NetworkPtr::makeRoot("Root");
-			auto branch = NetworkPtr::make("Branch", 1uz);
-			auto leaf = NetworkPtr::make("Leaf", 2uz);
+			auto root = NetworkPtr::makeRoot(logger, "Root");
+			auto branch = NetworkPtr::make(logger, "Branch", 1uz);
+			auto leaf = NetworkPtr::make(logger, "Leaf", 2uz);
 
 			root >> branch >> leaf;
 
@@ -254,8 +259,8 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 		});
 
 		suite.addTest("Unlink (operator-)", [&] {
-			auto root = NetworkPtr::makeRoot("Root");
-			auto child = NetworkPtr::make("Child");
+			auto root = NetworkPtr::makeRoot(logger, "Root");
+			auto child = NetworkPtr::make(logger, "Child");
 			root >> child;
 			{
 				auto childAccessor = child->sharedAccess();
@@ -269,8 +274,8 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 		});
 
 		suite.addTest("Bidirectional link (operator&)", [&] {
-			auto node1 = NetworkPtr::makeRoot("Node1");
-			auto node2 = NetworkPtr::make("Node2");
+			auto node1 = NetworkPtr::makeRoot(logger, "Node1");
+			auto node2 = NetworkPtr::make(logger, "Node2");
 
 			node1 & node2;
 
@@ -281,8 +286,8 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 		});
 
 		suite.addTest("Bidirectional unlink (operator/)", [&] {
-			auto node1 = NetworkPtr::makeRoot("Node1");
-			auto node2 = NetworkPtr::make("Node2");
+			auto node1 = NetworkPtr::makeRoot(logger, "Node1");
+			auto node2 = NetworkPtr::make(logger, "Node2");
 			node1 & node2;
 
 			node1 / node2;

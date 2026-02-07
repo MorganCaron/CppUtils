@@ -5,7 +5,7 @@ import CppUtils;
 
 export namespace CppUtils::UnitTest::Container::Vec3
 {
-	auto _ = TestSuite{"Container/Vec3", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Container/Vec3", {"UnitTest"}, [](TestSuite& suite) {
 		suite.addTest("Constructor & Accessors", [&] {
 			constexpr auto vec = CppUtils::Container::Vec3{1, 2, 3};
 

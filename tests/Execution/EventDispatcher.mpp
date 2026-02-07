@@ -6,9 +6,9 @@ import CppUtils;
 namespace CppUtils::UnitTest::Execution::EventDispatcher
 {
 	auto _ = TestSuite{
-		"Execution/EventDispatcher", {"Logger"}, [](auto& suite) {
+		"Execution/EventDispatcher", {"Logger"}, [](TestSuite& suite) {
 		using namespace std::literals;
-		using Logger = CppUtils::Logger<"CppUtils">;
+		using Logger = TestSuite::Logger;
 
 		suite.addTest("Empty", [&] {
 			auto _ = CppUtils::Execution::EventDispatcher{};
@@ -18,7 +18,7 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 
 			eventDispatcher.subscribe<>([&suite](const std::string& message) -> void {
-				Logger::print("{}\n", message);
+				Logger::print("{}", message);
 				suite.expect(false);
 			});
 		});
@@ -27,7 +27,7 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 
 			eventDispatcher.subscribe<"Ping">([&suite](const std::string& message) -> void {
-				Logger::print("{}\n", message);
+				Logger::print("{}", message);
 				suite.expect(false);
 			});
 		});
@@ -47,7 +47,7 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 			auto expectPingReceived = std::atomic_bool{false};
 
 			eventDispatcher.subscribe<>([&expectPingReceived, &suite](const std::string& message) -> void {
-				Logger::print("{}\n", message);
+				Logger::print("{}", message);
 				expectPingReceived = true;
 				suite.expectEqual(message, "ping"sv);
 			});
@@ -61,12 +61,12 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 			auto expectPingReceived = std::atomic_bool{false};
 
 			eventDispatcher.subscribe<"Ping">([&expectPingReceived, &suite](const std::string& message) -> void {
-				Logger::print("{}\n", message);
+				Logger::print("{}", message);
 				expectPingReceived = true;
 				suite.expectEqual(message, "ping"sv);
 			});
 			eventDispatcher.subscribe<"Other">([&suite](const std::string& message) -> void {
-				Logger::print("{}\n", message);
+				Logger::print("{}", message);
 				suite.expect(false);
 			});
 			eventDispatcher.emit<"Ping">("ping"s);
@@ -80,13 +80,13 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 			auto expectPongReceived = std::atomic_bool{false};
 
 			eventDispatcher.subscribe<"Ping">([&expectPingReceived, &suite, &eventDispatcher](const std::string& message) -> void {
-				Logger::print("{}\n", message);
+				Logger::print("{}", message);
 				expectPingReceived = true;
 				suite.expectEqual(message, "ping"sv);
 				eventDispatcher.emit<"Pong">("pong"s);
 			});
 			eventDispatcher.subscribe<"Pong">([&expectPongReceived, &suite](const std::string& message) -> void {
-				Logger::print("{}\n", message);
+				Logger::print("{}", message);
 				expectPongReceived = true;
 				suite.expectEqual(message, "pong"sv);
 			});
@@ -111,6 +111,19 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 
 			suite.expect(expect1);
 			suite.expect(expect2);
+		});
+
+		suite.addTest("Mutable Lambda", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+
+			eventDispatcher.subscribe<"Count">([count = 0, &suite](int expected) mutable {
+				count++;
+				suite.expectEqual(count, expected);
+			});
+
+			eventDispatcher.emit<"Count">(1);
+			eventDispatcher.emit<"Count">(2);
+			eventDispatcher.emit<"Count">(3);
 		});
 	}};
 }

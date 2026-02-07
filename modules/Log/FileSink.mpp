@@ -1,0 +1,25 @@
+export module CppUtils.Log.FileSink;
+
+import std;
+import CppUtils.FileSystem;
+import CppUtils.LogRotate;
+
+export namespace CppUtils::Log
+{
+	class FileSink final
+	{
+	public:
+		inline FileSink(LogRotateOptions options):
+			m_options{std::move(options)}
+		{}
+
+		inline auto operator()(const std::string& message) -> void
+		{
+			logRotate(m_options);
+			FileSystem::String::append(m_options.filePath, message);
+		}
+
+	private:
+		LogRotateOptions m_options;
+	};
+}

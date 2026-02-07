@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest
 {
-	auto _ = TestSuite{"UnitTest", [](auto& suite) {
+	auto _ = TestSuite{"UnitTest", [](TestSuite& suite) {
 		suite.addTest("empty test", [] {});
 
 		suite.addTest("expect", [&] {
@@ -17,74 +17,6 @@ namespace CppUtils::UnitTest
 
 			suite.expectEqual(1, 1);
 			suite.expectEqual("test"sv, "test"sv);
-		});
-
-		suite.addTest("DummyObject - No Copy No Move", [&] {
-			auto object = DummyObject{"DummyObject"};
-			suite.expectEqual(object.getCopyCount(), 0uz);
-			suite.expectEqual(object.getMoveCount(), 0uz);
-		});
-
-		suite.addTest("DummyObject - Copy Construction", [&] {
-			auto object = DummyObject{"DummyObject"};
-			auto copied = object;
-			suite.expectEqual(copied.getCopyCount(), 1uz);
-			suite.expectEqual(copied.getMoveCount(), 0uz);
-		});
-
-		suite.addTest("DummyObject - Move Construction", [&] {
-			auto object = DummyObject{"DummyObject"};
-			auto moved = std::move(object);
-			suite.expectEqual(moved.getCopyCount(), 0uz);
-			suite.expectEqual(moved.getMoveCount(), 1uz);
-		});
-
-		suite.addTest("DummyObject - Copy Assignment", [&] {
-			auto object = DummyObject{"DummyObject"};
-			auto target = DummyObject{"Target"};
-			target = object;
-			suite.expectEqual(target.getCopyCount(), 1uz);
-			suite.expectEqual(target.getMoveCount(), 0uz);
-		});
-
-		suite.addTest("DummyObject - Move Assignment", [&] {
-			auto object = DummyObject{"DummyObject"};
-			auto target = DummyObject{"Target"};
-			target = std::move(object);
-			suite.expectEqual(target.getCopyCount(), 0uz);
-			suite.expectEqual(target.getMoveCount(), 1uz);
-		});
-
-		suite.addTest("DummyObject - Two Copies", [&] {
-			auto object = DummyObject{"DummyObject"};
-			auto copy1 = object;
-			auto copy2 = copy1;
-			suite.expectEqual(copy2.getCopyCount(), 2uz);
-			suite.expectEqual(copy2.getMoveCount(), 0uz);
-		});
-
-		suite.addTest("DummyObject - Two Moves", [&] {
-			auto object = DummyObject{"DummyObject"};
-			auto moved1 = std::move(object);
-			auto moved2 = std::move(moved1);
-			suite.expectEqual(moved2.getCopyCount(), 0uz);
-			suite.expectEqual(moved2.getMoveCount(), 2uz);
-		});
-
-		suite.addTest("DummyObject - Copy then Move", [&] {
-			auto object = DummyObject{"DummyObject"};
-			auto copy = object;
-			auto moved = std::move(copy);
-			suite.expectEqual(moved.getCopyCount(), 1uz);
-			suite.expectEqual(moved.getMoveCount(), 1uz);
-		});
-
-		suite.addTest("DummyObject - Move then Copy", [&] {
-			auto object = DummyObject{"DummyObject"};
-			auto moved = std::move(object);
-			auto copy = moved;
-			suite.expectEqual(copy.getCopyCount(), 1uz);
-			suite.expectEqual(copy.getMoveCount(), 1uz);
 		});
 	}};
 }

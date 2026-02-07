@@ -1,0 +1,102 @@
+export module CppUtils.Execution.EventQueue;
+
+import std;
+import CppUtils.String.Hash;
+import CppUtils.Execution.EventDispatcher;
+import CppUtils.Execution.ScopeGuard;
+import CppUtils.Thread.ThreadLoop;
+import CppUtils.Thread.UniqueLocker;
+
+export namespace CppUtils::Execution
+{
+	class EventQueue
+	{
+	public:
+		inline EventQueue():
+			m_worker{
+				[this] { workerThread(); },
+				[this] { m_condition.notify_all(); }}
+		{
+			m_worker.start();
+		}
+
+		inline ~EventQueue()
+		{
+			waitUntilFinished();
+		}
+
+		EventQueue(const EventQueue&) = delete;
+		EventQueue& operator=(const EventQueue&) = delete;
+		EventQueue(EventQueue&&) = delete;
+		EventQueue& operator=(EventQueue&&) = delete;
+
+		template<String::Hasher eventName = String::Hash{}, class... Args>
+		inline auto emit(Args&&... args) -> void
+		{
+			emit(static_cast<String::Hash>(eventName), std::forward<Args>(args)...);
+		}
+
+		template<class... Args>
+		inline auto emit(String::Hash eventName, Args&&... args) -> void
+		{
+			auto task = [this, eventName, payload = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+				std::apply([this, eventName](auto&&... args) {
+					m_dispatcher.emit(eventName, std::forward<decltype(args)>(args)...);
+				}, std::move(payload));
+			};
+			enqueue(std::move(task));
+		}
+
+		template<String::Hasher eventName = String::Hash{}>
+		inline auto subscribe(auto&& function) -> void
+		{
+			m_dispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));
+		}
+
+		inline auto waitUntilFinished() -> void
+		{
+			auto accessor = m_queue.access();
+			m_condition.wait(accessor.getLockGuard(), [this, &accessor] { return accessor.value().empty() and not m_isTaskRunning; });
+		}
+
+	private:
+		inline auto enqueue(std::function<void()> task) -> void
+		{
+			{
+				auto accessor = m_queue.access();
+				accessor.value().push(std::move(task));
+			}
+			m_condition.notify_one();
+		}
+
+		inline auto workerThread() -> void
+		{
+			auto task = std::function<void()>{};
+			{
+				auto accessor = m_queue.access();
+				m_condition.wait(accessor.getLockGuard(), [this, &accessor] {
+					return not accessor.value().empty() or m_worker.isStopRequested();
+				});
+
+				if (accessor.value().empty())
+					return;
+
+				task = std::move(accessor.value().front());
+				accessor.value().pop();
+			}
+			if (task)
+			{
+				m_isTaskRunning = true;
+				auto _ = ScopeGuard{[this] { m_isTaskRunning = false; }};
+				task();
+			}
+			m_condition.notify_all();
+		}
+
+		EventDispatcher m_dispatcher;
+		Thread::UniqueLocker<std::queue<std::function<void()>>> m_queue;
+		std::condition_variable m_condition;
+		Thread::ThreadLoop m_worker;
+		std::atomic<bool> m_isTaskRunning = false;
+	};
+}

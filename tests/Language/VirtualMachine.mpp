@@ -8,9 +8,9 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 	auto _ = TestSuite{
 		"Language/VirtualMachine",
 		{"Logger", "Container/Stack"},
-		[](auto& suite) {
+		[](TestSuite& suite) {
 		using namespace std::literals;
-		using Logger = CppUtils::Logger<"CppUtils">;
+		using Logger = TestSuite::Logger;
 		namespace VM = CppUtils::Language::VirtualMachine;
 
 		suite.addTest("empty source", [&] {
@@ -335,7 +335,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			constexpr auto input = "Hello World!"sv;
 
 			static constexpr auto print = [](std::string_view text) -> void {
-				Logger::print("{}\n", text);
+				Logger::print("{}", text);
 			};
 
 			auto result = VM::execute<std::size_t, bool, std::string_view>(source, nb, input, +print);

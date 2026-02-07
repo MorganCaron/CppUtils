@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::Canvas
 {
-	auto _ = TestSuite{"Terminal/Canvas", {"UnitTest", "Thread/Scheduler", "String/Encoding"}, [](auto& suite) {
+	auto _ = TestSuite{"Terminal/Canvas", {"UnitTest", "Thread/Scheduler", "String/Encoding", "Container/Vec2"}, [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace std::chrono_literals;
 

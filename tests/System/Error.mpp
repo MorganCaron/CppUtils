@@ -5,12 +5,12 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::System::Error
 {
-	auto _ = TestSuite{"System/Error", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"System/Error", {"UnitTest"}, [](TestSuite& suite) {
 		suite.addTest("throwErrno", [&] {
-			suite.template expectThrow<std::runtime_error>([&] {
+			suite.expectThrow<std::runtime_error>([&] {
 				CppUtils::System::throwErrno(-1, "Test error");
 			});
-			suite.template expectNoThrow<>([&] {
+			suite.expectNoThrow<>([&] {
 				CppUtils::System::throwErrno(0, "Test success");
 			});
 		});
@@ -29,16 +29,16 @@ namespace CppUtils::UnitTest::System::Error
 
 #if defined(OS_WINDOWS)
 		suite.addTest("throwLastError", [&] {
-			suite.template expectThrow<std::runtime_error>([&] {
+			suite.expectThrow<std::runtime_error>([&] {
 				CppUtils::System::throwLastError("Test last error");
 			});
 		});
 
 		suite.addTest("throwLastErrorIf", [&] {
-			suite.template expectThrow<std::runtime_error>([&] {
+			suite.expectThrow<std::runtime_error>([&] {
 				CppUtils::System::throwLastErrorIf(1, "Test last error if");
 			});
-			suite.template expectNoThrow<>([&] {
+			suite.expectNoThrow<>([&] {
 				CppUtils::System::throwLastErrorIf(0, "Test last error if");
 			});
 		});

@@ -5,10 +5,10 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 {
-	auto _ = TestSuite{"Thread/AsyncEventDispatcher", {"Thread/ThreadPool", "Execution/EventDispatcher"}, [](auto& suite) {
+	auto _ = TestSuite{"Thread/AsyncEventDispatcher", {"Thread/ThreadPool", "Execution/EventDispatcher"}, [](TestSuite& suite) {
 		suite.addTest("Emit and Wait", [&] {
 			auto dispatcher = CppUtils::Thread::AsyncEventDispatcher{};
-			std::atomic_bool received = false;
+			auto received = std::atomic_bool{false};
 
 			dispatcher.subscribe<"Event">([&](bool value) {
 				suite.expectEqual(value, true);
@@ -21,7 +21,7 @@ namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 		});
 
 		suite.addTest("Error Handling", [&] {
-			std::atomic_bool errorCaught = false;
+			auto errorCaught = std::atomic_bool{false};
 			auto onError = [&](std::exception_ptr) {
 				errorCaught = true;
 			};
@@ -34,6 +34,40 @@ namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 
 			dispatcher.waitUntilFinished();
 			suite.expect(errorCaught);
+		});
+
+		suite.addTest("Stateful lambda", [&] {
+			auto dispatcher = CppUtils::Thread::AsyncEventDispatcher{};
+			auto counter = std::make_shared<int>(0);
+			auto mutex = std::make_shared<std::mutex>();
+
+			dispatcher.subscribe<"Event">([counter, mutex, internalCount = 0](int value) mutable {
+				auto lockGuard = std::lock_guard{*mutex};
+				internalCount += value;
+				*counter = internalCount;
+			});
+			dispatcher.emit<"Event">(10);
+			dispatcher.emit<"Event">(20);
+
+			dispatcher.waitUntilFinished();
+			suite.expectEqual(*counter, 30);
+		});
+
+		suite.addTest("Passing stateful lambda as argument", [&] {
+			auto dispatcher = CppUtils::Thread::AsyncEventDispatcher{};
+			auto result = std::atomic_int{0};
+
+			using Function = std::function<void()>;
+			dispatcher.subscribe<"Execute">([&](Function function) {
+				function();
+			});
+
+			dispatcher.emit<"Execute">(Function{[state = 42, &result]() {
+				result = state;
+			}});
+
+			dispatcher.waitUntilFinished();
+			suite.expectEqual(result.load(), 42);
 		});
 	}};
 }

@@ -5,9 +5,9 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Thread::ThreadLoop
 {
-	auto _ = TestSuite{"Thread/ThreadLoop", {"UnitTest"}, [](auto& suite) {
+	auto _ = TestSuite{"Thread/ThreadLoop", {"UnitTest"}, [](TestSuite& suite) {
 		using namespace std::chrono_literals;
-		using Logger = CppUtils::Logger<"CppUtils">;
+		using Logger = TestSuite::Logger;
 
 		suite.addTest("isRunning", [&] {
 			auto threadLoop = CppUtils::Thread::ThreadLoop{[] {}};

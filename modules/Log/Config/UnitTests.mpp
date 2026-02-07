@@ -1,0 +1,68 @@
+module;
+
+#include <cstdio>
+
+export module CppUtils.Log.Config.UnitTests;
+
+import std;
+import CppUtils.String;
+import CppUtils.Logger;
+import CppUtils.Execution.EventQueue;
+import CppUtils.Terminal.Size;
+import CppUtils.Terminal.TextColor;
+import CppUtils.Terminal.TextModifier;
+
+export namespace CppUtils
+{
+	template<>
+	inline void Logger<"UnitTests">::configure(Execution::EventQueue& eventQueue)
+	{
+		eventQueue.subscribe([](const std::string& message) {
+			std::println("{}", message);
+		});
+
+		eventQueue.subscribe<"info">([](const std::string& message) {
+			std::println("{}", message);
+		});
+
+		eventQueue.subscribe<"important">([](const std::string& message) {
+			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Cyan};
+			std::println("🛈 {}", message);
+		});
+
+		eventQueue.subscribe<"success">([](const std::string& message) {
+			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Green};
+			std::println("{} ✓", message);
+		});
+
+		eventQueue.subscribe<"debug">([](const std::string& message) {
+			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Magenta};
+			std::println("🛠 DEBUG: {}", message);
+		});
+
+		eventQueue.subscribe<"detail">([](const std::string& message) {
+			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Blue};
+			std::println("{}", message);
+		});
+
+		eventQueue.subscribe<"warning">([](const std::string& message) {
+			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Yellow};
+			std::println("{:^{}}\n{} ⚠", "🛆 WARNING 🛆", Terminal::getTerminalSize().width(), message);
+		});
+
+		eventQueue.subscribe<"error">([](const std::string& message) {
+			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
+			std::println("{:^{}}\n{} ✕", "🛇 ERROR 🛇", Terminal::getTerminalSize().width(), message);
+		});
+
+		eventQueue.subscribe<"color">([](Terminal::TextColor::TextColorEnum color, const std::string& message) {
+			auto _ = Terminal::TextModifier{stdout, color};
+			std::println("{}", message);
+		});
+
+		eventQueue.subscribe<"separator">([]() {
+			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Blue};
+			std::println("{:-^{}}", "", Terminal::getTerminalSize().width());
+		});
+	}
+}

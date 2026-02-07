@@ -5,9 +5,9 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::MeshNetwork
 {
-	auto _ = TestSuite{"Container/MeshNetwork", {"Container/NetworkPtr"}, [](auto& suite) {
+	auto _ = TestSuite{"Container/MeshNetwork", {"Container/NetworkPtr"}, [](TestSuite& suite) {
 		using namespace std::literals;
-		using Logger = CppUtils::Logger<"CppUtils">;
+		using Logger = TestSuite::Logger;
 		using StringMeshNodePtr = CppUtils::Container::MeshNodePtr<std::string, std::string>;
 		using Node = StringMeshNodePtr::NetworkPtr::Value;
 
@@ -19,7 +19,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto apple = StringMeshNodePtr::make("apple");
 			auto accessor = apple->sharedAccess();
 			const auto& value = accessor->value.value;
-			Logger::print("{}\n", value);
+			Logger::print("{}", value);
 			suite.expectEqual(value, "apple");
 		});
 
@@ -31,7 +31,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			}
 			auto accessor = appleRef->sharedAccess();
 			const auto& value = accessor->value.value;
-			Logger::print("{}\n", value);
+			Logger::print("{}", value);
 			suite.expectEqual(value, "apple");
 		});
 
@@ -51,7 +51,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 				auto apple = StringMeshNodePtr::NetworkPtr::SharedPtr{fruits[0]};
 				auto appleAccessor = apple->sharedAccess();
 				const auto& value = appleAccessor->value.value;
-				Logger::print("{}\n", value);
+				Logger::print("{}", value);
 				suite.expectEqual(value, "apple");
 			}
 		});
@@ -98,14 +98,14 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 					auto apple = StringMeshNodePtr::NetworkPtr::SharedPtr{fruits[0]};
 					auto appleAccessor = apple->sharedAccess();
 					const auto& value = appleAccessor->value.value;
-					Logger::print("{}\n", value);
+					Logger::print("{}", value);
 					suite.expectEqual(value, "apple");
 				}
 				{
 					auto banana = StringMeshNodePtr::NetworkPtr::SharedPtr{fruits[1]};
 					auto bananaAccessor = banana->sharedAccess();
 					const auto& value = bananaAccessor->value.value;
-					Logger::print("{}\n", value);
+					Logger::print("{}", value);
 					suite.expectEqual(value, "banana");
 				}
 			}
@@ -122,7 +122,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 					auto banana = StringMeshNodePtr::NetworkPtr::SharedPtr{fruits[0]};
 					auto bananaAccessor = banana->sharedAccess();
 					const auto& value = bananaAccessor->value.value;
-					Logger::print("{}\n", value);
+					Logger::print("{}", value);
 					suite.expectEqual(value, "banana");
 				}
 			}
@@ -153,14 +153,14 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 					auto apple = StringMeshNodePtr::NetworkPtr::SharedPtr{fruits[0]};
 					auto appleAccessor = apple->sharedAccess();
 					const auto& value = appleAccessor->value.value;
-					Logger::print("{}\n", value);
+					Logger::print("{}", value);
 					suite.expectEqual(value, "apple");
 				}
 				{
 					auto banana = StringMeshNodePtr::NetworkPtr::SharedPtr{fruits[1]};
 					auto bananaAccessor = banana->sharedAccess();
 					const auto& value = bananaAccessor->value.value;
-					Logger::print("{}\n", value);
+					Logger::print("{}", value);
 					suite.expectEqual(value, "banana");
 				}
 			}
@@ -223,7 +223,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 				auto appleAccessor = firstFruit->sharedAccess();
 				const auto& appleName = appleAccessor->value.value;
 				const auto& fruitName = fruitAccessor->value.value;
-				Logger::print("{} is a {}\n", appleName, fruitName);
+				Logger::print("{} is a {}", appleName, fruitName);
 				suite.expectEqual(appleName, "apple");
 				suite.expectEqual(fruitName, "fruit");
 			}
@@ -236,7 +236,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 				auto fruitAccessor = firstCategory->sharedAccess();
 				const auto& appleName = appleAccessor->value.value;
 				const auto& fruitName = fruitAccessor->value.value;
-				Logger::print("{} is a {}\n", appleName, fruitName);
+				Logger::print("{} is a {}", appleName, fruitName);
 				suite.expectEqual(appleName, "apple");
 				suite.expectEqual(fruitName, "fruit");
 			}
@@ -255,7 +255,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 				auto appleAccessor = firstFruit->sharedAccess();
 				const auto& appleName = appleAccessor->value.value;
 				const auto& fruitName = fruitAccessor->value.value;
-				Logger::print("{} is a {}\n", appleName, fruitName);
+				Logger::print("{} is a {}", appleName, fruitName);
 				suite.expectEqual(appleName, "apple");
 				suite.expectEqual(fruitName, "fruit");
 			}
@@ -268,7 +268,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 				auto fruitAccessor = firstCategory->sharedAccess();
 				const auto& appleName = appleAccessor->value.value;
 				const auto& fruitName = fruitAccessor->value.value;
-				Logger::print("{} is a {}\n", appleName, fruitName);
+				Logger::print("{} is a {}", appleName, fruitName);
 				suite.expectEqual(appleName, "apple");
 				suite.expectEqual(fruitName, "fruit");
 			}
@@ -315,7 +315,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 					auto color = StringMeshNodePtr::NetworkPtr::SharedPtr{colors[0]};
 					auto colorAccessor = color->sharedAccess();
 
-					Logger::print("{} is a {} {}\n", fruitAccessor->value.value, colorAccessor->value.value, fruitCategoryAccessor->value.value);
+					Logger::print("{} is a {} {}", fruitAccessor->value.value, colorAccessor->value.value, fruitCategoryAccessor->value.value);
 				}
 			}
 		});
@@ -509,7 +509,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 		suite.addTest("Get node: Invalid node", [&] {
 			auto emptyNode = StringMeshNodePtr{};
 
-			suite.template expectThrow<std::runtime_error>([&] {
+			suite.expectThrow<std::runtime_error>([&] {
 				auto _ = emptyNode["Branch"];
 			});
 		});
@@ -543,7 +543,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 		suite.addTest("Get nodes: Invalid node", [&] {
 			auto emptyNode = StringMeshNodePtr{};
 
-			suite.template expectThrow<std::runtime_error>([&] {
+			suite.expectThrow<std::runtime_error>([&] {
 				auto _ = emptyNode["Branch"];
 			});
 		});
