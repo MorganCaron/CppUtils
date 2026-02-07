@@ -17,6 +17,9 @@ import CppUtils.Terminal.TextModifier;
 
 export namespace CppUtils
 {
+	template<String::Hasher loggerName>
+	inline auto configureLogger(Execution::EventQueue& eventQueue) -> void;
+
 	template<String::Hasher loggerName = String::Hash{}>
 	struct Logger final
 	{
@@ -27,7 +30,10 @@ export namespace CppUtils
 			return eventQueue;
 		}
 
-		static inline void configure(Execution::EventQueue& eventQueue);
+		static inline auto configure(Execution::EventQueue& eventQueue) -> void
+		{
+			configureLogger<loggerName>(eventQueue);
+		}
 
 		template<String::Hasher logType = String::Hash{}, class... Args>
 		static inline auto emit(Args&&... args) -> void
@@ -60,6 +66,6 @@ export namespace CppUtils
 	};
 
 	template<String::Hasher loggerName>
-	inline void Logger<loggerName>::configure(Execution::EventQueue&)
+	inline auto configureLogger(Execution::EventQueue&) -> void
 	{}
 }
