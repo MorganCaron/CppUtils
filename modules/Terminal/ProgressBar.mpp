@@ -16,7 +16,7 @@ export namespace CppUtils::Terminal
 		inline auto setPercent(float percent) noexcept -> void
 		{
 			using namespace std::chrono_literals;
-			m_percent = percent;
+			m_percent = std::clamp(percent, 0.f, 100.f);
 			requestUpdate(10ms);
 		}
 
@@ -27,22 +27,29 @@ export namespace CppUtils::Terminal
 
 		inline auto draw(WritableAreaView& view) noexcept -> void final
 		{
+			using namespace std::literals;
 			const auto size = view.getViewport().getSize();
 			const auto titleSize = std::size(m_title);
 			constexpr auto percentWidth = 5; // " 100%"
 			const auto titleAndPercentSize = titleSize + percentWidth;
 			if (size.width() < titleAndPercentSize)
 				return;
+			const auto percent = static_cast<float>(m_percent);
 			constexpr auto minBarWidth = 4; // " [#]"
 			if (size.width() < titleAndPercentSize + minBarWidth)
 			{
-				const auto text = std::format("{} {:>3}% ", m_title, static_cast<std::size_t>(m_percent));
+				const auto text = std::format("{} {:>3}% ", m_title, static_cast<std::size_t>(percent));
 				view.printText({0, 0}, text);
 				return;
 			}
 			const auto barWidth = size.width() - (titleAndPercentSize + minBarWidth - 1);
-			const auto progress = static_cast<std::size_t>(static_cast<float>(barWidth) * m_percent / 100.f);
-			const auto text = std::format("{} [{}{}] {:>3}% ", m_title, std::string(progress, '#'), std::string(barWidth - progress, ' '), static_cast<std::size_t>(m_percent));
+			const auto progress = static_cast<std::size_t>(static_cast<float>(barWidth) * percent / 100.f);
+
+			const auto bar = (percent >= 100.f and barWidth >= std::size("--- Done ---"sv)) ?
+				std::format("{:^{}}", "--- Done ---"sv, barWidth) :
+				std::format("{:█<{}}{:░<{}}", ""sv, progress, ""sv, barWidth - progress);
+
+			const auto text = std::format("{} [{}] {:>3}% ", m_title, bar, static_cast<std::size_t>(percent));
 			view.printText({0, 0}, text);
 			drawFinished();
 		}
