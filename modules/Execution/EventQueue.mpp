@@ -81,12 +81,12 @@ export namespace CppUtils::Execution
 				if (accessor.value().empty())
 					return;
 
+				m_isTaskRunning = true;
 				task = std::move(accessor.value().front());
 				accessor.value().pop();
 			}
 			if (task)
 			{
-				m_isTaskRunning = true;
 				auto _ = ScopeGuard{[this] { m_isTaskRunning = false; }};
 				task();
 			}
