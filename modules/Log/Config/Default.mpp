@@ -27,7 +27,14 @@ export namespace CppUtils
 		});
 
 		eventQueue.subscribe<"separator">([]() {
-			std::println("{:-^{}}", "", Terminal::getTerminalSize().width());
+			using namespace std::literals;
+			const auto width = Terminal::getTerminalSize().width();
+			auto separator = ""s;
+			constexpr auto separatorChar = "─"sv;
+			separator.reserve(width * std::size(separatorChar));
+			for (auto i = 0uz; i < width; ++i)
+				separator += separatorChar;
+			std::println("{}", separator);
 		});
 	}
 }

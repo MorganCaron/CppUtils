@@ -61,8 +61,15 @@ export namespace CppUtils
 		});
 
 		eventQueue.subscribe<"separator">([]() {
+			using namespace std::literals;
 			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Blue};
-			std::println("{:-^{}}", "", Terminal::getTerminalSize().width());
+			const auto width = Terminal::getTerminalSize().width();
+			auto separator = ""s;
+			constexpr auto separatorChar = "─"sv;
+			separator.reserve(width * std::size(separatorChar));
+			for (auto i = 0uz; i < width; ++i)
+				separator += separatorChar;
+			std::println("{}", separator);
 		});
 	}
 }
