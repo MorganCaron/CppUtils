@@ -104,18 +104,19 @@ export namespace CppUtils::Thread
 				if (std::empty(tasksQueueAccessor.value()))
 					return;
 
+				auto lockGuard = std::lock_guard{m_waitingMutex};
 				m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
 				task = std::move(tasksQueueAccessor->front());
 				tasksQueueAccessor->pop();
 			}
 
 			task();
-			m_activeWorkers.fetch_sub(1, std::memory_order_relaxed);
 
-			if (m_activeWorkers.load(std::memory_order_relaxed) == 0)
 			{
 				auto lockGuard = std::lock_guard{m_waitingMutex};
-				if (isTasksQueueEmpty())
+				m_activeWorkers.fetch_sub(1, std::memory_order_relaxed);
+
+				if (m_activeWorkers.load(std::memory_order_relaxed) == 0 and isTasksQueueEmpty())
 					m_waitUntilFinishedCondition.notify_all();
 			}
 		}
