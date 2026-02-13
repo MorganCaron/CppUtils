@@ -1,61 +1,64 @@
 export module CppUtils.Type.Mapping;
 
+import std;
+
 export namespace CppUtils::Type
 {
-	template<auto Lhs, auto Rhs>
+	template<auto Lhs, auto... Rhs>
 	struct Pair final
 	{
 		static constexpr auto lhs = Lhs;
-		static constexpr auto rhs = Rhs;
+		static constexpr auto rhs = std::tuple{Rhs...};
 	};
 
 	template<class... Pairs>
 	struct Mapping final
 	{
 		static_assert(sizeof...(Pairs) > 0);
+		using Values = std::tuple<Pairs...>;
+
 		Mapping() = delete;
 
 		template<auto Lhs>
-		[[nodiscard]] static inline consteval auto toRhs() noexcept
+		[[nodiscard]] static inline consteval auto toRhs() noexcept -> auto
 		{
-			return toRhsImpl<Lhs, Pairs...>();
+			return []<auto Target, class First, class... Rest>(this auto&& self) consteval {
+				if constexpr (First::lhs == Target)
+					return First::rhs;
+				else if constexpr (sizeof...(Rest) == 0)
+					static_assert([] { return false; }(), "Lhs not found");
+				else
+					return self.template operator()<Target, Rest...>();
+			}.template operator()<Lhs, Pairs...>();
 		}
 
 		template<auto Rhs>
-		[[nodiscard]] static inline consteval auto toLhs() noexcept
+		[[nodiscard]] static inline consteval auto toLhs() noexcept -> auto
 		{
-			return toLhsImpl<Rhs, Pairs...>();
+			return []<auto Target, class First, class... Rest>(this auto&& self) consteval {
+				if constexpr (contains<Target>(First::rhs))
+					return First::lhs;
+				else if constexpr (sizeof...(Rest) == 0)
+					static_assert([] { return false; }(), "Rhs not found");
+				else
+					return self.template operator()<Target, Rest...>();
+			}.template operator()<Rhs, Pairs...>();
 		}
 
-	private:
-		template<auto Lhs, class First, class... Rest>
-		[[nodiscard]] static inline consteval auto toRhsImpl() noexcept
+		template<auto Lhs>
+		[[nodiscard]] static inline consteval auto toSingleRhs() noexcept -> auto
 		{
-			if constexpr (First::lhs == Lhs)
-				return First::rhs;
-			else
-				return toRhsImpl<Lhs, Rest...>();
+			constexpr auto tuple = toRhs<Lhs>();
+			static_assert(std::tuple_size_v<decltype(tuple)> == 1);
+			return std::get<0>(tuple);
 		}
 
-		template<auto>
-		[[nodiscard]] static inline consteval auto toRhsImpl() noexcept
+		template<auto Value, class Tuple>
+		[[nodiscard]] static inline consteval auto contains(const Tuple& tuple) noexcept -> bool
 		{
-			static_assert([] { return false; }(), "Lhs not found");
-		}
-
-		template<auto Rhs, class First, class... Rest>
-		[[nodiscard]] static inline consteval auto toLhsImpl() noexcept
-		{
-			if constexpr (First::rhs == Rhs)
-				return First::lhs;
-			else
-				return toLhsImpl<Rhs, Rest...>();
-		}
-
-		template<auto>
-		[[nodiscard]] static inline consteval auto toLhsImpl() noexcept
-		{
-			static_assert([] { return false; }(), "Rhs not found");
+			return []<std::size_t... I>(const Tuple& tuple, std::index_sequence<I...>) constexpr noexcept -> bool {
+				return ((std::get<I>(tuple) == Value) or ...);
+			}(tuple, std::make_index_sequence<std::tuple_size_v<Tuple>>{});
 		}
 	};
 }

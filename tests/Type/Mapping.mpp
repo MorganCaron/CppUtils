@@ -4,11 +4,90 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Type::Mapping
 {
-	using Map = ::CppUtils::Type::Mapping<
-		::CppUtils::Type::Pair<0, 100>,
-		::CppUtils::Type::Pair<1, 200>,
-		::CppUtils::Type::Pair<2, 300>>;
+	namespace Map
+	{
+		using Map = ::CppUtils::Type::Mapping<
+			::CppUtils::Type::Pair<0, 100>,
+			::CppUtils::Type::Pair<1, 200>,
+			::CppUtils::Type::Pair<2, 300>>;
 
-	static_assert(Map::toRhs<1>() == 200);
-	static_assert(Map::toLhs<300>() == 2);
+		static_assert(std::get<0>(Map::toRhs<0>()) == 100);
+		static_assert(std::get<0>(Map::toRhs<1>()) == 200);
+		static_assert(std::get<0>(Map::toRhs<2>()) == 300);
+
+		static_assert(Map::toSingleRhs<0>() == 100);
+		static_assert(Map::toSingleRhs<1>() == 200);
+		static_assert(Map::toSingleRhs<2>() == 300);
+
+		static_assert(Map::toLhs<100>() == 0);
+		static_assert(Map::toLhs<200>() == 1);
+		static_assert(Map::toLhs<300>() == 2);
+
+		static_assert(Map::contains<100>(Map::toRhs<0>()));
+		static_assert(Map::contains<200>(Map::toRhs<1>()));
+		static_assert(not Map::contains<1'000>(Map::toRhs<2>()));
+	}
+
+	namespace MultiMap
+	{
+		using MultiMap = ::CppUtils::Type::Mapping<
+			::CppUtils::Type::Pair<0, 1, 2, 3>>;
+
+		static_assert(std::tuple_size_v<decltype(MultiMap::toRhs<0>())> == 3);
+		static_assert(std::get<0>(MultiMap::toRhs<0>()) == 1);
+		static_assert(std::get<1>(MultiMap::toRhs<0>()) == 2);
+		static_assert(std::get<2>(MultiMap::toRhs<0>()) == 3);
+
+		static_assert(MultiMap::toLhs<1>() == 0);
+		static_assert(MultiMap::toLhs<2>() == 0);
+		static_assert(MultiMap::toLhs<3>() == 0);
+
+		static_assert(MultiMap::contains<1>(MultiMap::toRhs<0>()));
+		static_assert(MultiMap::contains<2>(MultiMap::toRhs<0>()));
+		static_assert(not MultiMap::contains<10>(MultiMap::toRhs<0>()));
+	}
+
+	namespace Boolean
+	{
+		using BooleanMap = ::CppUtils::Type::Mapping<
+			::CppUtils::Type::Pair<0, true>,
+			::CppUtils::Type::Pair<1, false>>;
+
+		static_assert(BooleanMap::toSingleRhs<0>());
+		static_assert(not BooleanMap::toSingleRhs<1>());
+
+		static_assert(BooleanMap::contains<true>(BooleanMap::toRhs<0>()));
+		static_assert(BooleanMap::contains<false>(BooleanMap::toRhs<1>()));
+		static_assert(not BooleanMap::contains<true>(BooleanMap::toRhs<1>()));
+	}
+
+	namespace FunctionPointer
+	{
+		constexpr auto function(int x) -> int
+		{
+			return x * 2;
+		}
+
+		using FunctionMap = ::CppUtils::Type::Mapping<
+			::CppUtils::Type::Pair<0, &function>>;
+
+		static_assert(FunctionMap::toSingleRhs<0>() == &function);
+
+		static_assert(FunctionMap::contains<&function>(FunctionMap::toRhs<0>()));
+	}
+
+	namespace MemberFunctionPointer
+	{
+		struct Struct final
+		{
+			int value;
+		};
+
+		using MemberMap = ::CppUtils::Type::Mapping<
+			::CppUtils::Type::Pair<0, &Struct::value>>;
+
+		static_assert(MemberMap::toSingleRhs<0>() == &Struct::value);
+
+		static_assert(MemberMap::contains<&Struct::value>(MemberMap::toRhs<0>()));
+	}
 }
