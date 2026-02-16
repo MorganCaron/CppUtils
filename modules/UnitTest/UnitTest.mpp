@@ -129,16 +129,18 @@ namespace CppUtils::UnitTest
 				std::plus{});
 			Logger::print<"info">("{} tests found. Execution:", nbTests);
 
-			auto successfulTests = std::vector<std::string>{};
-			auto failedTests = std::vector<std::string>{};
-			auto skippedTests = std::vector<std::string>{};
+			auto failedTestSuites = std::vector<std::string>{};
+			auto skippedTestSuites = std::vector<std::string>{};
+
+			auto nbSuccess = 0uz;
+			auto nbFail = 0uz;
+			auto nbSkip = 0uz;
 
 			if (auto result = m_testSuites.forEach([&](const auto& name, const auto& tests, const auto& dependencies) -> bool {
 				if (std::empty(tests))
 				{
 					Logger::print<"warning">("No tests found in test suite {}", name);
 					testSuiteIsSuccess[name] = true;
-					successfulTests.push_back(name);
 					return not settings.fastAbort;
 				}
 
@@ -147,21 +149,33 @@ namespace CppUtils::UnitTest
 					{
 						Logger::print<"warning">("Skipping test suite {} due to failed prerequisites in test suite {}", name, dependency);
 						testSuiteIsSuccess[name] = false;
-						skippedTests.push_back(name);
+						skippedTestSuites.push_back(name);
+						nbSkip += std::size(tests);
 						return not settings.fastAbort;
 					}
 
-				auto result = std::ranges::all_of(tests, [&](const auto& test) { return executeTest(test, settings); });
-				testSuiteIsSuccess[name] = result;
-				(result ? successfulTests : failedTests).push_back(name);
-				return result or not settings.fastAbort;
+				auto allTestsPassed = true;
+				for (const auto& test : tests)
+				{
+					if (executeTest(test, settings))
+						++nbSuccess;
+					else
+					{
+						++nbFail;
+						allTestsPassed = false;
+						if (settings.fastAbort)
+							break;
+					}
+				}
+
+				testSuiteIsSuccess[name] = allTestsPassed;
+				if (not allTestsPassed)
+					failedTestSuites.push_back(name);
+
+				return allTestsPassed or not settings.fastAbort;
 			});
 				not result)
 				Logger::print<"error">("The tests cannot be run: {}", result.error());
-
-			auto nbSuccess = std::size(successfulTests);
-			auto nbFail = std::size(failedTests);
-			auto nbSkip = std::size(skippedTests);
 
 			Logger::emit<"separator">();
 			Logger::print<"detail">("Test results");
@@ -179,19 +193,19 @@ namespace CppUtils::UnitTest
 				Logger::print<"success">("- {} successful tests", nbSuccess);
 			if (nbSuccess == 0)
 				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, "- 0 successful tests");
-			
+
 			if (nbFail > 0)
 			{
 				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, std::format("- {} failed tests", nbFail));
-				for (const auto& failedTest : failedTests)
-					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, std::format("  - {}", failedTest));
+				for (const auto& failedTestSuite : failedTestSuites)
+					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, std::format("  - {}", failedTestSuite));
 			}
 
 			if (nbSkip > 0)
 			{
 				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("- {} skipped tests (due to failed dependencies)", nbSkip));
-				for (const auto& skippedTest : skippedTests)
-					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("  - {}", skippedTest));
+				for (const auto& skippedTestSuite : skippedTestSuites)
+					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("  - {}", skippedTestSuite));
 			}
 
 			Logger::waitUntilFinished();
