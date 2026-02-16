@@ -63,7 +63,12 @@ export namespace CppUtils::Language::CSV
 	{
 		const auto lines = csv
 			| std::views::split(lineSeparator)
-			| std::views::transform([](auto&& range) { return std::string_view{range}; })
+			| std::views::transform([&](auto&& range) {
+				auto line = std::string_view{range};
+				if (lineSeparator == "\n" and not std::empty(line) and line.back() == '\r')
+					line.remove_suffix(1);
+				return line;
+			})
 			| std::ranges::to<std::vector<std::string_view>>();
 		for (auto i = dropNFirstLines; i < std::size(lines); ++i)
 			if (const auto trimmedLine = String::trimString(lines[i]); not std::empty(trimmedLine))

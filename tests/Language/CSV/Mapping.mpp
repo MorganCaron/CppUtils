@@ -29,22 +29,22 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 	using namespace CppUtils::String::Literals;
 
 	using CSVMapping = CppUtils::Type::Mapping<
-		CppUtils::Type::Pair<"String view"_token, "A"_excelColumn>,
-		CppUtils::Type::Pair<"String"_token, "B"_excelColumn>,
+		CppUtils::Type::Pair<"String 1"_token, "A"_excelColumn>,
+		CppUtils::Type::Pair<"String 2"_token, "B"_excelColumn>,
 		CppUtils::Type::Pair<"Unsigned integer"_token, "C"_excelColumn>,
 		CppUtils::Type::Pair<"Signed integer"_token, "D"_excelColumn>,
 		CppUtils::Type::Pair<"Floating point"_token, "E"_excelColumn>>;
 
 	using StructMapping = CppUtils::Type::Mapping<
-		CppUtils::Type::Pair<"String view"_token, &Object::a>,
-		CppUtils::Type::Pair<"String"_token, &Object::b>,
+		CppUtils::Type::Pair<"String 1"_token, &Object::a>,
+		CppUtils::Type::Pair<"String 2"_token, &Object::b>,
 		CppUtils::Type::Pair<"Unsigned integer"_token, &Object::c>,
 		CppUtils::Type::Pair<"Signed integer"_token, &Object::d>,
 		CppUtils::Type::Pair<"Floating point"_token, &Object::e>>;
 
 	using FileStructMapping = CppUtils::Type::Mapping<
-		CppUtils::Type::Pair<"String view"_token, &FileObject::a>,
-		CppUtils::Type::Pair<"String"_token, &FileObject::b>,
+		CppUtils::Type::Pair<"String 1"_token, &FileObject::a>,
+		CppUtils::Type::Pair<"String 2"_token, &FileObject::b>,
 		CppUtils::Type::Pair<"Unsigned integer"_token, &FileObject::c>,
 		CppUtils::Type::Pair<"Signed integer"_token, &FileObject::d>,
 		CppUtils::Type::Pair<"Floating point"_token, &FileObject::e>>;
@@ -126,6 +126,17 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
 				const auto filePath = directory / "test.csv";
 				CppUtils::FileSystem::String::write(filePath, "a;b;c;d;e\nfoo;bar;42;-1;3.14\n"sv);
+
+				const auto objects = CppUtils::Language::CSV::loadFile<FileObject, FileObjectMapping>(filePath, ";", "\n", 1uz);
+
+				suite.expectEqual(objects, std::vector<FileObject>{{"foo", "bar", 42, -1, 3.14f}});
+			}};
+		});
+
+		suite.addTest("load CSV File with CRLF", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto filePath = directory / "test_crlf.csv";
+				CppUtils::FileSystem::String::write(filePath, "a;b;c;d;e\r\nfoo;bar;42;-1;3.14\r\n"sv);
 
 				const auto objects = CppUtils::Language::CSV::loadFile<FileObject, FileObjectMapping>(filePath, ";", "\n", 1uz);
 

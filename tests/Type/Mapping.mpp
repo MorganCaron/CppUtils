@@ -6,10 +6,10 @@ namespace CppUtils::UnitTest::Type::Mapping
 {
 	namespace Map
 	{
-		using Map = ::CppUtils::Type::Mapping<
-			::CppUtils::Type::Pair<0, 100>,
-			::CppUtils::Type::Pair<1, 200>,
-			::CppUtils::Type::Pair<2, 300>>;
+		using Map = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<0, 100>,
+			CppUtils::Type::Pair<1, 200>,
+			CppUtils::Type::Pair<2, 300>>;
 
 		static_assert(std::get<0>(Map::toRhs<0>()) == 100);
 		static_assert(std::get<0>(Map::toRhs<1>()) == 200);
@@ -30,8 +30,8 @@ namespace CppUtils::UnitTest::Type::Mapping
 
 	namespace MultiMap
 	{
-		using MultiMap = ::CppUtils::Type::Mapping<
-			::CppUtils::Type::Pair<0, 1, 2, 3>>;
+		using MultiMap = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<0, 1, 2, 3>>;
 
 		static_assert(std::tuple_size_v<decltype(MultiMap::toRhs<0>())> == 3);
 		static_assert(std::get<0>(MultiMap::toRhs<0>()) == 1);
@@ -49,9 +49,9 @@ namespace CppUtils::UnitTest::Type::Mapping
 
 	namespace Boolean
 	{
-		using BooleanMap = ::CppUtils::Type::Mapping<
-			::CppUtils::Type::Pair<0, true>,
-			::CppUtils::Type::Pair<1, false>>;
+		using BooleanMap = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<0, true>,
+			CppUtils::Type::Pair<1, false>>;
 
 		static_assert(BooleanMap::toSingleRhs<0>());
 		static_assert(not BooleanMap::toSingleRhs<1>());
@@ -68,8 +68,8 @@ namespace CppUtils::UnitTest::Type::Mapping
 			return x * 2;
 		}
 
-		using FunctionMap = ::CppUtils::Type::Mapping<
-			::CppUtils::Type::Pair<0, &function>>;
+		using FunctionMap = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<0, &function>>;
 
 		static_assert(FunctionMap::toSingleRhs<0>() == &function);
 
@@ -83,8 +83,8 @@ namespace CppUtils::UnitTest::Type::Mapping
 			int value;
 		};
 
-		using MemberMap = ::CppUtils::Type::Mapping<
-			::CppUtils::Type::Pair<0, &Struct::value>>;
+		using MemberMap = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<0, &Struct::value>>;
 
 		static_assert(MemberMap::toSingleRhs<0>() == &Struct::value);
 
