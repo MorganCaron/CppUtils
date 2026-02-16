@@ -1,79 +1,139 @@
 export module CppUtils.Language.CSV.Mapping;
-/*
+
 import std;
 
 import CppUtils.String;
+import CppUtils.Type.Mapping;
+import CppUtils.FileSystem;
 
-export namespace CppUtils::Language::CSV::Mapping
+export namespace CppUtils::Language::CSV
 {
-	struct Column final
+	using Line = std::vector<std::string_view>;
+
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto toStruct(const auto& csvLine) -> Object
 	{
-		String::Token token;
-		std::size_t position;
-	};
-
-	template<class...>
-	struct CSVSchema;
-
-	template<class... Columns>
-	struct CSVSchema final
-	{
-		explicit CSVSchema(const Columns&... columns)
-		{
-			([&](const Column& column) -> void {
-				columnsPositions[column.token] = column.position;
-			}(columns), ...);
-		}
-
-		std::unordered_map<String::Hash, std::size_t> columnsPositions;
-	};
-
-	template<class>
-	struct Mapping;
-
-	template<class Object>
-	[[nodiscard]] inline auto toStruct(const Language::CSV::Line& csvLine) -> decltype(auto)
-	{
+		using CSVMapping = typename Mapping::CSVMapping;
+		using StructMapping = typename Mapping::StructMapping;
+		using FunctionMapping = typename Mapping::FunctionMapping;
 		static_assert(std::is_default_constructible_v<Object>);
-		const auto& structSchema = Language::Mapping::Mapping<Object>::schema;
-		const auto& csvSchema = Mapping<Object>::schema;
 		auto object = Object{};
-		std::apply([&](auto&&... attributes) -> void {
-			([&](auto&& attribute) -> void {
-				auto& objectAttribute = object.*attribute.address;
-				using AttributeType = std::remove_cvref_t<decltype(objectAttribute)>;
-				auto position = csvSchema.columnsPositions.at(attribute.token);
-				if (position < std::size(csvLine))
+		std::apply([&](auto&&... csvPairs) -> void {
+			([&](auto&& csvPair) -> void {
+				using CSVPair = std::remove_cvref_t<decltype(csvPair)>;
+				constexpr auto token = CSVPair::lhs;
+				constexpr auto csvColumnPosition = std::get<0>(CSVPair::rhs);
+				if (csvColumnPosition < std::size(csvLine))
 				{
-					if (attribute.parsingFunction)
-						objectAttribute = attribute.parsingFunction(csvLine[position]);
-					else if constexpr (std::same_as<AttributeType, std::string>)
-						objectAttribute = csvLine[position];
+					constexpr auto memberPointer = std::get<0>(StructMapping::template toRhs<token>());
+					auto& member = object.*memberPointer;
+					using MemberType = std::remove_cvref_t<decltype(member)>;
+					auto value = std::string_view{csvLine[csvColumnPosition]};
+					if constexpr (FunctionMapping::template containsLhs<token>())
+						FunctionMapping::template toSingleRhs<token>()(member, value);
+					else if constexpr (std::same_as<MemberType, std::string_view>)
+						member = value;
+					else if constexpr (std::same_as<MemberType, std::string>)
+						member = value;
+					else if constexpr (std::integral<MemberType> or std::floating_point<MemberType>)
+						std::from_chars(std::data(value), std::data(value) + std::size(value), member);
 				}
-			}(attributes, ...);
-		}, structSchema.attributes);
+			}(csvPairs), ...);
+		}, typename CSVMapping::Values{});
 		return object;
 	}
 
-	using namespace String::Literals;
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto toStruct(std::string_view csvLine, std::string_view separator = ";") -> Object
+	{
+		const auto tokens = csvLine
+			| std::views::split(separator)
+			| std::views::transform([](auto&& range) { return std::string_view{range}; })
+			| std::ranges::to<std::vector<std::string_view>>();
+		return toStruct<Object, Mapping>(tokens);
+	}
 
-	template<class T>
-	inline auto loadFile(const std::filesystem::path& filePath, std::vector<T>&& elements = {}, std::size dropNFirstLines = 0) -> std::vector<T>
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto toStructs(
+		std::string_view csv,
+		std::string_view columnSeparator = ";",
+		std::string_view lineSeparator = "\n",
+		std::size_t dropNFirstLines = 0,
+		std::vector<Object>&& objects = {}) -> std::vector<Object>
+	{
+		const auto lines = csv
+			| std::views::split(lineSeparator)
+			| std::views::transform([](auto&& range) { return std::string_view{range}; })
+			| std::ranges::to<std::vector<std::string_view>>();
+		for (auto i = dropNFirstLines; i < std::size(lines); ++i)
+			if (const auto trimmedLine = String::trimString(lines[i]); not std::empty(trimmedLine))
+				objects.push_back(toStruct<Object, Mapping>(trimmedLine, columnSeparator));
+		return std::move(objects);
+	}
+
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto toCSV(const Object& object, std::string_view separator = ";") -> std::string
+	{
+		using CSVMapping = typename Mapping::CSVMapping;
+		using StructMapping = typename Mapping::StructMapping;
+		constexpr auto maxPosition = []() -> std::size_t {
+			auto max = 0uz;
+			std::apply([&](auto&&... pairs) {
+				((max = std::max(max, static_cast<std::size_t>(std::get<0>(std::remove_cvref_t<decltype(pairs)>::rhs)))), ...);
+			}, typename CSVMapping::Values{});
+			return max;
+		}();
+		auto columns = std::vector<std::string>(maxPosition + 1);
+		std::apply([&](auto&&... csvPairs) -> void {
+			([&](auto&& csvPair) -> void {
+				using CSVPair = std::remove_cvref_t<decltype(csvPair)>;
+				constexpr auto token = CSVPair::lhs;
+				constexpr auto csvColumnPosition = std::get<0>(CSVPair::rhs);
+				constexpr auto memberPointer = std::get<0>(StructMapping::template toRhs<token>());
+				columns[csvColumnPosition] = String::formatValue(object.*memberPointer);
+			}(csvPairs), ...);
+		}, typename CSVMapping::Values{});
+		return String::concatenateStringsWithSeparator(columns, separator);
+	}
+
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto toCSV(
+		const std::vector<Object>& objects,
+		std::string_view columnSeparator = ";",
+		std::string_view lineSeparator = "\n") -> std::string
+	{
+		auto csv = std::string{};
+		for (const auto& object : objects)
+		{
+			if (not std::empty(csv))
+				csv += lineSeparator;
+			csv += toCSV<Object, Mapping>(object, columnSeparator);
+		}
+		return csv;
+	}
+
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto loadFile(
+		const std::filesystem::path& filePath,
+		std::string_view columnSeparator = ";",
+		std::string_view lineSeparator = "\n",
+		std::size_t dropNFirstLines = 0,
+		std::vector<Object>&& elements = {}) -> std::vector<Object>
 	{
 		auto fileContent = FileSystem::String::read(filePath);
-		auto csvTable = parse(fileContent, dropNFirstLines);
-		for (const auto& csvLine : csvTable)
-			elements.emplace_back(toStruct<T>(csvLine));
-		return elements;
+		return toStructs<Object, Mapping>(fileContent, columnSeparator, lineSeparator, dropNFirstLines, std::move(elements));
 	}
 
-	template<class T>
-	inline auto loadDirectory(const std::filesystem::path& directory, std::vector<T>&& elements = {}, std::size_t dropNFirstLines = 0) -> std::vector<T>
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto loadDirectory(const std::filesystem::path& directory,
+		std::string_view columnSeparator = ";",
+		std::string_view lineSeparator = "\n",
+		std::size_t dropNFirstLines = 0,
+		std::vector<Object>&& elements = {}) -> std::vector<Object>
 	{
-		FileSystem::forFilesWithExtension(directory, ".csv", [&elements, dropNFirstLines](const auto& filePath) {
-			loadFile(filePath, std::move(elements), dropNFirstLines);
+		FileSystem::forFilesWithExtension(directory, ".csv", [&](const auto& filePath) {
+			elements = loadFile<Object, Mapping>(filePath, columnSeparator, lineSeparator, dropNFirstLines, std::move(elements));
 		});
-		return elements;
+		return std::move(elements);
 	}
 }
-*/

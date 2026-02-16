@@ -14,7 +14,6 @@ export namespace CppUtils::Type
 	template<class... Pairs>
 	struct Mapping final
 	{
-		static_assert(sizeof...(Pairs) > 0);
 		using Values = std::tuple<Pairs...>;
 
 		Mapping() = delete;
@@ -22,27 +21,33 @@ export namespace CppUtils::Type
 		template<auto Lhs>
 		[[nodiscard]] static inline consteval auto toRhs() noexcept -> auto
 		{
-			return []<auto Target, class First, class... Rest>(this auto&& self) consteval {
-				if constexpr (First::lhs == Target)
-					return First::rhs;
-				else if constexpr (sizeof...(Rest) == 0)
-					static_assert([] { return false; }(), "Lhs not found");
-				else
-					return self.template operator()<Target, Rest...>();
-			}.template operator()<Lhs, Pairs...>();
+			if constexpr (sizeof...(Pairs) == 0)
+				static_assert([] { return false; }(), "Lhs not found");
+			else
+				return []<auto Target, class First, class... Rest>(this auto&& self) consteval {
+					if constexpr (First::lhs == Target)
+						return First::rhs;
+					else if constexpr (sizeof...(Rest) == 0)
+						static_assert([] { return false; }(), "Lhs not found");
+					else
+						return self.template operator()<Target, Rest...>();
+				}.template operator()<Lhs, Pairs...>();
 		}
 
 		template<auto Rhs>
 		[[nodiscard]] static inline consteval auto toLhs() noexcept -> auto
 		{
-			return []<auto Target, class First, class... Rest>(this auto&& self) consteval {
-				if constexpr (contains<Target>(First::rhs))
-					return First::lhs;
-				else if constexpr (sizeof...(Rest) == 0)
-					static_assert([] { return false; }(), "Rhs not found");
-				else
-					return self.template operator()<Target, Rest...>();
-			}.template operator()<Rhs, Pairs...>();
+			if constexpr (sizeof...(Pairs) == 0)
+				static_assert([] { return false; }(), "Rhs not found");
+			else
+				return []<auto Target, class First, class... Rest>(this auto&& self) consteval {
+					if constexpr (contains<Target>(First::rhs))
+						return First::lhs;
+					else if constexpr (sizeof...(Rest) == 0)
+						static_assert([] { return false; }(), "Rhs not found");
+					else
+						return self.template operator()<Target, Rest...>();
+				}.template operator()<Rhs, Pairs...>();
 		}
 
 		template<auto Lhs>
@@ -51,6 +56,21 @@ export namespace CppUtils::Type
 			constexpr auto tuple = toRhs<Lhs>();
 			static_assert(std::tuple_size_v<decltype(tuple)> == 1);
 			return std::get<0>(tuple);
+		}
+
+		template<auto Lhs>
+		[[nodiscard]] static inline consteval auto containsLhs() noexcept -> bool
+		{
+			return ((Pairs::lhs == Lhs) or ...);
+		}
+
+		template<auto Lhs>
+		[[nodiscard]] static inline consteval auto hasSingleRhs() noexcept -> bool
+		{
+			if constexpr (containsLhs<Lhs>())
+				return std::tuple_size_v<decltype(toRhs<Lhs>())> == 1;
+			else
+				return false;
 		}
 
 		template<auto Value, class Tuple>

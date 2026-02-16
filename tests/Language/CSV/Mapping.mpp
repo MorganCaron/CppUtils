@@ -1,0 +1,176 @@
+export module CppUtils.UnitTests.Language.CSV.Mapping;
+
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::CSV::Mapping
+{
+	struct Object final
+	{
+		std::string_view a;
+		std::string b;
+		std::size_t c;
+		int d;
+		float e;
+
+		auto operator==(const Object&) const -> bool = default;
+	};
+
+	struct FileObject final
+	{
+		std::string a;
+		std::string b;
+		std::size_t c;
+		int d;
+		float e;
+
+		auto operator==(const FileObject&) const -> bool = default;
+	};
+
+	using namespace CppUtils::String::Literals;
+
+	using CSVMapping = CppUtils::Type::Mapping<
+		CppUtils::Type::Pair<"String view"_token, "A"_excelColumn>,
+		CppUtils::Type::Pair<"String"_token, "B"_excelColumn>,
+		CppUtils::Type::Pair<"Unsigned integer"_token, "C"_excelColumn>,
+		CppUtils::Type::Pair<"Signed integer"_token, "D"_excelColumn>,
+		CppUtils::Type::Pair<"Floating point"_token, "E"_excelColumn>>;
+
+	using StructMapping = CppUtils::Type::Mapping<
+		CppUtils::Type::Pair<"String view"_token, &Object::a>,
+		CppUtils::Type::Pair<"String"_token, &Object::b>,
+		CppUtils::Type::Pair<"Unsigned integer"_token, &Object::c>,
+		CppUtils::Type::Pair<"Signed integer"_token, &Object::d>,
+		CppUtils::Type::Pair<"Floating point"_token, &Object::e>>;
+
+	using FileStructMapping = CppUtils::Type::Mapping<
+		CppUtils::Type::Pair<"String view"_token, &FileObject::a>,
+		CppUtils::Type::Pair<"String"_token, &FileObject::b>,
+		CppUtils::Type::Pair<"Unsigned integer"_token, &FileObject::c>,
+		CppUtils::Type::Pair<"Signed integer"_token, &FileObject::d>,
+		CppUtils::Type::Pair<"Floating point"_token, &FileObject::e>>;
+
+	namespace Conversion
+	{
+		inline auto doubleValue(std::size_t& member, std::string_view value) -> void
+		{
+			std::from_chars(std::data(value), std::data(value) + std::size(value), member);
+			member *= 2;
+		}
+	}
+
+	using FunctionMapping = CppUtils::Type::Mapping<
+		CppUtils::Type::Pair<"Unsigned integer"_token, &Conversion::doubleValue>>;
+
+	struct ObjectMapping final
+	{
+		using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
+		using StructMapping = UnitTest::Language::CSV::Mapping::StructMapping;
+		using FunctionMapping = CppUtils::Type::Mapping<>;
+	};
+
+	struct FileObjectMapping final
+	{
+		using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
+		using StructMapping = UnitTest::Language::CSV::Mapping::FileStructMapping;
+		using FunctionMapping = CppUtils::Type::Mapping<>;
+	};
+
+	struct ObjectFunctionMapping final
+	{
+		using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
+		using StructMapping = UnitTest::Language::CSV::Mapping::StructMapping;
+		using FunctionMapping = UnitTest::Language::CSV::Mapping::FunctionMapping;
+	};
+
+	auto _ = TestSuite{"Language/CSV/Mapping", {}, [](TestSuite& suite) {
+		using namespace std::literals;
+
+		suite.addTest("CSV line to Struct", [&] {
+			constexpr auto csvLine = "foo;bar;42;-1;3.14"sv;
+
+			const auto object = CppUtils::Language::CSV::toStruct<Object, ObjectMapping>(csvLine);
+
+			suite.expectEqual(object, Object{"foo", "bar", 42, -1, 3.14f});
+		});
+
+		suite.addTest("CSV to Structs", [&] {
+			constexpr auto csv = R"(
+				a;b;c;d;e
+				foo;bar;42;-1;3.14
+			)"sv;
+
+			const auto objects = CppUtils::Language::CSV::toStructs<Object, ObjectMapping>(csv, ";", "\n", 2uz);
+
+			suite.expectEqual(objects, std::vector<Object>{{"foo", "bar", 42, -1, 3.14f}});
+		});
+
+		suite.addTest("Struct to CSV line", [&] {
+			const auto object = Object{"foo", "bar", 42, -1, 3.14f};
+
+			const auto csvLine = CppUtils::Language::CSV::toCSV<Object, ObjectMapping>(object);
+
+			suite.expectEqual(csvLine, "foo;bar;42;-1;3.14"s);
+		});
+
+		suite.addTest("Structs to CSV", [&] {
+			const auto objects = std::vector<Object>{
+				{"foo", "bar", 1, -1, 1.1f},
+				{"hello", "world", 2, -2, 2.2f}};
+
+			const auto csv = CppUtils::Language::CSV::toCSV<Object, ObjectMapping>(objects);
+
+			suite.expectEqual(csv, "foo;bar;1;-1;1.1\nhello;world;2;-2;2.2"s);
+		});
+
+		suite.addTest("load CSV File", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto filePath = directory / "test.csv";
+				CppUtils::FileSystem::String::write(filePath, "a;b;c;d;e\nfoo;bar;42;-1;3.14\n"sv);
+
+				const auto objects = CppUtils::Language::CSV::loadFile<FileObject, FileObjectMapping>(filePath, ";", "\n", 1uz);
+
+				suite.expectEqual(objects, std::vector<FileObject>{{"foo", "bar", 42, -1, 3.14f}});
+			}};
+		});
+
+		suite.addTest("load CSV Directory", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				CppUtils::FileSystem::String::write(directory / "test1.csv", "a;b;c;d;e\nfoo;bar;1;-10;1.1\n"sv);
+				CppUtils::FileSystem::String::write(directory / "test2.csv", "a;b;c;d;e\nhello;world;2;-20;2.2\n"sv);
+
+				auto objects = CppUtils::Language::CSV::loadDirectory<FileObject, FileObjectMapping>(directory, ";", "\n", 1uz);
+				std::ranges::sort(objects, {}, &FileObject::b);
+
+				const auto expected = std::vector<FileObject>{
+					{"foo", "bar", 1, -10, 1.1f},
+					{"hello", "world", 2, -20, 2.2f}};
+
+				suite.expectEqual(objects, expected);
+			}};
+		});
+
+		suite.addTest("load CSV accumulation", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto filePath = directory / "test.csv";
+				CppUtils::FileSystem::String::write(filePath, "a;b;c;d;e\nfoo;bar;42;-1;3.14\n"sv);
+
+				auto objects = std::vector<FileObject>{{"existing", "object", 0, 0, 0.0f}};
+				objects = CppUtils::Language::CSV::loadFile<FileObject, FileObjectMapping>(filePath, ";", "\n", 1uz, std::move(objects));
+
+				const auto expected = std::vector<FileObject>{
+					{"existing", "object", 0, 0, 0.0f},
+					{"foo", "bar", 42, -1, 3.14f}};
+
+				suite.expectEqual(objects, expected);
+			}};
+		});
+
+		suite.addTest("FunctionMapping", [&] {
+			constexpr auto csvLine = "foo;bar;21;-1;3.14"sv;
+
+			const auto object = CppUtils::Language::CSV::toStruct<Object, ObjectFunctionMapping>(csvLine);
+
+			suite.expectEqual(object, Object{"foo", "bar", 42, -1, 3.14f});
+		});
+	}};
+}

@@ -51,6 +51,7 @@
 
 ### 🔣 Languages (Parsers, Compilers, VM)
 - Tools to create parsers and compilers (CSS, INI, HTML, JSON, Markdown, XML) (work in progress <img src="resources/loading.gif" width="12" height="12"/>)
+- [`CSV Mapping`](modules/Language/CSV/Mapping.mpp) - Type-safe CSV to struct mapping with support for custom conversion functions
 - [`CLikeCompiler`](modules/Language/CLikeCompiler.mpp) - Compiler for C-inspired language
 - [`GrammarParser`](modules/Language/GrammarParser.mpp) - A parser for defining and interpreting custom grammars, used for building language parsers
 - [`MetaEvaluator`](modules/Language/MetaEvaluator.mpp) - Homoiconic meta-circular evaluator with extensible reflexivity
@@ -107,7 +108,7 @@
 ### 🏷️ Type
 - [`Concept`](modules/Type/Concept.mpp) - Extensions to `<type_traits>` and `<concepts>` providing additional compile-time checks and utilities
 - [`Enum`](modules/Type/Enum.mpp) - Generic enum-to-string conversion
-- [`Mapping`](modules/Type/ObjectMapping.mpp) - Static reflection on members (pre-C++26)
+- [`Mapping`](modules/Type/Mapping.mpp) - Generic compile-time mapping between values
 - [`Tuple`](modules/Type/Tuple.mpp) - Visitor for `std::tuple`
 - [`VariadicTemplate`](modules/Type/VariadicTemplate.mpp) - Metaprogramming on variadic parameters
 - [`Variant`](modules/Type/Variant.mpp) - Generic print and comparison operators for `std::variant`

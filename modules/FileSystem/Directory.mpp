@@ -39,14 +39,14 @@ export namespace CppUtils::FileSystem
 			std::filesystem::create_directory(m_tempDirectory);
 		}
 
-		inline explicit TemporaryDirectory(auto&& function, [[maybe_unused]] auto&&... args):
+		inline explicit TemporaryDirectory(std::invocable<std::filesystem::path> auto&& function, [[maybe_unused]] auto&&... args):
 			TemporaryDirectory{}
 		{
 			static_assert(not Type::HasReturnValue<decltype(function)>);
 			function(m_tempDirectory, std::forward<decltype(args)>(args)...);
 		}
 
-		inline TemporaryDirectory(std::string_view directoryName, auto&& function, [[maybe_unused]] auto&&... args):
+		inline TemporaryDirectory(std::string_view directoryName, std::invocable<std::filesystem::path> auto&& function, [[maybe_unused]] auto&&... args):
 			TemporaryDirectory{directoryName}
 		{
 			static_assert(not Type::HasReturnValue<decltype(function)>);
