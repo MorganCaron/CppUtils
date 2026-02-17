@@ -4,10 +4,22 @@ import std;
 
 import CppUtils.String;
 import CppUtils.Type.Mapping;
-import CppUtils.FileSystem;
 
 export namespace CppUtils::Language::CSV
 {
+	template<class Mapping>
+	struct GetFunctionMapping final
+	{
+		using Type = Type::Mapping<>;
+	};
+
+	template<class Mapping>
+	requires requires { typename Mapping::FunctionMapping; }
+	struct GetFunctionMapping<Mapping> final
+	{
+		using Type = typename Mapping::FunctionMapping;
+	};
+
 	using Line = std::vector<std::string_view>;
 
 	template<class Object, class Mapping>
@@ -15,7 +27,7 @@ export namespace CppUtils::Language::CSV
 	{
 		using CSVMapping = typename Mapping::CSVMapping;
 		using StructMapping = typename Mapping::StructMapping;
-		using FunctionMapping = typename Mapping::FunctionMapping;
+		using FunctionMapping = typename GetFunctionMapping<Mapping>::Type;
 		static_assert(std::is_default_constructible_v<Object>);
 		auto object = Object{};
 		std::apply([&](auto&&... csvPairs) -> void {
@@ -44,35 +56,14 @@ export namespace CppUtils::Language::CSV
 	}
 
 	template<class Object, class Mapping>
-	[[nodiscard]] inline auto toStruct(std::string_view csvLine, std::string_view separator = ";") -> Object
-	{
-		const auto tokens = csvLine
-			| std::views::split(separator)
-			| std::views::transform([](auto&& range) { return std::string_view{range}; })
-			| std::ranges::to<std::vector<std::string_view>>();
-		return toStruct<Object, Mapping>(tokens);
-	}
-
-	template<class Object, class Mapping>
 	[[nodiscard]] inline auto toStructs(
-		std::string_view csv,
-		std::string_view columnSeparator = ";",
-		std::string_view lineSeparator = "\n",
+		const auto& lines,
 		std::size_t dropNFirstLines = 0,
 		std::vector<Object>&& objects = {}) -> std::vector<Object>
 	{
-		const auto lines = csv
-			| std::views::split(lineSeparator)
-			| std::views::transform([&](auto&& range) {
-				auto line = std::string_view{range};
-				if (lineSeparator == "\n" and not std::empty(line) and line.back() == '\r')
-					line.remove_suffix(1);
-				return line;
-			})
-			| std::ranges::to<std::vector<std::string_view>>();
 		for (auto i = dropNFirstLines; i < std::size(lines); ++i)
-			if (const auto trimmedLine = String::trimString(lines[i]); not std::empty(trimmedLine))
-				objects.push_back(toStruct<Object, Mapping>(trimmedLine, columnSeparator));
+			if (const auto& line = lines[i]; not std::empty(line))
+				objects.push_back(toStruct<Object, Mapping>(line));
 		return std::move(objects);
 	}
 
@@ -115,30 +106,5 @@ export namespace CppUtils::Language::CSV
 			csv += toCSV<Object, Mapping>(object, columnSeparator);
 		}
 		return csv;
-	}
-
-	template<class Object, class Mapping>
-	[[nodiscard]] inline auto loadFile(
-		const std::filesystem::path& filePath,
-		std::string_view columnSeparator = ";",
-		std::string_view lineSeparator = "\n",
-		std::size_t dropNFirstLines = 0,
-		std::vector<Object>&& elements = {}) -> std::vector<Object>
-	{
-		auto fileContent = FileSystem::String::read(filePath);
-		return toStructs<Object, Mapping>(fileContent, columnSeparator, lineSeparator, dropNFirstLines, std::move(elements));
-	}
-
-	template<class Object, class Mapping>
-	[[nodiscard]] inline auto loadDirectory(const std::filesystem::path& directory,
-		std::string_view columnSeparator = ";",
-		std::string_view lineSeparator = "\n",
-		std::size_t dropNFirstLines = 0,
-		std::vector<Object>&& elements = {}) -> std::vector<Object>
-	{
-		FileSystem::forFilesWithExtension(directory, ".csv", [&](const auto& filePath) {
-			elements = loadFile<Object, Mapping>(filePath, columnSeparator, lineSeparator, dropNFirstLines, std::move(elements));
-		});
-		return std::move(elements);
 	}
 }

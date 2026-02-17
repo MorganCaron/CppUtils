@@ -1,0 +1,65 @@
+export module CppUtils.Language.CSV.Parsing;
+
+import std;
+import CppUtils.String;
+import CppUtils.FileSystem;
+import CppUtils.Language.CSV.Mapping;
+
+export namespace CppUtils::Language::CSV
+{
+	[[nodiscard]] inline auto splitLine(std::string_view line, std::string_view separator = ";") -> std::vector<std::string_view>
+	{
+		return line
+			| std::views::split(separator)
+			| std::views::transform([](auto&& range) { return String::trimString(std::string_view{range}); })
+			| std::ranges::to<std::vector<std::string_view>>();
+	}
+
+	[[nodiscard]] inline auto parseCSV(std::string_view csv, std::string_view columnSeparator = ";", std::string_view lineSeparator = "\n") -> std::vector<std::vector<std::string_view>>
+	{
+		return csv
+			| std::views::split(lineSeparator)
+			| std::views::transform([lineSeparator](auto&& range) -> std::string_view {
+			auto line = std::string_view{range};
+			if (lineSeparator == "\n" and not std::empty(line) and line.back() == '\r')
+				line.remove_suffix(1);
+			return String::trimString(line);
+		})
+			| std::views::filter([](std::string_view line) { return not std::empty(line); })
+			| std::views::transform([columnSeparator](std::string_view line) { return splitLine(line, columnSeparator); })
+			| std::ranges::to<std::vector<std::vector<std::string_view>>>();
+	}
+
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto loadFile(
+		const std::filesystem::path& filePath,
+		std::size_t dropNFirstLines = 0,
+		std::string_view columnSeparator = ";",
+		std::string_view lineSeparator = "\n",
+		std::vector<Object>&& elements = {})
+	{
+		auto fileContent = FileSystem::String::read(filePath);
+		return toStructs<Object, Mapping>(parseCSV(fileContent, columnSeparator, lineSeparator), dropNFirstLines, std::move(elements));
+	}
+
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto loadDirectory(const std::filesystem::path& directory,
+		std::size_t dropNFirstLines = 0,
+		std::string_view columnSeparator = ";",
+		std::string_view lineSeparator = "\n",
+		std::vector<Object>&& elements = {})
+	{
+		FileSystem::forFilesWithExtension(directory, ".csv", [&](const auto& filePath) {
+			elements = loadFile<Object, Mapping>(filePath, dropNFirstLines, columnSeparator, lineSeparator, std::move(elements));
+		});
+		return std::move(elements);
+	}
+
+	namespace Literals
+	{
+		[[nodiscard]] inline auto operator""_csv(const char* cString, std::size_t size) -> std::vector<std::vector<std::string_view>>
+		{
+			return parseCSV(std::string_view{cString, size});
+		}
+	}
+}
