@@ -49,18 +49,6 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 		CppUtils::Type::Pair<"Signed integer"_token, &FileObject::d>,
 		CppUtils::Type::Pair<"Floating point"_token, &FileObject::e>>;
 
-	namespace Conversion
-	{
-		inline auto doubleValue(std::size_t& member, std::string_view value) -> void
-		{
-			std::from_chars(std::data(value), std::data(value) + std::size(value), member);
-			member *= 2;
-		}
-	}
-
-	using FunctionMapping = CppUtils::Type::Mapping<
-		CppUtils::Type::Pair<"Unsigned integer"_token, &Conversion::doubleValue>>;
-
 	struct ObjectMapping final
 	{
 		using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
@@ -79,7 +67,40 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 	{
 		using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
 		using StructMapping = UnitTest::Language::CSV::Mapping::StructMapping;
-		using FunctionMapping = UnitTest::Language::CSV::Mapping::FunctionMapping;
+		using FunctionMapping = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<"Unsigned integer"_token, [](std::size_t& member, std::string_view value) {
+				std::from_chars(std::data(value), std::data(value) + std::size(value), member);
+				member *= 2;
+			}>>;
+	};
+
+	struct ObjectLambdaMapping final
+	{
+		using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
+		using StructMapping = UnitTest::Language::CSV::Mapping::StructMapping;
+		using FunctionMapping = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<"Unsigned integer"_token, [](std::size_t& member, std::string_view value) {
+				std::from_chars(std::data(value), std::data(value) + std::size(value), member);
+				member *= 2;
+			}>>;
+	};
+
+	struct ObjectFunctorMapping final
+	{
+		struct MultiplyBy final
+		{
+			std::size_t factor;
+			void operator()(std::size_t& member, std::string_view value) const
+			{
+				std::from_chars(std::data(value), std::data(value) + std::size(value), member);
+				member *= factor;
+			}
+		};
+
+		using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
+		using StructMapping = UnitTest::Language::CSV::Mapping::StructMapping;
+		using FunctionMapping = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<"Unsigned integer"_token, MultiplyBy{4uz}>>;
 	};
 
 	auto _ = TestSuite{"Language/CSV/Mapping", {}, [](TestSuite& suite) {
@@ -182,6 +203,22 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 			const auto object = CppUtils::Language::CSV::toStruct<Object, ObjectFunctionMapping>(csvLine);
 
 			suite.expectEqual(object, Object{"foo", "bar", 42, -1, 3.14f});
+		});
+
+		suite.addTest("LambdaMapping", [&] {
+			constexpr auto csvLine = "foo;bar;21;-1;3.14"sv;
+
+			const auto object = CppUtils::Language::CSV::toStruct<Object, ObjectLambdaMapping>(csvLine);
+
+			suite.expectEqual(object, Object{"foo", "bar", 42, -1, 3.14f});
+		});
+
+		suite.addTest("FunctorMapping (lambda with capture substitute)", [&] {
+			constexpr auto csvLine = "foo;bar;10;-1;3.14"sv;
+
+			const auto object = CppUtils::Language::CSV::toStruct<Object, ObjectFunctorMapping>(csvLine);
+
+			suite.expectEqual(object, Object{"foo", "bar", 40, -1, 3.14f});
 		});
 	}};
 }
