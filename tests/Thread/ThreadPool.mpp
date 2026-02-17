@@ -99,5 +99,19 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 			});
 			suite.expectEqual(future.get(), 42);
 		});
+
+		suite.addTest("Stress test", [&] {
+			auto threadPool = CppUtils::Thread::ThreadPool{};
+			auto counter = std::atomic_size_t{0};
+			const auto numTasks = 10'000uz;
+
+			for (auto i = 0uz; i < numTasks; ++i)
+				threadPool.call([&counter] {
+					++counter;
+				});
+
+			threadPool.waitUntilFinished();
+			suite.expectEqual(counter.load(), numTasks);
+		});
 	}};
 }

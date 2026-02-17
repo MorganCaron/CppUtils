@@ -71,10 +71,10 @@ export namespace CppUtils::Thread
 
 		inline auto waitUntilFinished() -> void
 		{
-			if (auto lockGuard = std::unique_lock{m_waitingMutex};
-				m_activeWorkers != 0 or not isTasksQueueEmpty())
-				m_waitUntilFinishedCondition.wait(lockGuard, [this] {
-					return m_activeWorkers == 0 and isTasksQueueEmpty();
+			auto tasksQueueAccessor = m_tasksQueue.access();
+			if (m_activeWorkers != 0 or not std::empty(tasksQueueAccessor.value()))
+				m_waitUntilFinishedCondition.wait(tasksQueueAccessor.getLockGuard(), [this, &tasksQueueAccessor] {
+					return m_activeWorkers == 0 and std::empty(tasksQueueAccessor.value());
 				});
 		}
 
@@ -85,12 +85,6 @@ export namespace CppUtils::Thread
 		}
 
 	private:
-		[[nodiscard]] inline auto isTasksQueueEmpty() const -> bool
-		{
-			auto tasksQueueAccessor = m_tasksQueue.access();
-			return std::empty(tasksQueueAccessor.value());
-		}
-
 		inline auto workerThread() -> void
 		{
 			auto task = Task{};
@@ -104,7 +98,6 @@ export namespace CppUtils::Thread
 				if (std::empty(tasksQueueAccessor.value()))
 					return;
 
-				auto lockGuard = std::lock_guard{m_waitingMutex};
 				m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
 				task = std::move(tasksQueueAccessor->front());
 				tasksQueueAccessor->pop();
@@ -113,10 +106,10 @@ export namespace CppUtils::Thread
 			task();
 
 			{
-				auto lockGuard = std::lock_guard{m_waitingMutex};
+				auto tasksQueueAccessor = m_tasksQueue.access();
 				m_activeWorkers.fetch_sub(1, std::memory_order_relaxed);
 
-				if (m_activeWorkers.load(std::memory_order_relaxed) == 0 and isTasksQueueEmpty())
+				if (m_activeWorkers.load(std::memory_order_relaxed) == 0 and std::empty(tasksQueueAccessor.value()))
 					m_waitUntilFinishedCondition.notify_all();
 			}
 		}
@@ -148,7 +141,6 @@ export namespace CppUtils::Thread
 		std::vector<ThreadLoop> m_workers;
 		UniqueLocker<std::queue<Task>> m_tasksQueue;
 
-		std::mutex m_waitingMutex;
 		std::condition_variable m_waitUntilFinishedCondition;
 
 		mutable std::shared_mutex m_onErrorMutex;
