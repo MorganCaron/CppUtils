@@ -7,19 +7,6 @@ import CppUtils.Type.Mapping;
 
 export namespace CppUtils::Language::CSV
 {
-	template<class Mapping>
-	struct GetFunctionMapping final
-	{
-		using Type = Type::Mapping<>;
-	};
-
-	template<class Mapping>
-	requires requires { typename Mapping::FunctionMapping; }
-	struct GetFunctionMapping<Mapping> final
-	{
-		using Type = typename Mapping::FunctionMapping;
-	};
-
 	using Line = std::vector<std::string_view>;
 
 	template<class Object, class Mapping>
@@ -27,7 +14,7 @@ export namespace CppUtils::Language::CSV
 	{
 		using CSVMapping = typename Mapping::CSVMapping;
 		using StructMapping = typename Mapping::StructMapping;
-		using FunctionMapping = typename GetFunctionMapping<Mapping>::Type;
+		using FunctionMapping = typename Mapping::FunctionMapping;
 		static_assert(std::is_default_constructible_v<Object>);
 		auto object = Object{};
 		std::apply([&](auto&&... csvPairs) -> void {

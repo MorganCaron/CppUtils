@@ -42,19 +42,6 @@ export namespace CppUtils::Language::CSV
 		return toStructs<Object, Mapping>(parseCSV(fileContent, columnSeparator, lineSeparator), dropNFirstLines, std::move(elements));
 	}
 
-	template<class Object, class Mapping>
-	[[nodiscard]] inline auto loadDirectory(const std::filesystem::path& directory,
-		std::size_t dropNFirstLines = 0,
-		std::string_view columnSeparator = ";",
-		std::string_view lineSeparator = "\n",
-		std::vector<Object>&& elements = {})
-	{
-		FileSystem::forFilesWithExtension(directory, ".csv", [&](const auto& filePath) {
-			elements = loadFile<Object, Mapping>(filePath, dropNFirstLines, columnSeparator, lineSeparator, std::move(elements));
-		});
-		return std::move(elements);
-	}
-
 	namespace Literals
 	{
 		[[nodiscard]] inline auto operator""_csv(const char* cString, std::size_t size) -> std::vector<std::vector<std::string_view>>

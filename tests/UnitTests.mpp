@@ -21,6 +21,8 @@ export import CppUtils.UnitTests.FileSystem.Directory;
 export import CppUtils.UnitTests.FileSystem.File;
 export import CppUtils.UnitTests.FileSystem.Watcher;
 export import CppUtils.UnitTests.Language.ASTParser;
+export import CppUtils.UnitTests.Language.CSV.Mapping;
+export import CppUtils.UnitTests.Language.CSV.Parsing;
 export import CppUtils.UnitTests.Language.CallStackCompiler;
 export import CppUtils.UnitTests.Language.GrammarParser;
 export import CppUtils.UnitTests.Language.LabelsCompiler;

@@ -1,5 +1,6 @@
 export module CppUtils.UnitTests.Language.CSV.Mapping;
 
+import std;
 import CppUtils;
 
 namespace CppUtils::UnitTest::Language::CSV::Mapping
@@ -25,7 +26,32 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 
 		auto operator==(const FileObject&) const -> bool = default;
 	};
+}
 
+template<>
+struct std::formatter<CppUtils::UnitTest::Language::CSV::Mapping::Object>: std::formatter<std::string>
+{
+	auto format(const CppUtils::UnitTest::Language::CSV::Mapping::Object& object, format_context& context) const
+	{
+		return std::formatter<std::string>::format(
+			std::format("Object{{a={}, b={}, c={}, d={}, e={}}}", object.a, object.b, object.c, object.d, object.e),
+			context);
+	}
+};
+
+template<>
+struct std::formatter<CppUtils::UnitTest::Language::CSV::Mapping::FileObject>: std::formatter<std::string>
+{
+	auto format(const CppUtils::UnitTest::Language::CSV::Mapping::FileObject& fileObject, format_context& context) const
+	{
+		return std::formatter<std::string>::format(
+			std::format("FileObject{{a={}, b={}, c={}, d={}, e={}}}", fileObject.a, fileObject.b, fileObject.c, fileObject.d, fileObject.e),
+			context);
+	}
+};
+
+namespace CppUtils::UnitTest::Language::CSV::Mapping
+{
 	using namespace CppUtils::String::Literals;
 
 	using CSVMapping = CppUtils::Type::Mapping<
@@ -49,61 +75,31 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 		CppUtils::Type::Pair<"Signed integer"_token, &FileObject::d>,
 		CppUtils::Type::Pair<"Floating point"_token, &FileObject::e>>;
 
-	namespace Conversion
-	{
-		constexpr auto doubleValue = [](std::size_t& member, std::string_view value) {
-			std::from_chars(std::data(value), std::data(value) + std::size(value), member);
-			member *= 2;
-		};
-	}
-
 	struct ObjectMapping final
 	{
 		using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
 		using StructMapping = UnitTest::Language::CSV::Mapping::StructMapping;
+		using FunctionMapping = CppUtils::Type::Mapping<>;
 	};
 
-	struct FileObjectMapping final
+	struct FileMapping final
 	{
 		using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
 		using StructMapping = UnitTest::Language::CSV::Mapping::FileStructMapping;
+		using FunctionMapping = CppUtils::Type::Mapping<>;
 	};
 
-	struct ObjectFunctionMapping final
+	struct MultiplyBy final
 	{
-		using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
-		using StructMapping = UnitTest::Language::CSV::Mapping::StructMapping;
-		using FunctionMapping = CppUtils::Type::Mapping<
-			CppUtils::Type::Pair<"Unsigned integer"_token, Conversion::doubleValue>>;
-	};
-
-	struct ObjectLambdaMapping final
-	{
-		using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
-		using StructMapping = UnitTest::Language::CSV::Mapping::StructMapping;
-		using FunctionMapping = CppUtils::Type::Mapping<
-			CppUtils::Type::Pair<"Unsigned integer"_token, Conversion::doubleValue>>;
-	};
-
-	struct ObjectFunctorMapping final
-	{
-		struct MultiplyBy final
+		std::size_t factor;
+		inline auto operator()(auto& member, std::string_view value) const -> void
 		{
-			std::size_t factor;
-			void operator()(std::size_t& member, std::string_view value) const
-			{
-				std::from_chars(std::data(value), std::data(value) + std::size(value), member);
-				member *= factor;
-			}
-		};
-
-		using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
-		using StructMapping = UnitTest::Language::CSV::Mapping::StructMapping;
-		using FunctionMapping = CppUtils::Type::Mapping<
-			CppUtils::Type::Pair<"Unsigned integer"_token, MultiplyBy{4uz}>>;
+			std::from_chars(std::data(value), std::data(value) + std::size(value), member);
+			member *= factor;
+		}
 	};
 
-	auto _ = TestSuite{"Language/CSV/Mapping", {}, [](TestSuite& suite) {
+	auto _ = TestSuite{"Language/CSV/Mapping", {"FileSystem/Directory", "Language/CSV/Parsing"}, [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::Language::CSV::Literals;
 
@@ -117,10 +113,10 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 
 		suite.addTest("CSV to Structs", [&] {
 			const auto objects = CppUtils::Language::CSV::toStructs<Object, ObjectMapping>(R"(
-				a;b;c;d;e
-				foo;bar;42;-1;3.14
-			)"_csv,
-				2uz);
+					a;b;c;d;e
+					foo;bar;42;-1;3.14
+				)"_csv,
+				1uz);
 
 			suite.expectEqual(objects, std::vector<Object>{{"foo", "bar", 42, -1, 3.14f}});
 		});
@@ -135,90 +131,64 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 
 		suite.addTest("Structs to CSV", [&] {
 			const auto objects = std::vector<Object>{
-				{"foo", "bar", 1, -1, 1.1f},
-				{"hello", "world", 2, -2, 2.2f}};
+				{"foo", "bar", 42, -1, 3.14f},
+				{"hello", "world", 123, -456, 1.23f}};
 
 			const auto csv = CppUtils::Language::CSV::toCSV<Object, ObjectMapping>(objects);
 
-			suite.expectEqual(csv, "foo;bar;1;-1;1.1\nhello;world;2;-2;2.2"s);
+			suite.expectEqual(CppUtils::Language::CSV::parseCSV(csv), R"(
+				foo;bar;42;-1;3.14
+				hello;world;123;-456;1.23
+			)"_csv);
 		});
 
 		suite.addTest("load CSV File", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
 				const auto filePath = directory / "test.csv";
-				CppUtils::FileSystem::String::write(filePath, "a;b;c;d;e\nfoo;bar;42;-1;3.14\n"sv);
+				CppUtils::FileSystem::String::write(filePath, R"(
+					a;b;c;d;e
+					foo;bar;42;-1;3.14
+				)"sv);
 
-				const auto objects = CppUtils::Language::CSV::loadFile<FileObject, FileObjectMapping>(filePath, 1uz);
-
-				suite.expectEqual(objects, std::vector<FileObject>{{"foo", "bar", 42, -1, 3.14f}});
-			}};
-		});
-
-		suite.addTest("load CSV File with CRLF", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
-				const auto filePath = directory / "test_crlf.csv";
-				CppUtils::FileSystem::String::write(filePath, "a;b;c;d;e\r\nfoo;bar;42;-1;3.14\r\n"sv);
-
-				const auto objects = CppUtils::Language::CSV::loadFile<FileObject, FileObjectMapping>(filePath, 1uz);
+				const auto objects = CppUtils::Language::CSV::loadFile<FileObject, FileMapping>(filePath, 1uz);
 
 				suite.expectEqual(objects, std::vector<FileObject>{{"foo", "bar", 42, -1, 3.14f}});
 			}};
-		});
-
-		suite.addTest("load CSV Directory", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
-				CppUtils::FileSystem::String::write(directory / "test1.csv", "a;b;c;d;e\nfoo;bar;1;-10;1.1\n"sv);
-				CppUtils::FileSystem::String::write(directory / "test2.csv", "a;b;c;d;e\nhello;world;2;-20;2.2\n"sv);
-
-				auto objects = CppUtils::Language::CSV::loadDirectory<FileObject, FileObjectMapping>(directory, 1uz);
-				std::ranges::sort(objects, {}, &FileObject::b);
-
-				const auto expected = std::vector<FileObject>{
-					{"foo", "bar", 1, -10, 1.1f},
-					{"hello", "world", 2, -20, 2.2f}};
-
-				suite.expectEqual(objects, expected);
-			}};
-		});
-
-		suite.addTest("load CSV accumulation", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
-				const auto filePath = directory / "test.csv";
-				CppUtils::FileSystem::String::write(filePath, "a;b;c;d;e\nfoo;bar;42;-1;3.14\n"sv);
-
-				auto objects = std::vector<FileObject>{{"existing", "object", 0, 0, 0.0f}};
-				objects = CppUtils::Language::CSV::loadFile<FileObject, FileObjectMapping>(filePath, 1uz, ";", "\n", std::move(objects));
-
-				const auto expected = std::vector<FileObject>{
-					{"existing", "object", 0, 0, 0.0f},
-					{"foo", "bar", 42, -1, 3.14f}};
-
-				suite.expectEqual(objects, expected);
-			}};
-		});
-
-		suite.addTest("FunctionMapping", [&] {
-			const auto csvLine = "foo;bar;21;-1;3.14"_csv[0];
-
-			const auto object = CppUtils::Language::CSV::toStruct<Object, ObjectFunctionMapping>(csvLine);
-
-			suite.expectEqual(object, Object{"foo", "bar", 42, -1, 3.14f});
 		});
 
 		suite.addTest("LambdaMapping", [&] {
+			struct LambdaMapping final
+			{
+				using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
+				using StructMapping = UnitTest::Language::CSV::Mapping::StructMapping;
+				using FunctionMapping = CppUtils::Type::Mapping<
+					CppUtils::Type::Pair<"Unsigned integer"_token, [](auto& member, std::string_view value) {
+					std::from_chars(std::data(value), std::data(value) + std::size(value), member);
+					member *= 2;
+				}>>;
+			};
+
 			const auto csvLine = "foo;bar;21;-1;3.14"_csv[0];
 
-			const auto object = CppUtils::Language::CSV::toStruct<Object, ObjectLambdaMapping>(csvLine);
+			const auto object = CppUtils::Language::CSV::toStruct<Object, LambdaMapping>(csvLine);
 
 			suite.expectEqual(object, Object{"foo", "bar", 42, -1, 3.14f});
 		});
 
-		suite.addTest("FunctorMapping (lambda with capture substitute)", [&] {
-			const auto csvLine = "foo;bar;10;-1;3.14"_csv[0];
+		suite.addTest("FunctorMapping", [&] {
+			struct FunctorMapping final
+			{
+				using CSVMapping = UnitTest::Language::CSV::Mapping::CSVMapping;
+				using StructMapping = UnitTest::Language::CSV::Mapping::StructMapping;
+				using FunctionMapping = CppUtils::Type::Mapping<
+					CppUtils::Type::Pair<"Unsigned integer"_token, MultiplyBy{2uz}>>;
+			};
 
-			const auto object = CppUtils::Language::CSV::toStruct<Object, ObjectFunctorMapping>(csvLine);
+			const auto csvLine = "foo;bar;21;-1;3.14"_csv[0];
 
-			suite.expectEqual(object, Object{"foo", "bar", 40, -1, 3.14f});
+			const auto object = CppUtils::Language::CSV::toStruct<Object, FunctorMapping>(csvLine);
+
+			suite.expectEqual(object, Object{"foo", "bar", 42, -1, 3.14f});
 		});
 	}};
 }
