@@ -2,12 +2,15 @@ export module CppUtils.Container.Stack;
 
 import std;
 import CppUtils.Type;
+import CppUtils.Logger;
 
 export namespace CppUtils::Container
 {
 	class Stack final
 	{
 	public:
+		using Logger = Logger<"CppUtils">;
+
 		template<std::size_t I, class... Args>
 		[[nodiscard]] static inline consteval auto getOffset() noexcept -> std::size_t
 		{
@@ -115,10 +118,11 @@ export namespace CppUtils::Container
 
 		inline auto dump() const noexcept -> void
 		{
-			std::puts("Memory dump:");
+			Logger::print<"debug">("Memory dump:");
+			auto line = std::string{};
 			for (auto i = 0uz; i < std::size(m_data);)
 			{
-				std::print("{:#04x} ", static_cast<unsigned char>(m_data[i]));
+				line += std::format("{:#04x} ", static_cast<unsigned char>(m_data[i]));
 				if (++i % sizeof(std::size_t) == 0)
 				{
 					auto int1 = 0;
@@ -127,16 +131,22 @@ export namespace CppUtils::Container
 					std::memcpy(std::addressof(int1), std::data(m_data) + i - sizeof(int) * 2, sizeof(int));
 					std::memcpy(std::addressof(int2), std::data(m_data) + i - sizeof(int), sizeof(int));
 					std::memcpy(std::addressof(sizeT), std::data(m_data) + i - sizeof(std::size_t), sizeof(std::size_t));
-					std::println(" ({} | {} -> {})", int1, int2, sizeT);
+					Logger::print<"debug">("{} ({} | {} -> {})", line, int1, int2, sizeT);
+					line.clear();
 				}
 			}
-			if (std::size(m_data) % sizeof(std::size_t) != 0 and std::size(m_data) % sizeof(int) == 0)
+			if (not std::empty(line))
 			{
-				auto value = 0;
-				std::memcpy(std::addressof(value), std::data(m_data) + std::size(m_data) - sizeof(int), sizeof(int));
-				std::println("                     ({})", value);
+				if (std::size(m_data) % sizeof(int) == 0)
+				{
+					auto value = 0;
+					std::memcpy(std::addressof(value), std::data(m_data) + std::size(m_data) - sizeof(int), sizeof(int));
+					Logger::print<"debug">("{:<40} ({})", line, value);
+				}
+				else
+					Logger::print<"debug">("{}", line);
 			}
-			std::puts("");
+			Logger::print<>("");
 		}
 
 	private:
