@@ -39,10 +39,8 @@ export namespace CppUtils::Execution
 		template<class... Args>
 		inline auto emit(String::Hash eventName, Args&&... args) -> void
 		{
-			auto task = [this, eventName, payload = std::make_tuple(std::forward<Args>(args)...)]() mutable {
-				std::apply([this, eventName](auto&&... args) {
-					m_dispatcher.emit(eventName, std::forward<decltype(args)>(args)...);
-				}, std::move(payload));
+			auto task = [this, eventName, ... args = std::forward<Args>(args)]() mutable {
+				m_dispatcher.emit(eventName, std::move(args)...);
 			};
 			enqueue(std::move(task));
 		}
