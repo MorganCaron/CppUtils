@@ -1,0 +1,24 @@
+export module CppUtils.Type.Extractor;
+
+import std;
+
+export namespace CppUtils::Type
+{
+	template<class>
+	struct Extractor;
+
+	template<template<class...> class C, class... Args>
+	struct Extractor<C<Args...>> final
+	{
+		using types = std::tuple<Args...>;
+
+		template<class... NewArgs>
+		using rebind = C<NewArgs...>;
+	};
+
+	static_assert(std::same_as<Extractor<std::vector<char>>::types, std::tuple<char, std::allocator<char>>>);
+	static_assert(std::same_as<Extractor<std::tuple<char, int>>::types, std::tuple<char, int>>);
+
+	static_assert(std::same_as<Extractor<std::vector<char>>::rebind<int>, std::vector<int>>);
+	static_assert(std::same_as<Extractor<std::tuple<char, int>>::rebind<float, double>, std::tuple<float, double>>);
+}
