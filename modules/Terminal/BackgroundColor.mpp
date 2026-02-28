@@ -40,30 +40,21 @@ export namespace CppUtils::Terminal::BackgroundColor
 			[[maybe_unused]] inline constexpr std::uint8_t Default = 0;
 		}
 
-		[[nodiscard]] inline constexpr std::uint8_t getBackgroundColorCode(BackgroundColorEnum backgroundColor)
+		[[nodiscard]] inline constexpr auto getBackgroundColorCode(BackgroundColorEnum backgroundColor) -> std::uint8_t
 		{
 			switch (backgroundColor)
 			{
-			case BackgroundColorEnum::Default:
-				return Attribute::Default;
-			case BackgroundColorEnum::Black:
-				return Attribute::Black;
-			case BackgroundColorEnum::Red:
-				return Attribute::Red;
-			case BackgroundColorEnum::Green:
-				return Attribute::Green;
-			case BackgroundColorEnum::Yellow:
-				return Attribute::Yellow;
-			case BackgroundColorEnum::Blue:
-				return Attribute::Blue;
-			case BackgroundColorEnum::Magenta:
-				return Attribute::Magenta;
-			case BackgroundColorEnum::Cyan:
-				return Attribute::Cyan;
-			case BackgroundColorEnum::White:
-				return Attribute::White;
-			default:
-				return Attribute::Default;
+				using enum BackgroundColorEnum;
+			case Default: return Attribute::Default;
+			case Black: return Attribute::Black;
+			case Red: return Attribute::Red;
+			case Green: return Attribute::Green;
+			case Yellow: return Attribute::Yellow;
+			case Blue: return Attribute::Blue;
+			case Magenta: return Attribute::Magenta;
+			case Cyan: return Attribute::Cyan;
+			case White: return Attribute::White;
+			default: return Attribute::Default;
 			}
 		}
 	}
@@ -83,30 +74,21 @@ export namespace CppUtils::Terminal::BackgroundColor
 			[[maybe_unused]] inline constexpr auto Default = "\x1B[49m"sv;
 		}
 
-		[[nodiscard]] inline constexpr std::string_view getBackgroundColorCode(BackgroundColorEnum backgroundColor)
+		[[nodiscard]] inline constexpr auto getBackgroundColorCode(BackgroundColorEnum backgroundColor) -> std::string_view
 		{
 			switch (backgroundColor)
 			{
-			case BackgroundColorEnum::Default:
-				return EscapeCode::Default;
-			case BackgroundColorEnum::Black:
-				return EscapeCode::Black;
-			case BackgroundColorEnum::Red:
-				return EscapeCode::Red;
-			case BackgroundColorEnum::Green:
-				return EscapeCode::Green;
-			case BackgroundColorEnum::Yellow:
-				return EscapeCode::Yellow;
-			case BackgroundColorEnum::Blue:
-				return EscapeCode::Blue;
-			case BackgroundColorEnum::Magenta:
-				return EscapeCode::Magenta;
-			case BackgroundColorEnum::Cyan:
-				return EscapeCode::Cyan;
-			case BackgroundColorEnum::White:
-				return EscapeCode::White;
-			default:
-				return EscapeCode::Default;
+				using enum BackgroundColorEnum;
+			case Default: return EscapeCode::Default;
+			case Black: return EscapeCode::Black;
+			case Red: return EscapeCode::Red;
+			case Green: return EscapeCode::Green;
+			case Yellow: return EscapeCode::Yellow;
+			case Blue: return EscapeCode::Blue;
+			case Magenta: return EscapeCode::Magenta;
+			case Cyan: return EscapeCode::Cyan;
+			case White: return EscapeCode::White;
+			default: return EscapeCode::Default;
 			}
 		}
 	}

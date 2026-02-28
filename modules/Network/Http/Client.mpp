@@ -1,0 +1,110 @@
+export module CppUtils.Network.Http.Client;
+
+import std;
+import CppUtils.Network.Socket;
+import CppUtils.Network.Client;
+import CppUtils.Network.DNS;
+import CppUtils.Network.Http.Common;
+
+export namespace CppUtils::Network::Http
+{
+	class Client final
+	{
+	public:
+		inline auto setHostname(std::string hostname) -> void
+		{
+			m_hostname = std::move(hostname);
+		}
+
+		[[nodiscard]] inline auto connect(std::string_view hostname, std::uint16_t port = 80) -> std::expected<void, std::error_code>
+		{
+			setHostname(std::string{hostname});
+			m_port = port;
+			const auto ipAddresses = DNS::resolve(hostname);
+			if (std::empty(ipAddresses))
+				return std::unexpected{std::make_error_code(std::errc::host_unreachable)};
+			return connect(ipAddresses, port);
+		}
+
+		[[nodiscard]] inline auto connect(const std::vector<std::string>& ipAddresses, std::uint16_t port) -> std::expected<void, std::error_code>
+		{
+			auto lastError = std::error_code{};
+			for (const auto& ip : ipAddresses)
+				if (auto result = connectIP(ip, port); result.has_value())
+					return {};
+				else
+					lastError = result.error();
+			return std::unexpected{lastError};
+		}
+
+		[[nodiscard]] inline auto connectIP(std::string_view ip, std::uint16_t port) -> std::expected<void, std::error_code>
+		{
+			const auto domain = ip.find(':') != std::string_view::npos ? Socket::Domain::IPV6 : Socket::Domain::IPV4;
+			m_connection.emplace(domain, Socket::Type::TCP);
+			if (auto result = m_connection->connect(ip, port); not result)
+			{
+				m_connection.reset();
+				return std::unexpected{result.error()};
+			}
+			return {};
+		}
+
+		[[nodiscard]] inline auto send(Request request) -> std::expected<Response, std::error_code>
+		{
+			if (not m_connection.has_value())
+				if (auto result = connect(m_hostname, m_port); not result)
+					return std::unexpected{result.error()};
+
+			if (std::ranges::none_of(request.headers, [](const auto& header) { return header.name == "Host"; }))
+				request.headers.push_back(Header{"Host", m_hostname});
+
+			if (not m_connection.value().send(static_cast<std::string>(request)))
+			{
+				if (auto reconnectResult = connect(m_hostname, m_port); not reconnectResult)
+					return std::unexpected{reconnectResult.error()};
+
+				if (auto retryResult = m_connection.value().send(static_cast<std::string>(request)); not retryResult)
+					return std::unexpected{retryResult.error()};
+			}
+			return readResponse();
+		}
+
+		[[nodiscard]] inline auto get(std::string_view path) -> std::expected<Response, std::error_code>
+		{
+			auto request = Request{};
+			request.method = Method::Get;
+			request.path = std::string{path};
+			return send(std::move(request));
+		}
+
+	private:
+		[[nodiscard]] inline auto readResponse() -> std::expected<Response, std::error_code>
+		{
+			return readMessage<Response>(
+				[this](std::size_t size) { return m_connection.value().receive<std::string>(size); },
+				[this](std::string_view buffer) { return parseHeaders(buffer); });
+		}
+
+		[[nodiscard]] inline auto parseHeaders(std::string_view serializedHeaders) -> Response
+		{
+			return parseMessage(serializedHeaders, [](std::string_view statusLine) {
+				auto response = Response{};
+				if (auto firstSpace = statusLine.find(' '); firstSpace != std::string_view::npos)
+				{
+					if (auto secondSpace = statusLine.find(' ', firstSpace + 1); secondSpace != std::string_view::npos)
+					{
+						auto codeString = statusLine.substr(firstSpace + 1, secondSpace - firstSpace - 1);
+						auto code = 0uz;
+						std::from_chars(std::data(codeString), std::data(codeString) + std::size(codeString), code);
+						response.status = static_cast<Status>(code);
+					}
+				}
+				return response;
+			});
+		}
+
+		std::string m_hostname;
+		std::uint16_t m_port = 80;
+		std::optional<CppUtils::Network::Client> m_connection;
+	};
+}

@@ -40,30 +40,21 @@ export namespace CppUtils::Terminal::TextColor
 			[[maybe_unused]] inline constexpr std::uint8_t Default = Red | Green | Blue;
 		}
 
-		[[nodiscard]] inline constexpr std::uint8_t getTextColorCode(TextColorEnum textColor)
+		[[nodiscard]] inline constexpr auto getTextColorCode(TextColorEnum textColor) -> std::uint8_t
 		{
 			switch (textColor)
 			{
-			case TextColorEnum::Default:
-				return Attribute::Default;
-			case TextColorEnum::Black:
-				return Attribute::Black;
-			case TextColorEnum::Red:
-				return Attribute::Red;
-			case TextColorEnum::Green:
-				return Attribute::Green;
-			case TextColorEnum::Yellow:
-				return Attribute::Yellow;
-			case TextColorEnum::Blue:
-				return Attribute::Blue;
-			case TextColorEnum::Magenta:
-				return Attribute::Magenta;
-			case TextColorEnum::Cyan:
-				return Attribute::Cyan;
-			case TextColorEnum::White:
-				return Attribute::White;
-			default:
-				return Attribute::Default;
+				using enum TextColorEnum;
+			case Default: return Attribute::Default;
+			case Black: return Attribute::Black;
+			case Red: return Attribute::Red;
+			case Green: return Attribute::Green;
+			case Yellow: return Attribute::Yellow;
+			case Blue: return Attribute::Blue;
+			case Magenta: return Attribute::Magenta;
+			case Cyan: return Attribute::Cyan;
+			case White: return Attribute::White;
+			default: return Attribute::Default;
 			}
 		}
 	}
@@ -83,30 +74,21 @@ export namespace CppUtils::Terminal::TextColor
 			[[maybe_unused]] inline constexpr auto Default = "\x1B[39m"sv;
 		}
 
-		[[nodiscard]] inline constexpr std::string_view getTextColorCode(TextColorEnum textColor)
+		[[nodiscard]] inline constexpr auto getTextColorCode(TextColorEnum textColor) -> std::string_view
 		{
 			switch (textColor)
 			{
-			case TextColorEnum::Default:
-				return EscapeCode::Default;
-			case TextColorEnum::Black:
-				return EscapeCode::Black;
-			case TextColorEnum::Red:
-				return EscapeCode::Red;
-			case TextColorEnum::Green:
-				return EscapeCode::Green;
-			case TextColorEnum::Yellow:
-				return EscapeCode::Yellow;
-			case TextColorEnum::Blue:
-				return EscapeCode::Blue;
-			case TextColorEnum::Magenta:
-				return EscapeCode::Magenta;
-			case TextColorEnum::Cyan:
-				return EscapeCode::Cyan;
-			case TextColorEnum::White:
-				return EscapeCode::White;
-			default:
-				return EscapeCode::Default;
+				using enum TextColorEnum;
+			case Default: return EscapeCode::Default;
+			case Black: return EscapeCode::Black;
+			case Red: return EscapeCode::Red;
+			case Green: return EscapeCode::Green;
+			case Yellow: return EscapeCode::Yellow;
+			case Blue: return EscapeCode::Blue;
+			case Magenta: return EscapeCode::Magenta;
+			case Cyan: return EscapeCode::Cyan;
+			case White: return EscapeCode::White;
+			default: return EscapeCode::Default;
 			}
 		}
 	}

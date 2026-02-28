@@ -13,7 +13,7 @@ module;
 export module CppUtils.Network.Server;
 
 import std;
-import CppUtils.Network.Socket;
+export import CppUtils.Network.Socket;
 
 export namespace CppUtils::Network
 {
@@ -28,40 +28,36 @@ export namespace CppUtils::Network
 			setIPv6Only(false);
 		}
 
-		inline auto bind(std::uint16_t port) const -> void
+		[[nodiscard]] inline auto bind(std::uint16_t port) const -> std::expected<void, std::error_code>
 		{
 			auto address = makeAddress("", port);
-			throwErrno(
-				::bind(nativeHandle(), reinterpret_cast<sockaddr*>(std::addressof(address.storage)), address.length),
-				"CppUtils::Network::Server::bind");
+			if (auto result = expectSocket(::bind(nativeHandle(), reinterpret_cast<sockaddr*>(std::addressof(address.storage)), address.length)); not result)
+				return std::unexpected{result.error()};
+			return {};
 		}
 
-		inline auto listen(std::size_t waitingQueue = 10) -> void
+		[[nodiscard]] inline auto listen(std::size_t waitingQueue = 10) -> std::expected<void, std::error_code>
 		{
-			throwErrno(
-				::listen(nativeHandle(), static_cast<int>(waitingQueue)),
-				"CppUtils::Network::Server::listen");
+			if (auto result = expectSocket(::listen(nativeHandle(), static_cast<int>(waitingQueue))); not result)
+				return std::unexpected{result.error()};
+			return {};
 		}
 
-		[[nodiscard]] inline auto accept() -> std::optional<Socket>
+		[[nodiscard]] inline auto accept() -> std::expected<Socket, std::error_code>
 		{
 			auto clientSocket = ::accept(nativeHandle(), nullptr, nullptr);
 #if defined(OS_WINDOWS)
 			if (clientSocket == INVALID_SOCKET)
-			{
-				if (::WSAGetLastError() == WSAEWOULDBLOCK)
-					return std::nullopt;
-				throw std::runtime_error{"CppUtils::Network::Server::accept: Accept failed"};
-			}
-#elif defined(OS_LINUX) or defined(OS_MACOS)
+#else
 			if (clientSocket < 0)
-			{
-				if (errno == EAGAIN or errno == EWOULDBLOCK)
-					return std::nullopt;
-				throw std::runtime_error{"CppUtils::Network::Server::accept: Accept failed"};
-			}
 #endif
-			return Socket{clientSocket};
+			{
+				const auto error = lastErrorCode();
+				if (isWouldBlock())
+					return std::unexpected{std::make_error_code(std::errc::resource_unavailable_try_again)};
+				return std::unexpected{error};
+			}
+			return Socket{clientSocket, getDomain(), getType()};
 		}
 	};
 }

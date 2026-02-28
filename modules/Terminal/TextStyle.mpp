@@ -27,20 +27,16 @@ export namespace CppUtils::Terminal::TextStyle
 		[[maybe_unused]] inline constexpr auto Underline = "\x1B[4m"sv;
 	}
 
-	[[nodiscard]] inline std::string_view getTextStyleCode(TextStyleEnum textStyle)
+	[[nodiscard]] inline auto getTextStyleCode(TextStyleEnum textStyle) -> std::string_view
 	{
 		switch (textStyle)
 		{
-		case TextStyleEnum::Bolder:
-			return Ansi::EscapeCode::Bolder;
-		case TextStyleEnum::Lighter:
-			return Ansi::EscapeCode::Lighter;
-		case TextStyleEnum::Italic:
-			return Ansi::EscapeCode::Italic;
-		case TextStyleEnum::Underline:
-			return Ansi::EscapeCode::Underline;
-		default:
-			return "";
+			using enum TextStyleEnum;
+		case Bolder: return Ansi::EscapeCode::Bolder;
+		case Lighter: return Ansi::EscapeCode::Lighter;
+		case Italic: return Ansi::EscapeCode::Italic;
+		case Underline: return Ansi::EscapeCode::Underline;
+		default: return "";
 		}
 	}
 }

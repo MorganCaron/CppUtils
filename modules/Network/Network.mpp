@@ -2,3 +2,6 @@ export module CppUtils.Network;
 
 export import CppUtils.Network.Client;
 export import CppUtils.Network.Server;
+export import CppUtils.Network.Socket;
+export import CppUtils.Network.DNS;
+export import CppUtils.Network.Http;

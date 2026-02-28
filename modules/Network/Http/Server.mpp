@@ -1,0 +1,104 @@
+export module CppUtils.Network.Http.Server;
+
+import std;
+import CppUtils.Network.Socket;
+import CppUtils.Network.Server;
+import CppUtils.Network.Http.Common;
+import CppUtils.Thread.ThreadPool;
+import CppUtils.Thread.ThreadLoop;
+
+export namespace CppUtils::Network::Http
+{
+	class Server final
+	{
+	public:
+		using RequestHandler = std::function<Response(const Request&)>;
+
+		explicit inline Server(
+			std::uint16_t port,
+			RequestHandler requestHandler,
+			std::size_t numberThreads = std::thread::hardware_concurrency()):
+			m_requestHandler{std::move(requestHandler)},
+			m_threadPool{numberThreads},
+			m_loop{
+				[this] {
+					if (auto clientResult = m_server.accept(); clientResult)
+					{
+						clientResult.value().setBlocking(true);
+						m_threadPool.call([this, client = std::move(clientResult.value())]() mutable {
+							handleClient(std::move(client));
+						});
+					}
+				},
+				[this] { m_server.shutdown(); }
+			}
+		{
+			m_server.setReuseAddress(true);
+			m_server.setBlocking(true);
+			if (auto result = m_server.bind(port); not result)
+				throw std::system_error{result.error(), "HTTP Server bind failed"};
+			if (auto result = m_server.listen(); not result)
+				throw std::system_error{result.error(), "HTTP Server listen failed"};
+		}
+
+		inline auto run() -> void
+		{
+			m_loop.start();
+		}
+
+		inline auto stop() -> void
+		{
+			m_loop.stop();
+		}
+
+	private:
+		inline auto handleClient(Socket client) -> void
+		{
+			while (true)
+			{
+				auto requestResult = readRequest(client);
+				if (not requestResult)
+					break;
+				auto response = m_requestHandler(requestResult.value());
+
+				if (not std::empty(response.body) and std::ranges::none_of(response.headers, [](const auto& header) { return header.name == "Content-Length"; }))
+					response.headers.push_back(Header{"Content-Length", std::to_string(std::size(response.body))});
+
+				if (not client.send(static_cast<std::string>(response)))
+					break;
+
+				if (const auto shouldClose = std::ranges::any_of(requestResult->headers, [](const auto& header) {
+					return header.name == "Connection" and header.value == "close";
+				});
+					shouldClose)
+					break;
+			}
+		}
+
+		[[nodiscard]] inline auto readRequest(Socket& client) -> std::expected<Request, std::error_code>
+		{
+			return readMessage<Request>(
+				[&client](std::size_t size) { return client.receive<std::string>(size); },
+				[this](std::string_view buffer) { return parseHeaders(buffer); });
+		}
+
+		[[nodiscard]] inline auto parseHeaders(std::string_view serializedHeaders) -> Request
+		{
+			return parseMessage(serializedHeaders, [](std::string_view requestLine) {
+				auto request = Request{};
+				if (auto firstSpace = requestLine.find(' '); firstSpace != std::string_view::npos)
+				{
+					request.method = toMethod(requestLine.substr(0, firstSpace));
+					if (auto secondSpace = requestLine.find(' ', firstSpace + 1); secondSpace != std::string_view::npos)
+						request.path = std::string{requestLine.substr(firstSpace + 1, secondSpace - firstSpace - 1)};
+				}
+				return request;
+			});
+		}
+
+		CppUtils::Network::Server m_server;
+		RequestHandler m_requestHandler;
+		CppUtils::Thread::ThreadPool m_threadPool;
+		CppUtils::Thread::ThreadLoop m_loop;
+	};
+}

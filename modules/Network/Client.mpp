@@ -12,7 +12,7 @@ module;
 export module CppUtils.Network.Client;
 
 import std;
-import CppUtils.Network.Socket;
+export import CppUtils.Network.Socket;
 
 export namespace CppUtils::Network
 {
@@ -23,17 +23,19 @@ export namespace CppUtils::Network
 			Socket{domain, type}
 		{}
 
-		inline auto connect(std::string_view ip, std::uint16_t port) const -> void
+		[[nodiscard]] inline auto connect(std::string_view ip, std::uint16_t port) -> std::expected<void, std::error_code>
 		{
+			if (const auto detectedDomain = ip.find(':') != std::string_view::npos ? Domain::IPV6 : Domain::IPV4;
+				detectedDomain != getDomain())
+				*this = Client{detectedDomain, getType()};
+
 			auto address = makeAddress(std::empty(ip) ? "127.0.0.1" : ip, port);
 			if (address.length == 0)
-				throw std::runtime_error{"CppUtils::Network::Client::connect: Invalid address length"};
-#if defined(OS_WINDOWS)
-			if (nativeHandle() == INVALID_SOCKET)
-#else
-			if (nativeHandle() == -1)
-#endif
-				throw std::runtime_error{"CppUtils::Network::Client::connect: Invalid socket handle"};
+				return std::unexpected{std::make_error_code(std::errc::invalid_argument)};
+
+			if (not isValid())
+				return std::unexpected{std::make_error_code(std::errc::bad_file_descriptor)};
+
 			if (::connect(nativeHandle(), reinterpret_cast<sockaddr*>(std::addressof(address.storage)), address.length) < 0)
 			{
 #if defined(OS_WINDOWS)
@@ -41,8 +43,9 @@ export namespace CppUtils::Network
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 				if (errno != EINPROGRESS)
 #endif
-					throwErrno(-1, "CppUtils::Network::Client::connect");
+					return std::unexpected{std::error_code(errno, std::generic_category())};
 			}
+			return {};
 		}
 	};
 }

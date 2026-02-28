@@ -116,6 +116,7 @@ namespace CppUtils::UnitTest
 			}
 			if (settings.verbose)
 				Logger::print<"success">("Passed");
+			Logger::waitUntilFinished();
 			return true;
 		}
 

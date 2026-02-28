@@ -24,9 +24,10 @@ export namespace CppUtils::Math
 		const auto shift = [&]() constexpr noexcept -> std::size_t {
 			switch (alignment)
 			{
-			case HorizontalAlignment::Left: return totalBits - length;
-			case HorizontalAlignment::Center: return (totalBits - length + 1) / 2;
-			case HorizontalAlignment::Right: return 0;
+				using enum HorizontalAlignment;
+			case Left: return totalBits - length;
+			case Center: return (totalBits - length + 1) / 2;
+			case Right: return 0;
 			default: std::unreachable();
 			}
 		}();

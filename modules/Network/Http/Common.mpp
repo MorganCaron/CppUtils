@@ -1,0 +1,334 @@
+export module CppUtils.Network.Http.Common;
+
+import std;
+
+export namespace CppUtils::Network::Http
+{
+	enum class Method
+	{
+		Unknown,
+		Get,
+		Post,
+		Put,
+		Delete,
+		Head,
+		Options,
+		Patch
+	};
+
+	[[nodiscard]] inline auto toString(Method method) -> std::string_view
+	{
+		switch (method)
+		{
+			using enum Method;
+		case Get: return "GET";
+		case Post: return "POST";
+		case Put: return "PUT";
+		case Delete: return "DELETE";
+		case Head: return "HEAD";
+		case Options: return "OPTIONS";
+		case Patch: return "PATCH";
+		case Unknown: return "UNKNOWN";
+		}
+		return "UNKNOWN";
+	}
+
+	[[nodiscard]] inline auto toMethod(std::string_view method) -> Method
+	{
+		if (method == "GET")
+			return Method::Get;
+		if (method == "POST")
+			return Method::Post;
+		if (method == "PUT")
+			return Method::Put;
+		if (method == "DELETE")
+			return Method::Delete;
+		if (method == "HEAD")
+			return Method::Head;
+		if (method == "OPTIONS")
+			return Method::Options;
+		if (method == "PATCH")
+			return Method::Patch;
+		return Method::Unknown;
+	}
+
+	// https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+	enum class Status : std::size_t
+	{
+		// 1xx Informational
+		Continue = 100,
+		SwitchingProtocols = 101,
+		Processing = 102,
+		EarlyHints = 103,
+
+		// 2xx Success
+		Ok = 200,
+		Created = 201,
+		Accepted = 202,
+		NonAuthoritativeInformation = 203,
+		NoContent = 204,
+		ResetContent = 205,
+		PartialContent = 206,
+		MultiStatus = 207,
+		AlreadyReported = 208,
+		ImUsed = 226,
+
+		// 3xx Redirection
+		MultipleChoices = 300,
+		MovedPermanently = 301,
+		Found = 302,
+		SeeOther = 303,
+		NotModified = 304,
+		UseProxy = 305,
+		TemporaryRedirect = 307,
+		PermanentRedirect = 308,
+
+		// 4xx Client Error
+		BadRequest = 400,
+		Unauthorized = 401,
+		PaymentRequired = 402,
+		Forbidden = 403,
+		NotFound = 404,
+		MethodNotAllowed = 405,
+		NotAcceptable = 406,
+		ProxyAuthenticationRequired = 407,
+		RequestTimeout = 408,
+		Conflict = 409,
+		Gone = 410,
+		LengthRequired = 411,
+		PreconditionFailed = 412,
+		PayloadTooLarge = 413,
+		UriTooLong = 414,
+		UnsupportedMediaType = 415,
+		RangeNotSatisfiable = 416,
+		ExpectationFailed = 417,
+		ImATeapot = 418,
+		MisdirectedRequest = 421,
+		UnprocessableEntity = 422,
+		Locked = 423,
+		FailedDependency = 424,
+		TooEarly = 425,
+		UpgradeRequired = 426,
+		PreconditionRequired = 428,
+		TooManyRequests = 429,
+		RequestHeaderFieldsTooLarge = 431,
+		UnavailableForLegalReasons = 451,
+
+		// 5xx Server Error
+		InternalServerError = 500,
+		NotImplemented = 501,
+		BadGateway = 502,
+		ServiceUnavailable = 503,
+		GatewayTimeout = 504,
+		HttpVersionNotSupported = 505,
+		VariantAlsoNegotiates = 506,
+		InsufficientStorage = 507,
+		LoopDetected = 508,
+		NotExtended = 510,
+		NetworkAuthenticationRequired = 511
+	};
+
+	[[nodiscard]] constexpr auto operator==(Status status, std::size_t value) noexcept -> bool
+	{
+		return std::to_underlying(status) == value;
+	}
+
+	[[nodiscard]] inline auto toString(Status status) -> std::string_view
+	{
+		switch (status)
+		{
+			using enum Status;
+		case Continue: return "Continue";
+		case SwitchingProtocols: return "Switching Protocols";
+		case Processing: return "Processing";
+		case EarlyHints: return "Early Hints";
+		case Ok: return "OK";
+		case Created: return "Created";
+		case Accepted: return "Accepted";
+		case NonAuthoritativeInformation: return "Non-Authoritative Information";
+		case NoContent: return "No Content";
+		case ResetContent: return "Reset Content";
+		case PartialContent: return "Partial Content";
+		case MultiStatus: return "Multi-Status";
+		case AlreadyReported: return "Already Reported";
+		case ImUsed: return "IM Used";
+		case MultipleChoices: return "Multiple Choices";
+		case MovedPermanently: return "Moved Permanently";
+		case Found: return "Found";
+		case SeeOther: return "See Other";
+		case NotModified: return "Not Modified";
+		case UseProxy: return "Use Proxy";
+		case TemporaryRedirect: return "Temporary Redirect";
+		case PermanentRedirect: return "Permanent Redirect";
+		case BadRequest: return "Bad Request";
+		case Unauthorized: return "Unauthorized";
+		case PaymentRequired: return "Payment Required";
+		case Forbidden: return "Forbidden";
+		case NotFound: return "Not Found";
+		case MethodNotAllowed: return "Method Not Allowed";
+		case NotAcceptable: return "Not Acceptable";
+		case ProxyAuthenticationRequired: return "Proxy Authentication Required";
+		case RequestTimeout: return "Request Timeout";
+		case Conflict: return "Conflict";
+		case Gone: return "Gone";
+		case LengthRequired: return "Length Required";
+		case PreconditionFailed: return "Precondition Failed";
+		case PayloadTooLarge: return "Payload Too Large";
+		case UriTooLong: return "URI Too Long";
+		case UnsupportedMediaType: return "Unsupported Media Type";
+		case RangeNotSatisfiable: return "Range Not Satisfiable";
+		case ExpectationFailed: return "Expectation Failed";
+		case ImATeapot: return "I'm a teapot";
+		case MisdirectedRequest: return "Misdirected Request";
+		case UnprocessableEntity: return "Unprocessable Entity";
+		case Locked: return "Locked";
+		case FailedDependency: return "Failed Dependency";
+		case TooEarly: return "Too Early";
+		case UpgradeRequired: return "Upgrade Required";
+		case PreconditionRequired: return "Precondition Required";
+		case TooManyRequests: return "Too Many Requests";
+		case RequestHeaderFieldsTooLarge: return "Request Header Fields Too Large";
+		case UnavailableForLegalReasons: return "Unavailable For Legal Reasons";
+		case InternalServerError: return "Internal Server Error";
+		case NotImplemented: return "Not Implemented";
+		case BadGateway: return "Bad Gateway";
+		case ServiceUnavailable: return "Service Unavailable";
+		case GatewayTimeout: return "Gateway Timeout";
+		case HttpVersionNotSupported: return "HTTP Version Not Supported";
+		case VariantAlsoNegotiates: return "Variant Also Negotiates";
+		case InsufficientStorage: return "Insufficient Storage";
+		case LoopDetected: return "Loop Detected";
+		case NotExtended: return "Not Extended";
+		case NetworkAuthenticationRequired: return "Network Authentication Required";
+		}
+		return "Unknown Status";
+	}
+
+	struct Header final
+	{
+		std::string name;
+		std::string value;
+	};
+
+	[[nodiscard]] inline auto findHeaderEnd(std::string_view buffer) -> std::size_t
+	{
+		using namespace std::literals;
+		auto filtered = buffer | std::views::filter([](char c) { return c != '\r'; });
+		if (auto range = std::ranges::search(filtered, "\n\n"sv); not std::ranges::empty(range))
+			return static_cast<std::size_t>(std::distance(std::data(buffer), std::ranges::end(range).base()));
+		return std::string_view::npos;
+	}
+
+	[[nodiscard]] inline auto parseHeaderFields(auto linesRange) -> std::vector<Header>
+	{
+		return linesRange
+			| std::views::transform([](auto&& lineRange) {
+			auto line = std::string_view{lineRange};
+			if (line.ends_with('\r'))
+				line.remove_suffix(1);
+			return line;
+		})
+			| std::views::filter([](std::string_view line) { return line.contains(':'); })
+			| std::views::transform([](std::string_view line) {
+			const auto colon = line.find(':');
+			auto value = line.substr(colon + 1);
+			if (const auto first = value.find_first_not_of(' '); first != std::string_view::npos)
+				value = value.substr(first);
+			return Header{std::string{line.substr(0, colon)}, std::string{value}};
+		})
+			| std::ranges::to<std::vector<Header>>();
+	}
+
+	[[nodiscard]] inline auto parseMessage(std::string_view serializedHeaders, auto&& firstLineParser)
+	{
+		auto lines = serializedHeaders | std::views::split('\n');
+		auto it = std::ranges::begin(lines);
+
+		auto firstLine = std::string_view{*it};
+		if (firstLine.ends_with('\r'))
+			firstLine.remove_suffix(1);
+
+		auto message = firstLineParser(firstLine);
+		message.headers = parseHeaderFields(lines | std::views::drop(1));
+		return message;
+	}
+
+	[[nodiscard]] inline auto getContentLength(const std::vector<Header>& headers) -> std::size_t
+	{
+		auto contentLength = 0uz;
+		if (const auto it = std::ranges::find_if(headers, [](const auto& header) { return header.name == "Content-Length"; }); it != std::end(headers))
+			std::from_chars(std::data(it->value), std::data(it->value) + std::size(it->value), contentLength);
+		return contentLength;
+	}
+
+	template<class T>
+	[[nodiscard]] inline auto readMessage(auto&& receiver, auto&& headerParser) -> std::expected<T, std::error_code>
+	{
+		auto headerBuffer = std::string{};
+		auto bodyStart = std::string::npos;
+		while ((bodyStart = findHeaderEnd(headerBuffer)) == std::string::npos)
+		{
+			auto chunk = receiver(1'024uz);
+			if (not chunk)
+				return std::unexpected{chunk.error()};
+			headerBuffer += chunk.value();
+		}
+
+		auto bodyPart = headerBuffer.substr(bodyStart);
+		headerBuffer.resize(bodyStart);
+
+		auto message = headerParser(headerBuffer);
+		const auto contentLength = getContentLength(message.headers);
+
+		message.body = std::move(bodyPart);
+		while (std::size(message.body) < contentLength)
+		{
+			auto remaining = contentLength - std::size(message.body);
+			auto chunk = receiver(std::min(remaining, 4'096uz));
+			if (not chunk)
+				break;
+			message.body += chunk.value();
+		}
+
+		return message;
+	}
+
+	struct Request final
+	{
+		Method method = Method::Get;
+		std::string path = "/";
+		std::vector<Header> headers;
+		std::string body;
+
+		[[nodiscard]] explicit inline operator std::string() const
+		{
+			auto result = std::format("{} {} HTTP/1.1\r\n", Http::toString(method), path);
+			for (const auto& header : headers)
+				result += std::format("{}: {}\r\n", header.name, header.value);
+			if (not std::empty(body))
+				result += std::format("Content-Length: {}\r\n", std::size(body));
+			result += "\r\n";
+			result += body;
+			return result;
+		}
+	};
+
+	struct Response final
+	{
+		Status status = Status::Ok;
+		std::vector<Header> headers;
+		std::string body;
+
+		[[nodiscard]] explicit inline operator std::string() const
+		{
+			auto result = std::format("HTTP/1.1 {} {}\r\n", static_cast<int>(status), Http::toString(status));
+			for (const auto& header : headers)
+				result += std::format("{}: {}\r\n", header.name, header.value);
+			if (not std::empty(body))
+				result += std::format("Content-Length: {}\r\n", std::size(body));
+			result += "\r\n";
+			result += body;
+			return result;
+		}
+	};
+}

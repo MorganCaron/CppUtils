@@ -1,31 +1,45 @@
 export module CppUtils.Execution.Event;
 
 import std;
+import CppUtils.Chrono.Concept;
 
 export namespace CppUtils::Execution
 {
 	class Event final
 	{
 	public:
-		void wait()
+		inline auto wait() -> void
 		{
 			auto lock = std::unique_lock{m_mutex};
-			m_conditionVariable.wait(lock, [this]() { return m_triggered; });
-			m_triggered = false;
+			m_conditionVariable.wait(lock, [this] { return m_triggered; });
 		}
 
-		void notify()
+		template<Chrono::Duration DurationType>
+		[[nodiscard]] inline auto waitFor(const DurationType& duration) -> bool
+		{
+			auto lock = std::unique_lock{m_mutex};
+			return m_conditionVariable.wait_for(lock, duration, [this] { return m_triggered; });
+		}
+
+		template<Chrono::TimePoint TimePointType>
+		[[nodiscard]] inline auto waitUntil(const TimePointType& timePoint) -> bool
+		{
+			auto lock = std::unique_lock{m_mutex};
+			return m_conditionVariable.wait_until(lock, timePoint, [this] { return m_triggered; });
+		}
+
+		inline auto notify() -> void
 		{
 			{
-				auto lock = std::unique_lock{m_mutex};
+				auto lock = std::lock_guard{m_mutex};
 				m_triggered = true;
 			}
 			m_conditionVariable.notify_all();
 		}
 
-		void reset()
+		inline auto reset() -> void
 		{
-			auto lock = std::unique_lock{m_mutex};
+			auto lock = std::lock_guard{m_mutex};
 			m_triggered = false;
 		}
 

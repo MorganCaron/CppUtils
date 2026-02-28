@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::DependencyGraph
 {
-	auto _ = TestSuite{"Container/DependencyGraph", {"UnitTest"}, [](TestSuite& suite) {
+	auto _ = TestSuite{"Container/DependencyGraph", {"UnitTest", "Logger"}, [](TestSuite& suite) {
 		using namespace std::literals;
 		using Logger = TestSuite::Logger;
 

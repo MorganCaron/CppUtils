@@ -1,0 +1,406 @@
+export module CppUtils.UnitTests.Network.Socket;
+
+import std;
+import CppUtils;
+import CppUtils.Network.Socket;
+import CppUtils.Network.Server;
+import CppUtils.Network.Client;
+
+namespace CppUtils::UnitTest::Network
+{
+	auto _ = TestSuite{"Network/Socket", {"Logger", "Thread/TryAsync"}, [](auto& suite) {
+		using namespace std::literals;
+		using Logger = TestSuite::Logger;
+
+		suite.addTest("TCP: Accept connection", [&] {
+			auto serverisReady = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				suite.expect(server.bind(8'080).has_value());
+				suite.expect(server.listen().has_value());
+				Logger::print("Server: Waiting for connections on port 8080...");
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+				auto clientSocket = server.accept();
+				suite.expect(clientSocket.has_value());
+				Logger::print("Server: A new client has joined");
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				Logger::print("Client: Attempting to connect...");
+				suite.expect(client.connect("", 8'080).has_value());
+				Logger::print("Client: Connected");
+			});
+
+			if (auto response = clientConnecting.get(); not response)
+				throw response.error();
+			if (auto response = serverListening.get(); not response)
+				throw response.error();
+		});
+
+		suite.addTest("TCP: Blocking", [&] {
+			auto serverisReady = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				suite.expect(server.bind(8'080).has_value());
+				suite.expect(server.listen().has_value());
+				Logger::print("Server: Waiting for connections on port 8080...");
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+				auto clientSocket = server.accept();
+				suite.expect(clientSocket.has_value());
+				Logger::print("Server: A new client has joined");
+				clientSocket->setBlocking(true);
+				Logger::print("Server: Blocking enabled");
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				Logger::print("Client: Attempting to connect...");
+				suite.expect(client.connect("", 8'080).has_value());
+				client.setBlocking(true);
+				Logger::print("Client: Blocking enabled");
+			});
+
+			if (auto response = clientConnecting.get(); not response)
+				throw response.error();
+			if (auto response = serverListening.get(); not response)
+				throw response.error();
+		});
+
+		suite.addTest("TCP: Send/receive message (int)", [&] {
+			auto serverisReady = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				suite.expect(server.bind(8'080).has_value());
+				suite.expect(server.listen().has_value());
+				Logger::print("Server: Waiting for connections on port 8080...");
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				auto clientSocketResult = server.accept();
+				suite.expect(clientSocketResult.has_value());
+				auto clientSocket = std::move(clientSocketResult.value());
+				Logger::print("Server: A new client has joined");
+
+				clientSocket.setBlocking(true);
+				Logger::print("Server: Socket set to blocking mode");
+
+				auto number = clientSocket.receive<int>();
+				suite.expect(number.has_value());
+				Logger::print("Server: Message received: {}", number.value());
+				suite.expectEqual(number.value(), 21);
+
+				suite.expect(clientSocket.send(42).has_value());
+				Logger::print("Server: Message sent: 42");
+
+				Logger::print("Server: Closing");
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				Logger::print("Client: Attempting to connect...");
+				client.setBlocking(true);
+				suite.expect(client.connect("", 8'080).has_value());
+				Logger::print("Client: Connected to server");
+
+				suite.expect(client.send(21).has_value());
+				Logger::print("Client: Message sent: 21");
+
+				auto number = client.receive<int>();
+				suite.expect(number.has_value());
+				Logger::print("Client: Message received: {}", number.value());
+				suite.expectEqual(number.value(), 42);
+
+				Logger::print("Client: Closing");
+			});
+
+			if (auto response = clientConnecting.get(); not response)
+				throw response.error();
+			if (auto response = serverListening.get(); not response)
+				throw response.error();
+		});
+
+		suite.addTest("TCP: Send/receive message (std::string)", [&] {
+			auto serverisReady = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				suite.expect(server.bind(8'080).has_value());
+				suite.expect(server.listen().has_value());
+				Logger::print("Server: Waiting for connections on port 8080...");
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				auto clientSocketResult = server.accept();
+				suite.expect(clientSocketResult.has_value());
+				auto clientSocket = std::move(clientSocketResult.value());
+				Logger::print("Server: A new client has joined");
+
+				clientSocket.setBlocking(true);
+				Logger::print("Server: Socket set to blocking mode");
+
+				auto messageLength = clientSocket.receive<std::size_t>();
+				suite.expect(messageLength.has_value());
+				auto message = clientSocket.receive<std::string>(messageLength.value());
+				suite.expect(message.has_value());
+				Logger::print(R"(Server: Message received: "{}")", message.value());
+				suite.expectEqual(message.value(), "Hello server!");
+
+				auto responseString = "Hello client!"sv;
+				suite.expect(clientSocket.send(std::size(responseString)).has_value());
+				suite.expect(clientSocket.send(responseString).has_value());
+				Logger::print(R"(Server: Message sent: "{}")", responseString);
+
+				Logger::print("Server: Closing");
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				Logger::print("Client: Attempting to connect...");
+				client.setBlocking(true);
+				suite.expect(client.connect("", 8'080).has_value());
+				Logger::print("Client: Connected");
+
+				auto requestString = "Hello server!"sv;
+				suite.expect(client.send(std::size(requestString)).has_value());
+				suite.expect(client.send(requestString).has_value());
+				Logger::print(R"(Client: Message sent: "{}")", requestString);
+
+				auto responseLength = client.receive<std::size_t>();
+				suite.expect(responseLength.has_value());
+				auto response = client.receive<std::string>(responseLength.value());
+				suite.expect(response.has_value());
+				Logger::print(R"(Client: Message received: "{}")", response.value());
+				suite.expectEqual(response.value(), "Hello client!");
+
+				Logger::print("Client: Closing");
+			});
+
+			if (auto response = clientConnecting.get(); not response)
+				throw response.error();
+			if (auto response = serverListening.get(); not response)
+				throw response.error();
+		});
+
+		suite.addTest("UDP: Send/Receive", [&] {
+			auto serverisReady = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{CppUtils::Network::Socket::Domain::IPV4, CppUtils::Network::Socket::Type::UDP};
+				server.setReuseAddress(true);
+				suite.expect(server.bind(8'080).has_value());
+
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				auto result = server.receiveDatagram(1'024);
+				suite.expect(result.has_value());
+				auto message = std::string{reinterpret_cast<const char*>(std::data(result->data)), std::size(result->data)};
+				Logger::print(R"(Server: Received datagram: "{}")", message);
+				suite.expectEqual(message, "Hello server!");
+
+				Logger::print(R"(Server: Sending datagram: "Hello client!")");
+				suite.expect(server.sendDatagram("Hello client!", result->endpoint.ip, result->endpoint.port).has_value());
+			});
+
+			auto clientSending = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto socket = CppUtils::Network::Socket{CppUtils::Network::Socket::Domain::IPV4, CppUtils::Network::Socket::Type::UDP};
+
+				Logger::print(R"(Client: Sending datagram: "Hello server!")");
+				suite.expect(socket.sendDatagram("Hello server!", "127.0.0.1", 8'080).has_value());
+
+				auto result = socket.receiveDatagram(1'024);
+				suite.expect(result.has_value());
+				auto message = std::string{reinterpret_cast<const char*>(std::data(result->data)), std::size(result->data)};
+				Logger::print(R"(Client: Received datagram: "{}")", message);
+				suite.expectEqual(message, "Hello client!");
+			});
+
+			if (auto response = clientSending.get(); not response)
+				throw response.error();
+			if (auto response = serverListening.get(); not response)
+				throw response.error();
+		});
+
+		suite.addTest("isReadyForRead: Data available", [&] {
+			auto serverisReady = std::atomic_bool{false};
+			auto clientReceived = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				suite.expect(server.bind(8'080).has_value());
+				suite.expect(server.listen().has_value());
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				auto clientSocketResult = server.accept();
+				suite.expect(clientSocketResult.has_value());
+				suite.expect(clientSocketResult->send(123).has_value());
+				clientReceived.wait(false);
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				suite.expect(client.connect("", 8'080).has_value());
+				client.setBlocking(false);
+
+				suite.expect(client.isReadyForRead(5s));
+				auto data = client.receive<int>();
+				suite.expect(data.has_value());
+				suite.expectEqual(data.value(), 123);
+				clientReceived.store(true, std::memory_order_release);
+				clientReceived.notify_all();
+			});
+
+			if (auto response = clientConnecting.get(); not response)
+				throw response.error();
+			if (auto response = serverListening.get(); not response)
+				throw response.error();
+		});
+
+		suite.addTest("isReadyForRead: No data (timeout)", [&] {
+			auto serverisReady = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				suite.expect(server.bind(8'080).has_value());
+				suite.expect(server.listen().has_value());
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				auto clientSocket = server.accept();
+				suite.expect(clientSocket.has_value());
+				std::this_thread::sleep_for(1s);
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				suite.expect(client.connect("", 8'080).has_value());
+				client.setBlocking(false);
+				suite.expect(not client.isReadyForRead(100ms));
+			});
+
+			if (auto response = clientConnecting.get(); not response)
+				throw response.error();
+			if (auto response = serverListening.get(); not response)
+				throw response.error();
+		});
+
+		suite.addTest("Non-blocking: Would block", [&] {
+			auto serverisReady = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				suite.expect(server.bind(8'080).has_value());
+				suite.expect(server.listen().has_value());
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				auto clientSocket = server.accept();
+				suite.expect(clientSocket.has_value());
+				std::this_thread::sleep_for(500ms);
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				suite.expect(client.connect("", 8'080).has_value());
+				client.setBlocking(false);
+
+				auto result = client.receive<int>();
+				suite.expect(not result.has_value());
+				suite.expectEqual(result.error(), std::make_error_code(std::errc::resource_unavailable_try_again));
+			});
+
+			if (auto response = clientConnecting.get(); not response)
+				throw response.error();
+			if (auto response = serverListening.get(); not response)
+				throw response.error();
+		});
+
+		suite.addTest("Socket health check", [&] {
+			auto serverisReady = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				suite.expect(server.bind(8'080).has_value());
+				suite.expect(server.listen().has_value());
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				suite.expect(server.accept().has_value());
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				suite.expect(client.connect("", 8'080).has_value());
+
+				suite.expect(client.checkPendingError().has_value());
+			});
+
+			if (auto response = clientConnecting.get(); not response)
+				throw response.error();
+			if (auto response = serverListening.get(); not response)
+				throw response.error();
+		});
+
+		suite.addTest("TCP: Client detects server disconnect", [&] {
+			auto serverisReady = std::atomic_bool{false};
+			auto serverClosedConnection = std::atomic_bool{false};
+
+			auto serverListening = CppUtils::Thread::tryAsync([&] {
+				auto server = CppUtils::Network::Server{};
+				server.setReuseAddress(true);
+				suite.expect(server.bind(8'080).has_value());
+				suite.expect(server.listen().has_value());
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				{
+					auto clientSocket = server.accept();
+					suite.expect(clientSocket.has_value());
+				}
+				serverClosedConnection.store(true, std::memory_order_release);
+				serverClosedConnection.notify_all();
+			});
+
+			auto clientConnecting = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Client{};
+				suite.expect(client.connect("", 8'080).has_value());
+
+				serverClosedConnection.wait(false);
+				suite.expect(client.isReadyForRead(1s));
+				auto receiveResult = client.receive<int>();
+				suite.expect(not receiveResult.has_value());
+				suite.expect(CppUtils::Network::Socket::isDisconnectError(receiveResult.error()));
+			});
+
+			if (auto response = clientConnecting.get(); not response)
+				throw response.error();
+			if (auto response = serverListening.get(); not response)
+				throw response.error();
+		});
+	}};
+}

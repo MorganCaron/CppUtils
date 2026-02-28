@@ -7,32 +7,33 @@ export namespace CppUtils::Chrono
 {
 	[[nodiscard]] inline auto durationToString(Duration auto duration) -> std::string
 	{
-		const auto hour = std::chrono::duration_cast<std::chrono::hours>(duration);
-		duration -= hour;
-		const auto min = std::chrono::duration_cast<std::chrono::minutes>(duration);
-		duration -= min;
-		const auto sec = std::chrono::duration_cast<std::chrono::seconds>(duration);
-		duration -= sec;
-		const auto millisec = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-		duration -= millisec;
-		const auto microsec = std::chrono::duration_cast<std::chrono::microseconds>(duration);
-		duration -= microsec;
-		const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(duration);
+		const auto hours = std::chrono::duration_cast<std::chrono::hours>(duration);
+		duration -= hours;
+		const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration);
+		duration -= minutes;
+		const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+		duration -= seconds;
+		const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+		duration -= milliseconds;
+		const auto microseconds = std::chrono::duration_cast<std::chrono::microseconds>(duration);
+		duration -= microseconds;
+		const auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(duration);
 
-		auto str = std::string{};
-		if (hour.count() > 0)
-			str += " " + std::to_string(hour.count()) + "h";
-		if (min.count() > 0)
-			str += " " + std::to_string(min.count()) + "m";
-		if (sec.count() > 0)
-			str += " " + std::to_string(sec.count()) + "s";
-		if (millisec.count() > 0)
-			str += " " + std::to_string(millisec.count()) + "ms";
-		if (microsec.count() > 0)
-			str += " " + std::to_string(microsec.count()) + "us";
-		if (ns.count() > 0)
-			str += " " + std::to_string(ns.count()) + "ns";
-		return not std::empty(str) ? str.substr(1) : "0ns";
+		auto string = std::string{};
+		auto it = std::back_inserter(string);
+		if (hours.count() > 0)
+			std::format_to(it, " {}h", hours.count());
+		if (minutes.count() > 0)
+			std::format_to(it, " {}m", minutes.count());
+		if (seconds.count() > 0)
+			std::format_to(it, " {}s", seconds.count());
+		if (milliseconds.count() > 0)
+			std::format_to(it, " {}ms", milliseconds.count());
+		if (microseconds.count() > 0)
+			std::format_to(it, " {}us", microseconds.count());
+		if (nanoseconds.count() > 0)
+			std::format_to(it, " {}ns", nanoseconds.count());
+		return not std::empty(string) ? string.substr(1) : "0ns";
 	}
 
 	template<Clock Clock = std::chrono::high_resolution_clock>

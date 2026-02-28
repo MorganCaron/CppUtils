@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::NetworkPtr
 {
-	auto _ = TestSuite{"Container/NetworkPtr", {"Logger"}, [](TestSuite& suite) {
+	auto _ = TestSuite{"Container/NetworkPtr", {"Logger", "Thread/UniqueLocker", "Container/SafeShared"}, [](TestSuite& suite) {
 		using Logger = TestSuite::Logger;
 		using DummyObject = CppUtils::UnitTest::DummyObject;
 		using NetworkPtr = CppUtils::Container::NetworkPtr<DummyObject>;

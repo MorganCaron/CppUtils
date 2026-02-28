@@ -17,7 +17,7 @@ export namespace CppUtils::Thread
 			std::size_t numberThreads = std::max(1uz, static_cast<std::size_t>(std::thread::hardware_concurrency())),
 			std::function<void(std::exception_ptr)> onError = nullptr,
 			std::function<void()> finally = nullptr):
-			m_numberThreads{numberThreads},
+			m_numberThreads{std::max(1uz, numberThreads)},
 			m_onError{std::move(onError)},
 			m_finally{std::move(finally)}
 		{

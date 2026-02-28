@@ -1,0 +1,14 @@
+export module CppUtils.UnitTests.Network.Client;
+
+import std;
+import CppUtils;
+import CppUtils.Network.Client;
+
+namespace CppUtils::UnitTest::Network
+{
+	auto _ = TestSuite{"Network/Client", {"Logger", "Network/Socket"}, [](auto& suite) {
+		suite.addTest("Client Creation", [&] {
+			auto client = CppUtils::Network::Client{};
+		});
+	}};
+}

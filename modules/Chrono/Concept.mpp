@@ -13,5 +13,8 @@ export namespace CppUtils::Chrono
 	concept Duration = Type::Specializes<std::remove_cvref_t<T>, std::chrono::duration>;
 
 	template<class T>
+	concept TimePoint = Type::Specializes<std::remove_cvref_t<T>, std::chrono::time_point>;
+
+	template<class T>
 	concept Clock = Stl::chrono::is_clock_v<T>;
 }

@@ -1,0 +1,55 @@
+export module CppUtils.UnitTests.Network.Http;
+
+import std;
+import CppUtils;
+import CppUtils.Network.Http;
+
+namespace CppUtils::UnitTest::Network
+{
+	auto _ = TestSuite{"Network/Http", {"Logger", "Thread/TryAsync", "Network/Server", "Network/Client", "Network/DNS", "Network/Socket"}, [](auto& suite) {
+		suite.addTest("Client/Server Exchange", [&] {
+			auto serverisReady = std::atomic_bool{false};
+			auto server = CppUtils::Network::Http::Server{8'080, [](const CppUtils::Network::Http::Request& request) -> CppUtils::Network::Http::Response {
+				auto response = CppUtils::Network::Http::Response{};
+				response.body = "Hello " + request.path;
+				return response;
+			}};
+
+			auto serverThread = CppUtils::Thread::tryAsync([&] {
+				serverisReady.store(true, std::memory_order_release);
+				serverisReady.notify_all();
+
+				server.run();
+			});
+
+			auto clientThread = CppUtils::Thread::tryAsync([&] {
+				serverisReady.wait(false);
+				auto client = CppUtils::Network::Http::Client{};
+
+				auto connectionResult = client.connectIP("127.0.0.1", 8'080);
+				suite.expect(connectionResult.has_value());
+
+				{
+					auto response = client.get("/World");
+					suite.expect(response.has_value());
+					suite.expectEqual(response->status, 200uz);
+					suite.expectEqual(response->body, "Hello /World");
+				}
+
+				{
+					auto response = client.get("/Universe");
+					suite.expect(response.has_value());
+					suite.expectEqual(response->status, 200uz);
+					suite.expectEqual(response->body, "Hello /Universe");
+				}
+
+				server.stop();
+			});
+
+			if (auto response = clientThread.get(); not response)
+				throw response.error();
+			if (auto response = serverThread.get(); not response)
+				throw response.error();
+		});
+	}};
+}

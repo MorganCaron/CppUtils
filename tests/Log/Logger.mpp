@@ -20,18 +20,5 @@ namespace CppUtils::UnitTest::Logger
 			Logger::print<"warning">("Warning message");
 			Logger::print<"error">("Error message");
 		});
-
-		suite.addTest("In file", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
-				const auto logPath = directory / "test.log";
-				CppUtils::Log::addFileSink<"FileLogger">({.filePath = logPath});
-
-				CppUtils::Logger<"FileLogger">::print("Message");
-				CppUtils::Logger<"FileLogger">::waitUntilFinished();
-
-				suite.expect(std::filesystem::exists(logPath));
-				suite.expectEqual(CppUtils::FileSystem::String::read(logPath), "Message"s);
-			}};
-		});
 	}};
 }

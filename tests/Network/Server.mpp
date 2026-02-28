@@ -1,0 +1,41 @@
+export module CppUtils.UnitTests.Network.Server;
+
+import std;
+import CppUtils;
+import CppUtils.Network.Server;
+
+namespace CppUtils::UnitTest::Network
+{
+	auto _ = TestSuite{"Network/Server", {"Logger", "Network/Socket"}, [](auto& suite) {
+		using Logger = TestSuite::Logger;
+
+		suite.addTest("Server Creation", [&] {
+			auto server = CppUtils::Network::Server{};
+		});
+
+		suite.addTest("Bind IP", [&] {
+			auto server = CppUtils::Network::Server{};
+			server.setReuseAddress(true);
+			suite.expect(server.bind(8'080).has_value());
+		});
+
+		suite.addTest("Listening", [&] {
+			auto server = CppUtils::Network::Server{};
+			server.setReuseAddress(true);
+			suite.expect(server.bind(8'080).has_value());
+			suite.expect(server.listen().has_value());
+			Logger::print("Server: Waiting for connections on port 8080...");
+		});
+
+		suite.addTest("Abort connection", [&] {
+			auto server = CppUtils::Network::Server{};
+			server.setReuseAddress(true);
+			suite.expect(server.bind(8'080).has_value());
+			suite.expect(server.listen().has_value());
+			server.setBlocking(false);
+			Logger::print("Server: Waiting for connections on port 8080...");
+			auto clientSocket = server.accept();
+			suite.expect(not clientSocket.has_value());
+		});
+	}};
+}
