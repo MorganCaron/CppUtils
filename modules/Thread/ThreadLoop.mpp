@@ -75,6 +75,7 @@ export namespace CppUtils::Thread
 				return;
 
 			m_thread = std::jthread{[function = m_function, interruptFunction = m_interruptFunction, onError = m_onError](std::stop_token stopToken) mutable -> void {
+				using namespace std::chrono_literals;
 				while (not stopToken.stop_requested())
 				{
 					try
@@ -93,15 +94,18 @@ export namespace CppUtils::Thread
 							catch (const std::exception& exception)
 							{
 								std::println(stderr, "ThreadLoop: onError threw an exception: {}", exception.what());
+								std::this_thread::sleep_for(100ms);
 							}
 							catch (...)
 							{
 								std::println(stderr, "ThreadLoop: onError threw a non-std exception");
+								std::this_thread::sleep_for(100ms);
 							}
 						}
 						else
 						{
-							std::println(stderr, "ThreadLoop: Unhandled exception");
+							std::println(stderr, "ThreadLoop: Unhandled exception, cooling down...");
+							std::this_thread::sleep_for(100ms);
 						}
 					}
 				}

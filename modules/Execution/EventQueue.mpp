@@ -6,6 +6,7 @@ import CppUtils.Execution.EventDispatcher;
 import CppUtils.Execution.ScopeGuard;
 import CppUtils.Thread.ThreadLoop;
 import CppUtils.Thread.UniqueLocker;
+import CppUtils.Chrono.Concept;
 
 export namespace CppUtils::Execution
 {
@@ -51,10 +52,17 @@ export namespace CppUtils::Execution
 			m_dispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));
 		}
 
-		inline auto waitUntilFinished() -> void
+		template<Chrono::Duration Duration = std::chrono::milliseconds>
+		inline auto waitUntilFinished(Duration timeout = Duration::zero()) -> bool
 		{
 			auto accessor = m_queue.access();
-			m_condition.wait(accessor.getLockGuard(), [this, &accessor] { return accessor.value().empty() and not m_isTaskRunning; });
+			auto predicate = [this, &accessor] { return std::empty(accessor.value()) and not m_isTaskRunning; };
+			if (timeout == Duration::zero())
+			{
+				m_condition.wait(accessor.getLockGuard(), predicate);
+				return true;
+			}
+			return m_condition.wait_for(accessor.getLockGuard(), timeout, predicate);
 		}
 
 	private:
@@ -73,10 +81,10 @@ export namespace CppUtils::Execution
 			{
 				auto accessor = m_queue.access();
 				m_condition.wait(accessor.getLockGuard(), [this, &accessor] {
-					return not accessor.value().empty() or m_worker.isStopRequested();
+					return not std::empty(accessor.value()) or m_worker.isStopRequested();
 				});
 
-				if (accessor.value().empty())
+				if (std::empty(accessor.value()))
 					return;
 
 				m_isTaskRunning = true;

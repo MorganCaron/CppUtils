@@ -63,6 +63,7 @@ namespace CppUtils::UnitTest
 
 		inline auto executeTest(const Test& test, const TestSettings& settings) const -> bool
 		{
+			using namespace std::chrono_literals;
 			if (settings.verbose)
 			{
 				Logger::emit<"separator">();
@@ -116,12 +117,13 @@ namespace CppUtils::UnitTest
 			}
 			if (settings.verbose)
 				Logger::print<"success">("Passed");
-			Logger::waitUntilFinished();
+			Logger::waitUntilFinished(10s);
 			return true;
 		}
 
 		inline auto executeTests(TestSettings settings) -> int
 		{
+			using namespace std::chrono_literals;
 			auto testSuiteIsSuccess = std::unordered_map<std::string, bool>{};
 
 			const auto nbTests = std::ranges::fold_left(
@@ -209,7 +211,7 @@ namespace CppUtils::UnitTest
 					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("  - {}", skippedTestSuite));
 			}
 
-			Logger::waitUntilFinished();
+			Logger::waitUntilFinished(10s);
 			return nbFail == 0 ? exitSuccess : exitFailure;
 		}
 

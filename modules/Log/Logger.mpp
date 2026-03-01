@@ -11,6 +11,7 @@ import CppUtils.Pattern.Multiton;
 import CppUtils.Terminal.Size;
 import CppUtils.Terminal.TextColor;
 import CppUtils.Terminal.TextModifier;
+import CppUtils.Chrono.Concept;
 
 // Todo: log le datetime
 // Todo: log le stacktrace ( https://en.cppreference.com/w/cpp/utility/stacktrace_entry )
@@ -59,9 +60,10 @@ export namespace CppUtils
 			eventQueue().template subscribe<logType>(std::forward<decltype(function)>(function));
 		}
 
-		static inline auto waitUntilFinished() -> void
+		template<Chrono::Duration Duration = std::chrono::milliseconds>
+		static inline auto waitUntilFinished(Duration timeout = Duration::zero()) -> bool
 		{
-			eventQueue().waitUntilFinished();
+			return eventQueue().waitUntilFinished(timeout);
 		}
 	};
 
