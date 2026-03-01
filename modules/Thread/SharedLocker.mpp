@@ -18,14 +18,14 @@ export namespace CppUtils::Thread
 			m_value{std::cref(value)}
 		{}
 
-		[[nodiscard]] inline auto value() const& noexcept -> const T&
+		[[nodiscard]] inline auto value(this auto&& self) noexcept -> decltype(auto)
 		{
-			return m_value.get();
+			return self.m_value.get();
 		}
 
-		[[nodiscard]] inline auto operator->() const& noexcept -> const T*
+		[[nodiscard]] inline auto operator->(this auto&& self) noexcept -> const T*
 		{
-			return std::addressof(value());
+			return std::addressof(self.value());
 		}
 
 		[[nodiscard]] inline auto getLockGuard() const& noexcept -> auto&

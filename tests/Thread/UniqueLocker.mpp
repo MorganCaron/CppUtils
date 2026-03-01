@@ -8,8 +8,10 @@ namespace CppUtils::UnitTest::Thread::UniqueLocker
 	auto _ = TestSuite{"Thread/UniqueLocker", {"UnitTest"}, [](TestSuite& suite) {
 		suite.addTest("Access", [&] {
 			auto lockedString = CppUtils::Thread::UniqueLocker<std::string>{"Test"};
-			auto accessor = lockedString.access();
-			suite.expectEqual(accessor.value(), "Test");
+			{
+				auto accessor = lockedString.access();
+				suite.expectEqual(accessor.value(), "Test");
+			}
 		});
 
 		suite.addTest("Test mutex", [&] {

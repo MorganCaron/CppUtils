@@ -17,14 +17,12 @@ export namespace CppUtils::Thread
 			m_value{std::ref(value)}
 		{}
 
-		template<class Self>
-		[[nodiscard]] inline auto value(this Self& self) noexcept -> decltype(auto)
+		[[nodiscard]] inline auto value(this auto&& self) noexcept -> decltype(auto)
 		{
 			return self.m_value.get();
 		}
 
-		template<class Self>
-		[[nodiscard]] inline auto operator->(this Self& self) noexcept -> decltype(auto)
+		[[nodiscard]] inline auto operator->(this auto&& self) noexcept -> auto*
 		{
 			return std::addressof(self.value());
 		}
@@ -52,14 +50,12 @@ export namespace CppUtils::Thread
 			m_value{std::cref(value)}
 		{}
 
-		template<class Self>
-		[[nodiscard]] inline auto value(this Self& self) noexcept -> decltype(auto)
+		[[nodiscard]] inline auto value(this auto&& self) noexcept -> decltype(auto)
 		{
 			return self.m_value.get();
 		}
 
-		template<class Self>
-		[[nodiscard]] inline auto operator->(this Self& self) noexcept -> decltype(auto)
+		[[nodiscard]] inline auto operator->(this auto&& self) noexcept -> auto*
 		{
 			return std::addressof(self.value());
 		}
