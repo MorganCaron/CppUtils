@@ -2,6 +2,10 @@ export module CppUtils.Network.Http.Common;
 
 import std;
 
+import CppUtils.String;
+import CppUtils.Type.Hash;
+import CppUtils.Type.Mapping;
+
 export namespace CppUtils::Network::Http
 {
 	enum class Method
@@ -16,40 +20,25 @@ export namespace CppUtils::Network::Http
 		Patch
 	};
 
+	using MethodMapping = Type::Mapping<
+		Type::Pair<Method::Get, String::Hasher{"GET"}>,
+		Type::Pair<Method::Post, String::Hasher{"POST"}>,
+		Type::Pair<Method::Put, String::Hasher{"PUT"}>,
+		Type::Pair<Method::Delete, String::Hasher{"DELETE"}>,
+		Type::Pair<Method::Head, String::Hasher{"HEAD"}>,
+		Type::Pair<Method::Options, String::Hasher{"OPTIONS"}>,
+		Type::Pair<Method::Patch, String::Hasher{"PATCH"}>,
+		Type::Pair<Method::Unknown, String::Hasher{"UNKNOWN"}>>;
+
 	[[nodiscard]] inline auto toString(Method method) -> std::string_view
 	{
-		switch (method)
-		{
-			using enum Method;
-		case Get: return "GET";
-		case Post: return "POST";
-		case Put: return "PUT";
-		case Delete: return "DELETE";
-		case Head: return "HEAD";
-		case Options: return "OPTIONS";
-		case Patch: return "PATCH";
-		case Unknown: return "UNKNOWN";
-		}
-		return "UNKNOWN";
+		using namespace std::literals;
+		return MethodMapping::toRhs(method, "UNKNOWN"sv);
 	}
 
 	[[nodiscard]] inline auto toMethod(std::string_view method) -> Method
 	{
-		if (method == "GET")
-			return Method::Get;
-		if (method == "POST")
-			return Method::Post;
-		if (method == "PUT")
-			return Method::Put;
-		if (method == "DELETE")
-			return Method::Delete;
-		if (method == "HEAD")
-			return Method::Head;
-		if (method == "OPTIONS")
-			return Method::Options;
-		if (method == "PATCH")
-			return Method::Patch;
-		return Method::Unknown;
+		return MethodMapping::toLhs(method, Method::Unknown);
 	}
 
 	// https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
@@ -128,6 +117,70 @@ export namespace CppUtils::Network::Http
 		NetworkAuthenticationRequired = 511
 	};
 
+	using StatusMapping = Type::Mapping<
+		Type::Pair<Status::Continue, String::Hasher{"Continue"}>,
+		Type::Pair<Status::SwitchingProtocols, String::Hasher{"Switching Protocols"}>,
+		Type::Pair<Status::Processing, String::Hasher{"Processing"}>,
+		Type::Pair<Status::EarlyHints, String::Hasher{"Early Hints"}>,
+		Type::Pair<Status::Ok, String::Hasher{"OK"}>,
+		Type::Pair<Status::Created, String::Hasher{"Created"}>,
+		Type::Pair<Status::Accepted, String::Hasher{"Accepted"}>,
+		Type::Pair<Status::NonAuthoritativeInformation, String::Hasher{"Non-Authoritative Information"}>,
+		Type::Pair<Status::NoContent, String::Hasher{"No Content"}>,
+		Type::Pair<Status::ResetContent, String::Hasher{"Reset Content"}>,
+		Type::Pair<Status::PartialContent, String::Hasher{"Partial Content"}>,
+		Type::Pair<Status::MultiStatus, String::Hasher{"Multi-Status"}>,
+		Type::Pair<Status::AlreadyReported, String::Hasher{"Already Reported"}>,
+		Type::Pair<Status::ImUsed, String::Hasher{"IM Used"}>,
+		Type::Pair<Status::MultipleChoices, String::Hasher{"Multiple Choices"}>,
+		Type::Pair<Status::MovedPermanently, String::Hasher{"Moved Permanently"}>,
+		Type::Pair<Status::Found, String::Hasher{"Found"}>,
+		Type::Pair<Status::SeeOther, String::Hasher{"See Other"}>,
+		Type::Pair<Status::NotModified, String::Hasher{"Not Modified"}>,
+		Type::Pair<Status::UseProxy, String::Hasher{"Use Proxy"}>,
+		Type::Pair<Status::TemporaryRedirect, String::Hasher{"Temporary Redirect"}>,
+		Type::Pair<Status::PermanentRedirect, String::Hasher{"Permanent Redirect"}>,
+		Type::Pair<Status::BadRequest, String::Hasher{"Bad Request"}>,
+		Type::Pair<Status::Unauthorized, String::Hasher{"Unauthorized"}>,
+		Type::Pair<Status::PaymentRequired, String::Hasher{"Payment Required"}>,
+		Type::Pair<Status::Forbidden, String::Hasher{"Forbidden"}>,
+		Type::Pair<Status::NotFound, String::Hasher{"Not Found"}>,
+		Type::Pair<Status::MethodNotAllowed, String::Hasher{"Method Not Allowed"}>,
+		Type::Pair<Status::NotAcceptable, String::Hasher{"Not Acceptable"}>,
+		Type::Pair<Status::ProxyAuthenticationRequired, String::Hasher{"Proxy Authentication Required"}>,
+		Type::Pair<Status::RequestTimeout, String::Hasher{"Request Timeout"}>,
+		Type::Pair<Status::Conflict, String::Hasher{"Conflict"}>,
+		Type::Pair<Status::Gone, String::Hasher{"Gone"}>,
+		Type::Pair<Status::LengthRequired, String::Hasher{"Length Required"}>,
+		Type::Pair<Status::PreconditionFailed, String::Hasher{"Precondition Failed"}>,
+		Type::Pair<Status::PayloadTooLarge, String::Hasher{"Payload Too Large"}>,
+		Type::Pair<Status::UriTooLong, String::Hasher{"URI Too Long"}>,
+		Type::Pair<Status::UnsupportedMediaType, String::Hasher{"Unsupported Media Type"}>,
+		Type::Pair<Status::RangeNotSatisfiable, String::Hasher{"Range Not Satisfiable"}>,
+		Type::Pair<Status::ExpectationFailed, String::Hasher{"Expectation Failed"}>,
+		Type::Pair<Status::ImATeapot, String::Hasher{"I'm a teapot"}>,
+		Type::Pair<Status::MisdirectedRequest, String::Hasher{"Misdirected Request"}>,
+		Type::Pair<Status::UnprocessableEntity, String::Hasher{"Unprocessable Entity"}>,
+		Type::Pair<Status::Locked, String::Hasher{"Locked"}>,
+		Type::Pair<Status::FailedDependency, String::Hasher{"Failed Dependency"}>,
+		Type::Pair<Status::TooEarly, String::Hasher{"Too Early"}>,
+		Type::Pair<Status::UpgradeRequired, String::Hasher{"Upgrade Required"}>,
+		Type::Pair<Status::PreconditionRequired, String::Hasher{"Precondition Required"}>,
+		Type::Pair<Status::TooManyRequests, String::Hasher{"Too Many Requests"}>,
+		Type::Pair<Status::RequestHeaderFieldsTooLarge, String::Hasher{"Request Header Fields Too Large"}>,
+		Type::Pair<Status::UnavailableForLegalReasons, String::Hasher{"Unavailable For Legal Reasons"}>,
+		Type::Pair<Status::InternalServerError, String::Hasher{"Internal Server Error"}>,
+		Type::Pair<Status::NotImplemented, String::Hasher{"Not Implemented"}>,
+		Type::Pair<Status::BadGateway, String::Hasher{"Bad Gateway"}>,
+		Type::Pair<Status::ServiceUnavailable, String::Hasher{"Service Unavailable"}>,
+		Type::Pair<Status::GatewayTimeout, String::Hasher{"Gateway Timeout"}>,
+		Type::Pair<Status::HttpVersionNotSupported, String::Hasher{"HTTP Version Not Supported"}>,
+		Type::Pair<Status::VariantAlsoNegotiates, String::Hasher{"Variant Also Negotiates"}>,
+		Type::Pair<Status::InsufficientStorage, String::Hasher{"Insufficient Storage"}>,
+		Type::Pair<Status::LoopDetected, String::Hasher{"Loop Detected"}>,
+		Type::Pair<Status::NotExtended, String::Hasher{"Not Extended"}>,
+		Type::Pair<Status::NetworkAuthenticationRequired, String::Hasher{"Network Authentication Required"}>>;
+
 	[[nodiscard]] constexpr auto operator==(Status status, std::size_t value) noexcept -> bool
 	{
 		return std::to_underlying(status) == value;
@@ -135,73 +188,8 @@ export namespace CppUtils::Network::Http
 
 	[[nodiscard]] inline auto toString(Status status) -> std::string_view
 	{
-		switch (status)
-		{
-			using enum Status;
-		case Continue: return "Continue";
-		case SwitchingProtocols: return "Switching Protocols";
-		case Processing: return "Processing";
-		case EarlyHints: return "Early Hints";
-		case Ok: return "OK";
-		case Created: return "Created";
-		case Accepted: return "Accepted";
-		case NonAuthoritativeInformation: return "Non-Authoritative Information";
-		case NoContent: return "No Content";
-		case ResetContent: return "Reset Content";
-		case PartialContent: return "Partial Content";
-		case MultiStatus: return "Multi-Status";
-		case AlreadyReported: return "Already Reported";
-		case ImUsed: return "IM Used";
-		case MultipleChoices: return "Multiple Choices";
-		case MovedPermanently: return "Moved Permanently";
-		case Found: return "Found";
-		case SeeOther: return "See Other";
-		case NotModified: return "Not Modified";
-		case UseProxy: return "Use Proxy";
-		case TemporaryRedirect: return "Temporary Redirect";
-		case PermanentRedirect: return "Permanent Redirect";
-		case BadRequest: return "Bad Request";
-		case Unauthorized: return "Unauthorized";
-		case PaymentRequired: return "Payment Required";
-		case Forbidden: return "Forbidden";
-		case NotFound: return "Not Found";
-		case MethodNotAllowed: return "Method Not Allowed";
-		case NotAcceptable: return "Not Acceptable";
-		case ProxyAuthenticationRequired: return "Proxy Authentication Required";
-		case RequestTimeout: return "Request Timeout";
-		case Conflict: return "Conflict";
-		case Gone: return "Gone";
-		case LengthRequired: return "Length Required";
-		case PreconditionFailed: return "Precondition Failed";
-		case PayloadTooLarge: return "Payload Too Large";
-		case UriTooLong: return "URI Too Long";
-		case UnsupportedMediaType: return "Unsupported Media Type";
-		case RangeNotSatisfiable: return "Range Not Satisfiable";
-		case ExpectationFailed: return "Expectation Failed";
-		case ImATeapot: return "I'm a teapot";
-		case MisdirectedRequest: return "Misdirected Request";
-		case UnprocessableEntity: return "Unprocessable Entity";
-		case Locked: return "Locked";
-		case FailedDependency: return "Failed Dependency";
-		case TooEarly: return "Too Early";
-		case UpgradeRequired: return "Upgrade Required";
-		case PreconditionRequired: return "Precondition Required";
-		case TooManyRequests: return "Too Many Requests";
-		case RequestHeaderFieldsTooLarge: return "Request Header Fields Too Large";
-		case UnavailableForLegalReasons: return "Unavailable For Legal Reasons";
-		case InternalServerError: return "Internal Server Error";
-		case NotImplemented: return "Not Implemented";
-		case BadGateway: return "Bad Gateway";
-		case ServiceUnavailable: return "Service Unavailable";
-		case GatewayTimeout: return "Gateway Timeout";
-		case HttpVersionNotSupported: return "HTTP Version Not Supported";
-		case VariantAlsoNegotiates: return "Variant Also Negotiates";
-		case InsufficientStorage: return "Insufficient Storage";
-		case LoopDetected: return "Loop Detected";
-		case NotExtended: return "Not Extended";
-		case NetworkAuthenticationRequired: return "Network Authentication Required";
-		}
-		return "Unknown Status";
+		using namespace std::literals;
+		return StatusMapping::toRhs(status, "Unknown Status"sv);
 	}
 
 	struct Header final

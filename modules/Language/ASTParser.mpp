@@ -82,7 +82,7 @@ export namespace CppUtils::Language
 			};
 			functions["exists"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				auto nodeId = String::Token{};
+				auto nodeId = Type::Token{};
 				if (std::empty(instruction.nodes))
 				{
 					if (std::empty(scopeNodes)) [[unlikely]]
@@ -96,7 +96,7 @@ export namespace CppUtils::Language
 			};
 			functions["functionExists"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				auto nodeId = String::Token{};
+				auto nodeId = Type::Token{};
 				if (std::empty(instruction.nodes))
 				{
 					if (std::empty(scopeNodes)) [[unlikely]]
@@ -114,7 +114,7 @@ export namespace CppUtils::Language
 				auto& scopeNodes = context.getScope().nodes;
 				if (cursor.position >= std::size(cursor.source))
 					return std::unexpected{"Out of string"};
-				scopeNodes.emplace_back(static_cast<String::Token>(cursor.getCurrent()));
+				scopeNodes.emplace_back(static_cast<Type::Token>(cursor.getCurrent()));
 				return {};
 			};
 			functions["getCursorPosition"_token] = [](Cursor& cursor, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
@@ -123,7 +123,7 @@ export namespace CppUtils::Language
 					return std::unexpected{"Empty source"};
 				if (cursor.position >= std::size(cursor.source)) [[unlikely]]
 					return std::unexpected{"End of string"};
-				scopeNodes.emplace_back(static_cast<String::Token>(cursor.position));
+				scopeNodes.emplace_back(static_cast<Type::Token>(cursor.position));
 				return {};
 			};
 			functions["stepCursorForward"_token] = [](Cursor& cursor, const ASTNode&, MetaEvaluator&) -> std::expected<void, std::string_view> {
@@ -147,7 +147,7 @@ export namespace CppUtils::Language
 				const auto startPosition = Container::Vector::popBack(scopeNodes).value;
 				if (startPosition + length > std::size(cursor.source)) [[unlikely]]
 					return std::unexpected{R"(Out of string)"};
-				scopeNodes.emplace_back(String::hash(cursor.source.substr(startPosition, length)));
+				scopeNodes.emplace_back(Type::hash(cursor.source.substr(startPosition, length)));
 				return {};
 			};
 
@@ -161,8 +161,8 @@ export namespace CppUtils::Language
 
 			static constexpr auto binaryOperator = [](auto operation, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				auto lhs = String::Token{};
-				auto rhs = String::Token{};
+				auto lhs = Type::Token{};
+				auto rhs = Type::Token{};
 				if (auto rhsNode = instruction.find("rhs"_token); rhsNode != std::cend(instruction.nodes))
 				{
 					if (std::empty(scopeNodes)) [[unlikely]]

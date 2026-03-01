@@ -22,13 +22,13 @@ export namespace CppUtils::Thread
 			m_scheduler{step, numberThreads, std::move(onError), std::move(finally)}
 		{}
 
-		template<String::Hasher eventName = String::Hash{}>
+		template<String::Hasher eventName = Type::Hash{}>
 		inline auto subscribe(auto&& function) -> void
 		{
 			m_eventDispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));
 		}
 
-		template<String::Hasher eventName = String::Hash{}, class... Args, Chrono::Duration Delay = std::chrono::milliseconds>
+		template<String::Hasher eventName = Type::Hash{}, class... Args, Chrono::Duration Delay = std::chrono::milliseconds>
 		inline auto emit(Delay delay, Args&&... args) -> void
 		{
 			m_scheduler.schedule([this, payload = std::make_tuple(std::forward<Args>(args)...)] {
@@ -38,7 +38,7 @@ export namespace CppUtils::Thread
 			}, delay);
 		}
 
-		template<String::Hasher eventName = String::Hash{}, class... Args>
+		template<String::Hasher eventName = Type::Hash{}, class... Args>
 		inline auto emit(TimePoint when, Args&&... args) -> void
 		{
 			m_scheduler.schedule([this, payload = std::make_tuple(std::forward<Args>(args)...)] {
@@ -48,7 +48,7 @@ export namespace CppUtils::Thread
 			}, when);
 		}
 
-		template<String::Hasher eventName = String::Hash{}, class... Args>
+		template<String::Hasher eventName = Type::Hash{}, class... Args>
 		inline auto emit(Args&&... args) -> void
 		{
 			emit<eventName>(std::chrono::milliseconds{0}, std::forward<Args>(args)...);

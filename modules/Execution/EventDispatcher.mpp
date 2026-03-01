@@ -8,17 +8,17 @@ export namespace CppUtils::Execution
 {
 	class EventDispatcher final
 	{
-		using Key = std::pair<String::Hash, std::type_index>;
+		using Key = std::pair<Type::Hash, std::type_index>;
 
 	public:
-		template<String::Hasher eventName = String::Hash{}, class... Args>
+		template<String::Hasher eventName = Type::Hash{}, class... Args>
 		inline auto emit(const Args&... args) -> void
 		{
-			emit(static_cast<String::Hash>(eventName), args...);
+			emit(static_cast<Type::Hash>(eventName), args...);
 		}
 
 		template<class... Args>
-		inline auto emit(String::Hash eventName, const Args&... args) -> void
+		inline auto emit(Type::Hash eventName, const Args&... args) -> void
 		{
 			auto lockGuard = std::shared_lock{m_mutex};
 			using Tuple = std::tuple<std::remove_cvref_t<Args>...>;
@@ -31,7 +31,7 @@ export namespace CppUtils::Execution
 			}
 		}
 
-		template<String::Hasher eventName = String::Hash{}>
+		template<String::Hasher eventName = Type::Hash{}>
 		inline auto subscribe(auto&& function) -> void
 		{
 			using FunctionType = std::decay_t<decltype(function)>;
@@ -39,7 +39,7 @@ export namespace CppUtils::Execution
 			[&]<class... Args>(std::tuple<Args...>*) {
 				using Tuple = std::tuple<std::remove_cvref_t<Args>...>;
 				auto lockGuard = std::unique_lock{m_mutex};
-				auto key = std::make_pair(static_cast<String::Hash>(eventName), std::type_index{typeid(Tuple)});
+				auto key = std::make_pair(static_cast<Type::Hash>(eventName), std::type_index{typeid(Tuple)});
 				m_subscribers[key].emplace_back(
 					[function = std::forward<decltype(function)>(function)](const void* payload) mutable -> void {
 					const auto& args = *static_cast<const Tuple*>(payload);
@@ -53,7 +53,7 @@ export namespace CppUtils::Execution
 		{
 			[[nodiscard]] inline auto operator()(const Key& key) const noexcept -> std::size_t
 			{
-				return std::hash<String::Hash>{}(key.first) ^ (key.second.hash_code() << 1);
+				return std::hash<Type::Hash>{}(key.first) ^ (key.second.hash_code() << 1);
 			}
 		};
 

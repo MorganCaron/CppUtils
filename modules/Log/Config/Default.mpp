@@ -15,7 +15,7 @@ import CppUtils.Terminal.TextModifier;
 export namespace CppUtils
 {
 	template<>
-	inline auto configureLogger<String::Hash{}>(Execution::EventQueue& eventQueue) -> void
+	inline auto configureLogger<Type::Hash{}>(Execution::EventQueue& eventQueue) -> void
 	{
 		eventQueue.subscribe([](const std::string& message) {
 			std::println("{}", message);

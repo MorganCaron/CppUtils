@@ -1,5 +1,6 @@
 export module CppUtils.UnitTests.Type.Mapping;
 
+import std;
 import CppUtils;
 
 namespace CppUtils::UnitTest::Type::Mapping
@@ -23,9 +24,10 @@ namespace CppUtils::UnitTest::Type::Mapping
 		static_assert(Map::toLhs<200>() == 1);
 		static_assert(Map::toLhs<300>() == 2);
 
-		static_assert(Map::contains<100>(Map::toRhs<0>()));
-		static_assert(Map::contains<200>(Map::toRhs<1>()));
-		static_assert(not Map::contains<1'000>(Map::toRhs<2>()));
+		static_assert(Map::containsRhs<100>());
+		static_assert(Map::containsRhs<200>());
+		static_assert(Map::containsRhs<300>());
+		static_assert(not Map::containsRhs<1'000>());
 	}
 
 	namespace MultiMap
@@ -42,9 +44,10 @@ namespace CppUtils::UnitTest::Type::Mapping
 		static_assert(MultiMap::toLhs<2>() == 0);
 		static_assert(MultiMap::toLhs<3>() == 0);
 
-		static_assert(MultiMap::contains<1>(MultiMap::toRhs<0>()));
-		static_assert(MultiMap::contains<2>(MultiMap::toRhs<0>()));
-		static_assert(not MultiMap::contains<10>(MultiMap::toRhs<0>()));
+		static_assert(MultiMap::containsRhs<1>());
+		static_assert(MultiMap::containsRhs<2>());
+		static_assert(MultiMap::containsRhs<3>());
+		static_assert(not MultiMap::containsRhs<10>());
 	}
 
 	namespace Boolean
@@ -56,24 +59,22 @@ namespace CppUtils::UnitTest::Type::Mapping
 		static_assert(BooleanMap::toSingleRhs<0>());
 		static_assert(not BooleanMap::toSingleRhs<1>());
 
-		static_assert(BooleanMap::contains<true>(BooleanMap::toRhs<0>()));
-		static_assert(BooleanMap::contains<false>(BooleanMap::toRhs<1>()));
-		static_assert(not BooleanMap::contains<true>(BooleanMap::toRhs<1>()));
+		static_assert(BooleanMap::containsRhs<true>());
+		static_assert(BooleanMap::containsRhs<false>());
+
+		static_assert(std::get<0>(BooleanMap::toRhs<0>()));
+		static_assert(not std::get<0>(BooleanMap::toRhs<1>()));
 	}
 
 	namespace FunctionPointer
 	{
-		constexpr auto function(int x) -> int
-		{
-			return x * 2;
-		}
+		constexpr auto function(int x) -> int { return x * 2; }
 
 		using FunctionMap = CppUtils::Type::Mapping<
 			CppUtils::Type::Pair<0, &function>>;
 
 		static_assert(FunctionMap::toSingleRhs<0>() == &function);
-
-		static_assert(FunctionMap::contains<&function>(FunctionMap::toRhs<0>()));
+		static_assert(FunctionMap::containsRhs<&function>());
 	}
 
 	namespace MemberFunctionPointer
@@ -87,7 +88,94 @@ namespace CppUtils::UnitTest::Type::Mapping
 			CppUtils::Type::Pair<0, &Struct::value>>;
 
 		static_assert(MemberMap::toSingleRhs<0>() == &Struct::value);
+		static_assert(MemberMap::containsRhs<&Struct::value>());
+	}
 
-		static_assert(MemberMap::contains<&Struct::value>(MemberMap::toRhs<0>()));
+	namespace Runtime
+	{
+		using namespace std::literals;
+
+		enum class Dense
+		{
+			A = 10,
+			B,
+			C
+		};
+		using DenseMap = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<Dense::A, CppUtils::String::Hasher{"Alpha"}>,
+			CppUtils::Type::Pair<Dense::B, CppUtils::String::Hasher{"Beta"}>,
+			CppUtils::Type::Pair<Dense::C, CppUtils::String::Hasher{"Gamma"}>>;
+
+		enum class Sparse
+		{
+			X = 0,
+			Y = 1'000,
+			Z = 1'000'000
+		};
+		using SparseMap = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<Sparse::X, 1>,
+			CppUtils::Type::Pair<Sparse::Y, 2>,
+			CppUtils::Type::Pair<Sparse::Z, 3>>;
+
+		using StringMap = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<CppUtils::String::Hasher{"GET"}, 10>,
+			CppUtils::Type::Pair<CppUtils::String::Hasher{"POST"}, 20>,
+			CppUtils::Type::Pair<CppUtils::String::Hasher{"DELETE"}, 30>>;
+
+		struct CustomHashable final
+		{
+			int id;
+			constexpr auto hash() const noexcept -> std::uint64_t { return static_cast<std::uint64_t>(id); }
+			constexpr auto operator==(const CustomHashable&) const -> bool = default;
+			constexpr auto operator<(const CustomHashable& other) const noexcept -> bool { return id < other.id; }
+		};
+
+		using CustomMap = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<CustomHashable{1}, CppUtils::String::Hasher{"One"}>,
+			CppUtils::Type::Pair<CustomHashable{2}, CppUtils::String::Hasher{"Two"}>>;
+
+		auto _ = TestSuite{"Type/Mapping/Runtime", {}, [](auto& suite) {
+			suite.addTest("Dense Enum (LookupTable)", [&] {
+				suite.expectEqual(DenseMap::toRhs(Dense::A, "Unknown"sv), "Alpha"sv);
+				suite.expectEqual(DenseMap::toRhs(Dense::B, "Unknown"sv), "Beta"sv);
+				suite.expectEqual(DenseMap::toLhs("Alpha"sv, Dense::C), Dense::A);
+				suite.expect(DenseMap::containsLhs(Dense::B));
+				suite.expect(not DenseMap::containsLhs(static_cast<Dense>(0)));
+			});
+
+			suite.addTest("Sparse Enum (Perfect Hash)", [&] {
+				suite.expectEqual(SparseMap::toRhs(Sparse::X, 0), 1);
+				suite.expectEqual(SparseMap::toRhs(Sparse::Z, 0), 3);
+				suite.expectEqual(SparseMap::toLhs(2, Sparse::X), Sparse::Y);
+				suite.expect(SparseMap::containsLhs(Sparse::Y));
+				suite.expect(not SparseMap::containsLhs(static_cast<Sparse>(5)));
+			});
+
+			suite.addTest("String Mapping (Seed Search)", [&] {
+				suite.expectEqual(StringMap::toRhs("GET"sv, 0), 10);
+				suite.expectEqual(StringMap::toRhs("POST"sv, 0), 20);
+				suite.expectEqual(StringMap::toLhs(30, "UNKNOWN"sv), "DELETE"sv);
+				suite.expect(StringMap::containsLhs("GET"sv));
+				suite.expect(not StringMap::containsLhs("PATCH"sv));
+			});
+
+			suite.addTest("Custom Hashable (Member hash)", [&] {
+				suite.expectEqual(CustomMap::toRhs(CustomHashable{1}, "None"sv), "One"sv);
+				suite.expect(CustomMap::containsLhs(CustomHashable{2}));
+				suite.expect(not CustomMap::containsLhs(CustomHashable{3}));
+			});
+
+			suite.addTest("Homogeneity (O(1) Extraction)", [&] {
+				using MethodMap = CppUtils::Type::Mapping<
+					CppUtils::Type::Pair<1, CppUtils::String::Hasher{"GET"}>,
+					CppUtils::Type::Pair<2, CppUtils::String::Hasher{"POST"}>>;
+				suite.expectEqual(MethodMap::toRhs(1, "UNKNOWN"sv), "GET"sv);
+			});
+
+			suite.addTest("No Default Value", [&] {
+				suite.expectEqual(StringMap::toRhs("GET"sv).value(), 10);
+				suite.expect(not StringMap::toRhs("UNKNOWN"sv).has_value());
+			});
+		}};
 	}
 }

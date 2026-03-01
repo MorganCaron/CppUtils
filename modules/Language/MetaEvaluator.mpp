@@ -10,7 +10,7 @@ export namespace CppUtils::Language
 	{
 		using Cursor = String::Cursor<std::string_view>;
 
-		[[nodiscard]] inline constexpr auto exists(String::Token instruction) const noexcept -> bool
+		[[nodiscard]] inline constexpr auto exists(Type::Token instruction) const noexcept -> bool
 		{
 			const auto range = scopes | std::views::reverse;
 			auto it = std::ranges::find_if(range, [instruction](const auto scope) -> bool { return scope.get().exists(instruction); });
@@ -19,7 +19,7 @@ export namespace CppUtils::Language
 
 		[[nodiscard]] inline constexpr auto operator()(
 			Cursor& cursor,
-			const ASTNode& instruction = ASTNode{String::hash("main")})
+			const ASTNode& instruction = ASTNode{Type::hash("main")})
 			-> std::expected<void, std::string_view>
 		{
 			using namespace String::Literals;
@@ -60,8 +60,8 @@ export namespace CppUtils::Language
 			return scopes.back().get();
 		}
 
-		std::unordered_map<String::Token, std::function<std::expected<void, std::string_view>(Cursor&, const ASTNode&, MetaEvaluator&)>> functions;
-		ASTNode rootAst = {0uz, {ASTNode{String::hash("main")}}};
+		std::unordered_map<Type::Token, std::function<std::expected<void, std::string_view>(Cursor&, const ASTNode&, MetaEvaluator&)>> functions;
+		ASTNode rootAst = {0uz, {ASTNode{Type::hash("main")}}};
 		std::vector<std::reference_wrapper<ASTNode>> scopes = {std::ref(rootAst)};
 		bool exit = false;
 	};

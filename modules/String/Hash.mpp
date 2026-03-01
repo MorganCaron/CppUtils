@@ -3,36 +3,25 @@ export module CppUtils.String.Hash;
 import std;
 
 import CppUtils.String.Concept;
+export import CppUtils.Type.Hash;
 
 export namespace CppUtils::String
 {
-	using Hash = std::uint64_t;
-	using Token = Hash;
-
-	[[nodiscard]] inline constexpr auto hash(GenericText auto&& sv) noexcept -> Hash
-	{
-		auto result = 0xcb'f2'9c'e4'84'22'23'25u;
-		for (const auto& c : sv)
-			if (c)
-				result = (static_cast<Hash>(c) ^ result) * 0x1'00'00'00'01'b3u;
-		return result;
-	}
-
 	template<Char CharT = char, std::size_t N = 1>
 	struct Hasher final
 	{
-		inline constexpr Hasher(Hash hash):
+		inline constexpr Hasher(Type::Hash hash):
 			hash{hash},
 			name{'\0'}
 		{}
 
 		inline constexpr Hasher(const CharT (&cString)[N]):
-			hash{CppUtils::String::hash(cString)}
+			hash{Type::hash(cString)}
 		{
 			std::copy(cString, cString + N, std::begin(name));
 		}
 
-		[[nodiscard]] inline constexpr operator Hash() const noexcept
+		[[nodiscard]] inline constexpr operator Type::Hash() const noexcept
 		{
 			return hash;
 		}
@@ -47,31 +36,31 @@ export namespace CppUtils::String
 			return std::basic_string<CharT>{std::data(name), N - 1};
 		}
 
-		[[nodiscard]] inline constexpr auto operator==(Hash otherHash) const noexcept -> bool
+		[[nodiscard]] inline constexpr auto operator==(Type::Hash otherHash) const noexcept -> bool
 		{
 			return hash == otherHash;
 		}
 
-		Hash hash;
+		Type::Hash hash;
 		std::array<CharT, N> name;
 	};
 
-	static_assert(Hasher{"Foo"}.hash == hash("Foo"));
+	static_assert(Hasher{"Foo"}.hash == Type::hash("Foo"));
 
 	namespace Literals
 	{
-		[[nodiscard]] inline constexpr auto operator""_hash(const char* cString, std::size_t size) noexcept -> Hash
+		[[nodiscard]] inline constexpr auto operator""_hash(const char* cString, std::size_t size) noexcept -> Type::Hash
 		{
-			return hash(std::string_view{cString, size});
+			return Type::hash(std::string_view{cString, size});
 		}
 
-		[[nodiscard]] inline constexpr auto operator""_token(const char* cString, std::size_t size) noexcept -> Token
+		[[nodiscard]] inline constexpr auto operator""_token(const char* cString, std::size_t size) noexcept -> Type::Token
 		{
-			return hash(std::string_view{cString, size});
+			return Type::hash(std::string_view{cString, size});
 		}
 
-		static_assert("Foo"_hash == hash("Foo"));
-		static_assert("Foo"_token == hash("Foo"));
+		static_assert("Foo"_hash == Type::hash("Foo"));
+		static_assert("Foo"_token == Type::hash("Foo"));
 
 		static_assert("Foo"_hash == "Foo"_hash);
 		static_assert("Foo"_hash != "Bar"_hash);
@@ -79,7 +68,6 @@ export namespace CppUtils::String
 		static_assert("Foo"_token == "Foo"_token);
 		static_assert("Foo"_token != "Bar"_token);
 
-		static_assert("Foo"_hash == "Foo"_token);
 		static_assert("Foo"_hash == "Foo"_token);
 		static_assert("Foo"_hash != "Bar"_token);
 	}

@@ -58,15 +58,15 @@ export namespace CppUtils::Container
 		template<class CharT = char>
 		struct TokenTree
 		{
-			using Node = Tree::Node<String::Token>;
-			Node root = Node{String::hash(std::basic_string<CharT>{'r', 'o', 'o', 't'})};
+			using Node = Tree::Node<Type::Token>;
+			Node root = Node{Type::hash(std::basic_string<CharT>{'r', 'o', 'o', 't'})};
 			String::HashTable<CharT> hashTable = String::makeHashTable<CharT>(std::basic_string<CharT>{'r', 'o', 'o', 't'});
 		};
 
 		template<class CharT = char>
 		struct NodeView final
 		{
-			using Node = Node<String::Token>;
+			using Node = Node<Type::Token>;
 			std::reference_wrapper<const Node> node;
 			std::reference_wrapper<const TokenTree<CharT>> tree;
 
@@ -85,12 +85,12 @@ export namespace CppUtils::Container
 				return node.get();
 			}
 
-			[[nodiscard]] inline auto get(String::Token token) const -> const Node&
+			[[nodiscard]] inline auto get(Type::Token token) const -> const Node&
 			{
 				return get()[token];
 			}
 
-			inline auto to(String::Token token) -> NodeView&
+			inline auto to(Type::Token token) -> NodeView&
 			{
 				node = std::cref(get(token));
 				return *this;

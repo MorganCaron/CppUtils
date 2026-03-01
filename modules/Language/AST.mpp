@@ -5,5 +5,5 @@ import CppUtils.String;
 
 export namespace CppUtils::Language
 {
-	using ASTNode = Container::Tree::Node<String::Token>;
+	using ASTNode = Container::Tree::Node<Type::Token>;
 }

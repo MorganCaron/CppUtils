@@ -30,14 +30,14 @@ export namespace CppUtils::Execution
 		EventQueue(EventQueue&&) = delete;
 		EventQueue& operator=(EventQueue&&) = delete;
 
-		template<String::Hasher eventName = String::Hash{}, class... Args>
+		template<String::Hasher eventName = Type::Hash{}, class... Args>
 		inline auto emit(Args&&... args) -> void
 		{
-			emit(static_cast<String::Hash>(eventName), std::forward<Args>(args)...);
+			emit(static_cast<Type::Hash>(eventName), std::forward<Args>(args)...);
 		}
 
 		template<class... Args>
-		inline auto emit(String::Hash eventName, Args&&... args) -> void
+		inline auto emit(Type::Hash eventName, Args&&... args) -> void
 		{
 			auto task = [this, eventName, ... args = std::forward<Args>(args)]() mutable {
 				m_dispatcher.emit(eventName, std::move(args)...);
@@ -45,7 +45,7 @@ export namespace CppUtils::Execution
 			enqueue(std::move(task));
 		}
 
-		template<String::Hasher eventName = String::Hash{}>
+		template<String::Hasher eventName = Type::Hash{}>
 		inline auto subscribe(auto&& function) -> void
 		{
 			m_dispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));

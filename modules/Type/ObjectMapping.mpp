@@ -14,7 +14,7 @@ export namespace CppUtils::Type::ObjectMapping
 		using StructType = Object;
 		using AttributeType = Property;
 
-		String::Token token;
+		Type::Token token;
 		AttributeType StructType::* address;
 		bool optional = false;
 		AttributeType defaultValue = AttributeType{};
@@ -22,7 +22,7 @@ export namespace CppUtils::Type::ObjectMapping
 	};
 
 	template<class Object, class Property>
-	Attribute(String::Token token, Property Object::* address, bool optional = false, Property defaultValue = Property{}, Property (*parsingFunction)(std::string_view) = {}) -> Attribute<Object, Property>;
+	Attribute(Type::Token token, Property Object::* address, bool optional = false, Property defaultValue = Property{}, Property (*parsingFunction)(std::string_view) = {}) -> Attribute<Object, Property>;
 
 	template<class>
 	struct StructSchema;

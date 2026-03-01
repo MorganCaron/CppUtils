@@ -1,0 +1,53 @@
+export module CppUtils.Type.Hash;
+
+import std;
+import CppUtils.String.Concept;
+
+namespace
+{
+	template<class T>
+	concept HasMemberHash = requires (const T& value) {
+		{ value.hash() } -> std::convertible_to<std::uint64_t>;
+	};
+
+	template<class T>
+	concept HasADLHash = requires (const T& value) {
+		{ hash(value) } -> std::convertible_to<std::uint64_t>;
+	};
+
+	template<class T>
+	[[nodiscard]] constexpr auto callADLHash(const T& value) noexcept
+	{
+		return hash(value);
+	}
+}
+
+export namespace CppUtils::Type
+{
+	using Hash = std::uint64_t;
+	using Token = Hash;
+
+	[[maybe_unused]] inline constexpr struct
+	{
+		[[nodiscard]] constexpr auto operator()(const auto& value) const noexcept -> std::uint64_t
+		{
+			using T = std::remove_cvref_t<decltype(value)>;
+			if constexpr (HasMemberHash<T>)
+				return value.hash();
+			else if constexpr (HasADLHash<T>)
+				return callADLHash(value);
+			else if constexpr (std::is_integral_v<T> or std::is_enum_v<T>)
+				return static_cast<std::uint64_t>(value);
+			else if constexpr (String::GenericText<T>)
+			{
+				auto result = 0xcb'f2'9c'e4'84'22'23'25u;
+				for (const auto& c : value)
+					if (c)
+						result = (static_cast<std::uint64_t>(c) ^ result) * 0x1'00'00'00'01'b3u;
+				return result;
+			}
+			else
+				static_assert(std::is_void_v<T>, "Le type n'est pas hachable. Fournissez un membre .hash(), une fonction hash(T), ou assurez-vous qu'il s'agit d'un type numérique/texte.");
+		}
+	} hash{};
+}

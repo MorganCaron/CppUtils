@@ -8,7 +8,7 @@ import CppUtils.LogRotate;
 
 export namespace CppUtils::Log
 {
-	template<String::Hasher name, String::Hasher logType = String::Hash{}>
+	template<String::Hasher name, String::Hasher logType = Type::Hash{}>
 	inline auto addFileSink(LogRotateOptions options) -> void
 	{
 		Logger<name>::template subscribe<logType>(FileSink{std::move(options)});

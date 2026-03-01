@@ -4,5 +4,6 @@ export import CppUtils.String.Concept;
 export import CppUtils.String.Cursor;
 export import CppUtils.String.Encoding;
 export import CppUtils.String.Hash;
+export import CppUtils.Type.Hash;
 export import CppUtils.String.HashTable;
 export import CppUtils.String.Utility;

@@ -85,7 +85,7 @@ namespace CppUtils::UnitTest::Language::MetaEvaluator
 			const auto& scopeNodes = interpreter.getScope().nodes;
 			suite.expectEqual(std::size(scopeNodes), 3uz);
 			suite.expectEqual(scopeNodes.at(0).value, "main"_token);
-			suite.expectEqual(scopeNodes.at(1).value, static_cast<String::Token>("test"_token));
+			suite.expectEqual(scopeNodes.at(1).value, static_cast<Type::Token>("test"_token));
 			suite.expectEqual(scopeNodes.at(2).value, 42uz);
 		});
 	}};

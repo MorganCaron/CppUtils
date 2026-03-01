@@ -17,14 +17,14 @@ export namespace CppUtils::Thread
 			m_threadPool{numberThreads, std::move(onError), std::move(finally)}
 		{}
 
-		template<String::Hasher eventName = String::Hash{}, class... Args>
+		template<String::Hasher eventName = Type::Hash{}, class... Args>
 		inline auto emit(const Args&... args) -> void
 		{
-			emit(static_cast<String::Hash>(eventName), args...);
+			emit(static_cast<Type::Hash>(eventName), args...);
 		}
 
 		template<class... Args>
-		inline auto emit(String::Hash eventName, Args&&... args) -> void
+		inline auto emit(Type::Hash eventName, Args&&... args) -> void
 		{
 			m_threadPool.call([this, eventName, payload = std::make_tuple(std::forward<Args>(args)...)]() mutable {
 				std::apply([this, eventName](auto&&... args) {
@@ -33,7 +33,7 @@ export namespace CppUtils::Thread
 			});
 		}
 
-		template<String::Hasher eventName = String::Hash{}>
+		template<String::Hasher eventName = Type::Hash{}>
 		inline auto subscribe(auto&& function) -> void
 		{
 			m_eventDispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));

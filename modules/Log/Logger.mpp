@@ -20,7 +20,7 @@ export namespace CppUtils
 	template<String::Hasher loggerName>
 	inline auto configureLogger(Execution::EventQueue& eventQueue) -> void;
 
-	template<String::Hasher loggerName = String::Hash{}>
+	template<String::Hasher loggerName = Type::Hash{}>
 	struct Logger final
 	{
 		[[nodiscard]] static inline auto& eventQueue() noexcept
@@ -35,25 +35,25 @@ export namespace CppUtils
 			configureLogger<loggerName>(eventQueue);
 		}
 
-		template<String::Hasher logType = String::Hash{}, class... Args>
+		template<String::Hasher logType = Type::Hash{}, class... Args>
 		static inline auto emit(Args&&... args) -> void
 		{
 			eventQueue().template emit<logType>(std::forward<Args>(args)...);
 		}
 
 		template<class... Args>
-		static inline auto emit(String::Hash logType, Args&&... args) -> void
+		static inline auto emit(Type::Hash logType, Args&&... args) -> void
 		{
 			eventQueue().emit(logType, std::forward<Args>(args)...);
 		}
 
-		template<String::Hasher logType = String::Hash{}, class... Args>
+		template<String::Hasher logType = Type::Hash{}, class... Args>
 		static inline auto print(std::format_string<Args...> fmt, Args&&... args) -> void
 		{
 			emit<logType>(std::format(fmt, std::forward<Args>(args)...));
 		}
 
-		template<String::Hasher logType = String::Hash{}>
+		template<String::Hasher logType = Type::Hash{}>
 		static inline auto subscribe(auto&& function) -> void
 		{
 			eventQueue().template subscribe<logType>(std::forward<decltype(function)>(function));

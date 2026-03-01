@@ -113,7 +113,7 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
 			suite.expectEqual(std::size(scopeNodes), 1uz);
-			suite.expectEqual(scopeNodes.front().value, static_cast<String::Token>('a'));
+			suite.expectEqual(scopeNodes.front().value, static_cast<Type::Token>('a'));
 		});
 
 		suite.addTest("Nested nodes", [&] {

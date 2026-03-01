@@ -2,6 +2,10 @@ export module CppUtils.Type.Mapping;
 
 import std;
 
+import CppUtils.String;
+import CppUtils.Type.Hash;
+import CppUtils.Type.Utility;
+
 export namespace CppUtils::Type
 {
 	template<auto Lhs, auto... Rhs>
@@ -18,6 +22,7 @@ export namespace CppUtils::Type
 
 		Mapping() = delete;
 
+		// Complexité : O(n) à la compilation seulement
 		template<auto Lhs>
 		[[nodiscard]] static inline consteval auto toRhs() noexcept -> auto
 		{
@@ -34,6 +39,7 @@ export namespace CppUtils::Type
 				}.template operator()<Lhs, Pairs...>();
 		}
 
+		// Complexité : O(n) à la compilation seulement
 		template<auto Rhs>
 		[[nodiscard]] static inline consteval auto toLhs() noexcept -> auto
 		{
@@ -50,6 +56,7 @@ export namespace CppUtils::Type
 				}.template operator()<Rhs, Pairs...>();
 		}
 
+		// Complexité : O(n) à la compilation seulement
 		template<auto Lhs>
 		[[nodiscard]] static inline consteval auto toSingleRhs() noexcept -> auto
 		{
@@ -58,12 +65,21 @@ export namespace CppUtils::Type
 			return std::get<0>(tuple);
 		}
 
+		// Complexité : O(n) à la compilation seulement
 		template<auto Lhs>
 		[[nodiscard]] static inline consteval auto containsLhs() noexcept -> bool
 		{
 			return ((Pairs::lhs == Lhs) or ...);
 		}
 
+		// Complexité : O(n) à la compilation seulement
+		template<auto Rhs>
+		[[nodiscard]] static inline consteval auto containsRhs() noexcept -> bool
+		{
+			return (contains<Rhs>(Pairs::rhs) or ...);
+		}
+
+		// Complexité : O(n) à la compilation seulement
 		template<auto Lhs>
 		[[nodiscard]] static inline consteval auto hasSingleRhs() noexcept -> bool
 		{
@@ -73,12 +89,292 @@ export namespace CppUtils::Type
 				return false;
 		}
 
+	private:
+		// Complexité : O(n) à la compilation seulement
 		template<auto Value, class Tuple>
 		[[nodiscard]] static inline consteval auto contains(const Tuple& tuple) noexcept -> bool
 		{
 			return []<std::size_t... I>(const Tuple& tuple, std::index_sequence<I...>) constexpr noexcept -> bool {
 				return ((std::get<I>(tuple) == Value) or ...);
 			}(tuple, std::make_index_sequence<std::tuple_size_v<Tuple>>{});
+		}
+
+		struct HashParameters final
+		{
+			std::size_t seed;
+			std::size_t size;
+		};
+
+		template<class LhsType>
+		static inline consteval auto getLhsEntries()
+		{
+			struct Entry final
+			{
+				LhsType key;
+				std::size_t index;
+			};
+			auto result = []<std::size_t... I>(std::index_sequence<I...>) {
+				return std::array{Entry{Pairs::lhs, I}...};
+			}(std::make_index_sequence<sizeof...(Pairs)>{});
+			std::sort(std::begin(result), std::end(result), [](const auto& lhs, const auto& rhs) { return lhs.key < rhs.key; });
+			return result;
+		}
+
+		template<class LhsType>
+		static inline consteval auto getLhsParameters()
+		{
+			constexpr auto entries = getLhsEntries<LhsType>();
+			for (auto size = std::bit_ceil(sizeof...(Pairs) * 2uz); size <= 1'024; size <<= 1)
+			{
+				for (auto seed = 0uz; seed < 256; ++seed)
+				{
+					auto occupied = std::array<bool, 1'024>{};
+					for (auto i = 0uz; i < size; ++i)
+						occupied[i] = false;
+					auto collision = false;
+					for (const auto& entry : entries)
+					{
+						const auto index = (hash(entry.key) ^ seed) % size;
+						if (occupied[index])
+						{
+							collision = true;
+							break;
+						}
+						occupied[index] = true;
+					}
+					if (not collision)
+						return HashParameters{seed, size};
+				}
+			}
+			return HashParameters{0, 0};
+		}
+
+		template<class RhsType>
+		static inline consteval auto getRhsEntries()
+		{
+			struct Entry final
+			{
+				RhsType key;
+				std::size_t pairIndex;
+			};
+			constexpr auto totalRhs = (std::tuple_size_v<decltype(Pairs::rhs)> + ...);
+			auto result = std::array<Entry, totalRhs>{};
+			auto i = 0uz;
+			auto pairIdx = 0uz;
+			([&](auto&& pair) {
+				std::apply([&](auto&&... values) {
+					((result[i++] = {static_cast<RhsType>(values), pairIdx}), ...);
+				}, pair.rhs);
+				++pairIdx;
+			}(Pairs{}), ...);
+			std::sort(std::begin(result), std::end(result), [](const auto& lhs, const auto& rhs) { return lhs.key < rhs.key; });
+			return result;
+		}
+
+		template<class RhsType>
+		static inline consteval auto getRhsParameters()
+		{
+			constexpr auto entries = getRhsEntries<RhsType>();
+			for (auto size = std::bit_ceil(std::size(entries) * 2uz); size <= 1'024; size <<= 1)
+			{
+				for (auto seed = 0uz; seed < 256; ++seed)
+				{
+					auto occupied = std::array<bool, 1'024>{};
+					for (auto i = 0uz; i < size; ++i)
+						occupied[i] = false;
+					auto collision = false;
+					for (const auto& entry : entries)
+					{
+						const auto index = (hash(entry.key) ^ seed) % size;
+						if (occupied[index])
+						{
+							collision = true;
+							break;
+						}
+						occupied[index] = true;
+					}
+					if (not collision)
+						return HashParameters{seed, size};
+				}
+			}
+			return HashParameters{0, 0};
+		}
+
+		[[nodiscard]] static inline constexpr auto findLhs(auto lhs) noexcept -> std::optional<std::size_t>
+		{
+			using LhsType = decltype(lhs);
+			constexpr auto entries = getLhsEntries<LhsType>();
+
+			if constexpr (std::is_integral_v<LhsType> or std::is_enum_v<LhsType>)
+			{
+				constexpr auto minKey = std::min({static_cast<long long>(Pairs::lhs)...});
+				constexpr auto maxKey = std::max({static_cast<long long>(Pairs::lhs)...});
+				constexpr auto range = static_cast<std::size_t>(maxKey - minKey + 1);
+				if constexpr (range < std::max(2'048uz, sizeof...(Pairs) * 2))
+				{
+					static constexpr auto lookupTable = []() {
+						constexpr auto entries = getLhsEntries<LhsType>();
+						auto result = std::array<int, range>{};
+						result.fill(-1);
+						for (auto i = 0uz; i < std::size(entries); ++i)
+							result[static_cast<std::size_t>(static_cast<long long>(entries[i].key) - minKey)] = static_cast<int>(i);
+						return result;
+					}();
+					if (const auto key = static_cast<long long>(lhs); key >= minKey and key <= maxKey)
+						if (const auto index = lookupTable[static_cast<std::size_t>(key - minKey)]; index != -1)
+							return entries[static_cast<std::size_t>(index)].index;
+					return std::nullopt;
+				}
+			}
+			if (constexpr auto parameters = getLhsParameters<LhsType>(); parameters.size > 0)
+			{
+				static constexpr auto perfectHashTable = []() {
+					constexpr auto entries = getLhsEntries<LhsType>();
+					auto result = std::array<int, parameters.size>{};
+					result.fill(-1);
+					for (auto i = 0uz; i < std::size(entries); ++i)
+						result[(Type::hash(entries[i].key) ^ parameters.seed) % parameters.size] = static_cast<int>(i);
+					return result;
+				}();
+				if (const auto index = perfectHashTable[(Type::hash(lhs) ^ parameters.seed) % parameters.size]; index != -1)
+					if (const auto entry = entries[static_cast<std::size_t>(index)]; entry.key == lhs)
+						return entry.index;
+			}
+			else
+			{
+				if (auto it = std::lower_bound(std::begin(entries), std::end(entries), lhs, [](const auto& lhs, const auto& rhs) { return lhs.key < rhs; });
+					it != std::end(entries) and it->key == lhs)
+					return it->index;
+			}
+			return std::nullopt;
+		}
+
+		[[nodiscard]] static inline constexpr auto findRhs(auto rhs) noexcept -> std::optional<std::size_t>
+		{
+			using RhsType = decltype(rhs);
+			constexpr auto entries = getRhsEntries<RhsType>();
+			if (constexpr auto parameters = getRhsParameters<RhsType>(); parameters.size > 0)
+			{
+				static constexpr auto perfectHashTable = []() {
+					constexpr auto entries = getRhsEntries<RhsType>();
+					auto result = std::array<int, parameters.size>{};
+					result.fill(-1);
+					for (auto i = 0uz; i < std::size(entries); ++i)
+						result[(hash(entries[i].key) ^ parameters.seed) % parameters.size] = static_cast<int>(i);
+					return result;
+				}();
+				if (const auto index = perfectHashTable[(hash(rhs) ^ parameters.seed) % parameters.size]; index != -1)
+					if (const auto entry = entries[static_cast<std::size_t>(index)]; entry.key == rhs)
+						return entry.pairIndex;
+			}
+			else
+			{
+				if (auto it = std::lower_bound(std::begin(entries), std::end(entries), rhs, [](const auto& lhs, const auto& rhs) { return lhs.key < rhs; });
+					it != std::end(entries) and it->key == rhs)
+					return it->pairIndex;
+			}
+			return std::nullopt;
+		}
+
+	public:
+		// Complexité : O(1) au runtime
+		[[nodiscard]] static inline constexpr auto containsLhs(auto lhs) noexcept -> bool
+		{
+			return findLhs(lhs).has_value();
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] static inline constexpr auto containsRhs(auto rhs) noexcept -> bool
+		{
+			return findRhs(rhs).has_value();
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] static inline constexpr auto toRhs(auto lhs) noexcept
+		{
+			using UnifiedType = std::remove_cvref_t<CommonType<decltype(std::get<0>(Pairs::rhs))...>>;
+			return toRhs(lhs, std::optional<UnifiedType>{std::nullopt});
+		}
+
+		// Complexité : O(1) au runtime (ou O(n) pour l'extraction si hétérogène)
+		[[nodiscard]] static inline constexpr auto toRhs(auto lhs, auto defaultValue) -> decltype(defaultValue)
+		{
+			using DefaultType = decltype(defaultValue);
+			if (const auto index = findLhs(lhs))
+			{
+				using UnifiedType = std::remove_cvref_t<CommonType<decltype(std::get<0>(Pairs::rhs))...>>;
+				if constexpr (std::convertible_to<UnifiedType, DefaultType>)
+				{
+					static constexpr auto values = std::array{static_cast<DefaultType>(std::get<0>(Pairs::rhs))...};
+					if constexpr (std::is_same_v<DefaultType, std::nullptr_t>)
+						std::unreachable();
+					else
+						return static_cast<DefaultType>(values[*index]);
+				}
+				else
+				{
+					auto result = defaultValue;
+					auto i = 0uz;
+					std::apply([&](auto&&... pairs) {
+						(([&](auto&& pair) {
+							if (i++ == *index)
+							{
+								if constexpr (std::is_same_v<DefaultType, std::nullptr_t>)
+									std::unreachable();
+								else
+									result = static_cast<DefaultType>(std::get<0>(pair.rhs));
+							}
+						}(pairs)),
+							...);
+					}, Values{});
+					return result;
+				}
+			}
+			return defaultValue;
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] static inline constexpr auto toLhs(auto rhs) noexcept
+		{
+			using UnifiedType = std::remove_cvref_t<CommonType<decltype(Pairs::lhs)...>>;
+			return toLhs(rhs, std::optional<UnifiedType>{std::nullopt});
+		}
+
+		// Complexité : O(1) au runtime (ou O(n) pour l'extraction si hétérogène)
+		[[nodiscard]] static inline constexpr auto toLhs(auto rhs, auto defaultValue) -> decltype(defaultValue)
+		{
+			using DefaultType = decltype(defaultValue);
+			if (const auto pairIndex = findRhs(rhs))
+			{
+				using UnifiedType = std::remove_cvref_t<CommonType<decltype(Pairs::lhs)...>>;
+				if constexpr (std::convertible_to<UnifiedType, DefaultType>)
+				{
+					static constexpr auto values = std::array{static_cast<DefaultType>(Pairs::lhs)...};
+					if constexpr (std::is_same_v<DefaultType, std::nullptr_t>)
+						std::unreachable();
+					else
+						return static_cast<DefaultType>(values[*pairIndex]);
+				}
+				else
+				{
+					auto result = defaultValue;
+					auto i = 0uz;
+					std::apply([&](auto&&... pairs) {
+						(([&](auto&& pair) {
+							if (i++ == *pairIndex)
+							{
+								if constexpr (std::is_same_v<DefaultType, std::nullptr_t>)
+									std::unreachable();
+								else
+									result = static_cast<DefaultType>(pair.lhs);
+							}
+						}(pairs)),
+							...);
+					}, Values{});
+					return result;
+				}
+			}
+			return defaultValue;
 		}
 	};
 }

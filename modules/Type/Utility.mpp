@@ -5,32 +5,88 @@ import std;
 export namespace CppUtils::Type
 {
 	template<bool, template<class> class Then, class Arg, class Else>
-	struct LazyEvaluation
+	struct LazyEvaluation final
 	{
 		using type = Else;
 	};
 
 	template<template<class> class Then, class Arg, class Else>
-	struct LazyEvaluation<true, Then, Arg, Else>
+	struct LazyEvaluation<true, Then, Arg, Else> final
 	{
 		using type = Then<Arg>;
 	};
 
+	/*
+		LazyEvaluationType permet de choisir un type basé sur une condition sans instancier préventivement la branche 'Then'.
+		Contrairement à std::conditional<Condition, A, B>::type, qui force l'instanciation de A ET B même si Condition est fausse
+		(pouvant causer des erreurs de compilation si une branche est invalide pour les types donnés),
+		LazyEvaluationType n'instancie Then<Arg> que si la condition est vraie.
+	*/
 	template<bool Condition, template<class> class Then, class Arg, class Else>
 	using LazyEvaluationType = typename LazyEvaluation<Condition, Then, Arg, Else>::type;
 
 	static_assert(std::is_same_v<LazyEvaluationType<true, std::type_identity, int, char>, std::type_identity<int>>);
 	static_assert(std::is_same_v<LazyEvaluationType<false, std::type_identity, int, char>, char>);
 
+	template<class... T>
+	struct Common;
+
 	template<class T>
-	inline constexpr auto preferPassByRef = sizeof(T) > sizeof(void*) or std::is_class_v<T> or std::is_union_v<T> or std::is_array_v<T> or std::is_function_v<T>;
+	struct Common<T> final
+	{
+		using type = T;
+	};
+
+	template<class T, class U, class... Rest>
+	struct Common<T, U, Rest...> final
+	{
+	private:
+		template<class Lhs, class Rhs>
+		static constexpr auto get()
+		{
+			if constexpr (requires { typename std::common_type<Lhs, Rhs>::type; })
+				return std::type_identity<std::common_type_t<Lhs, Rhs>>{};
+			else if constexpr (requires { decltype(true ? std::declval<Lhs>() : std::declval<Rhs>()){}; })
+				return std::type_identity<decltype(true ? std::declval<Lhs>() : std::declval<Rhs>())>{};
+			else if constexpr (std::convertible_to<Lhs, Rhs>)
+				return std::type_identity<Rhs>{};
+			else if constexpr (std::convertible_to<Rhs, Lhs>)
+				return std::type_identity<Lhs>{};
+			else if constexpr (std::convertible_to<Lhs, std::string_view> and std::convertible_to<Rhs, std::string_view>)
+				return std::type_identity<std::string_view>{};
+			else
+				static_assert(sizeof(Lhs) == 0, "CommonType : Impossible de trouver un type commun entre les types fournis.");
+		}
+
+	public:
+		using type = typename Common<typename decltype(get<T, U>())::type, Rest...>::type;
+	};
+
+	/*
+		CommonType déduit un type unifié à partir d'une liste de types potentiellement hétérogènes.
+		Il est utilisé à la place de std::common_type car std::common_type est trop strict pour certains cas d'usage,
+		notamment avec des paramètres de template non-types (NTTP) de types différents mais partageant une conversion commune.
+		Bien que ces types partagent un terrain d'entente, std::common_type peut échouer à le déduire,
+		tandis que ce helper utilise les règles de déduction plus souples de l'opérateur ternaire.
+	*/
+	template<class... T>
+	using CommonType = typename Common<T...>::type;
+
+	/*
+		Se base sur une méthode heuristique supportant nativement les vues (types triviaux de taille <= 2 pointeurs. Ex: std::string_view, std::span, std::views::subrange, etc),
+		permettant au compilateur d'utiliser directement les registres CPU.
+	*/
+	template<class T>
+	inline constexpr auto preferPassByRef = (sizeof(T) > 2 * sizeof(void*)) or (not std::is_trivially_copyable_v<T>) or std::is_array_v<T>;
+	static_assert(preferPassByRef<std::string>);
 
 	template<class T>
 	inline constexpr auto preferPassByValue = not preferPassByRef<T>;
+	static_assert(preferPassByValue<int>);
+	static_assert(preferPassByValue<std::string_view>);
 
 	template<class T>
 	using In = std::conditional_t<preferPassByRef<T>, const T&, T>;
-
 	static_assert(std::is_same_v<In<int>, int>);
 	static_assert(std::is_same_v<In<std::string>, const std::string&>);
 }
