@@ -89,4 +89,13 @@ export namespace CppUtils::Type
 	using In = std::conditional_t<preferPassByRef<T>, const T&, T>;
 	static_assert(std::is_same_v<In<int>, int>);
 	static_assert(std::is_same_v<In<std::string>, const std::string&>);
+
+	/*
+		Valeur toujours false mais dépendante d’un paramètre template.
+		Permet un static_assert toujours false dans un if constexpr ou une template récursive.
+	 */
+	template<auto>
+	inline constexpr bool FalseValue = false;
+	template<class>
+	inline constexpr bool FalseType = false;
 }

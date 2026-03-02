@@ -27,13 +27,13 @@ export namespace CppUtils::Type
 		[[nodiscard]] static inline consteval auto toRhs() noexcept -> auto
 		{
 			if constexpr (sizeof...(Pairs) == 0)
-				static_assert([] { return false; }(), "Lhs not found");
+				static_assert(Type::FalseValue<Lhs>, "Lhs not found");
 			else
 				return []<auto Target, class First, class... Rest>(this auto&& self) consteval {
 					if constexpr (First::lhs == Target)
 						return First::rhs;
 					else if constexpr (sizeof...(Rest) == 0)
-						static_assert([] { return false; }(), "Lhs not found");
+						static_assert(Type::FalseValue<Target>, "Lhs not found");
 					else
 						return self.template operator()<Target, Rest...>();
 				}.template operator()<Lhs, Pairs...>();
@@ -44,13 +44,13 @@ export namespace CppUtils::Type
 		[[nodiscard]] static inline consteval auto toLhs() noexcept -> auto
 		{
 			if constexpr (sizeof...(Pairs) == 0)
-				static_assert([] { return false; }(), "Rhs not found");
+				static_assert(Type::FalseValue<Rhs>, "Rhs not found");
 			else
 				return []<auto Target, class First, class... Rest>(this auto&& self) consteval {
 					if constexpr (contains<Target>(First::rhs))
 						return First::lhs;
 					else if constexpr (sizeof...(Rest) == 0)
-						static_assert([] { return false; }(), "Rhs not found");
+						static_assert(Type::FalseValue<Target>, "Rhs not found");
 					else
 						return self.template operator()<Target, Rest...>();
 				}.template operator()<Rhs, Pairs...>();

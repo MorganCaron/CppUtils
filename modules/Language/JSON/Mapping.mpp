@@ -1,0 +1,283 @@
+export module CppUtils.Language.JSON.Mapping;
+
+import std;
+
+import CppUtils.String;
+import CppUtils.Type.Mapping;
+
+export namespace CppUtils::Language::JSON
+{
+	struct Value;
+
+	using Object = std::map<std::string, Value, std::less<>>;
+	using Array = std::vector<Value>;
+
+	template<std::output_iterator<char> Iterator>
+	[[nodiscard]] inline auto escapeString(std::string_view string, Iterator out) -> Iterator
+	{
+		using namespace std::literals;
+		using EscapeMapping = Type::Mapping<
+			Type::Pair<'"', String::Hasher{R"(\")"}>,
+			Type::Pair<'\\', String::Hasher{R"(\)"}>,
+			Type::Pair<'\b', String::Hasher{R"(\b)"}>,
+			Type::Pair<'\f', String::Hasher{R"(\f)"}>,
+			Type::Pair<'\n', String::Hasher{R"(\n)"}>,
+			Type::Pair<'\r', String::Hasher{R"(\r)"}>,
+			Type::Pair<'\t', String::Hasher{R"(\t)"}>>;
+
+		*out++ = '"';
+		for (const auto character : string)
+			if (const auto escaped = EscapeMapping::toRhs(character, std::string_view{}); not std::empty(escaped))
+				out = std::ranges::copy(escaped, out).out;
+			else if (static_cast<unsigned char>(character) < 0x20)
+				out = std::format_to(out, R"(\u{:04x})", static_cast<int>(character));
+			else
+				*out++ = character;
+		*out++ = '"';
+		return out;
+	}
+
+	struct Value final
+	{
+		std::variant<std::monostate, bool, double, std::string, Array, Object> data;
+
+		constexpr Value() = default;
+		constexpr Value(bool value): data{value} {}
+		constexpr Value(double value): data{value} {}
+		inline Value(std::string value): data{std::move(value)} {}
+		inline Value(const char* value): data{std::string{value}} {}
+		inline Value(Array value): data{std::move(value)} {}
+		inline Value(Object value): data{std::move(value)} {}
+
+		[[nodiscard]] constexpr auto isNull() const -> bool { return std::holds_alternative<std::monostate>(data); }
+		[[nodiscard]] constexpr auto isBool() const -> bool { return std::holds_alternative<bool>(data); }
+		[[nodiscard]] constexpr auto isNumber() const -> bool { return std::holds_alternative<double>(data); }
+		[[nodiscard]] constexpr auto isString() const -> bool { return std::holds_alternative<std::string>(data); }
+		[[nodiscard]] constexpr auto isArray() const -> bool { return std::holds_alternative<Array>(data); }
+		[[nodiscard]] constexpr auto isObject() const -> bool { return std::holds_alternative<Object>(data); }
+
+		template<class T>
+		[[nodiscard]] constexpr auto is() const -> bool
+		{
+			return std::holds_alternative<T>(data);
+		}
+
+		template<class T>
+		[[nodiscard]] constexpr auto&& as(this auto&& self)
+		{
+			return std::get<T>(std::forward<decltype(self)>(self).data);
+		}
+
+		template<class T>
+		[[nodiscard]] inline auto getIf() const -> std::optional<std::reference_wrapper<const T>>
+		{
+			if (const auto* value = std::get_if<T>(std::addressof(data)))
+				return std::ref(*value);
+			return std::nullopt;
+		}
+
+		[[nodiscard]] inline auto operator[](std::string_view key) const -> const Value&;
+		[[nodiscard]] inline auto operator[](std::size_t index) const -> const Value&;
+
+		[[nodiscard]] constexpr auto operator==(const Value&) const -> bool = default;
+
+		[[nodiscard]] inline operator std::string() const
+		{
+			auto result = std::string{};
+			dump(std::back_inserter(result));
+			return result;
+		}
+
+		template<std::output_iterator<char> Iterator>
+		inline auto dump(Iterator out) const -> Iterator
+		{
+			using namespace std::literals;
+			return std::visit([&](const auto& value) -> Iterator {
+				using T = std::remove_cvref_t<decltype(value)>;
+				if constexpr (std::same_as<T, std::monostate>)
+					return std::ranges::copy("null"sv, out).out;
+				if constexpr (std::same_as<T, bool>)
+					return std::ranges::copy(value ? "true"sv : "false"sv, out).out;
+				if constexpr (std::same_as<T, double>)
+					return std::ranges::copy(String::formatValue(value), out).out;
+				if constexpr (std::same_as<T, std::string>)
+					return escapeString(value, out);
+				if constexpr (std::same_as<T, Array>)
+				{
+					*out++ = '[';
+					for (auto first = true; const auto& item : value)
+					{
+						if (not first)
+							*out++ = ',';
+						out = item.dump(out);
+						first = false;
+					}
+					*out++ = ']';
+					return out;
+				}
+				if constexpr (std::same_as<T, Object>)
+				{
+					*out++ = '{';
+					for (auto first = true; const auto& [key, val] : value)
+					{
+						if (not first)
+							*out++ = ',';
+						out = escapeString(key, out);
+						*out++ = ':';
+						out = val.dump(out);
+						first = false;
+					}
+					*out++ = '}';
+					return out;
+				}
+				std::unreachable();
+			}, data);
+		}
+	};
+
+	inline constinit const auto nullValue = Value{};
+
+	[[nodiscard]] inline auto Value::operator[](std::string_view key) const -> const Value&
+	{
+		if (auto object = getIf<Object>())
+		{
+			const auto& objectRef = object->get();
+			if (auto it = objectRef.find(key); it != std::end(objectRef))
+				return it->second;
+		}
+		return nullValue;
+	}
+
+	[[nodiscard]] inline auto Value::operator[](std::size_t index) const -> const Value&
+	{
+		if (auto array = getIf<Array>())
+		{
+			const auto& arrayRef = array->get();
+			if (index < std::size(arrayRef))
+				return arrayRef[index];
+		}
+		return nullValue;
+	}
+
+	inline auto operator<<(std::ostream& os, const Value& value) -> std::ostream&
+	{
+		return os << static_cast<std::string>(value);
+	}
+
+	template<class ObjectType, class Mapping>
+	requires (std::is_default_constructible_v<ObjectType>)
+	[[nodiscard]] inline auto toStruct(const Value& jsonValue) -> ObjectType
+	{
+		using JSONMapping = typename Mapping::JSONMapping;
+		using StructMapping = typename Mapping::StructMapping;
+		using FunctionMapping = typename Mapping::FunctionMapping;
+
+		auto objectValue = ObjectType{};
+		std::apply([&](auto&&... jsonPairs) -> void {
+			([&](auto&& jsonPair) -> void {
+				using JSONPair = std::remove_cvref_t<decltype(jsonPair)>;
+				constexpr auto token = JSONPair::lhs;
+				constexpr auto jsonKeyValue = std::get<0>(JSONPair::rhs);
+				auto getKeyString = [&]() -> std::string {
+					using KeyType = std::remove_cvref_t<decltype(jsonKeyValue)>;
+					if constexpr (std::convertible_to<KeyType, std::string_view>)
+						return static_cast<std::string>(static_cast<std::string_view>(jsonKeyValue));
+					else if constexpr (std::convertible_to<KeyType, std::string>)
+						return static_cast<std::string>(jsonKeyValue);
+					else
+						return {};
+				};
+				const auto& value = jsonValue[getKeyString()];
+				if (not value.isNull())
+				{
+					constexpr auto memberPointer = std::get<0>(StructMapping::template toRhs<token>());
+					auto& member = objectValue.*memberPointer;
+					using MemberType = std::remove_cvref_t<decltype(member)>;
+					if constexpr (FunctionMapping::template containsLhs<token>())
+						FunctionMapping::template toSingleRhs<token>()(member, value);
+					else
+						std::visit([&](const auto& value) {
+							using ValueType = std::remove_cvref_t<decltype(value)>;
+							if constexpr (std::same_as<ValueType, std::monostate>)
+								return;
+							if constexpr (std::same_as<MemberType, bool>)
+							{
+								if constexpr (std::same_as<ValueType, bool>)
+									member = value;
+							}
+							else if constexpr (std::same_as<MemberType, std::string_view> or std::same_as<MemberType, std::string>)
+							{
+								if constexpr (std::same_as<ValueType, std::string>)
+									member = value;
+							}
+							else if constexpr (std::integral<MemberType> or std::floating_point<MemberType>)
+							{
+								if constexpr (std::same_as<ValueType, double> or std::same_as<ValueType, bool>)
+									member = static_cast<MemberType>(value);
+							}
+						}, value.data);
+				}
+			}(jsonPairs), ...);
+		}, typename JSONMapping::Values{});
+		return objectValue;
+	}
+
+	template<class ObjectType, class Mapping>
+	[[nodiscard]] inline auto toStructs(
+		const Value& jsonValue,
+		std::vector<ObjectType>&& objects = {}) -> std::vector<ObjectType>
+	{
+		if (jsonValue.isArray())
+			for (const auto& item : jsonValue.as<Array>())
+				objects.push_back(toStruct<ObjectType, Mapping>(item));
+		return std::move(objects);
+	}
+
+	template<class ObjectType, class Mapping>
+	requires (std::is_default_constructible_v<ObjectType>)
+	[[nodiscard]] inline auto toJSON(const ObjectType& objectValue) -> Value
+	{
+		using JSONMapping = typename Mapping::JSONMapping;
+		using StructMapping = typename Mapping::StructMapping;
+
+		auto object = Object{};
+		std::apply([&](auto&&... jsonPairs) -> void {
+			([&](auto&& jsonPair) -> void {
+				using JSONPair = std::remove_cvref_t<decltype(jsonPair)>;
+				constexpr auto token = JSONPair::lhs;
+				constexpr auto jsonKeyValue = std::get<0>(JSONPair::rhs);
+				auto getKeyString = [&]() -> std::string {
+					using KeyType = std::remove_cvref_t<decltype(jsonKeyValue)>;
+					if constexpr (std::convertible_to<KeyType, std::string_view>)
+						return static_cast<std::string>(static_cast<std::string_view>(jsonKeyValue));
+					else if constexpr (std::convertible_to<KeyType, std::string>)
+						return static_cast<std::string>(jsonKeyValue);
+					else
+						return {};
+				};
+				const auto jsonKey = getKeyString();
+				constexpr auto memberPointer = std::get<0>(StructMapping::template toRhs<token>());
+				const auto& member = objectValue.*memberPointer;
+				using MemberType = std::remove_cvref_t<decltype(member)>;
+				if constexpr (std::same_as<MemberType, bool>)
+					object[jsonKey] = Value{member};
+				else if constexpr (std::same_as<MemberType, std::string_view>)
+					object[jsonKey] = Value{std::string{member}};
+				else if constexpr (std::same_as<MemberType, std::string>)
+					object[jsonKey] = Value{member};
+				else if constexpr (std::integral<MemberType> or std::floating_point<MemberType>)
+					object[jsonKey] = Value{static_cast<double>(member)};
+			}(jsonPairs), ...);
+		}, typename JSONMapping::Values{});
+		return Value{object};
+	}
+}
+
+template<>
+struct std::formatter<CppUtils::Language::JSON::Value>: std::formatter<std::string>
+{
+	inline auto format(const CppUtils::Language::JSON::Value& value, std::format_context& context) const
+	{
+		return value.dump(context.out());
+	}
+};

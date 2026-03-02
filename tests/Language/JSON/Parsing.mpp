@@ -1,0 +1,64 @@
+export module CppUtils.UnitTests.Language.JSON.Parsing;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::JSON::Parsing
+{
+	auto _ = TestSuite{"Language/JSON/Parsing", {}, [](TestSuite& suite) {
+		using namespace std::literals;
+		using namespace CppUtils::Language::JSON::Literals;
+
+		suite.addTest("Simple Parse", [&] {
+			const auto result = "{}"_json;
+			suite.expect(result.has_value());
+			suite.expect(result->isObject());
+			suite.expect(std::empty(result->as<CppUtils::Language::JSON::Object>()));
+		});
+
+		suite.addTest("Parse Values", [&] {
+			const auto result = R"({
+				"a": "hello",
+				"b": 42,
+				"c": 3.14,
+				"d": true,
+				"e": null
+			})"_json;
+
+			suite.expect(result.has_value());
+			const auto& value = result.value();
+			suite.expect(value.isObject());
+			suite.expectEqual(value["a"].template as<std::string>(), "hello");
+			suite.expectEqual(value["b"].template as<double>(), 42.0);
+			suite.expectEqual(value["c"].template as<double>(), 3.14);
+			suite.expectEqual(value["d"].template as<bool>(), true);
+			suite.expect(value["e"].isNull());
+		});
+
+		suite.addTest("Parse Array", [&] {
+			const auto result = "[1, 2, 3]"_json;
+
+			suite.expect(result.has_value());
+			const auto& value = result.value();
+			suite.expect(value.isArray());
+			suite.expectEqual(std::size(value.as<CppUtils::Language::JSON::Array>()), 3uz);
+			suite.expectEqual(value[0].as<double>(), 1.0);
+		});
+
+		suite.addTest("Error Reporting", [&] {
+			const auto result = R"({"a": 1, "b"})"_json;
+			suite.expect(not result.has_value());
+			const auto& error = result.error();
+			suite.expectEqual(error.message, "Expected ':' after key");
+			suite.expectEqual(error.position, 12uz);
+		});
+
+		suite.addTest("Stringify", [&] {
+			auto object = CppUtils::Language::JSON::Object{};
+			object["a"] = CppUtils::Language::JSON::Value{"hello"};
+			object["b"] = CppUtils::Language::JSON::Value{42.0};
+			const auto json = static_cast<std::string>(CppUtils::Language::JSON::Value{object});
+			suite.expectEqual(json, R"({"a":"hello","b":42})");
+		});
+	}};
+}

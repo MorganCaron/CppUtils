@@ -1,0 +1,235 @@
+export module CppUtils.Language.JSON.Parsing;
+
+import std;
+import CppUtils.String;
+import CppUtils.FileSystem;
+import CppUtils.Type.Concept;
+import CppUtils.Type.Mapping;
+import CppUtils.Language.JSON.Mapping;
+
+export namespace CppUtils::Language::JSON
+{
+	struct Error final
+	{
+		std::string message;
+		std::size_t position = 0;
+	};
+
+	[[nodiscard]] inline auto parseJSON(std::string_view json) -> std::expected<Value, Error>
+	{
+		class Parser final
+		{
+		public:
+			explicit Parser(std::string_view json): m_json{json} {}
+
+			[[nodiscard]] auto parse() -> std::expected<Value, Error>
+			{
+				auto value = parseValue();
+				if (not value)
+					return std::unexpected{value.error()};
+
+				skipSpaces();
+				if (m_position != std::size(m_json))
+					return std::unexpected{Error{"Unexpected characters after JSON value", m_position}};
+
+				return value;
+			}
+
+		private:
+			inline auto skipSpaces() -> void
+			{
+				while (m_position < std::size(m_json) and std::isspace(static_cast<unsigned char>(m_json[m_position])))
+					++m_position;
+			}
+
+			[[nodiscard]] inline auto match(char c) -> bool
+			{
+				if (m_position < std::size(m_json) and m_json[m_position] == c)
+				{
+					++m_position;
+					return true;
+				}
+				return false;
+			}
+
+			[[nodiscard]] inline auto parseString() -> std::expected<std::string, Error>
+			{
+				if (not match('"'))
+					return std::unexpected{Error{"Expected opening double quote", m_position}};
+
+				auto start = m_position;
+				while (m_position < std::size(m_json) and m_json[m_position] != '"')
+				{
+					if (m_json[m_position] == '\\')
+						++m_position;
+					if (m_position < std::size(m_json))
+						++m_position;
+				}
+
+				if (not match('"'))
+					return std::unexpected{Error{"Unterminated string", m_position}};
+
+				return std::string{m_json.substr(start, m_position - start - 1)};
+			}
+
+			[[nodiscard]] inline auto parseNumber() -> std::expected<double, Error>
+			{
+				auto value = 0.0;
+				auto result = std::from_chars(std::data(m_json) + m_position, std::data(m_json) + std::size(m_json), value);
+				if (result.ec != std::errc())
+					return std::unexpected{Error{"Invalid number format", m_position}};
+
+				m_position += static_cast<std::size_t>(result.ptr - (std::data(m_json) + m_position));
+				return value;
+			}
+
+			[[nodiscard]] inline auto parseObject() -> std::expected<Object, Error>
+			{
+				if (not match('{'))
+					return std::unexpected{Error{"Expected '{'", m_position}};
+
+				auto object = Object{};
+				skipSpaces();
+				if (match('}'))
+					return object;
+
+				while (true)
+				{
+					skipSpaces();
+					auto key = parseString();
+					if (not key)
+						return std::unexpected{key.error()};
+
+					skipSpaces();
+					if (not match(':'))
+						return std::unexpected{Error{"Expected ':' after key", m_position}};
+
+					auto value = parseValue();
+					if (not value)
+						return std::unexpected{value.error()};
+
+					object[std::move(key.value())] = std::move(value.value());
+
+					skipSpaces();
+					if (match('}'))
+						return object;
+
+					if (not match(','))
+						return std::unexpected{Error{"Expected ',' or '}'", m_position}};
+				}
+			}
+
+			[[nodiscard]] inline auto parseArray() -> std::expected<Array, Error>
+			{
+				if (not match('['))
+					return std::unexpected{Error{"Expected '['", m_position}};
+
+				auto array = Array{};
+				skipSpaces();
+				if (match(']'))
+					return array;
+
+				while (true)
+				{
+					auto value = parseValue();
+					if (not value)
+						return std::unexpected{value.error()};
+
+					array.push_back(std::move(value.value()));
+
+					skipSpaces();
+					if (match(']'))
+						return array;
+
+					if (not match(','))
+						return std::unexpected{Error{"Expected ',' or ']'", m_position}};
+				}
+			}
+
+			[[nodiscard]] inline auto parseValue() -> std::expected<Value, Error>
+			{
+				using namespace std::literals;
+				skipSpaces();
+				if (m_position >= std::size(m_json))
+					return std::unexpected{Error{"Unexpected end of input", m_position}};
+
+				auto c = m_json[m_position];
+				if (c == '{')
+					return parseObject().transform([](Object&& object) { return Value{std::move(object)}; });
+				if (c == '[')
+					return parseArray().transform([](Array&& array) { return Value{std::move(array)}; });
+				if (c == '"')
+					return parseString().transform([](std::string&& string) { return Value{std::move(string)}; });
+				if (c == 't')
+				{
+					if (m_json.substr(m_position, 4) == "true"sv)
+					{
+						m_position += 4;
+						return Value{true};
+					}
+				}
+				if (c == 'f')
+				{
+					if (m_json.substr(m_position, 5) == "false"sv)
+					{
+						m_position += 5;
+						return Value{false};
+					}
+				}
+				if (c == 'n')
+				{
+					if (m_json.substr(m_position, 4) == "null"sv)
+					{
+						m_position += 4;
+						return nullValue;
+					}
+				}
+				if (std::isdigit(static_cast<unsigned char>(c)) or c == '-')
+					return parseNumber().transform([](double d) { return Value{d}; });
+
+				return std::unexpected{Error{std::format("Unexpected character: '{}'", c), m_position}};
+			}
+
+			std::string_view m_json;
+			std::size_t m_position = 0;
+		};
+
+		return Parser{json}.parse();
+	}
+
+	template<class T, class Mapping>
+	[[nodiscard]] inline auto loadFile(const std::filesystem::path& filePath) -> std::expected<T, Error>
+	{
+		using TargetType = std::conditional_t<Type::Specializes<T, std::vector>, typename T::value_type, T>;
+
+		static_assert([]() constexpr {
+			return std::apply([](auto&&... pairs) constexpr {
+				return (...and[]<auto Lhs, auto Rhs>(Type::Pair<Lhs, Rhs>) constexpr {
+					constexpr auto memberPointer = std::get<0>(Rhs);
+					using MemberType = std::remove_cvref_t<decltype(std::declval<TargetType>().*memberPointer)>;
+					return not std::same_as<MemberType, std::string_view>;
+				}(pairs));
+			}, typename Mapping::StructMapping::Values{});
+		}(), "loadFile cannot be used with types containing std::string_view members in their mapping. The temporary JSON Value used during parsing will be destroyed, leaving dangling string_views. Use parseJSON manually and keep the Value alive, or use std::string in your struct.");
+
+		auto fileContent = FileSystem::String::read(filePath);
+		return parseJSON(fileContent).and_then([](Value&& value) -> std::expected<T, Error> {
+			if constexpr (Type::Specializes<T, std::vector>)
+			{
+				using ItemType = typename T::value_type;
+				return toStructs<ItemType, Mapping>(value);
+			}
+			else if (value.isObject())
+				return toStruct<T, Mapping>(value);
+			return std::unexpected{Error{"JSON value is not an object", 0}};
+		});
+	}
+
+	namespace Literals
+	{
+		[[nodiscard]] inline auto operator""_json(const char* cString, std::size_t size) -> std::expected<Value, Error>
+		{
+			return parseJSON(std::string_view{cString, size});
+		}
+	}
+}
