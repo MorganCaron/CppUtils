@@ -9,14 +9,6 @@ namespace CppUtils::UnitTest::String::Utility
 		using namespace std::literals;
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("concatenateStringsWithSeparator", [&] {
-			auto strings = std::vector{"A"sv, "B"sv, "C"sv};
-			auto string = CppUtils::String::concatenateStringsWithSeparator(strings, ", ");
-
-			Logger::print("{}", string);
-			suite.expectEqual(string, "A, B, C");
-		});
-
 		suite.addTest("trimString", [&] {
 			auto string = "\n \t Hello World!\n \t ";
 			auto leftTrimString = CppUtils::String::leftTrimString(string);

@@ -76,7 +76,7 @@ export namespace CppUtils::Language::CSV
 				columns[csvColumnPosition] = String::formatValue(object.*memberPointer);
 			}(csvPairs), ...);
 		}, typename CSVMapping::Values{});
-		return String::concatenateStringsWithSeparator(columns, separator);
+		return columns | std::views::join_with(separator) | std::ranges::to<std::string>();
 	}
 
 	template<class Object, class Mapping>

@@ -73,33 +73,6 @@ export namespace CppUtils::String
 	static_assert(unescape('\n') == 'n');
 	static_assert(unescape('A') == 'A');
 
-	inline namespace cpp20
-	{
-		[[nodiscard]] inline auto concatenateStringsWithSeparator(const std::vector<std::string>& strings, std::string_view separator) -> std::string
-		{
-			return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{}, [separator](const std::string& lhs, const std::string& rhs) {
-				return std::empty(lhs) ? rhs : (lhs + std::data(separator) + rhs);
-			});
-		}
-
-		[[nodiscard]] inline auto concatenateStringsWithSeparator(const std::vector<std::string_view>& strings, std::string_view separator) -> std::string
-		{
-			return std::accumulate(std::cbegin(strings), std::cend(strings), std::string{}, [separator](std::string_view lhs, std::string_view rhs) {
-				return std::empty(lhs) ? std::string{rhs} : (std::string{lhs} + std::string{separator} + std::string{rhs});
-			});
-		}
-	}
-	namespace cpp23
-	{
-		/* Not yet supported by CLang libc++: std::views::join_with
-		template<Text StringT>
-		[[nodiscard]] inline auto concatenateStringsWithSeparator(std::span<StringT> strings, std::basic_string_view<typename StringT::value_type> separator) -> std::string
-		{
-			return std::ranges::to<std::basic_string<typename StringT::value_type>>(strings | std::views::join_with(separator));
-		}
-		*/
-	}
-
 	[[nodiscard]] inline auto leftTrimString(std::string_view stringView) -> std::string_view
 	{
 		const auto it = std::ranges::find_if_not(stringView, [](const auto c) {
@@ -152,19 +125,17 @@ export namespace CppUtils::String
 	template<class CharT>
 	[[nodiscard]] inline constexpr auto toLowercase(std::basic_string_view<CharT> originalString) -> std::basic_string<CharT>
 	{
-		auto result = std::basic_string<CharT>{originalString};
-		for (auto& c : result)
-			c = toLowercase(c);
-		return result;
+		return originalString
+			| std::views::transform([](CharT c) { return toLowercase(c); })
+			| std::ranges::to<std::basic_string<CharT>>();
 	}
 
 	template<class CharT>
 	[[nodiscard]] inline constexpr auto toUppercase(std::basic_string_view<CharT> originalString) -> std::basic_string<CharT>
 	{
-		auto result = std::basic_string<CharT>{originalString};
-		for (auto& c : result)
-			c = toUppercase(c);
-		return result;
+		return originalString
+			| std::views::transform([](CharT c) { return toUppercase(c); })
+			| std::ranges::to<std::basic_string<CharT>>();
 	}
 
 	[[nodiscard]] inline constexpr auto formatValue(const auto& value)
