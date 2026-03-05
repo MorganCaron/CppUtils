@@ -1,0 +1,86 @@
+export module CppUtils.UnitTests.Terminal.ProgressBar;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Terminal::ProgressBar
+{
+	auto _ = TestSuite{"Terminal/ProgressBar", {"UnitTest", "Thread/Scheduler", "Terminal/Canvas"}, [](TestSuite& suite) {
+		using namespace std::literals;
+		using namespace std::chrono_literals;
+
+		suite.addTest("Basic", [&] {
+			const auto terminalWidth = CppUtils::Terminal::getTerminalSize().width();
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{terminalWidth, 1}};
+			auto& progressBar = canvas.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Progress bar"));
+
+			auto scheduler = CppUtils::Thread::Scheduler{};
+			scheduler.schedule([&canvas]() mutable {
+				canvas.close();
+			}, 500ms);
+
+			for (auto i = 0.f; i <= 100.f; i += 1.f)
+			{
+				progressBar.setPercent(i);
+				std::this_thread::sleep_for(5ms);
+			}
+
+			canvas.wait();
+		});
+
+		suite.addTest("Multiple", [&] {
+			const auto terminalWidth = CppUtils::Terminal::getTerminalSize().width();
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{terminalWidth, 3}};
+			auto& layout = canvas.addWidget(std::make_unique<CppUtils::Terminal::Layout>());
+
+			auto& bar1 = layout.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Bar 1"));
+			auto& bar2 = layout.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Bar 2"));
+			auto& bar3 = layout.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Bar 3"));
+
+			auto scheduler = CppUtils::Thread::Scheduler{};
+			scheduler.schedule([&canvas]() mutable {
+				canvas.close();
+			}, 1'000ms);
+
+			for (auto i = 0.f; i <= 100.f; i += 1.f)
+			{
+				bar1.setPercent(i);
+				bar2.setPercent(CppUtils::Math::Easing::inQuad(i / 100.f) * 100.f);
+				bar3.setPercent(CppUtils::Math::Easing::outCubic(i / 100.f) * 100.f);
+				std::this_thread::sleep_for(10ms);
+			}
+
+			canvas.wait();
+		});
+
+		suite.addTest("Styles", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{60, 10}};
+
+			auto styles = std::vector<std::pair<std::string, CppUtils::Terminal::ProgressBarStyle>>{
+				{"Block", CppUtils::Terminal::ProgressBarStyles::Block},
+				{"Clean", CppUtils::Terminal::ProgressBarStyles::Clean},
+				{"Line", CppUtils::Terminal::ProgressBarStyles::Line},
+				{"Arrowhead", CppUtils::Terminal::ProgressBarStyles::Arrowhead},
+				{"Double", CppUtils::Terminal::ProgressBarStyles::Double},
+				{"Round", CppUtils::Terminal::ProgressBarStyles::Round},
+				{"Shaded", CppUtils::Terminal::ProgressBarStyles::Shaded},
+				{"Braille", CppUtils::Terminal::ProgressBarStyles::Braille},
+				{"Arrow", CppUtils::Terminal::ProgressBarStyles::Arrow},
+				{"Retro", CppUtils::Terminal::ProgressBarStyles::Retro}};
+
+			for (auto i = 0.f; i <= 100.f; i += 1.f)
+			{
+				auto y = 0uz;
+				for (const auto& [name, style] : styles)
+				{
+					auto bar = CppUtils::Terminal::ProgressBar(name, style);
+					bar.setPercent(i);
+					auto view = canvas.getWritableView(CppUtils::Terminal::Viewport{CppUtils::Container::Size2{60, 1}, CppUtils::Container::Size2{0, y++}});
+					bar.draw(view);
+				}
+				canvas.print();
+				std::this_thread::sleep_for(20ms);
+			}
+		});
+	}};
+}

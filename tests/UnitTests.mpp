@@ -53,6 +53,7 @@ export import CppUtils.UnitTests.System.Error;
 export import CppUtils.UnitTests.Terminal;
 export import CppUtils.UnitTests.Terminal.Canvas;
 export import CppUtils.UnitTests.Terminal.Primitive;
+export import CppUtils.UnitTests.Terminal.ProgressBar;
 export import CppUtils.UnitTests.Terminal.Scrollable;
 export import CppUtils.UnitTests.Terminal.Title;
 export import CppUtils.UnitTests.Thread.AsyncEventDispatcher;
