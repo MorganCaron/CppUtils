@@ -141,6 +141,36 @@ namespace CppUtils::UnitTest::Terminal::Canvas
 			canvas.wait();
 		});
 
+		suite.addTest("Progress Bar Styles", [&] {
+			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{60, 10}};
+
+			auto styles = std::vector<std::pair<std::string, CppUtils::Terminal::ProgressBarStyle>>{
+				{"Block", CppUtils::Terminal::ProgressBarStyles::Block},
+				{"Clean", CppUtils::Terminal::ProgressBarStyles::Clean},
+				{"Line", CppUtils::Terminal::ProgressBarStyles::Line},
+				{"Arrowhead", CppUtils::Terminal::ProgressBarStyles::Arrowhead},
+				{"Double", CppUtils::Terminal::ProgressBarStyles::Double},
+				{"Round", CppUtils::Terminal::ProgressBarStyles::Round},
+				{"Shaded", CppUtils::Terminal::ProgressBarStyles::Shaded},
+				{"Braille", CppUtils::Terminal::ProgressBarStyles::Braille},
+				{"Arrow", CppUtils::Terminal::ProgressBarStyles::Arrow},
+				{"Retro", CppUtils::Terminal::ProgressBarStyles::Retro}};
+
+			for (auto i = 0.f; i <= 100.f; i += 1.f)
+			{
+				auto y = 0uz;
+				for (const auto& [name, style] : styles)
+				{
+					auto bar = CppUtils::Terminal::ProgressBar(name, style);
+					bar.setPercent(i);
+					auto view = canvas.getWritableView(CppUtils::Terminal::Viewport{CppUtils::Container::Size2{60, 1}, CppUtils::Container::Size2{0, y++}});
+					bar.draw(view);
+				}
+				canvas.print();
+				std::this_thread::sleep_for(20ms);
+			}
+		});
+
 		suite.addTest("Bouncing ball", [&] {
 			const auto terminalSize = CppUtils::Terminal::getTerminalSize();
 			auto canvasSize = terminalSize;

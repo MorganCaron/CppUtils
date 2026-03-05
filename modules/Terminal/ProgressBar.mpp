@@ -3,21 +3,122 @@ export module CppUtils.Terminal.ProgressBar;
 import std;
 import CppUtils.Terminal.Area;
 import CppUtils.Container.Size;
+import CppUtils.String.Encoding;
 
 export namespace CppUtils::Terminal
 {
+	struct BarRenderer final
+	{
+		float percent;
+		std::size_t width;
+	};
+}
+
+export template<>
+struct std::formatter<CppUtils::Terminal::BarRenderer>
+{
+	std::string filled = "#";
+	std::string empty = ".";
+	std::string head = "";
+
+	constexpr auto parse(std::format_parse_context& context)
+	{
+		auto iterator = std::begin(context);
+		if (iterator == std::end(context) or *iterator == '}')
+			return iterator;
+
+		auto content = std::string{};
+		while (iterator != std::end(context) and *iterator != '}')
+			content += *iterator++;
+
+		auto filledCharacter = CppUtils::String::utf32Substr(content, 0uz, 1uz);
+		auto emptyCharacter = CppUtils::String::utf32Substr(content, 1uz, 1uz);
+		if (not std::empty(filledCharacter) and not std::empty(emptyCharacter))
+		{
+			filled = filledCharacter;
+			empty = emptyCharacter;
+			head = CppUtils::String::utf32Substr(content, 2uz, 1uz);
+		}
+
+		return iterator;
+	}
+
+	auto format(const CppUtils::Terminal::BarRenderer& barRenderer, std::format_context& context) const
+	{
+		using namespace std::literals;
+		if (barRenderer.width == 0uz)
+			return context.out();
+
+		static constexpr auto doneText = "--- Done ---"sv;
+		if (barRenderer.percent >= 100.f and barRenderer.width >= std::size(doneText))
+			return std::format_to(context.out(), "{:^{}}", doneText, barRenderer.width);
+
+		const auto filledLength = static_cast<std::size_t>(static_cast<float>(barRenderer.width) * barRenderer.percent / 100.f);
+		const auto emptyLength = barRenderer.width - filledLength;
+		const auto hasHead = not std::empty(head) and filledLength > 0uz;
+		const auto filledLengthWithoutHead = filledLength - (hasHead ? 1uz : 0uz);
+
+		auto result = std::string{};
+		result.reserve(barRenderer.width * 4uz);
+		std::ranges::copy(std::views::repeat(filled) | std::views::take(filledLengthWithoutHead) | std::views::join, std::back_inserter(result));
+		if (hasHead)
+			result += head;
+		std::ranges::copy(std::views::repeat(empty) | std::views::take(emptyLength) | std::views::join, std::back_inserter(result));
+
+		return std::format_to(context.out(), "{}", result);
+	}
+};
+
+export namespace CppUtils::Terminal
+{
+	using ProgressBarStyle = std::string;
+
+	namespace ProgressBarStyles
+	{
+		// [██████      ]
+		inline const auto Block = ProgressBarStyle{"{0} [{1:\N{FULL BLOCK} }] {2:>3}% "};
+		// [██████······]
+		inline const auto Clean = ProgressBarStyle{"{0} [{1:\N{FULL BLOCK}\N{MIDDLE DOT}}] {2:>3}% "};
+		// [━━━━━━──────]
+		inline const auto Line = ProgressBarStyle{"{0} [{1:\N{BOX DRAWINGS HEAVY HORIZONTAL}\N{BOX DRAWINGS LIGHT HORIZONTAL}}] {2:>3}% "};
+		// [━━━━━━▶─────]
+		inline const auto Arrowhead = ProgressBarStyle{"{0} [{1:\N{BOX DRAWINGS HEAVY HORIZONTAL}\N{BOX DRAWINGS LIGHT HORIZONTAL}\N{BLACK RIGHT-POINTING TRIANGLE}}] {2:>3}% "};
+		// [══════──────]
+		inline const auto Double = ProgressBarStyle{"{0} [{1:\N{BOX DRAWINGS DOUBLE HORIZONTAL}\N{BOX DRAWINGS LIGHT HORIZONTAL}}] {2:>3}% "};
+		// [●●●●●●○○○○○○]
+		inline const auto Round = ProgressBarStyle{"{0} [{1:\N{BLACK CIRCLE}\N{WHITE CIRCLE}}] {2:>3}% "};
+		// [▓▓▓▓▓▓░░░░░░]
+		inline const auto Shaded = ProgressBarStyle{"{0} [{1:\N{DARK SHADE}\N{LIGHT SHADE}}] {2:>3}% "};
+		// [⣿⣿⣿⣿⣿     ]
+		inline const auto Braille = ProgressBarStyle{"{0} [{1:\N{BRAILLE PATTERN DOTS-12345678}\N{BRAILLE PATTERN BLANK}}] {2:>3}% "};
+		// [>>>>>>------]
+		inline const auto Arrow = ProgressBarStyle{"{0} [{1:>-}] {2:>3}% "};
+		// [######......]
+		inline const auto Retro = ProgressBarStyle{"{0} [{1:#.}] {2:>3}%"};
+	}
+
 	class ProgressBar final: public Widget
 	{
 	public:
-		inline ProgressBar(std::string title = ""):
-			m_title{std::move(title)}
+		inline ProgressBar(std::string title = "", ProgressBarStyle style = ProgressBarStyles::Clean):
+			m_title{std::move(title)},
+			m_style{std::move(style)}
 		{}
 
 		inline auto setPercent(float percent) noexcept -> void
 		{
 			using namespace std::chrono_literals;
 			m_percent = std::clamp(percent, 0.f, 100.f);
-			requestUpdate(10ms);
+			if (hasWidgetManager())
+				requestUpdate(10ms);
+		}
+
+		inline auto setStyle(ProgressBarStyle style) noexcept -> void
+		{
+			using namespace std::chrono_literals;
+			m_style = std::move(style);
+			if (hasWidgetManager())
+				requestUpdate(10ms);
 		}
 
 		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 final
@@ -29,33 +130,27 @@ export namespace CppUtils::Terminal
 		{
 			using namespace std::literals;
 			const auto size = view.getViewport().getSize();
-			const auto titleSize = std::size(m_title);
-			constexpr auto percentWidth = 5; // " 100%"
-			const auto titleAndPercentSize = titleSize + percentWidth;
-			if (size.width() < titleAndPercentSize)
-				return;
 			const auto percent = static_cast<float>(m_percent);
-			constexpr auto minBarWidth = 4; // " [#]"
-			if (size.width() < titleAndPercentSize + minBarWidth)
-			{
-				const auto text = std::format("{} {:>3}% ", m_title, static_cast<std::size_t>(percent));
-				view.printText({0, 0}, text);
+			const auto percentInt = static_cast<std::size_t>(percent);
+
+			auto dummyBarRenderer = BarRenderer{percent, 0uz};
+			const auto overheadText = std::vformat(m_style, std::make_format_args(m_title, dummyBarRenderer, percentInt));
+			const auto overheadWidth = std::size(overheadText);
+
+			if (size.width() <= overheadWidth + 2)
 				return;
-			}
-			const auto barWidth = size.width() - (titleAndPercentSize + minBarWidth - 1);
-			const auto progress = static_cast<std::size_t>(static_cast<float>(barWidth) * percent / 100.f);
 
-			const auto bar = (percent >= 100.f and barWidth >= std::size("--- Done ---"sv)) ?
-				std::format("{:^{}}", "--- Done ---"sv, barWidth) :
-				std::format("{:█<{}}{:░<{}}", ""sv, progress, ""sv, barWidth - progress);
+			const auto availableBarWidth = size.width() - overheadWidth;
+			auto barRenderer = BarRenderer{percent, availableBarWidth};
 
-			const auto text = std::format("{} [{}] {:>3}% ", m_title, bar, static_cast<std::size_t>(percent));
+			const auto text = std::vformat(m_style, std::make_format_args(m_title, barRenderer, percentInt));
 			view.printText({0, 0}, text);
 			drawFinished();
 		}
 
 	private:
 		std::string m_title;
+		std::string m_style;
 		std::atomic<float> m_percent = 0.f;
 	};
 }

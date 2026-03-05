@@ -83,6 +83,42 @@ export namespace CppUtils::String
 	static_assert(toUtf32("⚽") == std::pair{U'⚽', 3uz});
 	static_assert(toUtf32("😊") == std::pair{U'😊', 4uz});
 
+	[[nodiscard]] inline constexpr auto utf32Substr(
+		std::string_view text,
+		std::size_t position,
+		std::size_t count = std::string_view::npos) -> std::string_view
+	{
+		auto start = 0uz;
+		for (auto i = 0uz; i < position and start < std::size(text); ++i)
+		{
+			auto [codePoint, length] = toUtf32(text.substr(start));
+			if (length == 0uz)
+				return "";
+			start += length;
+		}
+
+		if (count == std::string_view::npos)
+			return text.substr(start);
+
+		auto end = start;
+		for (auto i = 0uz; i < count and end < std::size(text); ++i)
+		{
+			auto [codePoint, length] = toUtf32(text.substr(end));
+			if (length == 0uz) break;
+			end += length;
+		}
+		return text.substr(start, end - start);
+	}
+
+	static_assert(utf32Substr("Hello", 0uz, 1uz) == "H");
+	static_assert(utf32Substr("Hello", 1uz, 2uz) == "el");
+	static_assert(utf32Substr("Hello", 0uz) == "Hello");
+	static_assert(utf32Substr("😊🤖🐸", 0uz, 1uz) == "😊");
+	static_assert(utf32Substr("😊🤖🐸", 1uz, 1uz) == "🤖");
+	static_assert(utf32Substr("😊🤖🐸", 1uz) == "🤖🐸");
+	static_assert(utf32Substr("😊🤖🐸", 0uz, 10uz) == "😊🤖🐸");
+	static_assert(utf32Substr("😊🤖🐸", 5uz, 1uz) == "");
+
 	[[nodiscard]] inline constexpr auto getDisplayWidth(char32_t character) noexcept -> std::size_t
 	{
 		// https://en.wikipedia.org/wiki/Halfwidth_and_fullwidth_forms
