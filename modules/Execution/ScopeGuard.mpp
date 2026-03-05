@@ -4,23 +4,43 @@ import std;
 
 export namespace CppUtils::Execution
 {
+	template<class Function>
 	class ScopeGuard final
 	{
 	public:
-		explicit ScopeGuard(std::function<void()> onExit) noexcept:
-			m_onExit{std::move(onExit)}
+		template<class F>
+		requires std::is_constructible_v<Function, F>
+		explicit constexpr ScopeGuard(F&& onExit) noexcept(std::is_nothrow_constructible_v<Function, F>):
+			m_onExit{std::forward<F>(onExit)}
 		{}
 
 		ScopeGuard(const ScopeGuard&) = delete;
 		auto operator=(const ScopeGuard&) -> ScopeGuard& = delete;
 
-		~ScopeGuard() noexcept
+		constexpr ~ScopeGuard() noexcept
 		{
-			if (m_onExit)
-				m_onExit();
+			if (m_active)
+			{
+				if constexpr (requires { static_cast<bool>(m_onExit); })
+				{
+					if (m_onExit)
+						std::invoke(m_onExit);
+				}
+				else
+					std::invoke(m_onExit);
+			}
+		}
+
+		constexpr void dismiss() noexcept
+		{
+			m_active = false;
 		}
 
 	private:
-		std::function<void()> m_onExit;
+		Function m_onExit;
+		bool m_active = true;
 	};
+
+	template<class Function>
+	ScopeGuard(Function) -> ScopeGuard<Function>;
 }
