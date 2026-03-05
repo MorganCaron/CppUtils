@@ -59,7 +59,13 @@ export namespace CppUtils::Type
 	concept TriviallyCopyable = std::is_trivially_copyable_v<T>;
 
 	template<class T>
-	concept Trivial = TriviallyConstructible<T> and TriviallyDestructible<T> and TriviallyCopyable<T>;
+	concept TriviallyMoveConstructible = std::is_trivially_move_constructible_v<T>;
+
+	template<class T>
+	concept TriviallyMoveAssignable = std::is_trivially_move_assignable_v<T>;
+
+	template<class T>
+	concept Trivial = TriviallyConstructible<T> and TriviallyDestructible<T> and TriviallyCopyable<T> and TriviallyMoveConstructible<T> and TriviallyMoveAssignable<T>;
 
 	template<class Function, class... Args>
 	concept Callable = std::invocable<Function, Args...>;

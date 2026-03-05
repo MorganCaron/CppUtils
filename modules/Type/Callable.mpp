@@ -7,20 +7,27 @@ export namespace CppUtils::Type
 	template<class T>
 	struct CallableTrait;
 
-	template<class Functor>
-	requires requires { &Functor::operator(); }
-	struct CallableTrait<Functor>: CallableTrait<decltype(&Functor::operator())>
-	{};
-
 	template<class Return, class... Args>
-	struct CallableTrait<Return(Args...)>
+	struct SignatureTrait
 	{
 		using ReturnType = Return;
 		using ArgumentsTypes = std::tuple<Args...>;
 	};
 
 	template<class Return, class... Args>
+	struct CallableTrait<Return(Args...)>: SignatureTrait<Return, Args...>
+	{};
+
+	template<class Return, class... Args>
+	struct CallableTrait<Return(Args...) noexcept>: SignatureTrait<Return, Args...>
+	{};
+
+	template<class Return, class... Args>
 	struct CallableTrait<Return (*)(Args...)>: CallableTrait<Return(Args...)>
+	{};
+
+	template<class Return, class... Args>
+	struct CallableTrait<Return (*)(Args...) noexcept>: CallableTrait<Return(Args...) noexcept>
 	{};
 
 	template<class Object, class Return, class... Args>
@@ -28,15 +35,11 @@ export namespace CppUtils::Type
 	{};
 
 	template<class Object, class Return, class... Args>
-	struct CallableTrait<Return (Object::*)(Args...) &>: CallableTrait<Return(Args...)>
-	{};
-
-	template<class Object, class Return, class... Args>
-	struct CallableTrait<Return (Object::*)(Args...) &&>: CallableTrait<Return(Args...)>
-	{};
-
-	template<class Object, class Return, class... Args>
 	struct CallableTrait<Return (Object::*)(Args...) const>: CallableTrait<Return(Args...)>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...) &>: CallableTrait<Return(Args...)>
 	{};
 
 	template<class Object, class Return, class... Args>
@@ -44,6 +47,39 @@ export namespace CppUtils::Type
 	{};
 
 	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...) &&>: CallableTrait<Return(Args...)>
+	{};
+
+	template<class Object, class Return, class... Args>
 	struct CallableTrait<Return (Object::*)(Args...) const&&>: CallableTrait<Return(Args...)>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...) noexcept>: CallableTrait<Return(Args...) noexcept>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...) const noexcept>: CallableTrait<Return(Args...) noexcept>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...) & noexcept>: CallableTrait<Return(Args...) noexcept>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...) const & noexcept>: CallableTrait<Return(Args...) noexcept>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...) && noexcept>: CallableTrait<Return(Args...) noexcept>
+	{};
+
+	template<class Object, class Return, class... Args>
+	struct CallableTrait<Return (Object::*)(Args...) const && noexcept>: CallableTrait<Return(Args...) noexcept>
+	{};
+
+	template<class Functor>
+	requires requires { &Functor::operator(); }
+	struct CallableTrait<Functor>: CallableTrait<decltype(&Functor::operator())>
 	{};
 }
