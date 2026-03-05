@@ -5,6 +5,7 @@ import std;
 import :WidgetManager;
 import :WritableAreaView;
 import CppUtils.Chrono.Concept;
+import CppUtils.Thread.Scheduler;
 
 export namespace CppUtils::Terminal
 {
@@ -36,6 +37,12 @@ export namespace CppUtils::Terminal
 		}
 
 		inline auto requestUpdate(Chrono::Duration auto delay = std::chrono::milliseconds{10}) -> void
+		{
+			requestUpdateImpl(std::chrono::duration_cast<Thread::Scheduler::Clock::duration>(delay));
+		}
+
+	private:
+		inline auto requestUpdateImpl(Thread::Scheduler::Clock::duration delay) -> void
 		{
 			getWidgetManager().scheduler.schedule([this]() -> void {
 				m_needUpdate = true;
