@@ -27,6 +27,11 @@ export namespace CppUtils::Thread
 			return std::addressof(self.value());
 		}
 
+		[[nodiscard]] inline auto operator*(this auto&& self) noexcept -> decltype(auto)
+		{
+			return self.value();
+		}
+
 		[[nodiscard]] inline auto getLockGuard() & noexcept -> auto&
 		{
 			return m_lockGuard;
@@ -58,6 +63,11 @@ export namespace CppUtils::Thread
 		[[nodiscard]] inline auto operator->(this auto&& self) noexcept -> auto*
 		{
 			return std::addressof(self.value());
+		}
+
+		[[nodiscard]] inline auto operator*(this auto&& self) noexcept -> decltype(auto)
+		{
+			return self.value();
 		}
 
 		[[nodiscard]] inline auto getLockGuard() & noexcept -> auto&
