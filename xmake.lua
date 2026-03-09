@@ -30,25 +30,16 @@ add_rules(
 	"mode.coverage",
 	"mode.valgrind")
 
-add_requires("wayland", "wayland-protocols")
-includes("xmake/rules/wayland-protocols.lua")
+if is_plat("linux") then
+	add_requires("wayland", "wayland-protocols")
+	includes("xmake/rules/wayland-protocols.lua")
+end
 
 option("compiler_verbose", {default = false, category = "Build CppUtils", description = "Verbose the compiler output"})
 option("enable_moduleonly", {default = true, category = "Build CppUtils", description = "Module only"})
 option("sanitize_memory", {default = false, category = "Build CppUtils/Sanitizer", description = "Enable ASan + LSan + UBSan"})
 option("sanitize_thread", {default = false, category = "Build CppUtils/Sanitizer", description = "Enable TSan"})
 option("enable_tests", {default = false, description = "Enable Unit Tests"})
-
-local import_wayland = function()
-	add_packages("wayland", "wayland-protocols", { public = true })
-	-- Ajouter "wayland-cursor"
-
-	add_rules("wayland.protocols")
-end
-
-if is_plat("linux") then
-	import_wayland()
-end
 
 target("CppUtils", function()
 	if get_config("enable_moduleonly") then
@@ -62,6 +53,11 @@ target("CppUtils", function()
 	add_includedirs("include", { public = true })
 	add_headerfiles("include/(CppUtils/**.hpp)")
 	add_headerfiles("include/(Stl/**.hpp)")
+
+	if is_plat("linux") then
+		add_packages("wayland", "wayland-protocols", { public = true })
+		add_rules("wayland.protocols")
+	end
 
 	if get_config("compiler_verbose") then
 		add_cflags("-v")

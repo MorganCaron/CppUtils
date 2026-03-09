@@ -36,66 +36,69 @@ namespace CppUtils::Window
 		inline constexpr const auto bytesPerPixel = std::size_t{4};
 	}
 
-	inline auto xdg_wm_base_ping([[maybe_unused]] void* data, xdg_wm_base* xdg_wm_base, std::uint32_t serial) -> void
+	namespace
 	{
-		xdg_wm_base_pong(xdg_wm_base, serial);
-	}
-
-	inline const auto windowManagerBaseListener = xdg_wm_base_listener{
-		.ping = xdg_wm_base_ping,
-	};
-
-	inline auto global_registry_handler(
-		void* data,
-		wl_registry* registry,
-		std::uint32_t id,
-		const char* interface,
-		std::uint32_t version) noexcept -> void
-	{
-		static const auto waylandRegistryHandlers = std::unordered_map<std::string_view, Wayland::RegisterHandler>{
-			Wayland::makeHandlerPair(wl_compositor_interface, Wayland::globals.compositor, 3, 4),
-			Wayland::makeHandlerPair(wl_shm_interface, Wayland::globals.sharedMemory, 1, 1),
-			Wayland::makeHandlerPair(xdg_wm_base_interface, Wayland::globals.windowManagerBase, 1, 1, [data]() -> void {
-			xdg_wm_base_add_listener(Wayland::globals.windowManagerBase.get(), &windowManagerBaseListener, data);
-		})};
-		auto interfaceName = std::string_view{interface};
-		if (const auto& iterator = waylandRegistryHandlers.find(interfaceName); iterator != std::cend(waylandRegistryHandlers))
+		auto xdg_wm_base_ping([[maybe_unused]] void* data, xdg_wm_base* xdg_wm_base, std::uint32_t serial) -> void
 		{
-			iterator->second(registry, id, version);
-			Logger::print<"success">("{}", interfaceName);
+			xdg_wm_base_pong(xdg_wm_base, serial);
 		}
-		else
-			Logger::print<"warning">("{}", interfaceName);
+
+		constexpr auto windowManagerBaseListener = xdg_wm_base_listener{
+			.ping = xdg_wm_base_ping,
+		};
+
+		auto global_registry_handler(
+			void* data,
+			wl_registry* registry,
+			std::uint32_t id,
+			const char* interface,
+			std::uint32_t version) noexcept -> void
+		{
+			static const auto waylandRegistryHandlers = std::unordered_map<std::string_view, Wayland::RegisterHandler>{
+				Wayland::makeHandlerPair(wl_compositor_interface, Wayland::globals.compositor, 3, 4),
+				Wayland::makeHandlerPair(wl_shm_interface, Wayland::globals.sharedMemory, 1, 1),
+				Wayland::makeHandlerPair(xdg_wm_base_interface, Wayland::globals.windowManagerBase, 1, 1, [data]() -> void {
+				xdg_wm_base_add_listener(Wayland::globals.windowManagerBase.get(), &windowManagerBaseListener, data);
+			})};
+			auto interfaceName = std::string_view{interface};
+			if (const auto& iterator = waylandRegistryHandlers.find(interfaceName); iterator != std::cend(waylandRegistryHandlers))
+			{
+				iterator->second(registry, id, version);
+				Logger::print<"success">("{}", interfaceName);
+			}
+			else
+				Logger::print<"warning">("{}", interfaceName);
+		}
+
+		auto global_registry_remover(
+			[[maybe_unused]] void* data,
+			[[maybe_unused]] wl_registry* registry,
+			[[maybe_unused]] std::uint32_t id) noexcept -> void
+		{}
+
+		constexpr auto registryListener = wl_registry_listener{
+			.global = global_registry_handler,
+			.global_remove = global_registry_remover,
+		};
+
+		auto wl_buffer_release([[maybe_unused]] void* data, [[maybe_unused]] wl_buffer* buffer) -> void
+		{
+			// Todo: basculer sur la frame suivante
+		}
+
+		constexpr auto bufferListener = wl_buffer_listener{
+			.release = wl_buffer_release,
+		};
+
+		auto xdg_surface_configure(
+			void* data,
+			xdg_surface* xdg_surface,
+			std::uint32_t serial) -> void;
+
+		constexpr auto surfaceListener = xdg_surface_listener{
+			.configure = xdg_surface_configure,
+		};
 	}
-
-	inline auto global_registry_remover(
-		[[maybe_unused]] void* data,
-		[[maybe_unused]] wl_registry* registry,
-		[[maybe_unused]] std::uint32_t id) noexcept -> void
-	{}
-
-	inline const auto registryListener = wl_registry_listener{
-		.global = global_registry_handler,
-		.global_remove = global_registry_remover,
-	};
-
-	inline auto wl_buffer_release([[maybe_unused]] void* data, [[maybe_unused]] wl_buffer* buffer) -> void
-	{
-		// Todo: basculer sur la frame suivante
-	}
-
-	inline const auto bufferListener = wl_buffer_listener{
-		.release = wl_buffer_release,
-	};
-
-	inline auto xdg_surface_configure(
-		void* data,
-		xdg_surface* xdg_surface,
-		std::uint32_t serial) -> void;
-
-	inline const auto surfaceListener = xdg_surface_listener{
-		.configure = xdg_surface_configure,
-	};
 #endif
 
 	export class Window final
@@ -123,7 +126,10 @@ namespace CppUtils::Window
 				const auto screenBufferSize = strideSize * m_size.height();
 				const auto bufferSize = screenBufferSize * 3; // triple buffering
 
-				m_fileDescriptor = System::FileDescriptor{System::allocateSharedMemory(bufferSize, "WaylandBuffer").value()};
+				auto sharedMemory = System::allocateSharedMemory(bufferSize, "WaylandBuffer");
+				if (not sharedMemory)
+					throw std::runtime_error{std::string{sharedMemory.error()}};
+				m_fileDescriptor = System::FileDescriptor{std::move(sharedMemory).value()};
 				pixels = System::MappedSharedMemory{m_fileDescriptor, bufferSize};
 				pool.reset(wl_shm_create_pool(Wayland::globals.sharedMemory.get(), m_fileDescriptor.get(), static_cast<std::int32_t>(bufferSize)));
 				buffer.reset(
@@ -158,7 +164,7 @@ namespace CppUtils::Window
 #endif
 
 #if defined(OS_WINDOWS)
-		[[nodiscard]] static inline auto generateStyle(Style style) const noexcept -> DWORD
+		[[nodiscard]] static inline auto generateStyle(Style style) noexcept -> DWORD
 		{
 			auto windowStyle = DWORD{0};
 			if (style & Style::HasBorder)
@@ -190,6 +196,10 @@ namespace CppUtils::Window
 			wl_display_roundtrip(display);
 			if (not Wayland::globals.compositor)
 				return std::unexpected{"Failed to find a Wayland compositor"s};
+			if (not Wayland::globals.sharedMemory)
+				return std::unexpected{"Failed to find Wayland shared memory interface (wl_shm)"s};
+			if (not Wayland::globals.windowManagerBase)
+				return std::unexpected{"Failed to find xdg_wm_base interface"s};
 #endif
 			return {};
 		}
@@ -204,6 +214,10 @@ namespace CppUtils::Window
 			if (m_window == nullptr)
 				return std::unexpected{"Window creation failed."sv};
 #elif defined(OS_LINUX)
+			if (not Wayland::globals.compositor)
+				return std::unexpected{"Wayland compositor is not initialized"sv};
+			if (not Wayland::globals.windowManagerBase)
+				return std::unexpected{"Wayland window manager base is not initialized"sv};
 			surface.reset(wl_compositor_create_surface(Wayland::globals.compositor.get()));
 			if (not surface)
 				return std::unexpected{"Failed to create a Wayland surface"sv};
@@ -223,14 +237,21 @@ namespace CppUtils::Window
 			m_style{style},
 			m_size{size}
 		{
-			initWindowManager();
+#if defined(OS_LINUX)
+			if (auto result = initWindowManager(); not result)
+				throw std::runtime_error{result.error()};
+
 			wl_display_roundtrip(Wayland::globals.display.get());
 			// m_imageStorage = ImageStorage{size};
-			openWindow();
+			if (auto result = openWindow(); not result)
+				throw std::runtime_error{std::string{result.error()}};
+
+			m_isOpen = true;
 			wl_surface_commit(surface.get());
 			wl_display_roundtrip(Wayland::globals.display.get());
 			// wl_display_dispatch(Wayland::globals.display.get());
 			wl_display_flush(Wayland::globals.display.get());
+#endif
 		}
 
 		inline ~Window()
@@ -269,30 +290,43 @@ namespace CppUtils::Window
 
 		[[nodiscard]] inline auto getPixels() const noexcept -> auto*
 		{
+#if defined(OS_LINUX)
 			return reinterpret_cast<std::uint32_t*>(m_imageStorage.pixels.get());
+#else
+			return static_cast<std::uint32_t*>(nullptr);
+#endif
 		}
 
 		inline auto runLoop() -> void
 		{
+#if defined(OS_LINUX)
+			if (not m_isOpen)
+				return;
 			auto result = 0;
 			while ((result = wl_display_dispatch(Wayland::globals.display.get())) != -1)
 				Logger::print<"detail">("Event received, result = {}", result);
 			Logger::print<"warning">("Wayland dispatch exited with {}", result);
+#endif
 		}
 
 		inline auto update() -> void
 		{
+#if defined(OS_LINUX)
+			if (not m_isOpen or not m_imageStorage.buffer)
+				return;
 			Logger::print<"detail">("update");
 			wl_surface_attach(surface.get(), m_imageStorage.buffer.get(), 0, 0);
 			wl_surface_damage(surface.get(), 0, 0, std::numeric_limits<std::int32_t>::max(), std::numeric_limits<std::int32_t>::max());
 			wl_surface_commit(surface.get());
 			wl_display_flush(Wayland::globals.display.get());
+#endif
 		}
 
 	private:
 		std::string m_title;
 		[[maybe_unused]] Style m_style;
 		Container::Size2 m_size;
+		bool m_isOpen = false;
 #if defined(OS_WINDOWS)
 		static inline constexpr auto windowClassName = L"Window";
 		HWND m_window;
@@ -306,8 +340,9 @@ namespace CppUtils::Window
 #endif
 	};
 
-	export inline auto drawFrame(Window& window) -> void
+	export inline auto drawFrame([[maybe_unused]] Window& window) -> void
 	{
+#if defined(OS_LINUX)
 		Logger::print<"detail">("drawFrame");
 		const auto& imageSize = window.getSize();
 		if (not window.m_imageStorage.buffer)
@@ -324,18 +359,24 @@ namespace CppUtils::Window
 				else
 					pixels[y * imageSize.width() + x] = 0xFF'EE'EE'EE;
 		}
+#endif
 	}
 
-	inline auto xdg_surface_configure(
-		void* data,
-		xdg_surface* xdg_surface,
-		std::uint32_t serial) -> void
+#if defined(OS_LINUX)
+	namespace
 	{
-		Logger::print<"detail">("Surface configure !");
-		auto& window = *static_cast<Window*>(data);
-		xdg_surface_ack_configure(xdg_surface, serial);
+		auto xdg_surface_configure(
+			void* data,
+			xdg_surface* xdg_surface,
+			std::uint32_t serial) -> void
+		{
+			Logger::print<"detail">("Surface configure !");
+			auto& window = *static_cast<Window*>(data);
+			xdg_surface_ack_configure(xdg_surface, serial);
 
-		drawFrame(window);
-		window.update();
+			drawFrame(window);
+			window.update();
+		}
 	}
+#endif
 }

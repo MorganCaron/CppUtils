@@ -54,7 +54,7 @@ export namespace CppUtils::System
 			return std::exchange(m_fileDescriptor, -1);
 		}
 
-		[[nodiscard]] inline constexpr auto isValid() noexcept -> bool
+		[[nodiscard]] inline constexpr auto isValid() const noexcept -> bool
 		{
 			return m_fileDescriptor != -1;
 		}

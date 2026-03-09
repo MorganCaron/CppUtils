@@ -9,8 +9,9 @@ export namespace CppUtils::UnitTest::Window
 		using namespace std::literals;
 
 		suite.addTest("Opening a window", [&] {
+			suite.expect(std::getenv("WAYLAND_DISPLAY") != nullptr);
 			auto window = CppUtils::Window::Window{"Title", {640, 360}};
-			std::this_thread::sleep_for(5s);
+			std::this_thread::sleep_for(3s);
 			suite.expectEqual(window.getTitle(), "Title"sv);
 		});
 	}};

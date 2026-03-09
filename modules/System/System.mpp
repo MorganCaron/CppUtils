@@ -31,23 +31,26 @@ export namespace CppUtils::System
 	[[nodiscard]] inline auto createSharedMemory(std::string filename = "SharedMemory") -> std::expected<FileDescriptor, std::string_view>
 	{
 		using namespace std::literals;
-		auto fillRandomSuffix = [](std::string& filename) -> void {
+		auto fillRandomSuffix = [](std::string& path) -> void {
+			static constexpr auto alphabet = std::string_view{"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"};
 			using namespace std::chrono;
-			auto random = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
+			auto random = static_cast<std::uint64_t>(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
 			for (auto i = 0uz; i < 6uz; ++i)
 			{
-				filename[std::size(filename) - 6 + i] = 'A' + static_cast<char>(random & 0b1111) + static_cast<char>((random & 0b1'0000) << 1); // Insère une lettre aléatoire parmi [A-Pa-p] (alphabet sur 32 caractères)
-				random >>= 5;
+				path[std::size(path) - 6 + i] = alphabet[random % std::size(alphabet)];
+				random /= std::size(alphabet);
 			}
 		};
-		filename += "-XXXXXX";
+		if (std::empty(filename))
+			filename = "SharedMemory";
+		auto path = std::string{"/"} + filename + "-XXXXXX";
 		auto retries = 100uz;
 		do
 		{
-			fillRandomSuffix(filename);
-			if (auto fileDescriptor = FileDescriptor{shm_open(std::data(filename), O_RDWR | O_CREAT | O_EXCL, 600)}; fileDescriptor.isValid())
+			fillRandomSuffix(path);
+			if (auto fileDescriptor = FileDescriptor{shm_open(std::data(path), O_RDWR | O_CREAT | O_EXCL, 0600)}; fileDescriptor.isValid())
 			{
-				shm_unlink(std::data(filename));
+				shm_unlink(std::data(path));
 				return fileDescriptor;
 			}
 		}
@@ -96,13 +99,16 @@ export namespace CppUtils::System
 		inline MappedSharedMemory& operator=(const MappedSharedMemory&) = delete;
 		inline MappedSharedMemory& operator=(MappedSharedMemory&& other) noexcept
 		{
+			if (this == std::addressof(other))
+				return *this;
+			release();
 			m_sharedMemory = std::exchange(other.m_sharedMemory, {});
 			return *this;
 		}
 
 		inline ~MappedSharedMemory()
 		{
-			munmap(std::data(m_sharedMemory), std::size(m_sharedMemory));
+			release();
 		}
 
 		[[nodiscard]] inline auto get() const noexcept -> auto*
@@ -113,6 +119,14 @@ export namespace CppUtils::System
 		[[nodiscard]] inline auto size() const noexcept -> auto
 		{
 			return std::size(m_sharedMemory);
+		}
+
+	private:
+		inline auto release() noexcept -> void
+		{
+			if (auto* data = std::data(m_sharedMemory); data != nullptr and std::size(m_sharedMemory) > 0)
+				munmap(data, std::size(m_sharedMemory));
+			m_sharedMemory = {};
 		}
 
 		std::span<std::byte> m_sharedMemory;

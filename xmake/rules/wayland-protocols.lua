@@ -5,6 +5,11 @@ do
 
 	-- Support des modules C++20
 	on_load(function(target)
+		if target:data("wayland.protocols.loaded") then
+			return
+		end
+		target:data_set("wayland.protocols.loaded", true)
+
 		local wayland_protocols_package = target:pkg("wayland-protocols")
 		if not wayland_protocols_package then
 			os.raise("wayland-protocols package not found")
