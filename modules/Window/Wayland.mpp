@@ -17,7 +17,7 @@ export module CppUtils.Window.Wayland;
 
 import std;
 
-import CppUtils.Container.Size2d;
+import CppUtils.Container.Size;
 import CppUtils.Logger;
 import CppUtils.Memory;
 import CppUtils.String;

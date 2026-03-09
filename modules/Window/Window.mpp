@@ -19,7 +19,7 @@ export module CppUtils.Window;
 
 import std;
 
-import CppUtils.Container.Size2d;
+import CppUtils.Container.Size;
 import CppUtils.Logger;
 import CppUtils.Memory;
 import CppUtils.String;
@@ -116,11 +116,11 @@ namespace CppUtils::Window
 		{
 			inline ImageStorage() = default;
 
-			inline explicit ImageStorage(Container::Size2d<std::size_t> size):
+			inline explicit ImageStorage(Container::Size2 size):
 				m_size{std::move(size)}
 			{
-				const auto strideSize = m_size.width * Wayland::bytesPerPixel;
-				const auto screenBufferSize = strideSize * m_size.height;
+				const auto strideSize = m_size.width() * Wayland::bytesPerPixel;
+				const auto screenBufferSize = strideSize * m_size.height();
 				const auto bufferSize = screenBufferSize * 3; // triple buffering
 
 				m_fileDescriptor = System::FileDescriptor{System::allocateSharedMemory(bufferSize, "WaylandBuffer").value()};
@@ -130,8 +130,8 @@ namespace CppUtils::Window
 					wl_shm_pool_create_buffer(
 						pool.get(),
 						static_cast<std::int32_t>(screenBufferSize * 0),
-						static_cast<std::int32_t>(m_size.width),
-						static_cast<std::int32_t>(m_size.height),
+						static_cast<std::int32_t>(m_size.width()),
+						static_cast<std::int32_t>(m_size.height()),
 						static_cast<std::int32_t>(strideSize),
 						WL_SHM_FORMAT_ARGB8888)); // WL_SHM_FORMAT_XRGB8888
 
@@ -147,7 +147,7 @@ namespace CppUtils::Window
 			}
 
 		private:
-			Container::Size2d<std::size_t> m_size;
+			Container::Size2 m_size;
 			System::FileDescriptor m_fileDescriptor;
 
 		public:
@@ -200,7 +200,7 @@ namespace CppUtils::Window
 #if defined(OS_WINDOWS)
 			auto hInstance = GetModuleHandleA(nullptr);
 			m_window = CreateWindowEx(
-				0, windowClassName, m_title.c_str(), generateStyle(m_style), CW_USEDEFAULT, CW_USEDEFAULT, size.width, size.height, nullptr, nullptr, hInstance, nullptr);
+				0, windowClassName, m_title.c_str(), generateStyle(m_style), CW_USEDEFAULT, CW_USEDEFAULT, m_size.width(), m_size.height(), nullptr, nullptr, hInstance, nullptr);
 			if (m_window == nullptr)
 				return std::unexpected{"Window creation failed."sv};
 #elif defined(OS_LINUX)
@@ -218,7 +218,7 @@ namespace CppUtils::Window
 		}
 
 	public:
-		inline Window(std::string title, Container::Size2d<std::size_t> size, Style style = Style{Style::IsMinimizable | Style::IsCloseable}):
+		inline Window(std::string title, Container::Size2 size, Style style = Style{Style::IsMinimizable | Style::IsCloseable}):
 			m_title{std::move(title)},
 			m_style{style},
 			m_size{size}
@@ -257,7 +257,7 @@ namespace CppUtils::Window
 			return m_title;
 		}
 
-		inline auto setSize(Container::Size2d<std::size_t> size) noexcept -> void
+		inline auto setSize(Container::Size2 size) noexcept -> void
 		{
 			m_size = size;
 		}
@@ -292,7 +292,7 @@ namespace CppUtils::Window
 	private:
 		std::string m_title;
 		[[maybe_unused]] Style m_style;
-		Container::Size2d<std::size_t> m_size;
+		Container::Size2 m_size;
 #if defined(OS_WINDOWS)
 		static inline constexpr auto windowClassName = L"Window";
 		HWND m_window;
@@ -316,13 +316,13 @@ namespace CppUtils::Window
 			window.m_imageStorage = Window::ImageStorage{imageSize};
 		}
 		auto* pixels = window.getPixels();
-		for (auto y = 0uz; y < imageSize.height; ++y)
+		for (auto y = 0uz; y < imageSize.height(); ++y)
 		{
-			for (auto x = 0uz; x < imageSize.width; ++x)
+			for (auto x = 0uz; x < imageSize.width(); ++x)
 				if ((x + y / 8 * 8) % 16 < 8)
-					pixels[y * imageSize.width + x] = 0xFF'66'66'66;
+					pixels[y * imageSize.width() + x] = 0xFF'66'66'66;
 				else
-					pixels[y * imageSize.width + x] = 0xFF'EE'EE'EE;
+					pixels[y * imageSize.width() + x] = 0xFF'EE'EE'EE;
 		}
 	}
 
