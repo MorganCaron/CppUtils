@@ -2,16 +2,14 @@ import std;
 import CppUtils;
 import CppUtils.UnitTests;
 
-auto start([[maybe_unused]] std::span<const std::string_view> args) -> int
+auto start(std::span<const std::string_view> args) -> int
 {
 	try
 	{
-		/*
-		auto& settings = CppUtils::UnitTest::executeCommands(argc, argv);
-		if (settings.abort)
-			return CppUtils::exitSuccess;
-		*/
 		auto settings = CppUtils::UnitTest::TestSettings{.fastAbort = false};
+		for (auto i = 0uz; i < std::size(args); ++i)
+			if (args[i] == "--filter" and i + 1 < std::size(args))
+				settings.filter = std::string{args[++i]};
 		return CppUtils::UnitTest::executeTests(std::move(settings));
 	}
 	catch (const std::exception& exception)

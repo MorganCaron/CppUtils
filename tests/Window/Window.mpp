@@ -9,8 +9,7 @@ export namespace CppUtils::UnitTest::Window
 		using namespace std::literals;
 
 		suite.addTest("Opening a window", [&] {
-			auto window = CppUtils::Window::Window{"Title", {1'920, 1'080}};
-			// window.runLoop();
+			auto window = CppUtils::Window::Window{"Title", {640, 360}};
 			std::this_thread::sleep_for(5s);
 			suite.expectEqual(window.getTitle(), "Title"sv);
 		});

@@ -25,6 +25,7 @@ namespace CppUtils::UnitTest
 		bool detail = true;
 		bool chrono = false;
 		bool fastAbort = false;
+		std::string filter = "";
 	};
 
 	struct Test final
@@ -126,7 +127,7 @@ namespace CppUtils::UnitTest
 			using namespace std::chrono_literals;
 			auto testSuiteIsSuccess = std::unordered_map<std::string, bool>{};
 
-			const auto nbTests = std::ranges::fold_left(
+			auto nbTests = std::ranges::fold_left(
 				std::views::values(m_testSuites.nodes) | std::views::transform([](auto&& node) { return std::ranges::size(node.value); }),
 				0uz,
 				std::plus{});
@@ -160,6 +161,12 @@ namespace CppUtils::UnitTest
 				auto allTestsPassed = true;
 				for (const auto& test : tests)
 				{
+					if (not std::empty(settings.filter) and test.name.find(settings.filter) == std::string::npos)
+					{
+						--nbTests;
+						continue;
+					}
+
 					if (executeTest(test, settings))
 						++nbSuccess;
 					else

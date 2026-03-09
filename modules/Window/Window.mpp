@@ -94,7 +94,7 @@ namespace CppUtils::Window
 		std::uint32_t serial) -> void;
 
 	inline const auto surfaceListener = xdg_surface_listener{
-		.configure = &Window::xdg_surface_configure,
+		.configure = xdg_surface_configure,
 	};
 #endif
 
@@ -228,7 +228,7 @@ namespace CppUtils::Window
 			// m_imageStorage = ImageStorage{size};
 			openWindow();
 			wl_surface_commit(surface.get());
-			// wl_display_roundtrip(Wayland::globals.display.get());
+			wl_display_roundtrip(Wayland::globals.display.get());
 			// wl_display_dispatch(Wayland::globals.display.get());
 			wl_display_flush(Wayland::globals.display.get());
 		}
@@ -276,13 +276,13 @@ namespace CppUtils::Window
 		{
 			auto result = 0;
 			while ((result = wl_display_dispatch(Wayland::globals.display.get())) != -1)
-				std::cout << "Event received, result = " << result << std::endl;
-			std::cout << "Wayland dispatch exited with " << result << std::endl;
+				Logger::print<"detail">("Event received, result = {}", result);
+			Logger::print<"warning">("Wayland dispatch exited with {}", result);
 		}
 
 		inline auto update() -> void
 		{
-			std::cout << "update" << std::endl;
+			Logger::print<"detail">("update");
 			wl_surface_attach(surface.get(), m_imageStorage.buffer.get(), 0, 0);
 			wl_surface_damage(surface.get(), 0, 0, std::numeric_limits<std::int32_t>::max(), std::numeric_limits<std::int32_t>::max());
 			wl_surface_commit(surface.get());
@@ -306,13 +306,13 @@ namespace CppUtils::Window
 #endif
 	};
 
-	inline auto drawFrame(Window& window) -> void
+	export inline auto drawFrame(Window& window) -> void
 	{
-		std::cout << "drawFrame" << std::endl;
+		Logger::print<"detail">("drawFrame");
 		const auto& imageSize = window.getSize();
 		if (not window.m_imageStorage.buffer)
 		{
-			std::cout << "ImageStorage" << std::endl;
+			Logger::print<"detail">("ImageStorage");
 			window.m_imageStorage = Window::ImageStorage{imageSize};
 		}
 		auto* pixels = window.getPixels();
@@ -331,7 +331,7 @@ namespace CppUtils::Window
 		xdg_surface* xdg_surface,
 		std::uint32_t serial) -> void
 	{
-		std::cout << "Surface configure !" << std::endl;
+		Logger::print<"detail">("Surface configure !");
 		auto& window = *static_cast<Window*>(data);
 		xdg_surface_ack_configure(xdg_surface, serial);
 
