@@ -36,20 +36,15 @@ if is_plat("linux") then
 end
 
 option("compiler_verbose", {default = false, category = "Build CppUtils", description = "Verbose the compiler output"})
-option("enable_moduleonly", {default = true, category = "Build CppUtils", description = "Module only"})
 option("sanitize_memory", {default = false, category = "Build CppUtils/Sanitizer", description = "Enable ASan + LSan + UBSan"})
 option("sanitize_thread", {default = false, category = "Build CppUtils/Sanitizer", description = "Enable TSan"})
 option("enable_tests", {default = false, description = "Enable Unit Tests"})
 
 target("CppUtils", function()
-	if get_config("enable_moduleonly") then
-		set_kind("moduleonly")
-	else
-		set_kind("$(kind)")
-	end
-
-
+	set_kind("static")
+	
 	add_files("modules/**.mpp", { public = true })
+	add_files("modules/**.cpp")
 	add_includedirs("include", { public = true })
 	add_headerfiles("include/(CppUtils/**.hpp)")
 	add_headerfiles("include/(Stl/**.hpp)")
