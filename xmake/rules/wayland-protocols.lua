@@ -28,7 +28,7 @@ do
 		for _, protocol in ipairs(protocols) do
 			local full = path.join(wayland_protocols_dir, protocol[1])
 			if os.exists(full) then
-				target:add("files", full, { rule = "wayland.protocols" })
+				target:add("files", full)
 			else
 				print("Protocol not found: " .. protocol[1])
 			end
@@ -61,12 +61,13 @@ do
 				end
 
 				-- Ajout explicitement le fichier source pour garantir son inclusion
+				-- always_added = true est nécessaire car le fichier est généré pendant le build
 				target:add("files", source, { always_added = true })
 			end
 		end
 
 		-- Rend accessible les fichiers générés depuis le projet utilisant cette rule
-		target:add("includedirs", outputDirectory, { public = true }) -- todo: retirer le public ?
+		target:add("includedirs", outputDirectory, { public = true })
 	end)
 
 	before_buildcmd_file(function(target, batchcmds, sourcefile, opt) -- sourcefile est un fichier XML
