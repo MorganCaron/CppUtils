@@ -27,9 +27,21 @@ export namespace CppUtils::Type
 	using Hash = std::uint64_t;
 	using Token = Hash;
 
-	[[maybe_unused]] inline constexpr struct
+	inline constexpr Hash HashOffset = 0xcb'f2'9c'e4'84'22'23'25u;
+	inline constexpr Hash HashPrime = 0x1'00'00'00'01'b3u;
+
+	[[maybe_unused]] inline constexpr struct HashT
 	{
-		[[nodiscard]] constexpr auto operator()(const auto& value) const noexcept -> std::uint64_t
+		template<class T, std::size_t N>
+		[[nodiscard]] constexpr auto operator()(const T (&value)[N], Hash seed = HashOffset) const noexcept -> Hash
+		{
+			if constexpr (String::Char<T>)
+				return (*this)(std::basic_string_view<T>{value}, seed);
+			else
+				return (*this)(std::span<const T, N>{value}, seed);
+		}
+
+		[[nodiscard]] constexpr auto operator()(const auto& value, Hash seed = HashOffset) const noexcept -> Hash
 		{
 			using T = std::remove_cvref_t<decltype(value)>;
 			if constexpr (HasMemberHash<T>)
@@ -37,13 +49,13 @@ export namespace CppUtils::Type
 			else if constexpr (HasADLHash<T>)
 				return callADLHash(value);
 			else if constexpr (std::is_integral_v<T> or std::is_enum_v<T>)
-				return static_cast<std::uint64_t>(value);
-			else if constexpr (String::GenericText<T>)
+				return static_cast<Hash>(value);
+			else if constexpr (std::ranges::contiguous_range<T>)
 			{
-				auto result = 0xcb'f2'9c'e4'84'22'23'25u;
+				// FNV-1a hash algorithm: https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+				auto result = seed;
 				for (const auto& c : value)
-					if (c)
-						result = (static_cast<std::uint64_t>(c) ^ result) * 0x1'00'00'00'01'b3u;
+					result = (static_cast<std::uint64_t>(c) ^ result) * HashPrime;
 				return result;
 			}
 			else
