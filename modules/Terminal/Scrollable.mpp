@@ -9,7 +9,7 @@ import CppUtils.Terminal.BackgroundColor;
 
 export namespace CppUtils::Terminal
 {
-	class Scrollable: public Widget
+	class Scrollable: public Area
 	{
 	public:
 		enum ScrollbarMode : std::uint8_t
@@ -21,7 +21,7 @@ export namespace CppUtils::Terminal
 		};
 
 		inline Scrollable(const Container::Size2& viewportSize, const Container::Size2& fullContentSize):
-			m_viewportBuffer{viewportSize},
+			Area{viewportSize},
 			m_fullContentArea{fullContentSize}
 		{}
 
@@ -57,14 +57,9 @@ export namespace CppUtils::Terminal
 			return m_scrollbarMode;
 		}
 
-		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 override
-		{
-			return m_viewportBuffer.getSize();
-		}
-
 		inline void setWidgetManager(WidgetManager& widgetManager) noexcept override
 		{
-			Widget::setWidgetManager(widgetManager);
+			Area::setWidgetManager(widgetManager);
 			m_fullContentArea.setWidgetManager(widgetManager);
 		}
 
@@ -90,18 +85,18 @@ export namespace CppUtils::Terminal
 				const auto sourcePosition = position + m_scrollPosition;
 
 				if (sourcePosition.x() < contentSize.width() and sourcePosition.y() < contentSize.height())
-					m_viewportBuffer.setChar(position, m_fullContentArea.getChar(sourcePosition));
+					setChar(position, m_fullContentArea.getChar(sourcePosition));
 				else
-					m_viewportBuffer.setChar(position, CharAttributes{U' '});
+					setChar(position, CharAttributes{U' '});
 			});
 
 			if (m_scrollbarMode != ScrollbarMode::None)
 			{
-				auto internalView = WritableAreaView{m_viewportBuffer};
+				auto internalView = WritableAreaView{*this};
 				drawScrollbars(internalView, contentSize, viewportSize, maxScrollX, maxScrollY);
 			}
 
-			view.applyArea(m_viewportBuffer);
+			view.applyArea(*this);
 			drawFinished();
 		}
 
@@ -151,7 +146,6 @@ export namespace CppUtils::Terminal
 
 		std::uint8_t m_scrollbarMode = ScrollbarMode::Both;
 		Container::Size2 m_scrollPosition{0, 0};
-		DynamicAreaBuffer m_viewportBuffer;
 		Area m_fullContentArea;
 	};
 }

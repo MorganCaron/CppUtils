@@ -82,15 +82,22 @@
 - [`Multiton`](modules/Pattern/Multiton.mpp) - Generic Multiton implementation based on the Meyers Singleton
 
 ### 💻 Terminal
+- [`Area`](modules/Terminal/Area.mpp) - Dedicated drawing context for a single child widget
 - [`Canvas`](modules/Terminal/Canvas.mpp) - Terminal-based 2D drawing surface
 - [`Cursor`](modules/Terminal/Cursor.mpp) - Terminal cursor manipulation
+- [`Layout`](modules/Terminal/Layout.mpp) - Container widget for dynamic children positioning
 - [`Primitive`](modules/Terminal/Primitive.mpp) - Basic drawing primitives for terminal (lines, rectangles, circles, ellipses)
 - [`ProgressBar`](modules/Terminal/ProgressBar.mpp) - Dynamically updating terminal progress bar
 - [`RawTerminal`](modules/Terminal/RawTerminal.mpp) - Raw input handling (no buffering or echo)
+- [`Scrollable`](modules/Terminal/Scrollable.mpp) - Scrollable viewport for viewing large content areas
 - [`Size`](modules/Terminal/Size.mpp) - Terminal size utilities
+- [`Spinner`](modules/Terminal/Spinner.mpp) - Animated widget displaying a sequence of frames
 - [`TextColor`](modules/Terminal/TextColor.mpp) - Terminal text color utilities
 - [`TextModifier`](modules/Terminal/TextModifier.mpp) - Utilities to style and color terminal text
 - [`Title`](modules/Terminal/Title.mpp) - Terminal title utilities
+- [`Viewport`](modules/Terminal/Viewport.mpp) - Rectangular region with clipping and intersection logic
+- [`Widget`](modules/Terminal/Widget.mpp) - UI interface for rendering and update lifecycle
+- [`WidgetManager`](modules/Terminal/WidgetManager.mpp) - Central hub for widget events and update scheduling
 
 ### 🚦 Multithreading & Synchronization
 - [`Scheduler`](modules/Thread/Scheduler.mpp) - Simple scheduler to run delayed functions on separate thread

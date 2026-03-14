@@ -30,9 +30,7 @@ export namespace CppUtils::Language::CSV
 					auto value = std::string_view{csvLine[csvColumnPosition]};
 					if constexpr (FunctionMapping::template containsLhs<token>())
 						FunctionMapping::template toSingleRhs<token>()(member, value);
-					else if constexpr (std::same_as<MemberType, std::string_view>)
-						member = value;
-					else if constexpr (std::same_as<MemberType, std::string>)
+					else if constexpr (std::same_as<MemberType, std::string_view> or std::same_as<MemberType, std::string>)
 						member = value;
 					else if constexpr (std::integral<MemberType> or std::floating_point<MemberType>)
 						std::from_chars(std::data(value), std::data(value) + std::size(value), member);
