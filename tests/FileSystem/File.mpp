@@ -6,6 +6,7 @@ import CppUtils;
 namespace CppUtils::UnitTest::FileSystem::File
 {
 	auto _ = TestSuite{"FileSystem/File", {"Logger", "FileSystem/Directory"}, [](TestSuite& suite) {
+		using namespace std::literals;
 		using Logger = TestSuite::Logger;
 
 		suite.addTest("forFiles", [&] {
@@ -31,6 +32,86 @@ namespace CppUtils::UnitTest::FileSystem::File
 					++filesCounter;
 				});
 				suite.expectEqual(filesCounter, 1u);
+			}};
+		});
+
+		suite.addTest("Binary/readByBlocks", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+				const auto filePath = directory / "test.tmp";
+				auto originalData = std::vector<std::byte>{std::byte{0xDE}, std::byte{0xAD}, std::byte{0xBE}, std::byte{0xEF}};
+				CppUtils::FileSystem::Binary::writeVector(filePath, originalData);
+
+				auto resultData = std::vector<std::byte>{};
+				auto nbBlocks = 0u;
+				const auto blockSize = 2uz;
+				const auto result = CppUtils::FileSystem::Binary::readByBlocks(filePath, [&](auto block) {
+					resultData.insert(std::end(resultData), std::begin(block), std::end(block));
+					++nbBlocks;
+				}, blockSize);
+
+				suite.expect(result.has_value());
+				suite.expectEqual(resultData, originalData);
+				suite.expectEqual(nbBlocks, (std::size(originalData) + blockSize - 1) / blockSize);
+			}};
+		});
+
+		suite.addTest("String/readByBlocks", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+				const auto filePath = directory / "test.tmp";
+				constexpr auto originalString = "Hello World!"sv;
+				CppUtils::FileSystem::String::write(filePath, originalString);
+
+				auto resultString = ""s;
+				auto nbBlocks = 0u;
+				const auto blockSize = 5uz;
+				const auto result = CppUtils::FileSystem::String::readByBlocks(filePath, [&](std::string_view block) {
+					resultString += block;
+					++nbBlocks;
+				}, blockSize);
+
+				suite.expect(result.has_value());
+				suite.expectEqual(resultString, originalString);
+				suite.expectEqual(nbBlocks, (std::size(originalString) + blockSize - 1) / blockSize);
+			}};
+		});
+
+		suite.addTest("readByBlocks (error)", [&] {
+			const auto result = CppUtils::FileSystem::Binary::readByBlocks("non_existent_file.tmp", [](auto) {});
+			suite.expect(not result.has_value());
+			suite.expect(result.error().type == CppUtils::FileSystem::Error::Type::OpenFailed);
+			suite.expectEqual(result.error().message, "Failed to open file"sv);
+		});
+
+		suite.addTest("readByBlocks (callback error propagation)", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+				const auto filePath = directory / "test.tmp";
+				CppUtils::FileSystem::String::write(filePath, "Some content");
+
+				const auto result = CppUtils::FileSystem::Binary::readByBlocks(filePath, [](auto) -> std::expected<void, std::string_view> {
+					return std::unexpected{"Error from callback"};
+				});
+
+				suite.expect(not result.has_value());
+				suite.expect(result.error().type == CppUtils::FileSystem::Error::Type::CallbackError);
+				suite.expectEqual(result.error().message, "Error from callback"sv);
+			}};
+		});
+
+		suite.addTest("IncrementalHash", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+				const auto filePath = directory / "test.tmp";
+				constexpr auto originalString = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."sv;
+				CppUtils::FileSystem::String::write(filePath, originalString);
+
+				auto finalHash = CppUtils::Type::HashOffset;
+				const auto result = CppUtils::FileSystem::Binary::readByBlocks(filePath, [&finalHash](auto block) {
+					finalHash = CppUtils::Type::hash(block, finalHash);
+				}, 8uz);
+
+				suite.expect(result.has_value());
+				auto expectedHash = CppUtils::Type::hash(originalString);
+
+				suite.expectEqual(finalHash, expectedHash);
 			}};
 		});
 	}};

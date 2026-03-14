@@ -43,7 +43,8 @@
 - [`EventQueue`](modules/Execution/EventQueue.mpp) - Thread-safe event queue running on a dedicated thread for asynchronous event processing (preserves event order)
 - [`ScopeGuard`](modules/Execution/ScopeGuard.mpp) - RAII utility to execute a function when leaving a scope, ensuring resource cleanup
 
-### 📁 File System
+### 📁 Filesystem
+- [`File`](modules/FileSystem/File.mpp) - Binary and text file I/O, including optimized block-by-block reading
 - [`Watcher`](modules/FileSystem/Watcher.mpp) - File modification watcher
 
 ### 🧠 Functional

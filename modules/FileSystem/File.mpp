@@ -5,6 +5,17 @@ import CppUtils.Type;
 
 export namespace CppUtils::FileSystem
 {
+	struct Error
+	{
+		enum class Type
+		{
+			OpenFailed,
+			ReadFailed,
+			CallbackError
+		} type;
+		std::string_view message;
+	};
+
 	inline auto forFiles(
 		const std::filesystem::path& directoryPath,
 		auto&& function,
@@ -36,8 +47,56 @@ export namespace CppUtils::FileSystem
 		}, recursively);
 	}
 
+	template<class T = std::span<const std::byte>>
+	inline auto readByBlocks(
+		const std::filesystem::path& filePath,
+		auto&& function,
+		std::size_t blockSize = 4'096) -> std::expected<void, Error>
+	{
+		auto file = std::ifstream{filePath, std::ios::binary};
+		if (not file.is_open())
+			return std::unexpected{Error{Error::Type::OpenFailed, "Failed to open file"}};
+
+		for (auto buffer = std::vector<char>(blockSize); file.good();)
+		{
+			file.read(std::data(buffer), static_cast<std::streamsize>(blockSize));
+
+			if (file.bad())
+				return std::unexpected{Error{Error::Type::ReadFailed, "Hardware read error"}};
+
+			const auto bytesRead = static_cast<std::size_t>(file.gcount());
+			if (bytesRead == 0)
+				break;
+
+			auto block = [&]() {
+				if constexpr (std::same_as<T, std::string_view>)
+					return std::string_view{std::data(buffer), bytesRead};
+				else
+					return std::as_bytes(std::span{std::data(buffer), bytesRead});
+			}();
+
+			using ResultType = std::invoke_result_t<decltype(function), decltype(block)>;
+			if constexpr (Type::Specializes<ResultType, std::expected>)
+			{
+				if (auto result = function(block); not result)
+					return std::unexpected{Error{Error::Type::CallbackError, result.error()}};
+			}
+			else
+				function(block);
+
+			if (bytesRead < blockSize)
+				break;
+		}
+		return {};
+	}
+
 	namespace Binary
 	{
+		[[nodiscard]] inline auto readByBlocks(const std::filesystem::path& filePath, auto&& function, std::size_t blockSize = 4'096)
+		{
+			return FileSystem::readByBlocks<std::span<const std::byte>>(filePath, std::forward<decltype(function)>(function), blockSize);
+		}
+
 		template<Type::TriviallyCopyable T>
 		inline auto write(const std::filesystem::path& filePath, const T& buffer) -> void
 		{
@@ -83,6 +142,11 @@ export namespace CppUtils::FileSystem
 
 	namespace String
 	{
+		[[nodiscard]] inline auto readByBlocks(const std::filesystem::path& filePath, auto&& function, std::size_t blockSize = 4'096)
+		{
+			return FileSystem::readByBlocks<std::string_view>(filePath, std::forward<decltype(function)>(function), blockSize);
+		}
+
 		inline auto write(const std::filesystem::path& filePath, std::string_view content) -> void
 		{
 			auto file = std::ofstream{filePath};
