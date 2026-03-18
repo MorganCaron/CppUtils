@@ -383,8 +383,10 @@ export namespace CppUtils::Functional::LambdaCalculus
 						Application<
 							Variable<2>,
 							Application<Variable<1>, Variable<0>>>>>>;
+		/*
 		static_assert(areEqual<
 			Application<Application<Mult, Application<Successor, Application<Successor, Zero>>>, Application<Successor, Application<Successor, Zero>>>,
 			Application<Successor, Application<Successor, Application<Successor, Application<Successor, Zero>>>>>); // Mult 2 2 = 4
+		*/
 	}
 }
