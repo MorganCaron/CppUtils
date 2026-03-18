@@ -142,7 +142,16 @@ export namespace CppUtils::Functional::LambdaCalculus
 		template<class Expression, class Argument0, class Argument1>
 		struct BetaReduction<Application<Application<Expression, Argument1>, Argument0>> final
 		{
-			using type = typename BetaReduction<Application<typename BetaReduction<Application<Expression, Argument1>>::type, Argument0>>::type;
+		private:
+			using InnerApplication = Application<Expression, Argument1>;
+			using ReducedInnerApplication = typename BetaReduction<InnerApplication>::type;
+
+		public:
+			using type = typename Type::LazyEvaluationType<
+				not std::is_same_v<InnerApplication, ReducedInnerApplication>,
+				BetaReduction,
+				Application<ReducedInnerApplication, Argument0>,
+				std::type_identity<Application<InnerApplication, Argument0>>>::type;
 		};
 
 		static_assert(std::is_same_v<
@@ -174,6 +183,22 @@ export namespace CppUtils::Functional::LambdaCalculus
 		struct NormalForm<Lambda<Body>> final
 		{
 			using type = Lambda<typename NormalForm<Body>::type>;
+		};
+
+		template<class Function, class Argument>
+		struct NormalForm<Application<Function, Argument>> final
+		{
+		private:
+			using Reduced = typename BetaReduction<Application<Function, Argument>>::type;
+			using Original = Application<Function, Argument>;
+
+		public:
+			using type = typename Type::LazyEvaluationType<
+				not std::is_same_v<Original, Reduced>,
+				NormalForm,
+				Reduced,
+				std::type_identity<
+					Application<typename NormalForm<Function>::type, typename NormalForm<Argument>::type>>>::type;
 		};
 
 		static_assert(std::is_same_v<
@@ -315,7 +340,7 @@ export namespace CppUtils::Functional::LambdaCalculus
 
 		using Zero = False;
 		static_assert(areEqual<Zero, Lambda<Lambda<Variable<0>>>>);
-		/*
+
 		// Successor = λn.λf.λx.f((n f) x)
 		using Successor =
 			Lambda<
@@ -361,6 +386,5 @@ export namespace CppUtils::Functional::LambdaCalculus
 		static_assert(areEqual<
 			Application<Application<Mult, Application<Successor, Application<Successor, Zero>>>, Application<Successor, Application<Successor, Zero>>>,
 			Application<Successor, Application<Successor, Application<Successor, Application<Successor, Zero>>>>>); // Mult 2 2 = 4
-		*/
 	}
 }
