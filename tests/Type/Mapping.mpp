@@ -174,7 +174,7 @@ namespace CppUtils::UnitTest::Type::Mapping
 
 			suite.addTest("No Default Value", [&] {
 				suite.expectEqual(StringMap::toRhs("GET"sv).value(), 10);
-				suite.expect(not StringMap::toRhs("UNKNOWN"sv).has_value());
+				suite.expect(not StringMap::toRhs("UNKNOWN"sv));
 			});
 		}};
 	}

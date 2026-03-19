@@ -14,7 +14,7 @@ namespace CppUtils::UnitTest::Thread
 				return 42;
 			});
 			auto result = future.get();
-			suite.expect(result.has_value());
+			suite.expect(result);
 			suite.expectEqual(result.value(), 42);
 		});
 
@@ -24,7 +24,7 @@ namespace CppUtils::UnitTest::Thread
 				return 0;
 			});
 			auto result = future.get();
-			suite.expect(not result.has_value());
+			suite.expect(not result);
 			suite.expectEqual(result.error().what(), "Test exception"sv);
 		});
 
@@ -33,7 +33,7 @@ namespace CppUtils::UnitTest::Thread
 				Logger::print("Void async call executed");
 			});
 			auto result = future.get();
-			suite.expect(result.has_value());
+			suite.expect(result);
 		});
 
 		suite.addTest("Void async call with exception", [&] {
@@ -41,7 +41,7 @@ namespace CppUtils::UnitTest::Thread
 				throw std::runtime_error{"Void test exception"};
 			});
 			auto result = future.get();
-			suite.expect(not result.has_value());
+			suite.expect(not result);
 			suite.expectEqual(result.error().what(), "Void test exception"sv);
 		});
 	}};

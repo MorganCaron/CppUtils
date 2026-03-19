@@ -34,7 +34,7 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			Logger::print("{}", interpreter.getScope());
 			suite.expect(std::empty(interpreter.getScope().nodes));
 		});
@@ -51,7 +51,7 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			Logger::print("{}", interpreter.getScope());
 			suite.expect(std::empty(interpreter.getScope().nodes));
 		});
@@ -66,7 +66,7 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
 			suite.expectEqual(std::size(scopeNodes), 1uz);
@@ -84,7 +84,7 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
 			suite.expectEqual(std::size(scopeNodes), 1uz);
@@ -109,7 +109,7 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
 			suite.expectEqual(std::size(scopeNodes), 1uz);
@@ -131,7 +131,7 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
 			suite.expectEqual(std::size(scopeNodes), 1uz);
@@ -155,7 +155,7 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
 			suite.expectEqual(std::size(scopeNodes), 2uz);
@@ -178,7 +178,7 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
 			suite.expectEqual(std::size(scopeNodes), 1uz);

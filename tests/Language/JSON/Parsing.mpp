@@ -11,7 +11,7 @@ namespace CppUtils::UnitTest::Language::JSON::Parsing
 
 		suite.addTest("Simple Parse", [&] {
 			const auto result = "{}"_json;
-			suite.expect(result.has_value());
+			suite.expect(result);
 			suite.expect(result->isObject());
 			suite.expect(std::empty(result->as<CppUtils::Language::JSON::Object>()));
 		});
@@ -25,7 +25,7 @@ namespace CppUtils::UnitTest::Language::JSON::Parsing
 				"e": null
 			})"_json;
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			const auto& value = result.value();
 			suite.expect(value.isObject());
 			suite.expectEqual(value["a"].template as<std::string>(), "hello");
@@ -38,7 +38,7 @@ namespace CppUtils::UnitTest::Language::JSON::Parsing
 		suite.addTest("Parse Array", [&] {
 			const auto result = "[1, 2, 3]"_json;
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			const auto& value = result.value();
 			suite.expect(value.isArray());
 			suite.expectEqual(std::size(value.as<CppUtils::Language::JSON::Array>()), 3uz);
@@ -47,7 +47,7 @@ namespace CppUtils::UnitTest::Language::JSON::Parsing
 
 		suite.addTest("Error Reporting", [&] {
 			const auto result = R"({"a": 1, "b"})"_json;
-			suite.expect(not result.has_value());
+			suite.expect(not result);
 			const auto& error = result.error();
 			suite.expectEqual(error.message, "Expected ':' after key");
 			suite.expectEqual(error.position, 12uz);

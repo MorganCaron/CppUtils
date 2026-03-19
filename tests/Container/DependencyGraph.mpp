@@ -180,7 +180,7 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 				return false;
 			});
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			suite.expect(not *result);
 			suite.expectEqual(count, 1uz);
 		});

@@ -27,18 +27,18 @@ namespace CppUtils::UnitTest::Network
 				auto client = CppUtils::Network::Http::Client{};
 
 				auto connectionResult = client.connectIP("127.0.0.1", 8'080);
-				suite.expect(connectionResult.has_value());
+				suite.expect(connectionResult);
 
 				{
 					auto response = client.get("/World");
-					suite.expect(response.has_value());
+					suite.expect(response);
 					suite.expectEqual(response->status, 200uz);
 					suite.expectEqual(response->body, "Hello /World");
 				}
 
 				{
 					auto response = client.get("/Universe");
-					suite.expect(response.has_value());
+					suite.expect(response);
 					suite.expectEqual(response->status, 200uz);
 					suite.expectEqual(response->body, "Hello /Universe");
 				}

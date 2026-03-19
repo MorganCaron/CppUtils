@@ -60,7 +60,7 @@ namespace CppUtils::UnitTest::Language::JSON::Mapping
 				"d": false
 			})"_json;
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			const auto object = CppUtils::Language::JSON::toStruct<Object, ObjectMapping>(result.value());
 			suite.expectEqual(object.a, "test");
 			suite.expectEqual(object.b, 123);
@@ -74,7 +74,7 @@ namespace CppUtils::UnitTest::Language::JSON::Mapping
 				{"a": "o2", "b": 2}
 			])"_json;
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			const auto& value = result.value();
 			const auto objects = CppUtils::Language::JSON::toStructs<Object, ObjectMapping>(value);
 			suite.expectEqual(std::size(objects), 2uz);
@@ -95,7 +95,7 @@ namespace CppUtils::UnitTest::Language::JSON::Mapping
 				"d": true
 			})"_json;
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			suite.expectEqual(json, result.value());
 		});
 
@@ -118,7 +118,7 @@ namespace CppUtils::UnitTest::Language::JSON::Mapping
 				{"a": "o2", "b": 2, "c": 2.2, "d": false}
 			])"_json;
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			suite.expectEqual(resultValue, result.value());
 		});
 	}};

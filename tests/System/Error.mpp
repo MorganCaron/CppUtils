@@ -18,11 +18,11 @@ namespace CppUtils::UnitTest::System::Error
 		suite.addTest("expectErrno", [&] {
 			{
 				auto result = CppUtils::System::expectErrno(-1, "Test error");
-				suite.expect(not result.has_value());
+				suite.expect(not result);
 			}
 			{
 				auto result = CppUtils::System::expectErrno(0, "Test success");
-				suite.expect(result.has_value());
+				suite.expect(result);
 				suite.expectEqual(result.value(), 0);
 			}
 		});
@@ -45,10 +45,10 @@ namespace CppUtils::UnitTest::System::Error
 
 		suite.addTest("expectNoError", [&] {
 			auto result = CppUtils::System::expectNoError(0, "Test no error");
-			suite.expect(result.has_value());
+			suite.expect(result);
 			suite.expectEqual(result.value(), 0);
 			result = CppUtils::System::expectNoError(1, "Test no error");
-			suite.expect(not result.has_value());
+			suite.expect(not result);
 		});
 #endif
 	}};

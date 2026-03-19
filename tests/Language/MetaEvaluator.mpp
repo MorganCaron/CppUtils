@@ -25,7 +25,7 @@ namespace CppUtils::UnitTest::Language::MetaEvaluator
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			suite.expectEqual(std::size(interpreter.getScope().nodes), 1uz);
 		});
 
@@ -50,7 +50,7 @@ namespace CppUtils::UnitTest::Language::MetaEvaluator
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			const auto& scopeNodes = interpreter.getScope().nodes;
 			suite.expectEqual(std::size(scopeNodes), 2uz);
 			suite.expectEqual(scopeNodes.at(0).value, "main"_token);
@@ -81,7 +81,7 @@ namespace CppUtils::UnitTest::Language::MetaEvaluator
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result.has_value());
+			suite.expect(result);
 			const auto& scopeNodes = interpreter.getScope().nodes;
 			suite.expectEqual(std::size(scopeNodes), 3uz);
 			suite.expectEqual(scopeNodes.at(0).value, "main"_token);

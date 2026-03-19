@@ -18,7 +18,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			auto result = VM::execute(source);
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 		});
 
 		suite.addTest("push-pop size_t", [&] {
@@ -26,7 +26,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			auto result = VM::execute(source);
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 		});
 
 		suite.addTest("push-pop bool", [&] {
@@ -34,7 +34,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			auto result = VM::execute<bool>(source);
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 		});
 
 		suite.addTest("push-pop char", [&] {
@@ -42,7 +42,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			auto result = VM::execute<char>(source);
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 		});
 
 		suite.addTest("push-pop int", [&] {
@@ -50,7 +50,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			auto result = VM::execute<int>(source);
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 		});
 
 		suite.addTest("import int", [&] {
@@ -59,7 +59,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			auto result = VM::execute(source, VM::NoFunctions{}, VM::makeReferences(number));
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 		});
 
 		suite.addTest("input output (int)", [&] {
@@ -69,7 +69,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			auto result = VM::execute(source, VM::NoFunctions{}, VM::makeReferences(input, output));
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 			suite.expectEqual(output, input);
 		});
 
@@ -80,7 +80,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			auto result = VM::execute(source, VM::NoFunctions{}, VM::makeReferences(input, output));
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 			suite.expectEqual(output, input);
 		});
 
@@ -96,7 +96,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			auto result = VM::execute(source, VM::Functions{getNumber}, VM::makeReferences(output));
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 			suite.expectEqual(output, 42uz);
 		});
 
@@ -111,7 +111,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 		});
 
 		suite.addTest("Call function: (std::size_t, std::size_t) -> std::size_t", [&] {
@@ -128,7 +128,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			auto result = VM::execute(source, VM::Functions{add, print}, VM::makeReferences(output));
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 			suite.expectEqual(output, 42uz);
 		});
 
@@ -151,7 +151,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			auto result = VM::execute(source, VM::Functions{add, print});
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 		});
 
 		suite.addTest("Return value", [&] {
@@ -184,7 +184,7 @@ namespace CppUtils::UnitTest::Language::VirtualMachine
 			auto result = VM::execute(source, VM::Functions{add, print}, VM::makeReferences(output));
 			if (not result)
 				Logger::print<"error">("{}", result.error());
-			suite.expect(result.has_value());
+			suite.expect(result);
 			suite.expectEqual(output, 42uz);
 		});
 		/*

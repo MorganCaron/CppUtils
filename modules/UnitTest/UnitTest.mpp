@@ -248,9 +248,10 @@ namespace CppUtils::UnitTest
 		}
 
 		// Todo C++23: std::stacktrace stacktrace = std::current_stacktrace()
-		inline auto expect(bool condition, std::source_location sourceLocation = std::source_location::current()) -> void
+		inline auto expect(const auto& condition, std::source_location sourceLocation = std::source_location::current()) -> void
+			requires requires { static_cast<bool>(condition); }
 		{
-			if (not condition) [[unlikely]]
+			if (not static_cast<bool>(condition)) [[unlikely]]
 				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expect(condition)",
 					sourceLocation.file_name(),
 					sourceLocation.line(),

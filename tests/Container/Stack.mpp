@@ -26,13 +26,13 @@ namespace CppUtils::UnitTest::Container::Stack
 			stack.push(42);
 			{
 				auto result = stack.pop<int>();
-				suite.expect(result.has_value());
+				suite.expect(result);
 				suite.expectEqual(result.value(), 42);
 			}
 			suite.expect(std::empty(stack));
 			{
 				auto result = stack.pop<int>();
-				suite.expect(not result.has_value());
+				suite.expect(not result);
 			}
 		});
 
@@ -56,22 +56,22 @@ namespace CppUtils::UnitTest::Container::Stack
 
 			{
 				auto result = stack.get<bool>(sizeof(int) + sizeof(float) + sizeof(std::string_view));
-				suite.expect(result.has_value());
+				suite.expect(result);
 				Logger::print("{}", result.value());
 			}
 			{
 				auto result = stack.get<int>(sizeof(float) + sizeof(std::string_view));
-				suite.expect(result.has_value());
+				suite.expect(result);
 				Logger::print("{}", result.value());
 			}
 			{
 				auto result = stack.get<float>(sizeof(std::string_view));
-				suite.expect(result.has_value());
+				suite.expect(result);
 				Logger::print("{}", result.value());
 			}
 			{
 				auto result = stack.get<std::string_view>();
-				suite.expect(result.has_value());
+				suite.expect(result);
 				Logger::print("{}", result.value());
 			}
 		});
@@ -82,10 +82,10 @@ namespace CppUtils::UnitTest::Container::Stack
 			auto getNumber = []() -> std::size_t {
 				return 42uz;
 			};
-			suite.expect(stack.call(+getNumber).has_value());
+			suite.expect(stack.call(+getNumber));
 			{
 				auto result = stack.pop<std::size_t>();
-				suite.expect(result.has_value());
+				suite.expect(result);
 				suite.expectEqual(result.value(), 42uz);
 			}
 			suite.expect(std::empty(stack));
@@ -97,7 +97,7 @@ namespace CppUtils::UnitTest::Container::Stack
 				std::println("{}", nb);
 			};
 			stack.push(42uz);
-			suite.expect(stack.call(print).has_value());
+			suite.expect(stack.call(print));
 		});
 
 		suite.addTest("Call function: (std::size_t, std::size_t) -> std::size_t", [&] {
@@ -108,11 +108,11 @@ namespace CppUtils::UnitTest::Container::Stack
 			auto add = [](std::size_t lhs, std::size_t rhs) -> std::size_t {
 				return lhs + rhs;
 			};
-			suite.expect(stack.call(add).has_value());
-			suite.expect(stack.drop(sizeof(std::size_t) * 2).has_value());
+			suite.expect(stack.call(add));
+			suite.expect(stack.drop(sizeof(std::size_t) * 2));
 			{
 				auto result = stack.pop<std::size_t>();
-				suite.expect(result.has_value());
+				suite.expect(result);
 				suite.expectEqual(result.value(), 42uz);
 			}
 			suite.expect(std::empty(stack));
@@ -129,15 +129,15 @@ namespace CppUtils::UnitTest::Container::Stack
 			auto print = [](std::size_t nb) -> void {
 				std::println("{}", nb);
 			};
-			suite.expect(stack.call(add).has_value());
-			suite.expect(stack.drop(sizeof(std::size_t) * 2).has_value());
+			suite.expect(stack.call(add));
+			suite.expect(stack.drop(sizeof(std::size_t) * 2));
 			{
 				auto result = stack.get<std::size_t>();
-				suite.expect(result.has_value());
+				suite.expect(result);
 				suite.expectEqual(result.value(), 42uz);
 			}
-			suite.expect(stack.call(print).has_value());
-			suite.expect(stack.drop(sizeof(std::size_t)).has_value());
+			suite.expect(stack.call(print));
+			suite.expect(stack.drop(sizeof(std::size_t)));
 			suite.expect(std::empty(stack));
 		});
 	}};
