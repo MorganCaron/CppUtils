@@ -1,0 +1,144 @@
+module;
+
+#include <CppUtils/System/Windows.hpp>
+#include <cstdio>
+
+export module CppUtils.Terminal.Mouse;
+
+import std;
+import CppUtils.Container.Size;
+import CppUtils.Terminal.RawTerminal;
+
+export namespace CppUtils::Terminal::Mouse
+{
+	enum class Button
+	{
+		None,
+		Left,
+		Middle,
+		Right,
+		ScrollUp,
+		ScrollDown
+	};
+
+	struct Event
+	{
+		Button button = Button::None;
+		bool pressed = false;
+		bool dragging = false;
+		bool shift = false;
+		bool alt = false;
+		bool ctrl = false;
+		Container::Size2 position;
+	};
+
+	namespace Ansi
+	{
+		inline constexpr auto EnableMouseTracking = "\x1b[?1003h"; // All motion
+		inline constexpr auto DisableMouseTracking = "\x1b[?1003l";
+		inline constexpr auto EnableExtendedCoordinates = "\x1b[?1006h"; // SGR extended mode
+		inline constexpr auto DisableExtendedCoordinates = "\x1b[?1006l";
+	}
+
+	class Tracker final
+	{
+	public:
+		inline Tracker():
+			m_active{true}
+		{
+#if defined(OS_LINUX) or defined(OS_MACOS)
+			std::print("{}{}", Ansi::EnableMouseTracking, Ansi::EnableExtendedCoordinates);
+			std::fflush(stdout);
+#endif
+		}
+
+		inline ~Tracker()
+		{
+			if (m_active)
+			{
+#if defined(OS_LINUX) or defined(OS_MACOS)
+				std::print("{}{}", Ansi::DisableMouseTracking, Ansi::DisableExtendedCoordinates);
+				std::fflush(stdout);
+#endif
+			}
+		}
+
+		Tracker(const Tracker&) = delete;
+		Tracker& operator=(const Tracker&) = delete;
+
+		inline Tracker(Tracker&& other) noexcept:
+			m_active{std::exchange(other.m_active, false)}
+		{}
+
+		inline Tracker& operator=(Tracker&& other) noexcept
+		{
+			if (this != std::addressof(other))
+				m_active = std::exchange(other.m_active, false);
+			return *this;
+		}
+
+	private:
+		bool m_active = false;
+	};
+
+	[[nodiscard]] inline auto getEvent() -> std::optional<Event>
+	{
+#if defined(OS_LINUX) or defined(OS_MACOS)
+		if (not RawTerminal::isInputAvailable())
+			return std::nullopt;
+
+		auto raw = RawTerminal{};
+
+		if (raw.readChar() != '\x1b')
+			return std::nullopt;
+		if (raw.readChar() != '[')
+			return std::nullopt;
+		if (raw.readChar() != '<')
+			return std::nullopt;
+
+		auto buffer = std::string{};
+		auto c = char{};
+		while ((c = raw.readChar()) != 'M' and c != 'm')
+			buffer += c;
+
+		auto buttonData = 0, x = 0, y = 0;
+		if (std::sscanf(buffer.c_str(), "%d;%d;%d", std::addressof(buttonData), std::addressof(x), std::addressof(y)) != 3)
+			return std::nullopt;
+
+		auto event = Event{};
+		event.position = Container::Size2{static_cast<std::size_t>(x - 1), static_cast<std::size_t>(y - 1)};
+		event.shift = (buttonData & 4) != 0;
+		event.alt = (buttonData & 8) != 0;
+		event.ctrl = (buttonData & 16) != 0;
+		event.dragging = (buttonData & 32) != 0;
+
+		const auto isRelease = (c == 'm');
+		event.pressed = not isRelease;
+
+		if (auto scroll = buttonData & 64; scroll != 0)
+		{
+			event.button = (buttonData & 1) ? Button::ScrollDown : Button::ScrollUp;
+			event.pressed = true;
+		}
+		else
+			switch (buttonData & 3)
+			{
+			case 0: event.button = Button::Left; break;
+			case 1: event.button = Button::Middle; break;
+			case 2: event.button = Button::Right; break;
+			case 3: event.button = Button::None; break;
+			}
+
+		return event;
+#elif defined(OS_WINDOWS)
+		return std::nullopt;
+#endif
+	}
+
+	[[nodiscard]] inline auto getPosition() -> std::optional<Container::Size2>
+	{
+		if (const auto event = getEvent())
+			return event->position;
+		return std::nullopt;
+	}
+}

@@ -5,6 +5,7 @@ module;
 #if defined(OS_LINUX) or defined(OS_MACOS)
 #	include <unistd.h>
 #	include <termios.h>
+#	include <poll.h>
 #endif
 
 export module CppUtils.Terminal.RawTerminal;
@@ -49,6 +50,12 @@ export namespace CppUtils::Terminal
 		{
 			if (m_initialized)
 				tcsetattr(STDIN_FILENO, TCSANOW, std::addressof(m_oldTerminalState));
+		}
+
+		[[nodiscard]] static inline auto isInputAvailable() -> bool
+		{
+			auto pfd = pollfd{STDIN_FILENO, POLLIN, 0};
+			return ::poll(std::addressof(pfd), 1, 0) > 0;
 		}
 
 		[[nodiscard]] inline auto readChar() const -> char
