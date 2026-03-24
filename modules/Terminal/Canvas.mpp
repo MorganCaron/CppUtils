@@ -132,6 +132,14 @@ export namespace CppUtils::Terminal
 			m_stopEvent.notify_all();
 		}
 
+		[[nodiscard]] inline auto getAbsolutePosition() const noexcept -> Container::Size2
+		{
+			const auto terminalSize = getTerminalSize();
+			const auto viewportSize = m_viewport.getSize();
+			const auto startLine = terminalSize.height() > viewportSize.height() ? terminalSize.height() - viewportSize.height() - 1 : 0;
+			return {m_viewport.getPosition().x(), startLine + m_viewport.getPosition().y()};
+		}
+
 	private:
 		std::mutex m_printMutex;
 		bool m_firstPrint = true;

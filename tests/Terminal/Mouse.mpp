@@ -31,25 +31,30 @@ namespace CppUtils::UnitTest::Terminal::Mouse
 						CppUtils::Terminal::PrimitiveStyle::Outline,
 						CppUtils::Terminal::CharAttributes{});
 
-					if (event->position.x() < size.width() and event->position.y() < size.height())
+					if (const auto origin = canvas.getAbsolutePosition();
+						event->position.x() >= origin.x() and event->position.y() >= origin.y())
 					{
-						auto c = ' ';
-						switch (event->button)
+						const auto relativePosition = event->position - origin;
+						if (relativePosition.x() < size.width() and relativePosition.y() < size.height())
 						{
-						case CppUtils::Terminal::Mouse::Button::Left: c = 'L'; break;
-						case CppUtils::Terminal::Mouse::Button::Middle: c = 'M'; break;
-						case CppUtils::Terminal::Mouse::Button::Right: c = 'R'; break;
-						case CppUtils::Terminal::Mouse::Button::ScrollUp: c = '^'; break;
-						case CppUtils::Terminal::Mouse::Button::ScrollDown: c = 'v'; break;
-						default: c = '.'; break;
+							auto c = ' ';
+							switch (event->button)
+							{
+							case CppUtils::Terminal::Mouse::Button::Left: c = 'L'; break;
+							case CppUtils::Terminal::Mouse::Button::Middle: c = 'M'; break;
+							case CppUtils::Terminal::Mouse::Button::Right: c = 'R'; break;
+							case CppUtils::Terminal::Mouse::Button::ScrollUp: c = '^'; break;
+							case CppUtils::Terminal::Mouse::Button::ScrollDown: c = 'v'; break;
+							default: c = '.'; break;
+							}
+
+							c = event->pressed ? static_cast<char>(std::toupper(c)) : static_cast<char>(std::tolower(c));
+							canvas.setChar(relativePosition, CppUtils::Terminal::CharAttributes{c});
+
+							canvas.printText({1, 1}, std::format("Position: {}, {}", event->position.x(), event->position.y()));
+							canvas.printText({1, 2}, std::format("Button: {} Pressed: {}", (int)event->button, event->pressed));
+							canvas.printText({1, 3}, std::format("Modifiers: {}{}{}", event->ctrl ? "C" : "", event->alt ? "A" : "", event->shift ? "S" : ""));
 						}
-
-						c = event->pressed ? static_cast<char>(std::toupper(c)) : static_cast<char>(std::tolower(c));
-						canvas.setChar(event->position, CppUtils::Terminal::CharAttributes{c});
-
-						canvas.printText({1, 1}, std::format("Position: {}, {}", event->position.x(), event->position.y()));
-						canvas.printText({1, 2}, std::format("Button: {} Pressed: {}", (int)event->button, event->pressed));
-						canvas.printText({1, 3}, std::format("Modifiers: {}{}{}", event->ctrl ? "C" : "", event->alt ? "A" : "", event->shift ? "S" : ""));
 					}
 					canvas.print();
 				}
