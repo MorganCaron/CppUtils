@@ -70,4 +70,4 @@ export import CppUtils.UnitTests.Type.Enum;
 export import CppUtils.UnitTests.Type.Mapping;
 export import CppUtils.UnitTests.Type.Tuple;
 export import CppUtils.UnitTests.UnitTest;
-export import CppUtils.UnitTests.UnitTest.DummyObject;
+export import CppUtils.UnitTests.UnitTest.LifetimeChecker;

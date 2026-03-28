@@ -1,13 +1,13 @@
-export module CppUtils.UnitTest.DummyObject;
+export module CppUtils.UnitTest.LifetimeChecker;
 
 import std;
 
 export namespace CppUtils::UnitTest
 {
-	class DummyObject
+	class LifetimeChecker
 	{
 	public:
-		inline DummyObject(std::function<void(std::string_view)> callback, std::string name, std::size_t indentationLevel = 0):
+		inline LifetimeChecker(std::function<void(std::string_view)> callback, std::string name, std::size_t indentationLevel = 0):
 			m_callback{std::move(callback)},
 			m_name{std::move(name)},
 			m_indentationLevel{indentationLevel}
@@ -25,12 +25,12 @@ export namespace CppUtils::UnitTest
 			return m_moveCount;
 		}
 
-		virtual ~DummyObject()
+		virtual ~LifetimeChecker()
 		{
 			m_callback(std::format("{}~{}()", std::string(m_indentationLevel, '\t'), m_name));
 		}
 
-		inline DummyObject(const DummyObject& other):
+		inline LifetimeChecker(const LifetimeChecker& other):
 			m_callback{other.m_callback},
 			m_name{other.m_name},
 			m_indentationLevel{other.m_indentationLevel},
@@ -40,7 +40,7 @@ export namespace CppUtils::UnitTest
 			m_callback(std::format("{}{}(const {}&)", std::string(m_indentationLevel, '\t'), m_name, m_name));
 		}
 
-		inline DummyObject(DummyObject&& other) noexcept:
+		inline LifetimeChecker(LifetimeChecker&& other) noexcept:
 			m_callback{other.m_callback},
 			m_name{std::move(other.m_name)},
 			m_indentationLevel{other.m_indentationLevel},
@@ -51,7 +51,7 @@ export namespace CppUtils::UnitTest
 			m_callback(std::format("{}{}({}&&)", std::string(m_indentationLevel, '\t'), m_name, m_name));
 		}
 
-		inline auto operator=(const DummyObject& rhs) -> DummyObject&
+		inline auto operator=(const LifetimeChecker& rhs) -> LifetimeChecker&
 		{
 			m_callback = rhs.m_callback;
 			m_name = rhs.m_name;
@@ -62,7 +62,7 @@ export namespace CppUtils::UnitTest
 			return *this;
 		}
 
-		inline auto operator=(DummyObject&& rhs) noexcept -> DummyObject&
+		inline auto operator=(LifetimeChecker&& rhs) noexcept -> LifetimeChecker&
 		{
 			m_callback = rhs.m_callback;
 			m_name = std::move(rhs.m_name);

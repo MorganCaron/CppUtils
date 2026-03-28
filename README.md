@@ -122,7 +122,7 @@
 - [`Variant`](modules/Type/Variant.mpp) - Generic print and comparison operators for `std::variant`
 
 ### 🧪 Unit Testing
-- [`DummyObject`](modules/UnitTest/DummyObject.mpp) - Dummy object that prints construction, destruction, copy and move operations, while counting copies and moves for test verification
+- [`LifetimeChecker`](modules/UnitTest/LifetimeChecker.mpp) - Object that prints construction, destruction, copy and move operations, while counting copies and moves for test verification
 - [`UnitTest`](modules/UnitTest/UnitTest.mpp) - Minimal test framework with assertions and filters
 
 ### 🧩 Miscellaneous
