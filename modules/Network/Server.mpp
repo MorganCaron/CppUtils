@@ -25,7 +25,7 @@ export namespace CppUtils::Network
 			Socket::Type type = Socket::Type::TCP):
 			Socket{domain, type}
 		{
-			setIPv6Only(false);
+			auto _ = setIPv6Only(false);
 		}
 
 		[[nodiscard]] inline auto bind(std::uint16_t port) const -> std::expected<void, std::error_code>

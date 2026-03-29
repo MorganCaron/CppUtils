@@ -24,17 +24,20 @@ export namespace CppUtils::Network::Http
 				[this] {
 					if (auto clientResult = m_server.accept(); clientResult)
 					{
-						clientResult.value().setBlocking(true);
+						auto _ = clientResult.value().setBlocking(true);
 						m_threadPool.call([this, client = std::move(clientResult.value())]() mutable {
 							handleClient(std::move(client));
 						});
 					}
 				},
-				[this] { m_server.shutdown(); }
-			}
+				[this] { auto _ = m_server.shutdown(); }}
 		{
-			m_server.setReuseAddress(true);
-			m_server.setBlocking(true);
+			{
+				auto _ = m_server.setReuseAddress(true);
+			}
+			{
+				auto _ = m_server.setBlocking(true);
+			}
 			if (auto result = m_server.bind(port); not result)
 				throw std::system_error{result.error(), "HTTP Server bind failed"};
 			if (auto result = m_server.listen(); not result)

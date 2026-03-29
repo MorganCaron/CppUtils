@@ -202,7 +202,7 @@ export namespace CppUtils::Network
 #endif
 		};
 
-		inline auto shutdown(ShutdownMode mode = ShutdownMode::Both) const -> std::expected<void, std::error_code>
+		[[nodiscard]] inline auto shutdown(ShutdownMode mode = ShutdownMode::Both) const -> std::expected<void, std::error_code>
 		{
 			if (auto result = expectSocket(::shutdown(m_socket, static_cast<int>(mode))); not result)
 				return std::unexpected{result.error()};
@@ -246,7 +246,7 @@ export namespace CppUtils::Network
 			return addressToEndpoint(address);
 		}
 
-		inline auto setIPv6Only(bool enable) const -> std::expected<void, std::error_code>
+		[[nodiscard]] inline auto setIPv6Only(bool enable) const -> std::expected<void, std::error_code>
 		{
 			if (m_domain != Domain::IPV6)
 				return {};
@@ -256,7 +256,7 @@ export namespace CppUtils::Network
 			return {};
 		}
 
-		inline auto setReuseAddress(bool enable) const -> std::expected<void, std::error_code>
+		[[nodiscard]] inline auto setReuseAddress(bool enable) const -> std::expected<void, std::error_code>
 		{
 			auto value = static_cast<int>(enable);
 			if (not setSocketOption(m_socket, SOL_SOCKET, SO_REUSEADDR, std::addressof(value), sizeof(value)))
@@ -264,7 +264,7 @@ export namespace CppUtils::Network
 			return {};
 		}
 
-		inline auto setBlocking(bool enable) -> std::expected<void, std::error_code>
+		[[nodiscard]] inline auto setBlocking(bool enable) -> std::expected<void, std::error_code>
 		{
 			m_isBlocking = enable;
 #if defined(OS_WINDOWS)
@@ -325,7 +325,7 @@ export namespace CppUtils::Network
 			return {};
 		}
 
-		inline auto send(const void* data, std::size_t size) -> std::expected<void, std::error_code>
+		[[nodiscard]] inline auto send(const void* data, std::size_t size) -> std::expected<void, std::error_code>
 		{
 			if (m_type == Type::UDP)
 				return std::unexpected{std::make_error_code(std::errc::invalid_argument)};
@@ -350,7 +350,7 @@ export namespace CppUtils::Network
 			return {};
 		}
 
-		inline auto sendDatagram(const void* data, std::size_t size, std::string_view ip, std::uint16_t port) -> std::expected<void, std::error_code>
+		[[nodiscard]] inline auto sendDatagram(const void* data, std::size_t size, std::string_view ip, std::uint16_t port) -> std::expected<void, std::error_code>
 		{
 			if (m_type != Type::UDP)
 				return std::unexpected{std::make_error_code(std::errc::invalid_argument)};
@@ -366,22 +366,22 @@ export namespace CppUtils::Network
 			return {};
 		}
 
-		inline auto send(std::string_view string) -> std::expected<void, std::error_code>
+		[[nodiscard]] inline auto send(std::string_view string) -> std::expected<void, std::error_code>
 		{
 			return send(std::data(string), std::size(string));
 		}
 
-		inline auto send(const std::vector<std::byte>& data) -> std::expected<void, std::error_code>
+		[[nodiscard]] inline auto send(const std::vector<std::byte>& data) -> std::expected<void, std::error_code>
 		{
 			return send(std::data(data), std::size(data));
 		}
 
-		inline auto sendDatagram(std::string_view string, std::string_view ip, std::uint16_t port) -> std::expected<void, std::error_code>
+		[[nodiscard]] inline auto sendDatagram(std::string_view string, std::string_view ip, std::uint16_t port) -> std::expected<void, std::error_code>
 		{
 			return sendDatagram(std::data(string), std::size(string), ip, port);
 		}
 
-		inline auto send(const CppUtils::Type::TriviallyCopyable auto& data) -> std::expected<void, std::error_code>
+		[[nodiscard]] inline auto send(const CppUtils::Type::TriviallyCopyable auto& data) -> std::expected<void, std::error_code>
 		{
 			return send(std::addressof(data), sizeof(decltype(data)));
 		}

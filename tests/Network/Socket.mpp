@@ -17,7 +17,7 @@ namespace CppUtils::UnitTest::Network
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
-				server.setReuseAddress(true);
+				suite.expect(server.setReuseAddress(true));
 				suite.expect(server.bind(8'080));
 				suite.expect(server.listen());
 				Logger::print("Server: Waiting for connections on port 8080...");
@@ -47,7 +47,7 @@ namespace CppUtils::UnitTest::Network
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
-				server.setReuseAddress(true);
+				suite.expect(server.setReuseAddress(true));
 				suite.expect(server.bind(8'080));
 				suite.expect(server.listen());
 				Logger::print("Server: Waiting for connections on port 8080...");
@@ -56,7 +56,7 @@ namespace CppUtils::UnitTest::Network
 				auto clientSocket = server.accept();
 				suite.expect(clientSocket);
 				Logger::print("Server: A new client has joined");
-				clientSocket->setBlocking(true);
+				suite.expect(clientSocket->setBlocking(true));
 				Logger::print("Server: Blocking enabled");
 			});
 
@@ -65,7 +65,7 @@ namespace CppUtils::UnitTest::Network
 				auto client = CppUtils::Network::Client{};
 				Logger::print("Client: Attempting to connect...");
 				suite.expect(client.connect("", 8'080));
-				client.setBlocking(true);
+				suite.expect(client.setBlocking(true));
 				Logger::print("Client: Blocking enabled");
 			});
 
@@ -80,7 +80,7 @@ namespace CppUtils::UnitTest::Network
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
-				server.setReuseAddress(true);
+				suite.expect(server.setReuseAddress(true));
 				suite.expect(server.bind(8'080));
 				suite.expect(server.listen());
 				Logger::print("Server: Waiting for connections on port 8080...");
@@ -92,7 +92,7 @@ namespace CppUtils::UnitTest::Network
 				auto clientSocket = std::move(clientSocketResult.value());
 				Logger::print("Server: A new client has joined");
 
-				clientSocket.setBlocking(true);
+				suite.expect(clientSocket.setBlocking(true));
 				Logger::print("Server: Socket set to blocking mode");
 
 				auto number = clientSocket.receive<int>();
@@ -110,7 +110,7 @@ namespace CppUtils::UnitTest::Network
 				serverisReady.wait(false);
 				auto client = CppUtils::Network::Client{};
 				Logger::print("Client: Attempting to connect...");
-				client.setBlocking(true);
+				suite.expect(client.setBlocking(true));
 				suite.expect(client.connect("", 8'080));
 				Logger::print("Client: Connected to server");
 
@@ -136,7 +136,7 @@ namespace CppUtils::UnitTest::Network
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
-				server.setReuseAddress(true);
+				suite.expect(server.setReuseAddress(true));
 				suite.expect(server.bind(8'080));
 				suite.expect(server.listen());
 				Logger::print("Server: Waiting for connections on port 8080...");
@@ -148,7 +148,7 @@ namespace CppUtils::UnitTest::Network
 				auto clientSocket = std::move(clientSocketResult.value());
 				Logger::print("Server: A new client has joined");
 
-				clientSocket.setBlocking(true);
+				suite.expect(clientSocket.setBlocking(true));
 				Logger::print("Server: Socket set to blocking mode");
 
 				auto messageLength = clientSocket.receive<std::size_t>();
@@ -170,7 +170,7 @@ namespace CppUtils::UnitTest::Network
 				serverisReady.wait(false);
 				auto client = CppUtils::Network::Client{};
 				Logger::print("Client: Attempting to connect...");
-				client.setBlocking(true);
+				suite.expect(client.setBlocking(true));
 				suite.expect(client.connect("", 8'080));
 				Logger::print("Client: Connected");
 
@@ -200,7 +200,7 @@ namespace CppUtils::UnitTest::Network
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{CppUtils::Network::Socket::Domain::IPV4, CppUtils::Network::Socket::Type::UDP};
-				server.setReuseAddress(true);
+				suite.expect(server.setReuseAddress(true));
 				suite.expect(server.bind(8'080));
 
 				serverisReady.store(true, std::memory_order_release);
@@ -242,7 +242,7 @@ namespace CppUtils::UnitTest::Network
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
-				server.setReuseAddress(true);
+				suite.expect(server.setReuseAddress(true));
 				suite.expect(server.bind(8'080));
 				suite.expect(server.listen());
 				serverisReady.store(true, std::memory_order_release);
@@ -258,7 +258,7 @@ namespace CppUtils::UnitTest::Network
 				serverisReady.wait(false);
 				auto client = CppUtils::Network::Client{};
 				suite.expect(client.connect("", 8'080));
-				client.setBlocking(false);
+				suite.expect(client.setBlocking(false));
 
 				suite.expect(client.isReadyForRead(5s));
 				auto data = client.receive<int>();
@@ -279,7 +279,7 @@ namespace CppUtils::UnitTest::Network
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
-				server.setReuseAddress(true);
+				suite.expect(server.setReuseAddress(true));
 				suite.expect(server.bind(8'080));
 				suite.expect(server.listen());
 				serverisReady.store(true, std::memory_order_release);
@@ -294,7 +294,7 @@ namespace CppUtils::UnitTest::Network
 				serverisReady.wait(false);
 				auto client = CppUtils::Network::Client{};
 				suite.expect(client.connect("", 8'080));
-				client.setBlocking(false);
+				suite.expect(client.setBlocking(false));
 				suite.expect(not client.isReadyForRead(100ms));
 			});
 
@@ -309,7 +309,7 @@ namespace CppUtils::UnitTest::Network
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
-				server.setReuseAddress(true);
+				suite.expect(server.setReuseAddress(true));
 				suite.expect(server.bind(8'080));
 				suite.expect(server.listen());
 				serverisReady.store(true, std::memory_order_release);
@@ -324,7 +324,7 @@ namespace CppUtils::UnitTest::Network
 				serverisReady.wait(false);
 				auto client = CppUtils::Network::Client{};
 				suite.expect(client.connect("", 8'080));
-				client.setBlocking(false);
+				suite.expect(client.setBlocking(false));
 
 				auto result = client.receive<int>();
 				suite.expect(not result);
@@ -342,7 +342,7 @@ namespace CppUtils::UnitTest::Network
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
-				server.setReuseAddress(true);
+				suite.expect(server.setReuseAddress(true));
 				suite.expect(server.bind(8'080));
 				suite.expect(server.listen());
 				serverisReady.store(true, std::memory_order_release);
@@ -371,7 +371,7 @@ namespace CppUtils::UnitTest::Network
 
 			auto serverListening = CppUtils::Thread::tryAsync([&] {
 				auto server = CppUtils::Network::Server{};
-				server.setReuseAddress(true);
+				suite.expect(server.setReuseAddress(true));
 				suite.expect(server.bind(8'080));
 				suite.expect(server.listen());
 				serverisReady.store(true, std::memory_order_release);
