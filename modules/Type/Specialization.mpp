@@ -1,0 +1,24 @@
+export module CppUtils.Type.Specialization;
+
+import std;
+
+export namespace CppUtils::Type
+{
+	template<class T, template<class...> class>
+	inline constexpr auto isSpecializationOfTypes = false;
+
+	template<template<class...> class IncompleteType, class... Args>
+	inline constexpr auto isSpecializationOfTypes<IncompleteType<Args...>, IncompleteType> = true;
+
+	template<class T, template<class...> class IncompleteType>
+	concept Specializes = isSpecializationOfTypes<std::remove_cvref_t<T>, IncompleteType>;
+
+	template<class T, template<auto...> class>
+	inline constexpr auto isSpecializationOfValues = false;
+
+	template<template<auto...> class IncompleteType, auto... Args>
+	inline constexpr auto isSpecializationOfValues<IncompleteType<Args...>, IncompleteType> = true;
+
+	template<class T, template<auto...> class IncompleteType>
+	concept SpecializesValue = isSpecializationOfValues<std::remove_cvref_t<T>, IncompleteType>;
+}

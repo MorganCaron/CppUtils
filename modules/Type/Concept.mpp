@@ -1,6 +1,7 @@
 export module CppUtils.Type.Concept;
 
 import std;
+export import CppUtils.Type.Specialization;
 
 export namespace CppUtils::Type
 {
@@ -21,15 +22,6 @@ export namespace CppUtils::Type
 	concept IsHashable = requires (std::remove_cvref_t<T>& a) {
 		{ std::hash<std::remove_cvref_t<T>>{}(a) } -> std::convertible_to<std::size_t>;
 	};
-
-	template<class T, template<class...> class IncompleteType>
-	inline constexpr auto isSpecializationOf = false;
-
-	template<template<class...> class IncompleteType, class... Args>
-	inline constexpr auto isSpecializationOf<IncompleteType<Args...>, IncompleteType> = true;
-
-	template<class T, template<class...> class IncompleteType>
-	concept Specializes = isSpecializationOf<std::remove_cvref_t<T>, IncompleteType>;
 
 	template<class T>
 	concept Function = std::is_function_v<T>;
