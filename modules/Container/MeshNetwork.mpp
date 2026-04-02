@@ -10,316 +10,379 @@ import CppUtils.Thread.SharedPtr;
 export namespace CppUtils::Container
 {
 	template<class Key, class Value>
-	struct MeshNode final
+	class MeshNodePtr final
 	{
-		using NetworkPtr = NetworkPtr<MeshNode<Key, Value>>;
-		using SharedPtr = NetworkPtr::SharedPtr;
-		using WeakPtr = NetworkPtr::WeakPtr;
-		using Accessor = NetworkPtr::Accessor;
-
-		explicit inline MeshNode(auto&&... args):
-			value{std::forward<decltype(args)>(args)...}
-		{}
-
-		static inline auto attach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
+	private:
+		struct MeshNode final
 		{
-			auto accessor = Thread::MultipleAccessor{*node0, *node1};
-			auto& node0Ref = std::get<0>(accessor.values);
-			auto& node1Ref = std::get<1>(accessor.values);
+			using WeakPtr = SafeWeak<NetworkPtr<MeshNode>>;
+			using VectorLocker = Thread::SharedLocker<std::vector<WeakPtr>>;
+			using Branches = std::unordered_map<Key, SafeShared<std::vector<WeakPtr>>>;
 
-			node0Ref.attachChild(node1, node1Ref);
-			node0Ref.value.branches[key1].push_back(node1);
-		}
+			Thread::SharedLocker<Value> value;
+			Thread::SharedLocker<Branches> branches;
 
-		static inline auto detach(SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
+			explicit inline MeshNode(auto&&... args):
+				value{std::forward<decltype(args)>(args)...}
+			{}
+		};
+
+		using SharedPtr = SafeShared<NetworkPtr<MeshNode>>;
+		using WeakPtr = MeshNode::WeakPtr;
+		using VectorLocker = MeshNode::VectorLocker;
+		using Branches = MeshNode::Branches;
+
+	private:
+		static auto attach(
+			const MeshNodePtr& parent,
+			const Key& key,
+			const MeshNodePtr& child,
+			SafeShared<std::vector<WeakPtr>> existingPersistenceGuard = nullptr) -> void
 		{
-			auto accessor = Thread::MultipleAccessor{*node0, *node1};
-			auto& node0Ref = std::get<0>(accessor.values);
-			auto& node1Ref = std::get<1>(accessor.values);
+			auto accessor = Thread::MultipleAccessor{*parent.m_node, *child.m_node};
+			auto& parentNetworkPtr = std::get<0>(accessor.values);
+			auto& childNetworkPtr = std::get<1>(accessor.values);
 
-			auto& branches = node0Ref.value.branches;
-			if (auto branchIt = branches.find(key1); branchIt != std::cend(branches))
+			auto persistenceGuard = SafeShared<std::vector<WeakPtr>>{};
 			{
-				auto& children = branchIt->second;
-				if (auto childIt = std::find_if(std::cbegin(children), std::cend(children), [&](const auto& child) -> bool {
-					return SafeShared{child} == node1;
-				});
-					childIt != std::cend(children))
-					children.erase(childIt);
-				if (std::empty(children))
-					branches.erase(branchIt);
+				auto branchesAccessor = parentNetworkPtr.value.branches.uniqueAccess();
+				auto& entry = branchesAccessor.value()[key];
+				if (not entry)
+					entry = existingPersistenceGuard ? existingPersistenceGuard : makeSafeShared<std::vector<WeakPtr>>();
+				persistenceGuard = entry;
 			}
-			node0Ref.detachChild(node1, node1Ref);
+
+			persistenceGuard->uniqueAccess()->push_back(child.m_node);
+			parentNetworkPtr.attachChild(childNetworkPtr);
 		}
 
-		static inline auto detach(SharedPtr& node, const Key& key) -> void
+		static auto detach(const MeshNodePtr& parent, const Key& key, const MeshNodePtr& child) -> void
 		{
-			const auto nodesToDetach = [&node, &key] -> std::vector<WeakPtr> {
-				auto nodeAccessor = node->uniqueAccess();
-				auto& branches = nodeAccessor->value.branches;
-				auto branch = branches[key];
-				branches.erase(key);
-				return branch;
-			}();
-			for (const auto& nodeToDetach : nodesToDetach)
-				if (auto sharedNode = nodeToDetach.lock())
-				{
-					auto accessor = Thread::MultipleAccessor{*node, *sharedNode};
-					auto& parentRef = std::get<0>(accessor.values);
-					auto& childRef = std::get<1>(accessor.values);
-					parentRef.detachChild(sharedNode, childRef);
-				}
-		}
+			auto accessor = Thread::MultipleAccessor{*parent.m_node, *child.m_node};
+			auto& parentNetworkPtr = std::get<0>(accessor.values);
+			auto& childNetworkPtr = std::get<1>(accessor.values);
 
-		static inline auto attach(const Key& key0, SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
-		{
-			if (node0->sharedAccess()->getDistanceFromRoot() == std::numeric_limits<std::size_t>::max())
+			auto branchesAccessor = parentNetworkPtr.value.branches.uniqueAccess();
+			if (auto branchIterator = branchesAccessor->find(key); branchIterator != std::cend(branchesAccessor.value()))
 			{
-				attach(node1, key0, node0);
-				attach(node0, key1, node1);
+				auto persistenceGuard = branchIterator->second;
+				auto vectorAccessor = persistenceGuard->uniqueAccess();
+				auto& vector = vectorAccessor.value();
+				if (auto it = std::ranges::find_if(vector, [&](auto& weak) { return Thread::SharedPtr::ownerEqual(weak, child.m_node); }); it != std::cend(vector))
+				{
+					vector.erase(it);
+					parentNetworkPtr.detachChild(childNetworkPtr);
+				}
+
+				if (std::empty(vector))
+					branchesAccessor->erase(branchIterator);
+			}
+		}
+
+		static auto detach(const MeshNodePtr& parent, const Key& key) -> void
+		{
+			auto children = std::vector<MeshNodePtr>{};
+			{
+				auto nodeAccessor = parent.m_node->sharedAccess();
+				auto branchesAccessor = nodeAccessor->value.branches.sharedAccess();
+				if (auto branchIterator = branchesAccessor->find(key); branchIterator != std::cend(branchesAccessor.value()))
+					for (auto vectorAccessor = branchIterator->second->sharedAccess(); auto& weak : vectorAccessor.value())
+						if (auto shared = weak.lock())
+							children.push_back(MeshNodePtr{shared});
+			}
+			for (auto& child : children)
+				detach(parent, key, child);
+		}
+
+		static auto attach(
+			const Key& firstKey,
+			const MeshNodePtr& firstNode,
+			const Key& secondKey,
+			const MeshNodePtr& secondNode,
+			SafeShared<std::vector<WeakPtr>> firstNodePersistenceGuard = nullptr,
+			SafeShared<std::vector<WeakPtr>> secondNodePersistenceGuard = nullptr) -> void
+		{
+			if (firstNode.m_node->sharedAccess()->getDistanceFromRoot() == std::numeric_limits<std::size_t>::max())
+			{
+				attach(secondNode, firstKey, firstNode, secondNodePersistenceGuard);
+				attach(firstNode, secondKey, secondNode, firstNodePersistenceGuard);
 			}
 			else
 			{
-				attach(node0, key1, node1);
-				attach(node1, key0, node0);
+				attach(firstNode, secondKey, secondNode, firstNodePersistenceGuard);
+				attach(secondNode, firstKey, firstNode, secondNodePersistenceGuard);
 			}
 		}
 
-		static inline auto detach(const Key& key0, SharedPtr& node0, const Key& key1, SharedPtr& node1) -> void
+		static auto detach(const Key& firstKey, const MeshNodePtr& firstNode, const Key& secondKey, const MeshNodePtr& secondNode) -> void
 		{
-			detach(node0, key1, node1);
-			detach(node1, key0, node0);
+			detach(firstNode, secondKey, secondNode);
+			detach(secondNode, firstKey, firstNode);
 		}
 
-		Value value;
-		std::unordered_map<Key, std::vector<WeakPtr>> branches;
-	};
-
-	template<class Key, class Value>
-	class MeshNodePtr final
-	{
 	public:
-		using NetworkPtr = NetworkPtr<MeshNode<Key, Value>>;
-		using SharedPtr = NetworkPtr::SharedPtr;
-
-		template<class NodePtrType>
+		template<bool IsConst>
 		class Branch final
 		{
 		public:
-			using ChildrenVector = std::vector<typename MeshNode<Key, Value>::WeakPtr>;
+			using VectorAccessor = std::conditional_t<IsConst,
+				Thread::ReadOnlyAccessor<std::vector<WeakPtr>>,
+				Thread::Accessor<std::vector<WeakPtr>, std::shared_mutex>>;
 
-			class BranchIterator final
-			{
-			public:
-				using iterator_category = std::input_iterator_tag;
-				using value_type = MeshNodePtr<Key, Value>;
-				using difference_type = std::ptrdiff_t;
-				using pointer = value_type*;
-				using reference = value_type&;
-				using internal_iterator_type = std::conditional_t<
-					std::is_const_v<std::remove_reference_t<NodePtrType>>,
-					typename std::vector<typename MeshNode<Key, Value>::WeakPtr>::const_iterator,
-					typename std::vector<typename MeshNode<Key, Value>::WeakPtr>::iterator>;
-
-				BranchIterator() = default;
-				BranchIterator(internal_iterator_type iterator): m_iterator{iterator} {}
-
-				[[nodiscard]] auto operator*() const -> MeshNodePtr<Key, Value>
-				{
-					return MeshNodePtr<Key, Value>{m_iterator->lock()};
-				}
-
-				auto operator++() -> BranchIterator&
-				{
-					++m_iterator;
-					return *this;
-				}
-
-				auto operator++(int) -> BranchIterator
-				{
-					BranchIterator temp = *this;
-					++(*this);
-					return temp;
-				}
-
-				[[nodiscard]] auto operator==(const BranchIterator& other) const -> bool
-				{
-					return m_iterator == other.m_iterator;
-				}
-
-				[[nodiscard]] auto operator!=(const BranchIterator& other) const -> bool
-				{
-					return not(*this == other);
-				}
-
-			private:
-				internal_iterator_type m_iterator;
-			};
-
-			Branch(NodePtrType& self, const Key& key, ChildrenVector children): m_self(self), m_key(key), m_children(std::move(children))
+			Branch() = default;
+			Branch(MeshNodePtr parent, Key key, SafeShared<std::vector<WeakPtr>> persistenceGuard, VectorAccessor vectorAccessor):
+				m_parent{std::move(parent)}, m_key{std::move(key)},
+				m_persistenceGuard{std::move(persistenceGuard)},
+				m_vectorAccessor{std::move(vectorAccessor)}
 			{}
 
-			[[nodiscard]] auto begin(this auto&& self) -> BranchIterator
+		private:
+			[[nodiscard]] auto getVectorAccessor(this auto&& self) -> auto&
 			{
-				return BranchIterator{std::begin(self.m_children)};
+				if (not self.m_vectorAccessor) [[unlikely]]
+				{
+					if constexpr (IsConst)
+						self.m_vectorAccessor = self.m_persistenceGuard->sharedAccess();
+					else
+						self.m_vectorAccessor = self.m_persistenceGuard->uniqueAccess();
+				}
+				return self.m_vectorAccessor.value();
 			}
 
-			[[nodiscard]] auto end(this auto&& self) -> BranchIterator
+		public:
+			[[nodiscard]] auto size() const noexcept -> std::size_t
 			{
-				return BranchIterator{std::end(self.m_children)};
+				if (not m_persistenceGuard) [[unlikely]]
+					return 0uz;
+				return std::size(getVectorAccessor().value());
 			}
 
-			[[nodiscard]] auto size() const -> std::size_t
-			{
-				return std::size(m_children);
-			}
+			[[nodiscard]] auto empty() const noexcept -> bool { return size() == 0uz; }
 
-			[[nodiscard]] auto empty() const -> bool
+			[[nodiscard]] auto contains(const MeshNodePtr& node) const -> bool
 			{
-				return std::empty(m_children);
+				if (not m_persistenceGuard) [[unlikely]]
+					return false;
+				return std::ranges::any_of(getVectorAccessor().value(), [&](const auto& weak) {
+					return Thread::SharedPtr::ownerEqual(weak, node.m_node);
+				});
 			}
 
 			auto clear() -> void
+			requires (not IsConst)
 			{
-				if constexpr (not std::is_const_v<NodePtrType>)
-				{
-					for (const auto& weakChild : m_children)
-						if (auto child = weakChild.lock())
-							MeshNode<Key, Value>::detach(m_self.get(), m_key, child);
-				}
-				else
-					throw std::logic_error{"Cannot clear a const branch"};
-			}
-
-			auto erase() -> void
-			{
-				if constexpr (not std::is_const_v<NodePtrType>)
-					MeshNode<Key, Value>::detach(m_self.get(), m_key);
-				else
-					throw std::logic_error{"Cannot erase a const branch"};
-			}
-
-			auto operator>>(MeshNodePtr<Key, Value>& other) -> MeshNodePtr<Key, Value>&
-			{
-				if constexpr (not std::is_const_v<NodePtrType>)
-				{
-					MeshNode<Key, Value>::attach(m_self.get(), m_key, other.get());
-					return other;
-				}
-				else
-					throw std::logic_error{"Cannot attach to a const branch"};
-			}
-
-			auto operator>>(Branch<NodePtrType>&& otherBranch) -> Branch<NodePtrType>&&
-			{
-				if constexpr (not std::is_const_v<NodePtrType>)
-				{
-					MeshNode<Key, Value>::attach(m_self.get(), m_key, otherBranch.m_self.get());
-					return std::move(otherBranch);
-				}
-				else
-					throw std::logic_error{"Cannot attach to a const branch"};
-			}
-
-			auto operator-(MeshNodePtr<Key, Value>& other) -> void
-			{
-				if constexpr (not std::is_const_v<NodePtrType>)
-					MeshNode<Key, Value>::detach(m_self.get(), m_key, other.get());
-				else
-					throw std::logic_error{"Cannot detach from a const branch"};
-			}
-
-			auto operator&(const Branch<NodePtrType>& other) -> void
-			{
-				if constexpr (not std::is_const_v<NodePtrType>)
-				{
-					auto node1 = MeshNodePtr{m_self.get()};
-					auto node2 = MeshNodePtr{other.m_self.get()};
-					MeshNode<Key, Value>::attach(other.m_key, node1.get(), m_key, node2.get());
-				}
-				else
-					throw std::logic_error{"Cannot attach to a const branch"};
-			}
-
-			auto operator/(const Branch<NodePtrType>& other) -> void
-			{
-				if constexpr (not std::is_const_v<NodePtrType>)
-				{
-					auto node1 = MeshNodePtr{m_self.get()};
-					auto node2 = MeshNodePtr{other.m_self.get()};
-					MeshNode<Key, Value>::detach(other.m_key, node1.get(), m_key, node2.get());
-				}
-				else
-					throw std::logic_error{"Cannot detach from a const branch"};
+				m_vectorAccessor.reset();
+				MeshNodePtr::detach(m_parent, m_key);
 			}
 
 			[[nodiscard]] auto operator[](std::size_t index) const -> std::expected<MeshNodePtr, std::string_view>
 			{
 				using namespace std::literals;
-
-				if (index >= std::size(m_children))
+				if (not m_persistenceGuard) [[unlikely]]
+					return std::unexpected{"Branch is no longer valid"sv};
+				auto& vectorAccessor = getVectorAccessor();
+				if (index >= std::size(vectorAccessor.value())) [[unlikely]]
 					return std::unexpected{"Branch index out of bounds"sv};
-				if (auto sharedChild = m_children[index].lock())
-					return MeshNodePtr{sharedChild};
+				if (auto sharedNode = vectorAccessor.value()[index].lock()) [[likely]]
+					return MeshNodePtr{sharedNode};
 				return std::unexpected{"Failed to lock weak pointer for branch. Node might have been deleted"sv};
 			}
 
-			[[nodiscard]] auto front() const -> std::expected<MeshNodePtr, std::string_view>
+			auto operator>>(const MeshNodePtr& other) -> const MeshNodePtr&
+			requires (not IsConst)
 			{
-				return (*this)[0];
+				auto persistenceGuard = m_persistenceGuard;
+				m_vectorAccessor.reset();
+				MeshNodePtr::attach(m_parent, m_key, other, persistenceGuard);
+				return other;
 			}
 
-			[[nodiscard]] auto back() const -> std::expected<MeshNodePtr, std::string_view>
+			auto operator>>(Branch<false>&& other) -> Branch<false>&&
+			requires (not IsConst)
 			{
-				return (*this)[std::size(m_children) - 1];
+				auto persistenceGuard = m_persistenceGuard;
+				m_vectorAccessor.reset();
+				MeshNodePtr::attach(m_parent, m_key, other.m_parent, persistenceGuard);
+				return std::move(other);
 			}
+
+			auto operator-(const MeshNodePtr& other) -> void
+			requires (not IsConst)
+			{
+				m_vectorAccessor.reset();
+				MeshNodePtr::detach(m_parent, m_key, other);
+			}
+
+			template<bool OtherIsConst>
+			auto operator&(const Branch<OtherIsConst>& other) -> void
+			requires (not IsConst)
+			{
+				auto persistenceGuard = m_persistenceGuard;
+				auto otherPersistenceGuard = other.m_persistenceGuard;
+				m_vectorAccessor.reset();
+				other.m_vectorAccessor.reset();
+				MeshNodePtr::attach(other.m_key, m_parent, m_key, other.m_parent, otherPersistenceGuard, persistenceGuard);
+			}
+
+			template<bool OtherIsConst>
+			auto operator/(const Branch<OtherIsConst>& other) -> void
+			requires (not IsConst)
+			{
+				m_vectorAccessor.reset();
+				other.m_vectorAccessor.reset();
+				MeshNodePtr::detach(other.m_key, m_parent, m_key, other.m_parent);
+			}
+
+			[[nodiscard]] auto front() const { return (*this)[0]; }
+			[[nodiscard]] auto back() const { return (*this)[size() - 1]; }
+
+			struct Iterator final
+			{
+				using iterator_category = std::random_access_iterator_tag;
+				using value_type = MeshNodePtr;
+				using difference_type = std::ptrdiff_t;
+				using pointer = void;
+				using reference = MeshNodePtr;
+
+				const Branch* branch = nullptr;
+				std::size_t index = 0uz;
+
+				[[nodiscard]] auto operator*() const -> MeshNodePtr { return (*branch)[index].value_or(MeshNodePtr{}); }
+
+				auto operator++() -> Iterator&
+				{
+					++index;
+					return *this;
+				}
+				auto operator++(int) -> Iterator
+				{
+					auto oldValue = *this;
+					++index;
+					return oldValue;
+				}
+				auto operator--() -> Iterator&
+				{
+					--index;
+					return *this;
+				}
+				auto operator--(int) -> Iterator
+				{
+					auto oldValue = *this;
+					--index;
+					return oldValue;
+				}
+
+				auto operator+=(difference_type n) -> Iterator&
+				{
+					index = static_cast<std::size_t>(static_cast<difference_type>(index) + n);
+					return *this;
+				}
+				auto operator-=(difference_type n) -> Iterator&
+				{
+					index = static_cast<std::size_t>(static_cast<difference_type>(index) - n);
+					return *this;
+				}
+
+				[[nodiscard]] friend auto operator+(Iterator it, difference_type n) -> Iterator
+				{
+					it += n;
+					return it;
+				}
+				[[nodiscard]] friend auto operator+(difference_type n, Iterator it) -> Iterator
+				{
+					it += n;
+					return it;
+				}
+				[[nodiscard]] friend auto operator-(Iterator it, difference_type n) -> Iterator
+				{
+					it -= n;
+					return it;
+				}
+				[[nodiscard]] friend auto operator-(const Iterator& lhs, const Iterator& rhs) -> difference_type
+				{
+					return static_cast<difference_type>(lhs.index) - static_cast<difference_type>(rhs.index);
+				}
+
+				[[nodiscard]] auto operator[](difference_type n) const -> MeshNodePtr { return *(*this + n); }
+
+				[[nodiscard]] auto operator<=>(const Iterator& other) const = default;
+			};
+
+			static_assert(std::random_access_iterator<Iterator>);
+
+			[[nodiscard]] auto begin() const { return Iterator{this, 0uz}; }
+			[[nodiscard]] auto end() const { return Iterator{this, size()}; }
 
 		private:
-			NodePtrType& m_self;
-			const Key& m_key;
-			ChildrenVector m_children;
+			MeshNodePtr m_parent;
+			Key m_key;
+			SafeShared<std::vector<WeakPtr>> m_persistenceGuard;
+			mutable std::optional<VectorAccessor> m_vectorAccessor;
+
+			friend class MeshNodePtr;
 		};
+
+		using MutableBranch = Branch<false>;
+		using ConstBranch = Branch<true>;
 
 		[[nodiscard]] static auto makeRoot(auto&&... args) -> MeshNodePtr
 		{
-			return MeshNodePtr{NetworkPtr::makeRoot(std::forward<decltype(args)>(args)...)};
+			return MeshNodePtr{NetworkPtr<MeshNode>::makeRoot(std::forward<decltype(args)>(args)...)};
 		}
 
 		[[nodiscard]] static auto make(auto&&... args) -> MeshNodePtr
 		{
-			return MeshNodePtr{NetworkPtr::make(std::forward<decltype(args)>(args)...)};
+			return MeshNodePtr{NetworkPtr<MeshNode>::make(std::forward<decltype(args)>(args)...)};
 		}
 
 		MeshNodePtr() = default;
-		MeshNodePtr(const SharedPtr& node): m_node(node) {}
-		MeshNodePtr(SharedPtr&& node): m_node(std::move(node)) {}
+		explicit MeshNodePtr(SharedPtr node): m_node{std::move(node)} {}
 
-		explicit operator bool() const noexcept
+		[[nodiscard]] auto operator==(const MeshNodePtr& other) const noexcept -> bool
 		{
-			return m_node != nullptr;
+			return Thread::SharedPtr::ownerEqual(m_node, other.m_node);
 		}
 
-		[[nodiscard]] auto operator[](const Key& key) -> Branch<MeshNodePtr<Key, Value>>
+		explicit operator bool() const noexcept { return m_node != nullptr; }
+
+		[[nodiscard]] auto operator[](this auto&& self, const Key& key)
 		{
-			if (not m_node)
+			using SelfType = std::remove_reference_t<decltype(self)>;
+			if (not self.m_node)
 				throw std::runtime_error{"MeshNodePtr::operator[]: Invalid MeshNodePtr"};
 
-			auto uniqueLocker = m_node->uniqueAccess();
-			auto& branches = uniqueLocker->value.branches;
-			return Branch{*this, key, branches[key]};
+			if constexpr (std::is_const_v<SelfType>)
+			{
+				auto mapAccessor = self.m_node->sharedAccess()->value.branches.sharedAccess();
+				auto persistenceGuardPtr = mapAccessor->at(key);
+				return Branch<true>{self, key, persistenceGuardPtr, persistenceGuardPtr->sharedAccess()};
+			}
+			auto persistenceGuardPtr = SafeShared<std::vector<WeakPtr>>{};
+			{
+				auto nodeAccessor = self.m_node->uniqueAccess();
+				auto mapAccessor = nodeAccessor->value.branches.uniqueAccess();
+				auto& entry = mapAccessor.value()[key];
+				if (not entry)
+					entry = makeSafeShared<std::vector<WeakPtr>>();
+				persistenceGuardPtr = entry;
+			}
+			return Branch<false>{self, key, persistenceGuardPtr, persistenceGuardPtr->uniqueAccess()};
 		}
 
-		[[nodiscard]] auto at(const Key& key) const -> std::expected<Branch<const MeshNodePtr<Key, Value>>, std::string_view>
+		[[nodiscard]] auto at(const Key& key) const -> std::expected<Branch<true>, std::string_view>
 		{
 			using namespace std::literals;
 
 			if (not m_node)
 				return std::unexpected{"MeshNodePtr::at(): Invalid MeshNodePtr"sv};
 
-			auto sharedLocker = m_node->sharedAccess();
-			const auto& branches = sharedLocker->value.branches;
-			if (auto iterator = branches.find(key); iterator != std::cend(branches))
-				return Branch{*this, key, iterator->second};
+			auto branchesAccessor = m_node->sharedAccess()->value.branches.sharedAccess();
+			if (auto branchIterator = branchesAccessor->find(key); branchIterator != std::cend(branchesAccessor.value())) [[likely]]
+			{
+				auto persistenceGuardPtr = branchIterator->second;
+				return Branch<true>{*this, key, persistenceGuardPtr, persistenceGuardPtr->sharedAccess()};
+			}
+
 			return std::unexpected{"MeshNodePtr::at(): Key not found"sv};
 		}
 
@@ -327,48 +390,46 @@ export namespace CppUtils::Container
 		{
 			if (not m_node)
 				return false;
+			auto nodeAccessor = m_node->sharedAccess();
+			return nodeAccessor->value.branches.sharedAccess()->contains(key);
+		}
 
-			auto sharedLocker = m_node->sharedAccess();
-			const auto& branches = sharedLocker->value.branches;
-			return branches.contains(key);
+		[[nodiscard]] auto count(const Key& key) const -> std::size_t
+		{
+			if (not m_node)
+				return 0uz;
+			auto nodeAccessor = m_node->sharedAccess();
+			return nodeAccessor->value.branches.sharedAccess()->count(key);
+		}
+
+		[[nodiscard]] auto getDistanceFromRoot() const -> std::size_t
+		{
+			if (not m_node)
+				return std::numeric_limits<std::size_t>::max();
+			return m_node->sharedAccess()->getDistanceFromRoot();
 		}
 
 		[[nodiscard]] auto operator->(this auto&& self)
 		{
-			return self.m_node.get();
+			return std::addressof(std::forward_like<decltype(self)>(*self.m_node));
 		}
 
 		[[nodiscard]] auto operator*(this auto&& self) -> decltype(auto)
 		{
-			return *self.m_node;
+			return std::forward_like<decltype(self)>(*self.m_node);
 		}
 
-		[[nodiscard]] auto get(this auto&& self) -> decltype(auto)
+		auto setValue(auto&& newValue) -> void
 		{
-			return (self.m_node);
+			auto nodeAccessor = m_node->uniqueAccess();
+			auto& meshNode = nodeAccessor->value;
+			meshNode.value.uniqueAccess().value() = std::forward<decltype(newValue)>(newValue);
 		}
 
-		auto setValue(Value&& value) -> void
+		[[nodiscard]] auto getValue() const -> Thread::ReadOnlyAccessor<Value>
 		{
-			if (not m_node)
-				return;
-			auto uniqueLocker = m_node->uniqueAccess();
-			uniqueLocker->value.value = std::forward<Value>(value);
-		}
-
-		[[nodiscard]] auto getValue() const -> std::expected<Value, std::string_view>
-		{
-			using namespace std::literals;
-
-			if (not m_node)
-				return std::unexpected{"Invalid MeshNodePtr"sv};
-			auto sharedLocker = m_node->sharedAccess();
-			return sharedLocker->value.value;
-		}
-
-		[[nodiscard]] auto operator==(const MeshNodePtr& other) const noexcept -> bool
-		{
-			return Thread::SharedPtr::ownerEqual(m_node, other.m_node);
+			auto nodeAccessor = m_node->sharedAccess();
+			return nodeAccessor->value.value.sharedAccess();
 		}
 
 	private:

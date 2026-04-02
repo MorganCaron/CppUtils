@@ -56,7 +56,7 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 				auto& rootRef = std::get<0>(accessor.values);
 				auto& branchRef = std::get<1>(accessor.values);
 				suite.expectEqual(branchRef.getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
-				rootRef.attachChild(branch, branchRef);
+				rootRef.attachChild(branchRef);
 				suite.expectEqual(branchRef.getDistanceFromRoot(), 1uz);
 			}
 			Logger::print("Persistance de Branch");
@@ -70,7 +70,7 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 					auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
 					auto& rootRef = std::get<0>(accessor.values);
 					auto& branchRef = std::get<1>(accessor.values);
-					rootRef.attachChild(branch, branchRef);
+					rootRef.attachChild(branchRef);
 					suite.expectEqual(rootRef.getDistanceFromRoot(), 0uz);
 					suite.expectEqual(branchRef.getDistanceFromRoot(), 1uz);
 				}
@@ -79,7 +79,7 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 					auto accessor = CppUtils::Thread::MultipleAccessor{*branch, *leaf};
 					auto& branchRef = std::get<0>(accessor.values);
 					auto& leafRef = std::get<1>(accessor.values);
-					branchRef.attachChild(leaf, leafRef);
+					branchRef.attachChild(leafRef);
 					suite.expectEqual(branchRef.getDistanceFromRoot(), 1uz);
 					suite.expectEqual(leafRef.getDistanceFromRoot(), 2uz);
 				}
@@ -97,7 +97,7 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 					auto& rootRef = std::get<0>(accessor.values);
 					auto& leafRef = std::get<1>(accessor.values);
 					suite.expectEqual(leafRef.getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
-					rootRef.attachChild(leaf, leafRef);
+					rootRef.attachChild(leafRef);
 					suite.expectEqual(leafRef.getDistanceFromRoot(), 1uz);
 				}
 				Logger::print("Persistance de Leaf");
@@ -105,7 +105,7 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 				auto& rootRef = std::get<0>(accessor.values);
 				auto& leafRef = std::get<1>(accessor.values);
 				suite.expectEqual(leafRef.getDistanceFromRoot(), 1uz);
-				rootRef.detachChild(leaf, leafRef);
+				rootRef.detachChild(leafRef);
 				suite.expectEqual(leafRef.getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
 			}
 			Logger::print("Non-persistance de Leaf");
@@ -120,20 +120,20 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 					auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
 					auto& rootRef = std::get<0>(accessor.values);
 					auto& branchRef = std::get<1>(accessor.values);
-					rootRef.attachChild(branch, branchRef);
+					rootRef.attachChild(branchRef);
 				}
 				{
 					auto accessor = CppUtils::Thread::MultipleAccessor{*branch, *leaf};
 					auto& branchRef = std::get<0>(accessor.values);
 					auto& leafRef = std::get<1>(accessor.values);
-					branchRef.attachChild(leaf, leafRef);
+					branchRef.attachChild(leafRef);
 				}
 				Logger::print("Persistance de Leaf");
 				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
 				auto& rootRef = std::get<0>(accessor.values);
 				auto& branchRef = std::get<1>(accessor.values);
 				suite.expectEqual(branchRef.getDistanceFromRoot(), 1uz);
-				rootRef.detachChild(branch, branchRef);
+				rootRef.detachChild(branchRef);
 				suite.expectEqual(branchRef.getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
 
 				{
@@ -152,7 +152,7 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *branch};
 				auto& rootRef = std::get<0>(accessor.values);
 				auto& branchRef = std::get<1>(accessor.values);
-				rootRef.attachChild(branch, branchRef);
+				rootRef.attachChild(branchRef);
 				suite.expectEqual(rootRef.getDistanceFromRoot(), 0uz);
 				suite.expectEqual(branchRef.getDistanceFromRoot(), 1uz);
 			}
@@ -162,7 +162,7 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 				auto& rootRef = std::get<0>(accessor.values);
 				auto& branchRef = std::get<1>(accessor.values);
 				Logger::print("Création d'une boucle");
-				branchRef.attachChild(root, rootRef);
+				branchRef.attachChild(rootRef);
 				suite.expectEqual(rootRef.getDistanceFromRoot(), 0uz);
 				suite.expectEqual(branchRef.getDistanceFromRoot(), 1uz);
 			}
@@ -179,16 +179,16 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 					auto& leafRef = std::get<1>(accessor.values);
 					suite.expectEqual(leafRef.getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
 
-					rootRef.attachChild(leaf, leafRef);
+					rootRef.attachChild(leafRef);
 					suite.expectEqual(leafRef.getDistanceFromRoot(), 1uz);
 
-					rootRef.attachChild(leaf, leafRef);
+					rootRef.attachChild(leafRef);
 					suite.expectEqual(leafRef.getDistanceFromRoot(), 1uz);
 
-					rootRef.detachChild(leaf, leafRef);
+					rootRef.detachChild(leafRef);
 					suite.expectEqual(leafRef.getDistanceFromRoot(), 1uz);
 
-					rootRef.detachChild(leaf, leafRef);
+					rootRef.detachChild(leafRef);
 					suite.expectEqual(leafRef.getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
 				}
 				Logger::print("Non-persistance de Leaf");
@@ -199,9 +199,9 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 		suite.addTest("Attach and detach root on itself", [&] {
 			auto root = NetworkPtr::makeRoot(logger, "Root");
 			auto accessor = root->uniqueAccess();
-			accessor->attachChild(root, accessor.value());
+			accessor->attachChild(accessor.value());
 			suite.expectEqual(accessor->getDistanceFromRoot(), 0uz);
-			accessor->detachChild(root, accessor.value());
+			accessor->detachChild(accessor.value());
 			suite.expectEqual(accessor->getDistanceFromRoot(), 0uz);
 		});
 
@@ -212,21 +212,21 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *node};
 				auto& rootRef = std::get<0>(accessor.values);
 				auto& nodeRef = std::get<1>(accessor.values);
-				rootRef.attachChild(node, nodeRef);
+				rootRef.attachChild(nodeRef);
 				suite.expectEqual(nodeRef.getDistanceFromRoot(), 1uz);
 			}
 			{
 				auto accessor = node->uniqueAccess();
-				accessor->attachChild(node, accessor.value());
+				accessor->attachChild(accessor.value());
 				suite.expectEqual(accessor->getDistanceFromRoot(), 1uz);
-				accessor->detachChild(node, accessor.value());
+				accessor->detachChild(accessor.value());
 				suite.expectEqual(accessor->getDistanceFromRoot(), 1uz);
 			}
 			{
 				auto accessor = CppUtils::Thread::MultipleAccessor{*root, *node};
 				auto& rootRef = std::get<0>(accessor.values);
 				auto& nodeRef = std::get<1>(accessor.values);
-				rootRef.detachChild(node, nodeRef);
+				rootRef.detachChild(nodeRef);
 				suite.expectEqual(nodeRef.getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
 			}
 		});

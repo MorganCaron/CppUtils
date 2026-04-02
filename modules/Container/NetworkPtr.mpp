@@ -33,23 +33,23 @@ export namespace CppUtils::Container
 
 		[[nodiscard]] static inline auto make(auto&&... args) -> SharedPtr
 		{
-			auto ptr = makeSafeShared<NetworkPtr<T>>(std::forward<decltype(args)>(args)...);
+			auto pointer = makeSafeShared<NetworkPtr<T>>(std::forward<decltype(args)>(args)...);
 			{
-				auto accessor = ptr->uniqueAccess();
-				accessor->setWeakThis(ptr);
+				auto accessor = pointer->uniqueAccess();
+				accessor->setWeakThis(pointer);
 			}
-			return ptr;
+			return pointer;
 		}
 
 		[[nodiscard]] static inline auto makeRoot(auto&&... args) -> SharedPtr
 		{
-			auto ptr = makeSafeShared<NetworkPtr<T>>(std::forward<decltype(args)>(args)...);
+			auto pointer = makeSafeShared<NetworkPtr<T>>(std::forward<decltype(args)>(args)...);
 			{
-				auto accessor = ptr->uniqueAccess();
-				accessor->setWeakThis(ptr);
+				auto accessor = pointer->uniqueAccess();
+				accessor->setWeakThis(pointer);
 				accessor->setRoot(true);
 			}
-			return ptr;
+			return pointer;
 		}
 
 		[[nodiscard]] inline auto isRoot() const noexcept -> bool
@@ -69,9 +69,9 @@ export namespace CppUtils::Container
 				m_distanceFromRoot = 0;
 		}
 
-		inline auto setWeakThis(WeakPtr ptr) noexcept -> void
+		inline auto setWeakThis(WeakPtr pointer) noexcept -> void
 		{
-			m_weakThis = std::move(ptr);
+			m_weakThis = std::move(pointer);
 		}
 
 		[[nodiscard]] inline auto getDistanceFromRoot() const noexcept -> std::size_t
@@ -79,8 +79,11 @@ export namespace CppUtils::Container
 			return m_distanceFromRoot;
 		}
 
-		inline auto attachChild(SharedPtr& childPtr, NetworkPtr& childValue) -> void
+		inline auto attachChild(NetworkPtr& childValue) -> void
 		{
+			auto childPtr = childValue.m_weakThis.lock();
+			if (not childPtr)
+				throw std::logic_error{"Child node not found"};
 			if (m_distanceFromRoot == std::numeric_limits<std::size_t>::max())
 				throw std::logic_error{"Root node not found"};
 			if (not childValue.isRoot())
@@ -94,8 +97,11 @@ export namespace CppUtils::Container
 			childValue.m_parents.push_back(m_weakThis);
 		}
 
-		inline auto detachChild(SharedPtr& childPtr, NetworkPtr& childValue) -> void
+		inline auto detachChild(NetworkPtr& childValue) -> void
 		{
+			auto childPtr = childValue.m_weakThis.lock();
+			if (not childPtr)
+				return;
 			if (auto thisPtr = m_weakThis.lock(); thisPtr)
 			{
 				const auto children = m_children | std::views::reverse;
@@ -139,7 +145,7 @@ export namespace CppUtils::Container
 					if (not childPtr)
 						continue;
 					auto accessor = childPtr->uniqueAccess();
-					detachChild(childPtr, accessor.value());
+					detachChild(accessor.value());
 				}
 		}
 
@@ -150,7 +156,7 @@ export namespace CppUtils::Container
 				auto accessor = Thread::MultipleAccessor{*parent, *thisPtr};
 				auto& parentRef = std::get<0>(accessor.values);
 				auto& childRef = std::get<1>(accessor.values);
-				parentRef.detachChild(thisPtr, childRef);
+				parentRef.detachChild(childRef);
 			}
 		}
 
@@ -163,7 +169,7 @@ export namespace CppUtils::Container
 						auto accessor = Thread::MultipleAccessor{*parent, *thisPtr};
 						auto& parentRef = std::get<0>(accessor.values);
 						auto& childRef = std::get<1>(accessor.values);
-						parentRef.detachChild(thisPtr, childRef);
+						parentRef.detachChild(childRef);
 					}
 		}
 
@@ -196,7 +202,7 @@ export namespace CppUtils::Container
 					parentDistance = accessor->getDistanceFromRoot();
 				}
 
-				if (parentDistance != std::numeric_limits<std::size_t>::max() && parentDistance + 1 < m_distanceFromRoot)
+				if (parentDistance != std::numeric_limits<std::size_t>::max() and parentDistance + 1 < m_distanceFromRoot)
 					m_distanceFromRoot = parentDistance + 1;
 			}
 
@@ -238,7 +244,7 @@ export namespace CppUtils::Container
 		auto accessor = Thread::MultipleAccessor{*from, *to};
 		auto& fromValue = std::get<0>(accessor.values);
 		auto& toValue = std::get<1>(accessor.values);
-		fromValue.attachChild(to, toValue);
+		fromValue.attachChild(toValue);
 		return to;
 	}
 
@@ -250,8 +256,8 @@ export namespace CppUtils::Container
 		auto accessor = Thread::MultipleAccessor{*lhs, *rhs};
 		auto& value1 = std::get<0>(accessor.values);
 		auto& value2 = std::get<1>(accessor.values);
-		value1.attachChild(rhs, value2);
-		value2.attachChild(lhs, value1);
+		value1.attachChild(value2);
+		value2.attachChild(value1);
 		return rhs;
 	}
 
@@ -263,7 +269,7 @@ export namespace CppUtils::Container
 		auto accessor = Thread::MultipleAccessor{*from, *to};
 		auto& fromValue = std::get<0>(accessor.values);
 		auto& toValue = std::get<1>(accessor.values);
-		fromValue.detachChild(to, toValue);
+		fromValue.detachChild(toValue);
 		return to;
 	}
 
@@ -275,8 +281,8 @@ export namespace CppUtils::Container
 		auto accessor = Thread::MultipleAccessor{*lhs, *rhs};
 		auto& value1 = std::get<0>(accessor.values);
 		auto& value2 = std::get<1>(accessor.values);
-		value1.detachChild(rhs, value2);
-		value2.detachChild(lhs, value1);
+		value1.detachChild(value2);
+		value2.detachChild(value1);
 		return rhs;
 	}
 }
