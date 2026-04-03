@@ -35,5 +35,19 @@ namespace CppUtils::UnitTest::Thread::ScheduledEventDispatcher
 			dispatcher.waitUntilFinished();
 			suite.expectEqual(receivedValue.load(), true);
 		});
+
+		suite.addTest("Delayed Emit with Flush", [&] {
+			auto dispatcher = CppUtils::Thread::ScheduledEventDispatcher{};
+			auto receivedValue = std::atomic_bool{};
+
+			dispatcher.subscribe<"Event">([&](bool value) {
+				receivedValue = value;
+			});
+			dispatcher.emit<"Event">(30s, true);
+
+			suite.expect(not receivedValue.load());
+			dispatcher.flush();
+			suite.expect(receivedValue.load());
+		});
 	}};
 }

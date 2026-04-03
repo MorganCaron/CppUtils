@@ -75,6 +75,11 @@ export namespace CppUtils::Thread
 			m_scheduler.waitUntilFinished();
 		}
 
+		inline auto flush() -> void
+		{
+			m_scheduler.flush();
+		}
+
 	private:
 		Scheduler m_scheduler;
 		Execution::EventDispatcher m_eventDispatcher;

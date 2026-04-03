@@ -234,5 +234,18 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			suite.expect(onErrorInvoked.load());
 		});
+
+		suite.addTest("Flush tasks", [&] {
+			auto scheduler = CppUtils::Thread::Scheduler{};
+			auto executed = std::atomic_bool{false};
+
+			scheduler.schedule([&executed] {
+				executed = true;
+			}, 30s);
+
+			suite.expect(not executed.load());
+			scheduler.flush();
+			suite.expect(executed.load());
+		});
 	}};
 }

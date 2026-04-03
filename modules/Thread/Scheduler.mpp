@@ -109,6 +109,30 @@ export namespace CppUtils::Thread
 			});
 		}
 
+		inline auto flush() -> void
+		{
+			auto tasksToRun = std::vector<std::shared_ptr<Item>>{};
+			{
+				auto accessor = m_items.access();
+				auto& [set, map, processingTasks] = accessor.value();
+
+				if (not std::empty(set))
+				{
+					tasksToRun.assign(std::begin(set), std::end(set));
+					processingTasks += std::size(set);
+					map.clear();
+					set.clear();
+
+					m_workCondition.notify_all();
+					m_finishedCondition.notify_all();
+				}
+			}
+
+			dispatchTasks(std::move(tasksToRun));
+
+			waitUntilFinished();
+		}
+
 		inline auto cancel(std::size_t id) -> void
 		{
 			auto accessor = m_items.access();
@@ -173,7 +197,13 @@ export namespace CppUtils::Thread
 					m_finishedCondition.notify_all();
 			}
 
-			for (auto&& item : tasksToRun)
+			dispatchTasks(std::move(tasksToRun));
+		}
+
+	private:
+		inline auto dispatchTasks(std::vector<std::shared_ptr<Item>> tasks) -> void
+		{
+			for (auto&& item : tasks)
 			{
 				try
 				{
@@ -191,7 +221,6 @@ export namespace CppUtils::Thread
 			}
 		}
 
-	private:
 		std::atomic_size_t m_nextId = 0;
 		Clock::duration m_step;
 		UniqueLocker<Items> m_items;
