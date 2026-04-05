@@ -541,5 +541,29 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			suite.expect(it < std::cend(branch));
 			suite.expectEqual(std::cend(branch) - std::cbegin(branch), 3);
 		});
+
+		suite.addTest("Get branches", [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto child1 = StringMeshNodePtr::make("child1");
+			auto child2 = StringMeshNodePtr::make("child2");
+			auto child3 = StringMeshNodePtr::make("child3");
+
+			root["A"] >> child1;
+			root["B"] >> child2;
+			root["B"] >> child3;
+
+			auto branchesAccessor = root.getBranches();
+			const auto& branches = branchesAccessor.value();
+
+			suite.expectEqual(std::size(branches), 2uz);
+			suite.expect(branches.contains("A"));
+			suite.expect(branches.contains("B"));
+
+			auto aBranches = branches.at("A")->sharedAccess();
+			suite.expectEqual(std::size(aBranches.value()), 1uz);
+
+			auto bBranches = branches.at("B")->sharedAccess();
+			suite.expectEqual(std::size(bBranches.value()), 2uz);
+		});
 	}};
 }

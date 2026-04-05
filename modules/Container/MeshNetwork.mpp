@@ -432,6 +432,12 @@ export namespace CppUtils::Container
 			return nodeAccessor->value.value.sharedAccess();
 		}
 
+		[[nodiscard]] auto getBranches() const -> Thread::ReadOnlyAccessor<Branches>
+		{
+			auto nodeAccessor = m_node->sharedAccess();
+			return nodeAccessor->value.branches.sharedAccess();
+		}
+
 	private:
 		SharedPtr m_node = nullptr;
 	};
