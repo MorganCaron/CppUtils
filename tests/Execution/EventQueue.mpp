@@ -23,5 +23,21 @@ namespace CppUtils::UnitTest::Execution
 			suite.expect(received);
 			suite.expectEqual(valueReceived, 42);
 		});
+
+		suite.addTest("Multiple subscribe", [&] {
+			auto queue = CppUtils::Execution::EventQueue{};
+			auto count = 0uz;
+
+			queue.subscribe<"A", "B">([&count] {
+				++count;
+			});
+
+			queue.emit<"A">();
+			queue.emit<"B">();
+			queue.emit<"C">();
+
+			queue.waitUntilFinished();
+			suite.expectEqual(count, 2uz);
+		});
 	}};
 }

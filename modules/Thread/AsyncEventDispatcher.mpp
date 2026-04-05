@@ -33,10 +33,10 @@ export namespace CppUtils::Thread
 			});
 		}
 
-		template<String::Hasher eventName = Type::Hash{}>
+		template<String::Hasher... eventNames>
 		inline auto subscribe(auto&& function) -> void
 		{
-			m_eventDispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));
+			m_eventDispatcher.subscribe<eventNames...>(std::forward<decltype(function)>(function));
 		}
 
 		inline auto waitUntilFinished() -> void

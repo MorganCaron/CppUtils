@@ -54,10 +54,10 @@ export namespace CppUtils
 			emit<logType>(std::format(fmt, std::forward<Args>(args)...));
 		}
 
-		template<String::Hasher logType = Type::Hash{}>
+		template<String::Hasher... logTypes>
 		static inline auto subscribe(auto&& function) -> void
 		{
-			eventQueue().template subscribe<logType>(std::forward<decltype(function)>(function));
+			eventQueue().template subscribe<logTypes...>(std::forward<decltype(function)>(function));
 		}
 
 		template<Chrono::Duration Duration = std::chrono::milliseconds>

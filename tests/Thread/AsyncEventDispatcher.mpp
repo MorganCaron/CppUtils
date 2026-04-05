@@ -69,5 +69,21 @@ namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 			dispatcher.waitUntilFinished();
 			suite.expectEqual(result.load(), 42);
 		});
+
+		suite.addTest("Multiple subscribe", [&] {
+			auto dispatcher = CppUtils::Thread::AsyncEventDispatcher{};
+			auto count = std::atomic_size_t{0};
+
+			dispatcher.subscribe<"A", "B">([&count] {
+				++count;
+			});
+
+			dispatcher.emit<"A">();
+			dispatcher.emit<"B">();
+			dispatcher.emit<"C">();
+
+			dispatcher.waitUntilFinished();
+			suite.expectEqual(count, 2uz);
+		});
 	}};
 }

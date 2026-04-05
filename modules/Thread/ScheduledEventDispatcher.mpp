@@ -46,10 +46,10 @@ export namespace CppUtils::Thread
 			m_scheduler{step, numberThreads, std::move(onError), std::move(finally)}
 		{}
 
-		template<String::Hasher eventName = Type::Hash{}>
+		template<String::Hasher... eventNames>
 		inline auto subscribe(auto&& function) -> void
 		{
-			m_eventDispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));
+			m_eventDispatcher.subscribe<eventNames...>(std::forward<decltype(function)>(function));
 		}
 
 		template<String::Hasher eventName = Type::Hash{}, class... Args, Chrono::Duration Delay = std::chrono::milliseconds>

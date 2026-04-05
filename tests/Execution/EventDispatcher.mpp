@@ -117,13 +117,29 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 
 			eventDispatcher.subscribe<"Count">([count = 0, &suite](int expected) mutable {
-				count++;
+				++count;
 				suite.expectEqual(count, expected);
 			});
 
 			eventDispatcher.emit<"Count">(1);
 			eventDispatcher.emit<"Count">(2);
 			eventDispatcher.emit<"Count">(3);
+		});
+
+		suite.addTest("Multiple subscribe", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+			auto count = std::atomic_size_t{0};
+
+			eventDispatcher.subscribe<"A", "B", "C">([&count] {
+				++count;
+			});
+
+			eventDispatcher.emit<"A">();
+			eventDispatcher.emit<"B">();
+			eventDispatcher.emit<"C">();
+			eventDispatcher.emit<"D">();
+
+			suite.expectEqual(count, 3uz);
 		});
 	}};
 }

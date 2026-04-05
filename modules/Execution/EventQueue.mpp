@@ -46,10 +46,10 @@ export namespace CppUtils::Execution
 			enqueue(std::move(task));
 		}
 
-		template<String::Hasher eventName = Type::Hash{}>
+		template<String::Hasher... eventNames>
 		inline auto subscribe(auto&& function) -> void
 		{
-			m_dispatcher.subscribe<eventName>(std::forward<decltype(function)>(function));
+			m_dispatcher.subscribe<eventNames...>(std::forward<decltype(function)>(function));
 		}
 
 		template<Chrono::Duration Duration = std::chrono::milliseconds>

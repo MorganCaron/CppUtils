@@ -31,15 +31,23 @@ export namespace CppUtils::Execution
 			}
 		}
 
-		template<String::Hasher eventName = Type::Hash{}>
+		template<String::Hasher... eventNames>
 		inline auto subscribe(auto&& function) -> void
+		{
+			if constexpr (sizeof...(eventNames) == 0)
+				subscribe(Type::Hash{}, std::forward<decltype(function)>(function));
+			else
+				(subscribe(static_cast<Type::Hash>(eventNames), function), ...);
+		}
+
+		inline auto subscribe(Type::Hash eventHash, auto&& function) -> void
 		{
 			using FunctionType = std::decay_t<decltype(function)>;
 			using ArgumentsTypes = typename Type::CallableTrait<FunctionType>::ArgumentsTypes;
 			[&]<class... Args>(std::tuple<Args...>*) {
 				using Tuple = std::tuple<std::remove_cvref_t<Args>...>;
 				auto lockGuard = std::unique_lock{m_mutex};
-				auto key = std::make_pair(static_cast<Type::Hash>(eventName), std::type_index{typeid(Tuple)});
+				auto key = std::make_pair(eventHash, std::type_index{typeid(Tuple)});
 				m_subscribers[key].emplace_back(
 					[function = std::forward<decltype(function)>(function)](const void* payload) mutable -> void {
 					const auto& args = *static_cast<const Tuple*>(payload);
