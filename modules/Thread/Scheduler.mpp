@@ -111,13 +111,16 @@ export namespace CppUtils::Thread
 
 		inline auto flush() -> void
 		{
-			auto tasksToRun = std::vector<std::shared_ptr<Item>>{};
+			while (true)
 			{
-				auto accessor = m_items.access();
-				auto& [set, map, processingTasks] = accessor.value();
-
-				if (not std::empty(set))
+				auto tasksToRun = std::vector<std::shared_ptr<Item>>{};
 				{
+					auto accessor = m_items.access();
+					auto& [set, map, processingTasks] = accessor.value();
+
+					if (std::empty(set))
+						break;
+
 					tasksToRun.assign(std::begin(set), std::end(set));
 					processingTasks += std::size(set);
 					map.clear();
@@ -126,10 +129,8 @@ export namespace CppUtils::Thread
 					m_workCondition.notify_all();
 					m_finishedCondition.notify_all();
 				}
+				dispatchTasks(std::move(tasksToRun));
 			}
-
-			dispatchTasks(std::move(tasksToRun));
-
 			waitUntilFinished();
 		}
 

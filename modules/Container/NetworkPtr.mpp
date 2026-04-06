@@ -188,7 +188,7 @@ export namespace CppUtils::Container
 
 		inline auto updateDistance(const WeakPtr& lockedParentWeak = {}, std::size_t lockedParentDistance = std::numeric_limits<std::size_t>::max()) -> void
 		{
-			auto oldDistanceFromRoot = m_distanceFromRoot;
+			const auto oldDistanceFromRoot = m_distanceFromRoot;
 
 			m_distanceFromRoot = std::numeric_limits<std::size_t>::max();
 			for (const auto& parentWeak : m_parents)
