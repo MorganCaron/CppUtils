@@ -80,6 +80,16 @@ export namespace CppUtils::Thread
 			m_scheduler.flush();
 		}
 
+		[[nodiscard]] inline auto getScheduledTasksCount() const -> std::size_t
+		{
+			return m_scheduler.getScheduledTasksCount();
+		}
+
+		inline auto cancelAll() -> void
+		{
+			m_scheduler.cancelAll();
+		}
+
 	private:
 		Scheduler m_scheduler;
 		Execution::EventDispatcher m_eventDispatcher;

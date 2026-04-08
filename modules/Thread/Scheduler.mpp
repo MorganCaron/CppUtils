@@ -109,6 +109,12 @@ export namespace CppUtils::Thread
 			});
 		}
 
+		inline auto getScheduledTasksCount() const -> std::size_t
+		{
+			auto accessor = m_items.access();
+			return std::size(accessor.value().set) + accessor.value().processingTasks;
+		}
+
 		inline auto flush() -> void
 		{
 			while (true)
@@ -119,18 +125,25 @@ export namespace CppUtils::Thread
 					auto& [set, map, processingTasks] = accessor.value();
 
 					if (std::empty(set))
-						break;
+					{
+						if (processingTasks == 0)
+							break;
+
+						m_finishedCondition.wait(accessor.getLockGuard());
+						continue;
+					}
 
 					tasksToRun.assign(std::begin(set), std::end(set));
 					processingTasks += std::size(set);
 					map.clear();
 					set.clear();
-
-					m_workCondition.notify_all();
-					m_finishedCondition.notify_all();
 				}
+
 				dispatchTasks(std::move(tasksToRun));
 			}
+
+			m_workCondition.notify_all();
+			m_finishedCondition.notify_all();
 			waitUntilFinished();
 		}
 

@@ -52,7 +52,13 @@ export namespace CppUtils::Container
 				persistenceGuard = entry;
 			}
 
-			persistenceGuard->uniqueAccess()->push_back(child.m_node);
+			{
+				auto vectorAccessor = persistenceGuard->uniqueAccess();
+				if (std::ranges::none_of(vectorAccessor.value(), [&](const auto& weak) {
+					return Thread::SharedPtr::ownerEqual(weak, child.m_node);
+				}))
+					vectorAccessor->push_back(child.m_node);
+			}
 			parentNetworkPtr.attachChild(childNetworkPtr);
 		}
 

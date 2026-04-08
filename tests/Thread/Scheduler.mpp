@@ -235,6 +235,42 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 			suite.expect(onErrorInvoked.load());
 		});
 
+		suite.addTest("getScheduledTasksCount(): Waiting tasks", [&] {
+			auto scheduler = CppUtils::Thread::Scheduler{};
+
+			suite.expectEqual(scheduler.getScheduledTasksCount(), 0uz);
+
+			scheduler.schedule([] {}, 10s);
+			suite.expectEqual(scheduler.getScheduledTasksCount(), 1uz);
+
+			scheduler.schedule([] {}, 20s);
+			suite.expectEqual(scheduler.getScheduledTasksCount(), 2uz);
+
+			scheduler.cancelAll();
+			suite.expectEqual(scheduler.getScheduledTasksCount(), 0uz);
+		});
+
+		suite.addTest("getScheduledTasksCount(): Processing tasks", [&] {
+			auto scheduler = CppUtils::Thread::Scheduler{};
+
+			auto promise = std::promise<void>{};
+			auto future = promise.get_future();
+			auto started = std::promise<void>{};
+			auto startedFuture = started.get_future();
+
+			scheduler.schedule([&] {
+				started.set_value();
+				future.wait();
+			}, 0s);
+
+			startedFuture.wait();
+			suite.expectEqual(scheduler.getScheduledTasksCount(), 1uz);
+
+			promise.set_value();
+			scheduler.flush();
+			suite.expectEqual(scheduler.getScheduledTasksCount(), 0uz);
+		});
+
 		suite.addTest("Flush tasks", [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto executed = std::atomic_bool{false};
@@ -246,6 +282,22 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 			suite.expect(not executed.load());
 			scheduler.flush();
 			suite.expect(executed.load());
+		});
+
+		suite.addTest("Flush tasks with chaining", [&] {
+			auto scheduler = CppUtils::Thread::Scheduler{};
+			auto counter = std::atomic_size_t{0};
+
+			scheduler.schedule([&] {
+				++counter;
+				scheduler.schedule([&] {
+					++counter;
+				}, 30s);
+			}, 30s);
+
+			suite.expectEqual(counter.load(), 0uz);
+			scheduler.flush();
+			suite.expectEqual(counter.load(), 2uz);
 		});
 	}};
 }

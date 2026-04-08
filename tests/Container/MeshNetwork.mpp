@@ -221,6 +221,32 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			}
 		});
 
+		suite.addTest("Duplicate attachment protection (operator>>)", [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto child = StringMeshNodePtr::make("child");
+
+			root["Branch"] >> child;
+			root["Branch"] >> child;
+
+			const auto& branch = root.at("Branch").value();
+			suite.expectEqual(std::size(branch), 1uz);
+		});
+
+		suite.addTest("Duplicate attachment protection (operator&)", [&] {
+			auto fruit = StringMeshNodePtr::makeRoot("fruit");
+			auto apple = StringMeshNodePtr::make("apple");
+
+			fruit["Elements"] & apple["Categories"];
+			fruit["Elements"] & apple["Categories"];
+			apple["Categories"] & fruit["Elements"];
+
+			const auto& elements = fruit.at("Elements").value();
+			suite.expectEqual(std::size(elements), 1uz);
+
+			const auto& categories = apple.at("Categories").value();
+			suite.expectEqual(std::size(categories), 1uz);
+		});
+
 		suite.addTest("Many", [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto banana = StringMeshNodePtr::make("banana");
