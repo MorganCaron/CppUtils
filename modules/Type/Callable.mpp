@@ -8,18 +8,14 @@ export namespace CppUtils::Type
 	struct CallableTrait;
 
 	template<class Return, class... Args>
-	struct SignatureTrait
+	struct CallableTrait<Return(Args...)>
 	{
 		using ReturnType = Return;
 		using ArgumentsTypes = std::tuple<Args...>;
 	};
 
 	template<class Return, class... Args>
-	struct CallableTrait<Return(Args...)>: SignatureTrait<Return, Args...>
-	{};
-
-	template<class Return, class... Args>
-	struct CallableTrait<Return(Args...) noexcept>: SignatureTrait<Return, Args...>
+	struct CallableTrait<Return(Args...) noexcept>: CallableTrait<Return(Args...)>
 	{};
 
 	template<class Return, class... Args>
@@ -27,7 +23,7 @@ export namespace CppUtils::Type
 	{};
 
 	template<class Return, class... Args>
-	struct CallableTrait<Return (*)(Args...) noexcept>: CallableTrait<Return(Args...) noexcept>
+	struct CallableTrait<Return (*)(Args...) noexcept>: CallableTrait<Return(Args...)>
 	{};
 
 	template<class Object, class Return, class... Args>
@@ -55,27 +51,27 @@ export namespace CppUtils::Type
 	{};
 
 	template<class Object, class Return, class... Args>
-	struct CallableTrait<Return (Object::*)(Args...) noexcept>: CallableTrait<Return(Args...) noexcept>
+	struct CallableTrait<Return (Object::*)(Args...) noexcept>: CallableTrait<Return(Args...)>
 	{};
 
 	template<class Object, class Return, class... Args>
-	struct CallableTrait<Return (Object::*)(Args...) const noexcept>: CallableTrait<Return(Args...) noexcept>
+	struct CallableTrait<Return (Object::*)(Args...) const noexcept>: CallableTrait<Return(Args...)>
 	{};
 
 	template<class Object, class Return, class... Args>
-	struct CallableTrait<Return (Object::*)(Args...) & noexcept>: CallableTrait<Return(Args...) noexcept>
+	struct CallableTrait<Return (Object::*)(Args...) & noexcept>: CallableTrait<Return(Args...)>
 	{};
 
 	template<class Object, class Return, class... Args>
-	struct CallableTrait<Return (Object::*)(Args...) const & noexcept>: CallableTrait<Return(Args...) noexcept>
+	struct CallableTrait<Return (Object::*)(Args...) const & noexcept>: CallableTrait<Return(Args...)>
 	{};
 
 	template<class Object, class Return, class... Args>
-	struct CallableTrait<Return (Object::*)(Args...) && noexcept>: CallableTrait<Return(Args...) noexcept>
+	struct CallableTrait<Return (Object::*)(Args...) && noexcept>: CallableTrait<Return(Args...)>
 	{};
 
 	template<class Object, class Return, class... Args>
-	struct CallableTrait<Return (Object::*)(Args...) const && noexcept>: CallableTrait<Return(Args...) noexcept>
+	struct CallableTrait<Return (Object::*)(Args...) const && noexcept>: CallableTrait<Return(Args...)>
 	{};
 
 	template<class Functor>
