@@ -43,7 +43,7 @@ export namespace CppUtils::Container
 				std::erase(node.dependencies, key);
 		}
 
-		[[nodiscard]] inline auto operator[](this auto&& self, const Key& key) -> decltype(auto)
+		[[nodiscard]] inline auto operator[](this auto&& self [[lifetimebound]], const Key& key) -> decltype(auto)
 		{
 			if constexpr (std::is_const_v<std::remove_reference_t<decltype(self)>>)
 				return (self.nodes.at(key).value);
@@ -61,7 +61,7 @@ export namespace CppUtils::Container
 			std::erase(nodes[key].dependencies, dependency);
 		}
 
-		[[nodiscard]] inline auto getDependencies(this auto&& self, const Key& key) -> decltype(auto)
+		[[nodiscard]] inline auto getDependencies(this auto&& self [[lifetimebound]], const Key& key) -> decltype(auto)
 		{
 			if constexpr (std::is_const_v<std::remove_reference_t<decltype(self)>>)
 				return (self.nodes.at(key).dependencies);

@@ -76,9 +76,6 @@ export namespace CppUtils::Language::JSON
 			return std::nullopt;
 		}
 
-		[[nodiscard]] inline auto operator[](std::string_view key) const -> const Value&;
-		[[nodiscard]] inline auto operator[](std::size_t index) const -> const Value&;
-
 		[[nodiscard]] constexpr auto operator==(const Value&) const -> bool = default;
 
 		[[nodiscard]] inline operator std::string() const
@@ -87,6 +84,9 @@ export namespace CppUtils::Language::JSON
 			dump(std::back_inserter(result));
 			return result;
 		}
+
+		[[nodiscard]] inline auto operator[](this auto&& self [[lifetimebound]], std::string_view key) -> const Value&;
+		[[nodiscard]] inline auto operator[](this auto&& self [[lifetimebound]], std::size_t index) -> const Value&;
 
 		template<std::output_iterator<char> Iterator>
 		inline auto dump(Iterator out) const -> Iterator
@@ -137,9 +137,9 @@ export namespace CppUtils::Language::JSON
 
 	inline constinit const auto nullValue = Value{};
 
-	[[nodiscard]] inline auto Value::operator[](std::string_view key) const -> const Value&
+	[[nodiscard]] inline auto Value::operator[](this auto&& self [[lifetimebound]], std::string_view key) -> const Value&
 	{
-		if (auto object = getIf<Object>())
+		if (auto object = self.template getIf<Object>())
 		{
 			const auto& objectRef = object->get();
 			if (auto it = objectRef.find(key); it != std::end(objectRef))
@@ -148,9 +148,9 @@ export namespace CppUtils::Language::JSON
 		return nullValue;
 	}
 
-	[[nodiscard]] inline auto Value::operator[](std::size_t index) const -> const Value&
+	[[nodiscard]] inline auto Value::operator[](this auto&& self [[lifetimebound]], std::size_t index) -> const Value&
 	{
-		if (auto array = getIf<Array>())
+		if (auto array = self.template getIf<Array>())
 		{
 			const auto& arrayRef = array->get();
 			if (index < std::size(arrayRef))

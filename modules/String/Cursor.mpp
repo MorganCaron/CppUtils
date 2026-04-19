@@ -12,9 +12,9 @@ export namespace CppUtils::String
 		Source source;
 		std::size_t position = 0;
 
-		[[nodiscard]] inline auto getCurrent() -> const auto&
+		[[nodiscard]] inline auto getCurrent(this auto&& self [[lifetimebound]]) -> decltype(auto)
 		{
-			return source[position];
+			return self.source[self.position];
 		}
 	};
 }

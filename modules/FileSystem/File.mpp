@@ -54,14 +54,14 @@ export namespace CppUtils::FileSystem
 		std::size_t blockSize = 4'096) -> std::expected<void, Error>
 	{
 		auto file = std::ifstream{filePath, std::ios::binary};
-		if (not file.is_open())
+		if (not file.is_open()) [[unlikely]]
 			return std::unexpected{Error{Error::Type::OpenFailed, "Failed to open file"}};
 
 		for (auto buffer = std::vector<char>(blockSize); file.good();)
 		{
 			file.read(std::data(buffer), static_cast<std::streamsize>(blockSize));
 
-			if (file.bad())
+			if (file.bad()) [[unlikely]]
 				return std::unexpected{Error{Error::Type::ReadFailed, "Hardware read error"}};
 
 			const auto bytesRead = static_cast<std::size_t>(file.gcount());

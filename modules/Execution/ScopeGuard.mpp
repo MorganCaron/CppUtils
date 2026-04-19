@@ -37,7 +37,7 @@ export namespace CppUtils::Execution
 		}
 
 	private:
-		Function m_onExit;
+		[[no_unique_address]] Function m_onExit;
 		bool m_active = true;
 	};
 

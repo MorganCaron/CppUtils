@@ -37,7 +37,7 @@ export namespace CppUtils::Terminal
 			requestUpdate(std::chrono::milliseconds{10});
 		}
 
-		[[nodiscard]] inline auto getScroll() const noexcept -> const Container::Size2&
+		[[nodiscard]] inline auto getScroll() const noexcept -> Container::Size2
 		{
 			return m_scrollPosition;
 		}

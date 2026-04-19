@@ -20,11 +20,11 @@ export namespace CppUtils::Terminal
 		{}
 
 		template<std::derived_from<Widget> T>
-		inline auto addWidget(std::unique_ptr<T> widget) -> T&
+		inline auto addWidget(this auto&& self [[lifetimebound]], std::unique_ptr<T> widget) -> T&
 		{
-			widget->setWidgetManager(getWidgetManager());
-			m_widget = std::move(widget);
-			return dynamic_cast<T&>(*m_widget);
+			widget->setWidgetManager(self.getWidgetManager());
+			self.m_widget = std::move(widget);
+			return dynamic_cast<T&>(*self.m_widget);
 		}
 
 		inline auto setViewport(const Viewport& viewport) noexcept -> void
@@ -32,9 +32,9 @@ export namespace CppUtils::Terminal
 			m_viewport = viewport;
 		}
 
-		[[nodiscard]] inline auto getViewport() const noexcept -> const auto&
+		[[nodiscard]] inline auto getViewport(this auto&& self [[lifetimebound]]) noexcept -> decltype(auto)
 		{
-			return m_viewport;
+			return (self.m_viewport);
 		}
 
 		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 final
@@ -42,9 +42,9 @@ export namespace CppUtils::Terminal
 			return DynamicAreaBuffer::getSize();
 		}
 
-		[[nodiscard]] inline auto getWritableView(std::optional<Viewport> viewport = std::nullopt) -> WritableAreaView
+		[[nodiscard]] inline auto getWritableView(this auto&& self [[lifetimebound]], std::optional<Viewport> viewport = std::nullopt) -> WritableAreaView
 		{
-			return WritableAreaView{*this, viewport.value_or(m_viewport)};
+			return WritableAreaView{self, viewport.value_or(self.m_viewport)};
 		}
 
 		inline auto fill(const CharAttributes& c) noexcept -> void

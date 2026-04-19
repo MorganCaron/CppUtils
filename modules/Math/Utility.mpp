@@ -30,6 +30,7 @@ export namespace CppUtils::Math
 	template<std::floating_point Float>
 	[[nodiscard]] inline constexpr auto isEqual(Float lhs, Float rhs, Float epsilon = std::numeric_limits<Float>::epsilon()) noexcept -> bool
 	{
+		[[assume(epsilon > 0)]];
 		auto difference = absolute(lhs - rhs);
 		auto maximum = std::max(absolute(lhs), absolute(rhs));
 		if (maximum >= Float{1})

@@ -20,16 +20,16 @@ export namespace CppUtils::Container
 			m_values{static_cast<T>(args)...}
 		{}
 
-		[[nodiscard]] inline constexpr auto operator[](this auto&& self, std::size_t axis) noexcept -> decltype(auto)
+		[[nodiscard]] inline constexpr auto operator[](this auto&& self [[lifetimebound]], std::size_t axis) noexcept -> decltype(auto)
 		{
 			assert(axis < 2);
 			return self.m_values[axis];
 		}
 
-		[[nodiscard]] inline constexpr auto x(this auto&& self) noexcept -> decltype(auto) { return self[0]; }
-		[[nodiscard]] inline constexpr auto y(this auto&& self) noexcept -> decltype(auto) { return self[1]; }
-		[[nodiscard]] inline constexpr auto width(this auto&& self) noexcept -> decltype(auto) { return self[0]; }
-		[[nodiscard]] inline constexpr auto height(this auto&& self) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto x(this auto&& self [[lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto y(this auto&& self [[lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto width(this auto&& self [[lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto height(this auto&& self [[lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
 
 		[[nodiscard]] friend inline constexpr auto operator==(const Vec2& lhs, const Vec2& rhs) noexcept -> bool
 		{

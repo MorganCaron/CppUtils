@@ -50,7 +50,7 @@ export namespace CppUtils::Terminal
 			m_buffer[position.y()][position.x()] = c;
 		}
 
-		[[nodiscard]] inline constexpr auto getBuffer() const noexcept -> const auto&
+		[[nodiscard]] inline constexpr auto getBuffer() const noexcept [[lifetimebound]] -> const Buffer&
 		{
 			return m_buffer;
 		}

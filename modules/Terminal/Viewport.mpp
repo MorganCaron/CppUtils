@@ -16,17 +16,17 @@ export namespace CppUtils::Terminal
 
 		[[nodiscard]] friend constexpr auto operator==(const Viewport&, const Viewport&) noexcept -> bool = default;
 
-		[[nodiscard]] inline constexpr auto getSize() const noexcept -> const auto&
+		[[nodiscard]] inline constexpr auto getSize() const noexcept -> Container::Size2
 		{
 			return m_size;
 		}
 
-		[[nodiscard]] inline constexpr auto getPosition() const noexcept -> const auto&
+		[[nodiscard]] inline constexpr auto getPosition() const noexcept -> Container::Size2
 		{
 			return m_position;
 		}
 
-		[[nodiscard]] inline constexpr auto getTopLeft() const noexcept -> const Container::Size2&
+		[[nodiscard]] inline constexpr auto getTopLeft() const noexcept -> Container::Size2
 		{
 			return m_position;
 		}

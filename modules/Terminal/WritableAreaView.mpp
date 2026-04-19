@@ -11,16 +11,16 @@ export namespace CppUtils::Terminal
 	class WritableAreaView final
 	{
 	public:
-		inline WritableAreaView(DynamicAreaBuffer& areaBuffer):
+		inline WritableAreaView(DynamicAreaBuffer& areaBuffer [[lifetimebound]]):
 			WritableAreaView{areaBuffer, Viewport{areaBuffer.getSize()}}
 		{}
 
-		WritableAreaView(DynamicAreaBuffer& areaBuffer, Viewport viewport):
+		WritableAreaView(DynamicAreaBuffer& areaBuffer [[lifetimebound]], Viewport viewport):
 			m_areaBuffer{areaBuffer},
 			m_viewport{std::move(viewport)}
 		{}
 
-		[[nodiscard]] inline auto getViewport() const noexcept -> const auto&
+		[[nodiscard]] inline auto getViewport() const noexcept [[lifetimebound]] -> const Viewport&
 		{
 			return m_viewport;
 		}
