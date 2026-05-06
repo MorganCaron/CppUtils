@@ -5,27 +5,27 @@ import CppUtils.Container.Vector;
 import CppUtils.String;
 import CppUtils.Type;
 import CppUtils.Language.AST;
-import CppUtils.Language.MetaEvaluator;
+import CppUtils.Language.MetaCircularEvaluator;
 
 export namespace CppUtils::Language
 {
-	struct ASTParser: public MetaEvaluator
+	struct ASTParser: public v1::MetaCircularEvaluator
 	{
 		ASTParser()
 		{
 			using namespace String::Literals;
 
-			functions["abort"_token] = [](Cursor&, const ASTNode&, MetaEvaluator&) -> std::expected<void, std::string_view> {
+			functions["abort"_token] = [](Cursor&, const ASTNode&, v1::MetaCircularEvaluator&) -> std::expected<void, std::string_view> {
 				return std::unexpected{"Abort"};
 			};
-			functions["return"_token] = [](Cursor&, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["return"_token] = [](Cursor&, const ASTNode&, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				context.exit = true;
 				return {};
 			};
-			functions["syntaxError"_token] = [](Cursor&, const ASTNode&, MetaEvaluator&) -> std::expected<void, std::string_view> {
+			functions["syntaxError"_token] = [](Cursor&, const ASTNode&, v1::MetaCircularEvaluator&) -> std::expected<void, std::string_view> {
 				return std::unexpected{"Syntax error"};
 			};
-			functions["enter"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["enter"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scope = context.getScope();
 				auto& scopeNodes = scope.nodes;
 				if (std::empty(scopeNodes)) [[unlikely]]
@@ -36,19 +36,19 @@ export namespace CppUtils::Language
 				context.scopes.push_back(std::ref(scope[targetNodeId]));
 				return {};
 			};
-			functions["enterInLast"_token] = [](Cursor&, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["enterInLast"_token] = [](Cursor&, const ASTNode&, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scope = context.getScope();
 				context.scopes.push_back(std::ref(scope.nodes.back()));
 				return {};
 			};
-			functions["leave"_token] = [](Cursor&, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["leave"_token] = [](Cursor&, const ASTNode&, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				if (std::size(context.scopes) <= 1)
 					return std::unexpected("Cannot leave the global scope");
 				context.scopes.pop_back();
 				return {};
 			};
 
-			functions["new"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["new"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				if (std::empty(instruction.nodes))
 					scopeNodes.emplace_back(0);
@@ -56,7 +56,7 @@ export namespace CppUtils::Language
 					scopeNodes.push_back(instruction.nodes.front());
 				return {};
 			};
-			functions["delete"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["delete"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scope = context.getScope();
 				auto& scopeNodes = scope.nodes;
 				if (std::empty(scopeNodes)) [[unlikely]]
@@ -67,11 +67,11 @@ export namespace CppUtils::Language
 					scopeNodes.erase(it);
 				return {};
 			};
-			functions["clear"_token] = [](Cursor&, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["clear"_token] = [](Cursor&, const ASTNode&, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				context.getScope().nodes.clear();
 				return {};
 			};
-			functions["="_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["="_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				if (std::empty(scopeNodes)) [[unlikely]]
 					return std::unexpected{"No node to edit"};
@@ -80,7 +80,7 @@ export namespace CppUtils::Language
 				scopeNodes.back().value = instruction.nodes.front().value;
 				return {};
 			};
-			functions["exists"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["exists"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				auto nodeId = Type::Token{};
 				if (std::empty(instruction.nodes))
@@ -94,7 +94,7 @@ export namespace CppUtils::Language
 				scopeNodes.emplace_back(context.functions.contains(nodeId));
 				return {};
 			};
-			functions["functionExists"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["functionExists"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				auto nodeId = Type::Token{};
 				if (std::empty(instruction.nodes))
@@ -110,14 +110,14 @@ export namespace CppUtils::Language
 				return {};
 			};
 
-			functions["readChar"_token] = [](Cursor& cursor, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["readChar"_token] = [](Cursor& cursor, const ASTNode&, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				if (cursor.position >= std::size(cursor.source))
 					return std::unexpected{"Out of string"};
 				scopeNodes.emplace_back(static_cast<Type::Token>(cursor.getCurrent()));
 				return {};
 			};
-			functions["getCursorPosition"_token] = [](Cursor& cursor, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["getCursorPosition"_token] = [](Cursor& cursor, const ASTNode&, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				if (std::empty(cursor.source)) [[unlikely]]
 					return std::unexpected{"Empty source"};
@@ -126,20 +126,20 @@ export namespace CppUtils::Language
 				scopeNodes.emplace_back(static_cast<Type::Token>(cursor.position));
 				return {};
 			};
-			functions["stepCursorForward"_token] = [](Cursor& cursor, const ASTNode&, MetaEvaluator&) -> std::expected<void, std::string_view> {
+			functions["stepCursorForward"_token] = [](Cursor& cursor, const ASTNode&, v1::MetaCircularEvaluator&) -> std::expected<void, std::string_view> {
 				++cursor.position;
 				return {};
 			};
-			functions["stepCursorBackward"_token] = [](Cursor& cursor, const ASTNode&, MetaEvaluator&) -> std::expected<void, std::string_view> {
+			functions["stepCursorBackward"_token] = [](Cursor& cursor, const ASTNode&, v1::MetaCircularEvaluator&) -> std::expected<void, std::string_view> {
 				--cursor.position;
 				return {};
 			};
-			functions["isEndOfString"_token] = [](Cursor& cursor, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["isEndOfString"_token] = [](Cursor& cursor, const ASTNode&, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				scopeNodes.emplace_back(cursor.position >= std::size(cursor.source));
 				return {};
 			};
-			functions["hash"_token] = [](Cursor& cursor, const ASTNode&, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["hash"_token] = [](Cursor& cursor, const ASTNode&, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				if (std::size(scopeNodes) < 2) [[unlikely]]
 					return std::unexpected{R"(Missing arguments in the "hash" instruction)"};
@@ -151,7 +151,7 @@ export namespace CppUtils::Language
 				return {};
 			};
 
-			static constexpr auto unaryOperator = [](auto operation, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			static constexpr auto unaryOperator = [](auto operation, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				if (std::empty(scopeNodes)) [[unlikely]]
 					return std::unexpected{"Missing argument"};
@@ -159,7 +159,7 @@ export namespace CppUtils::Language
 				return {};
 			};
 
-			static constexpr auto binaryOperator = [](auto operation, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			static constexpr auto binaryOperator = [](auto operation, const ASTNode& instruction, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				auto lhs = Type::Token{};
 				auto rhs = Type::Token{};
@@ -186,29 +186,29 @@ export namespace CppUtils::Language
 				return {};
 			};
 
-			functions["and"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::logical_and{}, instruction, context); };
-			functions["or"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::logical_or{}, instruction, context); };
-			functions["not"_token] = [](Cursor&, const ASTNode&, MetaEvaluator& context) { return unaryOperator(std::logical_not{}, context); };
+			functions["and"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::logical_and{}, instruction, context); };
+			functions["or"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::logical_or{}, instruction, context); };
+			functions["not"_token] = [](Cursor&, const ASTNode&, v1::MetaCircularEvaluator& context) { return unaryOperator(std::logical_not{}, context); };
 
-			functions["=="_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::equal_to{}, instruction, context); };
-			functions["!="_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::not_equal_to{}, instruction, context); };
-			functions[">"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::greater{}, instruction, context); };
-			functions["<"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::less{}, instruction, context); };
-			functions[">="_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::greater_equal{}, instruction, context); };
-			functions["<="_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::less_equal{}, instruction, context); };
+			functions["=="_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::equal_to{}, instruction, context); };
+			functions["!="_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::not_equal_to{}, instruction, context); };
+			functions[">"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::greater{}, instruction, context); };
+			functions["<"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::less{}, instruction, context); };
+			functions[">="_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::greater_equal{}, instruction, context); };
+			functions["<="_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::less_equal{}, instruction, context); };
 
-			functions["+"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::plus{}, instruction, context); };
-			functions["-"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::minus{}, instruction, context); };
-			functions["*"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::multiplies{}, instruction, context); };
-			functions["/"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::divides{}, instruction, context); };
-			functions["%"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::modulus{}, instruction, context); };
+			functions["+"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::plus{}, instruction, context); };
+			functions["-"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::minus{}, instruction, context); };
+			functions["*"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::multiplies{}, instruction, context); };
+			functions["/"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::divides{}, instruction, context); };
+			functions["%"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::modulus{}, instruction, context); };
 
-			functions["&"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::bit_and{}, instruction, context); };
-			functions["|"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::bit_or{}, instruction, context); };
-			functions["^"_token] = [](Cursor&, const ASTNode& instruction, MetaEvaluator& context) { return binaryOperator(std::bit_xor{}, instruction, context); };
-			functions["!"_token] = [](Cursor&, const ASTNode&, MetaEvaluator& context) { return unaryOperator(std::bit_not{}, context); };
+			functions["&"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::bit_and{}, instruction, context); };
+			functions["|"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::bit_or{}, instruction, context); };
+			functions["^"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return binaryOperator(std::bit_xor{}, instruction, context); };
+			functions["!"_token] = [](Cursor&, const ASTNode&, v1::MetaCircularEvaluator& context) { return unaryOperator(std::bit_not{}, context); };
 
-			static constexpr auto condition = [](auto operation, Cursor& cursor, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			static constexpr auto condition = [](auto operation, Cursor& cursor, const ASTNode& instruction, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				if (std::empty(scopeNodes)) [[unlikely]]
 					return std::unexpected{"condition: No value to check"};
@@ -226,10 +226,10 @@ export namespace CppUtils::Language
 				return {};
 			};
 
-			functions["if"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaEvaluator& context) { return condition(std::identity{}, cursor, instruction, context); };
-			functions["ifNot"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaEvaluator& context) { return condition(std::logical_not{}, cursor, instruction, context); };
+			functions["if"_token] = [](Cursor& cursor, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return condition(std::identity{}, cursor, instruction, context); };
+			functions["ifNot"_token] = [](Cursor& cursor, const ASTNode& instruction, v1::MetaCircularEvaluator& context) { return condition(std::logical_not{}, cursor, instruction, context); };
 
-			functions["while"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["while"_token] = [](Cursor& cursor, const ASTNode& instruction, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				if (std::empty(instruction.nodes)) [[unlikely]]
 					return std::unexpected{"while: No condition to execute"};
@@ -260,7 +260,7 @@ export namespace CppUtils::Language
 				}
 				return {};
 			};
-			functions["doWhile"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["doWhile"_token] = [](Cursor& cursor, const ASTNode& instruction, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				if (std::empty(instruction.nodes)) [[unlikely]]
 					return std::unexpected{"doWhile: No condition to execute"};
@@ -282,7 +282,7 @@ export namespace CppUtils::Language
 				while (Container::Vector::popBack(scopeNodes).value);
 				return {};
 			};
-			functions["optional"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["optional"_token] = [](Cursor& cursor, const ASTNode& instruction, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				auto lastPosition = cursor.position;
 				auto lexemes = std::ref(instruction.nodes);
@@ -302,7 +302,7 @@ export namespace CppUtils::Language
 				scopeNodes.emplace_back(1);
 				return {};
 			};
-			functions["alternative"_token] = [](Cursor& cursor, const ASTNode& instruction, MetaEvaluator& context) -> std::expected<void, std::string_view> {
+			functions["alternative"_token] = [](Cursor& cursor, const ASTNode& instruction, v1::MetaCircularEvaluator& context) -> std::expected<void, std::string_view> {
 				auto lastPosition = cursor.position;
 				auto lexemes = std::ref(instruction.nodes);
 				for (auto instructionPosition = 0uz; instructionPosition < std::size(lexemes.get()); ++instructionPosition)

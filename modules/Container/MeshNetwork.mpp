@@ -6,6 +6,7 @@ import CppUtils.Container.SafeShared;
 import CppUtils.Thread.UniqueLocker;
 import CppUtils.Thread.SharedLocker;
 import CppUtils.Thread.SharedPtr;
+import CppUtils.Type.Utility;
 
 export namespace CppUtils::Container
 {
@@ -35,7 +36,7 @@ export namespace CppUtils::Container
 	private:
 		static auto attach(
 			const MeshNodePtr& parent,
-			const Key& key,
+			Type::In<Key> key,
 			const MeshNodePtr& child,
 			SafeShared<std::vector<WeakPtr>> existingPersistenceGuard = nullptr) -> void
 		{
@@ -62,7 +63,7 @@ export namespace CppUtils::Container
 			parentNetworkPtr.attachChild(childNetworkPtr);
 		}
 
-		static auto detach(const MeshNodePtr& parent, const Key& key, const MeshNodePtr& child) -> void
+		static auto detach(const MeshNodePtr& parent, Type::In<Key> key, const MeshNodePtr& child) -> void
 		{
 			auto accessor = Thread::MultipleAccessor{*parent.m_node, *child.m_node};
 			auto& parentNetworkPtr = std::get<0>(accessor.values);
@@ -85,7 +86,7 @@ export namespace CppUtils::Container
 			}
 		}
 
-		static auto detach(const MeshNodePtr& parent, const Key& key) -> void
+		static auto detach(const MeshNodePtr& parent, Type::In<Key> key) -> void
 		{
 			auto children = std::vector<MeshNodePtr>{};
 			{
@@ -351,7 +352,7 @@ export namespace CppUtils::Container
 
 		explicit operator bool() const noexcept { return m_node != nullptr; }
 
-		[[nodiscard]] auto operator[](this auto&& self, const Key& key)
+		[[nodiscard]] auto operator[](this auto&& self, Type::In<Key> key)
 		{
 			using SelfType = std::remove_reference_t<decltype(self)>;
 			if (not self.m_node)
@@ -375,7 +376,7 @@ export namespace CppUtils::Container
 			return Branch<false>{self, key, persistenceGuardPtr, persistenceGuardPtr->uniqueAccess()};
 		}
 
-		[[nodiscard]] auto at(const Key& key) const -> std::expected<Branch<true>, std::string_view>
+		[[nodiscard]] auto at(Type::In<Key> key) const -> std::expected<Branch<true>, std::string_view>
 		{
 			using namespace std::literals;
 
@@ -392,7 +393,7 @@ export namespace CppUtils::Container
 			return std::unexpected{"MeshNodePtr::at(): Key not found"sv};
 		}
 
-		[[nodiscard]] auto contains(const Key& key) const -> bool
+		[[nodiscard]] auto contains(Type::In<Key> key) const -> bool
 		{
 			if (not m_node)
 				return false;
@@ -400,7 +401,7 @@ export namespace CppUtils::Container
 			return nodeAccessor->value.branches.sharedAccess()->contains(key);
 		}
 
-		[[nodiscard]] auto count(const Key& key) const -> std::size_t
+		[[nodiscard]] auto count(Type::In<Key> key) const -> std::size_t
 		{
 			if (not m_node)
 				return 0uz;

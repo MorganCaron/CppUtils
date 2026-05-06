@@ -1,0 +1,150 @@
+export module CppUtils.UnitTests.Language.MetaCircularParser;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::MetaCircularParser
+{
+	auto _ = TestSuite{
+		"Language/MetaCircularParser",
+		{"Logger", "Container/MeshNetwork"},
+		[](TestSuite& suite) {
+		using namespace std::literals;
+		using namespace CppUtils::String::Literals;
+		using Logger = TestSuite::Logger;
+		using MetaCircularEvaluator = CppUtils::Language::MetaCircularEvaluator;
+		using MeshNodePtr = MetaCircularEvaluator::MeshNodePtr;
+
+		suite.addTest("Size function", [&] {
+			auto interpreter = CppUtils::Language::MetaCircularParser{"Hello"sv};
+			auto destinationNode = MeshNodePtr::makeRoot(0uz);
+
+			auto sizeInstruction = MeshNodePtr::makeRoot("size"_token);
+			sizeInstruction["destination"_token] >> destinationNode;
+
+			const auto result = interpreter(sizeInstruction);
+			if (not result)
+				Logger::print<"error">("Error: {}", result.error());
+
+			suite.expect(result);
+			suite.expectEqual(destinationNode.getValue().value(), 5uz);
+		});
+
+		suite.addTest("Read function", [&] {
+			auto interpreter = CppUtils::Language::MetaCircularParser{"ABC"sv};
+			auto destinationNode = MeshNodePtr::makeRoot(0uz);
+			auto positionNode = MeshNodePtr::make(0uz);
+
+			auto readInstruction = MeshNodePtr::makeRoot("read"_token);
+			readInstruction["destination"_token] >> destinationNode;
+			readInstruction["position"_token] >> positionNode;
+
+			{
+				auto result = interpreter(readInstruction);
+				if (not result)
+					Logger::print<"error">("Error: {}", result.error());
+
+				suite.expect(result);
+				suite.expectEqual(destinationNode.getValue().value(), static_cast<std::size_t>('A'));
+			}
+			positionNode.setValue(1uz);
+			{
+				auto result = interpreter(readInstruction);
+				if (not result)
+					Logger::print<"error">("Error: {}", result.error());
+
+				suite.expect(result);
+				suite.expectEqual(destinationNode.getValue().value(), static_cast<std::size_t>('B'));
+			}
+		});
+
+		suite.addTest("Read at end of input", [&] {
+			auto interpreter = CppUtils::Language::MetaCircularParser{"A"sv};
+
+			auto readInstruction = MeshNodePtr::makeRoot("read"_token);
+			readInstruction["destination"_token] >> MeshNodePtr::make(0uz);
+			readInstruction["position"_token] >> MeshNodePtr::make(1uz);
+
+			auto result = interpreter(readInstruction);
+			suite.expect(not result);
+			suite.expectEqual(result.error(), "read: End of input"sv);
+		});
+
+		suite.addTest("Complex sequence: size and read", [&] {
+			auto interpreter = CppUtils::Language::MetaCircularParser{"Data"sv};
+
+			auto sizeDestination = MeshNodePtr::makeRoot(0uz);
+			auto characterDestination = MeshNodePtr::makeRoot(0uz);
+			auto positionNode = MeshNodePtr::make(0uz);
+
+			auto sizeInstruction = MeshNodePtr::makeRoot("size"_token);
+			sizeInstruction["destination"_token] >> sizeDestination;
+
+			auto readInstruction = MeshNodePtr::makeRoot("read"_token);
+			readInstruction["destination"_token] >> characterDestination;
+			readInstruction["position"_token] >> MeshNodePtr::make(0uz);
+
+			auto program = std::vector<MeshNodePtr>{sizeInstruction, readInstruction};
+
+			auto result = interpreter(program);
+			if (not result)
+				Logger::print<"error">("Error: {}", result.error());
+
+			suite.expect(result);
+			suite.expectEqual(sizeDestination.getValue().value(), 4uz);
+			suite.expectEqual(characterDestination.getValue().value(), static_cast<std::size_t>('D'));
+		});
+
+		suite.addTest("Iterative hash function", [&] {
+			constexpr auto source = "TestString"sv;
+			auto interpreter = CppUtils::Language::MetaCircularParser{source};
+
+			auto currentHashNode = MeshNodePtr::makeRoot(0uz);
+			auto charNode = MeshNodePtr::makeRoot(0uz);
+
+			{
+				auto firstCharInstruction = MeshNodePtr::makeRoot("hash"_token);
+				firstCharInstruction["destination"_token] >> currentHashNode;
+				firstCharInstruction["char"_token] >> charNode;
+
+				charNode.setValue(static_cast<std::size_t>(source[0]));
+				auto result = interpreter(firstCharInstruction);
+				if (not result)
+					Logger::print<"error">("Error: {}", result.error());
+
+				suite.expect(result);
+			}
+
+			auto hashInstruction = MeshNodePtr::makeRoot("hash"_token);
+			hashInstruction["destination"_token] >> currentHashNode;
+			hashInstruction["char"_token] >> charNode;
+			hashInstruction["accumulator"_token] >> currentHashNode;
+
+			for (auto i = 1uz; i < std::size(source); ++i)
+			{
+				charNode.setValue(static_cast<std::size_t>(source[i]));
+				auto result = interpreter(hashInstruction);
+				if (not result)
+					Logger::print<"error">("Error: {}", result.error());
+
+				suite.expect(result);
+			}
+
+			const auto expectedHash = CppUtils::Type::hash(source);
+			suite.expectEqual(currentHashNode.getValue().value(), expectedHash);
+		});
+
+		suite.addTest("parseToken bytecode", [&] {
+			auto interpreter = CppUtils::Language::MetaCircularParser{"test;"sv};
+
+			auto result = interpreter("parseToken"_token);
+			if (not result)
+				Logger::print<"error">("Error: {}", result.error());
+			suite.expect(result);
+
+			auto targetNode = interpreter.get("target"_token);
+			suite.expect(targetNode);
+			suite.expectEqual(targetNode->getValue().value(), "test"_token);
+		});
+	}};
+}

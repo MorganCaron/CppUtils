@@ -55,7 +55,9 @@
 - [`CSV Mapping`](modules/Language/CSV/Mapping.mpp) - Type-safe CSV to struct mapping with support for custom conversion functions
 - [`CLikeCompiler`](modules/Language/CLikeCompiler.mpp) - Compiler for C-inspired language
 - [`GrammarParser`](modules/Language/GrammarParser.mpp) - A parser for defining and interpreting custom grammars, used for building language parsers
-- [`MetaEvaluator`](modules/Language/MetaEvaluator.mpp) - Homoiconic meta-circular evaluator with extensible reflexivity
+- [`MetaCircularEvaluator`](modules/Language/MetaCircularEvaluator.mpp) - Homoiconic meta-circular evaluator with extensible reflexivity
+- [`MetaCircularArithmetic`](modules/Language/MetaCircularArithmetic.mpp) - Extension of `MetaCircularEvaluator` providing basic arithmetic operations (+, -, *, /, %)
+- [`MetaCircularParser`](modules/Language/MetaCircularParser.mpp) - Extension of `MetaCircularArithmetic` for building parsers with input stream reading capabilities
 - [`ASTParser`](modules/Language/ASTParser.mpp) - AST parser (work in progress <img src="resources/loading.gif" width="12" height="12"/>)
 - [`VirtualMachine`](modules/Language/VirtualMachine.mpp) - Generic virtual machine
 

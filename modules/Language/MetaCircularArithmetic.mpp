@@ -1,0 +1,45 @@
+export module CppUtils.Language.MetaCircularArithmetic;
+
+import std;
+import CppUtils.Language.MetaCircularEvaluator;
+import CppUtils.String;
+import CppUtils.Type;
+
+export namespace CppUtils::Language
+{
+	struct MetaCircularArithmetic: public MetaCircularEvaluator
+	{
+		inline MetaCircularArithmetic()
+		{
+			using namespace String::Literals;
+
+			auto arithmeticOperation = [](auto&& operation, std::string_view name) {
+				return [operation = std::forward<decltype(operation)>(operation), name](MetaCircularArithmetic&, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
+					auto lhs = instruction.at("lhs"_token).and_then([](auto branch) { return branch.front(); });
+					if (not lhs)
+						return std::unexpected{std::format("{}: Missing lhs", name)};
+
+					auto rhs = instruction.at("rhs"_token).and_then([](auto branch) { return branch.front(); });
+					if (not rhs)
+						return std::unexpected{std::format("{}: Missing rhs", name)};
+
+					auto result = instruction.at("result"_token).and_then([](auto branch) { return branch.front(); });
+					if (not result)
+						return std::unexpected{std::format("{}: Missing result", name)};
+
+					const auto lhsValue = lhs->getValue().value();
+					const auto rhsValue = rhs->getValue().value();
+					result->setValue(operation(lhsValue, rhsValue));
+					return {};
+				};
+			};
+
+			addFunction<MetaCircularArithmetic>("+"_token, arithmeticOperation(std::plus<>{}, "+"));
+			addFunction<MetaCircularArithmetic>("-"_token, arithmeticOperation(std::minus<>{}, "-"));
+			addFunction<MetaCircularArithmetic>("*"_token, arithmeticOperation(std::multiplies<>{}, "*"));
+			addFunction<MetaCircularArithmetic>("/"_token, arithmeticOperation(std::divides<>{}, "/"));
+			addFunction<MetaCircularArithmetic>("%"_token, arithmeticOperation(std::modulus<>{}, "%"));
+			addFunction<MetaCircularArithmetic>("<"_token, arithmeticOperation(std::less<>{}, "<"));
+		}
+	};
+}

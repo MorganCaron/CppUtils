@@ -1,0 +1,136 @@
+export module CppUtils.UnitTests.Language.MetaCircularArithmetic;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::MetaCircularArithmetic
+{
+	auto _ = TestSuite{
+		"Language/MetaCircularArithmetic",
+		{"Logger", "Container/MeshNetwork"},
+		[](TestSuite& suite) {
+		using namespace std::literals;
+		using namespace CppUtils::String::Literals;
+		using Logger = TestSuite::Logger;
+		using MetaCircularArithmetic = CppUtils::Language::MetaCircularArithmetic;
+		using MeshNodePtr = MetaCircularArithmetic::MeshNodePtr;
+
+		suite.addTest("Addition (+)", [&] {
+			auto interpreter = MetaCircularArithmetic{};
+			auto result = MeshNodePtr::make(0uz);
+
+			auto instruction = MeshNodePtr::makeRoot("+"_token);
+			instruction["lhs"_token] >> MeshNodePtr::make(10uz);
+			instruction["rhs"_token] >> MeshNodePtr::make(5uz);
+			instruction["result"_token] >> result;
+
+			const auto status = interpreter(instruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			suite.expectEqual(result.getValue().value(), 15uz);
+		});
+
+		suite.addTest("Subtraction (-)", [&] {
+			auto interpreter = MetaCircularArithmetic{};
+			auto result = MeshNodePtr::make(0uz);
+
+			auto instruction = MeshNodePtr::makeRoot("-"_token);
+			instruction["lhs"_token] >> MeshNodePtr::make(10uz);
+			instruction["rhs"_token] >> MeshNodePtr::make(3uz);
+			instruction["result"_token] >> result;
+
+			const auto status = interpreter(instruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			suite.expectEqual(result.getValue().value(), 7uz);
+		});
+
+		suite.addTest("Multiplication (*)", [&] {
+			auto interpreter = MetaCircularArithmetic{};
+			auto result = MeshNodePtr::make(0uz);
+
+			auto instruction = MeshNodePtr::makeRoot("*"_token);
+			instruction["lhs"_token] >> MeshNodePtr::make(4uz);
+			instruction["rhs"_token] >> MeshNodePtr::make(5uz);
+			instruction["result"_token] >> result;
+
+			const auto status = interpreter(instruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			suite.expectEqual(result.getValue().value(), 20uz);
+		});
+
+		suite.addTest("Division (/)", [&] {
+			auto interpreter = MetaCircularArithmetic{};
+			auto result = MeshNodePtr::make(0uz);
+
+			auto instruction = MeshNodePtr::makeRoot("/"_token);
+			instruction["lhs"_token] >> MeshNodePtr::make(20uz);
+			instruction["rhs"_token] >> MeshNodePtr::make(4uz);
+			instruction["result"_token] >> result;
+
+			const auto status = interpreter(instruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			suite.expectEqual(result.getValue().value(), 5uz);
+		});
+
+		suite.addTest("Modulus (%)", [&] {
+			auto interpreter = MetaCircularArithmetic{};
+			auto result = MeshNodePtr::make(0uz);
+
+			auto instruction = MeshNodePtr::makeRoot("%"_token);
+			instruction["lhs"_token] >> MeshNodePtr::make(17uz);
+			instruction["rhs"_token] >> MeshNodePtr::make(5uz);
+			instruction["result"_token] >> result;
+
+			const auto status = interpreter(instruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			suite.expectEqual(result.getValue().value(), 2uz);
+		});
+
+		suite.addTest("Less than (<)", [&] {
+			auto interpreter = MetaCircularArithmetic{};
+			auto result = MeshNodePtr::make(false);
+
+			{
+				auto instruction = MeshNodePtr::makeRoot("<"_token);
+				instruction["lhs"_token] >> MeshNodePtr::make(10uz);
+				instruction["rhs"_token] >> MeshNodePtr::make(20uz);
+				instruction["result"_token] >> result;
+
+				auto status = interpreter(instruction);
+				if (not status)
+					Logger::print<"error">("Error: {}", status.error());
+
+				suite.expect(status);
+				suite.expectEqual(result.getValue().value(), true);
+			}
+
+			{
+				auto instruction = MeshNodePtr::makeRoot("<"_token);
+				instruction["lhs"_token] >> MeshNodePtr::make(20uz);
+				instruction["rhs"_token] >> MeshNodePtr::make(10uz);
+				instruction["result"_token] >> result;
+
+				auto status = interpreter(instruction);
+				if (not status)
+					Logger::print<"error">("Error: {}", status.error());
+
+				suite.expect(status);
+				suite.expectEqual(result.getValue().value(), false);
+			}
+		});
+	}};
+}

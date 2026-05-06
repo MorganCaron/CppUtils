@@ -1,0 +1,167 @@
+export module CppUtils.Language.MetaCircularParser;
+
+import std;
+import CppUtils.Language.MetaCircularArithmetic;
+import CppUtils.String;
+import CppUtils.Type;
+
+export namespace CppUtils::Language
+{
+	template<String::StringView Source>
+	struct MetaCircularParser: public MetaCircularArithmetic
+	{
+		Source source;
+
+		inline MetaCircularParser(Source input):
+			source{input}
+		{
+			using namespace std::literals;
+			using namespace String::Literals;
+
+			addFunction<MetaCircularParser>("size"_token, [](MetaCircularParser& interpreter, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
+				auto destinationNode = instruction.at("destination"_token).and_then([](auto branch) { return branch.front(); });
+				if (not destinationNode)
+					return std::unexpected{"size: No destination"sv};
+				destinationNode->setValue(std::size(interpreter.source));
+				return {};
+			});
+
+			addFunction<MetaCircularParser>("read"_token, [](MetaCircularParser& interpreter, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
+				auto positionNode = instruction.at("position"_token).and_then([](auto branch) { return branch.front(); });
+				if (not positionNode)
+					return std::unexpected{"read: No position"sv};
+
+				const auto position = positionNode->getValue().value();
+				if (position >= std::size(interpreter.source))
+					return std::unexpected{"read: End of input"sv};
+
+				auto destinationNode = instruction.at("destination"_token).and_then([](auto branch) { return branch.front(); });
+				if (not destinationNode)
+					return std::unexpected{"read: No destination"sv};
+				destinationNode->setValue(static_cast<std::size_t>(interpreter.source[position]));
+				return {};
+			});
+
+			addFunction<MetaCircularParser>("hash"_token, [](MetaCircularParser&, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
+				auto charNode = instruction.at("char"_token).and_then([](auto branch) { return branch.front(); });
+				if (not charNode)
+					return std::unexpected{"hash: No character"sv};
+				const auto character = charNode->getValue().value();
+
+				auto accumulatorNode = instruction.at("accumulator"_token).and_then([](auto branch) { return branch.front(); });
+				const auto currentHash = accumulatorNode ? accumulatorNode->getValue().value() : Type::HashOffset;
+
+				auto destinationNode = instruction.at("destination"_token).and_then([](auto branch) { return branch.front(); });
+				if (not destinationNode)
+					return std::unexpected{"hash: No destination"sv};
+
+				const auto result = (static_cast<std::uint64_t>(character) ^ currentHash) * Type::HashPrime;
+				destinationNode->setValue(result);
+				return {};
+			});
+
+			// Etat global
+			auto positionNode = context["position"_token] >> MeshNodePtr::make(0uz);
+			auto accumulatorNode = context["accumulator"_token] >> MeshNodePtr::make(Type::HashOffset);
+			auto targetNode = context["target"_token] >> MeshNodePtr::make(0uz);
+
+			// Fonctions bytecode
+			auto lowLevelTokenParser = context["scope"_token] >> MeshNodePtr::make("lowLevelTokenParser"_token);
+			auto parseTokenNode = lowLevelTokenParser["parseToken"_token] >> MeshNodePtr::make("parseToken"_token);
+			auto onSeparatorNode = lowLevelTokenParser["onSeparator"_token] >> MeshNodePtr::make("onSeparator"_token);
+			auto onCharacterNode = lowLevelTokenParser["onCharacter"_token] >> MeshNodePtr::make("onCharacter"_token);
+
+			// Branchement
+			lowLevelTokenParser[static_cast<Type::Token>(true)] >> onSeparatorNode;
+			lowLevelTokenParser[static_cast<Type::Token>(false)] >> onCharacterNode;
+
+			// Variables de travail
+			auto workingVariablesBranch = lowLevelTokenParser["workingVariables"_token];
+			auto currentCharNode = workingVariablesBranch >> MeshNodePtr::make(0uz);
+			auto isSeparatorNode = workingVariablesBranch >> MeshNodePtr::make(0uz);
+			auto isNotEndSourceNode = workingVariablesBranch >> MeshNodePtr::make(0uz);
+			auto separatorNode = workingVariablesBranch >> MeshNodePtr::make(static_cast<std::size_t>(';'));
+			auto oneNode = workingVariablesBranch >> MeshNodePtr::make(1uz);
+			auto sourceSizeNode = workingVariablesBranch >> MeshNodePtr::make(std::size(source));
+			auto hashOffsetNode = workingVariablesBranch >> MeshNodePtr::make(Type::HashOffset);
+
+			// Fonction onSeparatorNode
+			{
+				auto instructions = onSeparatorNode["instructions"_token];
+				auto storeInstruction = instructions >> MeshNodePtr::make("define"_token);
+				storeInstruction["value"_token] >> accumulatorNode;
+				storeInstruction["target"_token] >> targetNode;
+
+				auto resetInstruction = instructions >> MeshNodePtr::make("define"_token);
+				resetInstruction["value"_token] >> hashOffsetNode;
+				resetInstruction["target"_token] >> accumulatorNode;
+			}
+
+			// Fonction onCharacterNode
+			{
+				auto instructions = onCharacterNode["instructions"_token];
+				auto hashInstruction = instructions >> MeshNodePtr::make("hash"_token);
+				hashInstruction["char"_token] >> currentCharNode;
+				hashInstruction["accumulator"_token] >> accumulatorNode;
+				hashInstruction["destination"_token] >> accumulatorNode;
+			}
+
+			// Fonction parseTokenNode
+			{
+				auto instructions = parseTokenNode["instructions"_token];
+
+				// 0: isNotEnd = position < size
+				auto checkEndInstruction = instructions >> MeshNodePtr::make("<"_token);
+				checkEndInstruction["lhs"_token] >> positionNode;
+				checkEndInstruction["rhs"_token] >> sourceSizeNode;
+				checkEndInstruction["result"_token] >> isNotEndSourceNode;
+
+				// 1: jump to 3 if isNotEnd
+				auto jumpIfNotEmpty = instructions >> MeshNodePtr::make("jump"_token);
+				jumpIfNotEmpty["condition"_token] >> isNotEndSourceNode;
+				jumpIfNotEmpty["index"_token] >> MeshNodePtr::make(3uz);
+
+				// 2: return if position >= size
+				instructions >> MeshNodePtr::make("return"_token);
+
+				// 3: read
+				auto readInstruction = instructions >> MeshNodePtr::make("read"_token);
+				readInstruction["position"_token] >> positionNode;
+				readInstruction["destination"_token] >> currentCharNode;
+
+				// 4: isSeparator = currentChar == ';'
+				auto compareInstruction = instructions >> MeshNodePtr::make("=="_token);
+				compareInstruction["lhs"_token] >> currentCharNode;
+				compareInstruction["rhs"_token] >> separatorNode;
+				compareInstruction["result"_token] >> isSeparatorNode;
+
+				// 5: jump to 8 (onSeparator) if isSeparator is true
+				auto jumpToSeparator = instructions >> MeshNodePtr::make("jump"_token);
+				jumpToSeparator["condition"_token] >> isSeparatorNode;
+				jumpToSeparator["index"_token] >> MeshNodePtr::make(8uz);
+
+				// 6: call onCharacter
+				instructions >> onCharacterNode;
+
+				// 7: jump to 9 (increment)
+				auto jumpToIncrement = instructions >> MeshNodePtr::make("jump"_token);
+				jumpToIncrement["index"_token] >> MeshNodePtr::make(9uz);
+
+				// 8: call onSeparator
+				instructions >> onSeparatorNode;
+
+				// 9: position++
+				auto incrementInstruction = instructions >> MeshNodePtr::make("+"_token);
+				incrementInstruction["lhs"_token] >> positionNode;
+				incrementInstruction["rhs"_token] >> oneNode;
+				incrementInstruction["result"_token] >> positionNode;
+
+				// 10: loop back to 0
+				instructions >> MeshNodePtr::make("jump"_token)["index"_token] >> MeshNodePtr::make(0uz);
+			}
+		}
+	};
+
+	template<String::StringView Source>
+	MetaCircularParser(Source) -> MetaCircularParser<Source>;
+}

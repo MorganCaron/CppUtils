@@ -1,0 +1,244 @@
+export module CppUtils.UnitTests.Language.MetaCircularEvaluator;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::MetaCircularEvaluator
+{
+	auto _ = TestSuite{
+		"Language/MetaCircularEvaluator",
+		{"Logger", "Container/MeshNetwork"},
+		[](TestSuite& suite) {
+		using namespace std::literals;
+		using namespace CppUtils::String::Literals;
+		using Logger = TestSuite::Logger;
+		using MetaCircularEvaluator = CppUtils::Language::MetaCircularEvaluator;
+		using MeshNodePtr = MetaCircularEvaluator::MeshNodePtr;
+
+		suite.addTest("Check if main function exists", [&] {
+			auto interpreter = MetaCircularEvaluator{};
+			suite.expect(not interpreter.get("main"_token));
+			interpreter.context["main"_token] >> MeshNodePtr::make("main"_token);
+			suite.expect(interpreter.get("main"_token));
+		});
+
+		suite.addTest("Internal function call", [&] {
+			auto interpreter = MetaCircularEvaluator{};
+			interpreter.context["main"_token] >> MeshNodePtr::make("main"_token);
+
+			const auto result = interpreter("main"_token);
+			if (not result)
+				Logger::print<"error">("Error: {}", result.error());
+
+			suite.expect(result);
+		});
+
+		suite.addTest("External function call", [&] {
+			auto interpreter = MetaCircularEvaluator{};
+			auto called = false;
+
+			interpreter.addFunction("ExternalFunction"_token, [&](MetaCircularEvaluator&, MeshNodePtr) -> std::expected<void, std::string_view> {
+				called = true;
+				return {};
+			});
+
+			const auto result = interpreter("ExternalFunction"_token);
+			if (not result)
+				Logger::print<"error">("Error: {}", result.error());
+
+			suite.expect(result);
+			suite.expect(called);
+		});
+
+		suite.addTest("Define node", [&] {
+			auto interpreter = MetaCircularEvaluator{};
+			auto target = MeshNodePtr::makeRoot("OldValue"_token);
+
+			auto defineNode = MeshNodePtr::makeRoot("define"_token);
+			defineNode["target"_token] >> target;
+			defineNode["value"_token] >> MeshNodePtr::make("NewValue"_token);
+
+			const auto result = interpreter(defineNode);
+			if (not result)
+				Logger::print<"error">("Error: {}", result.error());
+
+			suite.expect(result);
+
+			suite.expectEqual(target.getValue().value(), "NewValue"_token);
+		});
+
+		suite.addTest("Link", [&] {
+			auto interpreter = MetaCircularEvaluator{};
+			auto target = MeshNodePtr::makeRoot("Target"_token);
+			auto child = MeshNodePtr::makeRoot("Child"_token);
+
+			auto linkNode = MeshNodePtr::makeRoot("link"_token);
+			linkNode["source"_token] >> target;
+			linkNode["branch"_token]
+				>> MeshNodePtr::make("Branch"_token)["node"_token]
+				>> child;
+
+			const auto result = interpreter(linkNode);
+			if (not result)
+				Logger::print<"error">("Error: {}", result.error());
+
+			suite.expect(result);
+			suite.expect(target.contains("Branch"_token));
+			suite.expectEqual(std::size(target.at("Branch"_token).value()), 1uz);
+			suite.expectEqual(target.at("Branch"_token)->front()->getValue().value(), "Child"_token);
+		});
+
+		suite.addTest("Unlink", [&] {
+			auto interpreter = MetaCircularEvaluator{};
+			auto target = MeshNodePtr::makeRoot("Target"_token);
+			auto child = MeshNodePtr::makeRoot("Child"_token);
+			target["Branch"_token] >> child;
+			suite.expect(target.contains("Branch"_token));
+
+			// unlink branch
+			{
+				auto unlinkNode = MeshNodePtr::makeRoot("unlink"_token);
+				unlinkNode["source"_token] >> target;
+				unlinkNode["branch"_token] >> MeshNodePtr::make("Branch"_token);
+
+				const auto result = interpreter(unlinkNode);
+				suite.expect(result);
+				suite.expect(not target.contains("Branch"_token));
+			}
+
+			// unlink single node
+			{
+				target["Branch"_token] >> child;
+				suite.expect(target.contains("Branch"_token));
+
+				auto unlinkNode = MeshNodePtr::makeRoot("unlink"_token);
+				unlinkNode["source"_token] >> target;
+				unlinkNode["branch"_token] >> MeshNodePtr::make("Branch"_token);
+				unlinkNode["target"_token] >> child;
+
+				const auto result = interpreter(unlinkNode);
+				suite.expect(result);
+				suite.expect(not target.contains("Branch"_token));
+			}
+		});
+
+		suite.addTest("Equality (==)", [&] {
+			auto interpreter = MetaCircularEvaluator{};
+			auto rhs = MeshNodePtr::make(42uz);
+			auto resultNode = MeshNodePtr::make(false);
+
+			auto equalInstruction = MeshNodePtr::makeRoot("=="_token);
+			equalInstruction["lhs"_token] >> MeshNodePtr::make(42uz);
+			equalInstruction["rhs"_token] >> rhs;
+			equalInstruction["result"_token] >> resultNode;
+
+			{
+				auto result = interpreter(equalInstruction);
+				if (not result)
+					Logger::print<"error">("Error: {}", result.error());
+
+				suite.expect(result);
+				suite.expectEqual(resultNode.getValue().value(), true);
+			}
+			rhs.setValue(43uz);
+			{
+				auto result = interpreter(equalInstruction);
+				if (not result)
+					Logger::print<"error">("Error: {}", result.error());
+
+				suite.expect(result);
+				suite.expectEqual(resultNode.getValue().value(), false);
+			}
+		});
+
+		suite.addTest("Inversion (not)", [&] {
+			auto interpreter = MetaCircularEvaluator{};
+			auto value = MeshNodePtr::make(true);
+
+			auto notInstruction = MeshNodePtr::makeRoot("not"_token);
+			notInstruction["value"_token] >> value;
+
+			{
+				auto result = interpreter(notInstruction);
+				if (not result)
+					Logger::print<"error">("Error: {}", result.error());
+
+				suite.expect(result);
+				suite.expectEqual(static_cast<bool>(value.getValue().value()), false);
+			}
+
+			{
+				auto result = interpreter(notInstruction);
+				if (not result)
+					Logger::print<"error">("Error: {}", result.error());
+
+				suite.expect(result);
+				suite.expectEqual(static_cast<bool>(value.getValue().value()), true);
+			}
+		});
+
+		suite.addTest("Jump", [&] {
+			auto interpreter = MetaCircularEvaluator{};
+			auto value = MeshNodePtr::makeRoot(0uz);
+
+			auto instructions = interpreter.context["main"_token] >> MeshNodePtr::make("main"_token)["instructions"_token];
+
+			// jump to 2
+			{
+				auto jumpNode = MeshNodePtr::make("jump"_token);
+				instructions >> jumpNode;
+				jumpNode["index"_token] >> MeshNodePtr::make(2uz);
+			}
+
+			// define value = 1 (skipped)
+			{
+				auto defineNode = MeshNodePtr::make("define"_token);
+				instructions >> defineNode;
+				defineNode["value"_token] >> MeshNodePtr::make(1uz);
+				defineNode["target"_token] >> value;
+			}
+
+			// define value = 2
+			{
+				auto defineNode = MeshNodePtr::make("define"_token);
+				instructions >> defineNode;
+				defineNode["value"_token] >> MeshNodePtr::make(2uz);
+				defineNode["target"_token] >> value;
+			}
+
+			const auto result = interpreter("main"_token);
+			suite.expect(result);
+			suite.expectEqual(value.getValue().value(), 2uz);
+		});
+
+		suite.addTest("Return", [&] {
+			auto interpreter = MetaCircularEvaluator{};
+			auto value = MeshNodePtr::makeRoot(0uz);
+
+			auto instructions = interpreter.context["main"_token] >> MeshNodePtr::make("main"_token)["instructions"_token];
+
+			// define value = 1
+			{
+				auto defineNode = MeshNodePtr::make("define"_token);
+				instructions >> defineNode;
+				defineNode["value"_token] >> MeshNodePtr::make(1uz);
+				defineNode["target"_token] >> value;
+			}
+
+			// return
+			instructions >> MeshNodePtr::make("return"_token);
+
+			// define value = 2 (should not execute)
+			{
+				auto defineNode = MeshNodePtr::make("define"_token);
+				instructions >> defineNode;
+				defineNode["value"_token] >> MeshNodePtr::make(2uz);
+				defineNode["target"_token] >> value;
+			}
+
+			const auto result = interpreter("main"_token);
+			suite.expect(result);
+			suite.expectEqual(value.getValue().value(), 1uz);
+		});
+	}};
+}
