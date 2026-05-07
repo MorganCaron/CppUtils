@@ -7,7 +7,7 @@ namespace CppUtils::UnitTest::Language::ASTParser
 {
 	auto _ = TestSuite{
 		"Language/ASTParser",
-		{"Logger", "Container/Tree", "Language/MetaCircularEvaluator"},
+		{"Logger", "Container/Tree", "Language/MetaCircularVirtualMachine"},
 		[](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;

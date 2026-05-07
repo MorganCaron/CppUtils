@@ -12,8 +12,8 @@ namespace CppUtils::UnitTest::Language::MetaCircularParser
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = TestSuite::Logger;
-		using MetaCircularEvaluator = CppUtils::Language::MetaCircularEvaluator;
-		using MeshNodePtr = MetaCircularEvaluator::MeshNodePtr;
+		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
 
 		suite.addTest("Size function", [&] {
 			auto interpreter = CppUtils::Language::MetaCircularParser{"Hello"sv};

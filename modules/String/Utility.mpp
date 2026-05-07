@@ -192,6 +192,37 @@ export namespace CppUtils::String
 		return string | std::ranges::views::split(separator) | std::ranges::to<std::vector<std::string>>();
 	}
 
+	template<std::size_t Size>
+	struct FixedString final
+	{
+		char data[Size]{};
+
+		constexpr FixedString(const char (&string)[Size]) noexcept
+		{
+			std::copy_n(string, Size, data);
+		}
+
+		template<std::size_t OtherSize>
+		[[nodiscard]] constexpr auto operator+(const char (&other)[OtherSize]) const noexcept -> FixedString<Size + OtherSize - 1>
+		{
+			char result[Size + OtherSize - 1]{};
+			std::copy_n(data, Size - 1, result);
+			std::copy_n(other, OtherSize, result + Size - 1);
+			return result;
+		}
+
+		[[nodiscard]] constexpr operator std::string_view() const noexcept
+		{
+			return {data, Size - 1};
+		}
+	};
+
+	template<std::size_t Size>
+	FixedString(const char (&)[Size]) -> FixedString<Size>;
+
+	static_assert(std::string_view{FixedString{"foo"}} == "foo");
+	static_assert(std::string_view{FixedString{"foo"} + "bar"} == "foobar");
+
 	[[nodiscard]] inline constexpr auto excelColumnToPosition(std::string_view excelColumn) noexcept -> std::size_t
 	{
 		auto base = 26uz;

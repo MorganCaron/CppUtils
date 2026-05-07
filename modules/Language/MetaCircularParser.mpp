@@ -1,14 +1,14 @@
 export module CppUtils.Language.MetaCircularParser;
 
 import std;
-import CppUtils.Language.MetaCircularArithmetic;
+import CppUtils.Language.MetaCircularVirtualMachine;
 import CppUtils.String;
 import CppUtils.Type;
 
 export namespace CppUtils::Language
 {
 	template<String::StringView Source>
-	struct MetaCircularParser: public MetaCircularArithmetic
+	struct MetaCircularParser: public MetaCircularVirtualMachine
 	{
 		Source source;
 
