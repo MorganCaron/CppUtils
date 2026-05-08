@@ -18,15 +18,15 @@ export namespace CppUtils::Language
 			using namespace std::literals;
 			using namespace String::Literals;
 
-			addFunction<MetaCircularParser>("size"_token, [](MetaCircularParser& interpreter, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
+			addFunction<MetaCircularParser>("size"_token, [](MetaCircularParser& interpreter, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
 				auto destinationNode = instruction.at("destination"_token).and_then([](auto branch) { return branch.front(); });
 				if (not destinationNode)
 					return std::unexpected{"size: No destination"sv};
 				destinationNode->setValue(std::size(interpreter.source));
-				return {};
+				return next(instruction);
 			});
 
-			addFunction<MetaCircularParser>("read"_token, [](MetaCircularParser& interpreter, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
+			addFunction<MetaCircularParser>("read"_token, [](MetaCircularParser& interpreter, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
 				auto positionNode = instruction.at("position"_token).and_then([](auto branch) { return branch.front(); });
 				if (not positionNode)
 					return std::unexpected{"read: No position"sv};
@@ -39,10 +39,10 @@ export namespace CppUtils::Language
 				if (not destinationNode)
 					return std::unexpected{"read: No destination"sv};
 				destinationNode->setValue(static_cast<std::size_t>(interpreter.source[position]));
-				return {};
+				return next(instruction);
 			});
 
-			addFunction<MetaCircularParser>("hash"_token, [](MetaCircularParser&, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
+			addFunction<MetaCircularParser>("hash"_token, [](MetaCircularParser&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
 				auto charNode = instruction.at("char"_token).and_then([](auto branch) { return branch.front(); });
 				if (not charNode)
 					return std::unexpected{"hash: No character"sv};
@@ -57,7 +57,7 @@ export namespace CppUtils::Language
 
 				const auto result = (static_cast<std::uint64_t>(character) ^ currentHash) * Type::HashPrime;
 				destinationNode->setValue(result);
-				return {};
+				return next(instruction);
 			});
 
 			// Etat global
@@ -65,15 +65,11 @@ export namespace CppUtils::Language
 			auto accumulatorNode = context["accumulator"_token] >> MeshNodePtr::make(Type::HashOffset);
 			auto targetNode = context["target"_token] >> MeshNodePtr::make(0uz);
 
-			// Fonctions bytecode
+			// Fonctions
 			auto lowLevelTokenParser = context["scope"_token] >> MeshNodePtr::make("lowLevelTokenParser"_token);
-			auto parseTokenNode = lowLevelTokenParser["parseToken"_token] >> MeshNodePtr::make("parseToken"_token);
-			auto onSeparatorNode = lowLevelTokenParser["onSeparator"_token] >> MeshNodePtr::make("onSeparator"_token);
-			auto onCharacterNode = lowLevelTokenParser["onCharacter"_token] >> MeshNodePtr::make("onCharacter"_token);
-
-			// Branchement
-			lowLevelTokenParser[static_cast<Type::Token>(true)] >> onSeparatorNode;
-			lowLevelTokenParser[static_cast<Type::Token>(false)] >> onCharacterNode;
+			auto parseTokenNode = lowLevelTokenParser["parseToken"_token] >> MeshNodePtr::make("jump"_token);
+			auto onSeparatorNode = lowLevelTokenParser["onSeparator"_token] >> MeshNodePtr::make("jump"_token);
+			auto onCharacterNode = lowLevelTokenParser["onCharacter"_token] >> MeshNodePtr::make("jump"_token);
 
 			// Variables de travail
 			auto workingVariablesBranch = lowLevelTokenParser["workingVariables"_token];
@@ -86,78 +82,72 @@ export namespace CppUtils::Language
 			auto hashOffsetNode = workingVariablesBranch >> MeshNodePtr::make(Type::HashOffset);
 
 			// Fonction onSeparatorNode
+			MeshNodePtr onSeparatorEnd;
 			{
-				auto instructions = onSeparatorNode["instructions"_token];
-				auto storeInstruction = instructions >> MeshNodePtr::make("define"_token);
+				auto storeInstruction = onSeparatorNode["next"_token] >> MeshNodePtr::make("define"_token);
 				storeInstruction["value"_token] >> accumulatorNode;
 				storeInstruction["target"_token] >> targetNode;
 
-				auto resetInstruction = instructions >> MeshNodePtr::make("define"_token);
+				auto resetInstruction = storeInstruction["next"_token] >> MeshNodePtr::make("define"_token);
 				resetInstruction["value"_token] >> hashOffsetNode;
 				resetInstruction["target"_token] >> accumulatorNode;
+				onSeparatorEnd = resetInstruction;
 			}
 
 			// Fonction onCharacterNode
+			MeshNodePtr onCharacterEnd;
 			{
-				auto instructions = onCharacterNode["instructions"_token];
-				auto hashInstruction = instructions >> MeshNodePtr::make("hash"_token);
+				auto hashInstruction = onCharacterNode["next"_token] >> MeshNodePtr::make("hash"_token);
 				hashInstruction["char"_token] >> currentCharNode;
 				hashInstruction["accumulator"_token] >> accumulatorNode;
 				hashInstruction["destination"_token] >> accumulatorNode;
+				onCharacterEnd = hashInstruction;
 			}
 
 			// Fonction parseTokenNode
 			{
-				auto instructions = parseTokenNode["instructions"_token];
-
-				// 0: isNotEnd = position < size
-				auto checkEndInstruction = instructions >> MeshNodePtr::make("<"_token);
+				// isNotEnd = position < size
+				auto checkEndInstruction = parseTokenNode["next"_token] >> MeshNodePtr::make("<"_token);
 				checkEndInstruction["lhs"_token] >> positionNode;
 				checkEndInstruction["rhs"_token] >> sourceSizeNode;
 				checkEndInstruction["result"_token] >> isNotEndSourceNode;
 
-				// 1: jump to 3 if isNotEnd
-				auto jumpIfNotEmpty = instructions >> MeshNodePtr::make("jump"_token);
+				// jump to readInstruction if isNotEnd
+				auto jumpIfNotEmpty = checkEndInstruction["next"_token] >> MeshNodePtr::make("jump"_token);
 				jumpIfNotEmpty["condition"_token] >> isNotEndSourceNode;
-				jumpIfNotEmpty["index"_token] >> MeshNodePtr::make(3uz);
 
-				// 2: return if position >= size
-				instructions >> MeshNodePtr::make("return"_token);
+				// return if position >= size
+				jumpIfNotEmpty["else"_token] >> MeshNodePtr::make("return"_token);
 
-				// 3: read
-				auto readInstruction = instructions >> MeshNodePtr::make("read"_token);
+				// read
+				auto readInstruction = jumpIfNotEmpty["next"_token] >> MeshNodePtr::make("read"_token);
 				readInstruction["position"_token] >> positionNode;
 				readInstruction["destination"_token] >> currentCharNode;
 
-				// 4: isSeparator = currentChar == ';'
-				auto compareInstruction = instructions >> MeshNodePtr::make("=="_token);
+				// isSeparator = currentChar == ';'
+				auto compareInstruction = readInstruction["next"_token] >> MeshNodePtr::make("=="_token);
 				compareInstruction["lhs"_token] >> currentCharNode;
 				compareInstruction["rhs"_token] >> separatorNode;
 				compareInstruction["result"_token] >> isSeparatorNode;
 
-				// 5: jump to 8 (onSeparator) if isSeparator is true
-				auto jumpToSeparator = instructions >> MeshNodePtr::make("jump"_token);
+				// jump to onSeparator if isSeparator is true
+				auto jumpToSeparator = compareInstruction["next"_token] >> MeshNodePtr::make("jump"_token);
 				jumpToSeparator["condition"_token] >> isSeparatorNode;
-				jumpToSeparator["index"_token] >> MeshNodePtr::make(8uz);
+				jumpToSeparator["next"_token] >> onSeparatorNode;
 
-				// 6: call onCharacter
-				instructions >> onCharacterNode;
+				// call onCharacter
+				jumpToSeparator["else"_token] >> onCharacterNode;
 
-				// 7: jump to 9 (increment)
-				auto jumpToIncrement = instructions >> MeshNodePtr::make("jump"_token);
-				jumpToIncrement["index"_token] >> MeshNodePtr::make(9uz);
-
-				// 8: call onSeparator
-				instructions >> onSeparatorNode;
-
-				// 9: position++
-				auto incrementInstruction = instructions >> MeshNodePtr::make("+"_token);
+				// position++
+				auto incrementInstruction = MeshNodePtr::make("+"_token);
+				onCharacterEnd["next"_token] >> incrementInstruction;
+				onSeparatorEnd["next"_token] >> incrementInstruction;
 				incrementInstruction["lhs"_token] >> positionNode;
 				incrementInstruction["rhs"_token] >> oneNode;
 				incrementInstruction["result"_token] >> positionNode;
 
-				// 10: loop back to 0
-				instructions >> MeshNodePtr::make("jump"_token)["index"_token] >> MeshNodePtr::make(0uz);
+				// loop back to 0
+				incrementInstruction["next"_token] >> checkEndInstruction;
 			}
 		}
 	};

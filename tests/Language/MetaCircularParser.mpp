@@ -84,9 +84,9 @@ namespace CppUtils::UnitTest::Language::MetaCircularParser
 			readInstruction["destination"_token] >> characterDestination;
 			readInstruction["position"_token] >> MeshNodePtr::make(0uz);
 
-			auto program = std::vector<MeshNodePtr>{sizeInstruction, readInstruction};
+			sizeInstruction["next"_token] >> readInstruction;
 
-			auto result = interpreter(program);
+			auto result = interpreter(sizeInstruction);
 			if (not result)
 				Logger::print<"error">("Error: {}", result.error());
 

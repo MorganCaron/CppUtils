@@ -37,9 +37,9 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto called = false;
 
-			interpreter.addFunction("ExternalFunction"_token, [&](MetaCircularVirtualMachine&, MeshNodePtr) -> std::expected<void, std::string_view> {
+			interpreter.addFunction("ExternalFunction"_token, [&](MetaCircularVirtualMachine&, MeshNodePtr) -> std::expected<MeshNodePtr, std::string_view> {
 				called = true;
-				return {};
+				return MeshNodePtr{};
 			});
 
 			const auto result = interpreter("ExternalFunction"_token);
@@ -181,30 +181,22 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto value = MeshNodePtr::makeRoot(0uz);
 
-			auto instructions = interpreter.context["main"_token] >> MeshNodePtr::make("main"_token)["instructions"_token];
+			auto mainNode = interpreter.context["main"_token] >> MeshNodePtr::make("main"_token);
 
-			// jump to 2
-			{
-				auto jumpNode = MeshNodePtr::make("jump"_token);
-				instructions >> jumpNode;
-				jumpNode["index"_token] >> MeshNodePtr::make(2uz);
-			}
+			// jump to define value = 2
+			auto jumpNode = mainNode["next"_token] >> MeshNodePtr::make("jump"_token);
 
-			// define value = 1 (skipped)
-			{
-				auto defineNode = MeshNodePtr::make("define"_token);
-				instructions >> defineNode;
-				defineNode["value"_token] >> MeshNodePtr::make(1uz);
-				defineNode["target"_token] >> value;
-			}
+			// define value = 1 (skipped if jump condition is true)
+			auto define1 = jumpNode["else"_token] >> MeshNodePtr::make("define"_token);
+			define1["value"_token] >> MeshNodePtr::make(1uz);
+			define1["target"_token] >> value;
 
 			// define value = 2
-			{
-				auto defineNode = MeshNodePtr::make("define"_token);
-				instructions >> defineNode;
-				defineNode["value"_token] >> MeshNodePtr::make(2uz);
-				defineNode["target"_token] >> value;
-			}
+			auto define2 = jumpNode["next"_token] >> MeshNodePtr::make("define"_token);
+			define2["value"_token] >> MeshNodePtr::make(2uz);
+			define2["target"_token] >> value;
+
+			jumpNode["condition"_token] >> MeshNodePtr::make(1uz);
 
 			const auto result = interpreter("main"_token);
 			suite.expect(result);
@@ -215,26 +207,20 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto value = MeshNodePtr::makeRoot(0uz);
 
-			auto instructions = interpreter.context["main"_token] >> MeshNodePtr::make("main"_token)["instructions"_token];
+			auto mainNode = interpreter.context["main"_token] >> MeshNodePtr::makeRoot("main"_token);
 
 			// define value = 1
-			{
-				auto defineNode = MeshNodePtr::make("define"_token);
-				instructions >> defineNode;
-				defineNode["value"_token] >> MeshNodePtr::make(1uz);
-				defineNode["target"_token] >> value;
-			}
+			auto define1 = mainNode["next"_token] >> MeshNodePtr::make("define"_token);
+			define1["value"_token] >> MeshNodePtr::make(1uz);
+			define1["target"_token] >> value;
 
 			// return
-			instructions >> MeshNodePtr::make("return"_token);
+			auto returnNode = define1["next"_token] >> MeshNodePtr::make("return"_token);
 
 			// define value = 2 (should not execute)
-			{
-				auto defineNode = MeshNodePtr::make("define"_token);
-				instructions >> defineNode;
-				defineNode["value"_token] >> MeshNodePtr::make(2uz);
-				defineNode["target"_token] >> value;
-			}
+			auto define2 = returnNode["next"_token] >> MeshNodePtr::make("define"_token);
+			define2["value"_token] >> MeshNodePtr::make(2uz);
+			define2["target"_token] >> value;
 
 			const auto result = interpreter("main"_token);
 			suite.expect(result);

@@ -83,10 +83,22 @@ export namespace CppUtils::Language
 		{
 			using MeshNodePtr = Container::MeshNodePtr<Type::Token, Type::Token>;
 
+			struct StepResult final
+			{
+				std::expected<MeshNodePtr, std::string_view> value;
+			};
+
+			[[nodiscard]] static inline auto next(MeshNodePtr instruction) noexcept -> MeshNodePtr
+			{
+				using namespace String::Literals;
+				return instruction.at("next"_token)
+					.and_then([](auto branch) { return branch.front(); })
+					.value_or(MeshNodePtr{});
+			}
+
 			MeshNodePtr context = MeshNodePtr::makeRoot(0uz);
-			std::unordered_map<Type::Token, std::function<std::expected<void, std::string_view>(MetaCircularVirtualMachine&, MeshNodePtr)>> functions;
+			std::unordered_map<Type::Token, std::function<StepResult(MetaCircularVirtualMachine&, MeshNodePtr)>> functions;
 			Thread::ThreadPool threadPool;
-			std::size_t instructionPosition = 0;
 
 			template<class T = MetaCircularVirtualMachine>
 			inline auto addFunction(Type::Token token, auto&& function) -> void
@@ -95,8 +107,8 @@ export namespace CppUtils::Language
 
 				if (not functions.contains(token))
 				{
-					functions[token] = [function = std::forward<decltype(function)>(function)](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
-						return function(static_cast<T&>(interpreter), instruction);
+					functions[token] = [function = std::forward<decltype(function)>(function)](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> StepResult {
+						return StepResult{function(static_cast<T&>(interpreter), instruction)};
 					};
 					if (not context.contains(token))
 						context[token] >> MeshNodePtr::make(token);
@@ -106,7 +118,7 @@ export namespace CppUtils::Language
 			template<String::FixedString Name>
 			static auto arithmeticOperation(auto&& operation)
 			{
-				return [operation = std::forward<decltype(operation)>(operation)](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
+				return [operation = std::forward<decltype(operation)>(operation)](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
 					using namespace String::Literals;
 
 					static constexpr auto lhsError = Name + ": Missing lhs";
@@ -128,7 +140,8 @@ export namespace CppUtils::Language
 					const auto lhsValue = lhs->getValue().value();
 					const auto rhsValue = rhs->getValue().value();
 					result->setValue(operation(lhsValue, rhsValue));
-					return {};
+
+					return next(instruction);
 				};
 			}
 
@@ -137,7 +150,7 @@ export namespace CppUtils::Language
 				using namespace std::literals;
 				using namespace String::Literals;
 
-				addFunction("define"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) {
+				addFunction("define"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
 					return instruction.at("value"_token)
 						.and_then([](auto valueBranch) { return valueBranch.back(); })
 						.and_then([&instruction](auto valueNode) {
@@ -147,28 +160,24 @@ export namespace CppUtils::Language
 								target.setValue(value);
 							return {};
 						});
-					});
+					}).transform([&instruction] { return next(instruction); });
 				});
 
-				addFunction("jump"_token, [](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
+				addFunction("jump"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
 					auto conditionNode = instruction.at("condition"_token).and_then([](auto branch) { return branch.front(); });
-					if (conditionNode and conditionNode->getValue().value() == 0)
-						return {};
+					if (not conditionNode or conditionNode->getValue().value() != 0)
+						return instruction.at("next"_token).and_then([](auto branch) { return branch.front(); }).value_or(MeshNodePtr{});
 
-					auto indexNode = instruction.at("index"_token).and_then([](auto branch) { return branch.front(); });
-					if (not indexNode)
-						return std::unexpected{"jump: Missing index"sv};
-
-					interpreter.instructionPosition = indexNode->getValue().value() - 1;
-					return {};
+					return instruction.at("else"_token)
+						.and_then([](auto branch) { return branch.front(); })
+						.value_or(MeshNodePtr{});
 				});
 
-				addFunction("return"_token, [](MetaCircularVirtualMachine& interpreter, MeshNodePtr) -> std::expected<void, std::string_view> {
-					interpreter.instructionPosition = std::numeric_limits<std::size_t>::max() - 1;
-					return {};
+				addFunction("return"_token, [](MetaCircularVirtualMachine&, MeshNodePtr) -> std::expected<MeshNodePtr, std::string_view> {
+					return MeshNodePtr{};
 				});
 
-				addFunction("link"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
+				addFunction("link"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
 					return instruction.at("source"_token).and_then([&](auto sources) {
 						return instruction.at("branch"_token).and_then([&](auto branches) -> std::expected<void, std::string_view> {
 							for (auto branch : branches)
@@ -182,58 +191,45 @@ export namespace CppUtils::Language
 									return result;
 							return {};
 						});
-					});
+					}).transform([&instruction] { return next(instruction); });
 				});
 
-				addFunction("unlink"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
-					auto sourcesBranch = instruction.at("source"_token);
-					if (not sourcesBranch)
-						return std::unexpected{"unlink: Missing source"sv};
+				addFunction("unlink"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
+					return instruction.at("source"_token).and_then([&](auto sourcesBranch) -> std::expected<void, std::string_view> {
+						return instruction.at("branch"_token).and_then([&](auto branchesBranch) -> std::expected<void, std::string_view> {
+							auto targetsBranch = instruction.at("target"_token);
 
-					auto branchesBranch = instruction.at("branch"_token);
-					if (not branchesBranch)
-						return std::unexpected{"unlink: Missing branch"sv};
-
-					auto targetsBranch = instruction.at("target"_token);
-
-					for (auto source : sourcesBranch.value())
-						for (const auto& branchNameNode : branchesBranch.value())
-							if (auto targetBranch = source[branchNameNode.getValue().value()]; targetsBranch)
-								for (const auto& target : targetsBranch.value())
-									targetBranch - target;
-							else
-								targetBranch.clear();
-
-					return {};
+							for (auto source : sourcesBranch)
+								for (const auto& branchNameNode : branchesBranch)
+									if (auto targetBranch = source[branchNameNode.getValue().value()]; targetsBranch)
+										for (const auto& target : targetsBranch.value())
+											targetBranch - target;
+									else
+										targetBranch.clear();
+							return {};
+						});
+					}).transform([&instruction] { return next(instruction); });
 				});
 
-				addFunction("=="_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
-					auto lhs = instruction.at("lhs"_token).and_then([](auto branch) { return branch.front(); });
-					if (not lhs)
-						return std::unexpected{"==: Missing lhs"sv};
-
-					auto rhs = instruction.at("rhs"_token).and_then([](auto branch) { return branch.front(); });
-					if (not rhs)
-						return std::unexpected{"==: Missing rhs"sv};
-
-					auto result = instruction.at("result"_token).and_then([](auto branch) { return branch.front(); });
-					if (not result)
-						return std::unexpected{"==: Missing result"sv};
-
-					const auto lhsValue = lhs->getValue().value();
-					const auto rhsValue = rhs->getValue().value();
-					result->setValue(lhsValue == rhsValue);
-					return {};
+				addFunction("=="_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
+					return instruction.at("lhs"_token).and_then([](auto branch) { return branch.front(); }).and_then([&](MeshNodePtr lhs) {
+						return instruction.at("rhs"_token).and_then([](auto branch) { return branch.front(); }).and_then([&, lhs](MeshNodePtr rhs) {
+							return instruction.at("result"_token).and_then([](auto branch) { return branch.front(); }).and_then([&, lhs, rhs](MeshNodePtr result) -> std::expected<void, std::string_view> {
+								const auto lhsValue = lhs.getValue().value();
+								const auto rhsValue = rhs.getValue().value();
+								result.setValue(lhsValue == rhsValue);
+								return {};
+							});
+						});
+					}).transform([&instruction] { return next(instruction); });
 				});
 
-				addFunction("not"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<void, std::string_view> {
-					auto value = instruction.at("value"_token).and_then([](auto branch) { return branch.front(); });
-					if (not value)
-						return std::unexpected{"not: Missing value"sv};
-
-					const auto result = not static_cast<bool>(value->getValue().value());
-					value->setValue(result);
-					return {};
+				addFunction("not"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
+					return instruction.at("value"_token).and_then([](auto branch) { return branch.front(); }).and_then([&](MeshNodePtr value) -> std::expected<void, std::string_view> {
+						const auto result = not static_cast<bool>(value.getValue().value());
+						value.setValue(result);
+						return {};
+					}).transform([&instruction] { return next(instruction); });
 				});
 
 				addFunction("+"_token, arithmeticOperation<"+">(std::plus<>{}));
@@ -251,11 +247,12 @@ export namespace CppUtils::Language
 				using namespace std::literals;
 				using namespace String::Literals;
 
-				for (auto scope = std::expected<MeshNodePtr, std::string_view>{context};
+				for (auto scope = context;
 					scope;
-					scope = scope.value().at("scope"_token).and_then([](auto stack) { return stack.front(); }))
-					if (auto node = scope.value().at(token).and_then([](auto stack) { return stack.back(); }))
+					scope = scope.at("scope"_token).and_then([](auto stack) { return stack.front(); }).value_or(MeshNodePtr{}))
+					if (auto node = scope.at(token).and_then([](auto stack) { return stack.back(); }))
 						return node;
+
 				return std::unexpected{"Unknown node"sv};
 			}
 
@@ -263,36 +260,33 @@ export namespace CppUtils::Language
 			{
 				using namespace String::Literals;
 
-				auto definition = instruction;
-				while (not definition.contains("instructions"_token))
+				while (instruction)
 				{
-					auto resolved = get(definition.getValue().value());
-					if (not resolved or resolved.value() == definition)
+					auto definition = instruction;
+					while (true)
+					{
+						auto result = get(definition.getValue().value());
+						if (not result)
+							break;
+
+						const auto& resolved = result.value();
+						if (resolved.getValue().value() == definition.getValue().value())
+							break;
+						definition = resolved;
+					}
+
+					auto definitionToken = definition.getValue().value();
+					if (auto functionIt = functions.find(definitionToken); functionIt != std::cend(functions))
+						if (auto result = functionIt->second(*this, instruction).value)
+							instruction = result.value();
+						else
+							return std::unexpected{result.error()};
+					else if (auto branch = definition.at("next"_token))
+						instruction = branch.value().front().value_or(MeshNodePtr{});
+					else
 						break;
-					definition = resolved.value();
 				}
 
-				if (auto instructions = definition.at("instructions"_token))
-					return (*this)(instructions.value());
-
-				if (auto functionIt = functions.find(definition.getValue().value()); functionIt != std::cend(functions))
-					return functionIt->second(*this, instruction);
-
-				return {};
-			}
-
-			[[nodiscard]] inline auto operator()(const std::ranges::range auto& instructions) -> std::expected<void, std::string_view>
-			{
-				const auto savedPosition = instructionPosition;
-				auto guard = Execution::ScopeGuard{[&] { instructionPosition = savedPosition; }};
-
-				for (instructionPosition = 0uz; instructionPosition < std::size(instructions); ++instructionPosition)
-				{
-					auto it = std::ranges::begin(instructions);
-					std::ranges::advance(it, static_cast<std::ptrdiff_t>(instructionPosition));
-					if (auto result = (*this)(*it); not result)
-						return result;
-				}
 				return {};
 			}
 
@@ -304,7 +298,12 @@ export namespace CppUtils::Language
 					return (*this)(instruction.value());
 
 				if (auto functionIt = functions.find(token); functionIt != std::cend(functions))
-					return functionIt->second(*this, MeshNodePtr::make(token));
+				{
+					if (auto result = functionIt->second(*this, MeshNodePtr::make(token)).value)
+						return (*this)(result.value());
+					else
+						return std::unexpected{result.error()};
+				}
 
 				return std::unexpected{"Unknown function"sv};
 			}
