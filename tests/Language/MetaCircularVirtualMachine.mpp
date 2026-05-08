@@ -344,5 +344,64 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				suite.expectEqual(result.getValue().value(), false);
 			}
 		});
+
+		suite.addTest("Multithreading - thread and join", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+			auto value = MeshNodePtr::make(0uz);
+
+			auto threadTarget = MeshNodePtr::makeRoot("define"_token);
+			threadTarget["value"_token] >> MeshNodePtr::make(42uz);
+			threadTarget["target"_token] >> value;
+
+			auto threadIdNode = MeshNodePtr::make(0uz);
+
+			auto instruction = MeshNodePtr::makeRoot("thread"_token);
+			instruction["target"_token] >> threadTarget;
+			instruction["result"_token] >> threadIdNode;
+
+			auto joinInstruction = instruction["next"_token] >> MeshNodePtr::make("join"_token);
+			joinInstruction["thread"_token] >> threadIdNode;
+
+			const auto status = interpreter(instruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			suite.expectEqual(value.getValue().value(), 42uz);
+		});
+
+		suite.addTest("Multithreading - event, wait, notify", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+			auto value = MeshNodePtr::make(0uz);
+			auto eventIdNode = MeshNodePtr::make(0uz);
+			auto threadIdNode = MeshNodePtr::make(0uz);
+
+			auto instruction = MeshNodePtr::makeRoot("event"_token);
+			instruction["result"_token] >> eventIdNode;
+
+			auto threadTarget = MeshNodePtr::makeRoot("wait"_token);
+			threadTarget["event"_token] >> eventIdNode;
+
+			auto threadDefine = threadTarget["next"_token] >> MeshNodePtr::make("define"_token);
+			threadDefine["value"_token] >> MeshNodePtr::make(42uz);
+			threadDefine["target"_token] >> value;
+
+			auto threadInstruction = instruction["next"_token] >> MeshNodePtr::make("thread"_token);
+			threadInstruction["target"_token] >> threadTarget;
+			threadInstruction["result"_token] >> threadIdNode;
+
+			auto notifyInstruction = threadInstruction["next"_token] >> MeshNodePtr::make("notify"_token);
+			notifyInstruction["event"_token] >> eventIdNode;
+
+			auto joinInstruction = notifyInstruction["next"_token] >> MeshNodePtr::make("join"_token);
+			joinInstruction["thread"_token] >> threadIdNode;
+
+			const auto status = interpreter(instruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			suite.expectEqual(value.getValue().value(), 42uz);
+		});
 	}};
 }
