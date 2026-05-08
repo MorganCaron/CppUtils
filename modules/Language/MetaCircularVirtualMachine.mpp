@@ -288,11 +288,12 @@ export namespace CppUtils::Language
 
 					auto task = [target = targetInstruction.value(),
 									threadContext = std::move(threadContext),
-									environment = interpreter.environment]() mutable {
-						auto threadInterpreter = MetaCircularVirtualMachine{std::move(environment)};
-						threadInterpreter.context = std::move(threadContext);
+									environment = interpreter.environment,
+									&interpreter]() mutable {
+						auto threadInterpreter = interpreter.makeExecutionContext(std::move(environment));
+						threadInterpreter->context = std::move(threadContext);
 
-						if (auto result = threadInterpreter(target); not result)
+						if (auto result = (*threadInterpreter)(target); not result)
 							throw std::runtime_error{std::string{result.error()}};
 					};
 
@@ -397,6 +398,11 @@ export namespace CppUtils::Language
 			}
 
 			virtual ~MetaCircularVirtualMachine() = default;
+
+			[[nodiscard]] virtual auto makeExecutionContext(std::shared_ptr<Environment> environment) const -> std::unique_ptr<MetaCircularVirtualMachine>
+			{
+				return std::make_unique<MetaCircularVirtualMachine>(std::move(environment));
+			}
 
 			[[nodiscard]] inline auto reportError(std::string_view message) const -> std::expected<void, std::string_view>
 			{
