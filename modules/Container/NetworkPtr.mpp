@@ -86,15 +86,14 @@ export namespace CppUtils::Container
 				throw std::logic_error{"Child node not found"};
 			if (m_distanceFromRoot == std::numeric_limits<std::size_t>::max())
 				throw std::logic_error{"Root node not found"};
-			if (not childValue.isRoot())
-				if (std::empty(childValue.m_parents) or childValue.m_distanceFromRoot > m_distanceFromRoot + 1)
-					childValue.m_distanceFromRoot = m_distanceFromRoot + 1;
+
+			childValue.m_parents.push_back(m_weakThis);
+			childValue.updateDistance(m_weakThis, m_distanceFromRoot);
 
 			if (childValue.m_distanceFromRoot > m_distanceFromRoot)
 				m_children.push_back(childPtr);
 			else
 				m_children.push_back(WeakPtr{childPtr});
-			childValue.m_parents.push_back(m_weakThis);
 		}
 
 		inline auto detachChild(NetworkPtr& childValue) -> void
@@ -190,20 +189,23 @@ export namespace CppUtils::Container
 		{
 			const auto oldDistanceFromRoot = m_distanceFromRoot;
 
-			m_distanceFromRoot = std::numeric_limits<std::size_t>::max();
-			for (const auto& parentWeak : m_parents)
+			m_distanceFromRoot = m_isRoot ? 0 : std::numeric_limits<std::size_t>::max();
+			if (not m_isRoot)
 			{
-				auto parentDistance = std::numeric_limits<std::size_t>::max();
-				if (Thread::SharedPtr::ownerEqual(parentWeak, lockedParentWeak))
-					parentDistance = lockedParentDistance;
-				else if (auto parent = parentWeak.lock())
+				for (const auto& parentWeak : m_parents)
 				{
-					auto accessor = parent->sharedAccess();
-					parentDistance = accessor->getDistanceFromRoot();
-				}
+					auto parentDistance = std::numeric_limits<std::size_t>::max();
+					if (Thread::SharedPtr::ownerEqual(parentWeak, lockedParentWeak))
+						parentDistance = lockedParentDistance;
+					else if (auto parent = parentWeak.lock())
+					{
+						auto accessor = parent->sharedAccess();
+						parentDistance = accessor->getDistanceFromRoot();
+					}
 
-				if (parentDistance != std::numeric_limits<std::size_t>::max() and parentDistance + 1 < m_distanceFromRoot)
-					m_distanceFromRoot = parentDistance + 1;
+					if (parentDistance != std::numeric_limits<std::size_t>::max() and parentDistance + 1 < m_distanceFromRoot)
+						m_distanceFromRoot = parentDistance + 1;
+				}
 			}
 
 			if (m_distanceFromRoot == oldDistanceFromRoot)
