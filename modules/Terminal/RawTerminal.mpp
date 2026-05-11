@@ -84,5 +84,20 @@ export namespace CppUtils::Terminal
 		termios m_oldTerminalState;
 		bool m_initialized = false;
 	};
+#elif defined(OS_WINDOWS)
+	class RawTerminal final
+	{
+	public:
+		RawTerminal() = default;
+		RawTerminal(const RawTerminal&) = delete;
+		RawTerminal(RawTerminal&&) noexcept = default;
+		RawTerminal& operator=(const RawTerminal&) = delete;
+		RawTerminal& operator=(RawTerminal&&) noexcept = default;
+		~RawTerminal() = default;
+
+		[[nodiscard]] static inline auto isInputAvailable() -> bool { return false; }
+		[[nodiscard]] inline auto readChar() const -> char { return '\0'; }
+		[[nodiscard]] inline auto read([[maybe_unused]] char sentinel) const -> std::string { return {}; }
+	};
 #endif
 }

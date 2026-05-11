@@ -294,8 +294,8 @@ export namespace CppUtils::Network
 
 			auto timeValue = timeval{};
 			auto seconds = std::chrono::duration_cast<std::chrono::seconds>(timeout);
-			timeValue.tv_sec = static_cast<long>(seconds.count());
-			timeValue.tv_usec = static_cast<long>(std::chrono::duration_cast<std::chrono::microseconds>(timeout - seconds).count());
+			timeValue.tv_sec = static_cast<decltype(timeValue.tv_sec)>(seconds.count());
+			timeValue.tv_usec = static_cast<decltype(timeValue.tv_usec)>(std::chrono::duration_cast<std::chrono::microseconds>(timeout - seconds).count());
 
 #ifdef OS_WINDOWS
 			auto result = ::select(0, std::addressof(readSet), nullptr, nullptr, std::addressof(timeValue));

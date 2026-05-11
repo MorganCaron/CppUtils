@@ -1,3 +1,11 @@
+module;
+
+#include <CppUtils/System/OS.hpp>
+
+#if defined(OS_MACOS)
+#	include <Stl/charconv.hpp>
+#endif
+
 export module CppUtils.UnitTests.Language.CSV.Mapping;
 
 import std;
@@ -94,7 +102,11 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 		std::size_t factor;
 		inline auto operator()(auto& member, std::string_view value) const -> void
 		{
+#if defined(OS_MACOS)
+			static_cast<void>(Stl::from_chars(std::data(value), std::data(value) + std::size(value), member));
+#else
 			std::from_chars(std::data(value), std::data(value) + std::size(value), member);
+#endif
 			member *= factor;
 		}
 	};
@@ -163,7 +175,11 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 				using StructMapping = UnitTest::Language::CSV::Mapping::StructMapping;
 				using FunctionMapping = CppUtils::Type::Mapping<
 					CppUtils::Type::Pair<"Unsigned integer"_token, [](auto& member, std::string_view value) {
-					std::from_chars(std::data(value), std::data(value) + std::size(value), member);
+#if defined(OS_MACOS)
+					static_cast<void>(Stl::from_chars(std::data(value), std::data(value) + std::size(value), member));
+#else
+					static_cast<void>(std::from_chars(std::data(value), std::data(value) + std::size(value), member));
+#endif
 					member *= 2;
 				}>>;
 			};

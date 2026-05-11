@@ -24,10 +24,15 @@ export namespace CppUtils::Network::DNS
 	[[nodiscard]] inline auto getHostName() -> std::string
 	{
 #if defined(OS_WINDOWS)
-		Socket::WindowsSocketApi::ensureIsinitialized();
+		WindowsSocketApi::ensureIsinitialized();
 #endif
 		auto hostname = std::string(MaxHostNameLength, '\0');
-		if (::gethostname(std::data(hostname), std::size(hostname)) != 0)
+#if defined(OS_WINDOWS)
+		const auto length = static_cast<int>(std::size(hostname));
+#else
+		const auto length = std::size(hostname);
+#endif
+		if (::gethostname(std::data(hostname), length) != 0)
 			return "unknown";
 
 		if (const auto position = hostname.find('\0'); position != std::string::npos)
@@ -38,7 +43,7 @@ export namespace CppUtils::Network::DNS
 	[[nodiscard]] inline auto resolve(std::string_view hostname) -> std::vector<std::string>
 	{
 #if defined(OS_WINDOWS)
-		Socket::WindowsSocketApi::ensureIsinitialized();
+		WindowsSocketApi::ensureIsinitialized();
 #endif
 		auto hints = addrinfo{};
 		hints.ai_family = AF_UNSPEC; // IPv4 or IPv6
@@ -60,7 +65,12 @@ export namespace CppUtils::Network::DNS
 			else
 				address = std::addressof(reinterpret_cast<sockaddr_in6*>(entry->ai_addr)->sin6_addr);
 
-			::inet_ntop(entry->ai_family, address, std::data(ipString), static_cast<socklen_t>(std::size(ipString)));
+#if defined(OS_WINDOWS)
+			const auto ipStringSize = std::size(ipString);
+#else
+			const auto ipStringSize = static_cast<socklen_t>(std::size(ipString));
+#endif
+			::inet_ntop(entry->ai_family, address, std::data(ipString), ipStringSize);
 			ips.emplace_back(std::data(ipString));
 		}
 

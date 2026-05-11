@@ -1,3 +1,11 @@
+module;
+
+#include <CppUtils/System/OS.hpp>
+
+#if defined(OS_MACOS)
+#	include <Stl/charconv.hpp>
+#endif
+
 export module CppUtils.Language.JSON.Parsing;
 
 import std;
@@ -75,7 +83,11 @@ export namespace CppUtils::Language::JSON
 			[[nodiscard]] inline auto parseNumber() -> std::expected<double, Error>
 			{
 				auto value = 0.0;
+#if defined(OS_MACOS)
+				auto result = Stl::from_chars(std::data(m_json) + m_position, std::data(m_json) + std::size(m_json), value);
+#else
 				auto result = std::from_chars(std::data(m_json) + m_position, std::data(m_json) + std::size(m_json), value);
+#endif
 				if (result.ec != std::errc())
 					return std::unexpected{Error{"Invalid number format", m_position}};
 
