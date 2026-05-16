@@ -120,7 +120,7 @@ export namespace CppUtils::Language
 				using namespace String::Literals;
 
 				auto functions = environment->functions.uniqueAccess();
-				if (not functions.value().contains(token))
+				if (not functions->contains(token))
 				{
 					functions.value()[token] = [function = std::forward<decltype(function)>(function)](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> StepResult {
 						return StepResult{function(static_cast<T&>(interpreter), instruction)};
@@ -189,17 +189,107 @@ export namespace CppUtils::Language
 					}
 				});
 
-				addFunction("define"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
-					return instruction.at("value"_token)
-						.and_then([](auto valueBranch) { return valueBranch.back(); })
-						.and_then([&instruction](auto valueNode) {
-						return instruction.at("target"_token)
-							.and_then([value = valueNode.getValue().value()](auto targets) -> std::expected<void, std::string_view> {
-							for (auto target : targets)
-								target.setValue(value);
-							return {};
-						});
-					}).transform([&instruction] { return next(instruction); });
+				addFunction("set"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
+					auto targetNode = instruction.at("target"_token).and_then([](auto branch) { return branch.front(); });
+					if (not targetNode)
+						return std::unexpected{"set: Missing target"sv};
+
+					auto valueNode = instruction.at("value"_token).and_then([](auto branch) { return branch.front(); });
+					if (not valueNode)
+						return std::unexpected{"set: Missing value"sv};
+
+					auto value = valueNode->getValue().value();
+					targetNode->setValue(value);
+					return next(instruction);
+				});
+
+				addFunction("size"_token, [](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
+					auto sourceNode = instruction.at("source"_token).and_then([](auto branch) { return branch.front(); }).value_or(interpreter.context);
+					auto branchNameNode = instruction.at("branch"_token).and_then([](auto branch) { return branch.front(); });
+					if (not branchNameNode)
+						return std::unexpected{"size: Missing branch name"sv};
+
+					auto sizeNode = instruction.at("size"_token).and_then([](auto branch) { return branch.front(); });
+					if (not sizeNode)
+						return std::unexpected{"size: Missing result node"sv};
+
+					auto branchName = branchNameNode->getValue().value();
+					sizeNode->setValue(std::size(sourceNode[branchName]));
+					return next(instruction);
+				});
+
+				addFunction("create"_token, [](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
+					auto valueNode = instruction.at("value"_token).and_then([](auto branch) { return branch.front(); });
+					const auto value = valueNode ? valueNode->getValue().value() : 0uz;
+
+					auto destinationNode = instruction.at("destination"_token).and_then([](auto branch) { return branch.front(); }).value_or(interpreter.context);
+					auto branchPath = instruction.at("branch"_token);
+					if (not branchPath or std::empty(branchPath.value()))
+						return std::unexpected{"create: Missing branch path"sv};
+
+					auto currentDestination = destinationNode;
+					const auto& pathNodes = branchPath.value();
+					for (auto i = 0uz; i < std::size(pathNodes) - 1; ++i)
+					{
+						auto token = pathNodes[i]->getValue().value();
+						if (auto nextDestination = currentDestination[token].front(); not nextDestination)
+						{
+							auto intermediateNode = MeshNodePtr::make(0uz);
+							currentDestination[token] >> intermediateNode;
+							currentDestination = intermediateNode;
+						}
+						else
+							currentDestination = nextDestination.value();
+					}
+
+					auto finalKey = pathNodes.back()->getValue().value();
+					currentDestination[finalKey] >> MeshNodePtr::make(value);
+
+					return next(instruction);
+				});
+
+				addFunction("reference"_token, [](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
+					auto sourceNode = instruction.at("sourceBase"_token).and_then([](auto branch) { return branch.front(); }).value_or(interpreter.context);
+
+					auto targetNode = sourceNode;
+					if (auto targetBranch = instruction.at("sourcePath"_token))
+					{
+						for (auto node : targetBranch.value())
+						{
+							auto token = node.getValue().value();
+							auto nextNode = targetNode.at(token).and_then([](auto branch) { return branch.front(); });
+							if (not nextNode)
+								return std::unexpected{"reference: Source path not found"sv};
+							targetNode = nextNode.value();
+						}
+					}
+
+					auto destinationNode = instruction.at("destinationBase"_token).and_then([](auto branch) { return branch.front(); }).value_or(interpreter.context);
+
+					auto branchPath = instruction.at("destinationPath"_token);
+					if (not branchPath or std::empty(branchPath.value()))
+						return std::unexpected{"reference: Missing destination path"sv};
+
+					auto currentDestination = destinationNode;
+					const auto& pathNodes = branchPath.value();
+
+					for (auto i = 0uz; i < std::size(pathNodes) - 1; ++i)
+					{
+						auto token = pathNodes[i]->getValue().value();
+						if (auto nextDestination = currentDestination[token].front(); not nextDestination)
+						{
+							auto newNode = MeshNodePtr::make(0uz);
+							currentDestination[token] >> newNode;
+							currentDestination = newNode;
+						}
+						else
+							currentDestination = nextDestination.value();
+					}
+
+					auto finalKey = pathNodes.back()->getValue().value();
+					currentDestination[finalKey] >> targetNode;
+
+					return next(instruction);
 				});
 
 				addFunction("jump"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
@@ -220,7 +310,7 @@ export namespace CppUtils::Language
 					return instruction.at("source"_token).and_then([&](auto sources) {
 						return instruction.at("branch"_token).and_then([&](auto branches) -> std::expected<void, std::string_view> {
 							for (auto branch : branches)
-								if (auto result = branch.at("node"_token).and_then([&](auto targets) -> std::expected<void, std::string_view> {
+								if (auto result = instruction.at("target"_token).and_then([&](auto targets) -> std::expected<void, std::string_view> {
 									for (auto source : sources)
 										for (auto target : targets)
 											source[branch.getValue().value()] >> target;
@@ -234,20 +324,45 @@ export namespace CppUtils::Language
 				});
 
 				addFunction("unlink"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
-					return instruction.at("source"_token).and_then([&](auto sourcesBranch) -> std::expected<void, std::string_view> {
-						return instruction.at("branch"_token).and_then([&](auto branchesBranch) -> std::expected<void, std::string_view> {
+					return instruction.at("source"_token).and_then([&](auto sources) {
+						return instruction.at("branch"_token).and_then([&](auto branches) -> std::expected<void, std::string_view> {
 							auto targetsBranch = instruction.at("target"_token);
-
-							for (auto source : sourcesBranch)
-								for (const auto& branchNameNode : branchesBranch)
-									if (auto targetBranch = source[branchNameNode.getValue().value()]; targetsBranch)
+							for (auto source : sources)
+								for (const auto& branch : branches)
+									if (auto branchNodes = source[branch.getValue().value()]; targetsBranch)
 										for (const auto& target : targetsBranch.value())
-											targetBranch - target;
+											branchNodes - target;
 									else
-										targetBranch.clear();
+										branchNodes.clear();
 							return {};
 						});
 					}).transform([&instruction] { return next(instruction); });
+				});
+
+				addFunction("call"_token, [](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
+					auto function = instruction.at("function"_token).and_then([](auto branch) { return branch.front(); });
+					if (not function)
+						return std::unexpected{"call: No function"sv};
+
+					auto context = MeshNodePtr::makeRoot("context"_token);
+					context["scope"_token] >> interpreter.context;
+
+					if (auto inputs = instruction.at("input"_token))
+						for (auto input : inputs.value())
+							context["input"_token] >> input;
+
+					if (auto outputs = instruction.at("output"_token))
+						for (auto output : outputs.value())
+							context["output"_token] >> output;
+
+					auto previousContext = std::exchange(interpreter.context, std::move(context));
+					auto result = interpreter(function.value());
+					interpreter.context = std::move(previousContext);
+
+					if (not result)
+						return std::unexpected{result.error()};
+
+					return next(instruction);
 				});
 
 				addFunction("=="_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
@@ -286,6 +401,14 @@ export namespace CppUtils::Language
 					auto threadContext = MeshNodePtr::makeRoot("threadContext"_token);
 					threadContext["scope"_token] >> interpreter.context;
 
+					if (auto inputs = instruction.at("input"_token))
+						for (auto input : inputs.value())
+							threadContext["input"_token] >> input;
+
+					if (auto outputs = instruction.at("output"_token))
+						for (auto output : outputs.value())
+							threadContext["output"_token] >> output;
+
 					auto task = [target = targetInstruction.value(),
 									threadContext = std::move(threadContext),
 									environment = interpreter.environment,
@@ -297,27 +420,27 @@ export namespace CppUtils::Language
 							throw std::runtime_error{std::string{result.error()}};
 					};
 
-					auto id = interpreter.environment->nextThreadId++;
-					interpreter.environment->threads.uniqueAccess().value()[id] = std::make_shared<std::future<void>>(interpreter.environment->threadPool.call(task));
+					auto threadId = interpreter.environment->nextThreadId++;
+					interpreter.environment->threads.uniqueAccess().value()[threadId] = std::make_shared<std::future<void>>(interpreter.environment->threadPool.call(task));
 
-					auto resultNode = instruction.at("result"_token).and_then([](auto branch) { return branch.front(); });
-					if (not resultNode)
+					auto threadIdNode = instruction.at("threadId"_token).and_then([](auto branch) { return branch.front(); });
+					if (not threadIdNode)
 						return std::unexpected{"thread: Missing result node"sv};
 
-					resultNode->setValue(id);
+					threadIdNode->setValue(threadId);
 
 					return next(instruction);
 				});
 
 				addFunction("join"_token, [](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
-					auto idNode = instruction.at("thread"_token).and_then([](auto branch) { return branch.front(); });
-					if (not idNode)
+					auto threadIdNode = instruction.at("thread"_token).and_then([](auto branch) { return branch.front(); });
+					if (not threadIdNode)
 						return std::unexpected{"join: Missing thread id"sv};
 
-					auto id = idNode->getValue().value();
+					auto threadId = threadIdNode->getValue().value();
 					auto future = [&]() -> std::shared_ptr<std::future<void>> {
 						auto threads = interpreter.environment->threads.sharedAccess();
-						if (auto it = threads.value().find(id); it != std::end(threads.value()))
+						if (auto it = threads.value().find(threadId); it != std::end(threads.value()))
 							return it->second;
 						return nullptr;
 					}();
@@ -327,33 +450,33 @@ export namespace CppUtils::Language
 
 					{
 						auto threads = interpreter.environment->threads.uniqueAccess();
-						threads.value().erase(id);
+						threads.value().erase(threadId);
 					}
 
 					return next(instruction);
 				});
 
 				addFunction("detach"_token, [](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
-					auto idNode = instruction.at("thread"_token).and_then([](auto branch) { return branch.front(); });
-					if (not idNode)
+					auto threadIdNode = instruction.at("thread"_token).and_then([](auto branch) { return branch.front(); });
+					if (not threadIdNode)
 						return std::unexpected{"detach: Missing thread id"sv};
 
-					auto id = idNode->getValue().value();
+					auto threadId = threadIdNode->getValue().value();
 					auto threads = interpreter.environment->threads.uniqueAccess();
-					threads.value().erase(id);
+					threads.value().erase(threadId);
 
 					return next(instruction);
 				});
 
 				addFunction("event"_token, [](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
-					auto resultNode = instruction.at("result"_token).and_then([](auto branch) { return branch.front(); });
-					if (not resultNode)
+					auto eventIdNode = instruction.at("eventId"_token).and_then([](auto branch) { return branch.front(); });
+					if (not eventIdNode)
 						return std::unexpected{"event: Missing result node"sv};
 
-					auto id = interpreter.environment->nextEventId++;
-					interpreter.environment->events.uniqueAccess().value()[id] = std::make_shared<Execution::Event>();
+					auto eventId = interpreter.environment->nextEventId++;
+					interpreter.environment->events.uniqueAccess().value()[eventId] = std::make_shared<Execution::Event>();
 
-					resultNode->setValue(id);
+					eventIdNode->setValue(eventId);
 
 					return next(instruction);
 				});
@@ -399,19 +522,12 @@ export namespace CppUtils::Language
 
 			virtual ~MetaCircularVirtualMachine() = default;
 
-			[[nodiscard]] virtual auto makeExecutionContext(std::shared_ptr<Environment> environment) const -> std::unique_ptr<MetaCircularVirtualMachine>
+			[[nodiscard]] virtual inline auto makeExecutionContext(std::shared_ptr<Environment> environment) const -> std::unique_ptr<MetaCircularVirtualMachine>
 			{
 				return std::make_unique<MetaCircularVirtualMachine>(std::move(environment));
 			}
 
-			[[nodiscard]] inline auto reportError(std::string_view message) const -> std::expected<void, std::string_view>
-			{
-				if (not environment->stopRequested.exchange(true))
-					environment->firstErrorMessage.uniqueAccess().value() = message;
-
-				return resultWithBackgroundErrors(std::unexpected{message});
-			}
-
+		private:
 			[[nodiscard]] inline auto resultWithBackgroundErrors(std::expected<void, std::string_view> result) const -> std::expected<void, std::string_view>
 			{
 				if (not environment->stopRequested.load())
@@ -421,6 +537,15 @@ export namespace CppUtils::Language
 					return std::unexpected{std::string_view{firstError.value()}};
 
 				return result;
+			}
+
+		public:
+			[[nodiscard]] inline auto reportError(std::string_view message) const -> std::expected<void, std::string_view>
+			{
+				if (not environment->stopRequested.exchange(true))
+					environment->firstErrorMessage.uniqueAccess().value() = message;
+
+				return resultWithBackgroundErrors(std::unexpected{message});
 			}
 
 			[[nodiscard]] inline auto get(Type::Token token) -> std::expected<MeshNodePtr, std::string_view>
@@ -437,25 +562,38 @@ export namespace CppUtils::Language
 				return std::unexpected{"Unknown node"sv};
 			}
 
+			[[nodiscard]] inline auto resolve(Type::Token token) -> std::expected<MeshNodePtr, std::string_view>
+			{
+				using namespace std::literals;
+
+				auto currentToken = token;
+				auto lastResult = std::expected<MeshNodePtr, std::string_view>{std::unexpect, "Unknown node"sv};
+				while (true)
+				{
+					auto found = get(currentToken);
+					if (not found)
+						return lastResult;
+
+					if (lastResult and found.value() == lastResult.value())
+						return found;
+
+					const auto nextToken = found->getValue().value();
+					if (nextToken == currentToken)
+						return found;
+
+					lastResult = found;
+					currentToken = nextToken;
+				}
+			}
+
 			[[nodiscard]] inline auto operator()(MeshNodePtr instruction) -> std::expected<void, std::string_view>
 			{
 				using namespace String::Literals;
 
 				while (instruction and not environment->stopRequested.load())
 				{
-					auto definition = instruction;
-					while (true)
-					{
-						auto result = get(definition.getValue().value());
-						if (not result)
-							break;
-
-						const auto& resolved = result.value();
-						if (resolved.getValue().value() == definition.getValue().value())
-							break;
-						definition = resolved;
-					}
-
+					auto result = resolve(instruction.getValue().value());
+					auto definition = result ? result.value() : instruction;
 					auto definitionToken = definition.getValue().value();
 
 					if (auto function = [&]() -> std::function<StepResult(MetaCircularVirtualMachine&, MeshNodePtr)> {

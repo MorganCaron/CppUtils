@@ -22,15 +22,43 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			suite.expect(interpreter.get("main"_token));
 		});
 
+		suite.addTest("Create node", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+			auto value = MeshNodePtr::makeRoot("root"_token);
+
+			auto createNode = MeshNodePtr::makeRoot("create"_token);
+			createNode["value"_token] >> MeshNodePtr::make(1uz);
+			createNode["destination"_token] >> value;
+			createNode["branch"_token] >> MeshNodePtr::make("value"_token);
+
+			const auto status = interpreter(createNode);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			auto valueNode = value["value"_token].front();
+			suite.expect(valueNode);
+			suite.expectEqual(valueNode->getValue().value(), 1uz);
+		});
+
 		suite.addTest("Internal function call", [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
-			interpreter.context["main"_token] >> MeshNodePtr::make("main"_token);
+			auto value = MeshNodePtr::makeRoot(0uz);
 
-			const auto result = interpreter("main"_token);
-			if (not result)
-				Logger::print<"error">("Error: {}", result.error());
+			auto mainNode = interpreter.context["main"_token] >> MeshNodePtr::make("main"_token);
+			auto createNode = mainNode["next"_token] >> MeshNodePtr::make("create"_token);
+			createNode["value"_token] >> MeshNodePtr::make(1uz);
+			createNode["destination"_token] >> value;
+			createNode["branch"_token] >> MeshNodePtr::make("value"_token);
 
-			suite.expect(result);
+			const auto status = interpreter("main"_token);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			auto valueNode = value["value"_token].front();
+			suite.expect(valueNode);
+			suite.expectEqual(valueNode->getValue().value(), 1uz);
 		});
 
 		suite.addTest("External function call", [&] {
@@ -42,29 +70,67 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				return MeshNodePtr{};
 			});
 
-			const auto result = interpreter("ExternalFunction"_token);
-			if (not result)
-				Logger::print<"error">("Error: {}", result.error());
+			const auto status = interpreter("ExternalFunction"_token);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(result);
+			suite.expect(status);
 			suite.expect(called);
 		});
 
-		suite.addTest("Define node", [&] {
+		suite.addTest("resolve: vertical resolution", [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
-			auto target = MeshNodePtr::makeRoot("OldValue"_token);
 
-			auto defineNode = MeshNodePtr::makeRoot("define"_token);
-			defineNode["target"_token] >> target;
-			defineNode["value"_token] >> MeshNodePtr::make("NewValue"_token);
+			interpreter.context["x"_token] >> MeshNodePtr::make(10uz);
 
-			const auto result = interpreter(defineNode);
-			if (not result)
-				Logger::print<"error">("Error: {}", result.error());
+			auto childContext = MeshNodePtr::makeRoot("childContext"_token);
+			childContext["scope"_token] >> interpreter.context;
 
+			childContext["y"_token] >> MeshNodePtr::make(20uz);
+
+			auto childInterpreter = MetaCircularVirtualMachine{};
+			childInterpreter.context = childContext;
+			childInterpreter.environment = interpreter.environment;
+
+			auto yNode = childInterpreter.resolve("y"_token);
+			suite.expect(yNode);
+			suite.expectEqual(yNode->getValue().value(), 20uz);
+
+			auto xNode = childInterpreter.resolve("x"_token);
+			suite.expect(xNode);
+			suite.expectEqual(xNode->getValue().value(), 10uz);
+		});
+
+		suite.addTest("resolve: horizontal resolution", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+
+			interpreter.context["a"_token] >> MeshNodePtr::make("b"_token);
+			interpreter.context["b"_token] >> MeshNodePtr::make("c"_token);
+			auto nodeC = interpreter.context["c"_token] >> MeshNodePtr::make(42uz);
+
+			auto result = interpreter.resolve("a"_token);
 			suite.expect(result);
+			suite.expectEqual(result->getValue().value(), 42uz);
+			suite.expect(result.value() == nodeC);
+		});
 
-			suite.expectEqual(target.getValue().value(), "NewValue"_token);
+		suite.addTest("resolve: mixed vertical and horizontal resolution", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+
+			auto nodeY = interpreter.context["y"_token] >> MeshNodePtr::make(123uz);
+			interpreter.context["x"_token] >> MeshNodePtr::make("y"_token);
+
+			auto childContext = MeshNodePtr::makeRoot("childContext"_token);
+			childContext["scope"_token] >> interpreter.context;
+
+			auto childInterpreter = MetaCircularVirtualMachine{};
+			childInterpreter.context = childContext;
+			childInterpreter.environment = interpreter.environment;
+
+			auto result = childInterpreter.resolve("x"_token);
+			suite.expect(result);
+			suite.expectEqual(result->getValue().value(), 123uz);
+			suite.expect(result.value() == nodeY);
 		});
 
 		suite.addTest("Link", [&] {
@@ -74,15 +140,14 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 
 			auto linkNode = MeshNodePtr::makeRoot("link"_token);
 			linkNode["source"_token] >> target;
-			linkNode["branch"_token]
-				>> MeshNodePtr::make("Branch"_token)["node"_token]
-				>> child;
+			linkNode["branch"_token] >> MeshNodePtr::make("Branch"_token);
+			linkNode["target"_token] >> child;
 
-			const auto result = interpreter(linkNode);
-			if (not result)
-				Logger::print<"error">("Error: {}", result.error());
+			const auto status = interpreter(linkNode);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(result);
+			suite.expect(status);
 			suite.expect(target.contains("Branch"_token));
 			suite.expectEqual(std::size(target.at("Branch"_token).value()), 1uz);
 			suite.expectEqual(target.at("Branch"_token)->front()->getValue().value(), "Child"_token);
@@ -101,8 +166,11 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				unlinkNode["source"_token] >> target;
 				unlinkNode["branch"_token] >> MeshNodePtr::make("Branch"_token);
 
-				const auto result = interpreter(unlinkNode);
-				suite.expect(result);
+				const auto status = interpreter(unlinkNode);
+				if (not status)
+					Logger::print<"error">("Error: {}", status.error());
+
+				suite.expect(status);
 				suite.expect(not target.contains("Branch"_token));
 			}
 
@@ -116,8 +184,11 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				unlinkNode["branch"_token] >> MeshNodePtr::make("Branch"_token);
 				unlinkNode["target"_token] >> child;
 
-				const auto result = interpreter(unlinkNode);
-				suite.expect(result);
+				const auto status = interpreter(unlinkNode);
+				if (not status)
+					Logger::print<"error">("Error: {}", status.error());
+
+				suite.expect(status);
 				suite.expect(not target.contains("Branch"_token));
 			}
 		});
@@ -133,20 +204,20 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			equalInstruction["result"_token] >> resultNode;
 
 			{
-				auto result = interpreter(equalInstruction);
-				if (not result)
-					Logger::print<"error">("Error: {}", result.error());
+				auto status = interpreter(equalInstruction);
+				if (not status)
+					Logger::print<"error">("Error: {}", status.error());
 
-				suite.expect(result);
+				suite.expect(status);
 				suite.expectEqual(resultNode.getValue().value(), true);
 			}
 			rhs.setValue(43uz);
 			{
-				auto result = interpreter(equalInstruction);
-				if (not result)
-					Logger::print<"error">("Error: {}", result.error());
+				auto status = interpreter(equalInstruction);
+				if (not status)
+					Logger::print<"error">("Error: {}", status.error());
 
-				suite.expect(result);
+				suite.expect(status);
 				suite.expectEqual(resultNode.getValue().value(), false);
 			}
 		});
@@ -159,20 +230,20 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			notInstruction["value"_token] >> value;
 
 			{
-				auto result = interpreter(notInstruction);
-				if (not result)
-					Logger::print<"error">("Error: {}", result.error());
+				auto status = interpreter(notInstruction);
+				if (not status)
+					Logger::print<"error">("Error: {}", status.error());
 
-				suite.expect(result);
+				suite.expect(status);
 				suite.expectEqual(static_cast<bool>(value.getValue().value()), false);
 			}
 
 			{
-				auto result = interpreter(notInstruction);
-				if (not result)
-					Logger::print<"error">("Error: {}", result.error());
+				auto status = interpreter(notInstruction);
+				if (not status)
+					Logger::print<"error">("Error: {}", status.error());
 
-				suite.expect(result);
+				suite.expect(status);
 				suite.expectEqual(static_cast<bool>(value.getValue().value()), true);
 			}
 		});
@@ -183,48 +254,56 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 
 			auto mainNode = interpreter.context["main"_token] >> MeshNodePtr::make("main"_token);
 
-			// jump to define value = 2
 			auto jumpNode = mainNode["next"_token] >> MeshNodePtr::make("jump"_token);
 
-			// define value = 1 (skipped if jump condition is true)
-			auto define1 = jumpNode["else"_token] >> MeshNodePtr::make("define"_token);
-			define1["value"_token] >> MeshNodePtr::make(1uz);
-			define1["target"_token] >> value;
+			auto create1 = jumpNode["else"_token] >> MeshNodePtr::make("create"_token);
+			create1["value"_token] >> MeshNodePtr::make(1uz);
+			create1["destination"_token] >> value;
+			create1["branch"_token] >> MeshNodePtr::make("value"_token);
 
-			// define value = 2
-			auto define2 = jumpNode["next"_token] >> MeshNodePtr::make("define"_token);
-			define2["value"_token] >> MeshNodePtr::make(2uz);
-			define2["target"_token] >> value;
+			auto create2 = jumpNode["next"_token] >> MeshNodePtr::make("create"_token);
+			create2["value"_token] >> MeshNodePtr::make(2uz);
+			create2["destination"_token] >> value;
+			create2["branch"_token] >> MeshNodePtr::make("value"_token);
 
 			jumpNode["condition"_token] >> MeshNodePtr::make(1uz);
 
-			const auto result = interpreter("main"_token);
-			suite.expect(result);
-			suite.expectEqual(value.getValue().value(), 2uz);
+			const auto status = interpreter("main"_token);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			auto valueNode = value["value"_token].front();
+			suite.expect(valueNode);
+			suite.expectEqual(valueNode->getValue().value(), 2uz);
 		});
 
 		suite.addTest("Return", [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto value = MeshNodePtr::makeRoot(0uz);
 
-			auto mainNode = interpreter.context["main"_token] >> MeshNodePtr::makeRoot("main"_token);
+			auto mainNode = interpreter.context["main"_token] >> MeshNodePtr::make("main"_token);
 
-			// define value = 1
-			auto define1 = mainNode["next"_token] >> MeshNodePtr::make("define"_token);
-			define1["value"_token] >> MeshNodePtr::make(1uz);
-			define1["target"_token] >> value;
+			auto create1 = mainNode["next"_token] >> MeshNodePtr::make("create"_token);
+			create1["value"_token] >> MeshNodePtr::make(1uz);
+			create1["branch"_token] >> MeshNodePtr::make("value"_token);
+			create1["destination"_token] >> value;
 
-			// return
-			auto returnNode = define1["next"_token] >> MeshNodePtr::make("return"_token);
+			auto returnNode = create1["next"_token] >> MeshNodePtr::make("return"_token);
 
-			// define value = 2 (should not execute)
-			auto define2 = returnNode["next"_token] >> MeshNodePtr::make("define"_token);
-			define2["value"_token] >> MeshNodePtr::make(2uz);
-			define2["target"_token] >> value;
+			auto create2 = returnNode["next"_token] >> MeshNodePtr::make("create"_token);
+			create2["value"_token] >> MeshNodePtr::make(2uz);
+			create2["branch"_token] >> MeshNodePtr::make("value"_token);
+			create2["destination"_token] >> value;
 
-			const auto result = interpreter("main"_token);
-			suite.expect(result);
-			suite.expectEqual(value.getValue().value(), 1uz);
+			const auto status = interpreter("main"_token);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			auto valueNode = value["value"_token].front();
+			suite.expect(valueNode);
+			suite.expectEqual(valueNode->getValue().value(), 1uz);
 		});
 
 		suite.addTest("Addition (+)", [&] {
@@ -345,19 +424,200 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			}
 		});
 
+		suite.addTest("reference: link two nodes", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+
+			auto sourceNode = MeshNodePtr::makeRoot("source"_token);
+			sourceNode["data"_token] >> MeshNodePtr::make(123uz);
+
+			auto instruction = MeshNodePtr::makeRoot("reference"_token);
+			instruction["sourceBase"_token] >> sourceNode;
+			instruction["sourcePath"_token] >> MeshNodePtr::make("data"_token);
+			instruction["destinationPath"_token] >> MeshNodePtr::make("myReference"_token);
+
+			const auto status = interpreter(instruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+			suite.expect(status);
+
+			auto resolved = interpreter.get("myReference"_token);
+			suite.expect(resolved);
+			suite.expectEqual(resolved->getValue().value(), 123uz);
+		});
+
+		suite.addTest("reference: deep destination with auto-vivification", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+
+			auto sourceNode = MeshNodePtr::makeRoot("source"_token);
+			sourceNode.setValue(42uz);
+
+			auto instruction = MeshNodePtr::makeRoot("reference"_token);
+			instruction["sourceBase"_token] >> sourceNode;
+			auto branchPath = instruction["destinationPath"_token];
+			branchPath >> MeshNodePtr::make("path"_token);
+			branchPath >> MeshNodePtr::make("to"_token);
+			branchPath >> MeshNodePtr::make("value"_token);
+
+			const auto status = interpreter(instruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+			suite.expect(status);
+
+			auto path = interpreter.context["path"_token].front();
+			suite.expect(path);
+			auto to = path.value()["to"_token].front();
+			suite.expect(to);
+			auto valueNode = to.value()["value"_token].front();
+			suite.expect(valueNode);
+			suite.expectEqual(valueNode->getValue().value(), 42uz);
+		});
+
+		suite.addTest("reference: deep source and deep destination", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+
+			auto sourceRoot = MeshNodePtr::makeRoot("sourceRoot"_token);
+			sourceRoot["a"_token]
+				>> MeshNodePtr::make(0uz)["b"_token]
+				>> MeshNodePtr::make(123uz);
+
+			auto instruction = MeshNodePtr::makeRoot("reference"_token);
+			instruction["sourceBase"_token] >> sourceRoot;
+
+			auto targetPath = instruction["sourcePath"_token];
+			targetPath >> MeshNodePtr::make("a"_token);
+			targetPath >> MeshNodePtr::make("b"_token);
+
+			auto branchPath = instruction["destinationPath"_token];
+			branchPath >> MeshNodePtr::make("destination1"_token);
+			branchPath >> MeshNodePtr::make("destination2"_token);
+
+			const auto status = interpreter(instruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+			suite.expect(status);
+
+			auto destination1 = interpreter.get("destination1"_token);
+			suite.expect(destination1);
+			auto destination2 = destination1.value()["destination2"_token].front();
+			suite.expect(destination2);
+			suite.expectEqual(destination2->getValue().value(), 123uz);
+		});
+
+		suite.addTest("set: update node value", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+			auto targetNode = MeshNodePtr::makeRoot(0uz);
+
+			auto instruction = MeshNodePtr::makeRoot("set"_token);
+			instruction["target"_token] >> targetNode;
+			instruction["value"_token] >> MeshNodePtr::make(1uz);
+
+			const auto status = interpreter(instruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+			suite.expect(status);
+
+			suite.expectEqual(targetNode.getValue().value(), 1uz);
+		});
+
+		suite.addTest("size: get branch size", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+			auto root = MeshNodePtr::makeRoot("root"_token);
+			root["list"_token] >> MeshNodePtr::make(1uz);
+			root["list"_token] >> MeshNodePtr::make(2uz);
+			root["list"_token] >> MeshNodePtr::make(3uz);
+
+			auto resultNode = MeshNodePtr::makeRoot(0uz);
+
+			auto instruction = MeshNodePtr::makeRoot("size"_token);
+			instruction["source"_token] >> root;
+			instruction["branch"_token] >> MeshNodePtr::make("list"_token);
+			instruction["size"_token] >> resultNode;
+
+			const auto status = interpreter(instruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+			suite.expect(status);
+
+			suite.expectEqual(resultNode.getValue().value(), 3uz);
+		});
+
+		suite.addTest("call: no arguments", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+			auto value = MeshNodePtr::makeRoot("root"_token);
+
+			auto function = MeshNodePtr::makeRoot("create"_token);
+			function["value"_token] >> MeshNodePtr::make(42uz);
+			function["destination"_token] >> value;
+			function["branch"_token] >> MeshNodePtr::make("value"_token);
+
+			auto call = MeshNodePtr::makeRoot("call"_token);
+			call["function"_token] >> function;
+
+			const auto status = interpreter(call);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			auto valueNode = value["value"_token].front();
+			suite.expect(valueNode);
+			suite.expectEqual(valueNode->getValue().value(), 42uz);
+		});
+
+		suite.addTest("call: input and output", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+
+			auto lhs = MeshNodePtr::make(2uz);
+			auto rhs = MeshNodePtr::make(3uz);
+			auto result = MeshNodePtr::make(0uz);
+
+			auto call = MeshNodePtr::makeRoot("call"_token);
+			auto inputNode = call["input"_token] >> MeshNodePtr::make("inputs"_token);
+			inputNode["lhs"_token] >> lhs;
+			inputNode["rhs"_token] >> rhs;
+			auto outputNode = call["output"_token] >> MeshNodePtr::make("outputs"_token);
+			outputNode["result"_token] >> result;
+
+			auto referenceLhs = call["function"_token] >> MeshNodePtr::make("reference"_token);
+			referenceLhs["sourcePath"_token] >> MeshNodePtr::make("input"_token);
+			referenceLhs["sourcePath"_token] >> MeshNodePtr::make("lhs"_token);
+			referenceLhs["destinationPath"_token] >> MeshNodePtr::make("lhs"_token);
+			auto addInstruction = referenceLhs["destinationBase"_token] >> MeshNodePtr::make("+"_token);
+
+			auto referenceRhs = referenceLhs["next"_token] >> MeshNodePtr::make("reference"_token);
+			referenceRhs["sourcePath"_token] >> MeshNodePtr::make("input"_token);
+			referenceRhs["sourcePath"_token] >> MeshNodePtr::make("rhs"_token);
+			referenceRhs["destinationPath"_token] >> MeshNodePtr::make("rhs"_token);
+			referenceRhs["destinationBase"_token] >> addInstruction;
+
+			auto referenceResult = referenceRhs["next"_token] >> MeshNodePtr::make("reference"_token);
+			referenceResult["sourcePath"_token] >> MeshNodePtr::make("output"_token);
+			referenceResult["sourcePath"_token] >> MeshNodePtr::make("result"_token);
+			referenceResult["destinationPath"_token] >> MeshNodePtr::make("result"_token);
+			referenceResult["destinationBase"_token] >> addInstruction;
+			referenceResult["next"_token] >> addInstruction;
+
+			const auto status = interpreter(call);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			suite.expectEqual(result.getValue().value(), 5uz);
+		});
+
 		suite.addTest("Multithreading - thread and join", [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
-			auto value = MeshNodePtr::make(0uz);
+			auto value = MeshNodePtr::makeRoot("root"_token);
 
-			auto threadTarget = MeshNodePtr::makeRoot("define"_token);
+			auto threadTarget = MeshNodePtr::makeRoot("create"_token);
 			threadTarget["value"_token] >> MeshNodePtr::make(42uz);
-			threadTarget["target"_token] >> value;
+			threadTarget["destination"_token] >> value;
+			threadTarget["branch"_token] >> MeshNodePtr::make("value"_token);
 
 			auto threadIdNode = MeshNodePtr::make(0uz);
 
 			auto instruction = MeshNodePtr::makeRoot("thread"_token);
 			instruction["target"_token] >> threadTarget;
-			instruction["result"_token] >> threadIdNode;
+			instruction["threadId"_token] >> threadIdNode;
 
 			auto joinInstruction = instruction["next"_token] >> MeshNodePtr::make("join"_token);
 			joinInstruction["thread"_token] >> threadIdNode;
@@ -367,28 +627,31 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				Logger::print<"error">("Error: {}", status.error());
 
 			suite.expect(status);
-			suite.expectEqual(value.getValue().value(), 42uz);
+			auto valueNode = value["value"_token].front();
+			suite.expect(valueNode);
+			suite.expectEqual(valueNode->getValue().value(), 42uz);
 		});
 
 		suite.addTest("Multithreading - event, wait, notify", [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
-			auto value = MeshNodePtr::make(0uz);
+			auto value = MeshNodePtr::makeRoot("root"_token);
 			auto eventIdNode = MeshNodePtr::make(0uz);
 			auto threadIdNode = MeshNodePtr::make(0uz);
 
 			auto instruction = MeshNodePtr::makeRoot("event"_token);
-			instruction["result"_token] >> eventIdNode;
+			instruction["eventId"_token] >> eventIdNode;
 
 			auto threadTarget = MeshNodePtr::makeRoot("wait"_token);
 			threadTarget["event"_token] >> eventIdNode;
 
-			auto threadDefine = threadTarget["next"_token] >> MeshNodePtr::make("define"_token);
-			threadDefine["value"_token] >> MeshNodePtr::make(42uz);
-			threadDefine["target"_token] >> value;
+			auto threadCreate = threadTarget["next"_token] >> MeshNodePtr::make("create"_token);
+			threadCreate["value"_token] >> MeshNodePtr::make(42uz);
+			threadCreate["destination"_token] >> value;
+			threadCreate["branch"_token] >> MeshNodePtr::make("value"_token);
 
 			auto threadInstruction = instruction["next"_token] >> MeshNodePtr::make("thread"_token);
 			threadInstruction["target"_token] >> threadTarget;
-			threadInstruction["result"_token] >> threadIdNode;
+			threadInstruction["threadId"_token] >> threadIdNode;
 
 			auto notifyInstruction = threadInstruction["next"_token] >> MeshNodePtr::make("notify"_token);
 			notifyInstruction["event"_token] >> eventIdNode;
@@ -401,7 +664,60 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				Logger::print<"error">("Error: {}", status.error());
 
 			suite.expect(status);
-			suite.expectEqual(value.getValue().value(), 42uz);
+			auto valueNode = value["value"_token].front();
+			suite.expect(valueNode);
+			suite.expectEqual(valueNode->getValue().value(), 42uz);
+		});
+
+		suite.addTest("thread: input and output", [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+
+			auto lhs = MeshNodePtr::make(2uz);
+			auto rhs = MeshNodePtr::make(3uz);
+			auto result = MeshNodePtr::make(0uz);
+
+			auto inputNode = MeshNodePtr::makeRoot("inputs"_token);
+			inputNode["lhs"_token] >> lhs;
+			inputNode["rhs"_token] >> rhs;
+
+			auto outputNode = MeshNodePtr::makeRoot("outputs"_token);
+			outputNode["result"_token] >> result;
+
+			auto threadIdNode = MeshNodePtr::make(0uz);
+			auto threadInstruction = MeshNodePtr::makeRoot("thread"_token);
+			threadInstruction["input"_token] >> inputNode;
+			threadInstruction["output"_token] >> outputNode;
+			threadInstruction["threadId"_token] >> threadIdNode;
+			
+			auto referenceLhs = threadInstruction["target"_token] >> MeshNodePtr::makeRoot("reference"_token);
+			referenceLhs["sourcePath"_token] >> MeshNodePtr::make("input"_token);
+			referenceLhs["sourcePath"_token] >> MeshNodePtr::make("lhs"_token);
+			auto addInstruction = referenceLhs["destinationBase"_token] >> MeshNodePtr::make("+"_token);
+			referenceLhs["destinationPath"_token] >> MeshNodePtr::make("lhs"_token);
+
+			auto referenceRhs = referenceLhs["next"_token] >> MeshNodePtr::make("reference"_token);
+			referenceRhs["sourcePath"_token] >> MeshNodePtr::make("input"_token);
+			referenceRhs["sourcePath"_token] >> MeshNodePtr::make("rhs"_token);
+			referenceRhs["destinationBase"_token] >> addInstruction;
+			referenceRhs["destinationPath"_token] >> MeshNodePtr::make("rhs"_token);
+
+			auto referenceResult = referenceRhs["next"_token] >> MeshNodePtr::make("reference"_token);
+			referenceResult["sourcePath"_token] >> MeshNodePtr::make("output"_token);
+			referenceResult["sourcePath"_token] >> MeshNodePtr::make("result"_token);
+			referenceResult["destinationBase"_token] >> addInstruction;
+			referenceResult["destinationPath"_token] >> MeshNodePtr::make("result"_token);
+			referenceResult["next"_token] >> addInstruction;
+
+			threadInstruction["next"_token]
+				>> MeshNodePtr::make("join"_token)["thread"_token]
+				>> threadIdNode;
+
+			const auto status = interpreter(threadInstruction);
+			if (not status)
+				Logger::print<"error">("Error: {}", status.error());
+
+			suite.expect(status);
+			suite.expectEqual(result.getValue().value(), 5uz);
 		});
 	}};
 }
