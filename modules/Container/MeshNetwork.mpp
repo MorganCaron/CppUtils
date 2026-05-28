@@ -20,6 +20,7 @@ export namespace CppUtils::Container
 			using VectorLocker = Thread::SharedLocker<std::vector<WeakPtr>>;
 			using Branches = std::unordered_map<Key, SafeShared<std::vector<WeakPtr>>>;
 
+			std::size_t id = 0;
 			Thread::SharedLocker<Value> value;
 			Thread::SharedLocker<Branches> branches;
 
@@ -414,6 +415,19 @@ export namespace CppUtils::Container
 			if (not m_node)
 				return std::numeric_limits<std::size_t>::max();
 			return m_node->sharedAccess()->getDistanceFromRoot();
+		}
+
+		[[nodiscard]] auto getId() const noexcept -> std::size_t
+		{
+			if (not m_node)
+				return 0;
+			return m_node->sharedAccess()->value.id;
+		}
+
+		auto setId(std::size_t newId) -> void
+		{
+			if (m_node)
+				m_node->uniqueAccess()->value.id = newId;
 		}
 
 		[[nodiscard]] auto operator->(this auto&& self [[lifetimebound]])

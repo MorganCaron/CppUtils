@@ -101,7 +101,11 @@ export namespace CppUtils::Type
 
 				auto value = std::vector<T>{};
 				value.reserve(length.value());
+#if defined(__cpp_lib_ranges_indices)
 				for ([[maybe_unused]] auto _ : std::views::indices(length.value()))
+#else
+				for ([[maybe_unused]] auto _ : std::views::iota(0uz, length.value()))
+#endif
 				{
 					auto item = Serializer<T>::deserialize(view);
 					if (not item)
@@ -133,7 +137,11 @@ export namespace CppUtils::Type
 
 				auto map = std::unordered_map<Key, Value>{};
 				map.reserve(length.value());
+#if defined(__cpp_lib_ranges_indices)
 				for ([[maybe_unused]] auto _ : std::views::indices(length.value()))
+#else
+				for ([[maybe_unused]] auto _ : std::views::iota(0uz, length.value()))
+#endif
 				{
 					auto key = Serializer<Key>::deserialize(view);
 					if (not key)

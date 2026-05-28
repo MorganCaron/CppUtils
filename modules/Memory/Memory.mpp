@@ -16,43 +16,46 @@ export namespace CppUtils::Memory
 
 	namespace Literals
 	{
-		[[nodiscard]] inline constexpr auto operator""_Ko(unsigned long long int size) -> std::size_t
+		[[nodiscard]] inline constexpr auto operator""_B(unsigned long long int size) -> std::size_t
+		{
+			return static_cast<std::size_t>(size);
+		}
+
+		[[nodiscard]] inline constexpr auto operator""_kB(unsigned long long int size) -> std::size_t
 		{
 			return static_cast<std::size_t>(size) * 1'000;
 		}
 
-		[[nodiscard]] inline constexpr auto operator""_Mo(unsigned long long int size) -> std::size_t
+		[[nodiscard]] inline constexpr auto operator""_MB(unsigned long long int size) -> std::size_t
 		{
-			return static_cast<std::size_t>(size) * 1'000_Ko;
+			return static_cast<std::size_t>(size) * 1'000_kB;
 		}
 
-		[[nodiscard]] inline constexpr auto operator""_Go(unsigned long long int size) -> std::size_t
+		[[nodiscard]] inline constexpr auto operator""_GB(unsigned long long int size) -> std::size_t
 		{
-			return static_cast<std::size_t>(size) * 1'000_Mo;
+			return static_cast<std::size_t>(size) * 1'000_MB;
 		}
 
-		[[nodiscard]] inline constexpr auto operator""_Kio(unsigned long long int size) -> std::size_t
+		[[nodiscard]] inline constexpr auto operator""_KiB(unsigned long long int size) -> std::size_t
 		{
 			return static_cast<std::size_t>(size) * 1'024;
 		}
 
-		[[nodiscard]] inline constexpr auto operator""_Mio(unsigned long long int size) -> std::size_t
+		[[nodiscard]] inline constexpr auto operator""_MiB(unsigned long long int size) -> std::size_t
 		{
-			return static_cast<std::size_t>(size) * 1'024_Kio;
+			return static_cast<std::size_t>(size) * 1'024_KiB;
 		}
 
-		[[nodiscard]] inline constexpr auto operator""_Gio(unsigned long long int size) -> std::size_t
+		[[nodiscard]] inline constexpr auto operator""_GiB(unsigned long long int size) -> std::size_t
 		{
-			return static_cast<std::size_t>(size) * 1'024_Mio;
+			return static_cast<std::size_t>(size) * 1'024_MiB;
 		}
+
+		static_assert(1_kB == 1'000);
+		static_assert(1_MB == 1'000'000);
+		static_assert(1_GB == 1'000'000'000);
+		static_assert(1_KiB == 1'024);
+		static_assert(1_MiB == 1'048'576);
+		static_assert(1_GiB == 1'073'741'824);
 	}
-
-	using namespace Literals;
-
-	static_assert(1_Ko == 1'000);
-	static_assert(1_Mo == 1'000'000);
-	static_assert(1_Go == 1'000'000'000);
-	static_assert(1_Kio == 1'024);
-	static_assert(1_Mio == 1'048'576);
-	static_assert(1_Gio == 1'073'741'824);
 }

@@ -12,7 +12,7 @@ export namespace CppUtils
 	{
 		std::filesystem::path filePath;
 		std::size_t maxFiles = 10;
-		std::size_t maxSize = 10_Mo;
+		std::size_t maxSize = 10_MB;
 	};
 
 	inline auto logRotate(const LogRotateOptions& options) -> void

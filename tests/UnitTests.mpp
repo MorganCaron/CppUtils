@@ -22,6 +22,7 @@ export import CppUtils.UnitTests.Execution.EventQueue;
 export import CppUtils.UnitTests.Execution.ScopeGuard;
 export import CppUtils.UnitTests.FileSystem.Directory;
 export import CppUtils.UnitTests.FileSystem.File;
+export import CppUtils.UnitTests.FileSystem.IndexedStorage;
 export import CppUtils.UnitTests.FileSystem.Watcher;
 export import CppUtils.UnitTests.Language.ASTParser;
 export import CppUtils.UnitTests.Language.CLikeCompiler;

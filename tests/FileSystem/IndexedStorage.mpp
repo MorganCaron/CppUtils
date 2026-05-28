@@ -1,0 +1,178 @@
+export module CppUtils.UnitTests.FileSystem.IndexedStorage;
+
+import std;
+import CppUtils;
+import CppUtils.FileSystem.IndexedStorage;
+
+namespace CppUtils::UnitTest::FileSystem::IndexedStorageTests
+{
+	auto _ = TestSuite{"FileSystem/IndexedStorage", [](TestSuite& suite) {
+		using namespace CppUtils::Memory::Literals;
+
+		suite.addTest("Store and Load", [&suite] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
+				auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory, 1_KiB};
+
+				storage.store<std::string>(1, "Hello World");
+				storage.store<std::string>(2, "foobar");
+
+				auto value1 = storage.load<std::string>(1);
+				auto value2 = storage.load<std::string>(2);
+
+				suite.expect(value1.has_value());
+				suite.expect(value1.value() == "Hello World");
+				suite.expect(value2.has_value());
+				suite.expect(value2.value() == "foobar");
+				suite.expect(storage.contains(1));
+				suite.expect(storage.contains(2));
+				suite.expect(not storage.contains(3));
+			}};
+		});
+
+		suite.addTest("Remove and Recycle", [&suite] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
+					auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory};
+					storage.store<int>(1, 100);
+					storage.store<int>(2, 200);
+
+					const auto chunkPath = testDirectory / "chunk_0.bin";
+					suite.expect(std::filesystem::file_size(chunkPath) == 2 * sizeof(int));
+
+					suite.expect(storage.contains(1));
+					storage.remove(1);
+					suite.expect(not storage.contains(1));
+					
+					storage.store<int>(3, 300);
+					
+					auto value3 = storage.load<int>(3);
+					suite.expect(value3.has_value());
+					suite.expect(value3.value() == 300);
+					
+					suite.expect(std::filesystem::file_size(chunkPath) == 2 * sizeof(int));
+			}};
+		});
+
+		suite.addTest("Best-Fit Recycling", [&suite] {
+			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& testDirectory) {
+				auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory};
+				
+				storage.store<std::string>(1, "Short");
+				storage.store<std::string>(10, "Separator 1");
+				storage.store<std::string>(2, "Much Longer String");
+				storage.store<std::string>(20, "Separator 2");
+				storage.store<std::string>(3, "Medium String");
+				
+				auto targetOffset = 0uz;
+				{
+					auto indexAccessor = storage.getIndex();
+					targetOffset = indexAccessor->at(3).offset;
+				}
+
+				storage.remove(1);
+				storage.remove(2);
+				storage.remove(3);
+				
+				storage.store<std::string>(4, "Fits in Med"); 
+				
+				suite.expect(storage.contains(4));
+				{
+					auto indexAccessor = storage.getIndex();
+					suite.expect(indexAccessor->at(4).offset == targetOffset);
+				}
+			}};
+		});
+
+		suite.addTest("Thread Safety", [&suite] {
+			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& testDirectory) {
+				auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory};
+				
+				auto success = std::atomic<bool>{true};
+				auto threads = std::vector<std::jthread>{};
+				for (auto threadId = 0uz; threadId < 10; ++threadId)
+				{
+					threads.emplace_back([&storage, &success, threadId] {
+						for (auto i = 0uz; i < 100; ++i)
+						{
+							const auto elementId = threadId * 1000 + i;
+							storage.store<int>(elementId, static_cast<int>(elementId));
+							auto value = storage.load<int>(elementId);
+							if (value != static_cast<int>(elementId)) success = false;
+							if (i % 2 == 0) storage.remove(elementId);
+						}
+					});
+				}
+				threads.clear();
+				suite.expect(success.load());
+			}};
+		});
+
+		suite.addTest("Persistence", [&suite] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
+				{
+					auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory};
+					storage.store<int>(10, 420);
+					storage.store<std::string>(20, "Persisted String");
+				}
+
+				{
+					auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory};
+					auto value1 = storage.load<int>(10);
+					auto value2 = storage.load<std::string>(20);
+
+					suite.expect(value1.has_value());
+					suite.expect(value1.value() == 420);
+					suite.expect(value2.has_value());
+					suite.expect(value2.value() == "Persisted String");
+				}
+			}};
+		});
+
+		suite.addTest("Multiple Chunks", [&suite] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
+				auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory, 128_B};
+
+				for (auto i = 0uz; i < 100uz; ++i)
+					storage.store<int>(i, static_cast<int>(i * 42));
+
+				const auto chunkCount = std::ranges::count_if(std::filesystem::directory_iterator{testDirectory}, [](const auto& entry) {
+					return entry.path().filename().string().starts_with("chunk_");
+				});
+				suite.expect(chunkCount > 1);
+
+				for (auto i = 0uz; i < 100uz; ++i)
+				{
+					auto value = storage.load<int>(i);
+					suite.expect(value.has_value());
+					suite.expect(value.value() == static_cast<int>(i * 42));
+				}
+			}};
+		});
+
+		suite.addTest("Coalescing Free Blocks", [&suite] {
+			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& testDirectory) {
+				auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory};
+
+				storage.store<int>(1, 100);
+				storage.store<int>(2, 200);
+				storage.store<int>(3, 300);
+
+				const auto chunkPath = testDirectory / "chunk_0.bin";
+				const auto sizeBefore = std::filesystem::file_size(chunkPath);
+				suite.expect(sizeBefore == 3 * sizeof(int));
+
+				storage.remove(1);
+				storage.remove(2);
+
+				auto emptyVector = std::vector<std::byte>{};
+				storage.store<std::vector<std::byte>>(4, emptyVector);
+
+				auto sizeAfter = std::filesystem::file_size(chunkPath);
+				suite.expect(sizeAfter == sizeBefore);
+
+				auto loadedVector = storage.load<std::vector<std::byte>>(4);
+				suite.expect(loadedVector.has_value());
+				suite.expect(std::ranges::empty(loadedVector.value()));
+			}};
+		});
+	}};
+}

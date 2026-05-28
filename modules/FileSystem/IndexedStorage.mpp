@@ -1,0 +1,388 @@
+export module CppUtils.FileSystem.IndexedStorage;
+
+import std;
+import CppUtils.Memory;
+import CppUtils.Type.Serializer;
+import CppUtils.FileSystem.File;
+import CppUtils.Thread.SharedLocker;
+
+namespace CppUtils::FileSystem
+{
+	struct IndexedStorageEntry final
+	{
+		std::size_t chunkId;
+		std::size_t offset;
+		std::size_t size;
+		std::size_t allocatedSize;
+	};
+
+	struct IndexedStorageFreeBlock final
+	{
+		std::size_t chunkId;
+		std::size_t offset;
+		std::size_t size;
+	};
+
+	struct ChunkLocation final
+	{
+		std::size_t chunkId;
+		std::size_t offset;
+
+		auto operator<=>(const ChunkLocation&) const = default;
+	};
+}
+
+namespace CppUtils::Type::Binary
+{
+	template<>
+	struct Serializer<CppUtils::FileSystem::IndexedStorageEntry> final
+	{
+		static inline auto serialize(const CppUtils::FileSystem::IndexedStorageEntry& value, std::vector<std::byte>& buffer) -> void
+		{
+			Serializer<std::size_t>::serialize(value.chunkId, buffer);
+			Serializer<std::size_t>::serialize(value.offset, buffer);
+			Serializer<std::size_t>::serialize(value.size, buffer);
+			Serializer<std::size_t>::serialize(value.allocatedSize, buffer);
+		}
+
+		[[nodiscard]] static inline auto deserialize(std::span<const std::byte>& view) -> std::expected<CppUtils::FileSystem::IndexedStorageEntry, std::string_view>
+		{
+			auto chunkId = Serializer<std::size_t>::deserialize(view);
+			if (not chunkId)
+				return std::unexpected{chunkId.error()};
+			auto offset = Serializer<std::size_t>::deserialize(view);
+			if (not offset)
+				return std::unexpected{offset.error()};
+			auto size = Serializer<std::size_t>::deserialize(view);
+			if (not size)
+				return std::unexpected{size.error()};
+			auto allocatedSize = Serializer<std::size_t>::deserialize(view);
+			if (not allocatedSize)
+				return std::unexpected{allocatedSize.error()};
+
+			return CppUtils::FileSystem::IndexedStorageEntry{chunkId.value(), offset.value(), size.value(), allocatedSize.value()};
+		}
+	};
+
+	template<>
+	struct Serializer<CppUtils::FileSystem::IndexedStorageFreeBlock> final
+	{
+		static inline auto serialize(const CppUtils::FileSystem::IndexedStorageFreeBlock& value, std::vector<std::byte>& buffer) -> void
+		{
+			Serializer<std::size_t>::serialize(value.chunkId, buffer);
+			Serializer<std::size_t>::serialize(value.offset, buffer);
+			Serializer<std::size_t>::serialize(value.size, buffer);
+		}
+
+		[[nodiscard]] static inline auto deserialize(std::span<const std::byte>& view) -> std::expected<CppUtils::FileSystem::IndexedStorageFreeBlock, std::string_view>
+		{
+			auto chunkId = Serializer<std::size_t>::deserialize(view);
+			if (not chunkId)
+				return std::unexpected{chunkId.error()};
+			auto offset = Serializer<std::size_t>::deserialize(view);
+			if (not offset)
+				return std::unexpected{offset.error()};
+			auto size = Serializer<std::size_t>::deserialize(view);
+			if (not size)
+				return std::unexpected{size.error()};
+
+			return CppUtils::FileSystem::IndexedStorageFreeBlock{chunkId.value(), offset.value(), size.value()};
+		}
+	};
+}
+
+export namespace CppUtils::FileSystem
+{
+	class IndexedStorage final
+	{
+	public:
+		using Entry = IndexedStorageEntry;
+		using FreeBlock = IndexedStorageFreeBlock;
+		using IndexMap = std::unordered_map<std::size_t, Entry>;
+		using FreeList = std::multimap<std::size_t, FreeBlock>;
+
+	private:
+		std::filesystem::path m_directory;
+		Thread::SharedLocker<IndexMap> m_index;
+		FreeList m_freeList;
+		std::map<ChunkLocation, std::size_t> m_freeBlocksByLocation;
+		std::size_t m_currentChunkId = 0;
+		std::size_t m_currentChunkOffset = 0;
+		std::size_t m_maxChunkSize;
+		std::ofstream m_currentChunkStream;
+
+		mutable std::shared_mutex m_mutex;
+
+	public:
+		explicit IndexedStorage(std::filesystem::path directory, std::optional<std::size_t> maxChunkSize = std::nullopt):
+			m_directory{std::move(directory)}
+		{
+			using namespace CppUtils::Memory::Literals;
+			m_maxChunkSize = maxChunkSize.value_or(64_MiB);
+
+			if (not std::filesystem::exists(m_directory))
+				std::filesystem::create_directories(m_directory);
+
+			loadIndex();
+			openActiveChunk();
+		}
+
+		~IndexedStorage()
+		{
+			flush();
+		}
+
+		IndexedStorage(const IndexedStorage&) = delete;
+		auto operator=(const IndexedStorage&) -> IndexedStorage& = delete;
+
+		template<Type::Serializable T>
+		auto store(std::size_t id, const T& value) -> void
+		{
+			auto buffer = Type::serialize(value);
+			auto size = std::ranges::size(buffer);
+
+			auto lock = std::unique_lock{m_mutex};
+			auto indexAccessor = m_index.uniqueAccess();
+
+			if (auto it = indexAccessor->find(id); it != indexAccessor->end())
+			{
+				addFreeBlock(it->second.chunkId, it->second.offset, it->second.allocatedSize);
+				indexAccessor->erase(it);
+			}
+
+			if (auto it = m_freeList.lower_bound(size); it != std::end(m_freeList))
+			{
+				auto block = it->second;
+				m_freeList.erase(it);
+				m_freeBlocksByLocation.erase(ChunkLocation{block.chunkId, block.offset});
+
+				writeToChunk(block.chunkId, block.offset, buffer);
+
+				if (constexpr auto minimumSplitThreshold = 8uz;
+					block.size > size + minimumSplitThreshold)
+				{
+					addFreeBlock(block.chunkId, block.offset + size, block.size - size);
+					indexAccessor.value()[id] = Entry{block.chunkId, block.offset, size, size};
+				}
+				else
+					indexAccessor.value()[id] = Entry{block.chunkId, block.offset, size, block.size};
+				return;
+			}
+
+			if (m_currentChunkOffset + size > m_maxChunkSize and m_currentChunkOffset > 0)
+			{
+				m_currentChunkStream.close();
+				++m_currentChunkId;
+				openActiveChunk();
+			}
+
+			m_currentChunkStream.write(reinterpret_cast<const char*>(std::ranges::data(buffer)), static_cast<std::streamsize>(size));
+			m_currentChunkStream.flush();
+
+			indexAccessor.value()[id] = Entry{m_currentChunkId, m_currentChunkOffset, size, size};
+			m_currentChunkOffset += size;
+		}
+
+		template<Type::Serializable T>
+		[[nodiscard]] auto load(std::size_t id) const -> std::expected<T, std::string_view>
+		{
+			auto lock = std::shared_lock{m_mutex};
+			auto indexAccessor = m_index.sharedAccess();
+
+			auto it = indexAccessor->find(id);
+			if (it == indexAccessor->end())
+				return std::unexpected{"IndexedStorage::load(): Entry not found"};
+
+			const auto& entry = it->second;
+			auto chunkPath = getChunkPath(entry.chunkId);
+
+			auto file = std::ifstream{chunkPath, std::ios::binary};
+			if (not file.is_open())
+				return std::unexpected{"IndexedStorage::load(): Failed to open chunk file"};
+
+			file.seekg(static_cast<std::streamoff>(entry.offset));
+			auto buffer = std::vector<char>(entry.size);
+			file.read(std::ranges::data(buffer), static_cast<std::streamsize>(entry.size));
+
+			auto view = std::span<const std::byte>{reinterpret_cast<const std::byte*>(std::ranges::data(buffer)), entry.size};
+			auto result = Type::deserialize<T>(view);
+			if (not result)
+				return std::unexpected{result.error()};
+			return std::move(result.value());
+		}
+
+		[[nodiscard]] auto contains(std::size_t id) const -> bool
+		{
+			auto lock = std::shared_lock{m_mutex};
+			auto indexAccessor = m_index.sharedAccess();
+			return indexAccessor->contains(id);
+		}
+
+		auto remove(std::size_t id) -> void
+		{
+			auto lock = std::unique_lock{m_mutex};
+			auto indexAccessor = m_index.uniqueAccess();
+			if (auto it = indexAccessor->find(id); it != indexAccessor->end())
+			{
+				addFreeBlock(it->second.chunkId, it->second.offset, it->second.allocatedSize);
+				indexAccessor->erase(it);
+			}
+		}
+
+		[[nodiscard]] auto getIndex() const -> Thread::ReadOnlyAccessor<IndexMap>
+		{
+			return m_index.sharedAccess();
+		}
+
+		auto flush() -> void
+		{
+			auto lock = std::unique_lock{m_mutex};
+			if (m_currentChunkStream.is_open())
+				m_currentChunkStream.flush();
+			saveIndex();
+		}
+
+	private:
+		auto addFreeBlock(std::size_t chunkId, std::size_t offset, std::size_t size) -> void
+		{
+			if (size == 0)
+				return;
+
+			auto removeFromFreeList = [&](std::size_t offset, std::size_t size) {
+				auto [rangeBegin, rangeEnd] = m_freeList.equal_range(size);
+				for (auto iterator = rangeBegin; iterator != rangeEnd; ++iterator)
+					if (iterator->second.chunkId == chunkId and iterator->second.offset == offset)
+					{
+						m_freeList.erase(iterator);
+						break;
+					}
+			};
+
+			// Merge with following block
+			if (auto nextIterator = m_freeBlocksByLocation.find(ChunkLocation{chunkId, offset + size});
+				nextIterator != std::end(m_freeBlocksByLocation))
+			{
+				auto nextSize = nextIterator->second;
+				removeFromFreeList(offset + size, nextSize);
+				m_freeBlocksByLocation.erase(nextIterator);
+				size += nextSize;
+			}
+
+			// Merge with preceding block
+			if (auto previousIterator = m_freeBlocksByLocation.lower_bound(ChunkLocation{chunkId, offset});
+				previousIterator != std::begin(m_freeBlocksByLocation))
+			{
+				previousIterator = std::prev(previousIterator);
+				if (previousIterator->first.chunkId == chunkId and previousIterator->first.offset + previousIterator->second == offset)
+				{
+					auto previousOffset = previousIterator->first.offset;
+					auto previousSize = previousIterator->second;
+
+					removeFromFreeList(previousOffset, previousSize);
+					m_freeBlocksByLocation.erase(previousIterator);
+					offset = previousOffset;
+					size += previousSize;
+				}
+			}
+
+			// Insert final block
+			m_freeList.emplace(size, FreeBlock{chunkId, offset, size});
+			m_freeBlocksByLocation[ChunkLocation{chunkId, offset}] = size;
+		}
+
+		[[nodiscard]] auto getChunkPath(std::size_t chunkId) const -> std::filesystem::path
+		{
+			return m_directory / std::format("chunk_{}.bin", chunkId);
+		}
+
+		auto openActiveChunk() -> void
+		{
+			auto chunkPath = getChunkPath(m_currentChunkId);
+			m_currentChunkOffset = std::filesystem::exists(chunkPath) ? std::filesystem::file_size(chunkPath) : 0;
+
+			m_currentChunkStream.open(chunkPath, std::ios::binary | std::ios::in | std::ios::out | std::ios::ate);
+
+			if (not m_currentChunkStream.is_open())
+			{
+				m_currentChunkStream.clear();
+				m_currentChunkStream.open(chunkPath, std::ios::binary | std::ios::out);
+				m_currentChunkStream.close();
+				m_currentChunkStream.open(chunkPath, std::ios::binary | std::ios::in | std::ios::out | std::ios::ate);
+			}
+
+			if (not m_currentChunkStream.is_open())
+				throw std::runtime_error{"IndexedStorage: Failed to open active chunk"};
+		}
+
+		auto writeToChunk(std::size_t chunkId, std::size_t offset, std::span<const std::byte> buffer) -> void
+		{
+			if (chunkId == m_currentChunkId)
+			{
+				m_currentChunkStream.seekp(static_cast<std::streamoff>(offset));
+				m_currentChunkStream.write(reinterpret_cast<const char*>(std::ranges::data(buffer)), static_cast<std::streamsize>(std::ranges::size(buffer)));
+				m_currentChunkStream.flush();
+				m_currentChunkStream.seekp(0, std::ios::end);
+			}
+			else
+			{
+				auto chunkPath = getChunkPath(chunkId);
+				auto stream = std::ofstream{chunkPath, std::ios::binary | std::ios::in | std::ios::out};
+				stream.seekp(static_cast<std::streamoff>(offset));
+				stream.write(reinterpret_cast<const char*>(std::ranges::data(buffer)), static_cast<std::streamsize>(std::ranges::size(buffer)));
+				stream.flush();
+			}
+		}
+
+		auto loadIndex() -> void
+		{
+			auto indexPath = m_directory / "index.bin";
+			if (not std::filesystem::exists(indexPath))
+				return;
+
+			auto bytes = FileSystem::Binary::readVector<std::byte>(indexPath);
+			if (std::ranges::empty(bytes))
+				return;
+
+			auto view = std::span<const std::byte>{bytes};
+
+			auto index = Type::Binary::Serializer<IndexMap>::deserialize(view);
+			if (not index)
+				return;
+			m_index.uniqueAccess().value() = std::move(index.value());
+
+			auto freeList = Type::Binary::Serializer<std::vector<FreeBlock>>::deserialize(view);
+			if (not freeList)
+				return;
+			for (const auto& block : freeList.value())
+			{
+				m_freeList.emplace(block.size, block);
+				m_freeBlocksByLocation[ChunkLocation{block.chunkId, block.offset}] = block.size;
+			}
+
+			auto indexAccessor = m_index.sharedAccess();
+			for (const auto& [id, entry] : indexAccessor.value())
+				if (entry.chunkId > m_currentChunkId)
+					m_currentChunkId = entry.chunkId;
+
+			for (const auto& [size, block] : m_freeList)
+				if (block.chunkId > m_currentChunkId)
+					m_currentChunkId = block.chunkId;
+		}
+
+		auto saveIndex() const -> void
+		{
+			auto indexPath = m_directory / "index.bin";
+			auto bytes = std::vector<std::byte>{};
+
+			auto indexAccessor = m_index.sharedAccess();
+			Type::Binary::Serializer<IndexMap>::serialize(indexAccessor.value(), bytes);
+
+			auto freeList = std::vector<FreeBlock>{};
+			for (const auto& [size, block] : m_freeList)
+				freeList.push_back(block);
+			Type::Binary::Serializer<std::vector<FreeBlock>>::serialize(freeList, bytes);
+
+			FileSystem::Binary::writeVector(indexPath, bytes);
+		}
+	};
+}
