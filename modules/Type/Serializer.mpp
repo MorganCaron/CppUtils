@@ -1,0 +1,213 @@
+export module CppUtils.Type.Serializer;
+
+import std;
+
+export namespace CppUtils::Type
+{
+	namespace Binary
+	{
+		template<class T>
+		struct Serializer;
+	}
+
+	namespace Text
+	{
+		template<class T>
+		struct Serializer;
+	}
+
+	template<class T>
+	concept Serializable = requires (const T& value, std::vector<std::byte>& buffer, std::span<const std::byte>& view) {
+		{ Binary::Serializer<std::remove_cvref_t<T>>::serialize(value, buffer) } -> std::same_as<void>;
+		{ Binary::Serializer<std::remove_cvref_t<T>>::deserialize(view) } -> std::same_as<std::expected<std::remove_cvref_t<T>, std::string_view>>;
+	};
+
+	template<class T>
+	concept TextSerializable = requires (const T& value, std::string& buffer) {
+		{ Text::Serializer<std::remove_cvref_t<T>>::serialize(value, buffer) } -> std::same_as<void>;
+		{ Text::Serializer<std::remove_cvref_t<T>>::deserialize(std::string_view{buffer}) } -> std::same_as<std::expected<std::remove_cvref_t<T>, std::string_view>>;
+	};
+
+	namespace Binary
+	{
+		template<class T>
+		requires std::is_trivially_copyable_v<T> and (not std::is_pointer_v<T>)
+		struct Serializer<T> final
+		{
+			static inline auto serialize(const T& value, std::vector<std::byte>& buffer) -> void
+			{
+				const auto size = sizeof(T);
+				const auto currentSize = std::ranges::size(buffer);
+				buffer.resize(currentSize + size);
+				std::memcpy(std::ranges::data(buffer) + currentSize, std::addressof(value), size);
+			}
+
+			[[nodiscard]] static inline auto deserialize(std::span<const std::byte>& view) -> std::expected<T, std::string_view>
+			{
+				if (std::ranges::size(view) < sizeof(T))
+					return std::unexpected{"Binary::Serializer: Not enough bytes to deserialize trivial type"};
+
+				auto value = T{};
+				std::memcpy(std::addressof(value), std::ranges::data(view), sizeof(T));
+				view = view.subspan(sizeof(T));
+				return value;
+			}
+		};
+
+		template<>
+		struct Serializer<std::string> final
+		{
+			static inline auto serialize(const std::string& value, std::vector<std::byte>& buffer) -> void
+			{
+				const auto length = std::ranges::size(value);
+				Serializer<std::size_t>::serialize(length, buffer);
+
+				const auto currentSize = std::ranges::size(buffer);
+				buffer.resize(currentSize + length);
+				std::memcpy(std::ranges::data(buffer) + currentSize, std::ranges::data(value), length);
+			}
+
+			[[nodiscard]] static inline auto deserialize(std::span<const std::byte>& view) -> std::expected<std::string, std::string_view>
+			{
+				auto length = Serializer<std::size_t>::deserialize(view);
+				if (not length)
+					return std::unexpected{length.error()};
+
+				if (std::ranges::size(view) < length.value())
+					return std::unexpected{"Binary::Serializer: Not enough bytes to deserialize std::string"};
+
+				auto value = std::string(length.value(), '\0');
+				std::memcpy(std::data(value), std::ranges::data(view), length.value());
+				view = view.subspan(length.value());
+				return value;
+			}
+		};
+
+		template<Serializable T>
+		struct Serializer<std::vector<T>> final
+		{
+			static inline auto serialize(const std::vector<T>& value, std::vector<std::byte>& buffer) -> void
+			{
+				Serializer<std::size_t>::serialize(std::ranges::size(value), buffer);
+				for (const auto& item : value)
+					Serializer<T>::serialize(item, buffer);
+			}
+
+			[[nodiscard]] static inline auto deserialize(std::span<const std::byte>& view) -> std::expected<std::vector<T>, std::string_view>
+			{
+				auto length = Serializer<std::size_t>::deserialize(view);
+				if (not length)
+					return std::unexpected{length.error()};
+
+				auto value = std::vector<T>{};
+				value.reserve(length.value());
+				for ([[maybe_unused]] auto _ : std::views::indices(length.value()))
+				{
+					auto item = Serializer<T>::deserialize(view);
+					if (not item)
+						return std::unexpected{item.error()};
+					value.push_back(std::move(item.value()));
+				}
+				return value;
+			}
+		};
+
+		template<Serializable Key, Serializable Value>
+		struct Serializer<std::unordered_map<Key, Value>> final
+		{
+			static inline auto serialize(const std::unordered_map<Key, Value>& map, std::vector<std::byte>& buffer) -> void
+			{
+				Serializer<std::size_t>::serialize(std::ranges::size(map), buffer);
+				for (const auto& [key, value] : map)
+				{
+					Serializer<Key>::serialize(key, buffer);
+					Serializer<Value>::serialize(value, buffer);
+				}
+			}
+
+			[[nodiscard]] static inline auto deserialize(std::span<const std::byte>& view) -> std::expected<std::unordered_map<Key, Value>, std::string_view>
+			{
+				auto length = Serializer<std::size_t>::deserialize(view);
+				if (not length)
+					return std::unexpected{length.error()};
+
+				auto map = std::unordered_map<Key, Value>{};
+				map.reserve(length.value());
+				for ([[maybe_unused]] auto _ : std::views::indices(length.value()))
+				{
+					auto key = Serializer<Key>::deserialize(view);
+					if (not key)
+						return std::unexpected{key.error()};
+					auto value = Serializer<Value>::deserialize(view);
+					if (not value)
+						return std::unexpected{value.error()};
+					map.emplace(std::move(key.value()), std::move(value.value()));
+				}
+				return map;
+			}
+		};
+	}
+
+	namespace Text
+	{
+		template<class T>
+		requires (std::is_arithmetic_v<T> or std::is_enum_v<T>)
+		struct Serializer<T> final
+		{
+			static inline auto serialize(const T& value, std::string& buffer) -> void
+			{
+				if constexpr (std::is_enum_v<T>)
+					buffer += std::to_string(static_cast<std::underlying_type_t<T>>(value));
+				else
+					buffer += std::to_string(value);
+				buffer += " ";
+			}
+
+			[[nodiscard]] static inline auto deserialize(std::string_view& view) -> std::expected<T, std::string_view>
+			{
+				auto end = view.find(' ');
+				if (end == std::string_view::npos)
+					end = std::ranges::size(view);
+				if (end == 0 and std::ranges::empty(view))
+					return std::unexpected{"Text::Serializer: Empty input"};
+				auto word = view.substr(0, end);
+
+				auto value = T{};
+				auto result = std::from_chars_result{};
+
+				if constexpr (std::is_enum_v<T>)
+				{
+					auto underlying = std::underlying_type_t<T>{};
+					result = std::from_chars(word.data(), word.data() + word.size(), underlying);
+					value = static_cast<T>(underlying);
+				}
+				else
+					result = std::from_chars(word.data(), word.data() + word.size(), value);
+
+				if (result.ec != std::errc{})
+					return std::unexpected{"Text::Serializer: Conversion error"};
+
+				if (end < std::ranges::size(view))
+					view.remove_prefix(end + 1);
+				else
+					view = {};
+
+				return value;
+			}
+		};
+	}
+
+	template<Serializable T>
+	[[nodiscard]] auto serialize(const T& value) -> std::vector<std::byte>
+	{
+		auto buffer = std::vector<std::byte>{};
+		Binary::Serializer<T>::serialize(value, buffer);
+		return buffer;
+	}
+
+	template<Serializable T>
+	[[nodiscard]] auto deserialize(std::span<const std::byte>& view) -> std::expected<T, std::string_view>
+	{
+		return Binary::Serializer<T>::deserialize(view);
+	}
+}

@@ -8,6 +8,7 @@ export import CppUtils.Type.Hash;
 export import CppUtils.Type.Mapping;
 export import CppUtils.Type.ObjectMapping;
 export import CppUtils.Type.MemberFunction;
+export import CppUtils.Type.Serializer;
 export import CppUtils.Type.Tuple;
 export import CppUtils.Type.Utility;
 export import CppUtils.Type.VariadicTemplate;
