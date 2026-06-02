@@ -1,0 +1,205 @@
+export module CppUtils.UnitTests.Type.ReadWriteAdapter;
+
+import std;
+import CppUtils;
+
+namespace UserNamespace
+{
+	struct CustomADLObject final
+	{
+		int writeValue = 0;
+		int readValue = 3;
+	};
+
+	inline auto write(CustomADLObject& object, int value) -> void
+	{
+		object.writeValue = value;
+	}
+
+	[[nodiscard]] inline auto read(CustomADLObject& object, int& value) -> std::expected<void, std::string_view>
+	{
+		value = object.readValue;
+		return {};
+	}
+
+	struct CustomErrorADLObject final
+	{
+		int value = 0;
+	};
+
+	[[nodiscard]] inline auto read(CustomErrorADLObject& object, int& value) -> std::expected<void, int>
+	{
+		if (object.value < 0)
+			return std::unexpected{-1};
+		value = object.value;
+		return {};
+	}
+}
+
+namespace CppUtils::UnitTest::Type::ReadWriteAdapter
+{
+	struct CustomWriter final
+	{
+		int value = 0;
+
+		inline auto write(int value) -> void
+		{
+			this->value = value;
+		}
+	};
+
+	struct CustomReader final
+	{
+		int value = 1;
+
+		[[nodiscard]] inline auto read() -> int
+		{
+			return value;
+		}
+	};
+
+	struct ZeroCopyReader final
+	{
+		int value = 2;
+
+		inline auto read(int& value) -> void
+		{
+			value = this->value;
+		}
+	};
+
+	auto _ = TestSuite{"Type/ReadWriteAdapter", [](TestSuite& suite) {
+		suite.addTest("Generic Writer", [&suite] {
+			auto writer = CustomWriter{};
+
+			CppUtils::Type::Writer<CustomWriter>{}(writer, 1);
+			suite.expectEqual(writer.value, 1);
+		});
+
+		suite.addTest("Generic Reader", [&suite] {
+			auto reader = CustomReader{};
+
+			{
+				auto result = CppUtils::Type::Reader<CustomReader>{}(reader);
+				suite.expectEqual(result, 1);
+			}
+
+			{
+				auto value = 0;
+				auto result = CppUtils::Type::Reader<CustomReader>{}(reader, value);
+				suite.expect(result.has_value());
+				suite.expectEqual(value, 1);
+			}
+		});
+
+		suite.addTest("Zero copy Reader", [&suite] {
+			auto zeroCopyReader = ZeroCopyReader{};
+
+			{
+				auto value = 0;
+				auto result = CppUtils::Type::Reader<ZeroCopyReader>{}(zeroCopyReader, value);
+				suite.expect(result.has_value());
+				suite.expectEqual(value, 2);
+			}
+
+			{
+				auto result = CppUtils::Type::Reader<ZeroCopyReader>{}.template operator()<int>(zeroCopyReader);
+				suite.expect(result.has_value());
+				suite.expectEqual(result.value(), 2);
+			}
+		});
+
+		suite.addTest("std::ostringstream / std::istringstream specialization", [&suite] {
+			auto expectedValue = 1;
+			auto outputStream = std::ostringstream{std::ios::binary};
+			CppUtils::Type::Writer<std::ostringstream>{}(outputStream, expectedValue);
+
+			auto inputStream = std::istringstream{outputStream.str(), std::ios::binary};
+			auto value = 0;
+			auto result = CppUtils::Type::Reader<std::istringstream>{}(inputStream, value);
+			suite.expect(result.has_value());
+			suite.expectEqual(value, expectedValue);
+		});
+
+		suite.addTest("std::stringstream specialization", [&suite] {
+			auto stream = std::stringstream{std::ios::binary | std::ios::in | std::ios::out};
+			auto inputValue = 1;
+
+			CppUtils::Type::Writer<std::stringstream>{}(stream, inputValue);
+
+			{
+				auto value = 0;
+				auto result = CppUtils::Type::Reader<std::stringstream>{}(stream, value);
+				suite.expect(result.has_value());
+				suite.expectEqual(value, inputValue);
+			}
+
+			{
+				stream.seekg(0);
+				auto result = CppUtils::Type::Reader<std::stringstream>{}.template operator()<int>(stream);
+				suite.expect(result.has_value());
+				suite.expectEqual(result.value(), inputValue);
+			}
+		});
+
+		suite.addTest("std::vector<std::byte> and std::span<const std::byte> specialization", [&suite] {
+			auto buffer = std::vector<std::byte>{};
+			auto inputValue = 1;
+
+			CppUtils::Type::write(buffer, inputValue);
+			suite.expectEqual(std::ranges::size(buffer), sizeof(inputValue));
+
+			auto view = std::span<const std::byte>{buffer};
+			{
+				auto value = 0;
+				auto result = CppUtils::Type::read(view, value);
+				suite.expect(result.has_value());
+				suite.expectEqual(value, inputValue);
+			}
+			suite.expectEqual(std::ranges::size(view), 0uz);
+		});
+
+		suite.addTest("Customization Point Object (CPO) ADL", [&suite] {
+			auto object = UserNamespace::CustomADLObject{};
+
+			CppUtils::Type::write(object, 1);
+			suite.expectEqual(object.writeValue, 1);
+
+			{
+				auto value = 0;
+				auto result = CppUtils::Type::read(object, value);
+				suite.expect(result.has_value());
+				suite.expectEqual(value, 3);
+			}
+
+			{
+				auto errorObject = UserNamespace::CustomErrorADLObject{-1};
+				auto value = 0;
+				auto result = CppUtils::Type::read(errorObject, value);
+				suite.expect(not result.has_value());
+				suite.expectEqual(result.error(), -1);
+			}
+		});
+
+		suite.addTest("Reader errors", [&suite] {
+			using namespace std::literals;
+
+			auto buffer = std::vector<std::byte>{};
+			auto view = std::span<const std::byte>{buffer};
+			{
+				auto value = 0;
+				auto result = CppUtils::Type::read(view, value);
+				suite.expect(not result.has_value());
+				suite.expectEqual(result.error(), "Reader: span out of range"sv);
+			}
+
+			{
+				auto inputStream = std::istringstream{"", std::ios::binary};
+				auto value = 0;
+				auto result = CppUtils::Type::Reader<std::istringstream>{}(inputStream, value);
+				suite.expect(not result.has_value());
+				suite.expectEqual(result.error(), "Reader: unexpected end of stream"sv);
+			}
+		});
+	}};
+}

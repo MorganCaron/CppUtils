@@ -345,12 +345,12 @@ export namespace CppUtils::FileSystem
 
 			auto view = std::span<const std::byte>{bytes};
 
-			auto index = Type::Binary::Serializer<IndexMap>::deserialize(view);
+			auto index = Type::deserialize<IndexMap>(view);
 			if (not index)
 				return;
 			m_index.uniqueAccess().value() = std::move(index.value());
 
-			auto freeList = Type::Binary::Serializer<std::vector<FreeBlock>>::deserialize(view);
+			auto freeList = Type::deserialize<std::vector<FreeBlock>>(view);
 			if (not freeList)
 				return;
 			for (const auto& block : freeList.value())
@@ -375,12 +375,12 @@ export namespace CppUtils::FileSystem
 			auto bytes = std::vector<std::byte>{};
 
 			auto indexAccessor = m_index.sharedAccess();
-			Type::Binary::Serializer<IndexMap>::serialize(indexAccessor.value(), bytes);
+			Type::serialize(indexAccessor.value(), bytes);
 
 			auto freeList = std::vector<FreeBlock>{};
 			for (const auto& [size, block] : m_freeList)
 				freeList.push_back(block);
-			Type::Binary::Serializer<std::vector<FreeBlock>>::serialize(freeList, bytes);
+			Type::serialize(freeList, bytes);
 
 			FileSystem::Binary::writeVector(indexPath, bytes);
 		}

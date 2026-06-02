@@ -3,9 +3,8 @@ export module CppUtils.UnitTests.Type.Serializer;
 import std;
 import CppUtils;
 import CppUtils.Type.Serializer;
-import CppUtils.UnitTest;
 
-export namespace CppUtils::UnitTests::Type
+export namespace CppUtils::UnitTest::Type::Serializer
 {
 	struct CustomType final
 	{
@@ -16,85 +15,153 @@ export namespace CppUtils::UnitTests::Type
 	};
 }
 
-template<>
-struct CppUtils::Type::Binary::Serializer<CppUtils::UnitTests::Type::CustomType> final
+namespace CppUtils::Type::Binary
 {
-	static inline auto serialize(const CppUtils::UnitTests::Type::CustomType& value, std::vector<std::byte>& buffer) -> void
+	template<>
+	struct Serializer<CppUtils::UnitTest::Type::Serializer::CustomType> final
 	{
-		Serializer<int>::serialize(value.x, buffer);
-		Serializer<std::string>::serialize(value.y, buffer);
-	}
+		static inline auto serialize(const CppUtils::UnitTest::Type::Serializer::CustomType& value, auto& target) -> void
+		{
+			Type::serialize(value.x, target);
+			Type::serialize(value.y, target);
+		}
 
-	[[nodiscard]] static inline auto deserialize(std::span<const std::byte>& view) -> std::expected<CppUtils::UnitTests::Type::CustomType, std::string_view>
-	{
-		auto x = Serializer<int>::deserialize(view);
-		if (not x)
-			return std::unexpected{x.error()};
+		[[nodiscard]] static inline auto deserialize(auto& source, CppUtils::UnitTest::Type::Serializer::CustomType& value) -> std::expected<void, std::string_view>
+		{
+			auto resultX = Type::deserialize(source, value.x);
+			if (not resultX)
+				return std::unexpected{resultX.error()};
 
-		auto y = Serializer<std::string>::deserialize(view);
-		if (not y)
-			return std::unexpected{y.error()};
+			auto resultY = Type::deserialize(source, value.y);
+			if (not resultY)
+				return std::unexpected{resultY.error()};
 
-		return CppUtils::UnitTests::Type::CustomType{x.value(), std::move(y.value())};
-	}
-};
+			return {};
+		}
 
-export namespace CppUtils::UnitTests::Type
+		[[nodiscard]] static inline auto deserialize(auto& source) -> std::expected<CppUtils::UnitTest::Type::Serializer::CustomType, std::string_view>
+		{
+			auto value = CppUtils::UnitTest::Type::Serializer::CustomType{};
+			auto result = deserialize(source, value);
+			if (not result)
+				return std::unexpected{result.error()};
+			return value;
+		}
+	};
+}
+
+export namespace CppUtils::UnitTest::Type::Serializer
 {
-	auto _ = UnitTest::TestSuite{"Type/Serializer", [](UnitTest::TestSuite& suite) {
+	auto _ = TestSuite{"Type/Serializer", [](TestSuite& suite) {
 		using namespace std::literals;
 
 		suite.addTest("Trivial Type", [&suite] {
 			auto value = 42;
 			auto buffer = CppUtils::Type::serialize(value);
-			auto view = std::span<const std::byte>{buffer};
-			auto result = CppUtils::Type::deserialize<int>(view);
-			suite.expect(result.has_value());
-			suite.expectEqual(value, result.value());
+
+			{
+				auto view = std::span<const std::byte>{buffer};
+				auto result = CppUtils::Type::deserialize<int>(view);
+				suite.expect(result.has_value());
+				suite.expectEqual(result.value(), value);
+			}
+
+			{
+				auto view = std::span<const std::byte>{buffer};
+				auto deserializedValue = 0;
+				auto result = CppUtils::Type::deserialize(view, deserializedValue);
+				suite.expect(result.has_value());
+				suite.expectEqual(deserializedValue, value);
+			}
 		});
 
 		suite.addTest("std::string", [&suite] {
 			auto value = "Hello World!"s;
 			auto buffer = CppUtils::Type::serialize(value);
-			auto view = std::span<const std::byte>{buffer};
-			auto result = CppUtils::Type::deserialize<std::string>(view);
-			suite.expect(result.has_value());
-			suite.expectEqual(value, result.value());
+
+			{
+				auto view = std::span<const std::byte>{buffer};
+				auto result = CppUtils::Type::deserialize<std::string>(view);
+				suite.expect(result.has_value());
+				suite.expectEqual(result.value(), value);
+			}
+
+			{
+				auto view = std::span<const std::byte>{buffer};
+				auto deserializedValue = ""s;
+				auto result = CppUtils::Type::deserialize(view, deserializedValue);
+				suite.expect(result.has_value());
+				suite.expectEqual(deserializedValue, value);
+			}
 		});
 
 		suite.addTest("std::vector", [&suite] {
 			auto value = std::vector<int>{1, 2, 3, 4, 5};
 			auto buffer = CppUtils::Type::serialize(value);
-			auto view = std::span<const std::byte>{buffer};
-			auto result = CppUtils::Type::deserialize<std::vector<int>>(view);
-			suite.expect(result.has_value());
-			suite.expectEqual(value, result.value());
+
+			{
+				auto view = std::span<const std::byte>{buffer};
+				auto result = CppUtils::Type::deserialize<std::vector<int>>(view);
+				suite.expect(result.has_value());
+				suite.expectEqual(result.value(), value);
+			}
+
+			{
+				auto view = std::span<const std::byte>{buffer};
+				auto deserializedValue = std::vector<int>{};
+				auto result = CppUtils::Type::deserialize(view, deserializedValue);
+				suite.expect(result.has_value());
+				suite.expectEqual(deserializedValue, value);
+			}
 		});
 
 		suite.addTest("Custom Type", [&suite] {
 			auto value = CustomType{42, "Hello"};
 			auto buffer = CppUtils::Type::serialize(value);
-			auto view = std::span<const std::byte>{buffer};
-			auto result = CppUtils::Type::deserialize<CustomType>(view);
-			suite.expect(result.has_value());
-			suite.expectEqual(value, result.value());
+
+			{
+				auto view = std::span<const std::byte>{buffer};
+				auto result = CppUtils::Type::deserialize<CustomType>(view);
+				suite.expect(result.has_value());
+				suite.expectEqual(result.value(), value);
+			}
+
+			{
+				auto view = std::span<const std::byte>{buffer};
+				auto deserializedValue = CustomType{};
+				auto result = CppUtils::Type::deserialize(view, deserializedValue);
+				suite.expect(result.has_value());
+				suite.expectEqual(deserializedValue, value);
+			}
 		});
 
 		suite.addTest("TextSerializer (Basic)", [&suite] {
 			auto value = 42;
-			auto buffer = std::string{};
+			auto buffer = ""s;
 			CppUtils::Type::Text::Serializer<int>::serialize(value, buffer);
-			auto view = std::string_view{buffer};
-			auto result = CppUtils::Type::Text::Serializer<int>::deserialize(view);
-			suite.expect(result.has_value());
-			suite.expectEqual(value, result.value());
-			suite.expectEqual(std::string_view{""}, view);
+
+			{
+				auto view = std::string_view{buffer};
+				auto result = CppUtils::Type::Text::Serializer<int>::deserialize(view);
+				suite.expect(result.has_value());
+				suite.expectEqual(result.value(), value);
+				suite.expectEqual(view, ""sv);
+			}
+
+			{
+				auto view = std::string_view{buffer};
+				auto deserializedValue = 0;
+				auto result = CppUtils::Type::Text::Serializer<int>::deserialize(view, deserializedValue);
+				suite.expect(result.has_value());
+				suite.expectEqual(deserializedValue, value);
+				suite.expectEqual(view, ""sv);
+			}
 		});
 
 		suite.addTest("TextSerializer (Multiple)", [&suite] {
 			auto value0 = 3.14;
 			auto value1 = 42;
-			auto buffer = std::string{};
+			auto buffer = ""s;
 			CppUtils::Type::Text::Serializer<double>::serialize(value0, buffer);
 			CppUtils::Type::Text::Serializer<int>::serialize(value1, buffer);
 
@@ -104,8 +171,8 @@ export namespace CppUtils::UnitTests::Type
 
 			suite.expect(result0.has_value());
 			suite.expect(result1.has_value());
-			suite.expectEqual(value0, result0.value());
-			suite.expectEqual(value1, result1.value());
+			suite.expectEqual(result0.value(), value0);
+			suite.expectEqual(result1.value(), value1);
 		});
 	}};
 }

@@ -15,7 +15,7 @@ import std;
 export namespace CppUtils::Terminal
 {
 #if defined(OS_LINUX) or defined(OS_MACOS)
-	class RawTerminal final
+	class [[maybe_unused]] RawTerminal final
 	{
 	public:
 		inline RawTerminal()
@@ -85,7 +85,7 @@ export namespace CppUtils::Terminal
 		bool m_initialized = false;
 	};
 #elif defined(OS_WINDOWS)
-	class RawTerminal final
+	class [[maybe_unused]] RawTerminal final
 	{
 	public:
 		RawTerminal() = default;

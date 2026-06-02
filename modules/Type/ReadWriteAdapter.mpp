@@ -1,0 +1,315 @@
+export module CppUtils.Type.ReadWriteAdapter;
+
+import std;
+import CppUtils.Type.Utility;
+import CppUtils.Type.Specialization;
+
+export namespace CppUtils::Type
+{
+	template<class Target, class Value>
+	concept Writable = requires (Target target, Value value) {
+		target.write(value);
+	};
+
+	template<class Source, class Value>
+	concept Readable = requires (Source source, Value& value) {
+		source.read(value);
+	} or requires (Source source) {
+		{ source.read() } -> std::convertible_to<Value>;
+	} or requires (Source source) {
+		{ source.template read<Value>() } -> std::convertible_to<Value>;
+	};
+
+	template<class Target>
+	struct Writer final
+	{
+		template<class Value>
+		requires Writable<Target, Value>
+		inline auto operator()(Target& target, const Value& value) const -> void
+		{
+			target.write(value);
+		}
+	};
+
+	template<class Source>
+	struct Reader final
+	{
+		template<class Value>
+		requires Readable<Source, Value>
+		inline auto operator()(Source& source, Value& value) const
+		{
+			if constexpr (requires { { source.read(value) } -> Specializes<std::expected>; })
+				return source.read(value);
+			else if constexpr (requires { { source.read(value) } -> std::same_as<void>; })
+			{
+				source.read(value);
+				return std::expected<void, std::string_view>{};
+			}
+			else if constexpr (requires { { source.template read<Value>() } -> Specializes<std::expected>; })
+			{
+				auto result = source.template read<Value>();
+				using Error = typename decltype(result)::error_type;
+				if (not result)
+					return std::expected<void, Error>{std::unexpect, result.error()};
+				value = result.value();
+				return std::expected<void, Error>{};
+			}
+			else if constexpr (requires { { source.template read<Value>() } -> std::convertible_to<Value>; })
+			{
+				value = source.template read<Value>();
+				return std::expected<void, std::string_view>{};
+			}
+			else if constexpr (requires { { source.read() } -> Specializes<std::expected>; })
+			{
+				auto result = source.read();
+				using Error = typename decltype(result)::error_type;
+				if (not result)
+					return std::expected<void, Error>{std::unexpect, result.error()};
+				value = result.value();
+				return std::expected<void, Error>{};
+			}
+			else
+			{
+				value = source.read();
+				return std::expected<void, std::string_view>{};
+			}
+		}
+
+		template<class Value>
+		requires Readable<Source, Value>
+		[[nodiscard]] inline auto operator()(Source& source) const
+		{
+			if constexpr (requires { { source.template read<Value>() } -> Specializes<std::expected>; })
+				return source.template read<Value>();
+			else if constexpr (requires { { source.template read<Value>() } -> std::convertible_to<Value>; })
+				return std::expected<Value, std::string_view>{source.template read<Value>()};
+			else if constexpr (requires { { source.read() } -> Specializes<std::expected>; })
+				return source.read();
+			else if constexpr (requires { { source.read() } -> std::convertible_to<Value>; })
+				return std::expected<Value, std::string_view>{source.read()};
+			else
+			{
+				auto value = Value{};
+				auto result = operator()(source, value);
+				using Error = typename decltype(result)::error_type;
+				if (not result)
+					return std::expected<Value, Error>{std::unexpect, result.error()};
+				return std::expected<Value, Error>{value};
+			}
+		}
+
+		[[nodiscard]] inline auto operator()(Source& source) const
+		requires requires { source.read(); }
+		{
+			return source.read();
+		}
+	};
+
+	template<class Target>
+	requires std::derived_from<Target, std::ostream>
+	struct Writer<Target> final
+	{
+		template<class Value>
+		inline auto operator()(Target& target, const Value& value) const -> void
+		{
+			if constexpr (std::ranges::contiguous_range<Value>)
+			{
+				using ElementType = std::ranges::range_value_t<Value>;
+				if constexpr (std::is_trivially_copyable_v<ElementType>)
+					target.write(reinterpret_cast<const char*>(std::ranges::data(value)), static_cast<std::streamsize>(std::ranges::size(value) * sizeof(ElementType)));
+				else
+					static_assert(FalseType<Value>, "Range element is not trivially copyable in stream Writer::operator()");
+			}
+			else if constexpr (std::is_trivially_copyable_v<Value>)
+				target.write(reinterpret_cast<const char*>(std::addressof(value)), sizeof(Value));
+			else
+				static_assert(FalseType<Value>, "Value is not trivially copyable in stream Writer::operator()");
+		}
+	};
+
+	template<class Source>
+	requires std::derived_from<Source, std::istream>
+	struct Reader<Source> final
+	{
+		template<class Value>
+		[[nodiscard]] inline auto operator()(Source& source, Value& value) const -> std::expected<void, std::string_view>
+		{
+			if constexpr (std::ranges::contiguous_range<Value>)
+			{
+				using ElementType = std::ranges::range_value_t<Value>;
+				if constexpr (std::is_trivially_copyable_v<ElementType>)
+				{
+					source.read(reinterpret_cast<char*>(std::ranges::data(value)), static_cast<std::streamsize>(std::ranges::size(value) * sizeof(ElementType)));
+					if (source.fail())
+					{
+						if (source.eof())
+							return std::unexpected{"Reader: unexpected end of stream"};
+						return std::unexpected{"Reader: stream read failure"};
+					}
+				}
+				else
+					static_assert(FalseType<Value>, "Range element is not trivially copyable in stream Reader::operator()");
+			}
+			else if constexpr (std::is_trivially_copyable_v<Value>)
+			{
+				source.read(reinterpret_cast<char*>(std::addressof(value)), sizeof(Value));
+				if (source.fail())
+				{
+					if (source.eof())
+						return std::unexpected{"Reader: unexpected end of stream"};
+					return std::unexpected{"Reader: stream read failure"};
+				}
+			}
+			else
+				static_assert(FalseType<Value>, "Value is not trivially copyable in stream Reader::operator()");
+
+			return {};
+		}
+
+		template<class Value>
+		[[nodiscard]] inline auto operator()(Source& source) const -> std::expected<Value, std::string_view>
+		{
+			auto value = Value{};
+			auto result = operator()(source, value);
+			if (not result)
+				return std::unexpected{result.error()};
+			return value;
+		}
+	};
+
+	template<>
+	struct Writer<std::vector<std::byte>> final
+	{
+		template<class Value>
+		inline auto operator()(std::vector<std::byte>& target, const Value& value) const -> void
+		{
+			if constexpr (std::ranges::contiguous_range<Value>)
+			{
+				using ElementType = std::ranges::range_value_t<Value>;
+				if constexpr (std::is_trivially_copyable_v<ElementType>)
+				{
+					auto bytes = std::as_bytes(std::span(value));
+					target.insert(std::end(target), std::cbegin(bytes), std::cend(bytes));
+				}
+				else
+					static_assert(FalseType<Value>, "Range element is not trivially copyable in vector Writer::operator()");
+			}
+			else if constexpr (std::is_trivially_copyable_v<Value>)
+			{
+				auto bytes = std::as_bytes(std::span(std::addressof(value), 1));
+				target.insert(std::end(target), std::cbegin(bytes), std::cend(bytes));
+			}
+			else
+				static_assert(FalseType<Value>, "Value is not trivially copyable in vector Writer::operator()");
+		}
+	};
+
+	template<>
+	struct Reader<std::span<const std::byte>> final
+	{
+		template<class Value>
+		[[nodiscard]] inline auto operator()(std::span<const std::byte>& source, Value& value) const -> std::expected<void, std::string_view>
+		{
+			if constexpr (std::ranges::contiguous_range<Value>)
+			{
+				using ElementType = std::ranges::range_value_t<Value>;
+				if constexpr (std::is_trivially_copyable_v<ElementType>)
+				{
+					const auto bytesNeeded = std::ranges::size(value) * sizeof(ElementType);
+					if (std::ranges::size(source) < bytesNeeded)
+						return std::unexpected{"Reader: span out of range"};
+					std::memcpy(std::ranges::data(value), std::ranges::data(source), bytesNeeded);
+					source = source.subspan(bytesNeeded);
+				}
+				else
+					static_assert(FalseType<Value>, "Range element is not trivially copyable in span Reader::operator()");
+			}
+			else if constexpr (std::is_trivially_copyable_v<Value>)
+			{
+				constexpr auto bytesNeeded = sizeof(Value);
+				if (std::ranges::size(source) < bytesNeeded)
+					return std::unexpected{"Reader: span out of range"};
+				std::memcpy(std::addressof(value), std::ranges::data(source), bytesNeeded);
+				source = source.subspan(bytesNeeded);
+			}
+			else
+				static_assert(FalseType<Value>, "Value is not trivially copyable in span Reader::operator()");
+
+			return {};
+		}
+
+		template<class Value>
+		[[nodiscard]] inline auto operator()(std::span<const std::byte>& source) const -> std::expected<Value, std::string_view>
+		{
+			auto value = Value{};
+			auto result = operator()(source, value);
+			if (not result)
+				return std::unexpected{result.error()};
+			return value;
+		}
+	};
+
+	namespace Detail
+	{
+		namespace Adl
+		{
+			inline auto write(auto& target, const auto& value) -> void
+			{
+				using Target = std::remove_reference_t<decltype(target)>;
+				Writer<Target>{}(target, value);
+			}
+
+			inline auto read(auto& source, auto& value)
+			{
+				using Source = std::remove_reference_t<decltype(source)>;
+				if constexpr (requires { { Reader<Source>{}(source, value) } -> Specializes<std::expected>; })
+					return Reader<Source>{}(source, value);
+				else if constexpr (requires { { Reader<Source>{}(source, value) } -> std::same_as<void>; })
+				{
+					Reader<Source>{}(source, value);
+					return std::expected<void, std::string_view>{};
+				}
+			}
+		}
+
+		struct WriteCPO final
+		{
+			inline auto operator()(auto& target, const auto& value) const -> void
+			{
+				using Adl::write;
+				write(target, value);
+			}
+		};
+
+		struct ReadCPO final
+		{
+			template<class Value, class Source>
+			[[nodiscard]] inline auto operator()(Source& source) const
+			{
+				return Reader<Source>{}.template operator()<Value>(source);
+			}
+
+			template<class Source>
+			[[nodiscard]] inline auto operator()(Source& source) const
+			requires requires { Reader<Source>{}(source); }
+			{
+				return Reader<Source>{}(source);
+			}
+
+			[[nodiscard]] inline auto operator()(auto& source, auto& value) const
+			{
+				using Adl::read;
+				if constexpr (requires { { read(source, value) } -> Specializes<std::expected>; })
+					return read(source, value);
+				else if constexpr (requires { { read(source, value) } -> std::same_as<void>; })
+				{
+					read(source, value);
+					return std::expected<void, std::string_view>{};
+				}
+			}
+		};
+	}
+
+	inline constexpr Detail::WriteCPO write{};
+	inline constexpr Detail::ReadCPO read{};
+}

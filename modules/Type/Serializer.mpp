@@ -1,6 +1,7 @@
 export module CppUtils.Type.Serializer;
 
 import std;
+import CppUtils.Type.ReadWriteAdapter;
 
 export namespace CppUtils::Type
 {
@@ -16,10 +17,66 @@ export namespace CppUtils::Type
 		struct Serializer;
 	}
 
+	namespace Detail
+	{
+		namespace Adl
+		{
+			inline auto serialize(const auto& value, auto& target) -> void
+			{
+				using Value = std::remove_cvref_t<decltype(value)>;
+				Binary::Serializer<Value>::serialize(value, target);
+			}
+
+			inline auto deserialize(auto& source, auto& value)
+			{
+				using Value = std::remove_cvref_t<decltype(value)>;
+				return Binary::Serializer<Value>::deserialize(source, value);
+			}
+
+			template<class Value>
+			inline auto deserialize(auto& source)
+			{
+				return Binary::Serializer<Value>::deserialize(source);
+			}
+		}
+
+		struct SerializeCPO final
+		{
+			inline auto operator()(const auto& value, auto& target) const -> void
+			{
+				using Adl::serialize;
+				serialize(value, target);
+			}
+
+			template<class Value>
+			[[nodiscard]] inline auto operator()(const Value& value) const -> std::vector<std::byte>
+			{
+				auto buffer = std::vector<std::byte>{};
+				operator()(value, buffer);
+				return buffer;
+			}
+		};
+	}
+
+	inline constexpr Detail::SerializeCPO serialize{};
+
+	template<class Value>
+	[[nodiscard]] inline auto deserialize(auto& source)
+	{
+		using Detail::Adl::deserialize;
+		return deserialize<Value>(source);
+	}
+
+	[[nodiscard]] inline auto deserialize(auto& source, auto& value)
+	{
+		using Detail::Adl::deserialize;
+		return deserialize(source, value);
+	}
+
 	template<class T>
 	concept Serializable = requires (const T& value, std::vector<std::byte>& buffer, std::span<const std::byte>& view) {
-		{ Binary::Serializer<std::remove_cvref_t<T>>::serialize(value, buffer) } -> std::same_as<void>;
-		{ Binary::Serializer<std::remove_cvref_t<T>>::deserialize(view) } -> std::same_as<std::expected<std::remove_cvref_t<T>, std::string_view>>;
+		{ serialize(value, buffer) } -> std::same_as<void>;
+		{ deserialize<std::remove_cvref_t<T>>(view) } -> std::same_as<std::expected<std::remove_cvref_t<T>, std::string_view>>;
 	};
 
 	template<class T>
@@ -34,22 +91,24 @@ export namespace CppUtils::Type
 		requires std::is_trivially_copyable_v<T> and (not std::is_pointer_v<T>)
 		struct Serializer<T> final
 		{
-			static inline auto serialize(const T& value, std::vector<std::byte>& buffer) -> void
+			static inline auto serialize(const T& value, auto& target) -> void
 			{
-				const auto size = sizeof(T);
-				const auto currentSize = std::ranges::size(buffer);
-				buffer.resize(currentSize + size);
-				std::memcpy(std::ranges::data(buffer) + currentSize, std::addressof(value), size);
+				write(target, value);
 			}
 
-			[[nodiscard]] static inline auto deserialize(std::span<const std::byte>& view) -> std::expected<T, std::string_view>
+			[[nodiscard]] static inline auto deserialize(auto& source, T& value) -> std::expected<void, std::string_view>
 			{
-				if (std::ranges::size(view) < sizeof(T))
-					return std::unexpected{"Binary::Serializer: Not enough bytes to deserialize trivial type"};
+				if (not read(source, value))
+					return std::unexpected{"Binary::Serializer::deserialize: Not enough bytes to deserialize trivial type"};
+				return {};
+			}
 
+			[[nodiscard]] static inline auto deserialize(auto& source) -> std::expected<T, std::string_view>
+			{
 				auto value = T{};
-				std::memcpy(std::addressof(value), std::ranges::data(view), sizeof(T));
-				view = view.subspan(sizeof(T));
+				auto result = deserialize(source, value);
+				if (not result)
+					return std::unexpected{result.error()};
 				return value;
 			}
 		};
@@ -57,28 +116,31 @@ export namespace CppUtils::Type
 		template<>
 		struct Serializer<std::string> final
 		{
-			static inline auto serialize(const std::string& value, std::vector<std::byte>& buffer) -> void
+			static inline auto serialize(const std::string& value, auto& target) -> void
 			{
 				const auto length = std::ranges::size(value);
-				Serializer<std::size_t>::serialize(length, buffer);
-
-				const auto currentSize = std::ranges::size(buffer);
-				buffer.resize(currentSize + length);
-				std::memcpy(std::ranges::data(buffer) + currentSize, std::ranges::data(value), length);
+				Type::serialize(length, target);
+				write(target, value);
 			}
 
-			[[nodiscard]] static inline auto deserialize(std::span<const std::byte>& view) -> std::expected<std::string, std::string_view>
+			[[nodiscard]] static inline auto deserialize(auto& source, std::string& value) -> std::expected<void, std::string_view>
 			{
-				auto length = Serializer<std::size_t>::deserialize(view);
+				auto length = Type::deserialize<std::size_t>(source);
 				if (not length)
 					return std::unexpected{length.error()};
 
-				if (std::ranges::size(view) < length.value())
-					return std::unexpected{"Binary::Serializer: Not enough bytes to deserialize std::string"};
+				value.resize(length.value());
+				if (not read(source, value))
+					return std::unexpected{"Binary::Serializer::deserialize: Not enough bytes to deserialize std::string"};
+				return {};
+			}
 
-				auto value = std::string(length.value(), '\0');
-				std::memcpy(std::data(value), std::ranges::data(view), length.value());
-				view = view.subspan(length.value());
+			[[nodiscard]] static inline auto deserialize(auto& source) -> std::expected<std::string, std::string_view>
+			{
+				auto value = std::string{};
+				auto result = deserialize(source, value);
+				if (not result)
+					return std::unexpected{result.error()};
 				return value;
 			}
 		};
@@ -86,32 +148,45 @@ export namespace CppUtils::Type
 		template<Serializable T>
 		struct Serializer<std::vector<T>> final
 		{
-			static inline auto serialize(const std::vector<T>& value, std::vector<std::byte>& buffer) -> void
+			static inline auto serialize(const std::vector<T>& value, auto& target) -> void
 			{
-				Serializer<std::size_t>::serialize(std::ranges::size(value), buffer);
-				for (const auto& item : value)
-					Serializer<T>::serialize(item, buffer);
+				Type::serialize(std::ranges::size(value), target);
+				if constexpr (std::is_trivially_copyable_v<T>)
+					write(target, value);
+				else
+					for (const auto& item : value)
+						Type::serialize(item, target);
 			}
 
-			[[nodiscard]] static inline auto deserialize(std::span<const std::byte>& view) -> std::expected<std::vector<T>, std::string_view>
+			[[nodiscard]] static inline auto deserialize(auto& source, std::vector<T>& value) -> std::expected<void, std::string_view>
 			{
-				auto length = Serializer<std::size_t>::deserialize(view);
+				auto length = Type::deserialize<std::size_t>(source);
 				if (not length)
 					return std::unexpected{length.error()};
 
-				auto value = std::vector<T>{};
-				value.reserve(length.value());
-#if defined(__cpp_lib_ranges_indices)
-				for ([[maybe_unused]] auto _ : std::views::indices(length.value()))
-#else
-				for ([[maybe_unused]] auto _ : std::views::iota(0uz, length.value()))
-#endif
+				value.resize(length.value());
+
+				if constexpr (std::is_trivially_copyable_v<T>)
 				{
-					auto item = Serializer<T>::deserialize(view);
-					if (not item)
-						return std::unexpected{item.error()};
-					value.push_back(std::move(item.value()));
+					if (not read(source, value))
+						return std::unexpected{"Binary::Serializer::deserialize: Not enough bytes to deserialize std::vector"};
 				}
+				else
+					for (auto& item : value)
+					{
+						auto result = Type::deserialize(source, item);
+						if (not result)
+							return std::unexpected{result.error()};
+					}
+				return {};
+			}
+
+			[[nodiscard]] static inline auto deserialize(auto& source) -> std::expected<std::vector<T>, std::string_view>
+			{
+				auto value = std::vector<T>{};
+				auto result = deserialize(source, value);
+				if (not result)
+					return std::unexpected{result.error()};
 				return value;
 			}
 		};
@@ -119,23 +194,23 @@ export namespace CppUtils::Type
 		template<Serializable Key, Serializable Value>
 		struct Serializer<std::unordered_map<Key, Value>> final
 		{
-			static inline auto serialize(const std::unordered_map<Key, Value>& map, std::vector<std::byte>& buffer) -> void
+			static inline auto serialize(const std::unordered_map<Key, Value>& map, auto& target) -> void
 			{
-				Serializer<std::size_t>::serialize(std::ranges::size(map), buffer);
+				Type::serialize(std::ranges::size(map), target);
 				for (const auto& [key, value] : map)
 				{
-					Serializer<Key>::serialize(key, buffer);
-					Serializer<Value>::serialize(value, buffer);
+					Type::serialize(key, target);
+					Type::serialize(value, target);
 				}
 			}
 
-			[[nodiscard]] static inline auto deserialize(std::span<const std::byte>& view) -> std::expected<std::unordered_map<Key, Value>, std::string_view>
+			[[nodiscard]] static inline auto deserialize(auto& source, std::unordered_map<Key, Value>& map) -> std::expected<void, std::string_view>
 			{
-				auto length = Serializer<std::size_t>::deserialize(view);
+				auto length = Type::deserialize<std::size_t>(source);
 				if (not length)
 					return std::unexpected{length.error()};
 
-				auto map = std::unordered_map<Key, Value>{};
+				map.clear();
 				map.reserve(length.value());
 #if defined(__cpp_lib_ranges_indices)
 				for ([[maybe_unused]] auto _ : std::views::indices(length.value()))
@@ -143,14 +218,23 @@ export namespace CppUtils::Type
 				for ([[maybe_unused]] auto _ : std::views::iota(0uz, length.value()))
 #endif
 				{
-					auto key = Serializer<Key>::deserialize(view);
+					auto key = Type::deserialize<Key>(source);
 					if (not key)
 						return std::unexpected{key.error()};
-					auto value = Serializer<Value>::deserialize(view);
+					auto value = Type::deserialize<Value>(source);
 					if (not value)
 						return std::unexpected{value.error()};
 					map.emplace(std::move(key.value()), std::move(value.value()));
 				}
+				return {};
+			}
+
+			[[nodiscard]] static inline auto deserialize(auto& source) -> std::expected<std::unordered_map<Key, Value>, std::string_view>
+			{
+				auto map = std::unordered_map<Key, Value>{};
+				auto result = deserialize(source, map);
+				if (not result)
+					return std::unexpected{result.error()};
 				return map;
 			}
 		};
@@ -171,16 +255,15 @@ export namespace CppUtils::Type
 				buffer += " ";
 			}
 
-			[[nodiscard]] static inline auto deserialize(std::string_view& view) -> std::expected<T, std::string_view>
+			[[nodiscard]] static inline auto deserialize(std::string_view& view, T& value) -> std::expected<void, std::string_view>
 			{
 				auto end = view.find(' ');
 				if (end == std::string_view::npos)
 					end = std::ranges::size(view);
 				if (end == 0 and std::ranges::empty(view))
-					return std::unexpected{"Text::Serializer: Empty input"};
+					return std::unexpected{"Text::Serializer::deserialize: Empty input"};
 				auto word = view.substr(0, end);
 
-				auto value = T{};
 				auto result = std::from_chars_result{};
 
 				if constexpr (std::is_enum_v<T>)
@@ -193,29 +276,24 @@ export namespace CppUtils::Type
 					result = std::from_chars(word.data(), word.data() + word.size(), value);
 
 				if (result.ec != std::errc{})
-					return std::unexpected{"Text::Serializer: Conversion error"};
+					return std::unexpected{"Text::Serializer::deserialize: Conversion error"};
 
 				if (end < std::ranges::size(view))
 					view.remove_prefix(end + 1);
 				else
 					view = {};
 
+				return {};
+			}
+
+			[[nodiscard]] static inline auto deserialize(std::string_view& view) -> std::expected<T, std::string_view>
+			{
+				auto value = T{};
+				auto result = deserialize(view, value);
+				if (not result)
+					return std::unexpected{result.error()};
 				return value;
 			}
 		};
-	}
-
-	template<Serializable T>
-	[[nodiscard]] auto serialize(const T& value) -> std::vector<std::byte>
-	{
-		auto buffer = std::vector<std::byte>{};
-		Binary::Serializer<T>::serialize(value, buffer);
-		return buffer;
-	}
-
-	template<Serializable T>
-	[[nodiscard]] auto deserialize(std::span<const std::byte>& view) -> std::expected<T, std::string_view>
-	{
-		return Binary::Serializer<T>::deserialize(view);
 	}
 }
