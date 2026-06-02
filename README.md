@@ -45,6 +45,7 @@
 
 ### 📁 Filesystem
 - [`File`](modules/FileSystem/File.mpp) - Binary and text file I/O, including optimized block-by-block reading
+- [`IndexedStorage`](modules/FileSystem/IndexedStorage.mpp) - Thread-safe indexed storage engine for storing and retrieving serializable types in chunked binary files
 - [`Watcher`](modules/FileSystem/Watcher.mpp) - File modification watcher
 
 ### 🧠 Functional
@@ -118,6 +119,8 @@
 - [`Concept`](modules/Type/Concept.mpp) - Extensions to `<type_traits>` and `<concepts>` providing additional compile-time checks and utilities
 - [`Enum`](modules/Type/Enum.mpp) - Generic enum-to-string conversion
 - [`Mapping`](modules/Type/Mapping.mpp) - Generic compile-time mapping between values
+- [`ReadWriteAdapter`](modules/Type/ReadWriteAdapter.mpp) - `write` and `read` CPOs (Customization Point Objects) mapping stream and buffer operations (std::ostream, std::istream, std::vector<std::byte>, std::span<const std::byte>, etc)
+- [`Serializer`](modules/Type/Serializer.mpp) - `serialize` and `deserialize` CPOs (Customization Point Objects) and custom Binary/Text Serializers
 - [`Tuple`](modules/Type/Tuple.mpp) - Visitor for `std::tuple`
 - [`VariadicTemplate`](modules/Type/VariadicTemplate.mpp) - Metaprogramming on variadic parameters
 - [`Variant`](modules/Type/Variant.mpp) - Generic print and comparison operators for `std::variant`
