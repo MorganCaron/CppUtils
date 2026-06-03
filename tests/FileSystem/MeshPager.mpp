@@ -1,0 +1,112 @@
+export module CppUtils.UnitTests.FileSystem.MeshPager;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::FileSystem::MeshPager
+{
+	struct SpyValue final
+	{
+		std::string value;
+		static inline auto activeCount = 0uz;
+
+		SpyValue(): value{""} { activeCount++; }
+		explicit SpyValue(std::string value): value{std::move(value)} { activeCount++; }
+		SpyValue(const SpyValue& other): value{other.value} { activeCount++; }
+		SpyValue(SpyValue&& other) noexcept: value{std::move(other.value)} { activeCount++; }
+		SpyValue& operator=(const SpyValue& other)
+		{
+			value = other.value;
+			return *this;
+		}
+		SpyValue& operator=(SpyValue&& other) noexcept
+		{
+			value = std::move(other.value);
+			return *this;
+		}
+		~SpyValue() { activeCount--; }
+
+		auto operator==(const SpyValue& other) const -> bool = default;
+	};
+}
+
+namespace CppUtils::Type::Binary
+{
+	template<>
+	struct Serializer<CppUtils::UnitTest::FileSystem::MeshPager::SpyValue> final
+	{
+		static inline auto serialize(const CppUtils::UnitTest::FileSystem::MeshPager::SpyValue& value, auto& target) -> void
+		{
+			Type::serialize(value.value, target);
+		}
+
+		[[nodiscard]] static inline auto deserialize(auto& source, CppUtils::UnitTest::FileSystem::MeshPager::SpyValue& value) -> std::expected<void, std::string_view>
+		{
+			auto result = Type::deserialize(source, value.value);
+			if (not result)
+				return std::unexpected{result.error()};
+			return {};
+		}
+
+		[[nodiscard]] static inline auto deserialize(auto& source) -> std::expected<CppUtils::UnitTest::FileSystem::MeshPager::SpyValue, std::string_view>
+		{
+			auto value = CppUtils::UnitTest::FileSystem::MeshPager::SpyValue{};
+			auto result = deserialize(source, value);
+			if (not result)
+				return std::unexpected{result.error()};
+			return value;
+		}
+	};
+}
+
+namespace CppUtils::UnitTest::FileSystem::MeshPager
+{
+	auto _ = TestSuite{"FileSystem/MeshPager", [](TestSuite& suite) {
+		suite.addTest("Paging and RAII logic", [&suite] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
+				using Pager = CppUtils::FileSystem::MeshPager<std::string, SpyValue>;
+				using Node = CppUtils::Container::MeshNodePtr<std::string, SpyValue>;
+
+				SpyValue::activeCount = 0uz;
+				auto pager = Pager{testDirectory};
+
+				auto [idC, nodeA] = [&pager] {
+					auto nodeA = Node::makeRoot(SpyValue{"NodeA"});
+					auto nodeB = Node::makeRoot(SpyValue{"NodeB"});
+					auto nodeC = Node::makeRoot(SpyValue{"NodeC"});
+
+					nodeA["link"] & nodeB["link"];
+					nodeB["link"] & nodeC["link"];
+
+					pager.track(nodeA);
+					pager.track(nodeB);
+					return std::make_pair(pager.track(nodeC), nodeA);
+				}();
+
+				suite.expectEqual(SpyValue::activeCount, 3uz);
+
+				{
+					auto focus = pager.acquireFocus(nodeA, 1);
+					suite.expectEqual(SpyValue::activeCount, 2uz);
+
+					auto nodeB = nodeA["link"].front().value();
+					auto focusB = pager.acquireFocus(nodeB, 1);
+					suite.expectEqual(SpyValue::activeCount, 3uz);
+
+					auto nodeC = Node{};
+					for (auto neighbor : nodeB["link"])
+						if (neighbor and neighbor.getId() == idC)
+						{
+							nodeC = neighbor;
+							break;
+						}
+
+					suite.expect(nodeC);
+					suite.expectEqual(nodeC.getValue().value().value, "NodeC");
+				}
+
+				suite.expectEqual(SpyValue::activeCount, 1uz);
+			}};
+		});
+	}};
+}

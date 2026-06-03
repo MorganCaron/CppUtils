@@ -1,0 +1,302 @@
+export module CppUtils.FileSystem.MeshPager;
+
+import std;
+import CppUtils.Memory;
+import CppUtils.Container.MeshNetwork;
+import CppUtils.FileSystem.IndexedStorage;
+import CppUtils.Type.Serializer;
+import CppUtils.Thread.SharedPtr;
+
+export namespace CppUtils::FileSystem
+{
+	template<class Key, class Value>
+	struct MeshSerializedNode final
+	{
+		Value value;
+		std::unordered_map<Key, std::vector<std::size_t>> branches;
+		bool isRoot = false;
+	};
+
+	template<class Key, class Value>
+	class MeshPager final
+	{
+	private:
+		using NodePtr = Container::MeshNodePtr<Key, Value>;
+		using SerializedNode = MeshSerializedNode<Key, Value>;
+
+		std::filesystem::path m_directory;
+		FileSystem::IndexedStorage m_storage;
+		std::unordered_map<std::size_t, NodePtr> m_loadedNodes;
+		std::unordered_map<std::size_t, std::unordered_map<Key, std::unordered_set<std::size_t>>> m_knownLinks;
+		std::size_t m_nextId = 1;
+
+		std::vector<std::pair<std::size_t, std::size_t>> m_activeFocuses;
+		mutable std::shared_mutex m_mutex;
+
+	public:
+		class ScopedFocus final
+		{
+		private:
+			MeshPager& m_pager;
+			std::size_t m_nodeId = 0;
+			std::size_t m_distance = 0;
+
+		public:
+			ScopedFocus(MeshPager& pager, std::size_t nodeId, std::size_t distance):
+				m_pager{pager},
+				m_nodeId{nodeId},
+				m_distance{distance}
+			{
+				m_pager.addFocus(m_nodeId, m_distance);
+			}
+
+			~ScopedFocus()
+			{
+				if (m_nodeId != 0)
+					m_pager.removeFocus(m_nodeId, m_distance);
+			}
+
+			ScopedFocus(const ScopedFocus&) = delete;
+			ScopedFocus& operator=(const ScopedFocus&) = delete;
+
+			ScopedFocus(ScopedFocus&& other) noexcept:
+				m_pager{other.m_pager},
+				m_nodeId{std::exchange(other.m_nodeId, 0uz)},
+				m_distance{std::exchange(other.m_distance, 0uz)}
+			{}
+
+			ScopedFocus& operator=(ScopedFocus&& other) noexcept = delete;
+		};
+
+		explicit MeshPager(std::filesystem::path directory, std::optional<std::size_t> maxChunkSize = std::nullopt):
+			m_directory{std::move(directory)},
+			m_storage{m_directory, [&] {
+						  using namespace CppUtils::Memory::Literals;
+						  return maxChunkSize.value_or(64_MiB);
+					  }()}
+		{
+			auto indexAccessor = m_storage.getIndex();
+			auto keys = indexAccessor.value() | std::views::keys;
+			if (auto it = std::ranges::max_element(keys); it != std::end(keys))
+				m_nextId = *it + 1;
+		}
+
+		~MeshPager()
+		{
+			unloadAll();
+		}
+
+		auto track(NodePtr node) -> std::size_t
+		{
+			auto lock = std::unique_lock{m_mutex};
+			if (not node)
+				return 0;
+			if (node.getId() == 0)
+				node.setId(m_nextId++);
+			auto id = node.getId();
+			m_loadedNodes[id] = node;
+			updateLinks(id);
+			return id;
+		}
+
+		[[nodiscard]] auto acquireFocus(NodePtr node, std::size_t distance = 1) -> ScopedFocus
+		{
+			auto id = track(node);
+			return ScopedFocus{*this, id, distance};
+		}
+
+		auto updateFocuses() -> void
+		{
+			struct FocusState final
+			{
+				std::size_t nodeId;
+				std::size_t distance;
+				std::size_t maxDistance;
+			};
+
+			auto nodesToKeep = std::unordered_set<std::size_t>{};
+			auto queue = std::queue<FocusState>{};
+
+			for (const auto& [focusId, maxDistance] : m_activeFocuses)
+				if (focusId != 0 and nodesToKeep.insert(focusId).second)
+					queue.push({focusId, 0uz, maxDistance});
+
+			while (not std::ranges::empty(queue))
+			{
+				auto state = queue.front();
+				queue.pop();
+				if (state.distance >= state.maxDistance)
+					continue;
+
+				if (m_loadedNodes.contains(state.nodeId))
+					updateLinks(state.nodeId);
+
+				for (const auto& [key, neighbors] : m_knownLinks[state.nodeId])
+					for (auto neighborId : neighbors)
+					{
+						if (not m_loadedNodes.contains(neighborId))
+							loadNode(neighborId);
+
+						if (m_loadedNodes.contains(neighborId) and not nodesToKeep.contains(neighborId))
+						{
+							nodesToKeep.insert(neighborId);
+							queue.push({neighborId, state.distance + 1, state.maxDistance});
+						}
+					}
+			}
+
+			auto idsToUnload = std::vector<std::size_t>{};
+			for (const auto& [id, node] : m_loadedNodes)
+				if (not nodesToKeep.contains(id))
+					idsToUnload.push_back(id);
+
+			for (auto id : idsToUnload)
+				unloadNode(id);
+
+			for (auto id : nodesToKeep)
+			{
+				auto node = m_loadedNodes[id];
+				for (const auto& [key, neighbors] : m_knownLinks[id])
+				{
+					auto branch = node[key];
+					for (auto neighborId : neighbors)
+						if (auto it = m_loadedNodes.find(neighborId);
+							it != std::end(m_loadedNodes) and not branch.contains(it->second) and node.getDistanceFromRoot() != std::numeric_limits<std::size_t>::max())
+							branch >> it->second;
+				}
+			}
+		}
+
+	private:
+		auto addFocus(std::size_t nodeId, std::size_t distance) -> void
+		{
+			auto lock = std::unique_lock{m_mutex};
+			m_activeFocuses.push_back({nodeId, distance});
+			updateFocuses();
+		}
+
+		auto removeFocus(std::size_t nodeId, std::size_t distance) -> void
+		{
+			auto lock = std::unique_lock{m_mutex};
+			if (auto it = std::find(std::begin(m_activeFocuses), std::end(m_activeFocuses), std::make_pair(nodeId, distance));
+				it != std::end(m_activeFocuses))
+			{
+				m_activeFocuses.erase(it);
+				updateFocuses();
+			}
+		}
+
+	private:
+		auto updateLinks(std::size_t id) -> void
+		{
+			auto it = m_loadedNodes.find(id);
+			if (it == std::end(m_loadedNodes))
+				return;
+
+			auto node = it->second;
+			auto& links = m_knownLinks[id];
+
+			auto nodeAccessor = node.operator->()->sharedAccess();
+			auto branchesAccessor = nodeAccessor->value.branches.sharedAccess();
+			for (const auto& [key, persistenceGuard] : branchesAccessor.value())
+			{
+				auto& ids = links[key];
+				auto vectorAccessor = persistenceGuard->sharedAccess();
+				for (const auto& weak : vectorAccessor.value())
+				{
+					if (auto shared = weak.lock())
+					{
+						auto neighbor = NodePtr{shared};
+						auto neighborId = neighbor.getId();
+						if (neighborId == 0)
+						{
+							neighbor.setId(m_nextId++);
+							neighborId = neighbor.getId();
+							m_loadedNodes[neighborId] = neighbor;
+						}
+						ids.insert(neighborId);
+					}
+				}
+			}
+		}
+
+		auto loadNode(std::size_t id) -> NodePtr
+		{
+			if (auto data = m_storage.load<SerializedNode>(id))
+			{
+				auto node = data->isRoot ? NodePtr::makeRoot(data->value) : NodePtr::make(data->value);
+				node.setId(id);
+				m_loadedNodes[id] = node;
+				for (const auto& [key, ids] : data->branches)
+					m_knownLinks[id][key] = std::unordered_set<std::size_t>(std::begin(ids), std::end(ids));
+				return node;
+			}
+			return NodePtr{};
+		}
+
+		auto unloadNode(std::size_t id) -> void
+		{
+			auto it = m_loadedNodes.find(id);
+			if (it == std::end(m_loadedNodes))
+				return;
+
+			updateLinks(id);
+
+			auto data = SerializedNode{};
+			data.value = it->second.getValue().value();
+			for (const auto& [key, ids] : m_knownLinks[id])
+				data.branches[key] = std::vector<std::size_t>(std::begin(ids), std::end(ids));
+			data.isRoot = (it->second.getDistanceFromRoot() == 0);
+
+			m_storage.store(id, data);
+			m_loadedNodes.erase(it);
+		}
+
+		auto unloadAll() -> void
+		{
+			auto lock = std::unique_lock{m_mutex};
+			auto ids = std::vector<std::size_t>{};
+			for (const auto& [id, _] : m_loadedNodes)
+				ids.push_back(id);
+			for (auto id : ids)
+				unloadNode(id);
+		}
+	};
+}
+
+namespace CppUtils::Type::Binary
+{
+	template<class Key, class Value>
+	struct Serializer<CppUtils::FileSystem::MeshSerializedNode<Key, Value>> final
+	{
+		using SerializedNode = CppUtils::FileSystem::MeshSerializedNode<Key, Value>;
+
+		static inline auto serialize(const SerializedNode& node, std::vector<std::byte>& buffer) -> void
+		{
+			Type::serialize(node.value, buffer);
+			Type::serialize(node.branches, buffer);
+			Type::serialize(node.isRoot, buffer);
+		}
+
+		[[nodiscard]] static inline auto deserialize(std::span<const std::byte>& view) -> std::expected<SerializedNode, std::string_view>
+		{
+			auto value = Type::deserialize<Value>(view);
+			if (not value)
+				return std::unexpected{value.error()};
+
+			auto branches = Type::deserialize<std::unordered_map<Key, std::vector<std::size_t>>>(view);
+			if (not branches)
+				return std::unexpected{branches.error()};
+
+			auto isRoot = Type::deserialize<bool>(view);
+			if (not isRoot)
+				return std::unexpected{isRoot.error()};
+
+			auto node = SerializedNode{};
+			node.value = std::move(value.value());
+			node.branches = std::move(branches.value());
+			node.isRoot = isRoot.value();
+			return node;
+		}
+	};
+}

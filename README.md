@@ -46,6 +46,7 @@
 ### 📁 Filesystem
 - [`File`](modules/FileSystem/File.mpp) - Binary and text file I/O, including optimized block-by-block reading
 - [`IndexedStorage`](modules/FileSystem/IndexedStorage.mpp) - Thread-safe indexed storage engine for storing and retrieving serializable types in chunked binary files
+- [`MeshPager`](modules/FileSystem/MeshPager.mpp) - Paging mechanism for loading and saving `MeshNetwork` nodes on-demand using `IndexedStorage`
 - [`Watcher`](modules/FileSystem/Watcher.mpp) - File modification watcher
 
 ### 🧠 Functional

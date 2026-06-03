@@ -4,7 +4,7 @@ import std;
 import CppUtils;
 import CppUtils.FileSystem.IndexedStorage;
 
-namespace CppUtils::UnitTest::FileSystem::IndexedStorageTests
+namespace CppUtils::UnitTest::FileSystem::IndexedStorage
 {
 	auto _ = TestSuite{"FileSystem/IndexedStorage", [](TestSuite& suite) {
 		using namespace CppUtils::Memory::Literals;
@@ -31,37 +31,37 @@ namespace CppUtils::UnitTest::FileSystem::IndexedStorageTests
 
 		suite.addTest("Remove and Recycle", [&suite] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
-					auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory};
-					storage.store<int>(1, 100);
-					storage.store<int>(2, 200);
+				auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory};
+				storage.store<int>(1, 100);
+				storage.store<int>(2, 200);
 
-					const auto chunkPath = testDirectory / "chunk_0.bin";
-					suite.expect(std::filesystem::file_size(chunkPath) == 2 * sizeof(int));
+				const auto chunkPath = testDirectory / "chunk_0.bin";
+				suite.expect(std::filesystem::file_size(chunkPath) == 2 * sizeof(int));
 
-					suite.expect(storage.contains(1));
-					storage.remove(1);
-					suite.expect(not storage.contains(1));
-					
-					storage.store<int>(3, 300);
-					
-					auto value3 = storage.load<int>(3);
-					suite.expect(value3.has_value());
-					suite.expect(value3.value() == 300);
-					
-					suite.expect(std::filesystem::file_size(chunkPath) == 2 * sizeof(int));
+				suite.expect(storage.contains(1));
+				storage.remove(1);
+				suite.expect(not storage.contains(1));
+
+				storage.store<int>(3, 300);
+
+				auto value3 = storage.load<int>(3);
+				suite.expect(value3.has_value());
+				suite.expect(value3.value() == 300);
+
+				suite.expect(std::filesystem::file_size(chunkPath) == 2 * sizeof(int));
 			}};
 		});
 
 		suite.addTest("Best-Fit Recycling", [&suite] {
 			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& testDirectory) {
 				auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory};
-				
+
 				storage.store<std::string>(1, "Short");
 				storage.store<std::string>(10, "Separator 1");
 				storage.store<std::string>(2, "Much Longer String");
 				storage.store<std::string>(20, "Separator 2");
 				storage.store<std::string>(3, "Medium String");
-				
+
 				auto targetOffset = 0uz;
 				{
 					auto indexAccessor = storage.getIndex();
@@ -71,9 +71,9 @@ namespace CppUtils::UnitTest::FileSystem::IndexedStorageTests
 				storage.remove(1);
 				storage.remove(2);
 				storage.remove(3);
-				
-				storage.store<std::string>(4, "Fits in Med"); 
-				
+
+				storage.store<std::string>(4, "Fits in Med");
+
 				suite.expect(storage.contains(4));
 				{
 					auto indexAccessor = storage.getIndex();
@@ -85,7 +85,7 @@ namespace CppUtils::UnitTest::FileSystem::IndexedStorageTests
 		suite.addTest("Thread Safety", [&suite] {
 			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& testDirectory) {
 				auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory};
-				
+
 				auto success = std::atomic<bool>{true};
 				auto threads = std::vector<std::jthread>{};
 				for (auto threadId = 0uz; threadId < 10; ++threadId)
@@ -93,11 +93,13 @@ namespace CppUtils::UnitTest::FileSystem::IndexedStorageTests
 					threads.emplace_back([&storage, &success, threadId] {
 						for (auto i = 0uz; i < 100; ++i)
 						{
-							const auto elementId = threadId * 1000 + i;
+							const auto elementId = threadId * 1'000 + i;
 							storage.store<int>(elementId, static_cast<int>(elementId));
 							auto value = storage.load<int>(elementId);
-							if (value != static_cast<int>(elementId)) success = false;
-							if (i % 2 == 0) storage.remove(elementId);
+							if (value != static_cast<int>(elementId))
+								success = false;
+							if (i % 2 == 0)
+								storage.remove(elementId);
 						}
 					});
 				}

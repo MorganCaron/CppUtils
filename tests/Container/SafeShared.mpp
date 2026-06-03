@@ -8,12 +8,12 @@ namespace CppUtils::UnitTest::Container::SafeShared
 		suite.addTest("Empty", [&] {
 			auto safeSharedString = CppUtils::Container::SafeShared<std::string>{};
 
-			suite.expect(not static_cast<bool>(safeSharedString));
+			suite.expect(not safeSharedString);
 		});
 
 		suite.addTest("Unique access", [&] {
 			auto safeSharedString0 = CppUtils::Container::makeSafeShared<std::string>("Foo");
-			suite.expect(static_cast<bool>(safeSharedString0));
+			suite.expect(safeSharedString0);
 
 			auto safeSharedString1 = safeSharedString0;
 			{
