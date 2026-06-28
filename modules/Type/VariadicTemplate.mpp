@@ -1,3 +1,7 @@
+module;
+
+#include <version>
+
 export module CppUtils.Type.VariadicTemplate;
 
 import std;
@@ -5,9 +9,15 @@ import CppUtils.Type.Concept;
 
 export namespace CppUtils::Type
 {
+#if defined(__cpp_pack_indexing) and __cpp_pack_indexing >= 202311L
 	template<std::size_t I, class... Types>
 	requires (I < sizeof...(Types))
 	using NthType = Types...[I];
+#else
+	template<std::size_t I, class... Types>
+	requires (I < sizeof...(Types))
+	using NthType = std::tuple_element_t<I, std::tuple<Types...>>;
+#endif
 
 	template<class... Types>
 	using FirstType = NthType<0, Types...>;

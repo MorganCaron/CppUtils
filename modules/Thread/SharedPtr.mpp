@@ -1,3 +1,7 @@
+module;
+
+#include <version>
+
 export module CppUtils.Thread.SharedPtr;
 
 import std;

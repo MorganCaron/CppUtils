@@ -128,7 +128,3 @@ FixNamespaceComments: false
 
 # Literals
 BreakStringLiterals: false
-IntegerLiteralSeparator:
-  Binary: 4
-  Decimal: 3
-  Hex: 2
