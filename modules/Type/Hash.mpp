@@ -3,7 +3,7 @@ export module CppUtils.Type.Hash;
 import std;
 import CppUtils.String.Concept;
 
-namespace
+namespace Detail
 {
 	template<class T>
 	concept HasMemberHash = requires (const T& value) {
@@ -16,7 +16,7 @@ namespace
 	};
 
 	template<class T>
-	[[nodiscard]] constexpr auto callADLHash(const T& value) noexcept
+	[[nodiscard, maybe_unused]] constexpr auto callADLHash(const T& value) noexcept
 	{
 		return hash(value);
 	}
@@ -44,10 +44,10 @@ export namespace CppUtils::Type
 		[[nodiscard]] constexpr auto operator()(const auto& value, Hash seed = HashOffset) const noexcept -> Hash
 		{
 			using T = std::remove_cvref_t<decltype(value)>;
-			if constexpr (HasMemberHash<T>)
+			if constexpr (Detail::HasMemberHash<T>)
 				return value.hash();
-			else if constexpr (HasADLHash<T>)
-				return callADLHash(value);
+			else if constexpr (Detail::HasADLHash<T>)
+				return Detail::callADLHash(value);
 			else if constexpr (std::is_integral_v<T> or std::is_enum_v<T>)
 				return static_cast<Hash>(value);
 			else if constexpr (std::ranges::contiguous_range<T>)
