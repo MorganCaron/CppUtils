@@ -14,7 +14,7 @@ import CppUtils.Terminal.TextModifier;
 import CppUtils.Chrono.Concept;
 
 // Todo: log le datetime
-// Todo: log le stacktrace ( https://en.cppreference.com/w/cpp/utility/stacktrace_entry )
+// Todo: log le stacktrace ( https://en.cppreference.com/cpp/utility/stacktrace_entry )
 
 export namespace CppUtils
 {

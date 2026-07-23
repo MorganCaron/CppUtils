@@ -5,9 +5,9 @@
 
 namespace Stl
 {
-	// https://en.cppreference.com/w/cpp/header/expected
+	// https://en.cppreference.com/cpp/header/expected
 
-	// https://en.cppreference.com/w/cpp/utility/expected/unexpected
+	// https://en.cppreference.com/cpp/utility/expected/unexpected
 	template<class E>
 	requires (!std::is_void_v<E>)
 	class unexpected
@@ -126,7 +126,7 @@ namespace Stl
 	};
 	constexpr unexpect_t unexpect{};
 
-	// https://en.cppreference.com/w/cpp/utility/expected
+	// https://en.cppreference.com/cpp/utility/expected
 	template<class T, class E>
 	class expected
 	{
@@ -460,7 +460,7 @@ namespace Stl
 		};
 	};
 
-	// https://en.cppreference.com/w/cpp/header/expected
+	// https://en.cppreference.com/cpp/header/expected
 	template<class T, class E>
 	requires std::is_void_v<T>
 	class expected<T, E>

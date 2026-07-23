@@ -4,7 +4,7 @@
 
 namespace Stl
 {
-	// https://en.cppreference.com/w/cpp/string/basic_string_view
+	// https://en.cppreference.com/cpp/string/basic_string_view
 	template<class CharT, class Traits = std::char_traits<CharT>>
 	class basic_string_view
 	{

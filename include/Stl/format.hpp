@@ -21,7 +21,7 @@ namespace Stl
 
 namespace Stl
 {
-	// https://en.cppreference.com/w/cpp/utility/format/format_error
+	// https://en.cppreference.com/cpp/utility/format/format_error
 	class format_error: public std::runtime_error
 	{
 	public:
@@ -34,9 +34,9 @@ namespace Stl
 		format_error(const format_error&) noexcept = default;
 	};
 
-	// https://en.cppreference.com/w/cpp/utility/format/formatter
-	// https://en.cppreference.com/w/cpp/named_req/Formatter
-	// https://en.cppreference.com/w/cpp/named_req/BasicFormatter
+	// https://en.cppreference.com/cpp/utility/format/formatter
+	// https://en.cppreference.com/cpp/named_req/Formatter
+	// https://en.cppreference.com/cpp/named_req/BasicFormatter
 	template<class T, class CharT>
 	struct formatter
 	{
@@ -87,7 +87,7 @@ namespace Stl
 		}
 	};
 
-	// https://en.cppreference.com/w/cpp/utility/format/basic_format_context
+	// https://en.cppreference.com/cpp/utility/format/basic_format_context
 	template<class OutputIt, class CharT>
 	struct basic_format_context
 	{
@@ -124,10 +124,10 @@ namespace Stl
 	template<class OutputIt>
 	using wformat_context = basic_format_context<OutputIt, wchar_t>;
 
-	namespace
+	namespace detail
 	{
 		template<class OutputIt, class CharT, class T>
-		auto format_helper(OutputIt outputIt, basic_string_view<CharT>& inputString, const T& value) -> OutputIt
+		[[maybe_unused]] auto format_helper(OutputIt outputIt, basic_string_view<CharT>& inputString, const T& value) -> OutputIt
 		{
 			auto openBracket = inputString.find('{');
 			if (openBracket == basic_string_view<CharT>::npos)
@@ -144,7 +144,7 @@ namespace Stl
 		}
 	}
 
-	// https://en.cppreference.com/w/cpp/utility/format/basic_format_string
+	// https://en.cppreference.com/cpp/utility/format/basic_format_string
 	template<class CharT, class... Args>
 	struct basic_format_string
 	{
@@ -172,11 +172,11 @@ namespace Stl
 	template<class... Args>
 	using wformat_string = basic_format_string<wchar_t, std::type_identity_t<Args>...>;
 
-	// https://en.cppreference.com/w/cpp/utility/format/format_to
+	// https://en.cppreference.com/cpp/utility/format/format_to
 	template<class OutputIt, class CharT, class... Args>
 	auto format_to(OutputIt outputIt, basic_string_view<CharT> format, Args&&... args) -> OutputIt
 	{
-		((outputIt = format_helper(outputIt, format, args)), ...);
+		((outputIt = detail::format_helper(outputIt, format, args)), ...);
 		outputIt = std::copy(format.cbegin(), format.cend(), outputIt);
 		return outputIt;
 	}
@@ -205,7 +205,7 @@ namespace Stl
 		return outputString;
 	}
 
-	// https://en.cppreference.com/w/cpp/utility/format/format
+	// https://en.cppreference.com/cpp/utility/format/format
 	template<class... Args>
 	[[nodiscard]] inline auto format([[maybe_unused]] const std::locale& loc, wformat_string<Args...> format, Args&&... args) -> std::wstring
 	{

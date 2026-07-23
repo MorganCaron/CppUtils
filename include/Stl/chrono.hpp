@@ -4,7 +4,7 @@
 
 namespace Stl::chrono
 {
-	// https://en.cppreference.com/w/cpp/chrono/is_clock
+	// https://en.cppreference.com/cpp/chrono/is_clock
 	template<class>
 	struct is_clock: std::false_type
 	{};
