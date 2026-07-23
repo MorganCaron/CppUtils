@@ -10,19 +10,39 @@ import CppUtils.Type.Utility;
 
 export namespace CppUtils::Container
 {
-	template<class Key, class Value>
+	template<class Key, class Value, class Policy = void>
 	class MeshNodePtr final
 	{
+	private:
+		struct MeshNode;
+
+	public:
+		struct Link final
+		{
+			using WeakPtr = SafeWeak<NetworkPtr<MeshNode>>;
+
+			std::size_t targetId = 0;
+			mutable WeakPtr cache;
+
+			[[nodiscard]] auto operator==(const Link& other) const noexcept -> bool
+			{
+				if (targetId != 0uz and other.targetId != 0uz)
+					return targetId == other.targetId;
+				return false;
+			}
+		};
+
 	private:
 		struct MeshNode final
 		{
 			using WeakPtr = SafeWeak<NetworkPtr<MeshNode>>;
-			using VectorLocker = Thread::SharedLocker<std::vector<WeakPtr>>;
-			using Branches = std::unordered_map<Key, SafeShared<std::vector<WeakPtr>>>;
+			using VectorLocker = Thread::SharedLocker<std::vector<Link>>;
+			using Branches = std::unordered_map<Key, SafeShared<std::vector<Link>>>;
 
 			std::size_t id = 0;
 			Thread::SharedLocker<Value> value;
 			Thread::SharedLocker<Branches> branches;
+			[[no_unique_address]] std::conditional_t<std::is_void_v<Policy>, std::monostate, Policy> policy;
 
 			explicit inline MeshNode(auto&&... args):
 				value{std::forward<decltype(args)>(args)...}
@@ -39,27 +59,29 @@ export namespace CppUtils::Container
 			const MeshNodePtr& parent,
 			Type::In<Key> key,
 			const MeshNodePtr& child,
-			SafeShared<std::vector<WeakPtr>> existingPersistenceGuard = nullptr) -> void
+			SafeShared<std::vector<Link>> existingBranchLinks = nullptr) -> void
 		{
 			auto accessor = Thread::MultipleAccessor{*parent.m_node, *child.m_node};
 			auto& parentNetworkPtr = std::get<0>(accessor.values);
 			auto& childNetworkPtr = std::get<1>(accessor.values);
 
-			auto persistenceGuard = SafeShared<std::vector<WeakPtr>>{};
+			auto branchLinks = SafeShared<std::vector<Link>>{};
 			{
 				auto branchesAccessor = parentNetworkPtr.value.branches.uniqueAccess();
 				auto& entry = branchesAccessor.value()[key];
 				if (not entry)
-					entry = existingPersistenceGuard ? existingPersistenceGuard : makeSafeShared<std::vector<WeakPtr>>();
-				persistenceGuard = entry;
+					entry = existingBranchLinks ? existingBranchLinks : makeSafeShared<std::vector<Link>>();
+				branchLinks = entry;
 			}
 
 			{
-				auto vectorAccessor = persistenceGuard->uniqueAccess();
-				if (std::ranges::none_of(vectorAccessor.value(), [&](const auto& weak) {
-					return Thread::SharedPtr::ownerEqual(weak, child.m_node);
+				auto vectorAccessor = branchLinks->uniqueAccess();
+				if (std::ranges::none_of(vectorAccessor.value(), [&](const auto& link) {
+					if (link.targetId != 0uz and childNetworkPtr.value.id != 0uz)
+						return link.targetId == childNetworkPtr.value.id;
+					return Thread::SharedPtr::ownerEqual(link.cache, child.m_node);
 				}))
-					vectorAccessor->push_back(child.m_node);
+					vectorAccessor->push_back(Link{childNetworkPtr.value.id, child.m_node});
 			}
 			parentNetworkPtr.attachChild(childNetworkPtr);
 		}
@@ -73,10 +95,15 @@ export namespace CppUtils::Container
 			auto branchesAccessor = parentNetworkPtr.value.branches.uniqueAccess();
 			if (auto branchIterator = branchesAccessor->find(key); branchIterator != std::cend(branchesAccessor.value()))
 			{
-				auto persistenceGuard = branchIterator->second;
-				auto vectorAccessor = persistenceGuard->uniqueAccess();
+				auto branchLinks = branchIterator->second;
+				auto vectorAccessor = branchLinks->uniqueAccess();
 				auto& vector = vectorAccessor.value();
-				if (auto it = std::ranges::find_if(vector, [&](auto& weak) { return Thread::SharedPtr::ownerEqual(weak, child.m_node); }); it != std::cend(vector))
+				auto matches = [&](const auto& link) {
+					if (link.targetId != 0uz and childNetworkPtr.value.id != 0uz)
+						return link.targetId == childNetworkPtr.value.id;
+					return Thread::SharedPtr::ownerEqual(link.cache, child.m_node);
+				};
+				if (auto it = std::ranges::find_if(vector, matches); it != std::cend(vector))
 				{
 					vector.erase(it);
 					parentNetworkPtr.detachChild(childNetworkPtr);
@@ -94,9 +121,15 @@ export namespace CppUtils::Container
 				auto nodeAccessor = parent.m_node->sharedAccess();
 				auto branchesAccessor = nodeAccessor->value.branches.sharedAccess();
 				if (auto branchIterator = branchesAccessor->find(key); branchIterator != std::cend(branchesAccessor.value()))
-					for (auto vectorAccessor = branchIterator->second->sharedAccess(); auto& weak : vectorAccessor.value())
-						if (auto shared = weak.lock())
+					for (auto vectorAccessor = branchIterator->second->sharedAccess(); auto& link : vectorAccessor.value())
+					{
+						if (auto shared = link.cache.lock())
 							children.push_back(MeshNodePtr{shared});
+						else if constexpr (not std::is_void_v<Policy>)
+							if (link.targetId != 0uz)
+								if (auto resolved = nodeAccessor->value.policy.resolve(link.targetId))
+									children.push_back(resolved);
+					}
 			}
 			for (auto& child : children)
 				detach(parent, key, child);
@@ -107,18 +140,18 @@ export namespace CppUtils::Container
 			const MeshNodePtr& firstNode,
 			const Key& secondKey,
 			const MeshNodePtr& secondNode,
-			SafeShared<std::vector<WeakPtr>> firstNodePersistenceGuard = nullptr,
-			SafeShared<std::vector<WeakPtr>> secondNodePersistenceGuard = nullptr) -> void
+			SafeShared<std::vector<Link>> firstNodeBranchLinks = nullptr,
+			SafeShared<std::vector<Link>> secondNodeBranchLinks = nullptr) -> void
 		{
 			if (firstNode.m_node->sharedAccess()->getDistanceFromRoot() == std::numeric_limits<std::size_t>::max())
 			{
-				attach(secondNode, firstKey, firstNode, secondNodePersistenceGuard);
-				attach(firstNode, secondKey, secondNode, firstNodePersistenceGuard);
+				attach(secondNode, firstKey, firstNode, secondNodeBranchLinks);
+				attach(firstNode, secondKey, secondNode, firstNodeBranchLinks);
 			}
 			else
 			{
-				attach(firstNode, secondKey, secondNode, firstNodePersistenceGuard);
-				attach(secondNode, firstKey, firstNode, secondNodePersistenceGuard);
+				attach(firstNode, secondKey, secondNode, firstNodeBranchLinks);
+				attach(secondNode, firstKey, firstNode, secondNodeBranchLinks);
 			}
 		}
 
@@ -134,13 +167,13 @@ export namespace CppUtils::Container
 		{
 		public:
 			using VectorAccessor = std::conditional_t<IsConst,
-				Thread::ReadOnlyAccessor<std::vector<WeakPtr>>,
-				Thread::Accessor<std::vector<WeakPtr>, std::shared_mutex>>;
+				Thread::ReadOnlyAccessor<std::vector<Link>>,
+				Thread::Accessor<std::vector<Link>, std::shared_mutex>>;
 
 			Branch() = default;
-			Branch(MeshNodePtr parent, Key key, SafeShared<std::vector<WeakPtr>> persistenceGuard, VectorAccessor vectorAccessor):
+			Branch(MeshNodePtr parent, Key key, SafeShared<std::vector<Link>> branchLinks, VectorAccessor vectorAccessor):
 				m_parent{std::move(parent)}, m_key{std::move(key)},
-				m_persistenceGuard{std::move(persistenceGuard)},
+				m_branchLinks{std::move(branchLinks)},
 				m_vectorAccessor{std::move(vectorAccessor)}
 			{}
 
@@ -150,9 +183,9 @@ export namespace CppUtils::Container
 				if (not self.m_vectorAccessor) [[unlikely]]
 				{
 					if constexpr (IsConst)
-						self.m_vectorAccessor = self.m_persistenceGuard->sharedAccess();
+						self.m_vectorAccessor = self.m_branchLinks->sharedAccess();
 					else
-						self.m_vectorAccessor = self.m_persistenceGuard->uniqueAccess();
+						self.m_vectorAccessor = self.m_branchLinks->uniqueAccess();
 				}
 				return self.m_vectorAccessor.value();
 			}
@@ -160,7 +193,7 @@ export namespace CppUtils::Container
 		public:
 			[[nodiscard]] auto size() const noexcept -> std::size_t
 			{
-				if (not m_persistenceGuard) [[unlikely]]
+				if (not m_branchLinks) [[unlikely]]
 					return 0uz;
 				return std::size(getVectorAccessor().value());
 			}
@@ -169,10 +202,12 @@ export namespace CppUtils::Container
 
 			[[nodiscard]] auto contains(const MeshNodePtr& node) const -> bool
 			{
-				if (not m_persistenceGuard) [[unlikely]]
+				if (not m_branchLinks) [[unlikely]]
 					return false;
-				return std::ranges::any_of(getVectorAccessor().value(), [&](const auto& weak) {
-					return Thread::SharedPtr::ownerEqual(weak, node.m_node);
+				return std::ranges::any_of(getVectorAccessor().value(), [&](const auto& link) {
+					if (link.targetId != 0uz and node.getId() != 0uz)
+						return link.targetId == node.getId();
+					return Thread::SharedPtr::ownerEqual(link.cache, node.m_node);
 				});
 			}
 
@@ -186,31 +221,41 @@ export namespace CppUtils::Container
 			[[nodiscard]] auto operator[](std::size_t index) const -> std::expected<MeshNodePtr, std::string_view>
 			{
 				using namespace std::literals;
-				if (not m_persistenceGuard) [[unlikely]]
+				if (not m_branchLinks) [[unlikely]]
 					return std::unexpected{"Branch is no longer valid"sv};
 				auto& vectorAccessor = getVectorAccessor();
 				if (index >= std::size(vectorAccessor.value())) [[unlikely]]
 					return std::unexpected{"Branch index out of bounds"sv};
-				if (auto sharedNode = vectorAccessor.value()[index].lock()) [[likely]]
+				const auto& link = vectorAccessor.value()[index];
+				if (auto sharedNode = link.cache.lock())
 					return MeshNodePtr{sharedNode};
+
+				auto nodeAccessor = m_parent.m_node->sharedAccess();
+				if constexpr (not std::is_void_v<Policy>)
+					if (link.targetId != 0uz)
+						if (auto resolved = nodeAccessor->value.policy.resolve(link.targetId))
+						{
+							link.cache = resolved.m_node;
+							return resolved;
+						}
 				return std::unexpected{"Failed to lock weak pointer for branch. Node might have been deleted"sv};
 			}
 
 			auto operator>>(const MeshNodePtr& other) -> const MeshNodePtr&
 			requires (not IsConst)
 			{
-				auto persistenceGuard = m_persistenceGuard;
+				auto branchLinks = m_branchLinks;
 				m_vectorAccessor.reset();
-				MeshNodePtr::attach(m_parent, m_key, other, persistenceGuard);
+				MeshNodePtr::attach(m_parent, m_key, other, branchLinks);
 				return other;
 			}
 
 			auto operator>>(Branch<false>&& other) -> Branch<false>&&
 			requires (not IsConst)
 			{
-				auto persistenceGuard = m_persistenceGuard;
+				auto branchLinks = m_branchLinks;
 				m_vectorAccessor.reset();
-				MeshNodePtr::attach(m_parent, m_key, other.m_parent, persistenceGuard);
+				MeshNodePtr::attach(m_parent, m_key, other.m_parent, branchLinks);
 				return std::move(other);
 			}
 
@@ -225,11 +270,11 @@ export namespace CppUtils::Container
 			auto operator&(const Branch<OtherIsConst>& other) -> void
 			requires (not IsConst)
 			{
-				auto persistenceGuard = m_persistenceGuard;
-				auto otherPersistenceGuard = other.m_persistenceGuard;
+				auto branchLinks = m_branchLinks;
+				auto otherBranchLinks = other.m_branchLinks;
 				m_vectorAccessor.reset();
 				other.m_vectorAccessor.reset();
-				MeshNodePtr::attach(other.m_key, m_parent, m_key, other.m_parent, otherPersistenceGuard, persistenceGuard);
+				MeshNodePtr::attach(other.m_key, m_parent, m_key, other.m_parent, otherBranchLinks, branchLinks);
 			}
 
 			template<bool OtherIsConst>
@@ -324,7 +369,7 @@ export namespace CppUtils::Container
 		private:
 			MeshNodePtr m_parent;
 			Key m_key;
-			SafeShared<std::vector<WeakPtr>> m_persistenceGuard;
+			SafeShared<std::vector<Link>> m_branchLinks;
 			mutable std::optional<VectorAccessor> m_vectorAccessor;
 
 			friend class MeshNodePtr;
@@ -362,19 +407,19 @@ export namespace CppUtils::Container
 			if constexpr (std::is_const_v<SelfType>)
 			{
 				auto mapAccessor = self.m_node->sharedAccess()->value.branches.sharedAccess();
-				auto persistenceGuardPtr = mapAccessor->at(key);
-				return Branch<true>{self, key, persistenceGuardPtr, persistenceGuardPtr->sharedAccess()};
+				auto branchLinksPtr = mapAccessor->at(key);
+				return Branch<true>{self, key, branchLinksPtr, branchLinksPtr->sharedAccess()};
 			}
-			auto persistenceGuardPtr = SafeShared<std::vector<WeakPtr>>{};
+			auto branchLinksPtr = SafeShared<std::vector<Link>>{};
 			{
 				auto nodeAccessor = self.m_node->uniqueAccess();
 				auto mapAccessor = nodeAccessor->value.branches.uniqueAccess();
 				auto& entry = mapAccessor.value()[key];
 				if (not entry)
-					entry = makeSafeShared<std::vector<WeakPtr>>();
-				persistenceGuardPtr = entry;
+					entry = makeSafeShared<std::vector<Link>>();
+				branchLinksPtr = entry;
 			}
-			return Branch<false>{self, key, persistenceGuardPtr, persistenceGuardPtr->uniqueAccess()};
+			return Branch<false>{self, key, branchLinksPtr, branchLinksPtr->uniqueAccess()};
 		}
 
 		[[nodiscard]] auto at(Type::In<Key> key) const -> std::expected<Branch<true>, std::string_view>
@@ -387,8 +432,8 @@ export namespace CppUtils::Container
 			auto branchesAccessor = m_node->sharedAccess()->value.branches.sharedAccess();
 			if (auto branchIterator = branchesAccessor->find(key); branchIterator != std::cend(branchesAccessor.value())) [[likely]]
 			{
-				auto persistenceGuardPtr = branchIterator->second;
-				return Branch<true>{*this, key, persistenceGuardPtr, persistenceGuardPtr->sharedAccess()};
+				auto branchLinksPtr = branchIterator->second;
+				return Branch<true>{*this, key, branchLinksPtr, branchLinksPtr->sharedAccess()};
 			}
 
 			return std::unexpected{"MeshNodePtr::at(): Key not found"sv};
@@ -424,10 +469,17 @@ export namespace CppUtils::Container
 			return m_node->sharedAccess()->value.id;
 		}
 
-		auto setId(std::size_t newId) -> void
+		auto setId(std::size_t newId) const -> void
 		{
 			if (m_node)
 				m_node->uniqueAccess()->value.id = newId;
+		}
+
+		auto setPolicy(std::conditional_t<std::is_void_v<Policy>, int, Policy> policy) const -> void
+		requires (not std::is_void_v<Policy>)
+		{
+			if (m_node)
+				m_node->uniqueAccess()->value.policy = std::move(policy);
 		}
 
 		[[nodiscard]] auto operator->(this auto&& self [[lifetimebound]])
@@ -440,7 +492,7 @@ export namespace CppUtils::Container
 			return std::forward_like<decltype(self)>(*self.m_node);
 		}
 
-		auto setValue(auto&& newValue) -> void
+		auto setValue(auto&& newValue) const -> void
 		{
 			auto nodeAccessor = m_node->uniqueAccess();
 			auto& meshNode = nodeAccessor->value;

@@ -3,6 +3,7 @@ export module CppUtils.FileSystem.MeshPager;
 import std;
 import CppUtils.Memory;
 import CppUtils.Container.MeshNetwork;
+import CppUtils.Container.SafeShared;
 import CppUtils.FileSystem.IndexedStorage;
 import CppUtils.Type.Serializer;
 import CppUtils.Thread.SharedPtr;
@@ -20,18 +21,32 @@ export namespace CppUtils::FileSystem
 	template<class Key, class Value>
 	class MeshPager final
 	{
+	public:
+		struct Policy final
+		{
+			MeshPager* pager = nullptr;
+
+			auto resolve(std::size_t targetId) const -> Container::MeshNodePtr<Key, Value, Policy>
+			{
+				if (pager)
+					return pager->loadNode(targetId);
+				return {};
+			}
+		};
+
+		using MeshNodePtr = Container::MeshNodePtr<Key, Value, Policy>;
+
 	private:
-		using NodePtr = Container::MeshNodePtr<Key, Value>;
 		using SerializedNode = MeshSerializedNode<Key, Value>;
 
 		std::filesystem::path m_directory;
 		FileSystem::IndexedStorage m_storage;
-		std::unordered_map<std::size_t, NodePtr> m_loadedNodes;
+		std::unordered_map<std::size_t, MeshNodePtr> m_loadedNodes;
 		std::unordered_map<std::size_t, std::unordered_map<Key, std::unordered_set<std::size_t>>> m_knownLinks;
 		std::size_t m_nextId = 1;
 
 		std::vector<std::pair<std::size_t, std::size_t>> m_activeFocuses;
-		mutable std::shared_mutex m_mutex;
+		mutable std::recursive_mutex m_mutex;
 
 	public:
 		class ScopedFocus final
@@ -86,7 +101,7 @@ export namespace CppUtils::FileSystem
 			unloadAll();
 		}
 
-		auto track(NodePtr node) -> std::size_t
+		auto track(MeshNodePtr node) -> std::size_t
 		{
 			auto lock = std::unique_lock{m_mutex};
 			if (not node)
@@ -94,12 +109,13 @@ export namespace CppUtils::FileSystem
 			if (node.getId() == 0)
 				node.setId(m_nextId++);
 			auto id = node.getId();
+			configurePolicy(node);
 			m_loadedNodes[id] = node;
-			updateLinks(id);
+			updateLinks(node);
 			return id;
 		}
 
-		[[nodiscard]] auto acquireFocus(NodePtr node, std::size_t distance = 1) -> ScopedFocus
+		[[nodiscard]] auto acquireFocus(MeshNodePtr node, std::size_t distance = 1) -> ScopedFocus
 		{
 			auto id = track(node);
 			return ScopedFocus{*this, id, distance};
@@ -107,6 +123,7 @@ export namespace CppUtils::FileSystem
 
 		auto updateFocuses() -> void
 		{
+			auto lock = std::unique_lock{m_mutex};
 			struct FocusState final
 			{
 				std::size_t nodeId;
@@ -128,8 +145,8 @@ export namespace CppUtils::FileSystem
 				if (state.distance >= state.maxDistance)
 					continue;
 
-				if (m_loadedNodes.contains(state.nodeId))
-					updateLinks(state.nodeId);
+				if (auto it = m_loadedNodes.find(state.nodeId); it != std::end(m_loadedNodes))
+					updateLinks(it->second);
 
 				for (const auto& [key, neighbors] : m_knownLinks[state.nodeId])
 					for (auto neighborId : neighbors)
@@ -186,61 +203,90 @@ export namespace CppUtils::FileSystem
 			}
 		}
 
-	private:
-		auto updateLinks(std::size_t id) -> void
+		auto configurePolicy(MeshNodePtr node) -> void
 		{
-			auto it = m_loadedNodes.find(id);
-			if (it == std::end(m_loadedNodes))
+			if (not node)
+				return;
+			node.setPolicy(Policy{this});
+		}
+
+	public:
+		auto updateLinks(MeshNodePtr node) -> void
+		{
+			auto lock = std::unique_lock{m_mutex};
+			auto nodeId = node.getId();
+			if (nodeId == 0)
 				return;
 
-			auto node = it->second;
-			auto& links = m_knownLinks[id];
+			auto& links = m_knownLinks[nodeId];
 
-			auto nodeAccessor = node.operator->()->sharedAccess();
+			auto nodeAccessor = node->sharedAccess();
 			auto branchesAccessor = nodeAccessor->value.branches.sharedAccess();
-			for (const auto& [key, persistenceGuard] : branchesAccessor.value())
+			for (const auto& [key, branchLinks] : branchesAccessor.value())
 			{
 				auto& ids = links[key];
-				auto vectorAccessor = persistenceGuard->sharedAccess();
-				for (const auto& weak : vectorAccessor.value())
+				auto vectorAccessor = branchLinks->uniqueAccess();
+				for (auto& link : vectorAccessor.value())
 				{
-					if (auto shared = weak.lock())
+					if (link.targetId == 0)
 					{
-						auto neighbor = NodePtr{shared};
-						auto neighborId = neighbor.getId();
-						if (neighborId == 0)
+						if (auto shared = link.cache.lock())
 						{
-							neighbor.setId(m_nextId++);
-							neighborId = neighbor.getId();
-							m_loadedNodes[neighborId] = neighbor;
+							auto neighbor = MeshNodePtr{shared};
+							auto neighborId = neighbor.getId();
+							if (neighborId == 0)
+							{
+								neighbor.setId(m_nextId++);
+								neighborId = neighbor.getId();
+								configurePolicy(neighbor);
+								m_loadedNodes[neighborId] = neighbor;
+							}
+							link.targetId = neighborId;
 						}
-						ids.insert(neighborId);
 					}
+					if (link.targetId != 0)
+						ids.insert(link.targetId);
 				}
 			}
 		}
 
-		auto loadNode(std::size_t id) -> NodePtr
+		auto loadNode(std::size_t id) -> MeshNodePtr
 		{
+			auto lock = std::unique_lock{m_mutex};
+			if (auto it = m_loadedNodes.find(id); it != std::end(m_loadedNodes))
+				return it->second;
+
 			if (auto data = m_storage.load<SerializedNode>(id))
 			{
-				auto node = data->isRoot ? NodePtr::makeRoot(data->value) : NodePtr::make(data->value);
+				auto node = data->isRoot ? MeshNodePtr::makeRoot(data->value) : MeshNodePtr::make(data->value);
 				node.setId(id);
+				configurePolicy(node);
 				m_loadedNodes[id] = node;
-				for (const auto& [key, ids] : data->branches)
-					m_knownLinks[id][key] = std::unordered_set<std::size_t>(std::begin(ids), std::end(ids));
+				for (const auto& [branchKey, neighborIds] : data->branches)
+				{
+					using Link = MeshNodePtr::Link;
+					m_knownLinks[id][branchKey] = std::unordered_set<std::size_t>(std::begin(neighborIds), std::end(neighborIds));
+					auto branchLinks = Container::makeSafeShared<std::vector<Link>>();
+					{
+						auto links = branchLinks->uniqueAccess();
+						for (auto neighborId : neighborIds)
+							links->push_back(Link{neighborId, {}});
+					}
+					node->uniqueAccess()->value.branches.uniqueAccess().value()[branchKey] = std::move(branchLinks);
+				}
 				return node;
 			}
-			return NodePtr{};
+			return MeshNodePtr{};
 		}
 
 		auto unloadNode(std::size_t id) -> void
 		{
+			auto lock = std::unique_lock{m_mutex};
 			auto it = m_loadedNodes.find(id);
 			if (it == std::end(m_loadedNodes))
 				return;
 
-			updateLinks(id);
+			updateLinks(it->second);
 
 			auto data = SerializedNode{};
 			data.value = it->second.getValue().value();
@@ -249,6 +295,7 @@ export namespace CppUtils::FileSystem
 			data.isRoot = (it->second.getDistanceFromRoot() == 0);
 
 			m_storage.store(id, data);
+			it->second.setPolicy(Policy{nullptr});
 			m_loadedNodes.erase(it);
 		}
 

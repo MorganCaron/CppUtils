@@ -64,16 +64,16 @@ namespace CppUtils::UnitTest::FileSystem::MeshPager
 	auto _ = TestSuite{"FileSystem/MeshPager", [](TestSuite& suite) {
 		suite.addTest("Paging and RAII logic", [&suite] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
-				using Pager = CppUtils::FileSystem::MeshPager<std::string, SpyValue>;
-				using Node = CppUtils::Container::MeshNodePtr<std::string, SpyValue>;
+				using MeshPager = CppUtils::FileSystem::MeshPager<std::string, SpyValue>;
+				using MeshNode = MeshPager::MeshNodePtr;
 
 				SpyValue::activeCount = 0uz;
-				auto pager = Pager{testDirectory};
+				auto pager = MeshPager{testDirectory};
 
 				auto [idC, nodeA] = [&pager] {
-					auto nodeA = Node::makeRoot(SpyValue{"NodeA"});
-					auto nodeB = Node::makeRoot(SpyValue{"NodeB"});
-					auto nodeC = Node::makeRoot(SpyValue{"NodeC"});
+					auto nodeA = MeshNode::makeRoot(SpyValue{"NodeA"});
+					auto nodeB = MeshNode::makeRoot(SpyValue{"NodeB"});
+					auto nodeC = MeshNode::makeRoot(SpyValue{"NodeC"});
 
 					nodeA["link"] & nodeB["link"];
 					nodeB["link"] & nodeC["link"];
@@ -93,7 +93,7 @@ namespace CppUtils::UnitTest::FileSystem::MeshPager
 					auto focusB = pager.acquireFocus(nodeB, 1);
 					suite.expectEqual(SpyValue::activeCount, 3uz);
 
-					auto nodeC = Node{};
+					auto nodeC = MeshNode{};
 					for (auto neighbor : nodeB["link"])
 						if (neighbor and neighbor.getId() == idC)
 						{
