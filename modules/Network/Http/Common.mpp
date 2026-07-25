@@ -254,9 +254,9 @@ export namespace CppUtils::Network::Http
 		auto contentLength = 0uz;
 		if (const auto it = std::ranges::find_if(headers, [](const auto& header) { return header.name == "Content-Length"; }); it != std::end(headers))
 #if defined(OS_MACOS)
-			static_cast<void>(Stl::from_chars(std::data(it->value), std::data(it->value) + std::size(it->value), contentLength));
+			auto _ = Stl::from_chars(std::data(it->value), std::data(it->value) + std::size(it->value), contentLength);
 #else
-			static_cast<void>(std::from_chars(std::data(it->value), std::data(it->value) + std::size(it->value), contentLength));
+			auto _ = std::from_chars(std::data(it->value), std::data(it->value) + std::size(it->value), contentLength);
 #endif
 		return contentLength;
 	}

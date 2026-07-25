@@ -3,15 +3,164 @@ module;
 #include <CppUtils/System/Windows.hpp>
 #include <cstdio>
 
+#if defined(OS_LINUX) or defined(OS_MACOS)
+#	include <unistd.h>
+#	include <termios.h>
+#endif
+
 export module CppUtils.Terminal.Utility;
 
 import std;
 import CppUtils.System.Type;
 import CppUtils.System.Error;
-import CppUtils.Terminal.Handle;
+export import CppUtils.Terminal.Handle;
 
 export namespace CppUtils::Terminal
 {
+#if defined(OS_LINUX) or defined(OS_MACOS)
+	using State = termios;
+
+	enum class Flag : tcflag_t
+	{
+		None = 0,
+		Raw = None,
+		WaitForEnter = ICANON,
+		PrintTypedKeys = ECHO,
+		ProcessInterruptSignals = ISIG,
+		TextEditingShortcuts = IEXTEN,
+		MouseInput = 0,
+		MouseTextSelection = 0,
+		AllowMouseSelection = 0,
+		AnsiEscapeCodes = 0,
+		Default = static_cast<tcflag_t>(WaitForEnter) | static_cast<tcflag_t>(PrintTypedKeys) | static_cast<tcflag_t>(ProcessInterruptSignals) | static_cast<tcflag_t>(TextEditingShortcuts)
+	};
+#elif defined(OS_WINDOWS)
+	using State = DWORD;
+
+	enum class Flag : DWORD
+	{
+		None = 0,
+		Raw = None,
+		WaitForEnter = ENABLE_LINE_INPUT,
+		PrintTypedKeys = ENABLE_ECHO_INPUT,
+		ProcessInterruptSignals = ENABLE_PROCESSED_INPUT,
+		MouseInput = ENABLE_MOUSE_INPUT,
+		MouseTextSelection = ENABLE_QUICK_EDIT_MODE,
+		AllowMouseSelection = ENABLE_EXTENDED_FLAGS,
+		AnsiEscapeCodes = ENABLE_VIRTUAL_TERMINAL_PROCESSING,
+		TextEditingShortcuts = 0,
+		Default = static_cast<DWORD>(WaitForEnter) | static_cast<DWORD>(PrintTypedKeys) | static_cast<DWORD>(ProcessInterruptSignals) | static_cast<DWORD>(MouseTextSelection)
+	};
+#endif
+
+	[[nodiscard]] inline constexpr auto operator&(Flag lhs, Flag rhs) -> bool
+	{
+		return static_cast<bool>(
+			static_cast<std::underlying_type_t<Flag>>(lhs) & static_cast<std::underlying_type_t<Flag>>(rhs));
+	}
+
+	[[nodiscard]] inline constexpr auto operator|(Flag lhs, Flag rhs) -> Flag
+	{
+		return static_cast<Flag>(
+			static_cast<std::underlying_type_t<Flag>>(lhs) | static_cast<std::underlying_type_t<Flag>>(rhs));
+	}
+
+	[[nodiscard]] inline auto getState(InputHandle handle = DefaultInputHandle) -> std::optional<State>
+	{
+#if defined(OS_LINUX) or defined(OS_MACOS)
+		auto state = termios{};
+		if (::tcgetattr(handle, std::addressof(state)) == 0)
+			return state;
+		return std::nullopt;
+#elif defined(OS_WINDOWS)
+		const auto resolved = resolveInputHandle(handle);
+		if (resolved == INVALID_HANDLE_VALUE or resolved == nullptr)
+			return std::nullopt;
+		auto mode = DWORD{0};
+		if (::GetConsoleMode(resolved, std::addressof(mode)))
+			return mode;
+		return std::nullopt;
+#endif
+	}
+
+	inline auto setState(State state, InputHandle handle = DefaultInputHandle) -> bool
+	{
+#if defined(OS_LINUX) or defined(OS_MACOS)
+		return ::tcsetattr(handle, TCSANOW, std::addressof(state)) == 0;
+#elif defined(OS_WINDOWS)
+		const auto resolved = resolveInputHandle(handle);
+		if (resolved == INVALID_HANDLE_VALUE or resolved == nullptr)
+			return false;
+		return ::SetConsoleMode(resolved, state) != 0;
+#endif
+	}
+
+	[[nodiscard]] inline auto hasFlag(Flag flag, InputHandle handle = DefaultInputHandle) -> bool
+	{
+		const auto state = getState(handle);
+		if (not state)
+			return false;
+
+#if defined(OS_LINUX) or defined(OS_MACOS)
+		const auto flagValue = static_cast<tcflag_t>(flag);
+		if (flagValue == 0)
+		{
+			const auto rawMask = static_cast<tcflag_t>(Flag::WaitForEnter | Flag::PrintTypedKeys);
+			return (state->c_lflag & rawMask) == 0 and state->c_cc[VMIN] == 1 and state->c_cc[VTIME] == 0;
+		}
+		return (state->c_lflag & flagValue) != 0;
+#elif defined(OS_WINDOWS)
+		const auto flagValue = static_cast<DWORD>(flag);
+		if (flagValue == 0)
+		{
+			const auto rawMask = static_cast<DWORD>(Flag::WaitForEnter | Flag::PrintTypedKeys);
+			return (*state & rawMask) == 0;
+		}
+		return (*state & flagValue) != 0;
+#endif
+	}
+
+	[[nodiscard]] inline auto isRawMode(InputHandle handle = DefaultInputHandle) -> bool
+	{
+		return hasFlag(Flag::Raw, handle);
+	}
+
+	inline auto enableRawMode(InputHandle handle = DefaultInputHandle) -> std::optional<State>
+	{
+#if defined(OS_LINUX) or defined(OS_MACOS)
+		auto oldState = termios{};
+		if (::tcgetattr(handle, std::addressof(oldState)) != 0)
+			return std::nullopt;
+
+		auto rawState = oldState;
+		::cfmakeraw(std::addressof(rawState));
+		rawState.c_cc[VMIN] = 1;
+		rawState.c_cc[VTIME] = 0;
+
+		if (::tcsetattr(handle, TCSAFLUSH, std::addressof(rawState)) != 0)
+			return std::nullopt;
+
+		return oldState;
+#elif defined(OS_WINDOWS)
+		const auto resolved = resolveInputHandle(handle);
+		if (resolved == INVALID_HANDLE_VALUE or resolved == nullptr)
+			return std::nullopt;
+
+		auto oldMode = DWORD{0};
+		if (not ::GetConsoleMode(resolved, std::addressof(oldMode)))
+			return std::nullopt;
+
+		auto rawMode = oldMode;
+		rawMode |= static_cast<DWORD>(Flag::AllowMouseSelection);
+		rawMode &= static_cast<DWORD>(~(Flag::WaitForEnter | Flag::PrintTypedKeys | Flag::ProcessInterruptSignals | Flag::MouseInput | Flag::MouseTextSelection));
+
+		if (not ::SetConsoleMode(resolved, rawMode))
+			return std::nullopt;
+
+		return oldMode;
+#endif
+	}
+
 	inline auto setConsoleOutputUTF8() -> void
 	{
 #if defined(OS_WINDOWS)

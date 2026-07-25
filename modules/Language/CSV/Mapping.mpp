@@ -42,9 +42,9 @@ export namespace CppUtils::Language::CSV
 						member = value;
 					else if constexpr (std::integral<MemberType> or std::floating_point<MemberType>)
 #if defined(OS_MACOS)
-						static_cast<void>(Stl::from_chars(std::data(value), std::data(value) + std::size(value), member));
+						auto _ = Stl::from_chars(std::data(value), std::data(value) + std::size(value), member);
 #else
-						static_cast<void>(std::from_chars(std::data(value), std::data(value) + std::size(value), member));
+						auto _ = std::from_chars(std::data(value), std::data(value) + std::size(value), member);
 #endif
 				}
 			}(csvPairs), ...);

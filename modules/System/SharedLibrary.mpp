@@ -75,9 +75,9 @@ export namespace CppUtils::System
 		~SharedLibrary() noexcept
 		{
 #if defined(OS_WINDOWS)
-			static_cast<void>(FreeLibrary(m_library));
+			auto _ = FreeLibrary(m_library);
 #elif defined(OS_LINUX) or defined(OS_MACOS)
-			static_cast<void>(dlclose(m_library));
+			auto _ = dlclose(m_library);
 #endif
 		}
 

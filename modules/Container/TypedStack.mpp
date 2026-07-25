@@ -216,7 +216,7 @@ export namespace CppUtils::Container
 		inline constexpr auto call(ReturnType (*function)(Args...)) -> void
 		{
 			auto call = [this, function]<std::size_t... I> /* Not supported on MSVC [[nodiscard]] */ (/* Not supported on MSVC [[maybe_unused]] */ std::index_sequence<I...> indexSequence) -> decltype(auto) {
-				static_cast<void>(indexSequence);
+				auto _ = indexSequence;
 				return std::invoke(function, get<std::remove_cvref_t<Type::NthType<I, Args...>>>(size() - sizeof...(Args) + I)...);
 			};
 			if constexpr (std::is_void_v<ReturnType>)
@@ -230,7 +230,7 @@ export namespace CppUtils::Container
 		{
 			auto* objectPointer = get<Object*>(size() - 1 - sizeof...(Args));
 			auto call = [this, function, objectPointer]<std::size_t... I> /* Not supported on MSVC [[nodiscard]] */ (/* Not supported on MSVC [[maybe_unused]] */ std::index_sequence<I...> indexSequence) -> decltype(auto) {
-				static_cast<void>(indexSequence);
+				auto _ = indexSequence;
 				return std::invoke(function, objectPointer, get<std::remove_cvref_t<Type::NthType<I, Args...>>>(size() - sizeof...(Args) + I)...);
 			};
 			if constexpr (std::is_void_v<ReturnType>)
@@ -245,7 +245,7 @@ export namespace CppUtils::Container
 			visit(size() - 1 - sizeof...(Args), [this, function](auto&& objectPointer) -> void {
 				using ObjectPointer = std::remove_cvref_t<decltype(objectPointer)>;
 				auto call = [this, function, objectPointer]<std::size_t... I> /* Not supported on MSVC [[nodiscard]] */ (/* Not supported on MSVC [[maybe_unused]] */ std::index_sequence<I...> indexSequence) -> decltype(auto) {
-					static_cast<void>(indexSequence);
+					auto _ = indexSequence;
 					return std::invoke(function, objectPointer, get<std::remove_cvref_t<Type::NthType<I, Args...>>>(size() - sizeof...(Args) + I)...);
 				};
 				if constexpr (not std::same_as<ObjectPointer, const Object*> and not std::same_as<ObjectPointer, Object*>)

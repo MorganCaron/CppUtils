@@ -83,26 +83,23 @@ export namespace CppUtils::Terminal::Mouse
 
 	[[nodiscard]] inline auto getEvent() -> std::optional<Event>
 	{
-#if defined(OS_LINUX) or defined(OS_MACOS)
-		if (not RawTerminal::isInputAvailable())
-			return std::nullopt;
-
 		auto raw = RawTerminal{};
-
-		if (raw.readChar() != '\x1b')
-			return std::nullopt;
-		if (raw.readChar() != '[')
-			return std::nullopt;
-		if (raw.readChar() != '<')
+		if (not raw.isInputAvailable())
 			return std::nullopt;
 
-		auto buffer = std::string{};
-		auto c = char{};
-		while ((c = raw.readChar()) != 'M' and c != 'm')
-			buffer += c;
+		if (raw.readChar().value_or('\0') != '\x1b')
+			return std::nullopt;
+		if (raw.readChar().value_or('\0') != '[')
+			return std::nullopt;
+		if (raw.readChar().value_or('\0') != '<')
+			return std::nullopt;
+
+		const auto [buffer, sentinel] = raw.read('M', 'm');
+		if (sentinel == '\0')
+			return std::nullopt;
 
 		auto buttonData = 0, x = 0, y = 0;
-		if (std::sscanf(buffer.c_str(), "%d;%d;%d", std::addressof(buttonData), std::addressof(x), std::addressof(y)) != 3)
+		if (std::sscanf(std::data(buffer), "%d;%d;%d", std::addressof(buttonData), std::addressof(x), std::addressof(y)) != 3)
 			return std::nullopt;
 
 		auto event = Event{};
@@ -112,7 +109,7 @@ export namespace CppUtils::Terminal::Mouse
 		event.ctrl = (buttonData & 16) != 0;
 		event.dragging = (buttonData & 32) != 0;
 
-		const auto isRelease = (c == 'm');
+		const auto isRelease = (sentinel == 'm');
 		event.pressed = not isRelease;
 
 		if (auto scroll = buttonData & 64; scroll != 0)
@@ -130,9 +127,6 @@ export namespace CppUtils::Terminal::Mouse
 			}
 
 		return event;
-#elif defined(OS_WINDOWS)
-		return std::nullopt;
-#endif
 	}
 
 	[[nodiscard]] inline auto getPosition() -> std::optional<Container::Size2>

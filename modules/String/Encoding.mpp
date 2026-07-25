@@ -7,6 +7,29 @@ import CppUtils.Container.Interval;
 
 export namespace CppUtils::String
 {
+	[[nodiscard]] inline constexpr auto isHighSurrogate(char16_t codeUnit) noexcept -> bool
+	{
+		return codeUnit >= 0xD800 and codeUnit <= 0xDBFF;
+	}
+
+	static_assert(isHighSurrogate(0xD83D));
+	static_assert(not isHighSurrogate(0xDE0A));
+
+	[[nodiscard]] inline constexpr auto isLowSurrogate(char16_t codeUnit) noexcept -> bool
+	{
+		return codeUnit >= 0xDC00 and codeUnit <= 0xDFFF;
+	}
+
+	static_assert(isLowSurrogate(0xDE0A));
+	static_assert(not isLowSurrogate(0xD83D));
+
+	[[nodiscard]] inline constexpr auto utf16SurrogatesToCodePoint(char16_t highSurrogate, char16_t lowSurrogate) noexcept -> char32_t
+	{
+		return static_cast<char32_t>(0x10000 + (((highSurrogate - 0xD800) << 10) | (lowSurrogate - 0xDC00)));
+	}
+
+	static_assert(utf16SurrogatesToCodePoint(0xD83D, 0xDE0A) == U'😊');
+
 	inline constexpr auto toUtf8(char32_t codePoint, std::string&& string = {}) -> std::string
 	{
 		if (codePoint < 0x80)
@@ -41,7 +64,7 @@ export namespace CppUtils::String
 		return string;
 	}
 
-	inline constexpr auto toUtf32(std::string_view text) -> std::pair<char32_t, std::size_t>
+	[[nodiscard]] inline constexpr auto toUtf32(std::string_view text) -> std::pair<char32_t, std::size_t>
 	{
 		if (std::empty(text))
 			return {U'\0', 0};
@@ -104,7 +127,8 @@ export namespace CppUtils::String
 		for (auto i = 0uz; i < count and end < std::size(text); ++i)
 		{
 			auto [codePoint, length] = toUtf32(text.substr(end));
-			if (length == 0uz) break;
+			if (length == 0uz)
+				break;
 			end += length;
 		}
 		return text.substr(start, end - start);

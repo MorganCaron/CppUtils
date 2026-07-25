@@ -1,0 +1,79 @@
+module;
+
+#include <CppUtils/System/Windows.hpp>
+
+#if defined(OS_LINUX) or defined(OS_MACOS)
+#	include <unistd.h>
+#	include <termios.h>
+#endif
+
+export module CppUtils.UnitTests.Terminal.Utility;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Terminal::Utility
+{
+	[[nodiscard]] auto directOSIsRawMode() -> bool
+	{
+#if defined(OS_LINUX) or defined(OS_MACOS)
+		auto t = termios{};
+		if (::tcgetattr(STDIN_FILENO, std::addressof(t)) != 0)
+			return false;
+		return (t.c_lflag & (ICANON | ECHO)) == 0 and t.c_cc[VMIN] == 1 and t.c_cc[VTIME] == 0;
+#elif defined(OS_WINDOWS)
+		const auto handle = ::GetStdHandle(STD_INPUT_HANDLE);
+		if (handle == INVALID_HANDLE_VALUE or handle == nullptr)
+			return false;
+		auto mode = DWORD{0};
+		if (not ::GetConsoleMode(handle, std::addressof(mode)))
+			return false;
+		return (mode & (ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT)) == 0;
+#endif
+	}
+
+	auto _ = TestSuite{"Terminal/Utility", {"UnitTest"}, [](TestSuite& suite) {
+		suite.addTest("getState and setState", [&] {
+			const auto state = CppUtils::Terminal::getState();
+			if (state)
+				suite.expect(CppUtils::Terminal::setState(state.value()));
+		});
+
+		suite.addTest("isRawMode", [&] {
+			suite.expectEqual(CppUtils::Terminal::isRawMode(), directOSIsRawMode());
+		});
+
+		suite.addTest("enableRawMode toggles raw mode and enables restoration", [&] {
+			const auto initialRaw = CppUtils::Terminal::isRawMode();
+			const auto oldState = CppUtils::Terminal::enableRawMode();
+			suite.skipIf(not oldState, "Terminal environment non-interactive");
+
+			suite.expect(CppUtils::Terminal::isRawMode());
+			suite.expect(directOSIsRawMode());
+
+			suite.expect(CppUtils::Terminal::setState(oldState.value()));
+			suite.expectEqual(CppUtils::Terminal::isRawMode(), initialRaw);
+			suite.expectEqual(directOSIsRawMode(), initialRaw);
+		});
+
+		suite.addTest("Flag bitwise operators", [&] {
+			using CppUtils::Terminal::Flag;
+			const auto combined = Flag::WaitForEnter | Flag::PrintTypedKeys;
+			suite.expect(combined & Flag::WaitForEnter);
+			suite.expect(combined & Flag::PrintTypedKeys);
+		});
+
+		suite.addTest("Cross-platform unified flags", [&] {
+			using CppUtils::Terminal::Flag;
+			const auto allFlags = Flag::None | Flag::WaitForEnter | Flag::PrintTypedKeys | Flag::ProcessInterruptSignals | Flag::TextEditingShortcuts | Flag::MouseInput | Flag::MouseTextSelection | Flag::AllowMouseSelection | Flag::AnsiEscapeCodes | Flag::Default;
+			suite.expect(allFlags & Flag::WaitForEnter);
+			suite.expect(Flag::Default & Flag::WaitForEnter);
+			suite.expect(Flag::Default & Flag::PrintTypedKeys);
+		});
+
+		suite.addTest("hasFlag function", [&] {
+			using CppUtils::Terminal::Flag;
+			suite.expectEqual(CppUtils::Terminal::hasFlag(Flag::Raw), CppUtils::Terminal::isRawMode());
+		});
+	}};
+}

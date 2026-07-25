@@ -4,6 +4,10 @@ module;
 
 #include <cstdio>
 
+#if defined(OS_LINUX) or defined(OS_MACOS)
+#	include <unistd.h>
+#endif
+
 export module CppUtils.Terminal.Handle;
 
 import std;
@@ -11,34 +15,61 @@ import CppUtils.System.Type;
 
 export namespace CppUtils::Terminal
 {
+#if defined(OS_LINUX) or defined(OS_MACOS)
+	using InputHandle = int;
+	inline constexpr auto DefaultInputHandle = InputHandle{STDIN_FILENO};
+#elif defined(OS_WINDOWS)
+	using InputHandle = HANDLE;
+	inline constexpr auto DefaultInputHandle = InputHandle{nullptr};
+
+	[[nodiscard]] inline auto resolveInputHandle(InputHandle handle) -> HANDLE
+	{
+		if (handle == nullptr or handle == INVALID_HANDLE_VALUE)
+			return ::GetStdHandle(STD_INPUT_HANDLE);
+		return handle;
+	}
+#endif
+
 #if defined(OS_WINDOWS)
 	[[nodiscard]] inline auto getTerminalHandle(std::FILE* file) -> System::Handle
 	{
 		auto terminalHandle = System::InvalidHandle;
-		if (file == stdout)
+		if (file == stdin)
+			terminalHandle = GetStdHandle(STD_INPUT_HANDLE);
+		else if (file == stdout)
 			terminalHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 		else if (file == stderr)
 			terminalHandle = GetStdHandle(STD_ERROR_HANDLE);
 		return terminalHandle;
 	}
 
-	[[nodiscard]] inline auto getTerminalHandle(std::ostream& stream) -> System::Handle
+	[[nodiscard]] inline auto getTerminalHandle(std::ios_base& stream) -> System::Handle
 	{
 		auto terminalHandle = System::InvalidHandle;
-		if (std::addressof(stream) == std::addressof(std::cout))
+		if (std::addressof(stream) == std::addressof(std::cin))
+			terminalHandle = GetStdHandle(STD_INPUT_HANDLE);
+		else if (std::addressof(stream) == std::addressof(std::cout))
 			terminalHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 		else if (std::addressof(stream) == std::addressof(std::cerr))
 			terminalHandle = GetStdHandle(STD_ERROR_HANDLE);
 		return terminalHandle;
 	}
 #else
-	[[nodiscard]] inline auto getTerminalHandle([[maybe_unused]] std::FILE* file) -> System::Handle
+	[[nodiscard]] inline auto getTerminalHandle(std::FILE* file) -> System::Handle
 	{
+		if (file != nullptr)
+			return ::fileno(file);
 		return System::InvalidHandle;
 	}
 
-	[[nodiscard]] inline auto getTerminalHandle([[maybe_unused]] std::ostream& stream) -> System::Handle
+	[[nodiscard]] inline auto getTerminalHandle(std::ios_base& stream) -> System::Handle
 	{
+		if (std::addressof(stream) == std::addressof(std::cin))
+			return STDIN_FILENO;
+		if (std::addressof(stream) == std::addressof(std::cout))
+			return STDOUT_FILENO;
+		if (std::addressof(stream) == std::addressof(std::cerr))
+			return STDERR_FILENO;
 		return System::InvalidHandle;
 	}
 #endif

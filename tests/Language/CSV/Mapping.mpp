@@ -103,9 +103,9 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 		inline auto operator()(auto& member, std::string_view value) const -> void
 		{
 #if defined(OS_MACOS)
-			static_cast<void>(Stl::from_chars(std::data(value), std::data(value) + std::size(value), member));
+			auto _ = Stl::from_chars(std::data(value), std::data(value) + std::size(value), member);
 #else
-			std::from_chars(std::data(value), std::data(value) + std::size(value), member);
+			auto _ = std::from_chars(std::data(value), std::data(value) + std::size(value), member);
 #endif
 			member *= factor;
 		}
@@ -176,9 +176,9 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 				using FunctionMapping = CppUtils::Type::Mapping<
 					CppUtils::Type::Pair<"Unsigned integer"_token, [](auto& member, std::string_view value) {
 #if defined(OS_MACOS)
-					static_cast<void>(Stl::from_chars(std::data(value), std::data(value) + std::size(value), member));
+					auto _ = Stl::from_chars(std::data(value), std::data(value) + std::size(value), member);
 #else
-					static_cast<void>(std::from_chars(std::data(value), std::data(value) + std::size(value), member));
+					auto _ = std::from_chars(std::data(value), std::data(value) + std::size(value), member);
 #endif
 					member *= 2;
 				}>>;

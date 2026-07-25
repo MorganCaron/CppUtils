@@ -10,6 +10,7 @@ import std;
 import CppUtils.Container.Size;
 import CppUtils.Terminal.RawTerminal;
 import CppUtils.Terminal.TextModifier;
+import CppUtils.Terminal.Handle;
 
 export namespace CppUtils::Terminal
 {
@@ -17,7 +18,7 @@ export namespace CppUtils::Terminal
 	[[nodiscard]] inline auto getCursorPosition() -> std::expected<Container::Size2, std::string_view>
 	{
 		auto consoleScreenBufferInfo = CONSOLE_SCREEN_BUFFER_INFO{};
-		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), std::addressof(consoleScreenBufferInfo));
+		GetConsoleScreenBufferInfo(getTerminalHandle(stdout), std::addressof(consoleScreenBufferInfo));
 		return Container::Size2{
 			consoleScreenBufferInfo.dwCursorPosition.X,
 			consoleScreenBufferInfo.dwCursorPosition.Y};
@@ -31,9 +32,12 @@ export namespace CppUtils::Terminal
 		std::print("{}", Ansi::EscapeCode::GetCursorPosition);
 		std::fflush(stdout);
 
-		const auto response = rawTerminal.read('R');
+		const auto [response, sentinel] = rawTerminal.read('R');
+		if (sentinel == '\0')
+			return std::unexpected{"Cursor position retrieval failure"sv};
+
 		auto rows = 0, columns = 0;
-		if (std::sscanf(response.c_str(), "\x1b[%d;%d", std::addressof(rows), std::addressof(columns)) == 2)
+		if (std::sscanf(std::data(response), "\x1b[%d;%d", std::addressof(rows), std::addressof(columns)) == 2)
 			return Container::Size2{static_cast<std::size_t>(columns - 1), static_cast<std::size_t>(rows - 1)};
 		return std::unexpected{"Cursor position retrieval failure"sv};
 	}
@@ -42,7 +46,7 @@ export namespace CppUtils::Terminal
 #if defined(OS_WINDOWS)
 	inline auto setCursorPosition(Container::Size2 position) -> void
 	{
-		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), COORD{static_cast<SHORT>(position.x()), static_cast<SHORT>(position.y())});
+		SetConsoleCursorPosition(getTerminalHandle(stdout), COORD{static_cast<SHORT>(position.x()), static_cast<SHORT>(position.y())});
 	}
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 	inline auto setCursorPosition(Container::Size2 position) -> void

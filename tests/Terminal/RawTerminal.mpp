@@ -1,0 +1,92 @@
+export module CppUtils.UnitTests.Terminal.RawTerminal;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Terminal::RawTerminal
+{
+	auto _ = TestSuite{"Terminal/RawTerminal", {"UnitTest"}, [](TestSuite& suite) {
+		suite.addTest("Single RawTerminal", [&] {
+			const auto initialRawState = CppUtils::Terminal::isRawMode();
+			{
+				auto raw = CppUtils::Terminal::RawTerminal{};
+				suite.skipIf(not raw.isInitialized(), "Terminal environment non-interactive");
+				suite.expect(CppUtils::Terminal::isRawMode());
+			}
+			suite.expectEqual(CppUtils::Terminal::isRawMode(), initialRawState);
+		});
+
+		suite.addTest("Move construction", [&] {
+			const auto initialRawState = CppUtils::Terminal::isRawMode();
+			{
+				auto raw1 = CppUtils::Terminal::RawTerminal{};
+				suite.skipIf(not raw1.isInitialized(), "Terminal environment non-interactive");
+				suite.expect(CppUtils::Terminal::isRawMode());
+				{
+					auto raw2 = std::move(raw1);
+					suite.expect(not raw1.isInitialized());
+					suite.expect(raw2.isInitialized());
+					suite.expect(CppUtils::Terminal::isRawMode());
+				}
+				suite.expectEqual(CppUtils::Terminal::isRawMode(), initialRawState);
+			}
+			suite.expectEqual(CppUtils::Terminal::isRawMode(), initialRawState);
+		});
+
+		suite.addTest("Move assignment (raw2 = move(raw1))", [&] {
+			const auto initialRawState = CppUtils::Terminal::isRawMode();
+			{
+				auto raw1 = CppUtils::Terminal::RawTerminal{};
+				suite.skipIf(not raw1.isInitialized(), "Terminal environment non-interactive");
+				suite.expect(CppUtils::Terminal::isRawMode());
+
+				auto raw2 = CppUtils::Terminal::RawTerminal{};
+				suite.expect(raw2.isInitialized());
+				suite.expect(CppUtils::Terminal::isRawMode());
+
+				raw2 = std::move(raw1);
+				suite.expect(not raw1.isInitialized());
+				suite.expect(raw2.isInitialized());
+
+				suite.expect(CppUtils::Terminal::isRawMode());
+			}
+			suite.expectEqual(CppUtils::Terminal::isRawMode(), initialRawState);
+		});
+
+		suite.addTest("Move assignment (raw1 = move(raw2))", [&] {
+			const auto initialRawState = CppUtils::Terminal::isRawMode();
+			{
+				auto raw1 = CppUtils::Terminal::RawTerminal{};
+				suite.skipIf(not raw1.isInitialized(), "Terminal environment non-interactive");
+				suite.expect(CppUtils::Terminal::isRawMode());
+
+				auto raw2 = CppUtils::Terminal::RawTerminal{};
+				suite.expect(raw2.isInitialized());
+				suite.expect(CppUtils::Terminal::isRawMode());
+
+				raw1 = std::move(raw2);
+				suite.expect(not raw2.isInitialized());
+				suite.expect(raw1.isInitialized());
+
+				suite.expect(CppUtils::Terminal::isRawMode());
+			}
+			suite.expectEqual(CppUtils::Terminal::isRawMode(), initialRawState);
+		});
+
+		suite.addTest("Multiple handles", [&] {
+			const auto defaultRawState = CppUtils::Terminal::isRawMode();
+			{
+				auto rawDefault = CppUtils::Terminal::RawTerminal{};
+				suite.skipIf(not rawDefault.isInitialized(), "Terminal environment non-interactive");
+				suite.expect(CppUtils::Terminal::isRawMode());
+
+#if defined(OS_LINUX) or defined(OS_MACOS)
+				auto rawStderr = CppUtils::Terminal::RawTerminal{STDERR_FILENO};
+				suite.skipIf(not rawStderr.isInitialized(), "Terminal stderr non-interactive");
+				suite.expect(CppUtils::Terminal::isRawMode(STDERR_FILENO));
+#endif
+			}
+			suite.expectEqual(CppUtils::Terminal::isRawMode(), defaultRawState);
+		});
+	}};
+}

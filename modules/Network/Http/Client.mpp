@@ -104,9 +104,9 @@ export namespace CppUtils::Network::Http
 						auto codeString = statusLine.substr(firstSpace + 1, secondSpace - firstSpace - 1);
 						auto code = 0uz;
 #if defined(OS_MACOS)
-						static_cast<void>(Stl::from_chars(std::data(codeString), std::data(codeString) + std::size(codeString), code));
+						auto _ = Stl::from_chars(std::data(codeString), std::data(codeString) + std::size(codeString), code);
 #else
-						static_cast<void>(std::from_chars(std::data(codeString), std::data(codeString) + std::size(codeString), code));
+						auto _ = std::from_chars(std::data(codeString), std::data(codeString) + std::size(codeString), code);
 #endif
 						response.status = static_cast<Status>(code);
 					}

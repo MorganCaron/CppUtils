@@ -11,6 +11,7 @@ export module CppUtils.Terminal.Size;
 
 import std;
 import CppUtils.Container.Size;
+import CppUtils.Terminal.Handle;
 
 export namespace CppUtils::Terminal
 {
@@ -18,7 +19,7 @@ export namespace CppUtils::Terminal
 	[[nodiscard]] inline auto getTerminalSize() -> Container::Size2
 	{
 		auto consoleScreenBufferInfo = CONSOLE_SCREEN_BUFFER_INFO{};
-		GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), std::addressof(consoleScreenBufferInfo));
+		GetConsoleScreenBufferInfo(getTerminalHandle(stdout), std::addressof(consoleScreenBufferInfo));
 		return Container::Size2{
 			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Right - consoleScreenBufferInfo.srWindow.Left + 1),
 			static_cast<std::size_t>(consoleScreenBufferInfo.srWindow.Bottom - consoleScreenBufferInfo.srWindow.Top + 1)};

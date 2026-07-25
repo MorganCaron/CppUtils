@@ -42,6 +42,27 @@ namespace CppUtils::UnitTest
 		{}
 	};
 
+	class TestSkipped final: public std::runtime_error
+	{
+	public:
+		explicit inline TestSkipped(std::string message, std::source_location location = std::source_location::current()):
+			std::runtime_error{std::format("{} (at {}:{})", message, location.file_name(), location.line())}
+		{}
+	};
+
+	struct SkippedTest final
+	{
+		std::string name;
+		std::string message;
+	};
+
+	enum class TestStatus
+	{
+		Success,
+		Failure,
+		Skipped
+	};
+
 	class TestRunner final
 	{
 		using Logger = Logger<"UnitTests">;
@@ -61,7 +82,7 @@ namespace CppUtils::UnitTest
 				m_testSuites.addDependency(name, prerequisite);
 		}
 
-		inline auto executeTest(const Test& test, const TestSettings& settings) const -> bool
+		inline auto executeTest(const Test& test, const TestSettings& settings) const -> std::pair<TestStatus, std::string>
 		{
 			using namespace std::chrono_literals;
 			if (settings.verbose)
@@ -101,6 +122,12 @@ namespace CppUtils::UnitTest
 
 					future.get();
 				}
+				catch (const TestSkipped& skipped)
+				{
+					if (settings.verbose)
+						Logger::print<"warning">("Skipped: {}", skipped.what());
+					return {TestStatus::Skipped, skipped.what()};
+				}
 				catch (const TestException&)
 				{
 					std::throw_with_nested(std::runtime_error{std::format("The following test didn't pass:\n{}", test.name)});
@@ -113,12 +140,12 @@ namespace CppUtils::UnitTest
 			catch (const std::exception& exception)
 			{
 				logException<Logger>(exception);
-				return false;
+				return {TestStatus::Failure, ""};
 			}
 			if (settings.verbose)
 				Logger::print<"success">("Passed");
 			Logger::waitUntilFinished(10s);
-			return true;
+			return {TestStatus::Success, ""};
 		}
 
 		inline auto executeTests(TestSettings settings) -> int
@@ -133,7 +160,8 @@ namespace CppUtils::UnitTest
 			Logger::print<"info">("{} tests found. Execution:", nbTests);
 
 			auto failedTestSuites = std::vector<std::string>{};
-			auto skippedTestSuites = std::vector<std::string>{};
+			auto implicitlySkippedTestSuites = std::vector<std::string>{};
+			auto explicitlySkippedTests = std::vector<SkippedTest>{};
 
 			auto nbSuccess = 0uz;
 			auto nbFail = 0uz;
@@ -152,7 +180,7 @@ namespace CppUtils::UnitTest
 					{
 						Logger::print<"warning">("Skipping test suite {} due to failed prerequisites in test suite {}", name, dependency);
 						testSuiteIsSuccess[name] = false;
-						skippedTestSuites.push_back(name);
+						implicitlySkippedTestSuites.push_back(name);
 						nbSkip += std::size(tests);
 						return not settings.fastAbort;
 					}
@@ -160,8 +188,14 @@ namespace CppUtils::UnitTest
 				auto allTestsPassed = true;
 				for (const auto& test : tests)
 				{
-					if (executeTest(test, settings))
+					const auto [status, skipMessage] = executeTest(test, settings);
+					if (status == TestStatus::Success)
 						++nbSuccess;
+					else if (status == TestStatus::Skipped)
+					{
+						++nbSkip;
+						explicitlySkippedTests.push_back({test.name, skipMessage});
+					}
 					else
 					{
 						++nbFail;
@@ -206,9 +240,11 @@ namespace CppUtils::UnitTest
 
 			if (nbSkip > 0)
 			{
-				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("- {} skipped tests (due to failed dependencies)", nbSkip));
-				for (const auto& skippedTestSuite : skippedTestSuites)
-					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("  - {}", skippedTestSuite));
+				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("- {} skipped tests", nbSkip));
+				for (const auto& skippedTest : explicitlySkippedTests)
+					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("  - {}: {}", skippedTest.name, skippedTest.message));
+				for (const auto& skippedTestSuite : implicitlySkippedTestSuites)
+					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("  - {} (due to failed prerequisites)", skippedTestSuite));
 			}
 
 			Logger::waitUntilFinished(10s);
@@ -245,6 +281,17 @@ namespace CppUtils::UnitTest
 		inline auto addTest(std::string name, std::function<void()> function, std::chrono::seconds timeout = std::chrono::seconds{10}) -> void
 		{
 			tests.emplace_back(std::move(name), [function = std::move(function)](std::stop_token) { function(); }, timeout);
+		}
+
+		[[noreturn]] inline auto skip(std::string message, std::source_location sourceLocation = std::source_location::current()) -> void
+		{
+			throw TestSkipped{std::move(message), sourceLocation};
+		}
+
+		inline auto skipIf(bool condition, std::string message, std::source_location sourceLocation = std::source_location::current()) -> void
+		{
+			if (condition)
+				skip(std::move(message), sourceLocation);
 		}
 
 		// Todo C++23: std::stacktrace stacktrace = std::current_stacktrace()

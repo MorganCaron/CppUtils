@@ -6,41 +6,51 @@ module;
 #	include <unistd.h>
 #	include <termios.h>
 #	include <poll.h>
+#	include <errno.h>
 #endif
 
 export module CppUtils.Terminal.RawTerminal;
 
 import std;
+import CppUtils.Terminal.Utility;
+import CppUtils.Thread.UniqueLocker;
+import CppUtils.String.Encoding;
 
 export namespace CppUtils::Terminal
 {
-#if defined(OS_LINUX) or defined(OS_MACOS)
 	class [[maybe_unused]] RawTerminal final
 	{
 	public:
-		inline RawTerminal()
+		inline RawTerminal(InputHandle handle = DefaultInputHandle):
+			m_handle{handle}
 		{
-			if (tcgetattr(STDIN_FILENO, std::addressof(m_oldTerminalState)))
-				return;
+			auto contexts = s_contexts.access();
+			auto& context = contexts.value()[m_handle];
+			if (context.activeCount == 0)
+			{
+				auto oldState = enableRawMode(m_handle);
+				if (not oldState)
+					return;
+				context.oldState = *oldState;
+			}
+			++context.activeCount;
 			m_initialized = true;
-
-			auto rawTerminal = m_oldTerminalState;
-			rawTerminal.c_lflag &= static_cast<tcflag_t>(~(ICANON | ECHO));
-			tcsetattr(STDIN_FILENO, TCSANOW, std::addressof(rawTerminal));
 		}
 
-		RawTerminal(const RawTerminal&) = delete;
-		RawTerminal(RawTerminal&& other) noexcept:
-			m_oldTerminalState{other.m_oldTerminalState},
+#if defined(OS_LINUX) or defined(OS_MACOS)
+		inline RawTerminal(RawTerminal&& other) noexcept:
+			m_handle{other.m_handle},
 			m_initialized{std::exchange(other.m_initialized, false)}
 		{}
 
-		RawTerminal& operator=(const RawTerminal&) = delete;
-		RawTerminal& operator=(RawTerminal&& rhs) noexcept
+		inline RawTerminal& operator=(RawTerminal&& rhs) noexcept
 		{
 			if (this != std::addressof(rhs))
 			{
-				m_oldTerminalState = rhs.m_oldTerminalState;
+				if (m_initialized)
+					destroy();
+
+				m_handle = rhs.m_handle;
 				m_initialized = std::exchange(rhs.m_initialized, false);
 			}
 			return *this;
@@ -49,55 +59,199 @@ export namespace CppUtils::Terminal
 		inline ~RawTerminal()
 		{
 			if (m_initialized)
-				tcsetattr(STDIN_FILENO, TCSANOW, std::addressof(m_oldTerminalState));
+				destroy();
 		}
 
-		[[nodiscard]] static inline auto isInputAvailable() -> bool
+		[[nodiscard]] inline auto isInputAvailable() const -> bool
 		{
-			auto pfd = pollfd{STDIN_FILENO, POLLIN, 0};
-			return ::poll(std::addressof(pfd), 1, 0) > 0;
+			auto pfd = pollfd{m_handle, POLLIN, 0};
+			return (::poll(std::addressof(pfd), 1, 0) > 0) and (pfd.revents & POLLIN);
 		}
 
-		[[nodiscard]] inline auto readChar() const -> char
+		[[nodiscard]] inline auto readChar() -> std::optional<char>
 		{
-			auto c = char{};
-			if (::read(STDIN_FILENO, std::addressof(c), 1) == 1)
-				return c;
-			return '\0';
-		}
-
-		[[nodiscard]] inline auto read(char sentinel) const -> std::string
-		{
-			using namespace std::literals;
-
-			auto string = ""s;
-			auto c = readChar();
-			while (c != '\0' and c != sentinel)
+			for (auto c = char{};;)
 			{
-				string += c;
-				c = readChar();
+				const auto result = ::read(m_handle, std::addressof(c), 1);
+				if (result == 1)
+					return c;
+
+				if (result < 0 and errno == EINTR)
+					continue;
+
+				return std::nullopt;
 			}
-			return string;
+		}
+
+#elif defined(OS_WINDOWS)
+		RawTerminal(RawTerminal&& other) noexcept:
+			m_handle{other.m_handle},
+			m_initialized{std::exchange(other.m_initialized, false)},
+			m_buffer{std::move(other.m_buffer)}
+		{}
+
+		RawTerminal& operator=(RawTerminal&& rhs) noexcept
+		{
+			if (this != std::addressof(rhs))
+			{
+				if (m_initialized)
+					destroy();
+
+				m_handle = rhs.m_handle;
+				m_initialized = std::exchange(rhs.m_initialized, false);
+				m_buffer = std::move(rhs.m_buffer);
+			}
+			return *this;
+		}
+
+		~RawTerminal()
+		{
+			if (m_initialized)
+				destroy();
+		}
+
+		[[nodiscard]] auto isInputAvailable() const -> bool
+		{
+			const auto inputHandle = resolveInputHandle(m_handle);
+			if (inputHandle == INVALID_HANDLE_VALUE or inputHandle == nullptr)
+				return false;
+
+			auto events = DWORD{0};
+			if (not ::GetNumberOfConsoleInputEvents(inputHandle, std::addressof(events)) or events == 0)
+				return false;
+
+			auto records = std::array<INPUT_RECORD, 64>{};
+			auto readCount = DWORD{0};
+
+			for (auto offset = DWORD{0}; offset < events; offset += readCount)
+			{
+				const auto toRead = std::min<DWORD>(events - offset, static_cast<DWORD>(std::ranges::size(records)));
+				if (not ::PeekConsoleInputW(inputHandle, std::ranges::data(records), toRead, std::addressof(readCount)) or readCount == 0)
+					break;
+
+				for (auto i = DWORD{0}; i < readCount; ++i)
+					if (records[i].EventType == KEY_EVENT and records[i].Event.KeyEvent.bKeyDown)
+						return true;
+			}
+			return false;
+		}
+
+		[[nodiscard]] auto readChar() -> std::optional<char>
+		{
+			if (not std::ranges::empty(m_buffer))
+			{
+				const auto c = m_buffer.front();
+				m_buffer.pop();
+				return c;
+			}
+
+			const auto inputHandle = resolveInputHandle(m_handle);
+			if (inputHandle == INVALID_HANDLE_VALUE or inputHandle == nullptr)
+				return std::nullopt;
+
+			auto record = INPUT_RECORD{};
+			auto readCount = DWORD{0};
+			auto highSurrogate = char16_t{0};
+
+			while (true)
+			{
+				if (not ::ReadConsoleInputW(inputHandle, std::addressof(record), 1, std::addressof(readCount)) or readCount == 0)
+					return std::nullopt;
+
+				if (record.EventType == KEY_EVENT and record.Event.KeyEvent.bKeyDown)
+				{
+					const auto utf16CodeUnit = static_cast<char16_t>(record.Event.KeyEvent.uChar.UnicodeChar);
+					if (utf16CodeUnit == 0)
+						continue;
+
+					auto codePoint = char32_t{0};
+					if (highSurrogate != 0)
+					{
+						const auto previousHigh = highSurrogate;
+						highSurrogate = 0;
+						if (String::isLowSurrogate(utf16CodeUnit))
+							codePoint = String::utf16SurrogatesToCodePoint(previousHigh, utf16CodeUnit);
+						else
+						{
+							if (String::isHighSurrogate(utf16CodeUnit))
+							{
+								highSurrogate = utf16CodeUnit;
+								continue;
+							}
+							codePoint = utf16CodeUnit;
+						}
+					}
+					else if (String::isHighSurrogate(utf16CodeUnit))
+					{
+						highSurrogate = utf16CodeUnit;
+						continue;
+					}
+					else
+						codePoint = utf16CodeUnit;
+
+					const auto utf8String = String::toUtf8(codePoint);
+					for (const auto byte : utf8String)
+						m_buffer.push(byte);
+
+					break;
+				}
+			}
+
+			if (not std::ranges::empty(m_buffer))
+			{
+				const auto c = m_buffer.front();
+				m_buffer.pop();
+				return c;
+			}
+			return std::nullopt;
+		}
+#endif
+
+		RawTerminal(const RawTerminal&) = delete;
+		RawTerminal& operator=(const RawTerminal&) = delete;
+
+		[[nodiscard]] inline auto isInitialized() const -> bool
+		{
+			return m_initialized;
+		}
+
+		[[nodiscard]] inline auto read(std::same_as<char> auto... sentinels) -> std::pair<std::string, char>
+		{
+			auto string = std::string{};
+			while (auto c = readChar())
+			{
+				if (((*c == sentinels) or ...))
+					return {string, *c};
+				string += *c;
+			}
+			return {string, '\0'};
 		}
 
 	private:
-		termios m_oldTerminalState;
+		struct Context final
+		{
+			State oldState{};
+			std::size_t activeCount = 0;
+		};
+
+		auto destroy() -> void
+		{
+			m_initialized = false;
+			auto contexts = s_contexts.access();
+			if (auto it = contexts->find(m_handle); it != std::ranges::end(contexts.value()))
+				if (auto& context = it->second; context.activeCount > 0 and --context.activeCount == 0)
+				{
+					auto _ = setState(context.oldState, m_handle);
+					contexts->erase(it);
+				}
+		}
+
+		static inline Thread::UniqueLocker<std::unordered_map<InputHandle, Context>> s_contexts;
+
+#if defined(OS_WINDOWS)
+		std::queue<char> m_buffer;
+#endif
+		InputHandle m_handle{};
 		bool m_initialized = false;
 	};
-#elif defined(OS_WINDOWS)
-	class [[maybe_unused]] RawTerminal final
-	{
-	public:
-		RawTerminal() = default;
-		RawTerminal(const RawTerminal&) = delete;
-		RawTerminal(RawTerminal&&) noexcept = default;
-		RawTerminal& operator=(const RawTerminal&) = delete;
-		RawTerminal& operator=(RawTerminal&&) noexcept = default;
-		~RawTerminal() = default;
-
-		[[nodiscard]] static inline auto isInputAvailable() -> bool { return false; }
-		[[nodiscard]] inline auto readChar() const -> char { return '\0'; }
-		[[nodiscard]] inline auto read([[maybe_unused]] char sentinel) const -> std::string { return {}; }
-	};
-#endif
 }
