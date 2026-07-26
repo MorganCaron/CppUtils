@@ -77,11 +77,12 @@ export namespace CppUtils::Network::Http
 			return readResponse();
 		}
 
-		[[nodiscard]] inline auto get(std::string_view path) -> std::expected<Response, std::error_code>
+		[[nodiscard]] inline auto get(std::string_view path, std::vector<Header> headers = {}) -> std::expected<Response, std::error_code>
 		{
 			auto request = Request{};
 			request.method = Method::Get;
 			request.path = std::string{path};
+			request.headers = std::move(headers);
 			return send(std::move(request));
 		}
 

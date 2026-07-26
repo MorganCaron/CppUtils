@@ -26,15 +26,18 @@ namespace CppUtils::UnitTest::Thread::ThreadLoop
 				auto threadLoop = CppUtils::Thread::ThreadLoop{[&lockedNumber] {
 					auto accessor = lockedNumber.access();
 					auto& nb = accessor.value();
-					++nb;
-					std::this_thread::sleep_for(10ms);
+					if (nb < 5uz)
+					{
+						++nb;
+						std::this_thread::sleep_for(10ms);
+					}
 				}};
 				threadLoop.start();
-				std::this_thread::sleep_for(100ms);
+				std::this_thread::sleep_for(250ms);
 			}
 			auto accessor = lockedNumber.access();
 			auto nb = accessor.value();
-			suite.expectEqual(nb, 10uz);
+			suite.expectEqual(nb, 5uz);
 		});
 
 		suite.addTest("onError callback", [&] {

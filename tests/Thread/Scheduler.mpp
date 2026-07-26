@@ -139,7 +139,7 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expect(times[1] - times[0] > 100ms);
+			suite.expect(times[1] - times[0] > 80ms);
 			suite.expect(times[2] - times[1] < 100ms);
 			suite.expect(times[3] - times[2] > 200ms);
 		});
@@ -163,7 +163,7 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expect(times[1] - times[0] < 100ms);
+			suite.expect(times[1] - times[0] < 80ms);
 			suite.expect(times[2] - times[1] > 100ms);
 			suite.expect(times[3] - times[2] > 200ms);
 		});

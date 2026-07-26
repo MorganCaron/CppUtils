@@ -37,7 +37,7 @@ namespace CppUtils::UnitTest::Network
 				}
 
 				{
-					auto response = client.get("/Universe");
+					auto response = client.get("/Universe", {{"Connection", "close"}});
 					suite.expect(response);
 					suite.expectEqual(response->status, 200uz);
 					suite.expectEqual(response->body, "Hello /Universe");

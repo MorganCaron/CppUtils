@@ -1,5 +1,7 @@
 module;
 
+#include <cstdio>
+
 #include <CppUtils/System/Windows.hpp>
 
 #if defined(OS_LINUX) or defined(OS_MACOS)
