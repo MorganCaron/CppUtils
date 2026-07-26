@@ -511,6 +511,22 @@ export namespace CppUtils::Container
 			return nodeAccessor->value.branches.sharedAccess();
 		}
 
+		auto clearBranches() const -> void
+		{
+			if (not m_node)
+				return;
+
+			auto branchKeys = std::vector<Key>{};
+			{
+				auto nodeAccessor = m_node->sharedAccess();
+				auto branchesAccessor = nodeAccessor->value.branches.sharedAccess();
+				for (const auto& [key, _] : branchesAccessor.value())
+					branchKeys.push_back(key);
+			}
+			for (const auto& key : branchKeys)
+				detach(*this, key);
+		}
+
 	private:
 		SharedPtr m_node = nullptr;
 	};
