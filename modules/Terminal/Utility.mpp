@@ -65,6 +65,12 @@ export namespace CppUtils::Terminal
 			static_cast<std::underlying_type_t<Flag>>(lhs) | static_cast<std::underlying_type_t<Flag>>(rhs));
 	}
 
+	[[nodiscard]] inline constexpr auto operator~(Flag flag) noexcept -> Flag
+	{
+		return static_cast<Flag>(
+			~static_cast<std::underlying_type_t<Flag>>(flag));
+	}
+
 	[[nodiscard]] inline auto getState(InputHandle handle = DefaultInputHandle) -> std::optional<State>
 	{
 #if defined(OS_LINUX) or defined(OS_MACOS)

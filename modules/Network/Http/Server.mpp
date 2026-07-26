@@ -22,12 +22,16 @@ export namespace CppUtils::Network::Http
 			m_threadPool{numberThreads},
 			m_loop{
 				[this] {
-					if (auto clientResult = m_server.accept(); clientResult)
+					using namespace std::chrono_literals;
+					if (m_server.isReadyForRead(50ms))
 					{
-						auto _ = clientResult.value().setBlocking(true);
-						m_threadPool.call([this, client = std::move(clientResult.value())]() mutable {
-							handleClient(std::move(client));
-						});
+						if (auto clientResult = m_server.accept(); clientResult)
+						{
+							auto _ = clientResult.value().setBlocking(true);
+							m_threadPool.call([this, client = std::move(clientResult.value())]() mutable {
+								handleClient(std::move(client));
+							});
+						}
 					}
 				},
 				[this] { auto _ = m_server.shutdown(); }}

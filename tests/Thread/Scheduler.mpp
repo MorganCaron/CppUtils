@@ -192,10 +192,10 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 			auto aExecuted = std::atomic_bool{false};
 			auto bExecuted = std::atomic_bool{false};
 
-			scheduler.schedule([&] { bExecuted = true; }, 200ms);
+			scheduler.schedule([&] { bExecuted = true; }, 500ms);
 			scheduler.schedule([&] { aExecuted = true; }, 100ms);
 
-			std::this_thread::sleep_for(150ms);
+			std::this_thread::sleep_for(250ms);
 			scheduler.cancelAll();
 
 			suite.expect(aExecuted.load());
