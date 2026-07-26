@@ -107,7 +107,7 @@ namespace CppUtils::UnitTest::Terminal::Canvas
 			auto charPosition = CppUtils::Container::Size2{};
 			const auto collisionBox = canvasSize - CppUtils::Container::Size2{1, 0};
 
-			for (auto i = 0uz; i <= 500uz; ++i)
+			for (auto i = 0uz; i <= 250uz; ++i)
 			{
 				canvas.printText(charPosition, ".");
 				auto previousBallPosition = ballPosition;

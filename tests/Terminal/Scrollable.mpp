@@ -84,7 +84,7 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 						});
 						scrollable.setScroll(currentScroll);
 						canvas.print();
-						std::this_thread::sleep_for(30ms);
+						std::this_thread::sleep_for(20ms);
 					}
 			}
 		});

@@ -248,10 +248,10 @@ export namespace CppUtils::Terminal
 
 		static inline Thread::UniqueLocker<std::unordered_map<InputHandle, Context>> s_contexts;
 
+		InputHandle m_handle{};
+		bool m_initialized = false;
 #if defined(OS_WINDOWS)
 		std::queue<char> m_buffer;
 #endif
-		InputHandle m_handle{};
-		bool m_initialized = false;
 	};
 }
