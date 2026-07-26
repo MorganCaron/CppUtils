@@ -4,7 +4,7 @@ import std;
 import CppUtils.Execution.EventQueue;
 import CppUtils.UnitTest;
 
-namespace CppUtils::UnitTest::Execution
+namespace CppUtils::UnitTest::Execution::EventQueue
 {
 	auto _ = TestSuite{"Execution/EventQueue", {"Execution/EventDispatcher", "Thread/UniqueLocker", "Thread/ThreadLoop", "Execution/ScopeGuard", "UnitTest"}, [](TestSuite& suite) {
 		suite.addTest("Local EventQueue emission", [&] {
