@@ -23,17 +23,17 @@ struct std::formatter<CppUtils::Terminal::BarRenderer>
 
 	constexpr auto parse(std::format_parse_context& context)
 	{
-		auto iterator = std::begin(context);
-		if (iterator == std::end(context) or *iterator == '}')
+		auto iterator = std::ranges::begin(context);
+		if (iterator == std::ranges::end(context) or *iterator == '}')
 			return iterator;
 
 		auto content = std::string{};
-		while (iterator != std::end(context) and *iterator != '}')
+		while (iterator != std::ranges::end(context) and *iterator != '}')
 			content += *iterator++;
 
 		auto filledCharacter = CppUtils::String::utf32Substr(content, 0uz, 1uz);
 		auto emptyCharacter = CppUtils::String::utf32Substr(content, 1uz, 1uz);
-		if (not std::empty(filledCharacter) and not std::empty(emptyCharacter))
+		if (not std::ranges::empty(filledCharacter) and not std::ranges::empty(emptyCharacter))
 		{
 			filled = filledCharacter;
 			empty = emptyCharacter;
@@ -50,12 +50,12 @@ struct std::formatter<CppUtils::Terminal::BarRenderer>
 			return context.out();
 
 		static constexpr auto doneText = "--- Done ---"sv;
-		if (barRenderer.percent >= 100.f and barRenderer.width >= std::size(doneText))
+		if (barRenderer.percent >= 100.f and barRenderer.width >= std::ranges::size(doneText))
 			return std::format_to(context.out(), "{:^{}}", doneText, barRenderer.width);
 
 		const auto filledLength = static_cast<std::size_t>(static_cast<float>(barRenderer.width) * barRenderer.percent / 100.f);
 		const auto emptyLength = barRenderer.width - filledLength;
-		const auto hasHead = not std::empty(head) and filledLength > 0uz;
+		const auto hasHead = not std::ranges::empty(head) and filledLength > 0uz;
 		const auto filledLengthWithoutHead = filledLength - (hasHead ? 1uz : 0uz);
 
 		auto result = std::string{};
@@ -108,7 +108,7 @@ export namespace CppUtils::Terminal
 		inline auto setPercent(float percent) noexcept -> void
 		{
 			using namespace std::chrono_literals;
-			m_percent = std::clamp(percent, 0.f, 100.f);
+			m_percent = std::ranges::clamp(percent, 0.f, 100.f);
 			if (hasWidgetManager())
 				requestUpdate(10ms);
 		}
@@ -135,7 +135,7 @@ export namespace CppUtils::Terminal
 
 			auto dummyBarRenderer = BarRenderer{percent, 0uz};
 			const auto overheadText = std::vformat(m_style, std::make_format_args(m_title, dummyBarRenderer, percentInt));
-			const auto overheadWidth = std::size(overheadText);
+			const auto overheadWidth = std::ranges::size(overheadText);
 
 			if (size.width() <= overheadWidth + 2)
 				return;

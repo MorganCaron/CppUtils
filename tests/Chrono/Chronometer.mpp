@@ -12,7 +12,7 @@ namespace CppUtils::UnitTest::Chrono::Chronometer
 			auto chrono = CppUtils::Chrono::Chronometer{};
 			chrono.stop();
 			auto string = CppUtils::Chrono::durationToString(chrono.getDuration());
-			suite.expect(not std::empty(string));
+			suite.expect(not std::ranges::empty(string));
 			Logger::print("{}", string);
 		});
 	}};

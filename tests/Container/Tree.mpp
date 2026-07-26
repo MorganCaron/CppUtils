@@ -25,7 +25,7 @@ namespace CppUtils::UnitTest::Container::Tree
 			branch0.nodes[0].nodes.emplace_back(StringTreeNode{"SubSubBranch0"});
 			branch0.nodes.emplace_back(StringTreeNode{"SubBranch1"});
 			branch0.nodes.emplace_back(StringTreeNode{"SubBranch2"});
-			suite.expectEqual(std::size(branch0.nodes), 3uz);
+			suite.expectEqual(std::ranges::size(branch0.nodes), 3uz);
 
 			root.nodes.emplace_back(StringTreeNode{"Branch2"});
 			auto& branch2 = root.nodes[2];

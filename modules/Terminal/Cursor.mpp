@@ -37,7 +37,7 @@ export namespace CppUtils::Terminal
 			return std::unexpected{"Cursor position retrieval failure"sv};
 
 		auto rows = 0, columns = 0;
-		if (std::sscanf(std::data(response), "\x1b[%d;%d", std::addressof(rows), std::addressof(columns)) == 2)
+		if (std::sscanf(std::ranges::data(response), "\x1b[%d;%d", std::addressof(rows), std::addressof(columns)) == 2)
 			return Container::Size2{static_cast<std::size_t>(columns - 1), static_cast<std::size_t>(rows - 1)};
 		return std::unexpected{"Cursor position retrieval failure"sv};
 	}

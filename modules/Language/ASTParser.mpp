@@ -28,7 +28,7 @@ export namespace CppUtils::Language
 			functions["enter"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scope = context.getScope();
 				auto& scopeNodes = scope.nodes;
-				if (std::empty(scopeNodes)) [[unlikely]]
+				if (std::ranges::empty(scopeNodes)) [[unlikely]]
 					return std::unexpected{"Missing scope token"};
 				auto targetNodeId = scopeNodes.back().value;
 				if (instruction.exists("delete"_token))
@@ -42,7 +42,7 @@ export namespace CppUtils::Language
 				return {};
 			};
 			functions["leave"_token] = [](Cursor&, const ASTNode&, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
-				if (std::size(context.scopes) <= 1)
+				if (std::ranges::size(context.scopes) <= 1)
 					return std::unexpected("Cannot leave the global scope");
 				context.scopes.pop_back();
 				return {};
@@ -50,7 +50,7 @@ export namespace CppUtils::Language
 
 			functions["new"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				if (std::empty(instruction.nodes))
+				if (std::ranges::empty(instruction.nodes))
 					scopeNodes.emplace_back(0);
 				else
 					scopeNodes.push_back(instruction.nodes.front());
@@ -59,11 +59,11 @@ export namespace CppUtils::Language
 			functions["delete"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scope = context.getScope();
 				auto& scopeNodes = scope.nodes;
-				if (std::empty(scopeNodes)) [[unlikely]]
+				if (std::ranges::empty(scopeNodes)) [[unlikely]]
 					return std::unexpected{"No node to delete"};
-				if (std::empty(instruction.nodes))
+				if (std::ranges::empty(instruction.nodes))
 					scopeNodes.pop_back();
-				else if (auto it = scope.find(instruction.nodes.front().value); it != std::cend(scopeNodes))
+				else if (auto it = scope.find(instruction.nodes.front().value); it != std::ranges::cend(scopeNodes))
 					scopeNodes.erase(it);
 				return {};
 			};
@@ -73,9 +73,9 @@ export namespace CppUtils::Language
 			};
 			functions["="_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				if (std::empty(scopeNodes)) [[unlikely]]
+				if (std::ranges::empty(scopeNodes)) [[unlikely]]
 					return std::unexpected{"No node to edit"};
-				if (std::empty(instruction.nodes)) [[unlikely]]
+				if (std::ranges::empty(instruction.nodes)) [[unlikely]]
 					return std::unexpected{"No value to set"};
 				scopeNodes.back().value = instruction.nodes.front().value;
 				return {};
@@ -83,9 +83,9 @@ export namespace CppUtils::Language
 			functions["exists"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				auto nodeId = Type::Token{};
-				if (std::empty(instruction.nodes))
+				if (std::ranges::empty(instruction.nodes))
 				{
-					if (std::empty(scopeNodes)) [[unlikely]]
+					if (std::ranges::empty(scopeNodes)) [[unlikely]]
 						return std::unexpected{"No node to search"};
 					nodeId = scopeNodes.back().value;
 				}
@@ -97,9 +97,9 @@ export namespace CppUtils::Language
 			functions["functionExists"_token] = [](Cursor&, const ASTNode& instruction, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
 				auto nodeId = Type::Token{};
-				if (std::empty(instruction.nodes))
+				if (std::ranges::empty(instruction.nodes))
 				{
-					if (std::empty(scopeNodes)) [[unlikely]]
+					if (std::ranges::empty(scopeNodes)) [[unlikely]]
 						return std::unexpected{"No function to search"};
 					nodeId = scopeNodes.back().value;
 				}
@@ -112,16 +112,16 @@ export namespace CppUtils::Language
 
 			functions["readChar"_token] = [](Cursor& cursor, const ASTNode&, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				if (cursor.position >= std::size(cursor.source))
+				if (cursor.position >= std::ranges::size(cursor.source))
 					return std::unexpected{"Out of string"};
 				scopeNodes.emplace_back(static_cast<Type::Token>(cursor.getCurrent()));
 				return {};
 			};
 			functions["getCursorPosition"_token] = [](Cursor& cursor, const ASTNode&, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				if (std::empty(cursor.source)) [[unlikely]]
+				if (std::ranges::empty(cursor.source)) [[unlikely]]
 					return std::unexpected{"Empty source"};
-				if (cursor.position >= std::size(cursor.source)) [[unlikely]]
+				if (cursor.position >= std::ranges::size(cursor.source)) [[unlikely]]
 					return std::unexpected{"End of string"};
 				scopeNodes.emplace_back(static_cast<Type::Token>(cursor.position));
 				return {};
@@ -136,16 +136,16 @@ export namespace CppUtils::Language
 			};
 			functions["isEndOfString"_token] = [](Cursor& cursor, const ASTNode&, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				scopeNodes.emplace_back(cursor.position >= std::size(cursor.source));
+				scopeNodes.emplace_back(cursor.position >= std::ranges::size(cursor.source));
 				return {};
 			};
 			functions["hash"_token] = [](Cursor& cursor, const ASTNode&, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				if (std::size(scopeNodes) < 2) [[unlikely]]
+				if (std::ranges::size(scopeNodes) < 2) [[unlikely]]
 					return std::unexpected{R"(Missing arguments in the "hash" instruction)"};
 				const auto length = Container::Vector::popBack(scopeNodes).value;
 				const auto startPosition = Container::Vector::popBack(scopeNodes).value;
-				if (startPosition + length > std::size(cursor.source)) [[unlikely]]
+				if (startPosition + length > std::ranges::size(cursor.source)) [[unlikely]]
 					return std::unexpected{R"(Out of string)"};
 				scopeNodes.emplace_back(Type::hash(cursor.source.substr(startPosition, length)));
 				return {};
@@ -153,7 +153,7 @@ export namespace CppUtils::Language
 
 			static constexpr auto unaryOperator = [](auto operation, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				if (std::empty(scopeNodes)) [[unlikely]]
+				if (std::ranges::empty(scopeNodes)) [[unlikely]]
 					return std::unexpected{"Missing argument"};
 				scopeNodes.emplace_back(operation(Container::Vector::popBack(scopeNodes).value));
 				return {};
@@ -163,18 +163,18 @@ export namespace CppUtils::Language
 				auto& scopeNodes = context.getScope().nodes;
 				auto lhs = Type::Token{};
 				auto rhs = Type::Token{};
-				if (auto rhsNode = instruction.find("rhs"_token); rhsNode != std::cend(instruction.nodes))
+				if (auto rhsNode = instruction.find("rhs"_token); rhsNode != std::ranges::cend(instruction.nodes))
 				{
-					if (std::empty(scopeNodes)) [[unlikely]]
+					if (std::ranges::empty(scopeNodes)) [[unlikely]]
 						return std::unexpected{"Missing lhs"};
 					lhs = scopeNodes.back().value;
 					rhs = rhsNode->nodes.front().value;
 				}
 				else
 				{
-					if (std::size(scopeNodes) < 2) [[unlikely]]
+					if (std::ranges::size(scopeNodes) < 2) [[unlikely]]
 						return std::unexpected{"Missing operands"};
-					lhs = scopeNodes[std::size(scopeNodes) - 2].value;
+					lhs = scopeNodes[std::ranges::size(scopeNodes) - 2].value;
 					rhs = scopeNodes.back().value;
 					if (not instruction.exists("keepRhs"_token))
 						scopeNodes.pop_back();
@@ -210,12 +210,12 @@ export namespace CppUtils::Language
 
 			static constexpr auto condition = [](auto operation, Cursor& cursor, const ASTNode& instruction, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				if (std::empty(scopeNodes)) [[unlikely]]
+				if (std::ranges::empty(scopeNodes)) [[unlikely]]
 					return std::unexpected{"condition: No value to check"};
 				if (operation(scopeNodes.back().value))
 				{
 					auto lexemes = std::ref(instruction.nodes);
-					for (auto instructionPosition = 0uz; not context.exit and instructionPosition < std::size(lexemes.get()); ++instructionPosition)
+					for (auto instructionPosition = 0uz; not context.exit and instructionPosition < std::ranges::size(lexemes.get()); ++instructionPosition)
 					{
 						const auto& lexeme = lexemes.get()[instructionPosition];
 						if (auto result = context(cursor, lexeme); not result) [[unlikely]]
@@ -231,18 +231,18 @@ export namespace CppUtils::Language
 
 			functions["while"_token] = [](Cursor& cursor, const ASTNode& instruction, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				if (std::empty(instruction.nodes)) [[unlikely]]
+				if (std::ranges::empty(instruction.nodes)) [[unlikely]]
 					return std::unexpected{"while: No condition to execute"};
 				if (auto result = context(cursor, instruction.nodes.front()); not result) [[unlikely]]
 					return result;
 				if (context.exit)
 					return {};
-				if (std::empty(scopeNodes)) [[unlikely]]
+				if (std::ranges::empty(scopeNodes)) [[unlikely]]
 					return std::unexpected{"while: No value to check"};
 				while (Container::Vector::popBack(scopeNodes).value)
 				{
 					auto lexemes = std::ref(instruction.nodes);
-					for (auto instructionPosition = 1uz; instructionPosition < std::size(lexemes.get()); ++instructionPosition)
+					for (auto instructionPosition = 1uz; instructionPosition < std::ranges::size(lexemes.get()); ++instructionPosition)
 					{
 						const auto& lexeme = lexemes.get()[instructionPosition];
 						if (auto result = context(cursor, lexeme); not result) [[unlikely]]
@@ -255,19 +255,19 @@ export namespace CppUtils::Language
 						return result;
 					if (context.exit)
 						return {};
-					if (std::empty(scopeNodes)) [[unlikely]]
+					if (std::ranges::empty(scopeNodes)) [[unlikely]]
 						return std::unexpected{"while: No value to check"};
 				}
 				return {};
 			};
 			functions["doWhile"_token] = [](Cursor& cursor, const ASTNode& instruction, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto& scopeNodes = context.getScope().nodes;
-				if (std::empty(instruction.nodes)) [[unlikely]]
+				if (std::ranges::empty(instruction.nodes)) [[unlikely]]
 					return std::unexpected{"doWhile: No condition to execute"};
 				do
 				{
 					auto lexemes = std::ref(instruction.nodes);
-					for (auto instructionPosition = 0uz; instructionPosition < std::size(lexemes.get()); ++instructionPosition)
+					for (auto instructionPosition = 0uz; instructionPosition < std::ranges::size(lexemes.get()); ++instructionPosition)
 					{
 						const auto& lexeme = lexemes.get()[instructionPosition];
 						if (auto result = context(cursor, lexeme); not result) [[unlikely]]
@@ -276,7 +276,7 @@ export namespace CppUtils::Language
 					}
 					if (context.exit)
 						return {};
-					if (std::empty(scopeNodes)) [[unlikely]]
+					if (std::ranges::empty(scopeNodes)) [[unlikely]]
 						return std::unexpected{"doWhile: No value to check"};
 				}
 				while (Container::Vector::popBack(scopeNodes).value);
@@ -286,7 +286,7 @@ export namespace CppUtils::Language
 				auto& scopeNodes = context.getScope().nodes;
 				auto lastPosition = cursor.position;
 				auto lexemes = std::ref(instruction.nodes);
-				for (auto instructionPosition = 0uz; instructionPosition < std::size(lexemes.get()); ++instructionPosition)
+				for (auto instructionPosition = 0uz; instructionPosition < std::ranges::size(lexemes.get()); ++instructionPosition)
 				{
 					const auto& lexeme = lexemes.get()[instructionPosition];
 					if (auto result = context(cursor, lexeme); not result)
@@ -305,7 +305,7 @@ export namespace CppUtils::Language
 			functions["alternative"_token] = [](Cursor& cursor, const ASTNode& instruction, v1::MetaCircularVirtualMachine& context) -> std::expected<void, std::string_view> {
 				auto lastPosition = cursor.position;
 				auto lexemes = std::ref(instruction.nodes);
-				for (auto instructionPosition = 0uz; instructionPosition < std::size(lexemes.get()); ++instructionPosition)
+				for (auto instructionPosition = 0uz; instructionPosition < std::ranges::size(lexemes.get()); ++instructionPosition)
 				{
 					const auto& lexeme = lexemes.get()[instructionPosition];
 					if (auto result = context(cursor, lexeme); not result)

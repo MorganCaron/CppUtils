@@ -13,7 +13,7 @@ namespace CppUtils::UnitTest::Language::JSON::Parsing
 			const auto result = "{}"_json;
 			suite.expect(result);
 			suite.expect(result->isObject());
-			suite.expect(std::empty(result->as<CppUtils::Language::JSON::Object>()));
+			suite.expect(std::ranges::empty(result->as<CppUtils::Language::JSON::Object>()));
 		});
 
 		suite.addTest("Parse Values", [&] {
@@ -41,7 +41,7 @@ namespace CppUtils::UnitTest::Language::JSON::Parsing
 			suite.expect(result);
 			const auto& value = result.value();
 			suite.expect(value.isArray());
-			suite.expectEqual(std::size(value.as<CppUtils::Language::JSON::Array>()), 3uz);
+			suite.expectEqual(std::ranges::size(value.as<CppUtils::Language::JSON::Array>()), 3uz);
 			suite.expectEqual(value[0].as<double>(), 1.0);
 		});
 

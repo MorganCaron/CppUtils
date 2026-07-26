@@ -30,7 +30,7 @@ export namespace CppUtils::Language::CSV
 				using CSVPair = std::remove_cvref_t<decltype(csvPair)>;
 				constexpr auto token = CSVPair::lhs;
 				constexpr auto csvColumnPosition = std::get<0>(CSVPair::rhs);
-				if (csvColumnPosition < std::size(csvLine))
+				if (csvColumnPosition < std::ranges::size(csvLine))
 				{
 					constexpr auto memberPointer = std::get<0>(StructMapping::template toRhs<token>());
 					auto& member = object.*memberPointer;
@@ -42,9 +42,9 @@ export namespace CppUtils::Language::CSV
 						member = value;
 					else if constexpr (std::integral<MemberType> or std::floating_point<MemberType>)
 #if defined(OS_MACOS)
-						auto _ = Stl::from_chars(std::data(value), std::data(value) + std::size(value), member);
+						auto _ = Stl::from_chars(std::ranges::data(value), std::ranges::data(value) + std::ranges::size(value), member);
 #else
-						auto _ = std::from_chars(std::data(value), std::data(value) + std::size(value), member);
+						auto _ = std::from_chars(std::ranges::data(value), std::ranges::data(value) + std::ranges::size(value), member);
 #endif
 				}
 			}(csvPairs), ...);
@@ -58,8 +58,8 @@ export namespace CppUtils::Language::CSV
 		std::size_t dropNFirstLines = 0,
 		std::vector<Object>&& objects = {}) -> std::vector<Object>
 	{
-		for (auto i = dropNFirstLines; i < std::size(lines); ++i)
-			if (const auto& line = lines[i]; not std::empty(line))
+		for (auto i = dropNFirstLines; i < std::ranges::size(lines); ++i)
+			if (const auto& line = lines[i]; not std::ranges::empty(line))
 				objects.push_back(toStruct<Object, Mapping>(line));
 		return std::move(objects);
 	}
@@ -72,7 +72,7 @@ export namespace CppUtils::Language::CSV
 		constexpr auto maxPosition = []() -> std::size_t {
 			auto max = 0uz;
 			std::apply([&](auto&&... pairs) {
-				((max = std::max(max, static_cast<std::size_t>(std::get<0>(std::remove_cvref_t<decltype(pairs)>::rhs)))), ...);
+				((max = std::ranges::max(max, static_cast<std::size_t>(std::get<0>(std::remove_cvref_t<decltype(pairs)>::rhs)))), ...);
 			}, typename CSVMapping::Values{});
 			return max;
 		}();
@@ -98,7 +98,7 @@ export namespace CppUtils::Language::CSV
 		auto csv = std::string{};
 		for (const auto& object : objects)
 		{
-			if (not std::empty(csv))
+			if (not std::ranges::empty(csv))
 				csv += lineSeparator;
 			csv += toCSV<Object, Mapping>(object, columnSeparator);
 		}

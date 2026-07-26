@@ -24,17 +24,17 @@ export namespace CppUtils::Container
 
 		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
 		{
-			return std::empty(m_types);
+			return std::ranges::empty(m_types);
 		}
 
 		[[nodiscard]] inline constexpr auto size() const noexcept -> std::size_t
 		{
-			return std::size(m_types);
+			return std::ranges::size(m_types);
 		}
 
 		[[nodiscard]] inline constexpr auto getByteSize() const noexcept -> std::size_t
 		{
-			return std::size(m_data);
+			return std::ranges::size(m_data);
 		}
 
 		[[nodiscard]] inline constexpr auto getType(std::size_t position) const -> std::size_t

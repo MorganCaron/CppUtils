@@ -150,7 +150,7 @@ export namespace CppUtils::FileSystem
 				indexAccessor->erase(it);
 			}
 
-			if (auto it = m_freeList.lower_bound(size); it != std::end(m_freeList))
+			if (auto it = m_freeList.lower_bound(size); it != std::ranges::end(m_freeList))
 			{
 				auto block = it->second;
 				m_freeList.erase(it);
@@ -260,7 +260,7 @@ export namespace CppUtils::FileSystem
 
 			// Merge with following block
 			if (auto nextIterator = m_freeBlocksByLocation.find(ChunkLocation{chunkId, offset + size});
-				nextIterator != std::end(m_freeBlocksByLocation))
+				nextIterator != std::ranges::end(m_freeBlocksByLocation))
 			{
 				auto nextSize = nextIterator->second;
 				removeFromFreeList(offset + size, nextSize);
@@ -270,9 +270,9 @@ export namespace CppUtils::FileSystem
 
 			// Merge with preceding block
 			if (auto previousIterator = m_freeBlocksByLocation.lower_bound(ChunkLocation{chunkId, offset});
-				previousIterator != std::begin(m_freeBlocksByLocation))
+				previousIterator != std::ranges::begin(m_freeBlocksByLocation))
 			{
-				previousIterator = std::prev(previousIterator);
+				previousIterator = std::ranges::prev(previousIterator);
 				if (previousIterator->first.chunkId == chunkId and previousIterator->first.offset + previousIterator->second == offset)
 				{
 					auto previousOffset = previousIterator->first.offset;

@@ -149,7 +149,7 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 
 			suite.expect(status);
 			suite.expect(target.contains("Branch"_token));
-			suite.expectEqual(std::size(target.at("Branch"_token).value()), 1uz);
+			suite.expectEqual(std::ranges::size(target.at("Branch"_token).value()), 1uz);
 			suite.expectEqual(target.at("Branch"_token)->front()->getValue().value(), "Child"_token);
 		});
 

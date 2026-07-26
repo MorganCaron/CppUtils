@@ -32,7 +32,7 @@ export namespace CppUtils::Math
 	{
 		[[assume(epsilon > 0)]];
 		auto difference = absolute(lhs - rhs);
-		auto maximum = std::max(absolute(lhs), absolute(rhs));
+		auto maximum = std::ranges::max(absolute(lhs), absolute(rhs));
 		if (maximum >= Float{1})
 			return difference <= epsilon * maximum;
 		else if (maximum > Float{0})

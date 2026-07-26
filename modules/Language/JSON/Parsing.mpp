@@ -37,7 +37,7 @@ export namespace CppUtils::Language::JSON
 					return std::unexpected{value.error()};
 
 				skipSpaces();
-				if (m_position != std::size(m_json))
+				if (m_position != std::ranges::size(m_json))
 					return std::unexpected{Error{"Unexpected characters after JSON value", m_position}};
 
 				return value;
@@ -46,13 +46,13 @@ export namespace CppUtils::Language::JSON
 		private:
 			inline auto skipSpaces() -> void
 			{
-				while (m_position < std::size(m_json) and std::isspace(static_cast<unsigned char>(m_json[m_position])))
+				while (m_position < std::ranges::size(m_json) and std::isspace(static_cast<unsigned char>(m_json[m_position])))
 					++m_position;
 			}
 
 			[[nodiscard]] inline auto match(char c) -> bool
 			{
-				if (m_position < std::size(m_json) and m_json[m_position] == c)
+				if (m_position < std::ranges::size(m_json) and m_json[m_position] == c)
 				{
 					++m_position;
 					return true;
@@ -66,11 +66,11 @@ export namespace CppUtils::Language::JSON
 					return std::unexpected{Error{"Expected opening double quote", m_position}};
 
 				auto start = m_position;
-				while (m_position < std::size(m_json) and m_json[m_position] != '"')
+				while (m_position < std::ranges::size(m_json) and m_json[m_position] != '"')
 				{
 					if (m_json[m_position] == '\\')
 						++m_position;
-					if (m_position < std::size(m_json))
+					if (m_position < std::ranges::size(m_json))
 						++m_position;
 				}
 
@@ -84,14 +84,14 @@ export namespace CppUtils::Language::JSON
 			{
 				auto value = 0.0;
 #if defined(OS_MACOS)
-				auto result = Stl::from_chars(std::data(m_json) + m_position, std::data(m_json) + std::size(m_json), value);
+				auto result = Stl::from_chars(std::ranges::data(m_json) + m_position, std::ranges::data(m_json) + std::ranges::size(m_json), value);
 #else
-				auto result = std::from_chars(std::data(m_json) + m_position, std::data(m_json) + std::size(m_json), value);
+				auto result = std::from_chars(std::ranges::data(m_json) + m_position, std::ranges::data(m_json) + std::ranges::size(m_json), value);
 #endif
 				if (result.ec != std::errc())
 					return std::unexpected{Error{"Invalid number format", m_position}};
 
-				m_position += static_cast<std::size_t>(result.ptr - (std::data(m_json) + m_position));
+				m_position += static_cast<std::size_t>(result.ptr - (std::ranges::data(m_json) + m_position));
 				return value;
 			}
 
@@ -162,7 +162,7 @@ export namespace CppUtils::Language::JSON
 			{
 				using namespace std::literals;
 				skipSpaces();
-				if (m_position >= std::size(m_json))
+				if (m_position >= std::ranges::size(m_json))
 					return std::unexpected{Error{"Unexpected end of input", m_position}};
 
 				auto c = m_json[m_position];

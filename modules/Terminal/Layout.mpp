@@ -32,11 +32,11 @@ export namespace CppUtils::Terminal
 				if (direction == Direction::Horizontal)
 				{
 					totalSize.width() += widget->getSize().width();
-					totalSize.height() = std::max(totalSize.height(), widget->getSize().height());
+					totalSize.height() = std::ranges::max(totalSize.height(), widget->getSize().height());
 				}
 				else
 				{
-					totalSize.width() = std::max(totalSize.width(), widget->getSize().width());
+					totalSize.width() = std::ranges::max(totalSize.width(), widget->getSize().width());
 					totalSize.height() += widget->getSize().height();
 				}
 			}
@@ -50,8 +50,8 @@ export namespace CppUtils::Terminal
 			for (const auto& widget : m_widgets)
 			{
 				auto widgetSize = widget->getSize();
-				widgetSize.width() = std::min(widgetSize.width(), size.width());
-				widgetSize.height() = std::min(widgetSize.height(), size.height());
+				widgetSize.width() = std::ranges::min(widgetSize.width(), size.width());
+				widgetSize.height() = std::ranges::min(widgetSize.height(), size.height());
 
 				auto subview = view.getSubView(Viewport{widgetSize, origin});
 				if (not subview)

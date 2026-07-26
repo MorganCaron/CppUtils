@@ -74,7 +74,7 @@ export namespace CppUtils::Container
 			auto visited = std::unordered_map<Key, VisitState>{};
 
 			auto hasCycle = [&](this const auto& self, const Key& key) -> bool {
-				if (auto it = visited.find(key); it != std::cend(visited))
+				if (auto it = visited.find(key); it != std::ranges::cend(visited))
 				{
 					if (it->second == VisitState::Visiting)
 						return true;
@@ -84,7 +84,7 @@ export namespace CppUtils::Container
 
 				visited[key] = VisitState::Visiting;
 
-				if (auto found = nodes.find(key); found != std::cend(nodes))
+				if (auto found = nodes.find(key); found != std::ranges::cend(nodes))
 					for (const auto& dep : found->second.dependencies)
 						if (self(dep))
 							return true;

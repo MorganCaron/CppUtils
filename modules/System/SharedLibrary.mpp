@@ -50,7 +50,7 @@ export namespace CppUtils::System
 		{
 			auto stringPath = libraryPath.string();
 #if defined(OS_WINDOWS)
-			m_library = LoadLibraryEx(std::data(stringPath), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+			m_library = LoadLibraryEx(std::ranges::data(stringPath), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
 			if (not m_library)
 			{
 				auto buffer = std::array<char, 256>{};
@@ -58,13 +58,13 @@ export namespace CppUtils::System
 					nullptr,
 					GetLastError(),
 					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-					std::data(buffer),
-					static_cast<DWORD>(std::size(buffer)),
+					std::ranges::data(buffer),
+					static_cast<DWORD>(std::ranges::size(buffer)),
 					nullptr);
-				throw std::runtime_error{std::format("Couldn't load library {}\n{}", stringPath, std::data(buffer))};
+				throw std::runtime_error{std::format("Couldn't load library {}\n{}", stringPath, std::ranges::data(buffer))};
 			}
 #elif defined(OS_LINUX) or defined(OS_MACOS)
-			m_library = dlopen(std::data(stringPath), RTLD_LAZY);
+			m_library = dlopen(std::ranges::data(stringPath), RTLD_LAZY);
 			if (not m_library)
 				throw std::runtime_error{std::format("Couldn't load library {}\n{}", stringPath, dlerror())};
 #else
@@ -87,7 +87,7 @@ export namespace CppUtils::System
 			using namespace std::literals;
 #if defined(OS_WINDOWS)
 			auto handle = GetModuleHandle(nullptr);
-			auto* functionPointer = GetProcAddress(handle, std::data(signature));
+			auto* functionPointer = GetProcAddress(handle, std::ranges::data(signature));
 			if (not functionPointer)
 			{
 				auto buffer = std::array<char, 256>{};
@@ -95,16 +95,16 @@ export namespace CppUtils::System
 					nullptr,
 					GetLastError(),
 					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-					std::data(buffer),
-					static_cast<DWORD>(std::size(buffer)),
+					std::ranges::data(buffer),
+					static_cast<DWORD>(std::ranges::size(buffer)),
 					nullptr);
-				throw std::runtime_error{std::format("Couldn't load function {}\nError code: {}", signature, std::data(buffer))};
+				throw std::runtime_error{std::format("Couldn't load function {}\nError code: {}", signature, std::ranges::data(buffer))};
 			}
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 			auto* handle = dlopen(nullptr, RTLD_LAZY);
 			if (handle == nullptr)
 				throw std::runtime_error{dlerror()};
-			auto* functionPointer = dlsym(handle, std::data(signature));
+			auto* functionPointer = dlsym(handle, std::ranges::data(signature));
 			if (not functionPointer)
 				throw std::runtime_error{std::format("Couldn't load function {}\n{}", signature, dlerror())};
 #else

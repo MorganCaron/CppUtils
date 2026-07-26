@@ -59,7 +59,7 @@ export namespace CppUtils::FileSystem
 
 		for (auto buffer = std::vector<char>(blockSize); file.good();)
 		{
-			file.read(std::data(buffer), static_cast<std::streamsize>(blockSize));
+			file.read(std::ranges::data(buffer), static_cast<std::streamsize>(blockSize));
 
 			if (file.bad()) [[unlikely]]
 				return std::unexpected{Error{Error::Type::ReadFailed, "Hardware read error"}};
@@ -70,9 +70,9 @@ export namespace CppUtils::FileSystem
 
 			auto block = [&]() {
 				if constexpr (std::same_as<T, std::string_view>)
-					return std::string_view{std::data(buffer), bytesRead};
+					return std::string_view{std::ranges::data(buffer), bytesRead};
 				else
-					return std::as_bytes(std::span{std::data(buffer), bytesRead});
+					return std::as_bytes(std::span{std::ranges::data(buffer), bytesRead});
 			}();
 
 			using ResultType = std::invoke_result_t<decltype(function), decltype(block)>;
@@ -123,7 +123,7 @@ export namespace CppUtils::FileSystem
 			auto file = std::ofstream{filePath, std::ios::binary};
 			if (not file.is_open())
 				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
-			file.write(reinterpret_cast<const char*>(std::data(vector)), static_cast<std::streamsize>(std::size(vector) * sizeof(T)));
+			file.write(reinterpret_cast<const char*>(std::ranges::data(vector)), static_cast<std::streamsize>(std::ranges::size(vector) * sizeof(T)));
 		}
 
 		template<Type::TriviallyCopyable T>
@@ -135,7 +135,7 @@ export namespace CppUtils::FileSystem
 			const auto nbElements = std::filesystem::file_size(filePath) / sizeof(T);
 			auto vector = std::vector<T>{};
 			vector.resize(nbElements);
-			file.read(reinterpret_cast<char*>(std::data(vector)), static_cast<std::streamsize>(nbElements * sizeof(T)));
+			file.read(reinterpret_cast<char*>(std::ranges::data(vector)), static_cast<std::streamsize>(nbElements * sizeof(T)));
 			return vector;
 		}
 	}

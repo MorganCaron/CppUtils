@@ -59,7 +59,7 @@ export namespace CppUtils::Container
 
 		[[nodiscard]] inline auto isTemporary() const noexcept -> bool
 		{
-			return not m_isRoot and std::empty(m_parents);
+			return not m_isRoot and std::ranges::empty(m_parents);
 		}
 
 		inline auto setRoot(bool isRoot) noexcept -> void
@@ -111,17 +111,14 @@ export namespace CppUtils::Container
 				});
 					childIt != std::ranges::end(children))
 				{
-					auto baseIt = std::prev(childIt.base());
+					auto baseIt = std::ranges::prev(childIt.base());
 					auto needsDistanceUpdate = std::holds_alternative<SharedPtr>(*baseIt);
 					m_children.erase(baseIt);
 					auto& parents = childValue.m_parents;
-					if (auto parentIt = std::find_if(
-							std::cbegin(parents),
-							std::cend(parents),
-							[&thisPtr](const auto& parentWeak) -> bool {
+					if (auto parentIt = std::ranges::find_if(parents, [&thisPtr](const auto& parentWeak) -> bool {
 						return Thread::SharedPtr::ownerEqual(parentWeak, thisPtr);
 					});
-						parentIt != std::cend(parents))
+						parentIt != std::ranges::cend(parents))
 					{
 						parents.erase(parentIt);
 						if (needsDistanceUpdate)

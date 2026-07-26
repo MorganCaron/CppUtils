@@ -24,7 +24,7 @@ export namespace CppUtils::String
 
 		if (tokenNames.contains(token))
 		{
-			if (const auto& name = tokenNames.at(token); not std::empty(name))
+			if (const auto& name = tokenNames.at(token); not std::ranges::empty(name))
 				return std::format("{}", name);
 			else
 				return std::format(R"("")");

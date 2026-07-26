@@ -22,7 +22,7 @@ export namespace CppUtils::System
 		{
 			auto pipeFileDescriptors = std::array<int, 2>{};
 			throwErrno(
-				pipe2(std::data(pipeFileDescriptors), O_NONBLOCK),
+				pipe2(std::ranges::data(pipeFileDescriptors), O_NONBLOCK),
 				"Can't create a pipe");
 			read = pipeFileDescriptors[0];
 			write = pipeFileDescriptors[1];

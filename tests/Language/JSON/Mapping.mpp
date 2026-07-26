@@ -77,7 +77,7 @@ namespace CppUtils::UnitTest::Language::JSON::Mapping
 			suite.expect(result);
 			const auto& value = result.value();
 			const auto objects = CppUtils::Language::JSON::toStructs<Object, ObjectMapping>(value);
-			suite.expectEqual(std::size(objects), 2uz);
+			suite.expectEqual(std::ranges::size(objects), 2uz);
 			suite.expectEqual(objects[0].a, "o1");
 			suite.expectEqual(objects[1].a, "o2");
 		});
@@ -109,7 +109,7 @@ namespace CppUtils::UnitTest::Language::JSON::Mapping
 				resultValue.as<CppUtils::Language::JSON::Array>().push_back(CppUtils::Language::JSON::toJSON<Object, ObjectMapping>(objectValue));
 
 			suite.expect(resultValue.isArray());
-			suite.expectEqual(std::size(resultValue.as<CppUtils::Language::JSON::Array>()), 2uz);
+			suite.expectEqual(std::ranges::size(resultValue.as<CppUtils::Language::JSON::Array>()), 2uz);
 
 			Logger::print("Produced JSON Array: {}", static_cast<std::string>(resultValue));
 

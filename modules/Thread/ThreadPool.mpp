@@ -14,10 +14,10 @@ export namespace CppUtils::Thread
 
 	public:
 		explicit inline ThreadPool(
-			std::size_t numberThreads = std::max(1uz, static_cast<std::size_t>(std::thread::hardware_concurrency())),
+			std::size_t numberThreads = std::ranges::max(1uz, static_cast<std::size_t>(std::thread::hardware_concurrency())),
 			std::function<void(std::exception_ptr)> onError = nullptr,
 			std::function<void()> finally = nullptr):
-			m_numberThreads{std::max(1uz, numberThreads)},
+			m_numberThreads{std::ranges::max(1uz, numberThreads)},
 			m_onError{std::move(onError)},
 			m_finally{std::move(finally)}
 		{
@@ -72,9 +72,9 @@ export namespace CppUtils::Thread
 		inline auto waitUntilFinished() -> void
 		{
 			auto tasksQueueAccessor = m_tasksQueue.access();
-			if (m_activeWorkers != 0 or not std::empty(tasksQueueAccessor.value()))
+			if (m_activeWorkers != 0 or not std::ranges::empty(tasksQueueAccessor.value()))
 				m_waitUntilFinishedCondition.wait(tasksQueueAccessor.getLockGuard(), [this, &tasksQueueAccessor] {
-					return m_activeWorkers == 0 and std::empty(tasksQueueAccessor.value());
+					return m_activeWorkers == 0 and std::ranges::empty(tasksQueueAccessor.value());
 				});
 		}
 
@@ -92,10 +92,10 @@ export namespace CppUtils::Thread
 			{
 				auto tasksQueueAccessor = m_tasksQueue.access();
 				m_startWorkingCondition.wait(tasksQueueAccessor.getLockGuard(), [this, &tasksQueueAccessor] {
-					return not std::empty(tasksQueueAccessor.value()) or m_stopRequested.load(std::memory_order_relaxed);
+					return not std::ranges::empty(tasksQueueAccessor.value()) or m_stopRequested.load(std::memory_order_relaxed);
 				});
 
-				if (std::empty(tasksQueueAccessor.value()))
+				if (std::ranges::empty(tasksQueueAccessor.value()))
 					return;
 
 				m_activeWorkers.fetch_add(1, std::memory_order_relaxed);
@@ -109,7 +109,7 @@ export namespace CppUtils::Thread
 				auto tasksQueueAccessor = m_tasksQueue.access();
 				m_activeWorkers.fetch_sub(1, std::memory_order_relaxed);
 
-				if (m_activeWorkers.load(std::memory_order_relaxed) == 0 and std::empty(tasksQueueAccessor.value()))
+				if (m_activeWorkers.load(std::memory_order_relaxed) == 0 and std::ranges::empty(tasksQueueAccessor.value()))
 					m_waitUntilFinishedCondition.notify_all();
 			}
 		}

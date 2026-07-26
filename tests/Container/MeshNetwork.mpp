@@ -46,7 +46,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			suite.expectEqual(fruitValue, "fruit");
 
 			auto branches = fruit.at("Elements").value();
-			suite.expectEqual(std::size(branches), 1uz);
+			suite.expectEqual(std::ranges::size(branches), 1uz);
 			{
 				auto appleAccessor = branches[0].value().getValue();
 				const auto& appleValue = appleAccessor.value();
@@ -90,7 +90,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 
 			{
 				auto fruits = fruit.at("Elements").value();
-				suite.expectEqual(std::size(fruits), 2uz);
+				suite.expectEqual(std::ranges::size(fruits), 2uz);
 				{
 					auto appleAccessor = fruits[0].value().getValue();
 					const auto& value = appleAccessor.value();
@@ -108,7 +108,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			{
 				fruit["Elements"] - apple;
 				auto fruits = fruit.at("Elements").value();
-				suite.expectEqual(std::size(fruits), 1uz);
+				suite.expectEqual(std::ranges::size(fruits), 1uz);
 				{
 					auto bananaAccessor = fruits[0].value().getValue();
 					const auto& bananaValue = bananaAccessor.value();
@@ -120,7 +120,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			{
 				fruit["Elements"] - banana;
 				auto fruits = fruit.at("Elements").value_or({});
-				suite.expectEqual(std::size(fruits), 0uz);
+				suite.expectEqual(std::ranges::size(fruits), 0uz);
 			}
 		});
 
@@ -131,10 +131,10 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			fruit["Elements"] >> apple;
 			fruit["Elements"] >> banana;
 
-			suite.expectEqual(std::size(fruit.at("Elements").value_or({})), 2uz);
+			suite.expectEqual(std::ranges::size(fruit.at("Elements").value_or({})), 2uz);
 
 			fruit["Elements"].clear();
-			suite.expectEqual(std::size(fruit.at("Elements").value_or({})), 0uz);
+			suite.expectEqual(std::ranges::size(fruit.at("Elements").value_or({})), 0uz);
 		});
 
 		suite.addTest("Detach child with multiple links", [&] {
@@ -155,7 +155,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			{
 				suite.expectEqual(elements.count("Color"), 0uz);
 				suite.expectEqual(elements.count("Fruit"), 1uz);
-				suite.expectEqual(std::size(elements.at("Fruit").value_or({})), 1uz);
+				suite.expectEqual(std::ranges::size(elements.at("Fruit").value_or({})), 1uz);
 				suite.expectEqual(orange.getDistanceFromRoot(), 1uz);
 			}
 
@@ -174,7 +174,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 
 			{
 				auto elements = fruit.at("Elements").value();
-				suite.expectEqual(std::size(elements), 1uz);
+				suite.expectEqual(std::ranges::size(elements), 1uz);
 				{
 					auto appleAccessor = elements[0].value().getValue();
 					const auto& value = appleAccessor.value();
@@ -184,7 +184,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			}
 			{
 				auto categories = apple.at("Categories").value();
-				suite.expectEqual(std::size(categories), 1uz);
+				suite.expectEqual(std::ranges::size(categories), 1uz);
 				{
 					auto fruitAccessor = categories[0].value().getValue();
 					const auto& value = fruitAccessor.value();
@@ -201,7 +201,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 
 			{
 				auto elements = fruit.at("Elements").value();
-				suite.expectEqual(std::size(elements), 1uz);
+				suite.expectEqual(std::ranges::size(elements), 1uz);
 				{
 					auto appleAccessor = elements[0].value().getValue();
 					const auto& value = appleAccessor.value();
@@ -211,7 +211,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			}
 			{
 				auto categories = apple.at("Categories").value();
-				suite.expectEqual(std::size(categories), 1uz);
+				suite.expectEqual(std::ranges::size(categories), 1uz);
 				{
 					auto fruitAccessor = categories[0].value().getValue();
 					const auto& value = fruitAccessor.value();
@@ -229,7 +229,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			root["Branch"] >> child;
 
 			const auto& branch = root.at("Branch").value();
-			suite.expectEqual(std::size(branch), 1uz);
+			suite.expectEqual(std::ranges::size(branch), 1uz);
 		});
 
 		suite.addTest("Duplicate attachment protection (operator&)", [&] {
@@ -241,10 +241,10 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			apple["Categories"] & fruit["Elements"];
 
 			const auto& elements = fruit.at("Elements").value();
-			suite.expectEqual(std::size(elements), 1uz);
+			suite.expectEqual(std::ranges::size(elements), 1uz);
 
 			const auto& categories = apple.at("Categories").value();
-			suite.expectEqual(std::size(categories), 1uz);
+			suite.expectEqual(std::ranges::size(categories), 1uz);
 		});
 
 		suite.addTest("Many", [&] {
@@ -270,15 +270,15 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 
 			{
 				auto fruits = fruit.at("Elements").value();
-				suite.expectEqual(std::size(fruits), 3uz);
+				suite.expectEqual(std::ranges::size(fruits), 3uz);
 				for (auto node : fruits)
 				{
-					suite.expectEqual(std::size(node.at("Categories").value_or({})), 1uz);
+					suite.expectEqual(std::ranges::size(node.at("Categories").value_or({})), 1uz);
 					auto categoryAccessor = node["Categories"][0].value().getValue();
 					const auto& categoryValue = categoryAccessor.value();
 					suite.expectEqual(categoryValue, "fruit");
 
-					suite.expectEqual(std::size(node.at("Colors").value_or({})), 1uz);
+					suite.expectEqual(std::ranges::size(node.at("Colors").value_or({})), 1uz);
 					auto colorAccessor = node["Colors"][0].value().getValue();
 					auto fruitAccessor = node.getValue();
 					const auto& colorValue = colorAccessor.value();
@@ -295,7 +295,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			fruit["Elements"] >> apple;
 
 			const auto& elements = fruit.at("Elements").value_or({});
-			suite.expectEqual(std::size(elements), 1uz);
+			suite.expectEqual(std::ranges::size(elements), 1uz);
 			suite.expectEqual(elements[0].value().getValue().value(), "apple");
 		});
 
@@ -307,11 +307,11 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			root["Branch1"] >> child1["Branch2"] >> child2;
 
 			const auto& branch1Children = root.at("Branch1").value_or({});
-			suite.expectEqual(std::size(branch1Children), 1uz);
+			suite.expectEqual(std::ranges::size(branch1Children), 1uz);
 			suite.expectEqual(branch1Children[0].value().getValue().value(), "child1");
 
 			const auto& branch2Children = branch1Children[0].value().at("Branch2").value_or({});
-			suite.expectEqual(std::size(branch2Children), 1uz);
+			suite.expectEqual(std::ranges::size(branch2Children), 1uz);
 			suite.expectEqual(branch2Children[0].value().getValue().value(), "child2");
 		});
 
@@ -319,10 +319,10 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto root = StringMeshNodePtr::makeRoot("root");
 			auto child = StringMeshNodePtr::make("child");
 			root["Branch"] >> child;
-			suite.expectEqual(std::size(root.at("Branch").value_or({})), 1uz);
+			suite.expectEqual(std::ranges::size(root.at("Branch").value_or({})), 1uz);
 
 			root["Branch"] - child;
-			suite.expectEqual(std::size(root.at("Branch").value_or({})), 0uz);
+			suite.expectEqual(std::ranges::size(root.at("Branch").value_or({})), 0uz);
 		});
 
 		suite.addTest("Bidirectional link (operator&)", [&] {
@@ -331,11 +331,11 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			fruit["Elements"] & apple["Categories"];
 
 			const auto& elements = fruit.at("Elements").value_or({});
-			suite.expectEqual(std::size(elements), 1uz);
+			suite.expectEqual(std::ranges::size(elements), 1uz);
 			suite.expectEqual(elements[0].value().getValue().value(), "apple");
 
 			const auto& categories = apple.at("Categories").value_or({});
-			suite.expectEqual(std::size(categories), 1uz);
+			suite.expectEqual(std::ranges::size(categories), 1uz);
 			suite.expectEqual(categories[0].value().getValue().value(), "fruit");
 		});
 
@@ -344,13 +344,13 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto apple = StringMeshNodePtr::make("apple");
 			fruit["Elements"] & apple["Categories"];
 
-			suite.expectEqual(std::size(fruit.at("Elements").value_or({})), 1uz);
-			suite.expectEqual(std::size(apple.at("Categories").value_or({})), 1uz);
+			suite.expectEqual(std::ranges::size(fruit.at("Elements").value_or({})), 1uz);
+			suite.expectEqual(std::ranges::size(apple.at("Categories").value_or({})), 1uz);
 
 			fruit["Elements"] / apple["Categories"];
 
-			suite.expectEqual(std::size(fruit.at("Elements").value_or({})), 0uz);
-			suite.expectEqual(std::size(apple.at("Categories").value_or({})), 0uz);
+			suite.expectEqual(std::ranges::size(fruit.at("Elements").value_or({})), 0uz);
+			suite.expectEqual(std::ranges::size(apple.at("Categories").value_or({})), 0uz);
 		});
 
 		suite.addTest("Get value", [&] {
@@ -392,7 +392,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			root["Branch"] >> child1;
 			root["Branch"] >> child2;
 
-			suite.expectEqual(std::size(root.at("Branch").value_or({})), 2uz);
+			suite.expectEqual(std::ranges::size(root.at("Branch").value_or({})), 2uz);
 		});
 
 		suite.addTest("Branch stays live after construction", [&] {
@@ -404,7 +404,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			}
 			{
 				const auto branch = fruit["Elements"];
-				suite.expectEqual(std::size(branch), 1uz);
+				suite.expectEqual(std::ranges::size(branch), 1uz);
 				suite.expectEqual(branch.front().value().getValue().value(), "apple");
 			}
 		});
@@ -413,7 +413,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto root = StringMeshNodePtr::makeRoot("root");
 			auto child = StringMeshNodePtr::make("child");
 			root["Branch"] >> child;
-			suite.expectEqual(std::size(root.at("Branch").value_or({})), 1uz);
+			suite.expectEqual(std::ranges::size(root.at("Branch").value_or({})), 1uz);
 
 			root["Branch"].clear();
 			suite.expect(not root.contains("Branch"));
@@ -468,7 +468,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			for (const auto& node : fruit["Elements"])
 				children.push_back(node);
 
-			suite.expectEqual(std::size(children), 2uz);
+			suite.expectEqual(std::ranges::size(children), 2uz);
 			suite.expectEqual(children[0].getValue().value(), "apple");
 			suite.expectEqual(children[1].getValue().value(), "banana");
 		});
@@ -480,7 +480,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			for (const auto& child : root["NonExistentBranch"])
 				children.push_back(child);
 
-			suite.expect(std::empty(children));
+			suite.expect(std::ranges::empty(children));
 		});
 
 		suite.addTest("Get nodes: Invalid node", [&] {
@@ -499,7 +499,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			const auto branch = fruit.at("Elements");
 
 			suite.expect(branch.has_value());
-			suite.expectEqual(std::size(branch.value()), 1uz);
+			suite.expectEqual(std::ranges::size(branch.value()), 1uz);
 			suite.expectEqual(branch.value()[0].value().getValue().value(), "apple");
 		});
 
@@ -553,7 +553,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			}
 
 			auto branch = fruit["Elements"];
-			auto it = std::begin(branch);
+			auto it = std::ranges::begin(branch);
 
 			suite.expectEqual((*it).getValue().value(), "apple");
 			suite.expectEqual((*(it + 2)).getValue().value(), "orange");
@@ -564,8 +564,8 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			it -= 1;
 			suite.expectEqual((*it).getValue().value(), "banana");
 
-			suite.expect(it < std::cend(branch));
-			suite.expectEqual(std::cend(branch) - std::cbegin(branch), 3);
+			suite.expect(it < std::ranges::cend(branch));
+			suite.expectEqual(std::ranges::cend(branch) - std::ranges::cbegin(branch), 3);
 		});
 
 		suite.addTest("Get branches", [&] {
@@ -581,15 +581,15 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto branchesAccessor = root.getBranches();
 			const auto& branches = branchesAccessor.value();
 
-			suite.expectEqual(std::size(branches), 2uz);
+			suite.expectEqual(std::ranges::size(branches), 2uz);
 			suite.expect(branches.contains("A"));
 			suite.expect(branches.contains("B"));
 
 			auto aBranches = branches.at("A")->sharedAccess();
-			suite.expectEqual(std::size(aBranches.value()), 1uz);
+			suite.expectEqual(std::ranges::size(aBranches.value()), 1uz);
 
 			auto bBranches = branches.at("B")->sharedAccess();
-			suite.expectEqual(std::size(bBranches.value()), 2uz);
+			suite.expectEqual(std::ranges::size(bBranches.value()), 2uz);
 		});
 
 		suite.addTest("Clear all branches", [&] {
@@ -600,7 +600,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			root["BranchA"] >> childA;
 			root["BranchB"] >> childB;
 
-			suite.expectEqual(std::size(root.getBranches().value()), 2uz);
+			suite.expectEqual(std::ranges::size(root.getBranches().value()), 2uz);
 
 			root.clearBranches();
 

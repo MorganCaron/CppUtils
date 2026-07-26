@@ -7,15 +7,15 @@ export namespace CppUtils::Container::Vector
 	template<class T>
 	inline auto merge(std::vector<T>& dest, const std::vector<T>& src) -> void
 	{
-		dest.reserve(std::size(dest) + std::size(src));
-		dest.insert(std::cend(dest), std::begin(src), std::end(src));
+		dest.reserve(std::ranges::size(dest) + std::ranges::size(src));
+		dest.insert(std::ranges::cend(dest), std::ranges::begin(src), std::ranges::end(src));
 	}
 
 	[[nodiscard]] inline auto merge(auto&&... containers) -> decltype(auto)
 	{
-		using ValueType = typename std::common_type_t<std::decay_t<decltype(*std::begin(containers))>...>;
+		using ValueType = typename std::common_type_t<std::decay_t<decltype(*std::ranges::begin(containers))>...>;
 		auto result = std::vector<ValueType>{};
-		(result.insert(std::cend(result), std::make_move_iterator(std::begin(containers)), std::make_move_iterator(std::end(containers))), ...);
+		(result.insert(std::ranges::cend(result), std::make_move_iterator(std::ranges::begin(containers)), std::make_move_iterator(std::ranges::end(containers))), ...);
 		return result;
 	}
 

@@ -22,27 +22,27 @@ export namespace CppUtils::Container
 
 		[[nodiscard]] inline constexpr auto size() const noexcept -> std::size_t
 		{
-			return std::size(m_data);
+			return std::ranges::size(m_data);
 		}
 
 		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
 		{
-			return std::empty(m_data);
+			return std::ranges::empty(m_data);
 		}
 
 		inline constexpr auto set(Type::TriviallyCopyable auto value, std::size_t offset = 0) -> std::expected<void, std::string_view>
 		{
 			using namespace std::literals;
-			if (offset + sizeof(decltype(value)) > std::size(m_data)) [[unlikely]]
+			if (offset + sizeof(decltype(value)) > std::ranges::size(m_data)) [[unlikely]]
 				return std::unexpected{"Stack underflow"sv};
-			auto* destination = std::data(m_data) + std::size(m_data) - offset - sizeof(decltype(value));
+			auto* destination = std::ranges::data(m_data) + std::ranges::size(m_data) - offset - sizeof(decltype(value));
 			std::memcpy(destination, std::addressof(value), sizeof(decltype(value)));
 			return {};
 		}
 
 		inline constexpr auto push(Type::TriviallyCopyable auto value) -> void
 		{
-			m_data.resize(std::size(m_data) + sizeof(decltype(value)), std::byte{0});
+			m_data.resize(std::ranges::size(m_data) + sizeof(decltype(value)), std::byte{0});
 			auto _ = set(value);
 		}
 
@@ -50,19 +50,19 @@ export namespace CppUtils::Container
 		[[nodiscard]] inline constexpr auto get(std::size_t offset = 0) const -> std::expected<T, std::string_view>
 		{
 			using namespace std::literals;
-			if (offset + sizeof(T) > std::size(m_data)) [[unlikely]]
+			if (offset + sizeof(T) > std::ranges::size(m_data)) [[unlikely]]
 				return std::unexpected{"Stack underflow"sv};
 			auto value = T{};
-			std::memcpy(std::addressof(value), std::data(m_data) + std::size(m_data) - offset - sizeof(T), sizeof(T));
+			std::memcpy(std::addressof(value), std::ranges::data(m_data) + std::ranges::size(m_data) - offset - sizeof(T), sizeof(T));
 			return value;
 		}
 
 		inline constexpr auto drop(std::size_t nbBytes) -> std::expected<void, std::string_view>
 		{
 			using namespace std::literals;
-			if (nbBytes > std::size(m_data)) [[unlikely]]
+			if (nbBytes > std::ranges::size(m_data)) [[unlikely]]
 				return std::unexpected{"Stack underflow"sv};
-			m_data.resize(std::size(m_data) - nbBytes);
+			m_data.resize(std::ranges::size(m_data) - nbBytes);
 			return {};
 		}
 
@@ -120,7 +120,7 @@ export namespace CppUtils::Container
 		{
 			Logger::print<"debug">("Memory dump:");
 			auto line = std::string{};
-			for (auto i = 0uz; i < std::size(m_data);)
+			for (auto i = 0uz; i < std::ranges::size(m_data);)
 			{
 				line += std::format("{:#04x} ", static_cast<unsigned char>(m_data[i]));
 				if (++i % sizeof(std::size_t) == 0)
@@ -128,19 +128,19 @@ export namespace CppUtils::Container
 					auto int1 = 0;
 					auto int2 = 0;
 					auto sizeT = 0uz;
-					std::memcpy(std::addressof(int1), std::data(m_data) + i - sizeof(int) * 2, sizeof(int));
-					std::memcpy(std::addressof(int2), std::data(m_data) + i - sizeof(int), sizeof(int));
-					std::memcpy(std::addressof(sizeT), std::data(m_data) + i - sizeof(std::size_t), sizeof(std::size_t));
+					std::memcpy(std::addressof(int1), std::ranges::data(m_data) + i - sizeof(int) * 2, sizeof(int));
+					std::memcpy(std::addressof(int2), std::ranges::data(m_data) + i - sizeof(int), sizeof(int));
+					std::memcpy(std::addressof(sizeT), std::ranges::data(m_data) + i - sizeof(std::size_t), sizeof(std::size_t));
 					Logger::print<"debug">("{} ({} | {} -> {})", line, int1, int2, sizeT);
 					line.clear();
 				}
 			}
-			if (not std::empty(line))
+			if (not std::ranges::empty(line))
 			{
-				if (std::size(m_data) % sizeof(int) == 0)
+				if (std::ranges::size(m_data) % sizeof(int) == 0)
 				{
 					auto value = 0;
-					std::memcpy(std::addressof(value), std::data(m_data) + std::size(m_data) - sizeof(int), sizeof(int));
+					std::memcpy(std::addressof(value), std::ranges::data(m_data) + std::ranges::size(m_data) - sizeof(int), sizeof(int));
 					Logger::print<"debug">("{:<40} ({})", line, value);
 				}
 				else

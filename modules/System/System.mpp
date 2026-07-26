@@ -21,7 +21,7 @@ export namespace CppUtils::System
 #if defined(OS_LINUX)
 	[[nodiscard]] inline auto createAnonymousFile(std::string_view name, unsigned int flags = 0) -> FileDescriptor
 	{
-		return FileDescriptor{memfd_create(std::data(name), flags)};
+		return FileDescriptor{memfd_create(std::ranges::data(name), flags)};
 	}
 #endif
 }

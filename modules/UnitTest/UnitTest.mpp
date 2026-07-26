@@ -168,7 +168,7 @@ namespace CppUtils::UnitTest
 			auto nbSkip = 0uz;
 
 			if (auto result = m_testSuites.forEach([&](const auto& name, const auto& tests, const auto& dependencies) -> bool {
-				if (std::empty(tests))
+				if (std::ranges::empty(tests))
 				{
 					Logger::print<"warning">("No tests found in test suite {}", name);
 					testSuiteIsSuccess[name] = true;
@@ -181,7 +181,7 @@ namespace CppUtils::UnitTest
 						Logger::print<"warning">("Skipping test suite {} due to failed prerequisites in test suite {}", name, dependency);
 						testSuiteIsSuccess[name] = false;
 						implicitlySkippedTestSuites.push_back(name);
-						nbSkip += std::size(tests);
+						nbSkip += std::ranges::size(tests);
 						return not settings.fastAbort;
 					}
 

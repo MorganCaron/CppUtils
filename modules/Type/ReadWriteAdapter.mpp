@@ -189,7 +189,7 @@ export namespace CppUtils::Type
 				if constexpr (std::is_trivially_copyable_v<ElementType>)
 				{
 					auto bytes = std::as_bytes(std::span(value));
-					target.insert(std::end(target), std::cbegin(bytes), std::cend(bytes));
+					target.insert(std::ranges::end(target), std::ranges::cbegin(bytes), std::ranges::cend(bytes));
 				}
 				else
 					static_assert(FalseType<Value>, "Range element is not trivially copyable in vector Writer::operator()");
@@ -197,7 +197,7 @@ export namespace CppUtils::Type
 			else if constexpr (std::is_trivially_copyable_v<Value>)
 			{
 				auto bytes = std::as_bytes(std::span(std::addressof(value), 1));
-				target.insert(std::end(target), std::cbegin(bytes), std::cend(bytes));
+				target.insert(std::ranges::end(target), std::ranges::cbegin(bytes), std::ranges::cend(bytes));
 			}
 			else
 				static_assert(FalseType<Value>, "Value is not trivially copyable in vector Writer::operator()");

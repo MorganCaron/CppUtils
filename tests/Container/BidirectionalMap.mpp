@@ -10,15 +10,15 @@ namespace CppUtils::UnitTest::Container::BidirectionalMap
 
 		suite.addTest("Empty Map", [&] {
 			auto map = CppUtils::Container::BidirectionalMap<int, int>{};
-			suite.expect(std::empty(map));
-			suite.expectEqual(std::size(map), 0uz);
+			suite.expect(std::ranges::empty(map));
+			suite.expectEqual(std::ranges::size(map), 0uz);
 		});
 
 		suite.addTest("One value", [&] {
 			auto map = CppUtils::Container::BidirectionalMap<int, std::string>{};
 			map.insert({42, "Hello World!"s});
-			suite.expect(not std::empty(map));
-			suite.expectEqual(std::size(map), 1uz);
+			suite.expect(not std::ranges::empty(map));
+			suite.expectEqual(std::ranges::size(map), 1uz);
 			suite.expectEqual(map.left(42), "Hello World!"sv);
 			suite.expectEqual(map.right("Hello World!"s), 42);
 		});
@@ -27,7 +27,7 @@ namespace CppUtils::UnitTest::Container::BidirectionalMap
 			auto map = CppUtils::Container::BidirectionalMap<int, std::string>{};
 			map.insert({42, "Hello World!"s});
 			map.eraseLeft(42);
-			suite.expect(std::empty(map));
+			suite.expect(std::ranges::empty(map));
 		});
 	}};
 }

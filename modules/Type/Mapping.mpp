@@ -116,7 +116,7 @@ export namespace CppUtils::Type
 			auto result = []<std::size_t... I>(std::index_sequence<I...>) {
 				return std::array{Entry{Pairs::lhs, I}...};
 			}(std::make_index_sequence<sizeof...(Pairs)>{});
-			std::sort(std::begin(result), std::end(result), [](const auto& lhs, const auto& rhs) { return lhs.key < rhs.key; });
+			std::ranges::sort(result, [](const auto& lhs, const auto& rhs) { return lhs.key < rhs.key; });
 			return result;
 		}
 
@@ -167,7 +167,7 @@ export namespace CppUtils::Type
 				}, pair.rhs);
 				++pairIdx;
 			}(Pairs{}), ...);
-			std::sort(std::begin(result), std::end(result), [](const auto& lhs, const auto& rhs) { return lhs.key < rhs.key; });
+			std::ranges::sort(result, [](const auto& lhs, const auto& rhs) { return lhs.key < rhs.key; });
 			return result;
 		}
 
@@ -175,7 +175,7 @@ export namespace CppUtils::Type
 		static inline consteval auto getRhsParameters()
 		{
 			constexpr auto entries = getRhsEntries<RhsType>();
-			for (auto size = std::bit_ceil(std::size(entries) * 2uz); size <= 1'024; size <<= 1)
+			for (auto size = std::bit_ceil(std::ranges::size(entries) * 2uz); size <= 1'024; size <<= 1)
 			{
 				for (auto seed = 0uz; seed < 256; ++seed)
 				{
@@ -207,16 +207,16 @@ export namespace CppUtils::Type
 
 			if constexpr (std::is_integral_v<LhsType> or std::is_enum_v<LhsType>)
 			{
-				constexpr auto minKey = std::min({static_cast<long long>(Pairs::lhs)...});
-				constexpr auto maxKey = std::max({static_cast<long long>(Pairs::lhs)...});
+				constexpr auto minKey = std::ranges::min({static_cast<long long>(Pairs::lhs)...});
+				constexpr auto maxKey = std::ranges::max({static_cast<long long>(Pairs::lhs)...});
 				constexpr auto range = static_cast<std::size_t>(maxKey - minKey + 1);
-				if constexpr (range < std::max(2'048uz, sizeof...(Pairs) * 2))
+				if constexpr (range < std::ranges::max(2'048uz, sizeof...(Pairs) * 2))
 				{
 					static constexpr auto lookupTable = []() {
 						constexpr auto entries = getLhsEntries<LhsType>();
 						auto result = std::array<int, range>{};
 						result.fill(-1);
-						for (auto i = 0uz; i < std::size(entries); ++i)
+						for (auto i = 0uz; i < std::ranges::size(entries); ++i)
 							result[static_cast<std::size_t>(static_cast<long long>(entries[i].key) - minKey)] = static_cast<int>(i);
 						return result;
 					}();
@@ -232,7 +232,7 @@ export namespace CppUtils::Type
 					constexpr auto entries = getLhsEntries<LhsType>();
 					auto result = std::array<int, parameters.size>{};
 					result.fill(-1);
-					for (auto i = 0uz; i < std::size(entries); ++i)
+					for (auto i = 0uz; i < std::ranges::size(entries); ++i)
 						result[(Type::hash(entries[i].key) ^ parameters.seed) % parameters.size] = static_cast<int>(i);
 					return result;
 				}();
@@ -242,8 +242,8 @@ export namespace CppUtils::Type
 			}
 			else
 			{
-				if (auto it = std::lower_bound(std::begin(entries), std::end(entries), lhs, [](const auto& lhs, const auto& rhs) { return lhs.key < rhs; });
-					it != std::end(entries) and it->key == lhs)
+				if (auto it = std::ranges::lower_bound(entries, lhs, [](const auto& lhs, const auto& rhs) { return lhs < rhs; }, [](const auto& entry) { return entry.key; });
+					it != std::ranges::end(entries) and it->key == lhs)
 					return it->index;
 			}
 			return std::nullopt;
@@ -259,7 +259,7 @@ export namespace CppUtils::Type
 					constexpr auto entries = getRhsEntries<RhsType>();
 					auto result = std::array<int, parameters.size>{};
 					result.fill(-1);
-					for (auto i = 0uz; i < std::size(entries); ++i)
+					for (auto i = 0uz; i < std::ranges::size(entries); ++i)
 						result[(hash(entries[i].key) ^ parameters.seed) % parameters.size] = static_cast<int>(i);
 					return result;
 				}();
@@ -269,8 +269,8 @@ export namespace CppUtils::Type
 			}
 			else
 			{
-				if (auto it = std::lower_bound(std::begin(entries), std::end(entries), rhs, [](const auto& lhs, const auto& rhs) { return lhs.key < rhs; });
-					it != std::end(entries) and it->key == rhs)
+				if (auto it = std::ranges::lower_bound(entries, rhs, [](const auto& lhs, const auto& rhs) { return lhs < rhs; }, [](const auto& entry) { return entry.key; });
+					it != std::ranges::end(entries) and it->key == rhs)
 					return it->pairIndex;
 			}
 			return std::nullopt;

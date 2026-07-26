@@ -28,11 +28,11 @@ export namespace CppUtils::Network::DNS
 #endif
 		auto hostname = std::string(MaxHostNameLength, '\0');
 #if defined(OS_WINDOWS)
-		const auto length = static_cast<int>(std::size(hostname));
+		const auto length = static_cast<int>(std::ranges::size(hostname));
 #else
-		const auto length = std::size(hostname);
+		const auto length = std::ranges::size(hostname);
 #endif
-		if (::gethostname(std::data(hostname), length) != 0)
+		if (::gethostname(std::ranges::data(hostname), length) != 0)
 			return "unknown";
 
 		if (const auto position = hostname.find('\0'); position != std::string::npos)
@@ -51,7 +51,7 @@ export namespace CppUtils::Network::DNS
 		hints.ai_protocol = IPPROTO_TCP;
 
 		auto* resultPointer = static_cast<addrinfo*>(nullptr);
-		if (::getaddrinfo(std::data(hostname), nullptr, std::addressof(hints), std::addressof(resultPointer)) != 0)
+		if (::getaddrinfo(std::ranges::data(hostname), nullptr, std::addressof(hints), std::addressof(resultPointer)) != 0)
 			return {};
 
 		auto result = Memory::UniquePtrWithDestructor<addrinfo>{resultPointer, ::freeaddrinfo};
@@ -66,12 +66,12 @@ export namespace CppUtils::Network::DNS
 				address = std::addressof(reinterpret_cast<sockaddr_in6*>(entry->ai_addr)->sin6_addr);
 
 #if defined(OS_WINDOWS)
-			const auto ipStringSize = std::size(ipString);
+			const auto ipStringSize = std::ranges::size(ipString);
 #else
-			const auto ipStringSize = static_cast<socklen_t>(std::size(ipString));
+			const auto ipStringSize = static_cast<socklen_t>(std::ranges::size(ipString));
 #endif
-			::inet_ntop(entry->ai_family, address, std::data(ipString), ipStringSize);
-			ips.emplace_back(std::data(ipString));
+			::inet_ntop(entry->ai_family, address, std::ranges::data(ipString), ipStringSize);
+			ips.emplace_back(std::ranges::data(ipString));
 		}
 
 		return ips;

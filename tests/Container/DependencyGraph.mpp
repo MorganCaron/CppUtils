@@ -42,7 +42,7 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 			suite.expect(not graph.contains('B'));
 			suite.expect(graph.contains('A'));
 			const auto& aDeps = graph.getDependencies('A');
-			suite.expect(std::empty(aDeps));
+			suite.expect(std::ranges::empty(aDeps));
 		});
 
 		suite.addTest("Change value", [&] {
@@ -62,9 +62,9 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 			const auto& aDeps = graph.getDependencies('A');
 			const auto& bDeps = graph.getDependencies('B');
 
-			suite.expectEqual(std::size(aDeps), 1uz);
+			suite.expectEqual(std::ranges::size(aDeps), 1uz);
 			suite.expectEqual(aDeps[0], 'B');
-			suite.expect(std::empty(bDeps));
+			suite.expect(std::ranges::empty(bDeps));
 
 			suite.expect(not graph.hasCycle());
 		});
@@ -79,8 +79,8 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 			const auto& aDeps = graph.getDependencies('A');
 			const auto& bDeps = graph.getDependencies('B');
 
-			suite.expect(std::empty(aDeps));
-			suite.expect(std::empty(bDeps));
+			suite.expect(std::ranges::empty(aDeps));
+			suite.expect(std::ranges::empty(bDeps));
 
 			suite.expect(not graph.hasCycle());
 		});
@@ -95,8 +95,8 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 			const auto& aDeps = graph.getDependencies('A');
 			const auto& bDeps = graph.getDependencies('B');
 
-			suite.expectEqual(std::size(aDeps), 1uz);
-			suite.expectEqual(std::size(bDeps), 1uz);
+			suite.expectEqual(std::ranges::size(aDeps), 1uz);
+			suite.expectEqual(std::ranges::size(bDeps), 1uz);
 			suite.expectEqual(aDeps[0], 'B');
 			suite.expectEqual(bDeps[0], 'A');
 
@@ -119,10 +119,10 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 			const auto& cDeps = graph.getDependencies('C');
 			const auto& dDeps = graph.getDependencies('D');
 
-			suite.expectEqual(std::size(aDeps), 1uz);
-			suite.expectEqual(std::size(bDeps), 1uz);
-			suite.expectEqual(std::size(cDeps), 1uz);
-			suite.expectEqual(std::size(dDeps), 1uz);
+			suite.expectEqual(std::ranges::size(aDeps), 1uz);
+			suite.expectEqual(std::ranges::size(bDeps), 1uz);
+			suite.expectEqual(std::ranges::size(cDeps), 1uz);
+			suite.expectEqual(std::ranges::size(dDeps), 1uz);
 			suite.expectEqual(aDeps[0], 'B');
 			suite.expectEqual(bDeps[0], 'C');
 			suite.expectEqual(cDeps[0], 'D');

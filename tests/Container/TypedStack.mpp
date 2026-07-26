@@ -11,23 +11,23 @@ namespace CppUtils::UnitTest::Container::TypedStack
 
 		suite.addTest("Empty Stack", [&] {
 			auto stack = CppUtils::Container::TypedStack<int>{};
-			suite.expect(std::empty(stack));
+			suite.expect(std::ranges::empty(stack));
 		});
 
 		suite.addTest("One value", [&] {
 			auto stack = CppUtils::Container::TypedStack<int>{42};
-			suite.expect(!std::empty(stack));
-			suite.expectEqual(std::size(stack), 1uz);
+			suite.expect(!std::ranges::empty(stack));
+			suite.expectEqual(std::ranges::size(stack), 1uz);
 		});
 
 		suite.addTest("One type, multiple values", [&] {
 			auto stack = CppUtils::Container::TypedStack<int>{1, 2, 3};
-			suite.expectEqual(std::size(stack), 3uz);
+			suite.expectEqual(std::ranges::size(stack), 3uz);
 		});
 
 		suite.addTest("Multiple types", [&] {
 			auto stack = CppUtils::Container::TypedStack<bool, int, float, std::string_view>{true, 42, 3.14f, "Hello World!"sv};
-			suite.expectEqual(std::size(stack), 4uz);
+			suite.expectEqual(std::ranges::size(stack), 4uz);
 
 			stack.print();
 
@@ -61,7 +61,7 @@ namespace CppUtils::UnitTest::Container::TypedStack
 		suite.addTest("pop", [&] {
 			auto stack = CppUtils::Container::TypedStack<int>{42};
 			suite.expectEqual(stack.pop<int>(), 42);
-			suite.expect(std::empty(stack));
+			suite.expect(std::ranges::empty(stack));
 		});
 
 		suite.addTest("copy", [&] {
@@ -74,13 +74,13 @@ namespace CppUtils::UnitTest::Container::TypedStack
 		suite.addTest("visit", [&] {
 			auto stack = CppUtils::Container::TypedStack<bool, int, float, std::string_view>{true, 42, 3.14f, "Hello World!"sv};
 
-			for (auto i = 0uz; i < std::size(stack); ++i)
+			for (auto i = 0uz; i < std::ranges::size(stack); ++i)
 				stack.visit(i, [&](auto&& value) -> void {
 					stack.print(i);
 					Logger::print("{}", value);
 				});
 
-			suite.expectEqual(std::size(stack), 4uz);
+			suite.expectEqual(std::ranges::size(stack), 4uz);
 		});
 
 		// Todo: tester les autres méthodes

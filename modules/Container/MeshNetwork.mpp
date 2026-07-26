@@ -93,7 +93,7 @@ export namespace CppUtils::Container
 			auto& childNetworkPtr = std::get<1>(accessor.values);
 
 			auto branchesAccessor = parentNetworkPtr.value.branches.uniqueAccess();
-			if (auto branchIterator = branchesAccessor->find(key); branchIterator != std::cend(branchesAccessor.value()))
+			if (auto branchIterator = branchesAccessor->find(key); branchIterator != std::ranges::cend(branchesAccessor.value()))
 			{
 				auto branchLinks = branchIterator->second;
 				auto vectorAccessor = branchLinks->uniqueAccess();
@@ -103,13 +103,13 @@ export namespace CppUtils::Container
 						return link.targetId == childNetworkPtr.value.id;
 					return Thread::SharedPtr::ownerEqual(link.cache, child.m_node);
 				};
-				if (auto it = std::ranges::find_if(vector, matches); it != std::cend(vector))
+				if (auto it = std::ranges::find_if(vector, matches); it != std::ranges::cend(vector))
 				{
 					vector.erase(it);
 					parentNetworkPtr.detachChild(childNetworkPtr);
 				}
 
-				if (std::empty(vector))
+				if (std::ranges::empty(vector))
 					branchesAccessor->erase(branchIterator);
 			}
 		}
@@ -120,7 +120,7 @@ export namespace CppUtils::Container
 			{
 				auto nodeAccessor = parent.m_node->sharedAccess();
 				auto branchesAccessor = nodeAccessor->value.branches.sharedAccess();
-				if (auto branchIterator = branchesAccessor->find(key); branchIterator != std::cend(branchesAccessor.value()))
+				if (auto branchIterator = branchesAccessor->find(key); branchIterator != std::ranges::cend(branchesAccessor.value()))
 					for (auto vectorAccessor = branchIterator->second->sharedAccess(); auto& link : vectorAccessor.value())
 					{
 						if (auto shared = link.cache.lock())
@@ -195,7 +195,7 @@ export namespace CppUtils::Container
 			{
 				if (not m_branchLinks) [[unlikely]]
 					return 0uz;
-				return std::size(getVectorAccessor().value());
+				return std::ranges::size(getVectorAccessor().value());
 			}
 
 			[[nodiscard]] auto empty() const noexcept -> bool { return size() == 0uz; }
@@ -224,7 +224,7 @@ export namespace CppUtils::Container
 				if (not m_branchLinks) [[unlikely]]
 					return std::unexpected{"Branch is no longer valid"sv};
 				auto& vectorAccessor = getVectorAccessor();
-				if (index >= std::size(vectorAccessor.value())) [[unlikely]]
+				if (index >= std::ranges::size(vectorAccessor.value())) [[unlikely]]
 					return std::unexpected{"Branch index out of bounds"sv};
 				const auto& link = vectorAccessor.value()[index];
 				if (auto sharedNode = link.cache.lock())
@@ -430,7 +430,7 @@ export namespace CppUtils::Container
 				return std::unexpected{"MeshNodePtr::at(): Invalid MeshNodePtr"sv};
 
 			auto branchesAccessor = m_node->sharedAccess()->value.branches.sharedAccess();
-			if (auto branchIterator = branchesAccessor->find(key); branchIterator != std::cend(branchesAccessor.value())) [[likely]]
+			if (auto branchIterator = branchesAccessor->find(key); branchIterator != std::ranges::cend(branchesAccessor.value())) [[likely]]
 			{
 				auto branchLinksPtr = branchIterator->second;
 				return Branch<true>{*this, key, branchLinksPtr, branchLinksPtr->sharedAccess()};

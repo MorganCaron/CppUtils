@@ -39,7 +39,7 @@ export namespace CppUtils::Language
 				auto lengthNode = instruction.at("length"_token).and_then([](auto branch) { return branch.front(); });
 				if (not lengthNode)
 					return std::unexpected{"length: No result node"sv};
-				lengthNode->setValue(std::size(interpreter.source));
+				lengthNode->setValue(std::ranges::size(interpreter.source));
 				return next(instruction);
 			});
 
@@ -49,7 +49,7 @@ export namespace CppUtils::Language
 					return std::unexpected{"read: No position"sv};
 
 				const auto position = positionNode->getValue().value();
-				if (position >= std::size(interpreter.source))
+				if (position >= std::ranges::size(interpreter.source))
 					return std::unexpected{"read: End of input"sv};
 
 				auto charNode = instruction.at("char"_token).and_then([](auto branch) { return branch.front(); });

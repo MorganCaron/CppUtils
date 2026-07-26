@@ -20,7 +20,7 @@ export namespace CppUtils::Terminal
 		auto title = std::wstring{};
 		constexpr auto size = 256uz;
 		title.resize(size);
-		::GetConsoleTitleW(std::data(title), size);
+		::GetConsoleTitleW(std::ranges::data(title), size);
 		return title;
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 		/*
@@ -32,7 +32,7 @@ export namespace CppUtils::Terminal
 
 		const auto response = rawTerminal.read('\a');
 		if (constexpr auto prefix = "\033]21;"sv; response.starts_with(prefix))
-			return std::string{std::cbegin(response) + std::size(prefix), std::cend(response)};
+			return std::string{std::ranges::cbegin(response) + std::ranges::size(prefix), std::ranges::cend(response)};
 		*/
 		return std::string{};
 #endif
@@ -41,7 +41,7 @@ export namespace CppUtils::Terminal
 	inline auto setTerminalTitle(const String::GenericText auto& title) -> void
 	{
 #if defined(OS_WINDOWS)
-		::SetConsoleTitleW(std::data(title));
+		::SetConsoleTitleW(std::ranges::data(title));
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 		std::print(Ansi::EscapeCode::SetTitle, title);
 		std::fflush(stdout);

@@ -45,16 +45,16 @@ export namespace CppUtils::Language::VirtualMachine
 			auto lastStackPositions = std::stack<std::size_t>{};
 
 			auto skipComment = [&source](std::size_t& position) -> void {
-				while (++position < std::size(source) and source[position] != '/' and source[position] != '\n') {}
+				while (++position < std::ranges::size(source) and source[position] != '/' and source[position] != '\n') {}
 			};
 
-			for (auto position = 0uz; position < std::size(source); ++position)
+			for (auto position = 0uz; position < std::ranges::size(source); ++position)
 				switch (auto instruction = source[position]; instruction)
 				{
 				case '@':
 					do
 						++position;
-					while (position < std::size(source) and source[position] != '@');
+					while (position < std::ranges::size(source) and source[position] != '@');
 					break;
 
 				case '[': stack.push(0uz); break;
@@ -69,7 +69,7 @@ export namespace CppUtils::Language::VirtualMachine
 				case '{':
 				{
 					auto oldPosition = position++;
-					for (auto counter = 1uz; position < std::size(source) and counter > 0; ++position)
+					for (auto counter = 1uz; position < std::ranges::size(source) and counter > 0; ++position)
 						switch (auto instruction = source[position]; instruction)
 						{
 						case '\\': ++position; break;
@@ -77,7 +77,7 @@ export namespace CppUtils::Language::VirtualMachine
 						case '}': --counter; break;
 						case '/': skipComment(position); break;
 						}
-					if (position >= std::size(source)) [[unlikely]]
+					if (position >= std::ranges::size(source)) [[unlikely]]
 						return std::unexpected{"Missing '}'"sv};
 					stack.push(position - 1);
 					position = oldPosition;
@@ -89,7 +89,7 @@ export namespace CppUtils::Language::VirtualMachine
 					break;
 
 				case '(':
-					lastStackPositions.push(std::size(stack));
+					lastStackPositions.push(std::ranges::size(stack));
 					break;
 
 				case ')':
@@ -102,8 +102,8 @@ export namespace CppUtils::Language::VirtualMachine
 					if (auto startPosition = stack.template get<std::size_t>(); not startPosition) [[unlikely]]
 						return std::unexpected{startPosition.error()};
 					else if (auto result = stack.set(std::hash<decltype(source)>{}(SourceT{
-								 std::next(std::begin(source), static_cast<std::ptrdiff_t>(startPosition.value() + 1)),
-								 std::next(std::begin(source), static_cast<std::ptrdiff_t>(position - 1))}));
+								 std::ranges::next(std::ranges::begin(source), static_cast<std::ptrdiff_t>(startPosition.value() + 1)),
+								 std::ranges::next(std::ranges::begin(source), static_cast<std::ptrdiff_t>(position - 1))}));
 						not result) [[unlikely]]
 						return result;
 					break;
@@ -124,9 +124,9 @@ export namespace CppUtils::Language::VirtualMachine
 						return std::unexpected{"Function identifier too large"sv};
 					else if (auto argumentsPosition = stack.template pop<std::size_t>(); not argumentsPosition) [[unlikely]]
 						return std::unexpected{argumentsPosition.error()};
-					else if (argumentsPosition.value() > std::size(stack)) [[unlikely]]
+					else if (argumentsPosition.value() > std::ranges::size(stack)) [[unlikely]]
 						return std::unexpected{"Arguments position too high"sv};
-					else if (auto result = Type::Tuple::visitAt(functions, functionId.value(), [&stack, functionOffset = std::size(stack) - argumentsPosition.value()](auto& function) { return stack.call(function, functionOffset); });
+					else if (auto result = Type::Tuple::visitAt(functions, functionId.value(), [&stack, functionOffset = std::ranges::size(stack) - argumentsPosition.value()](auto& function) { return stack.call(function, functionOffset); });
 						not result) [[unlikely]]
 						return std::unexpected{result.error()};
 					break;
@@ -382,103 +382,103 @@ export namespace CppUtils::Language::VirtualMachine
 				switch (instruction)
 				{
 				case ':':
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
-					if (auto symbol = pop(stack).value; not std::empty(stack))
+					if (auto symbol = pop(stack).value; not std::ranges::empty(stack))
 						scope.get()[symbol].nodes = std::move(stack);
-					else if (auto it = std::ranges::find_if(scope.get().nodes, [symbol](const auto& node) -> bool { return node.value == symbol; }); it != std::cend(scope.get().nodes))
+					else if (auto it = std::ranges::find_if(scope.get().nodes, [symbol](const auto& node) -> bool { return node.value == symbol; }); it != std::ranges::cend(scope.get().nodes))
 						scope.get().nodes.erase(it);
 					break;
 				case '.': stack.emplace_back(0uz); break;
 				case '*':
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
 					if (auto result = execute<lambdas...>(source, inspector, pop(stack).value, std::move(context)); not result) [[unlikely]]
 						return result;
 					break;
 				case ';':
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
-					if (auto functionId = pop(stack).value; functionId >= std::size(functions)) [[unlikely]]
+					if (auto functionId = pop(stack).value; functionId >= std::ranges::size(functions)) [[unlikely]]
 						return std::unexpected{"Function id out of range"sv};
 					else if (auto result = functions[functionId](context); not result) [[unlikely]]
 						return result;
 					break;
 				case ',': ++sourcePosition; break;
 				case '+':
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
-					if (auto rhs = pop(stack).value; std::empty(stack)) [[unlikely]]
+					if (auto rhs = pop(stack).value; std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
 					else
 						stack.back().value += rhs;
 					break;
 				case '-':
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
-					if (auto rhs = pop(stack).value; std::empty(stack)) [[unlikely]]
+					if (auto rhs = pop(stack).value; std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
 					else
 						stack.back().value -= rhs;
 					break;
 				case '(': stack.emplace_back(instructionPosition); break;
 				case ')':
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
 					instructionPosition = pop(stack).value - 1;
 					break;
 				case '[': stack.emplace_back(sourcePosition); break;
 				case ']':
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
 					sourcePosition = pop(stack).value;
 					break;
 				case '{':
 				{
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
 					scopes.push_back(std::ref(scope.get()[pop(stack).value]));
 					break;
 				}
 				case '}':
-					if (std::empty(scopes)) [[unlikely]]
+					if (std::ranges::empty(scopes)) [[unlikely]]
 						return std::unexpected{"Scope underflow"sv};
 					scopes.pop_back();
 					break;
 				case '#':
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
-					if (auto startPosition = pop(stack).value + 1; startPosition >= std::size(source) or sourcePosition - 1 >= std::size(source)) [[unlikely]]
+					if (auto startPosition = pop(stack).value + 1; startPosition >= std::ranges::size(source) or sourcePosition - 1 >= std::ranges::size(source)) [[unlikely]]
 						return std::unexpected{"Syntax error: hash section out of range"sv};
 					stack.emplace_back(std::hash<Source>{}(Source{
-						std::next(std::cbegin(source), static_cast<Source::difference_type>(pop(stack).value + 1)),
-						std::next(std::cbegin(source), static_cast<Source::difference_type>(sourcePosition - 1))}));
+						std::ranges::next(std::ranges::cbegin(source), static_cast<Source::difference_type>(pop(stack).value + 1)),
+						std::ranges::next(std::ranges::cbegin(source), static_cast<Source::difference_type>(sourcePosition - 1))}));
 					break;
 				case 'r':
-					if (sourcePosition >= std::size(source)) [[unlikely]]
+					if (sourcePosition >= std::ranges::size(source)) [[unlikely]]
 						return std::unexpected{"Syntax error: unexpected end of code"sv};
 					else
 						stack.emplace_back(static_cast<std::size_t>(source[sourcePosition]));
 					break;
-				case 'e': stack.emplace_back(sourcePosition < std::size(source)); break;
+				case 'e': stack.emplace_back(sourcePosition < std::ranges::size(source)); break;
 				case '=':
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
 					stack.back().value = (stack.back().value = pop(stack).value);
 					break;
 				case '<':
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
 					stack.back().value = (stack.back().value < pop(stack).value);
 					break;
 				case '>':
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
 					stack.back().value = (stack.back().value > pop(stack).value);
 					break;
 				case '!': stack.back().value = not stack.back().value; break;
 				case '?':
-					if (std::empty(stack)) [[unlikely]]
+					if (std::ranges::empty(stack)) [[unlikely]]
 						return std::unexpected{"Stack underflow"sv};
 					if (not pop(stack).value)
 						++instructionPosition;
@@ -488,7 +488,7 @@ export namespace CppUtils::Language::VirtualMachine
 				default:
 					if (instruction >= '0' and instruction <= '9')
 					{
-						if (std::empty(stack)) [[unlikely]]
+						if (std::ranges::empty(stack)) [[unlikely]]
 							return std::unexpected{"Stack underflow"sv};
 						stack.back().value = stack.back().value * 10 + static_cast<std::size_t>(pop(stack).value - '0');
 					}
@@ -497,7 +497,7 @@ export namespace CppUtils::Language::VirtualMachine
 			else
 			{
 				auto lexemes = std::ref(grammar.get()[instruction].nodes);
-				for (instructionPosition = 0uz; instructionPosition < std::size(lexemes.get()); ++instructionPosition)
+				for (instructionPosition = 0uz; instructionPosition < std::ranges::size(lexemes.get()); ++instructionPosition)
 				{
 					auto lexeme = lexemes.get()[instructionPosition].value;
 					if (auto result = execute<lambdas...>(source, inspector, lexeme, std::move(context)); not result) [[unlikely]]

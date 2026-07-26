@@ -33,7 +33,7 @@ export namespace CppUtils::Chrono
 			std::format_to(it, " {}us", microseconds.count());
 		if (nanoseconds.count() > 0)
 			std::format_to(it, " {}ns", nanoseconds.count());
-		return not std::empty(string) ? string.substr(1) : "0ns";
+		return not std::ranges::empty(string) ? string.substr(1) : "0ns";
 	}
 
 	template<Clock Clock = std::chrono::high_resolution_clock>

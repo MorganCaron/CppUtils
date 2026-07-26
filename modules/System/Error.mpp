@@ -28,7 +28,7 @@ export namespace CppUtils::System
 	inline auto throwLastError(std::string_view message = "") -> void
 	{
 		throw std::runtime_error{
-			std::empty(message) ?
+			std::ranges::empty(message) ?
 				std::format("{}", GetLastError()) :
 				std::format("{}: {}", message, GetLastError())};
 	}
@@ -45,7 +45,7 @@ export namespace CppUtils::System
 			return value;
 
 		return std::unexpected(std::runtime_error{
-			std::empty(message) ?
+			std::ranges::empty(message) ?
 				std::format("{}", GetLastError()) :
 				std::format("{}: {}", message, GetLastError())});
 	}

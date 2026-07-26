@@ -30,9 +30,9 @@ export namespace CppUtils::Container::BTree
 		{
 			auto lockGuard = std::shared_lock{m_sharedMutex};
 			return std::accumulate(
-				std::cbegin(children),
-				std::cend(children),
-				std::size(values),
+				std::ranges::cbegin(children),
+				std::ranges::cend(children),
+				std::ranges::size(values),
 				[](std::size_t nb, const auto& child) -> std::size_t {
 				return nb + std::size(*child);
 			});
@@ -41,12 +41,12 @@ export namespace CppUtils::Container::BTree
 		[[nodiscard]] inline constexpr auto exists(const Key& key) const noexcept -> bool
 		{
 			auto lockGuard = std::shared_lock{m_sharedMutex};
-			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
+			auto it = std::ranges::lower_bound(keys, key);
 			if (isLeaf)
-				return it != std::cend(keys) and *it == key;
+				return it != std::ranges::cend(keys) and *it == key;
 			else
 			{
-				auto index = static_cast<std::size_t>(std::distance(std::cbegin(keys), it));
+				auto index = static_cast<std::size_t>(std::ranges::distance(std::ranges::cbegin(keys), it));
 				return children[index]->exists(key);
 			}
 		}
@@ -54,7 +54,7 @@ export namespace CppUtils::Container::BTree
 		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
 		{
 			auto lockGuard = std::shared_lock{m_sharedMutex};
-			return std::empty(keys);
+			return std::ranges::empty(keys);
 		}
 
 		inline auto clear() noexcept -> void
@@ -69,12 +69,12 @@ export namespace CppUtils::Container::BTree
 		[[nodiscard]] inline auto get(const Key& key) -> decltype(auto)
 		{
 			auto lockGuard = std::shared_lock{m_sharedMutex};
-			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
+			auto it = std::ranges::lower_bound(keys, key);
 			if (isLeaf)
 			{
-				if (it != std::cend(keys) and *it == key)
+				if (it != std::ranges::cend(keys) and *it == key)
 				{
-					auto index = static_cast<std::size_t>(std::distance(std::cbegin(keys), it));
+					auto index = static_cast<std::size_t>(std::ranges::distance(std::ranges::cbegin(keys), it));
 					return *values[index];
 				}
 				else
@@ -82,7 +82,7 @@ export namespace CppUtils::Container::BTree
 			}
 			else
 			{
-				auto index = static_cast<std::size_t>(std::distance(std::cbegin(keys), it));
+				auto index = static_cast<std::size_t>(std::ranges::distance(std::ranges::cbegin(keys), it));
 				return children[index]->get(key);
 			}
 		}
@@ -90,26 +90,26 @@ export namespace CppUtils::Container::BTree
 		inline auto add(const Key& key, Value&& value) -> void
 		{
 			auto lockGuard = std::unique_lock{m_sharedMutex};
-			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
-			auto position = std::distance(std::cbegin(keys), it);
+			auto it = std::ranges::lower_bound(keys, key);
+			auto position = std::ranges::distance(std::ranges::cbegin(keys), it);
 			auto index = static_cast<std::size_t>(position);
 			if (isLeaf)
 			{
-				if (auto it = std::find(std::cbegin(keys), std::cend(keys), key); it != std::cend(keys))
+				if (auto it = std::ranges::find(keys, key); it != std::ranges::cend(keys))
 					*values[index] = std::move(value);
 				else
 				{
 					keys.insert(it, key);
-					values.insert(std::next(std::begin(values), position), std::make_unique<Value>(value));
+					values.insert(std::ranges::next(std::ranges::begin(values), position), std::make_unique<Value>(value));
 				}
 			}
 			else
 			{
 				children[index]->add(key, std::move(value));
-				if (std::size(children[index]->keys) > maxNumberOfKeys)
+				if (std::ranges::size(children[index]->keys) > maxNumberOfKeys)
 					splitChild(index);
 			}
-			if (std::size(keys) > maxNumberOfKeys)
+			if (std::ranges::size(keys) > maxNumberOfKeys)
 				splitSelf();
 		}
 
@@ -119,37 +119,37 @@ export namespace CppUtils::Container::BTree
 			auto child = std::move(children[index]);
 			auto newChild = std::make_unique<Node>(child->isLeaf, child->maxNumberOfKeys);
 
-			auto middleIndex = std::size(child->keys) / 2;
+			auto middleIndex = std::ranges::size(child->keys) / 2;
 			auto middlePosition = static_cast<std::ptrdiff_t>(middleIndex);
 
 			newChild->keys.assign(
-				std::make_move_iterator(std::next(std::begin(child->keys), middlePosition + 1)),
-				std::make_move_iterator(std::end(child->keys)));
+				std::make_move_iterator(std::ranges::next(std::ranges::begin(child->keys), middlePosition + 1)),
+				std::make_move_iterator(std::ranges::end(child->keys)));
 			child->keys.resize(middleIndex);
 
 			if (child->isLeaf)
 			{
 				newChild->values.assign(
-					std::make_move_iterator(std::next(std::begin(child->values), middlePosition + 1)),
-					std::make_move_iterator(std::end(child->values)));
+					std::make_move_iterator(std::ranges::next(std::ranges::begin(child->values), middlePosition + 1)),
+					std::make_move_iterator(std::ranges::end(child->values)));
 				child->values.resize(middleIndex);
 			}
 			else
 			{
 				newChild->children.assign(
-					std::make_move_iterator(std::next(std::begin(child->children), middlePosition + 1)),
-					std::make_move_iterator(std::end(child->children)));
+					std::make_move_iterator(std::ranges::next(std::ranges::begin(child->children), middlePosition + 1)),
+					std::make_move_iterator(std::ranges::end(child->children)));
 				child->children.resize(middleIndex + 1);
 			}
 
-			keys.insert(std::next(std::begin(keys), static_cast<std::ptrdiff_t>(index)), child->keys[middleIndex]);
-			values.insert(std::next(std::begin(values), static_cast<std::ptrdiff_t>(index)), std::move(child->values[middleIndex]));
-			children.insert(std::next(std::begin(children), static_cast<std::ptrdiff_t>(index) + 1), std::move(newChild));
+			keys.insert(std::ranges::next(std::ranges::begin(keys), static_cast<std::ptrdiff_t>(index)), child->keys[middleIndex]);
+			values.insert(std::ranges::next(std::ranges::begin(values), static_cast<std::ptrdiff_t>(index)), std::move(child->values[middleIndex]));
+			children.insert(std::ranges::next(std::ranges::begin(children), static_cast<std::ptrdiff_t>(index) + 1), std::move(newChild));
 		}
 
 		inline auto splitSelf() -> void
 		{
-			auto middleIndex = std::size(keys) / 2;
+			auto middleIndex = std::ranges::size(keys) / 2;
 			auto middlePosition = static_cast<std::ptrdiff_t>(middleIndex);
 			auto middleValue = std::move(values[middleIndex]);
 
@@ -157,29 +157,29 @@ export namespace CppUtils::Container::BTree
 			auto newChild2 = std::make_unique<Node>(isLeaf, maxNumberOfKeys);
 
 			newChild1->keys.assign(
-				std::make_move_iterator(std::begin(keys)),
-				std::make_move_iterator(std::next(std::begin(keys), middlePosition)));
+				std::make_move_iterator(std::ranges::begin(keys)),
+				std::make_move_iterator(std::ranges::next(std::ranges::begin(keys), middlePosition)));
 			newChild2->keys.assign(
-				std::make_move_iterator(std::next(std::begin(keys), middlePosition + 1)),
-				std::make_move_iterator(std::end(keys)));
+				std::make_move_iterator(std::ranges::next(std::ranges::begin(keys), middlePosition + 1)),
+				std::make_move_iterator(std::ranges::end(keys)));
 
 			if (isLeaf)
 			{
 				newChild1->values.assign(
-					std::make_move_iterator(std::begin(values)),
-					std::make_move_iterator(std::next(std::begin(values), middlePosition)));
+					std::make_move_iterator(std::ranges::begin(values)),
+					std::make_move_iterator(std::ranges::next(std::ranges::begin(values), middlePosition)));
 				newChild2->values.assign(
-					std::make_move_iterator(std::next(std::begin(values), middlePosition + 1)),
-					std::make_move_iterator(std::end(values)));
+					std::make_move_iterator(std::ranges::next(std::ranges::begin(values), middlePosition + 1)),
+					std::make_move_iterator(std::ranges::end(values)));
 			}
 			else
 			{
 				newChild1->children.assign(
-					std::make_move_iterator(std::begin(children)),
-					std::make_move_iterator(std::next(std::begin(children), middlePosition + 1)));
+					std::make_move_iterator(std::ranges::begin(children)),
+					std::make_move_iterator(std::ranges::next(std::ranges::begin(children), middlePosition + 1)));
 				newChild2->children.assign(
-					std::make_move_iterator(std::next(std::begin(children), middlePosition + 1)),
-					std::make_move_iterator(std::end(children)));
+					std::make_move_iterator(std::ranges::next(std::ranges::begin(children), middlePosition + 1)),
+					std::make_move_iterator(std::ranges::end(children)));
 			}
 
 			keys.assign({keys[middleIndex]});
@@ -195,23 +195,23 @@ export namespace CppUtils::Container::BTree
 		inline auto remove(const Key& key) -> void
 		{
 			auto lockGuard = std::unique_lock{m_sharedMutex};
-			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
-			auto position = std::distance(std::cbegin(keys), it);
+			auto it = std::ranges::lower_bound(keys, key);
+			auto position = std::ranges::distance(std::ranges::cbegin(keys), it);
 			auto index = static_cast<std::size_t>(position);
 
 			if (isLeaf)
 			{
-				if (it != std::cend(keys) && *it == key)
+				if (it != std::ranges::cend(keys) && *it == key)
 				{
 					keys.erase(it);
-					values.erase(std::next(std::begin(values), position));
+					values.erase(std::ranges::next(std::ranges::begin(values), position));
 				}
 			}
-			else if (it != std::cend(keys) && *it == key)
+			else if (it != std::ranges::cend(keys) && *it == key)
 			{
 				keys.erase(it);
-				values.erase(std::next(std::cbegin(values), position));
-				children.erase(std::next(std::cbegin(children), position));
+				values.erase(std::ranges::next(std::ranges::cbegin(values), position));
+				children.erase(std::ranges::next(std::ranges::cbegin(children), position));
 			}
 			else
 				children[index]->remove(key);
@@ -220,21 +220,21 @@ export namespace CppUtils::Container::BTree
 		[[nodiscard]] inline auto operator[](const Key& key) -> decltype(auto)
 		{
 			auto lockGuard = std::shared_lock{m_sharedMutex};
-			auto it = std::lower_bound(std::cbegin(keys), std::cend(keys), key);
-			auto position = std::distance(std::cbegin(keys), it);
+			auto it = std::ranges::lower_bound(keys, key);
+			auto position = std::ranges::distance(std::ranges::cbegin(keys), it);
 			auto index = static_cast<std::size_t>(position);
 
 			if (isLeaf)
 			{
-				if (it != std::cend(keys) && *it == key)
+				if (it != std::ranges::cend(keys) && *it == key)
 					return *values[index];
 
 				keys.insert(it, key);
-				return *(*values.emplace(std::next(std::begin(values), position), std::make_unique<Value>()));
+				return *(*values.emplace(std::ranges::next(std::ranges::begin(values), position), std::make_unique<Value>()));
 			}
 			else
 			{
-				if (it != std::cend(keys) && *it == key)
+				if (it != std::ranges::cend(keys) && *it == key)
 					return *values[index];
 
 				return children[index]->get(key);
@@ -253,7 +253,7 @@ namespace std
 
 		inline constexpr auto parse(std::format_parse_context& context) -> auto
 		{
-			return std::begin(context);
+			return std::ranges::begin(context);
 		}
 
 		template<class FormatContext>
@@ -269,7 +269,7 @@ namespace std
 		auto formatNode(const Node& node, FormatContext& context, const std::basic_string<CharT>& prefix = "") const -> void
 		{
 			auto&& out = context.out();
-			if (std::empty(node))
+			if (std::ranges::empty(node))
 			{
 				std::format_to(out, "Empty node\n");
 				return;
@@ -278,7 +278,7 @@ namespace std
 
 			if (node.isLeaf)
 			{
-				const auto nbKeys = std::size(node.keys);
+				const auto nbKeys = std::ranges::size(node.keys);
 				for (auto i = 0uz; i < nbKeys; ++i)
 				{
 					const bool isLastKey = (i == nbKeys - 1);
@@ -288,7 +288,7 @@ namespace std
 			}
 			else
 			{
-				const auto nbKeys = std::size(node.keys);
+				const auto nbKeys = std::ranges::size(node.keys);
 				if (nbKeys == 0)
 					return;
 				std::format_to(out, "{}├─ ", prefix);

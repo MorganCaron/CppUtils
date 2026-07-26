@@ -28,10 +28,10 @@ export namespace CppUtils::Terminal
 
 		inline auto draw(WritableAreaView& view) noexcept -> void
 		{
-			if (std::empty(m_frames))
+			if (std::ranges::empty(m_frames))
 				return;
 			view.applyArea(m_frames[m_frame]);
-			if (++m_frame == std::size(m_frames))
+			if (++m_frame == std::ranges::size(m_frames))
 				m_frame = 0;
 			drawFinished();
 			requestUpdate(m_duration);

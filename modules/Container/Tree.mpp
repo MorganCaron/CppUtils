@@ -25,12 +25,12 @@ export namespace CppUtils::Container
 
 			[[nodiscard]] inline constexpr auto exists(const ValueType& key) const noexcept -> bool
 			{
-				return find(key) != std::cend(nodes);
+				return find(key) != std::ranges::cend(nodes);
 			}
 
 			[[nodiscard]] inline constexpr auto operator[](this auto&& self, const ValueType& key) -> decltype(auto)
 			{
-				if (const auto value = self.find(key); value == std::end(self.nodes)) [[unlikely]]
+				if (const auto value = self.find(key); value == std::ranges::end(self.nodes)) [[unlikely]]
 					if constexpr (std::is_const_v<std::remove_reference_t<decltype(self)>>)
 						throw std::out_of_range{"The Node does not contain the requested child."};
 					else
@@ -151,7 +151,7 @@ namespace std
 	{
 		inline constexpr auto parse(std::format_parse_context& context) -> auto
 		{
-			return std::begin(context);
+			return std::ranges::begin(context);
 		}
 
 		template<class FormatContext>
@@ -168,7 +168,7 @@ namespace std
 		{
 			auto&& out = context.out();
 			std::format_to(out, "{}\n", node.value);
-			const auto nbNodes = std::size(node.nodes);
+			const auto nbNodes = std::ranges::size(node.nodes);
 			for (auto i = 0uz; i < nbNodes; ++i)
 			{
 				const auto isLastNode = (i == nbNodes - 1);
@@ -183,7 +183,7 @@ namespace std
 	{
 		inline constexpr auto parse(std::format_parse_context& context) -> auto
 		{
-			return std::begin(context);
+			return std::ranges::begin(context);
 		}
 
 		template<class FormatContext>
@@ -201,7 +201,7 @@ namespace std
 			const auto& [node, tree] = nodeView;
 			auto&& out = context.out();
 			std::format_to(out, "{}\n", nodeView.getPrintableValue());
-			const auto nbNodes = std::size(node.get().nodes);
+			const auto nbNodes = std::ranges::size(node.get().nodes);
 			for (auto i = 0uz; i < nbNodes; ++i)
 			{
 				const auto isLastNode = (i == nbNodes - 1);
@@ -217,7 +217,7 @@ namespace std
 	{
 		inline constexpr auto parse(std::format_parse_context& context) -> auto
 		{
-			return std::begin(context);
+			return std::ranges::begin(context);
 		}
 
 		template<class FormatContext>

@@ -100,7 +100,7 @@ namespace CppUtils::UnitTest::Terminal::Canvas
 		suite.addTest("Bouncing ball", [&] {
 			const auto terminalSize = CppUtils::Terminal::getTerminalSize();
 			auto canvasSize = terminalSize;
-			canvasSize.height() = std::min(canvasSize.width() * 1 / 3, terminalSize.height() - 2);
+			canvasSize.height() = std::ranges::min(canvasSize.width() * 1 / 3, terminalSize.height() - 2);
 			auto canvas = CppUtils::Terminal::Canvas{canvasSize};
 			auto ballPosition = CppUtils::Container::Vec2<float>{};
 			auto ballVelocity = CppUtils::Container::Vec2<float>{1.f, 1.f};
@@ -119,7 +119,7 @@ namespace CppUtils::UnitTest::Terminal::Canvas
 					if (const auto limit = static_cast<float>(collisionBox[axis]); ballPosition[axis] < 0.f or ballPosition[axis] > limit)
 					{
 						const auto total = ballPosition[axis] - previousBallPosition[axis];
-						const auto over = ballPosition[axis] - std::clamp(ballPosition[axis], 0.f, limit);
+						const auto over = ballPosition[axis] - std::ranges::clamp(ballPosition[axis], 0.f, limit);
 						const auto ratio = 1.f - over / total;
 						ballPosition = previousBallPosition + ballVelocity * ratio;
 						previousBallPosition = ballPosition - ballVelocity * (1.0f - ratio);

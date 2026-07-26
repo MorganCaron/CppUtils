@@ -64,8 +64,8 @@ export namespace CppUtils::Network::Http
 					break;
 				auto response = m_requestHandler(requestResult.value());
 
-				if (not std::empty(response.body) and std::ranges::none_of(response.headers, [](const auto& header) { return header.name == "Content-Length"; }))
-					response.headers.push_back(Header{"Content-Length", std::to_string(std::size(response.body))});
+				if (not std::ranges::empty(response.body) and std::ranges::none_of(response.headers, [](const auto& header) { return header.name == "Content-Length"; }))
+					response.headers.push_back(Header{"Content-Length", std::to_string(std::ranges::size(response.body))});
 
 				if (not client.send(static_cast<std::string>(response)))
 					break;

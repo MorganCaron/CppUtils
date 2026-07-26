@@ -21,7 +21,7 @@ namespace CppUtils::UnitTest::Terminal
 					stdout,
 					CppUtils::Terminal::TextColor::TextColorEnum::Default,
 					backgroundColor};
-				std::puts(std::data(text));
+				std::puts(std::ranges::data(text));
 			};
 
 			applyBackgroundColor("Default", CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Default);
@@ -41,7 +41,7 @@ namespace CppUtils::UnitTest::Terminal
 					std::string_view text,
 					CppUtils::Terminal::TextColor::TextColorEnum textColor) -> void {
 				auto _ = CppUtils::Terminal::TextModifier{stdout, textColor};
-				std::puts(std::data(text));
+				std::puts(std::ranges::data(text));
 			};
 
 			applyTextColor("Default", CppUtils::Terminal::TextColor::TextColorEnum::Default);
@@ -65,7 +65,7 @@ namespace CppUtils::UnitTest::Terminal
 					CppUtils::Terminal::TextColor::TextColorEnum::Default,
 					CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Default,
 					textStyle};
-				std::puts(std::data(text));
+				std::puts(std::ranges::data(text));
 			};
 
 			applyTextStyle("Bolder", CppUtils::Terminal::TextStyle::TextStyleEnum::Bolder);

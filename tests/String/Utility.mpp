@@ -72,7 +72,7 @@ namespace CppUtils::UnitTest::String::Utility
 
 		suite.addTest("split", [&] {
 			auto splitString = CppUtils::String::split("Hello World!", " ");
-			suite.expectEqual(std::size(splitString), 2uz);
+			suite.expectEqual(std::ranges::size(splitString), 2uz);
 			suite.expectEqual(splitString[0], "Hello"sv);
 			suite.expectEqual(splitString[1], "World!"sv);
 		});

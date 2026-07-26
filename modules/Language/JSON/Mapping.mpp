@@ -27,7 +27,7 @@ export namespace CppUtils::Language::JSON
 
 		*out++ = '"';
 		for (const auto character : string)
-			if (const auto escaped = EscapeMapping::toRhs(character, std::string_view{}); not std::empty(escaped))
+			if (const auto escaped = EscapeMapping::toRhs(character, std::string_view{}); not std::ranges::empty(escaped))
 				out = std::ranges::copy(escaped, out).out;
 			else if (static_cast<unsigned char>(character) < 0x20)
 				out = std::format_to(out, R"(\u{:04x})", static_cast<int>(character));
@@ -142,7 +142,7 @@ export namespace CppUtils::Language::JSON
 		if (auto object = self.template getIf<Object>())
 		{
 			const auto& objectRef = object->get();
-			if (auto it = objectRef.find(key); it != std::end(objectRef))
+			if (auto it = objectRef.find(key); it != std::ranges::end(objectRef))
 				return it->second;
 		}
 		return nullValue;
@@ -153,7 +153,7 @@ export namespace CppUtils::Language::JSON
 		if (auto array = self.template getIf<Array>())
 		{
 			const auto& arrayRef = array->get();
-			if (index < std::size(arrayRef))
+			if (index < std::ranges::size(arrayRef))
 				return arrayRef[index];
 		}
 		return nullValue;

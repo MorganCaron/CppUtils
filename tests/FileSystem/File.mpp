@@ -45,13 +45,13 @@ namespace CppUtils::UnitTest::FileSystem::File
 				auto nbBlocks = 0u;
 				const auto blockSize = 2uz;
 				const auto result = CppUtils::FileSystem::Binary::readByBlocks(filePath, [&](auto block) {
-					resultData.insert(std::end(resultData), std::begin(block), std::end(block));
+					resultData.insert(std::ranges::end(resultData), std::ranges::begin(block), std::ranges::end(block));
 					++nbBlocks;
 				}, blockSize);
 
 				suite.expect(result);
 				suite.expectEqual(resultData, originalData);
-				suite.expectEqual(nbBlocks, (std::size(originalData) + blockSize - 1) / blockSize);
+				suite.expectEqual(nbBlocks, (std::ranges::size(originalData) + blockSize - 1) / blockSize);
 			}};
 		});
 
@@ -71,7 +71,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 
 				suite.expect(result);
 				suite.expectEqual(resultString, originalString);
-				suite.expectEqual(nbBlocks, (std::size(originalString) + blockSize - 1) / blockSize);
+				suite.expectEqual(nbBlocks, (std::ranges::size(originalString) + blockSize - 1) / blockSize);
 			}};
 		});
 

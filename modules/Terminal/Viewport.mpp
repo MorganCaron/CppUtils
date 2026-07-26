@@ -50,10 +50,10 @@ export namespace CppUtils::Terminal
 
 		[[nodiscard]] static inline constexpr auto intersection(const Viewport& lhs, const Viewport& rhs) noexcept -> Viewport
 		{
-			const auto x1 = std::max(lhs.getPosition().x(), rhs.getPosition().x());
-			const auto y1 = std::max(lhs.getPosition().y(), rhs.getPosition().y());
-			const auto x2 = std::min(lhs.getPosition().x() + lhs.getSize().width(), rhs.getPosition().x() + rhs.getSize().width());
-			const auto y2 = std::min(lhs.getPosition().y() + lhs.getSize().height(), rhs.getPosition().y() + rhs.getSize().height());
+			const auto x1 = std::ranges::max(lhs.getPosition().x(), rhs.getPosition().x());
+			const auto y1 = std::ranges::max(lhs.getPosition().y(), rhs.getPosition().y());
+			const auto x2 = std::ranges::min(lhs.getPosition().x() + lhs.getSize().width(), rhs.getPosition().x() + rhs.getSize().width());
+			const auto y2 = std::ranges::min(lhs.getPosition().y() + lhs.getSize().height(), rhs.getPosition().y() + rhs.getSize().height());
 
 			if (x1 < x2 and y1 < y2)
 				return Viewport{{x2 - x1, y2 - y1}, {x1, y1}};

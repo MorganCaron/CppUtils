@@ -99,7 +99,7 @@ export namespace CppUtils::Terminal::Mouse
 			return std::nullopt;
 
 		auto buttonData = 0, x = 0, y = 0;
-		if (std::sscanf(std::data(buffer), "%d;%d;%d", std::addressof(buttonData), std::addressof(x), std::addressof(y)) != 3)
+		if (std::sscanf(std::ranges::data(buffer), "%d;%d;%d", std::addressof(buttonData), std::addressof(x), std::addressof(y)) != 3)
 			return std::nullopt;
 
 		auto event = Event{};

@@ -115,7 +115,7 @@ export namespace CppUtils::Terminal
 					view.setChar({barX, y}, CharAttributes{U'│', TextColor::TextColorEnum::White});
 
 				const auto ratio = static_cast<double>(heightForBar) / static_cast<double>(contentSize.height());
-				const auto thumbHeight = std::max(1uz, static_cast<std::size_t>(ratio * static_cast<double>(heightForBar)));
+				const auto thumbHeight = std::ranges::max(1uz, static_cast<std::size_t>(ratio * static_cast<double>(heightForBar)));
 				const auto scrollRatio = (maxScrollY > 0) ? static_cast<double>(m_scrollPosition.y()) / static_cast<double>(maxScrollY) : 0.0;
 				const auto thumbY = static_cast<std::size_t>(scrollRatio * static_cast<double>(heightForBar - thumbHeight));
 
@@ -132,7 +132,7 @@ export namespace CppUtils::Terminal
 					view.setChar({x, barY}, CharAttributes{U'─', TextColor::TextColorEnum::White});
 
 				const auto ratio = static_cast<double>(widthForBar) / static_cast<double>(contentSize.width());
-				const auto thumbWidth = std::max(1uz, static_cast<std::size_t>(ratio * static_cast<double>(widthForBar)));
+				const auto thumbWidth = std::ranges::max(1uz, static_cast<std::size_t>(ratio * static_cast<double>(widthForBar)));
 				const auto scrollRatio = (maxScrollX > 0) ? static_cast<double>(m_scrollPosition.x()) / static_cast<double>(maxScrollX) : 0.0;
 				const auto thumbX = static_cast<std::size_t>(scrollRatio * static_cast<double>(widthForBar - thumbWidth));
 

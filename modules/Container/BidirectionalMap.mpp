@@ -35,31 +35,31 @@ export namespace CppUtils::Container
 
 		[[nodiscard]] constexpr inline auto begin(this auto&& self) -> decltype(auto)
 		{
-			return std::begin(self.values);
+			return std::ranges::begin(self.values);
 		}
 
 		[[nodiscard]] constexpr inline auto cbegin() const -> decltype(auto)
 		{
-			return std::cbegin(values);
+			return std::ranges::cbegin(values);
 		}
 
 		[[nodiscard]] constexpr inline auto end(this auto&& self) -> decltype(auto)
 		{
-			return std::end(self.values);
+			return std::ranges::end(self.values);
 		}
 		[[nodiscard]] constexpr inline auto cend() const -> decltype(auto)
 		{
-			return std::cend(values);
+			return std::ranges::cend(values);
 		}
 
 		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
 		{
-			return std::empty(values);
+			return std::ranges::empty(values);
 		}
 
 		[[nodiscard]] inline constexpr auto size() const noexcept -> std::size_t
 		{
-			return std::size(values);
+			return std::ranges::size(values);
 		}
 
 		inline auto clear() noexcept -> void
@@ -74,17 +74,17 @@ export namespace CppUtils::Container
 
 		[[nodiscard]] inline auto findLeft(const Lhs& lhs) -> decltype(auto)
 		{
-			return std::find_if(std::cbegin(values), std::cend(values), [&lhs](auto&& pair) -> bool { return pair.first == lhs; });
+			return std::ranges::find_if(values, [&lhs](auto&& pair) -> bool { return pair.first == lhs; });
 		}
 
 		[[nodiscard]] inline auto findRight(const Rhs& rhs) -> decltype(auto)
 		{
-			return std::find_if(std::cbegin(values), std::cend(values), [&rhs](auto&& pair) -> bool { return pair.second == rhs; });
+			return std::ranges::find_if(values, [&rhs](auto&& pair) -> bool { return pair.second == rhs; });
 		}
 
 		[[nodiscard]] inline auto left(const Lhs& lhs) -> decltype(auto)
 		{
-			if (auto it = findLeft(lhs); it == std::cend(values))
+			if (auto it = findLeft(lhs); it == std::ranges::cend(values))
 				throw std::runtime_error{"Missing key in BidirectionalMap"};
 			else
 				return it->second;
@@ -92,7 +92,7 @@ export namespace CppUtils::Container
 
 		[[nodiscard]] inline auto right(const Rhs& rhs) -> decltype(auto)
 		{
-			if (auto it = findRight(rhs); it == std::cend(values))
+			if (auto it = findRight(rhs); it == std::ranges::cend(values))
 				throw std::runtime_error{"Missing key in BidirectionalMap"};
 			else
 				return it->first;

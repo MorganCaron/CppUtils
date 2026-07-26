@@ -211,7 +211,7 @@ export namespace CppUtils::Network::Http
 		using namespace std::literals;
 		auto filtered = buffer | std::views::filter([](char c) { return c != '\r'; });
 		if (auto range = std::ranges::search(filtered, "\n\n"sv); not std::ranges::empty(range))
-			return static_cast<std::size_t>(std::distance(std::ranges::begin(buffer), std::ranges::end(range).base()));
+			return static_cast<std::size_t>(std::ranges::distance(std::ranges::begin(buffer), std::ranges::end(range).base()));
 		return std::string_view::npos;
 	}
 
@@ -252,11 +252,11 @@ export namespace CppUtils::Network::Http
 	[[nodiscard]] inline auto getContentLength(const std::vector<Header>& headers) -> std::size_t
 	{
 		auto contentLength = 0uz;
-		if (const auto it = std::ranges::find_if(headers, [](const auto& header) { return header.name == "Content-Length"; }); it != std::end(headers))
+		if (const auto it = std::ranges::find_if(headers, [](const auto& header) { return header.name == "Content-Length"; }); it != std::ranges::end(headers))
 #if defined(OS_MACOS)
-			auto _ = Stl::from_chars(std::data(it->value), std::data(it->value) + std::size(it->value), contentLength);
+			auto _ = Stl::from_chars(std::ranges::data(it->value), std::ranges::data(it->value) + std::ranges::size(it->value), contentLength);
 #else
-			auto _ = std::from_chars(std::data(it->value), std::data(it->value) + std::size(it->value), contentLength);
+			auto _ = std::from_chars(std::ranges::data(it->value), std::ranges::data(it->value) + std::ranges::size(it->value), contentLength);
 #endif
 		return contentLength;
 	}
@@ -281,10 +281,10 @@ export namespace CppUtils::Network::Http
 		const auto contentLength = getContentLength(message.headers);
 
 		message.body = std::move(bodyPart);
-		while (std::size(message.body) < contentLength)
+		while (std::ranges::size(message.body) < contentLength)
 		{
-			auto remaining = contentLength - std::size(message.body);
-			auto chunk = receiver(std::min(remaining, 4'096uz));
+			auto remaining = contentLength - std::ranges::size(message.body);
+			auto chunk = receiver(std::ranges::min(remaining, 4'096uz));
 			if (not chunk)
 				break;
 			message.body += chunk.value();
@@ -305,8 +305,8 @@ export namespace CppUtils::Network::Http
 			auto result = std::format("{} {} HTTP/1.1\r\n", Http::toString(method), path);
 			for (const auto& header : headers)
 				result += std::format("{}: {}\r\n", header.name, header.value);
-			if (not std::empty(body))
-				result += std::format("Content-Length: {}\r\n", std::size(body));
+			if (not std::ranges::empty(body))
+				result += std::format("Content-Length: {}\r\n", std::ranges::size(body));
 			result += "\r\n";
 			result += body;
 			return result;
@@ -324,8 +324,8 @@ export namespace CppUtils::Network::Http
 			auto result = std::format("HTTP/1.1 {} {}\r\n", static_cast<int>(status), Http::toString(status));
 			for (const auto& header : headers)
 				result += std::format("{}: {}\r\n", header.name, header.value);
-			if (not std::empty(body))
-				result += std::format("Content-Length: {}\r\n", std::size(body));
+			if (not std::ranges::empty(body))
+				result += std::format("Content-Length: {}\r\n", std::ranges::size(body));
 			result += "\r\n";
 			result += body;
 			return result;

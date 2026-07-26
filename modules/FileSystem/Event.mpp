@@ -62,7 +62,7 @@ namespace std
 	{
 		inline constexpr auto parse(std::format_parse_context& ctx) -> auto
 		{
-			return std::begin(ctx);
+			return std::ranges::begin(ctx);
 		}
 
 		template<class FormatContext>

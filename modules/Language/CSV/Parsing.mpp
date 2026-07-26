@@ -21,11 +21,11 @@ export namespace CppUtils::Language::CSV
 			| std::views::split(lineSeparator)
 			| std::views::transform([lineSeparator](auto&& range) -> std::string_view {
 			auto line = std::string_view{range};
-			if (lineSeparator == "\n" and not std::empty(line) and line.back() == '\r')
+			if (lineSeparator == "\n" and not std::ranges::empty(line) and line.back() == '\r')
 				line.remove_suffix(1);
 			return String::trimString(line);
 		})
-			| std::views::filter([](std::string_view line) { return not std::empty(line); })
+			| std::views::filter([](std::string_view line) { return not std::ranges::empty(line); })
 			| std::views::transform([columnSeparator](std::string_view line) { return splitLine(line, columnSeparator); })
 			| std::ranges::to<std::vector<std::vector<std::string_view>>>();
 	}

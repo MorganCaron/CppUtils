@@ -106,7 +106,7 @@ export namespace CppUtils::FileSystem
 		inline auto listener() -> void
 		{
 #if defined(OS_WINDOWS)
-			switch (WaitForMultipleObjects(static_cast<DWORD>(std::size(m_changeHandles)), std::data(m_changeHandles), false, INFINITE))
+			switch (WaitForMultipleObjects(static_cast<DWORD>(std::ranges::size(m_changeHandles)), std::ranges::data(m_changeHandles), false, INFINITE))
 			{
 			case WAIT_OBJECT_0: // An event occurred on a file
 				System::throwLastErrorIf(not FindNextChangeNotification(m_changeHandles[0]), "FindNextChangeNotification failed");
@@ -123,7 +123,7 @@ export namespace CppUtils::FileSystem
 #elif defined(OS_LINUX)
 			auto nbFileDescriptorsReady = 0uz;
 			{
-				auto epollWaitResult = epoll_wait(m_eventPoll, std::data(m_events), maxEvents, 1);
+				auto epollWaitResult = epoll_wait(m_eventPoll, std::ranges::data(m_events), maxEvents, 1);
 				if (epollWaitResult == -1)
 					return;
 				[[assume(epollWaitResult >= 0)]];
@@ -138,15 +138,15 @@ export namespace CppUtils::FileSystem
 					auto eventFileDescriptor = m_events[i].data.fd;
 					if (eventFileDescriptor == m_stopPipe.read)
 						continue;
-					length = read(eventFileDescriptor, std::data(buffer), std::size(buffer));
+					length = read(eventFileDescriptor, std::ranges::data(buffer), std::ranges::size(buffer));
 					if (length == -1 and errno == EINTR)
 						break;
 				}
 				for (auto offset = std::ptrdiff_t{0}; offset < length;)
 				{
-					auto inotifyEvent = *reinterpret_cast<INotifyEvent*>(std::data(buffer) + offset);
+					auto inotifyEvent = *reinterpret_cast<INotifyEvent*>(std::ranges::data(buffer) + offset);
 					offset += sizeof(INotifyEvent);
-					auto filename = std::string_view{reinterpret_cast<const char*>(std::data(buffer) + offset)};
+					auto filename = std::string_view{reinterpret_cast<const char*>(std::ranges::data(buffer) + offset)};
 					offset += inotifyEvent.len;
 
 					auto lockGuard = std::unique_lock{m_mutex};
@@ -156,7 +156,7 @@ export namespace CppUtils::FileSystem
 						continue;
 					}
 					if (auto it = m_watchDescriptors.findRight(inotifyEvent.wd);
-						it != std::cend(m_watchDescriptors))
+						it != std::ranges::cend(m_watchDescriptors))
 					{
 						auto path = it->first;
 						if (std::filesystem::is_directory(path))

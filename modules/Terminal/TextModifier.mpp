@@ -85,18 +85,18 @@ export namespace CppUtils::Terminal
 		static inline auto eraseCurrentLine(std::FILE* file) -> void
 		{
 			std::fwrite(
-				std::data(Ansi::EscapeCode::EraseCurrentLine),
+				std::ranges::data(Ansi::EscapeCode::EraseCurrentLine),
 				sizeof(decltype(Ansi::EscapeCode::EraseCurrentLine)::value_type),
-				std::size(Ansi::EscapeCode::EraseCurrentLine),
+				std::ranges::size(Ansi::EscapeCode::EraseCurrentLine),
 				file);
 		}
 
 		static inline auto moveCursorUp(std::FILE* file) -> void
 		{
 			std::fwrite(
-				std::data(Ansi::EscapeCode::MoveCursorUp),
+				std::ranges::data(Ansi::EscapeCode::MoveCursorUp),
 				sizeof(decltype(Ansi::EscapeCode::MoveCursorUp)::value_type),
-				std::size(Ansi::EscapeCode::MoveCursorUp),
+				std::ranges::size(Ansi::EscapeCode::MoveCursorUp),
 				file);
 		}
 

@@ -105,14 +105,14 @@ export namespace CppUtils::Thread
 		{
 			auto accessor = m_items.access();
 			m_finishedCondition.wait(accessor.getLockGuard(), [&] {
-				return std::empty(accessor.value().set) and accessor.value().processingTasks == 0;
+				return std::ranges::empty(accessor.value().set) and accessor.value().processingTasks == 0;
 			});
 		}
 
 		inline auto getScheduledTasksCount() const -> std::size_t
 		{
 			auto accessor = m_items.access();
-			return std::size(accessor.value().set) + accessor.value().processingTasks;
+			return std::ranges::size(accessor.value().set) + accessor.value().processingTasks;
 		}
 
 		inline auto flush() -> void
@@ -124,7 +124,7 @@ export namespace CppUtils::Thread
 					auto accessor = m_items.access();
 					auto& [set, map, processingTasks] = accessor.value();
 
-					if (std::empty(set))
+					if (std::ranges::empty(set))
 					{
 						if (processingTasks == 0)
 							break;
@@ -133,8 +133,8 @@ export namespace CppUtils::Thread
 						continue;
 					}
 
-					tasksToRun.assign(std::begin(set), std::end(set));
-					processingTasks += std::size(set);
+					tasksToRun.assign(std::ranges::begin(set), std::ranges::end(set));
+					processingTasks += std::ranges::size(set);
 					map.clear();
 					set.clear();
 				}
@@ -151,7 +151,7 @@ export namespace CppUtils::Thread
 		{
 			auto accessor = m_items.access();
 			auto& [set, map, processingTasks] = accessor.value();
-			if (auto it = map.find(id); it != std::end(map))
+			if (auto it = map.find(id); it != std::ranges::end(map))
 			{
 				it->second->cancelled = true;
 				set.erase(it->second);
@@ -181,22 +181,22 @@ export namespace CppUtils::Thread
 				auto accessor = m_items.access();
 				auto& [set, map, processingTasks] = accessor.value();
 
-				if (std::empty(set))
+				if (std::ranges::empty(set))
 					m_workCondition.wait(accessor.getLockGuard(), [this, &set] {
-						return not std::empty(set) or m_threadLoop.isStopRequested();
+						return not std::ranges::empty(set) or m_threadLoop.isStopRequested();
 					});
-				else if (auto first = *std::begin(set); first->time > Clock::now())
+				else if (auto first = *std::ranges::begin(set); first->time > Clock::now())
 					m_workCondition.wait_until(accessor.getLockGuard(), first->time, [this, &set, first] {
-						return m_threadLoop.isStopRequested() or std::empty(set) or (*std::begin(set) != first) or ((*std::begin(set))->time <= Clock::now());
+						return m_threadLoop.isStopRequested() or std::ranges::empty(set) or (*std::ranges::begin(set) != first) or ((*std::ranges::begin(set))->time <= Clock::now());
 					});
 
-				if (m_threadLoop.isStopRequested() or std::empty(set) or (*std::begin(set))->time > Clock::now())
+				if (m_threadLoop.isStopRequested() or std::ranges::empty(set) or (*std::ranges::begin(set))->time > Clock::now())
 					return;
 
-				auto first = *std::begin(set);
+				auto first = *std::ranges::begin(set);
 				const auto endTime = (m_step == Clock::duration::zero()) ? first->time : first->time + m_step;
 
-				for (auto it = std::begin(set); it != std::end(set);)
+				for (auto it = std::ranges::begin(set); it != std::ranges::end(set);)
 					if ((*it)->time <= endTime)
 					{
 						tasksToRun.push_back(*it);
@@ -207,7 +207,7 @@ export namespace CppUtils::Thread
 					else
 						break;
 
-				if (std::empty(set))
+				if (std::ranges::empty(set))
 					m_finishedCondition.notify_all();
 			}
 

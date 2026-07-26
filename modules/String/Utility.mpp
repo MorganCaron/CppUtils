@@ -84,10 +84,10 @@ export namespace CppUtils::String
 
 	[[nodiscard]] inline auto rightTrimString(std::string_view stringView) -> std::string_view
 	{
-		const auto it = std::find_if_not(std::rbegin(stringView), std::rend(stringView), [](const auto c) {
+		const auto it = std::ranges::find_if_not(std::ranges::rbegin(stringView), std::ranges::rend(stringView), [](const auto c) {
 			return std::isspace(static_cast<unsigned char>(c));
 		});
-		stringView.remove_suffix(static_cast<std::size_t>(std::ranges::distance(std::rbegin(stringView), it)));
+		stringView.remove_suffix(static_cast<std::size_t>(std::ranges::distance(std::ranges::rbegin(stringView), it)));
 		return stringView;
 	}
 
@@ -149,7 +149,7 @@ export namespace CppUtils::String
 	[[nodiscard]] inline constexpr auto toAscii(const GenericText auto& string) -> std::string
 	{
 		auto asciiString = std::string{};
-		std::transform(std::cbegin(string), std::cend(string), std::back_inserter(asciiString), [](auto c) -> char {
+		std::ranges::transform(string, std::back_inserter(asciiString), [](auto c) -> char {
 			return c < 128 ? static_cast<char>(c) : '?';
 		});
 		return asciiString;
@@ -182,7 +182,7 @@ export namespace CppUtils::String
 			if (number < 0)
 				string[0] = '-';
 		auto unsignedNumber = Math::absolute(number);
-		for (auto i = std::size(string); unsignedNumber != 0; unsignedNumber /= base)
+		for (auto i = std::ranges::size(string); unsignedNumber != 0; unsignedNumber /= base)
 			string[--i] = digits[unsignedNumber % base];
 		return string;
 	}
@@ -199,15 +199,15 @@ export namespace CppUtils::String
 
 		constexpr FixedString(const char (&string)[Size]) noexcept
 		{
-			std::copy_n(string, Size, data);
+			std::ranges::copy_n(string, Size, data);
 		}
 
 		template<std::size_t OtherSize>
 		[[nodiscard]] constexpr auto operator+(const char (&other)[OtherSize]) const noexcept -> FixedString<Size + OtherSize - 1>
 		{
 			char result[Size + OtherSize - 1]{};
-			std::copy_n(data, Size - 1, result);
-			std::copy_n(other, OtherSize, result + Size - 1);
+			std::ranges::copy_n(data, Size - 1, result);
+			std::ranges::copy_n(other, OtherSize, result + Size - 1);
 			return result;
 		}
 

@@ -11,14 +11,14 @@ namespace CppUtils::UnitTest::Container::Stack
 
 		suite.addTest("Empty Stack", [&] {
 			auto stack = CppUtils::Container::Stack{};
-			suite.expect(std::empty(stack));
+			suite.expect(std::ranges::empty(stack));
 		});
 
 		suite.addTest("Push one value", [&] {
 			auto stack = CppUtils::Container::Stack{};
 			stack.push(42);
-			suite.expect(not std::empty(stack));
-			suite.expectEqual(std::size(stack), sizeof(int));
+			suite.expect(not std::ranges::empty(stack));
+			suite.expectEqual(std::ranges::size(stack), sizeof(int));
 		});
 
 		suite.addTest("Pop", [&] {
@@ -29,7 +29,7 @@ namespace CppUtils::UnitTest::Container::Stack
 				suite.expect(result);
 				suite.expectEqual(result.value(), 42);
 			}
-			suite.expect(std::empty(stack));
+			suite.expect(std::ranges::empty(stack));
 			{
 				auto result = stack.pop<int>();
 				suite.expect(not result);
@@ -41,7 +41,7 @@ namespace CppUtils::UnitTest::Container::Stack
 			stack.push(1);
 			stack.push(2);
 			stack.push(3);
-			suite.expectEqual(std::size(stack), sizeof(int) * 3);
+			suite.expectEqual(std::ranges::size(stack), sizeof(int) * 3);
 		});
 
 		suite.addTest("Multiple types", [&] {
@@ -50,7 +50,7 @@ namespace CppUtils::UnitTest::Container::Stack
 			stack.push(42);
 			stack.push(3.14f);
 			stack.push("Hello World!"sv);
-			suite.expectEqual(std::size(stack), sizeof(bool) + sizeof(int) + sizeof(float) + sizeof(std::string_view));
+			suite.expectEqual(std::ranges::size(stack), sizeof(bool) + sizeof(int) + sizeof(float) + sizeof(std::string_view));
 
 			stack.dump();
 
@@ -88,7 +88,7 @@ namespace CppUtils::UnitTest::Container::Stack
 				suite.expect(result);
 				suite.expectEqual(result.value(), 42uz);
 			}
-			suite.expect(std::empty(stack));
+			suite.expect(std::ranges::empty(stack));
 		});
 
 		suite.addTest("Call function: (std::size_t) -> void", [&] {
@@ -115,7 +115,7 @@ namespace CppUtils::UnitTest::Container::Stack
 				suite.expect(result);
 				suite.expectEqual(result.value(), 42uz);
 			}
-			suite.expect(std::empty(stack));
+			suite.expect(std::ranges::empty(stack));
 		});
 
 		suite.addTest("Call functions", [&] {
@@ -138,7 +138,7 @@ namespace CppUtils::UnitTest::Container::Stack
 			}
 			suite.expect(stack.call(print));
 			suite.expect(stack.drop(sizeof(std::size_t)));
-			suite.expect(std::empty(stack));
+			suite.expect(std::ranges::empty(stack));
 		});
 	}};
 }

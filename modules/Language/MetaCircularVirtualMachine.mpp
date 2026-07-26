@@ -37,9 +37,9 @@ export namespace CppUtils::Language
 
 				if (instruction.value == "call"_token)
 				{
-					if (std::empty(instruction.nodes)) [[unlikely]]
+					if (std::ranges::empty(instruction.nodes)) [[unlikely]]
 						return std::unexpected{R"(Missing argument in the "call" instruction)"};
-					if (auto it = functions.find(instruction.nodes.front().value); it != std::cend(functions))
+					if (auto it = functions.find(instruction.nodes.front().value); it != std::ranges::cend(functions))
 						return it->second(cursor, instruction.nodes.front(), *this);
 					else [[unlikely]]
 						return std::unexpected{"Unknown function"};
@@ -55,7 +55,7 @@ export namespace CppUtils::Language
 				if (not grammar.get().exists(instruction.value)) [[unlikely]]
 					return std::unexpected{"Unknown lexeme"};
 				auto lexemes = std::ref(grammar.get()[instruction.value].nodes);
-				for (auto instructionPosition = 0uz; not exit and instructionPosition < std::size(lexemes.get()); ++instructionPosition)
+				for (auto instructionPosition = 0uz; not exit and instructionPosition < std::ranges::size(lexemes.get()); ++instructionPosition)
 				{
 					const auto& lexeme = lexemes.get()[instructionPosition];
 					if (auto result = operator()(cursor, lexeme); not result) [[unlikely]]
@@ -214,7 +214,7 @@ export namespace CppUtils::Language
 						return std::unexpected{"size: Missing result node"sv};
 
 					auto branchName = branchNameNode->getValue().value();
-					sizeNode->setValue(std::size(sourceNode[branchName]));
+					sizeNode->setValue(std::ranges::size(sourceNode[branchName]));
 					return next(instruction);
 				});
 
@@ -224,12 +224,12 @@ export namespace CppUtils::Language
 
 					auto destinationNode = instruction.at("destination"_token).and_then([](auto branch) { return branch.front(); }).value_or(interpreter.context);
 					auto branchPath = instruction.at("branch"_token);
-					if (not branchPath or std::empty(branchPath.value()))
+					if (not branchPath or std::ranges::empty(branchPath.value()))
 						return std::unexpected{"create: Missing branch path"sv};
 
 					auto currentDestination = destinationNode;
 					const auto& pathNodes = branchPath.value();
-					for (auto i = 0uz; i < std::size(pathNodes) - 1; ++i)
+					for (auto i = 0uz; i < std::ranges::size(pathNodes) - 1; ++i)
 					{
 						auto token = pathNodes[i]->getValue().value();
 						if (auto nextDestination = currentDestination[token].front(); not nextDestination)
@@ -267,13 +267,13 @@ export namespace CppUtils::Language
 					auto destinationNode = instruction.at("destinationBase"_token).and_then([](auto branch) { return branch.front(); }).value_or(interpreter.context);
 
 					auto branchPath = instruction.at("destinationPath"_token);
-					if (not branchPath or std::empty(branchPath.value()))
+					if (not branchPath or std::ranges::empty(branchPath.value()))
 						return std::unexpected{"reference: Missing destination path"sv};
 
 					auto currentDestination = destinationNode;
 					const auto& pathNodes = branchPath.value();
 
-					for (auto i = 0uz; i < std::size(pathNodes) - 1; ++i)
+					for (auto i = 0uz; i < std::ranges::size(pathNodes) - 1; ++i)
 					{
 						auto token = pathNodes[i]->getValue().value();
 						if (auto nextDestination = currentDestination[token].front(); not nextDestination)
@@ -440,7 +440,7 @@ export namespace CppUtils::Language
 					auto threadId = threadIdNode->getValue().value();
 					auto future = [&]() -> std::shared_ptr<std::future<void>> {
 						auto threads = interpreter.environment->threads.sharedAccess();
-						if (auto it = threads.value().find(threadId); it != std::end(threads.value()))
+						if (auto it = threads.value().find(threadId); it != std::ranges::end(threads.value()))
 							return it->second;
 						return nullptr;
 					}();
@@ -489,7 +489,7 @@ export namespace CppUtils::Language
 					auto id = idNode->getValue().value();
 					auto event = [&]() -> std::shared_ptr<Execution::Event> {
 						auto events = interpreter.environment->events.sharedAccess();
-						if (auto it = events.value().find(id); it != std::end(events.value()))
+						if (auto it = events.value().find(id); it != std::ranges::end(events.value()))
 							return it->second;
 						return nullptr;
 					}();
@@ -508,7 +508,7 @@ export namespace CppUtils::Language
 					auto id = idNode->getValue().value();
 					auto event = [&]() -> std::shared_ptr<Execution::Event> {
 						auto events = interpreter.environment->events.sharedAccess();
-						if (auto it = events.value().find(id); it != std::end(events.value()))
+						if (auto it = events.value().find(id); it != std::ranges::end(events.value()))
 							return it->second;
 						return nullptr;
 					}();
@@ -533,7 +533,7 @@ export namespace CppUtils::Language
 				if (not environment->stopRequested.load())
 					return result;
 
-				if (auto firstError = environment->firstErrorMessage.sharedAccess(); not std::empty(firstError.value()))
+				if (auto firstError = environment->firstErrorMessage.sharedAccess(); not std::ranges::empty(firstError.value()))
 					return std::unexpected{std::string_view{firstError.value()}};
 
 				return result;
@@ -598,7 +598,7 @@ export namespace CppUtils::Language
 
 					if (auto function = [&]() -> std::function<StepResult(MetaCircularVirtualMachine&, MeshNodePtr)> {
 						auto functions = environment->functions.sharedAccess();
-						if (auto functionIt = functions.value().find(definitionToken); functionIt != std::cend(functions.value()))
+						if (auto functionIt = functions.value().find(definitionToken); functionIt != std::ranges::cend(functions.value()))
 							return functionIt->second;
 						return nullptr;
 					}())
@@ -624,7 +624,7 @@ export namespace CppUtils::Language
 
 				if (auto function = [&]() -> std::function<StepResult(MetaCircularVirtualMachine&, MeshNodePtr)> {
 					auto functions = environment->functions.sharedAccess();
-					if (auto functionIt = functions.value().find(token); functionIt != std::cend(functions.value()))
+					if (auto functionIt = functions.value().find(token); functionIt != std::ranges::cend(functions.value()))
 						return functionIt->second;
 					return nullptr;
 				}())

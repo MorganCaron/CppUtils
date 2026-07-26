@@ -23,7 +23,7 @@ export namespace CppUtils::Execution
 			auto lockGuard = std::shared_lock{m_mutex};
 			using Tuple = std::tuple<std::decay_t<Args>...>;
 			auto key = std::make_pair(eventName, std::type_index{typeid(Tuple)});
-			if (auto subscriberIt = m_subscribers.find(key); subscriberIt != std::cend(m_subscribers))
+			if (auto subscriberIt = m_subscribers.find(key); subscriberIt != std::ranges::cend(m_subscribers))
 			{
 				auto payload = std::make_tuple(args...);
 				for (auto& function : subscriberIt->second)

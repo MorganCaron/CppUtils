@@ -56,7 +56,7 @@ export namespace CppUtils::Execution
 		inline auto waitUntilFinished(Duration timeout = Duration::zero()) -> bool
 		{
 			auto accessor = m_queue.access();
-			auto predicate = [this, &accessor] { return std::empty(accessor.value()) and not m_isTaskRunning; };
+			auto predicate = [this, &accessor] { return std::ranges::empty(accessor.value()) and not m_isTaskRunning; };
 			if (timeout == Duration::zero())
 			{
 				m_condition.wait(accessor.getLockGuard(), predicate);
@@ -81,10 +81,10 @@ export namespace CppUtils::Execution
 			{
 				auto accessor = m_queue.access();
 				m_condition.wait(accessor.getLockGuard(), [this, &accessor] {
-					return not std::empty(accessor.value()) or m_worker.isStopRequested();
+					return not std::ranges::empty(accessor.value()) or m_worker.isStopRequested();
 				});
 
-				if (std::empty(accessor.value()))
+				if (std::ranges::empty(accessor.value()))
 					return;
 
 				m_isTaskRunning = true;

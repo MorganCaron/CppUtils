@@ -29,7 +29,7 @@ export namespace CppUtils::Network
 				detectedDomain != getDomain())
 				*this = Client{detectedDomain, getType()};
 
-			auto address = makeAddress(std::empty(ip) ? "127.0.0.1" : ip, port);
+			auto address = makeAddress(std::ranges::empty(ip) ? "127.0.0.1" : ip, port);
 			if (address.length == 0)
 				return std::unexpected{std::make_error_code(std::errc::invalid_argument)};
 

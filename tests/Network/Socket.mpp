@@ -159,7 +159,7 @@ namespace CppUtils::UnitTest::Network
 				suite.expectEqual(message.value(), "Hello server!");
 
 				auto responseString = "Hello client!"sv;
-				suite.expect(clientSocket.send(std::size(responseString)));
+				suite.expect(clientSocket.send(std::ranges::size(responseString)));
 				suite.expect(clientSocket.send(responseString));
 				Logger::print(R"(Server: Message sent: "{}")", responseString);
 
@@ -175,7 +175,7 @@ namespace CppUtils::UnitTest::Network
 				Logger::print("Client: Connected");
 
 				auto requestString = "Hello server!"sv;
-				suite.expect(client.send(std::size(requestString)));
+				suite.expect(client.send(std::ranges::size(requestString)));
 				suite.expect(client.send(requestString));
 				Logger::print(R"(Client: Message sent: "{}")", requestString);
 
@@ -208,7 +208,7 @@ namespace CppUtils::UnitTest::Network
 
 				auto result = server.receiveDatagram(1'024);
 				suite.expect(result);
-				auto message = std::string{reinterpret_cast<const char*>(std::data(result->data)), std::size(result->data)};
+				auto message = std::string{reinterpret_cast<const char*>(std::ranges::data(result->data)), std::ranges::size(result->data)};
 				Logger::print(R"(Server: Received datagram: "{}")", message);
 				suite.expectEqual(message, "Hello server!");
 
@@ -225,7 +225,7 @@ namespace CppUtils::UnitTest::Network
 
 				auto result = socket.receiveDatagram(1'024);
 				suite.expect(result);
-				auto message = std::string{reinterpret_cast<const char*>(std::data(result->data)), std::size(result->data)};
+				auto message = std::string{reinterpret_cast<const char*>(std::ranges::data(result->data)), std::ranges::size(result->data)};
 				Logger::print(R"(Client: Received datagram: "{}")", message);
 				suite.expectEqual(message, "Hello client!");
 			});

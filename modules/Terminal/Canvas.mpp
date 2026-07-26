@@ -37,7 +37,7 @@ export namespace CppUtils::Terminal
 		inline auto applyDifferences() noexcept -> void
 		{
 			using namespace std::literals;
-			std::fwrite(std::data(TextStyle::Ansi::EscapeCode::Reset), sizeof(char), std::size(TextStyle::Ansi::EscapeCode::Reset), stdout);
+			std::fwrite(std::ranges::data(TextStyle::Ansi::EscapeCode::Reset), sizeof(char), std::ranges::size(TextStyle::Ansi::EscapeCode::Reset), stdout);
 
 			const auto terminalSize = getTerminalSize();
 			const auto viewportSize = m_viewport.getSize();
@@ -61,7 +61,7 @@ export namespace CppUtils::Terminal
 
 				if (cellChanged)
 				{
-					if (std::empty(stringBuffer))
+					if (std::ranges::empty(stringBuffer))
 						setCursorPosition({position.x(), startLine + position.y()});
 					if (needUpdateTextStyle)
 					{
@@ -81,19 +81,19 @@ export namespace CppUtils::Terminal
 					if (currentChar.displayWidth > 0)
 						stringBuffer = String::toUtf8(currentChar.character, std::move(stringBuffer));
 					m_previousBuffer.setChar(position, currentChar);
-					if (not std::empty(stringBuffer) and position.x() + 1 == viewportSize.width())
+					if (not std::ranges::empty(stringBuffer) and position.x() + 1 == viewportSize.width())
 						stringBuffer += '\n';
 				}
-				else if (not std::empty(stringBuffer))
+				else if (not std::ranges::empty(stringBuffer))
 				{
-					std::fwrite(std::data(stringBuffer), sizeof(decltype(stringBuffer)::value_type), std::size(stringBuffer), stdout);
+					std::fwrite(std::ranges::data(stringBuffer), sizeof(decltype(stringBuffer)::value_type), std::ranges::size(stringBuffer), stdout);
 					stringBuffer.clear();
 					needFlush = true;
 				}
 			});
-			if (not std::empty(stringBuffer))
+			if (not std::ranges::empty(stringBuffer))
 			{
-				std::fwrite(std::data(stringBuffer), sizeof(decltype(stringBuffer)::value_type), std::size(stringBuffer), stdout);
+				std::fwrite(std::ranges::data(stringBuffer), sizeof(decltype(stringBuffer)::value_type), std::ranges::size(stringBuffer), stdout);
 				needFlush = true;
 			}
 			if (needFlush)
