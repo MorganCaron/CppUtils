@@ -3,7 +3,7 @@ export module CppUtils.Terminal.FixedAreaBuffer;
 import std;
 import CppUtils.Container.Size;
 import CppUtils.Terminal.AreaBuffer;
-import CppUtils.Terminal.CharAttributes;
+import CppUtils.Terminal.CharCell;
 
 export namespace CppUtils::Terminal
 {
@@ -11,7 +11,7 @@ export namespace CppUtils::Terminal
 	class FixedAreaBuffer final: public AreaBuffer
 	{
 	public:
-		using Line = std::array<CharAttributes, Width>;
+		using Line = std::array<CharCell, Width>;
 		using Buffer = std::array<Line, Height>;
 		static constexpr auto size = Container::Size2{Width, Height};
 
@@ -20,30 +20,30 @@ export namespace CppUtils::Terminal
 			return size;
 		}
 
-		inline constexpr FixedAreaBuffer(CharAttributes defaultCharAttributes = {}):
+		inline constexpr FixedAreaBuffer(CharCell defaultCell = {}):
 			m_buffer{[](auto v) constexpr -> Buffer {
 				auto line = Line{};
 				line.fill(v);
 				auto buffer = Buffer{};
 				buffer.fill(line);
 				return buffer;
-			}(defaultCharAttributes)}
+			}(defaultCell)}
 		{}
 
 		inline constexpr FixedAreaBuffer(char defaultChar):
-			FixedAreaBuffer{CharAttributes{defaultChar}}
+			FixedAreaBuffer{CharCell{defaultChar}}
 		{}
 
 		inline constexpr FixedAreaBuffer(Buffer buffer):
 			m_buffer{buffer}
 		{}
 
-		[[nodiscard]] constexpr auto getChar(const Container::Size2& position) const noexcept -> const CharAttributes& final
+		[[nodiscard]] constexpr auto getChar(const Container::Size2& position) const noexcept -> const CharCell& final
 		{
 			return m_buffer[position.y()][position.x()];
 		}
 
-		constexpr auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void final
+		constexpr auto setChar(const Container::Size2& position, const CharCell& c) noexcept -> void final
 		{
 			if (position.x() >= size.width() or position.y() >= size.height())
 				return;

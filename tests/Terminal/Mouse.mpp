@@ -29,7 +29,7 @@ namespace CppUtils::UnitTest::Terminal::Mouse
 						{0, 0},
 						size,
 						CppUtils::Terminal::PrimitiveStyle::Outline,
-						CppUtils::Terminal::CharAttributes{});
+						CppUtils::Terminal::CharCell{});
 
 					if (const auto origin = canvas.getAbsolutePosition();
 						event->position.x() >= origin.x() and event->position.y() >= origin.y())
@@ -49,7 +49,7 @@ namespace CppUtils::UnitTest::Terminal::Mouse
 							}
 
 							c = event->pressed ? static_cast<char>(std::toupper(c)) : static_cast<char>(std::tolower(c));
-							canvas.setChar(relativePosition, CppUtils::Terminal::CharAttributes{c});
+							canvas.setChar(relativePosition, CppUtils::Terminal::CharCell{c});
 
 							canvas.printText({1, 1}, std::format("Position: {}, {}", event->position.x(), event->position.y()));
 							canvas.printText({1, 2}, std::format("Button: {} Pressed: {}", (int)event->button, event->pressed));

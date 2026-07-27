@@ -3,6 +3,7 @@ export module CppUtils.Terminal.Primitive;
 import std;
 import CppUtils.Terminal.Area;
 import CppUtils.Terminal.CharAttributes;
+import CppUtils.Terminal.CharCell;
 import CppUtils.Container.Size;
 
 export namespace CppUtils::Terminal
@@ -13,7 +14,7 @@ export namespace CppUtils::Terminal
 		Filled
 	};
 
-	inline auto drawLine(WritableAreaView& view, const Container::Size2& start, const Container::Size2& end, const CharAttributes& c) -> void
+	inline auto drawLine(WritableAreaView& view, const Container::Size2& start, const Container::Size2& end, const CharCell& c) -> void
 	{
 		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_de_segment_de_Bresenham
 		auto x0 = static_cast<int>(start.x());
@@ -46,7 +47,7 @@ export namespace CppUtils::Terminal
 		}
 	}
 
-	inline auto drawRectangle(WritableAreaView& view, const Container::Size2& topLeft, const Container::Size2& size, PrimitiveStyle style, const CharAttributes& c) -> void
+	inline auto drawRectangle(WritableAreaView& view, const Container::Size2& topLeft, const Container::Size2& size, PrimitiveStyle style, const CharCell& c) -> void
 	{
 		if (size.width() == 0 or size.height() == 0)
 			return;
@@ -73,7 +74,7 @@ export namespace CppUtils::Terminal
 					view.setChar({currentX, currentY}, c);
 	}
 
-	inline auto drawCircle(WritableAreaView& view, const Container::Size2& center, std::size_t radius, PrimitiveStyle style, const CharAttributes& c) -> void
+	inline auto drawCircle(WritableAreaView& view, const Container::Size2& center, std::size_t radius, PrimitiveStyle style, const CharCell& c) -> void
 	{
 		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_d%27arc_de_cercle_de_Bresenham
 		auto centerX = static_cast<int>(center.x());
@@ -127,7 +128,7 @@ export namespace CppUtils::Terminal
 		}
 	}
 
-	inline auto drawEllipse(WritableAreaView& view, const Container::Size2& p1, const Container::Size2& p2, PrimitiveStyle style, const CharAttributes& c) -> void
+	inline auto drawEllipse(WritableAreaView& view, const Container::Size2& p1, const Container::Size2& p2, PrimitiveStyle style, const CharCell& c) -> void
 	{
 		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_d%27arc_de_cercle_de_Bresenham
 		auto x0 = static_cast<int>(p1.x());

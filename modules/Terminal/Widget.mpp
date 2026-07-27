@@ -6,6 +6,7 @@ import :WidgetManager;
 import :WritableAreaView;
 import CppUtils.Chrono.Concept;
 import CppUtils.Thread.Scheduler;
+import CppUtils.Terminal.Mouse;
 
 export namespace CppUtils::Terminal
 {
@@ -16,9 +17,19 @@ export namespace CppUtils::Terminal
 		[[nodiscard]] virtual auto getSize() const noexcept -> Container::Size2 = 0;
 		virtual auto draw(WritableAreaView& view) noexcept -> void = 0;
 
+		inline virtual auto onMouseEvent([[maybe_unused]] const Mouse::Event& event) -> bool
+		{
+			return false;
+		}
+
 		inline auto drawFinished() noexcept -> void
 		{
 			m_needUpdate = false;
+		}
+
+		[[nodiscard]] inline auto needUpdate() const noexcept -> bool
+		{
+			return m_needUpdate;
 		}
 
 		virtual inline auto setWidgetManager(WidgetManager& widgetManager) noexcept -> void
@@ -36,7 +47,12 @@ export namespace CppUtils::Terminal
 			return m_widgetManagerRef.has_value();
 		}
 
-		inline auto requestUpdate(Chrono::Duration auto delay = std::chrono::milliseconds{10}) -> void
+		inline auto requestUpdate() -> void
+		{
+			requestUpdate(std::chrono::milliseconds{10});
+		}
+
+		inline auto requestUpdate(Chrono::Duration auto delay) -> void
 		{
 			requestUpdateImpl(std::chrono::duration_cast<Thread::Scheduler::Clock::duration>(delay));
 		}
@@ -50,8 +66,7 @@ export namespace CppUtils::Terminal
 			}, delay);
 		}
 
-	private:
-		std::atomic_bool m_needUpdate = true;
 		std::optional<std::reference_wrapper<WidgetManager>> m_widgetManagerRef = std::nullopt;
+		std::atomic_bool m_needUpdate = true;
 	};
 }

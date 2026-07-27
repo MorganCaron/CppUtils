@@ -3,22 +3,22 @@ export module CppUtils.Terminal.Area:DynamicAreaBuffer;
 import std;
 import CppUtils.Container.Size;
 import CppUtils.Terminal.AreaBuffer;
-import CppUtils.Terminal.CharAttributes;
+import CppUtils.Terminal.CharCell;
 
 export namespace CppUtils::Terminal
 {
 	class DynamicAreaBuffer: public AreaBuffer
 	{
 	public:
-		using Line = std::vector<CharAttributes>;
+		using Line = std::vector<CharCell>;
 		using Buffer = std::vector<Line>;
 
-		inline DynamicAreaBuffer(const Container::Size2& size, CharAttributes defaultCharAttributes = {}):
-			DynamicAreaBuffer{size, Buffer(size.height(), Line(size.width(), defaultCharAttributes))}
+		inline DynamicAreaBuffer(const Container::Size2& size, CharCell defaultCell = {}):
+			DynamicAreaBuffer{size, Buffer(size.height(), Line(size.width(), defaultCell))}
 		{}
 
 		inline DynamicAreaBuffer(const Container::Size2& size, char defaultChar):
-			DynamicAreaBuffer{size, CharAttributes{defaultChar}}
+			DynamicAreaBuffer{size, CharCell{defaultChar}}
 		{}
 
 		inline DynamicAreaBuffer(const Container::Size2& size, Buffer&& buffer):
@@ -39,13 +39,13 @@ export namespace CppUtils::Terminal
 			return m_size;
 		}
 
-		[[nodiscard]] auto getChar(const Container::Size2& position) const noexcept -> const CharAttributes& final
+		[[nodiscard]] auto getChar(const Container::Size2& position) const noexcept -> const CharCell& final
 		{
 			auto lock = std::unique_lock{m_mutex};
 			return m_buffer[position.y()][position.x()];
 		}
 
-		auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void final
+		auto setChar(const Container::Size2& position, const CharCell& c) noexcept -> void final
 		{
 			auto lock = std::unique_lock{m_mutex};
 			if (position.x() >= m_size.width() or position.y() >= m_size.height())
@@ -60,14 +60,14 @@ export namespace CppUtils::Terminal
 				if (position.x() + 1 < m_size.width())
 					if (auto& nextChar = m_buffer[position.y()][position.x() + 1];
 						nextChar.displayWidth == 0)
-						nextChar = CharAttributes{' '};
+						nextChar = CharCell{' '};
 			}
 			else if (oldChar.displayWidth == 0)
 			{
 				if (position.x() > 0)
 					if (auto& previousChar = m_buffer[position.y()][position.x() - 1];
 						previousChar.displayWidth == 2)
-						previousChar = CharAttributes{' '};
+						previousChar = CharCell{' '};
 			}
 
 			m_buffer[position.y()][position.x()] = c;

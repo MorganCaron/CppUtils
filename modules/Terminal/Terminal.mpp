@@ -2,8 +2,10 @@ export module CppUtils.Terminal;
 
 export import CppUtils.Terminal.Area;
 export import CppUtils.Terminal.BackgroundColor;
+export import CppUtils.Terminal.Button;
 export import CppUtils.Terminal.Canvas;
 export import CppUtils.Terminal.CharAttributes;
+export import CppUtils.Terminal.CharCell;
 export import CppUtils.Terminal.Cursor;
 export import CppUtils.Terminal.Handle;
 export import CppUtils.Terminal.Layout;

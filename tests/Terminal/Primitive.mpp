@@ -12,9 +12,9 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 10}};
 			auto view = canvas.getWritableView();
 
-			CppUtils::Terminal::drawLine(view, {0, 0}, {9, 0}, CppUtils::Terminal::CharAttributes{'-'});
-			CppUtils::Terminal::drawLine(view, {0, 0}, {0, 9}, CppUtils::Terminal::CharAttributes{'|'});
-			CppUtils::Terminal::drawLine(view, {0, 0}, {9, 9}, CppUtils::Terminal::CharAttributes{'\\'});
+			CppUtils::Terminal::drawLine(view, {0, 0}, {9, 0}, CppUtils::Terminal::CharCell{'-'});
+			CppUtils::Terminal::drawLine(view, {0, 0}, {0, 9}, CppUtils::Terminal::CharCell{'|'});
+			CppUtils::Terminal::drawLine(view, {0, 0}, {9, 9}, CppUtils::Terminal::CharCell{'\\'});
 			canvas.print();
 
 			suite.expectEqual(static_cast<std::uint32_t>(canvas.getChar({5, 0}).character), static_cast<std::uint32_t>(U'-'));
@@ -26,7 +26,7 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{20, 10}};
 			auto view = canvas.getWritableView();
 
-			CppUtils::Terminal::drawRectangle(view, {1, 1}, {18, 8}, CppUtils::Terminal::PrimitiveStyle::Outline, CppUtils::Terminal::CharAttributes{'#'});
+			CppUtils::Terminal::drawRectangle(view, {1, 1}, {18, 8}, CppUtils::Terminal::PrimitiveStyle::Outline, CppUtils::Terminal::CharCell{'#'});
 			canvas.print();
 
 			suite.expectEqual(canvas.getChar({1, 1}).character, U'#');
@@ -42,7 +42,7 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{20, 10}};
 			auto view = canvas.getWritableView();
 
-			CppUtils::Terminal::drawRectangle(view, {1, 1}, {18, 8}, CppUtils::Terminal::PrimitiveStyle::Filled, CppUtils::Terminal::CharAttributes{'#'});
+			CppUtils::Terminal::drawRectangle(view, {1, 1}, {18, 8}, CppUtils::Terminal::PrimitiveStyle::Filled, CppUtils::Terminal::CharCell{'#'});
 			canvas.print();
 
 			suite.expectEqual(canvas.getChar({10, 0}).character, U' ');
@@ -60,7 +60,7 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{11, 11}};
 			auto view = canvas.getWritableView();
 
-			CppUtils::Terminal::drawCircle(view, {5, 5}, 4, CppUtils::Terminal::PrimitiveStyle::Outline, CppUtils::Terminal::CharAttributes{'O'});
+			CppUtils::Terminal::drawCircle(view, {5, 5}, 4, CppUtils::Terminal::PrimitiveStyle::Outline, CppUtils::Terminal::CharCell{'O'});
 			canvas.print();
 
 			suite.expectEqual(canvas.getChar({5, 0}).character, U' ');
@@ -85,7 +85,7 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{11, 11}};
 			auto view = canvas.getWritableView();
 
-			CppUtils::Terminal::drawCircle(view, {5, 5}, 4, CppUtils::Terminal::PrimitiveStyle::Filled, CppUtils::Terminal::CharAttributes{'#'});
+			CppUtils::Terminal::drawCircle(view, {5, 5}, 4, CppUtils::Terminal::PrimitiveStyle::Filled, CppUtils::Terminal::CharCell{'#'});
 			canvas.print();
 
 			suite.expectEqual(canvas.getChar({5, 0}).character, U' ');
@@ -103,7 +103,7 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{20, 10}};
 			auto view = canvas.getWritableView();
 
-			CppUtils::Terminal::drawEllipse(view, {1, 1}, {18, 8}, CppUtils::Terminal::PrimitiveStyle::Outline, CppUtils::Terminal::CharAttributes{'O'});
+			CppUtils::Terminal::drawEllipse(view, {1, 1}, {18, 8}, CppUtils::Terminal::PrimitiveStyle::Outline, CppUtils::Terminal::CharCell{'O'});
 			canvas.print();
 
 			suite.expectEqual(canvas.getChar({10, 0}).character, U' ');
@@ -125,7 +125,7 @@ namespace CppUtils::UnitTest::Terminal::Primitive
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{20, 10}};
 			auto view = canvas.getWritableView();
 
-			CppUtils::Terminal::drawEllipse(view, {1, 1}, {18, 8}, CppUtils::Terminal::PrimitiveStyle::Filled, CppUtils::Terminal::CharAttributes{'#'});
+			CppUtils::Terminal::drawEllipse(view, {1, 1}, {18, 8}, CppUtils::Terminal::PrimitiveStyle::Filled, CppUtils::Terminal::CharCell{'#'});
 			canvas.print();
 
 			suite.expectEqual(canvas.getChar({10, 0}).character, U' ');

@@ -11,6 +11,8 @@ import CppUtils.String.Encoding;
 import CppUtils.Terminal.Size;
 import CppUtils.Terminal.Cursor;
 import CppUtils.Terminal.Area;
+import CppUtils.Terminal.Mouse;
+import CppUtils.Terminal.CharAttributes;
 import CppUtils.Terminal.TextStyle;
 import CppUtils.Terminal.TextColor;
 import CppUtils.Terminal.BackgroundColor;
@@ -49,15 +51,18 @@ export namespace CppUtils::Terminal
 				const auto& currentChar = getChar(position);
 				const auto& previousChar = m_previousBuffer.getChar(position);
 
+				const auto& currentAttributes = currentChar.attributes;
+				const auto& previousAttributes = previousChar.attributes;
+
 				const auto cellChanged = currentChar.character != previousChar.character
 					or currentChar.displayWidth != previousChar.displayWidth
-					or currentChar.textStyle != previousChar.textStyle
-					or currentChar.textColor != previousChar.textColor
-					or currentChar.backgroundColor != previousChar.backgroundColor;
+					or currentAttributes.textStyle != previousAttributes.textStyle
+					or currentAttributes.textColor != previousAttributes.textColor
+					or currentAttributes.backgroundColor != previousAttributes.backgroundColor;
 
-				const auto needUpdateTextStyle = currentChar.textStyle != lastAttributes.textStyle;
-				const auto needUpdateTextColor = currentChar.textColor != lastAttributes.textColor;
-				const auto needUpdateBackgroundColor = currentChar.backgroundColor != lastAttributes.backgroundColor;
+				const auto needUpdateTextStyle = currentAttributes.textStyle != lastAttributes.textStyle;
+				const auto needUpdateTextColor = currentAttributes.textColor != lastAttributes.textColor;
+				const auto needUpdateBackgroundColor = currentAttributes.backgroundColor != lastAttributes.backgroundColor;
 
 				if (cellChanged)
 				{
@@ -65,18 +70,18 @@ export namespace CppUtils::Terminal
 						setCursorPosition({position.x(), startLine + position.y()});
 					if (needUpdateTextStyle)
 					{
-						stringBuffer += TextStyle::getTextStyleCode(currentChar.textStyle);
-						lastAttributes.textStyle = currentChar.textStyle;
+						stringBuffer += TextStyle::getTextStyleCode(currentAttributes.textStyle);
+						lastAttributes.textStyle = currentAttributes.textStyle;
 					}
 					if (needUpdateTextColor)
 					{
-						stringBuffer += TextColor::Ansi::getTextColorCode(currentChar.textColor);
-						lastAttributes.textColor = currentChar.textColor;
+						stringBuffer += TextColor::Ansi::getTextColorCode(currentAttributes.textColor);
+						lastAttributes.textColor = currentAttributes.textColor;
 					}
 					if (needUpdateBackgroundColor)
 					{
-						stringBuffer += BackgroundColor::Ansi::getBackgroundColorCode(currentChar.backgroundColor);
-						lastAttributes.backgroundColor = currentChar.backgroundColor;
+						stringBuffer += BackgroundColor::Ansi::getBackgroundColorCode(currentAttributes.backgroundColor);
+						lastAttributes.backgroundColor = currentAttributes.backgroundColor;
 					}
 					if (currentChar.displayWidth > 0)
 						stringBuffer = String::toUtf8(currentChar.character, std::move(stringBuffer));
@@ -138,6 +143,17 @@ export namespace CppUtils::Terminal
 			const auto viewportSize = m_viewport.getSize();
 			const auto startLine = terminalSize.height() > viewportSize.height() ? terminalSize.height() - viewportSize.height() - 1 : 0;
 			return {m_viewport.getPosition().x(), startLine + m_viewport.getPosition().y()};
+		}
+
+		inline auto onMouseEvent(const Mouse::Event& event) -> bool override
+		{
+			const auto canvasViewport = Viewport{getSize(), getAbsolutePosition()};
+			if (not canvasViewport.contains(event.position))
+				return false;
+
+			auto translatedEvent = event;
+			translatedEvent.position -= canvasViewport.getPosition();
+			return Area::onMouseEvent(translatedEvent);
 		}
 
 	private:

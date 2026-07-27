@@ -1,0 +1,79 @@
+export module CppUtils.Terminal.CharCell;
+
+import std;
+import CppUtils.Terminal.CharAttributes;
+import CppUtils.Terminal.TextColor;
+import CppUtils.Terminal.BackgroundColor;
+import CppUtils.Terminal.TextStyle;
+import CppUtils.String.Encoding;
+
+export namespace CppUtils::Terminal
+{
+	struct CharCell final
+	{
+		char32_t character = U' ';
+		CharAttributes attributes;
+		std::size_t displayWidth = 1;
+
+		inline constexpr CharCell() = default;
+
+		inline constexpr CharCell(char32_t c, CharAttributes attributes, std::size_t displayWidth):
+			character{c}, attributes{attributes}, displayWidth{displayWidth}
+		{}
+
+		inline constexpr CharCell(char32_t c, CharAttributes attributes = {}):
+			CharCell{c, attributes, String::getDisplayWidth(c)}
+		{}
+
+		inline constexpr CharCell(char c, CharAttributes attributes = {}):
+			CharCell{static_cast<char32_t>(c), attributes}
+		{}
+
+		inline CharCell(std::string_view text, const CharAttributes& attributes, std::size_t& bytesConsumed):
+			character{U'?'}, attributes{attributes}, displayWidth{1}
+		{
+			auto [codePoint, length] = String::toUtf32(text);
+			character = codePoint;
+			bytesConsumed = length;
+			displayWidth = String::getDisplayWidth(character);
+		}
+
+		inline CharCell(std::string_view text, std::size_t& bytesConsumed):
+			CharCell{text, CharAttributes{}, bytesConsumed}
+		{}
+
+		inline constexpr CharCell(
+			char32_t c,
+			TextColor::TextColorEnum textColor,
+			std::size_t displayWidth):
+			character{c},
+			attributes{textColor},
+			displayWidth{displayWidth}
+		{}
+
+		inline constexpr CharCell(
+			char32_t c,
+			TextColor::TextColorEnum textColor):
+			CharCell{c, textColor, String::getDisplayWidth(c)}
+		{}
+
+		inline constexpr CharCell(
+			char32_t c,
+			TextColor::TextColorEnum textColor,
+			BackgroundColor::BackgroundColorEnum backgroundColor,
+			std::size_t displayWidth):
+			character{c},
+			attributes{textColor, backgroundColor},
+			displayWidth{displayWidth}
+		{}
+
+		inline constexpr CharCell(
+			char32_t c,
+			TextColor::TextColorEnum textColor,
+			BackgroundColor::BackgroundColorEnum backgroundColor):
+			CharCell{c, textColor, backgroundColor, String::getDisplayWidth(c)}
+		{}
+
+		inline auto operator==(const CharCell&) const noexcept -> bool = default;
+	};
+}

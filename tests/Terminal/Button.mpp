@@ -1,0 +1,69 @@
+export module CppUtils.UnitTests.Terminal.Button;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Terminal::Button
+{
+	auto _ = TestSuite{"Terminal/Button", {"Terminal/Canvas"}, [](TestSuite& suite) {
+		using namespace std::chrono_literals;
+
+		suite.addTest("Click", [&] {
+			const auto size = CppUtils::Container::Size2{10, 3};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			auto clicked = false;
+			canvas.addWidget(std::make_unique<CppUtils::Terminal::Button>(size, "Click me", [&clicked] {
+				clicked = true;
+			}));
+
+			canvas.print();
+			std::this_thread::sleep_for(200ms);
+			suite.expectEqual(clicked, false);
+
+			auto hoverEvent = CppUtils::Terminal::Mouse::Event{
+				.button = CppUtils::Terminal::Mouse::Button::None,
+				.pressed = false,
+				.position = canvas.getAbsolutePosition() + CppUtils::Container::Size2{5, 1}};
+			canvas.onMouseEvent(hoverEvent);
+			canvas.print();
+			std::this_thread::sleep_for(200ms);
+
+			suite.expectEqual(canvas.getChar({5, 1}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Cyan);
+
+			auto pressEvent = hoverEvent;
+			pressEvent.button = CppUtils::Terminal::Mouse::Button::Left;
+			pressEvent.pressed = true;
+			canvas.onMouseEvent(pressEvent);
+			canvas.print();
+			std::this_thread::sleep_for(200ms);
+
+			suite.expectEqual(canvas.getChar({5, 1}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Black);
+			suite.expectEqual(clicked, false);
+
+			auto releaseEvent = pressEvent;
+			releaseEvent.pressed = false;
+			canvas.onMouseEvent(releaseEvent);
+			canvas.print();
+			std::this_thread::sleep_for(200ms);
+
+			suite.expectEqual(clicked, true);
+			suite.expectEqual(canvas.getChar({5, 1}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Cyan);
+		});
+
+		suite.addTest("CustomStyle", [&] {
+			const auto size = CppUtils::Container::Size2{10, 3};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			auto& button = canvas.addWidget(std::make_unique<CppUtils::Terminal::Button>(size, "Custom"));
+
+			auto customStyle = CppUtils::Terminal::ButtonStyle{};
+			customStyle.normal.backgroundColor = CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Red;
+			button.setStyle(customStyle);
+
+			canvas.print();
+			std::this_thread::sleep_for(200ms);
+			suite.expectEqual(canvas.getChar({0, 0}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Red);
+		});
+	}};
+}

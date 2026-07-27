@@ -1,0 +1,98 @@
+export module CppUtils.Terminal.Button;
+
+import std;
+import CppUtils.Container.Size;
+import CppUtils.Terminal.Area;
+import CppUtils.Terminal.CharAttributes;
+import CppUtils.Terminal.TextColor;
+import CppUtils.Terminal.BackgroundColor;
+import CppUtils.Terminal.Mouse;
+
+export namespace CppUtils::Terminal
+{
+	struct ButtonStyle
+	{
+		CharAttributes normal = {TextColor::TextColorEnum::White, BackgroundColor::BackgroundColorEnum::Blue};
+		CharAttributes hovered = {TextColor::TextColorEnum::White, BackgroundColor::BackgroundColorEnum::Cyan};
+		CharAttributes pressed = {TextColor::TextColorEnum::White, BackgroundColor::BackgroundColorEnum::Black};
+	};
+
+	class Button: public Widget
+	{
+	public:
+		inline Button(const Container::Size2& size, std::string text, std::function<void()> onClick = {}):
+			m_size{size},
+			m_text{std::move(text)},
+			m_onClick{std::move(onClick)}
+		{}
+
+		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 override
+		{
+			return m_size;
+		}
+
+		inline auto setStyle(const ButtonStyle& style) noexcept -> void
+		{
+			m_style = style;
+			requestUpdate();
+		}
+
+		inline auto draw(WritableAreaView& view) noexcept -> void override
+		{
+			auto attributes = m_style.normal;
+			if (m_isPressed)
+				attributes = m_style.pressed;
+			else if (m_isHovered)
+				attributes = m_style.hovered;
+
+			view.fill(attributes);
+
+			if (not std::ranges::empty(m_text))
+			{
+				const auto textSize = std::ranges::size(m_text);
+				const auto x = (m_size.width() > textSize) ? (m_size.width() - textSize) / 2 : 0;
+				const auto y = m_size.height() / 2;
+				view.printText({x, y}, m_text, attributes);
+			}
+			drawFinished();
+		}
+
+		inline auto onMouseEvent(const Mouse::Event& event) -> bool override
+		{
+			const auto wasHovered = m_isHovered;
+			const auto wasPressed = m_isPressed;
+
+			m_isHovered = (event.position.x() < m_size.width() and event.position.y() < m_size.height());
+
+			if (m_isHovered)
+			{
+				if (event.button == Mouse::Button::Left)
+				{
+					if (event.pressed)
+						m_isPressed = true;
+					else if (m_isPressed)
+					{
+						m_isPressed = false;
+						if (m_onClick)
+							m_onClick();
+					}
+				}
+			}
+			else
+				m_isPressed = false;
+
+			if (wasHovered != m_isHovered or wasPressed != m_isPressed)
+				requestUpdate();
+
+			return m_isHovered;
+		}
+
+	private:
+		Container::Size2 m_size;
+		std::string m_text;
+		std::function<void()> m_onClick;
+		ButtonStyle m_style;
+		bool m_isHovered = false;
+		bool m_isPressed = false;
+	};
+}

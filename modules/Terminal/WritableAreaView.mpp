@@ -5,6 +5,7 @@ import :DynamicAreaBuffer;
 import :Viewport;
 import CppUtils.Terminal.AreaBuffer;
 import CppUtils.Terminal.CharAttributes;
+import CppUtils.Terminal.CharCell;
 
 export namespace CppUtils::Terminal
 {
@@ -25,7 +26,7 @@ export namespace CppUtils::Terminal
 			return m_viewport;
 		}
 
-		inline auto printText(Container::Size2 position, std::string_view text) noexcept -> void
+		inline auto printText(Container::Size2 position, std::string_view text, const CharAttributes& style = {}) noexcept -> void
 		{
 			for (auto i = 0uz; i < std::ranges::size(text);)
 			{
@@ -38,15 +39,16 @@ export namespace CppUtils::Terminal
 					break;
 
 				auto bytesConsumed = 0uz;
-				auto charAttributes = Terminal::CharAttributes{text.substr(i), bytesConsumed};
-				setChar(position, charAttributes);
+				const auto cell = CharCell{text.substr(i), style, bytesConsumed};
+				setChar(position, cell);
 
-				if (charAttributes.displayWidth == 2 and position.x() + 1 < getViewport().getSize().width())
-					setChar(Container::Size2{position.x() + 1, position.y()}, Terminal::CharAttributes{U' ', 0});
-				position.x() += charAttributes.displayWidth;
+				if (cell.displayWidth == 2 and position.x() + 1 < getViewport().getSize().width())
+					setChar(Container::Size2{position.x() + 1, position.y()}, CharCell{U' ', style, 0});
+				position.x() += cell.displayWidth;
 				i += bytesConsumed;
 			}
 		}
+
 		[[nodiscard]] inline auto getSubView(Viewport viewport) noexcept -> std::expected<WritableAreaView, std::string>
 		{
 			if (not m_viewport.contains(viewport))
@@ -79,7 +81,7 @@ export namespace CppUtils::Terminal
 			drawBuffer(areaBuffer, {0, 0}, Viewport{m_viewport.getSize()});
 		}
 
-		inline auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void
+		inline auto setChar(const Container::Size2& position, const CharCell& c) noexcept -> void
 		{
 			const auto absolutePosition = m_viewport.getPosition() + position;
 			if (not m_viewport.contains(absolutePosition))
@@ -87,11 +89,21 @@ export namespace CppUtils::Terminal
 			m_areaBuffer.setChar(absolutePosition, c);
 		}
 
-		inline auto fill(const CharAttributes& c) noexcept -> void
+		inline auto setChar(const Container::Size2& position, char32_t c, const CharAttributes& style = {}) noexcept -> void
+		{
+			setChar(position, CharCell{c, style});
+		}
+
+		inline auto fill(const CharCell& c) noexcept -> void
 		{
 			m_viewport.forEach([this, &c](const auto& position) noexcept -> void {
 				m_areaBuffer.setChar(position, c);
 			});
+		}
+
+		inline auto fill(const CharAttributes& style) noexcept -> void
+		{
+			fill(CharCell{U' ', style});
 		}
 
 	private:

@@ -3,6 +3,7 @@ export module CppUtils.Terminal.AreaBuffer;
 import std;
 import CppUtils.Container.Size;
 import CppUtils.Terminal.CharAttributes;
+import CppUtils.Terminal.CharCell;
 import CppUtils.String.Encoding;
 
 export namespace CppUtils::Terminal
@@ -10,8 +11,8 @@ export namespace CppUtils::Terminal
 	class AreaBuffer
 	{
 	public:
-		[[nodiscard]] virtual auto getChar(const Container::Size2& position) const noexcept -> const CharAttributes& = 0;
-		virtual auto setChar(const Container::Size2& position, const CharAttributes& c) noexcept -> void = 0;
+		[[nodiscard]] virtual auto getChar(const Container::Size2& position) const noexcept -> const CharCell& = 0;
+		virtual auto setChar(const Container::Size2& position, const CharCell& c) noexcept -> void = 0;
 		[[nodiscard]] virtual auto getSize() const noexcept -> Container::Size2 = 0;
 
 		[[nodiscard]] inline virtual auto toString() const -> std::string
@@ -21,16 +22,16 @@ export namespace CppUtils::Terminal
 			{
 				for (auto x = 0uz; x < getSize().width(); ++x)
 				{
-					const auto& charAttributes = getChar(Container::Size2{x, y});
-					if (charAttributes.displayWidth > 0)
-						result += String::toUtf8(charAttributes.character);
+					const auto& charCell = getChar(Container::Size2{x, y});
+					if (charCell.displayWidth > 0)
+						result += String::toUtf8(charCell.character);
 				}
 				result += '\n';
 			}
 			return result;
 		}
 
-		inline auto printText(Container::Size2 position, std::string_view text) noexcept -> void
+		inline auto printText(Container::Size2 position, std::string_view text, const CharAttributes& style = {}) noexcept -> void
 		{
 			for (auto i = 0uz; i < std::ranges::size(text);)
 			{
@@ -43,12 +44,12 @@ export namespace CppUtils::Terminal
 					return;
 
 				auto bytesConsumed = 0uz;
-				auto charAttributes = Terminal::CharAttributes{text.substr(i), bytesConsumed};
-				setChar(position, charAttributes);
+				const auto cell = CharCell{text.substr(i), style, bytesConsumed};
+				setChar(position, cell);
 
-				if (charAttributes.displayWidth == 2 and position.x() + 1 < getSize().width())
-					setChar(Container::Size2{position.x() + 1, position.y()}, Terminal::CharAttributes{U' ', 0});
-				position.x() += charAttributes.displayWidth;
+				if (cell.displayWidth == 2 and position.x() + 1 < getSize().width())
+					setChar(Container::Size2{position.x() + 1, position.y()}, CharCell{U' ', style, 0});
+				position.x() += cell.displayWidth;
 				i += bytesConsumed;
 			}
 		}
