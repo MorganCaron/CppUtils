@@ -1,3 +1,7 @@
+module;
+
+#include <cassert>
+
 export module CppUtils.Terminal.Area:WritableAreaView;
 
 import std;
@@ -12,84 +16,120 @@ export namespace CppUtils::Terminal
 	class WritableAreaView final
 	{
 	public:
-		inline WritableAreaView(DynamicAreaBuffer& areaBuffer [[lifetimebound]]):
-			WritableAreaView{areaBuffer, Viewport{areaBuffer.getSize()}}
-		{}
-
-		WritableAreaView(DynamicAreaBuffer& areaBuffer [[lifetimebound]], Viewport viewport):
-			m_areaBuffer{areaBuffer},
+		inline WritableAreaView(DynamicAreaBuffer& areaBuffer [[clang::lifetimebound, msvc::lifetimebound]], Viewport viewport):
+			m_accessor{areaBuffer.uniqueAccess()},
+			m_areaBuffer{std::ref(static_cast<AreaBuffer&>(*m_accessor.value()))},
 			m_viewport{std::move(viewport)}
 		{}
 
-		[[nodiscard]] inline auto getViewport() const noexcept [[lifetimebound]] -> const Viewport&
+		explicit inline WritableAreaView(DynamicAreaBuffer& areaBuffer [[clang::lifetimebound, msvc::lifetimebound]]):
+			m_accessor{areaBuffer.uniqueAccess()},
+			m_areaBuffer{std::ref(static_cast<AreaBuffer&>(*m_accessor.value()))},
+			m_viewport{Viewport{m_accessor.value()->getSize()}}
+		{}
+
+		explicit inline WritableAreaView(AreaBuffer& areaBuffer [[clang::lifetimebound, msvc::lifetimebound]]):
+			WritableAreaView{areaBuffer, Viewport{areaBuffer.getSize()}}
+		{}
+
+		inline WritableAreaView(AreaBuffer& areaBuffer [[clang::lifetimebound, msvc::lifetimebound]], Viewport viewport):
+			m_areaBuffer{std::ref(areaBuffer)},
+			m_viewport{std::move(viewport)}
+		{}
+
+		[[nodiscard]] inline auto getViewport() const noexcept [[clang::lifetimebound, msvc::lifetimebound]] -> const Viewport&
 		{
 			return m_viewport;
 		}
 
-		inline auto printText(Container::Size2 position, std::string_view text, const CharAttributes& style = {}) noexcept -> void
+		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2<>
+		{
+			return m_viewport.getSize();
+		}
+
+		inline auto printText(Container::Size2<> position, std::string_view text, const CharAttributes& style = {}) noexcept -> void
 		{
 			for (auto i = 0uz; i < std::ranges::size(text);)
 			{
-				if (position.x() >= getViewport().getSize().width())
+				if (position.x() >= getSize().width())
 				{
 					position.x() = 0;
 					++position.y();
 				}
-				if (position.y() >= getViewport().getSize().height())
+				if (position.y() >= getSize().height())
 					break;
 
 				auto bytesConsumed = 0uz;
-				const auto cell = CharCell{text.substr(i), style, bytesConsumed};
+				const auto cell = CharCell::fromString(text.substr(i), bytesConsumed, style);
+
+				if (bytesConsumed == 0)
+					break;
+
 				setChar(position, cell);
 
-				if (cell.displayWidth == 2 and position.x() + 1 < getViewport().getSize().width())
+				if (cell.displayWidth == 2 and position.x() + 1 < getSize().width())
 					setChar(Container::Size2{position.x() + 1, position.y()}, CharCell{U' ', style, 0});
+
 				position.x() += cell.displayWidth;
 				i += bytesConsumed;
 			}
 		}
 
-		[[nodiscard]] inline auto getSubView(Viewport viewport) noexcept -> std::expected<WritableAreaView, std::string>
+		[[nodiscard]] inline auto getSubView(const Viewport& viewport) noexcept -> std::optional<WritableAreaView>
 		{
-			if (not m_viewport.contains(viewport))
-				return std::unexpected{"New viewport is out of bounds"};
-			return WritableAreaView{m_areaBuffer, viewport};
+			const auto absolutePosition = m_viewport.getPosition() + viewport.getPosition();
+			const auto absoluteViewport = Viewport{viewport.getSize(), absolutePosition};
+
+			const auto intersection = Viewport::intersection(m_viewport, absoluteViewport);
+			if (intersection.getSize().width() == 0 or intersection.getSize().height() == 0)
+				return std::nullopt;
+
+			return WritableAreaView{m_areaBuffer.get(), intersection};
 		}
 
-		inline auto drawBuffer(const AreaBuffer& source, Container::Size2 destinationPosition, Viewport sourceViewport) noexcept -> void
+		inline auto applyArea(const AreaBuffer& source, const Viewport& sourceViewport, Container::Size2<> destinationPosition = {0, 0}) noexcept -> void
 		{
-			const auto& sourceOrigin = sourceViewport.getPosition();
-			sourceViewport.forEach([&](const auto& absoluteSourcePosition) {
-				const auto offset = absoluteSourcePosition - sourceOrigin;
-				setChar(destinationPosition + offset, source.getChar(absoluteSourcePosition));
+			sourceViewport.forEach([this, &source, sourceViewport, destinationPosition](const auto& relativePosition) noexcept -> void {
+				const auto sourceCellPosition = sourceViewport.getPosition() + relativePosition;
+				const auto destinationCellPosition = destinationPosition + relativePosition;
+				setChar(destinationCellPosition, source.getChar(sourceCellPosition));
 			});
 		}
 
-		inline auto applyArea(const AreaBuffer& areaBuffer, Viewport viewport) noexcept -> void
+		inline auto applyArea(const AreaBuffer& source, Container::Size2<> destinationPosition = {0, 0}) noexcept -> void
 		{
-			const auto intersection = Viewport::intersection(m_viewport, viewport);
-			if (intersection.getSize().width() == 0 or intersection.getSize().height() == 0)
+			const auto sourceViewport = Viewport{source.getSize()};
+			const auto absoluteDestinationPosition = m_viewport.getPosition() + destinationPosition;
+			const auto targetViewport = Viewport{sourceViewport.getSize(), absoluteDestinationPosition};
+
+			const auto intersection = Viewport::intersection(m_viewport, targetViewport);
+			const auto intersectionSize = intersection.getSize();
+			if (intersectionSize.width() == 0 or intersectionSize.height() == 0)
 				return;
 
-			const auto offset = intersection.getPosition() - viewport.getPosition();
-			const auto relativeDestinationPosition = intersection.getPosition() - m_viewport.getPosition();
-			drawBuffer(areaBuffer, relativeDestinationPosition, Viewport{intersection.getSize(), offset});
+			const auto intersectionPosition = intersection.getPosition();
+			const auto offset = intersectionPosition - targetViewport.getPosition();
+			const auto clippedDestinationPosition = intersectionPosition - m_viewport.getPosition();
+
+			applyArea(source, Viewport{intersectionSize, offset}, clippedDestinationPosition);
 		}
 
-		inline auto applyArea(const AreaBuffer& areaBuffer) noexcept -> void
+		[[nodiscard]] inline auto getChar(const Container::Size2<>& position) const noexcept -> const CharCell&
 		{
-			drawBuffer(areaBuffer, {0, 0}, Viewport{m_viewport.getSize()});
+			const auto absolutePosition = m_viewport.getPosition() + position;
+			assert(m_viewport.contains(absolutePosition));
+			return m_areaBuffer.get().getChar(absolutePosition);
 		}
 
-		inline auto setChar(const Container::Size2& position, const CharCell& c) noexcept -> void
+		inline auto setChar(const Container::Size2<>& position, const CharCell& c) noexcept -> void
 		{
 			const auto absolutePosition = m_viewport.getPosition() + position;
 			if (not m_viewport.contains(absolutePosition))
 				return;
-			m_areaBuffer.setChar(absolutePosition, c);
+			m_areaBuffer.get().setChar(absolutePosition, c);
 		}
 
-		inline auto setChar(const Container::Size2& position, char32_t c, const CharAttributes& style = {}) noexcept -> void
+		inline auto setChar(const Container::Size2<>& position, char32_t c, const CharAttributes& style = {}) noexcept -> void
 		{
 			setChar(position, CharCell{c, style});
 		}
@@ -97,7 +137,7 @@ export namespace CppUtils::Terminal
 		inline auto fill(const CharCell& c) noexcept -> void
 		{
 			m_viewport.forEach([this, &c](const auto& position) noexcept -> void {
-				m_areaBuffer.setChar(position, c);
+				m_areaBuffer.get().setChar(position, c);
 			});
 		}
 
@@ -106,8 +146,24 @@ export namespace CppUtils::Terminal
 			fill(CharCell{U' ', style});
 		}
 
+		inline auto fill(char32_t c) noexcept -> void
+		{
+			fill(CharCell{c});
+		}
+
+		inline auto fill(char c) noexcept -> void
+		{
+			fill(static_cast<char32_t>(static_cast<unsigned char>(c)));
+		}
+
+		inline auto clear() noexcept -> void
+		{
+			fill(' ');
+		}
+
 	private:
-		DynamicAreaBuffer& m_areaBuffer;
+		std::optional<DynamicAreaBuffer::UniqueAccessor> m_accessor;
+		std::reference_wrapper<AreaBuffer> m_areaBuffer;
 		Viewport m_viewport;
 	};
 }

@@ -12,19 +12,21 @@ export import :WritableAreaView;
 
 export namespace CppUtils::Terminal
 {
-	class Area: public Widget, public DynamicAreaBuffer
+	class Area: public Widget
 	{
 	public:
-		inline Area(const Container::Size2& size, const Viewport& viewport = {{0, 0}, {0, 0}}):
-			DynamicAreaBuffer{size},
+		inline Area(const Container::Size2<>& size, const Viewport& viewport = {{0, 0}, {0, 0}}):
+			m_buffer{size},
 			m_viewport{(viewport.getSize().width() == 0 or viewport.getSize().height() == 0) ? Viewport{size} : viewport}
 		{}
 
 		template<std::derived_from<Widget> T>
-		inline auto addWidget(this auto&& self [[lifetimebound]], std::unique_ptr<T> widget) -> T&
+		inline auto addWidget(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]], std::unique_ptr<T> widget) -> T&
 		{
-			widget->setWidgetManager(self.getWidgetManager());
 			self.m_widget = std::move(widget);
+			if (self.hasWidgetManager())
+				self.m_widget->setWidgetManager(self.getWidgetManager());
+			self.requestUpdate();
 			return dynamic_cast<T&>(*self.m_widget);
 		}
 
@@ -33,68 +35,49 @@ export namespace CppUtils::Terminal
 			m_viewport = viewport;
 		}
 
-		[[nodiscard]] inline auto getViewport(this auto&& self [[lifetimebound]]) noexcept -> decltype(auto)
+	protected:
+		inline auto onWidgetManagerSet(WidgetManager& widgetManager) noexcept -> void override
+		{
+			if (m_widget)
+				m_widget->setWidgetManager(widgetManager);
+		}
+
+	public:
+		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2<> override
+		{
+			return m_viewport.getSize();
+		}
+
+		[[nodiscard]] inline auto getViewport(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return (self.m_viewport);
 		}
 
-		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 final
+		[[nodiscard]] inline auto getWritableView(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]], std::optional<Viewport> viewport = std::nullopt) -> WritableAreaView
 		{
-			return DynamicAreaBuffer::getSize();
+			return WritableAreaView{self.m_buffer, viewport.value_or(self.m_viewport)};
 		}
 
-		[[nodiscard]] inline auto getWritableView(this auto&& self [[lifetimebound]], std::optional<Viewport> viewport = std::nullopt) -> WritableAreaView
+		inline auto draw(WritableAreaView& view) noexcept -> void override
 		{
-			return WritableAreaView{self, viewport.value_or(self.m_viewport)};
-		}
-
-		inline auto fill(const CharCell& c) noexcept -> void
-		{
-			auto view = getWritableView();
-			view.fill(c);
-		}
-
-		inline auto fill(const CharAttributes& style) noexcept -> void
-		{
-			fill(CharCell{U' ', style});
-		}
-
-		inline auto fill(char c) noexcept -> void
-		{
-			fill(CharCell{c});
-		}
-
-		inline auto clear() noexcept -> void
-		{
-			fill(' ');
+			if (m_widget)
+				m_widget->draw(view);
 		}
 
 		inline auto onMouseEvent(const Mouse::Event& event) -> bool override
 		{
 			if (not m_widget)
 				return false;
-
-			if (not m_viewport.contains(event.position))
-				return false;
-
-			auto translatedEvent = event;
-			translatedEvent.position -= m_viewport.getPosition();
-			return m_widget->onMouseEvent(translatedEvent);
+			return m_widget->onMouseEvent(event);
 		}
 
-		inline auto draw([[maybe_unused]] WritableAreaView& view) noexcept -> void override
+		[[nodiscard]] inline auto getBuffer(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
-			if (not m_widget)
-				return;
-			auto selfView = getWritableView();
-			m_widget->draw(selfView);
-			// Draw scrollbars
-			// Apply to view (applique la portion délimitée par viewport du buffer sur view)
-			// view.applyArea(m_widget->getBuffer(), m_viewport);
-			drawFinished();
+			return (self.m_buffer);
 		}
 
 	protected:
+		DynamicAreaBuffer m_buffer;
 		Viewport m_viewport;
 		std::unique_ptr<Widget> m_widget;
 	};

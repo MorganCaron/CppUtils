@@ -2,24 +2,24 @@ export module CppUtils.Terminal.Scrollable;
 
 import std;
 import CppUtils.Container.Size;
-export import CppUtils.Terminal.Area;
+import CppUtils.Terminal.Area;
+import CppUtils.Terminal.AreaBuffer;
+import CppUtils.Terminal.CharAttributes;
 import CppUtils.Terminal.CharCell;
-import CppUtils.Terminal.TextColor;
-import CppUtils.Terminal.BackgroundColor;
 import CppUtils.Terminal.Mouse;
 
 export namespace CppUtils::Terminal
 {
 	struct ScrollbarStyle final
 	{
-		CharCell verticalTrack = {U'│', TextColor::TextColorEnum::White};
-		CharCell verticalThumb = {U'█', TextColor::TextColorEnum::White};
-		CharCell horizontalTrack = {U'─', TextColor::TextColorEnum::White};
-		CharCell horizontalThumb = {U'█', TextColor::TextColorEnum::White};
-		CharCell corner = {U'┘', TextColor::TextColorEnum::White};
+		CharCell verticalTrack = {U'│'};
+		CharCell verticalThumb = {U'█'};
+		CharCell horizontalTrack = {U'─'};
+		CharCell horizontalThumb = {U'█'};
+		CharCell corner = {U'┘'};
 	};
 
-	class Scrollable: public Area
+	class Scrollable final: public Area
 	{
 	public:
 		enum ScrollbarMode : std::uint8_t
@@ -30,7 +30,9 @@ export namespace CppUtils::Terminal
 			Both = Vertical | Horizontal
 		};
 
-		inline Scrollable(const Container::Size2& viewportSize, const Container::Size2& fullContentSize):
+		inline Scrollable(
+			const Container::Size2<>& viewportSize,
+			const Container::Size2<>& fullContentSize):
 			Area{viewportSize},
 			m_fullContentArea{fullContentSize}
 		{}
@@ -41,13 +43,21 @@ export namespace CppUtils::Terminal
 			return m_fullContentArea.addWidget(std::move(widget));
 		}
 
-		inline auto setScroll(const Container::Size2& position) noexcept -> void
+	protected:
+		inline auto onWidgetManagerSet(WidgetManager& widgetManager) noexcept -> void override
 		{
-			m_scrollPosition = position;
-			requestUpdate(std::chrono::milliseconds{10});
+			m_fullContentArea.setWidgetManager(widgetManager);
 		}
 
-		[[nodiscard]] inline auto getScroll() const noexcept -> Container::Size2
+	public:
+		inline auto setScroll(this auto&& self, const Container::Size2<>& position) noexcept -> decltype(auto)
+		{
+			self.m_scrollPosition = position;
+			self.requestUpdate(std::chrono::milliseconds{10});
+			return self;
+		}
+
+		[[nodiscard]] inline auto getScroll() const noexcept -> Container::Size2<>
 		{
 			return m_scrollPosition;
 		}
@@ -57,20 +67,17 @@ export namespace CppUtils::Terminal
 			return m_fullContentArea;
 		}
 
-		inline auto showScrollbars(std::uint8_t mode = ScrollbarMode::Both) noexcept -> void
+		inline auto showScrollbars(this auto&& self, std::uint8_t mode = ScrollbarMode::Both) noexcept -> decltype(auto)
 		{
-			m_scrollbarMode = mode;
+			self.m_scrollbarMode = mode;
+			return self;
 		}
 
-		[[nodiscard]] inline auto getScrollbarMode() const noexcept -> std::uint8_t
+		inline auto setScrollbarStyle(this auto&& self, const ScrollbarStyle& style) noexcept -> decltype(auto)
 		{
-			return m_scrollbarMode;
-		}
-
-		inline auto setScrollbarStyle(const ScrollbarStyle& style) noexcept -> void
-		{
-			m_scrollbarStyle = style;
-			requestUpdate();
+			self.m_scrollbarStyle = style;
+			self.requestUpdate();
+			return self;
 		}
 
 		[[nodiscard]] inline auto getScrollbarStyle() const noexcept -> const ScrollbarStyle&
@@ -78,16 +85,11 @@ export namespace CppUtils::Terminal
 			return m_scrollbarStyle;
 		}
 
-		inline void setWidgetManager(WidgetManager& widgetManager) noexcept override
-		{
-			Area::setWidgetManager(widgetManager);
-			m_fullContentArea.setWidgetManager(widgetManager);
-		}
-
 		inline auto onMouseEvent(const Mouse::Event& event) -> bool override
 		{
 			const auto viewportSize = getSize();
-			const auto& contentSize = m_fullContentArea.getSize();
+			auto contentAreaAccessor = m_fullContentArea.getBuffer().sharedAccess();
+			const auto contentSize = contentAreaAccessor->getSize();
 
 			const bool showVertical = (m_scrollbarMode & ScrollbarMode::Vertical) and (contentSize.height() > viewportSize.height());
 			const bool showHorizontal = (m_scrollbarMode & ScrollbarMode::Horizontal) and (contentSize.width() > viewportSize.width());
@@ -99,33 +101,35 @@ export namespace CppUtils::Terminal
 			{
 				if (event.pressed)
 				{
-					if (showVertical and event.position.x() == viewportSize.width() - 1)
+					if (showVertical and event.relativePosition.x() == viewportSize.width() - 1)
 						if (const auto heightForBar = showHorizontal ? viewportSize.height() - 1 : viewportSize.height();
-							event.position.y() < heightForBar)
+							event.relativePosition.y() < heightForBar)
 						{
+							m_isDraggingVertical = true;
+
 							const auto [thumbY, thumbHeight] = getCurrentThumbPosition(heightForBar, contentSize.height(), m_scrollPosition.y(), maxScrollY);
-							if (event.position.y() >= thumbY and event.position.y() < thumbY + thumbHeight)
-								m_dragOffsetVertical = event.position.y() - thumbY;
+							if (event.relativePosition.y() >= thumbY and event.relativePosition.y() < thumbY + thumbHeight)
+								m_dragOffsetVertical = event.relativePosition.y() - thumbY;
 							else
 								m_dragOffsetVertical = thumbHeight / 2;
 
-							m_isDraggingVertical = true;
-							updateVerticalScroll(event.position.y(), heightForBar, contentSize.height(), maxScrollY);
+							updateVerticalScroll(event.relativePosition.y(), heightForBar, contentSize.height(), maxScrollY);
 							return true;
 						}
 
-					if (showHorizontal and event.position.y() == viewportSize.height() - 1)
+					if (showHorizontal and event.relativePosition.y() == viewportSize.height() - 1)
 						if (const auto widthForBar = showVertical ? viewportSize.width() - 1 : viewportSize.width();
-							event.position.x() < widthForBar)
+							event.relativePosition.x() < widthForBar)
 						{
+							m_isDraggingHorizontal = true;
+
 							const auto [thumbX, thumbWidth] = getCurrentThumbPosition(widthForBar, contentSize.width(), m_scrollPosition.x(), maxScrollX);
-							if (event.position.x() >= thumbX and event.position.x() < thumbX + thumbWidth)
-								m_dragOffsetHorizontal = event.position.x() - thumbX;
+							if (event.relativePosition.x() >= thumbX and event.relativePosition.x() < thumbX + thumbWidth)
+								m_dragOffsetHorizontal = event.relativePosition.x() - thumbX;
 							else
 								m_dragOffsetHorizontal = thumbWidth / 2;
 
-							m_isDraggingHorizontal = true;
-							updateHorizontalScroll(event.position.x(), widthForBar, contentSize.width(), maxScrollX);
+							updateHorizontalScroll(event.relativePosition.x(), widthForBar, contentSize.width(), maxScrollX);
 							return true;
 						}
 				}
@@ -136,20 +140,18 @@ export namespace CppUtils::Terminal
 				}
 			}
 
-			if (event.dragging)
+			if (m_isDraggingVertical)
 			{
-				if (m_isDraggingVertical)
-				{
-					const auto heightForBar = showHorizontal ? viewportSize.height() - 1 : viewportSize.height();
-					updateVerticalScroll(event.position.y(), heightForBar, contentSize.height(), maxScrollY);
-					return true;
-				}
-				if (m_isDraggingHorizontal)
-				{
-					const auto widthForBar = showVertical ? viewportSize.width() - 1 : viewportSize.width();
-					updateHorizontalScroll(event.position.x(), widthForBar, contentSize.width(), maxScrollX);
-					return true;
-				}
+				const auto heightForBar = showHorizontal ? viewportSize.height() - 1 : viewportSize.height();
+				updateVerticalScroll(event.relativePosition.y(), heightForBar, contentSize.height(), maxScrollY);
+				return true;
+			}
+
+			if (m_isDraggingHorizontal)
+			{
+				const auto widthForBar = showVertical ? viewportSize.width() - 1 : viewportSize.width();
+				updateHorizontalScroll(event.relativePosition.x(), widthForBar, contentSize.width(), maxScrollX);
+				return true;
 			}
 
 			if (event.button == Mouse::Button::ScrollUp)
@@ -172,18 +174,16 @@ export namespace CppUtils::Terminal
 			}
 
 			auto translatedEvent = event;
-			translatedEvent.position += m_scrollPosition;
+			translatedEvent.relativePosition += m_scrollPosition;
 			return m_fullContentArea.onMouseEvent(translatedEvent);
 		}
 
 		inline auto draw(WritableAreaView& view) noexcept -> void override
 		{
-			{
-				auto fullContentAreaView = m_fullContentArea.getWritableView();
-				m_fullContentArea.draw(fullContentAreaView);
-			}
+			auto fullContentAreaView = m_fullContentArea.getWritableView();
+			m_fullContentArea.draw(fullContentAreaView);
 
-			const auto& contentSize = m_fullContentArea.getSize();
+			const auto contentSize = fullContentAreaView.getSize();
 			const auto viewportSize = getSize();
 
 			const auto maxScrollX = (contentSize.width() > viewportSize.width()) ? contentSize.width() - viewportSize.width() : 0;
@@ -198,92 +198,97 @@ export namespace CppUtils::Terminal
 				const auto sourcePosition = position + m_scrollPosition;
 
 				if (sourcePosition.x() < contentSize.width() and sourcePosition.y() < contentSize.height())
-					setChar(position, m_fullContentArea.getChar(sourcePosition));
+					view.setChar(position, fullContentAreaView.getChar(sourcePosition));
 				else
-					setChar(position, CharCell{U' '});
+					view.setChar(position, CharCell{U' '});
 			});
 
 			if (m_scrollbarMode != ScrollbarMode::None)
-			{
-				auto internalView = WritableAreaView{*this};
-				drawScrollbars(internalView, contentSize, viewportSize, maxScrollX, maxScrollY);
-			}
+				drawScrollbars(view, contentSize, viewportSize, maxScrollX, maxScrollY);
 
-			view.applyArea(*this);
 			drawFinished();
 		}
 
 	private:
-		[[nodiscard]] inline auto getCurrentThumbPosition(std::size_t visibleLength, std::size_t contentLength, std::size_t currentScrollPosition, std::size_t maxScroll) const noexcept -> std::pair<std::size_t, std::size_t>
+		struct Thumb final
+		{
+			std::size_t position = 0uz;
+			std::size_t size = 0uz;
+		};
+
+		[[nodiscard]] inline auto getCurrentThumbPosition(std::size_t visibleLength, std::size_t contentLength, std::size_t currentScrollPosition, std::size_t maxScroll) const noexcept -> Thumb
 		{
 			if (visibleLength == 0 or contentLength == 0)
-				return {0, 0};
-			const auto ratio = static_cast<double>(visibleLength) / static_cast<double>(contentLength);
-			const auto thumbSize = std::ranges::max(1uz, static_cast<std::size_t>(ratio * static_cast<double>(visibleLength)));
-			const auto maxThumbPosition = (visibleLength > thumbSize) ? visibleLength - thumbSize : 0;
-			const auto scrollRatio = (maxScroll > 0) ? static_cast<double>(currentScrollPosition) / static_cast<double>(maxScroll) : 0.0;
-			const auto thumbPosition = static_cast<std::size_t>(scrollRatio * static_cast<double>(maxThumbPosition));
+				return {};
+
+			const auto thumbSize = std::clamp((visibleLength * visibleLength) / contentLength, 1uz, visibleLength);
+
+			if (maxScroll == 0)
+				return {0uz, visibleLength};
+
+			const auto availableTrackSpace = visibleLength - thumbSize;
+			const auto thumbPosition = (currentScrollPosition * availableTrackSpace) / maxScroll;
+
 			return {thumbPosition, thumbSize};
 		}
 
-		inline auto updateScrollOnAxis(std::size_t clickPosition, std::size_t dragOffset, std::size_t visibleLength, std::size_t contentLength, std::size_t& scrollPosition, std::size_t maxScroll) -> void
+		inline auto updateScrollOnAxis(
+			std::size_t mousePosition,
+			std::size_t dragOffset,
+			std::size_t visibleLength,
+			std::size_t contentLength,
+			std::size_t maxScroll,
+			std::size_t& scrollPosition) -> void
 		{
-			if (visibleLength == 0)
+			const auto [thumbPosition, thumbSize] = getCurrentThumbPosition(visibleLength, contentLength, scrollPosition, maxScroll);
+			const auto maxThumbPosition = (visibleLength > thumbSize) ? visibleLength - thumbSize : 0uz;
+			if (maxThumbPosition == 0uz or maxScroll == 0uz)
 				return;
-			const auto ratio = static_cast<double>(visibleLength) / static_cast<double>(contentLength);
-			const auto thumbSize = std::ranges::max(1uz, static_cast<std::size_t>(ratio * static_cast<double>(visibleLength)));
 
-			const auto targetThumb = (clickPosition > dragOffset) ? clickPosition - dragOffset : 0;
-			const auto maxThumbPosition = (visibleLength > thumbSize) ? visibleLength - thumbSize : 0;
-
+			const auto targetThumb = (mousePosition >= dragOffset) ? mousePosition - dragOffset : 0uz;
 			const auto finalThumb = std::ranges::min(targetThumb, maxThumbPosition);
-			const auto scrollRatio = (maxThumbPosition > 0) ? static_cast<double>(finalThumb) / static_cast<double>(maxThumbPosition) : 0.0;
 
-			scrollPosition = static_cast<std::size_t>(scrollRatio * static_cast<double>(maxScroll));
+			scrollPosition = (finalThumb * maxScroll) / maxThumbPosition;
 			requestUpdate();
 		}
 
 		inline auto updateVerticalScroll(std::size_t y, std::size_t heightForBar, std::size_t contentHeight, std::size_t maxScrollY) -> void
 		{
-			updateScrollOnAxis(y, m_dragOffsetVertical, heightForBar, contentHeight, m_scrollPosition.y(), maxScrollY);
+			updateScrollOnAxis(y, m_dragOffsetVertical, heightForBar, contentHeight, maxScrollY, m_scrollPosition.y());
 		}
 
 		inline auto updateHorizontalScroll(std::size_t x, std::size_t widthForBar, std::size_t contentWidth, std::size_t maxScrollX) -> void
 		{
-			updateScrollOnAxis(x, m_dragOffsetHorizontal, widthForBar, contentWidth, m_scrollPosition.x(), maxScrollX);
+			updateScrollOnAxis(x, m_dragOffsetHorizontal, widthForBar, contentWidth, maxScrollX, m_scrollPosition.x());
 		}
 
-		inline auto drawScrollbars(WritableAreaView& view, const Container::Size2& contentSize, const Container::Size2& viewSize, std::size_t maxScrollX, std::size_t maxScrollY) -> void
+		inline auto drawScrollbars(WritableAreaView& view, const Container::Size2<>& contentSize, const Container::Size2<>& viewSize, std::size_t maxScrollX, std::size_t maxScrollY) noexcept -> void
 		{
 			const bool showVertical = (m_scrollbarMode & ScrollbarMode::Vertical) and (contentSize.height() > viewSize.height());
 			const bool showHorizontal = (m_scrollbarMode & ScrollbarMode::Horizontal) and (contentSize.width() > viewSize.width());
 
 			if (showVertical)
 			{
-				const auto barX = viewSize.width() - 1;
 				const auto heightForBar = showHorizontal ? viewSize.height() - 1 : viewSize.height();
-
-				for (auto y = 0uz; y < heightForBar; ++y)
-					view.setChar({barX, y}, m_scrollbarStyle.verticalTrack);
-
 				const auto [thumbY, thumbHeight] = getCurrentThumbPosition(heightForBar, contentSize.height(), m_scrollPosition.y(), maxScrollY);
 
-				for (auto i = 0uz; i < thumbHeight; ++i)
-					view.setChar({barX, thumbY + i}, m_scrollbarStyle.verticalThumb);
+				for (auto y = 0uz; y < heightForBar; ++y)
+					if (y >= thumbY and y < thumbY + thumbHeight)
+						view.setChar({viewSize.width() - 1, y}, m_scrollbarStyle.verticalThumb);
+					else
+						view.setChar({viewSize.width() - 1, y}, m_scrollbarStyle.verticalTrack);
 			}
 
 			if (showHorizontal)
 			{
-				const auto barY = viewSize.height() - 1;
 				const auto widthForBar = showVertical ? viewSize.width() - 1 : viewSize.width();
-
-				for (auto x = 0uz; x < widthForBar; ++x)
-					view.setChar({x, barY}, m_scrollbarStyle.horizontalTrack);
-
 				const auto [thumbX, thumbWidth] = getCurrentThumbPosition(widthForBar, contentSize.width(), m_scrollPosition.x(), maxScrollX);
 
-				for (auto i = 0uz; i < thumbWidth; ++i)
-					view.setChar({thumbX + i, barY}, m_scrollbarStyle.horizontalThumb);
+				for (auto x = 0uz; x < widthForBar; ++x)
+					if (x >= thumbX and x < thumbX + thumbWidth)
+						view.setChar({x, viewSize.height() - 1}, m_scrollbarStyle.horizontalThumb);
+					else
+						view.setChar({x, viewSize.height() - 1}, m_scrollbarStyle.horizontalTrack);
 			}
 
 			if (showVertical and showHorizontal)
@@ -291,7 +296,7 @@ export namespace CppUtils::Terminal
 		}
 
 		std::uint8_t m_scrollbarMode = ScrollbarMode::Both;
-		Container::Size2 m_scrollPosition{0, 0};
+		Container::Size2<> m_scrollPosition{0, 0};
 		Area m_fullContentArea;
 		ScrollbarStyle m_scrollbarStyle;
 		bool m_isDraggingVertical = false;

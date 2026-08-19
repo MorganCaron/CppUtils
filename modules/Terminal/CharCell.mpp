@@ -29,18 +29,21 @@ export namespace CppUtils::Terminal
 			CharCell{static_cast<char32_t>(c), attributes}
 		{}
 
-		inline CharCell(std::string_view text, const CharAttributes& attributes, std::size_t& bytesConsumed):
-			character{U'?'}, attributes{attributes}, displayWidth{1}
+		[[nodiscard]] static inline auto fromString(
+			std::string_view text,
+			std::size_t& bytesConsumed,
+			const CharAttributes& attributes = {}) -> CharCell
 		{
-			auto [codePoint, length] = String::toUtf32(text);
-			character = codePoint;
-			bytesConsumed = length;
-			displayWidth = String::getDisplayWidth(character);
-		}
+			if (std::ranges::empty(text))
+			{
+				bytesConsumed = 0;
+				return {};
+			}
 
-		inline CharCell(std::string_view text, std::size_t& bytesConsumed):
-			CharCell{text, CharAttributes{}, bytesConsumed}
-		{}
+			auto [codePoint, length] = String::toUtf32(text);
+			bytesConsumed = length;
+			return CharCell{codePoint, attributes, String::getDisplayWidth(codePoint)};
+		}
 
 		inline constexpr CharCell(
 			char32_t c,

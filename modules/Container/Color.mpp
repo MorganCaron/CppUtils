@@ -1,0 +1,59 @@
+export module CppUtils.Container.Color;
+
+import std;
+import CppUtils.Container.Vec;
+
+export namespace CppUtils::Container
+{
+	template<class T>
+	requires (std::is_arithmetic_v<T>)
+	struct ColorRGB: public Vec<3, T>
+	{
+		inline constexpr ColorRGB() = default;
+
+		template<std::convertible_to<T>... Args>
+		requires (sizeof...(Args) == 3)
+		inline constexpr ColorRGB(Args&&... args):
+			Vec<3, T>{static_cast<T>(args)...}
+		{}
+
+		inline constexpr ColorRGB(const Vec<3, T>& vec): Vec<3, T>{vec} {}
+
+		[[nodiscard]] inline constexpr auto r(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto g(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto b(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[2]; }
+		[[nodiscard]] inline constexpr auto red(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto green(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto blue(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[2]; }
+	};
+
+	template<class T>
+	ColorRGB(T, T, T) -> ColorRGB<T>;
+
+	template<class T>
+	requires (std::is_arithmetic_v<T>)
+	struct ColorRGBA: public Vec<4, T>
+	{
+		inline constexpr ColorRGBA() = default;
+
+		template<std::convertible_to<T>... Args>
+		requires (sizeof...(Args) == 4)
+		inline constexpr ColorRGBA(Args&&... args):
+			Vec<4, T>{static_cast<T>(args)...}
+		{}
+
+		inline constexpr ColorRGBA(const Vec<4, T>& vec): Vec<4, T>{vec} {}
+
+		[[nodiscard]] inline constexpr auto r(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto g(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto b(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[2]; }
+		[[nodiscard]] inline constexpr auto a(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[3]; }
+		[[nodiscard]] inline constexpr auto red(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto green(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto blue(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[2]; }
+		[[nodiscard]] inline constexpr auto alpha(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[3]; }
+	};
+
+	template<class T>
+	ColorRGBA(T, T, T, T) -> ColorRGBA<T>;
+}

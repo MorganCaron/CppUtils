@@ -12,7 +12,7 @@ namespace CppUtils::UnitTest::Terminal::ProgressBar
 		suite.addTest("Basic", [&] {
 			const auto terminalWidth = CppUtils::Terminal::getTerminalSize().width();
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{terminalWidth, 1}};
-			auto& progressBar = canvas.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Progress bar"));
+			auto& progressBar = canvas.newWidget<CppUtils::Terminal::ProgressBar>("Progress bar");
 
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			scheduler.schedule([&canvas]() mutable {
@@ -31,23 +31,23 @@ namespace CppUtils::UnitTest::Terminal::ProgressBar
 		suite.addTest("Multiple", [&] {
 			const auto terminalWidth = CppUtils::Terminal::getTerminalSize().width();
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{terminalWidth, 3}};
-			auto& layout = canvas.addWidget(std::make_unique<CppUtils::Terminal::Layout>());
+			auto& layout = canvas.newWidget<CppUtils::Terminal::Layout>(CppUtils::Container::Size2{terminalWidth, 3});
 
-			auto& bar1 = layout.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Bar 1"));
-			auto& bar2 = layout.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Bar 2"));
-			auto& bar3 = layout.addWidget(std::make_unique<CppUtils::Terminal::ProgressBar>("Bar 3"));
+			auto& bar1 = layout.newWidget<CppUtils::Terminal::ProgressBar>("Bar 1");
+			auto& bar2 = layout.newWidget<CppUtils::Terminal::ProgressBar>("Bar 2");
+			auto& bar3 = layout.newWidget<CppUtils::Terminal::ProgressBar>("Bar 3");
 
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			scheduler.schedule([&canvas]() mutable {
 				canvas.close();
-			}, 1'000ms);
+			}, 500ms);
 
 			for (auto i = 0.f; i <= 100.f; i += 1.f)
 			{
 				bar1.setPercent(i);
 				bar2.setPercent(CppUtils::Math::Easing::inQuad(i / 100.f) * 100.f);
 				bar3.setPercent(CppUtils::Math::Easing::outCubic(i / 100.f) * 100.f);
-				std::this_thread::sleep_for(10ms);
+				std::this_thread::sleep_for(5ms);
 			}
 
 			canvas.wait();

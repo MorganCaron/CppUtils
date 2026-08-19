@@ -2,7 +2,6 @@ export module CppUtils.Container.NetworkPtr;
 
 import std;
 import CppUtils.Container.SafeShared;
-import CppUtils.Thread.UniqueLocker;
 import CppUtils.Thread.SharedLocker;
 import CppUtils.Thread.SharedPtr;
 

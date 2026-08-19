@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::Button
 {
-	auto _ = TestSuite{"Terminal/Button", {"Terminal/Canvas"}, [](TestSuite& suite) {
+	auto _ = TestSuite{"Terminal/Button", {"Terminal/Canvas", "Terminal/Text", "Terminal/Element"}, [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
 		suite.addTest("Click", [&] {
@@ -13,9 +13,10 @@ namespace CppUtils::UnitTest::Terminal::Button
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
 			auto clicked = false;
-			canvas.addWidget(std::make_unique<CppUtils::Terminal::Button>(size, "Click me", [&clicked] {
+			auto textWidget = std::make_unique<CppUtils::Terminal::Text>(size, "Click me", CppUtils::Terminal::Alignment::Center);
+			canvas.newWidget<CppUtils::Terminal::Button>(size, std::move(textWidget), [&clicked] {
 				clicked = true;
-			}));
+			});
 
 			canvas.print();
 			std::this_thread::sleep_for(200ms);
@@ -24,12 +25,16 @@ namespace CppUtils::UnitTest::Terminal::Button
 			auto hoverEvent = CppUtils::Terminal::Mouse::Event{
 				.button = CppUtils::Terminal::Mouse::Button::None,
 				.pressed = false,
-				.position = canvas.getAbsolutePosition() + CppUtils::Container::Size2{5, 1}};
+				.relativePosition = {},
+				.absolutePosition = canvas.getAbsolutePosition() + CppUtils::Container::Size2{5uz, 1uz}};
 			canvas.onMouseEvent(hoverEvent);
 			canvas.print();
 			std::this_thread::sleep_for(200ms);
 
-			suite.expectEqual(canvas.getChar({5, 1}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Cyan);
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({5, 1}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Cyan);
+			}
 
 			auto pressEvent = hoverEvent;
 			pressEvent.button = CppUtils::Terminal::Mouse::Button::Left;
@@ -38,7 +43,10 @@ namespace CppUtils::UnitTest::Terminal::Button
 			canvas.print();
 			std::this_thread::sleep_for(200ms);
 
-			suite.expectEqual(canvas.getChar({5, 1}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Black);
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({5, 1}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Black);
+			}
 			suite.expectEqual(clicked, false);
 
 			auto releaseEvent = pressEvent;
@@ -48,22 +56,103 @@ namespace CppUtils::UnitTest::Terminal::Button
 			std::this_thread::sleep_for(200ms);
 
 			suite.expectEqual(clicked, true);
-			suite.expectEqual(canvas.getChar({5, 1}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Cyan);
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({5, 1}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Cyan);
+			}
 		});
 
 		suite.addTest("CustomStyle", [&] {
-			const auto size = CppUtils::Container::Size2{10, 3};
+			const auto size = CppUtils::Container::Size2{20, 3};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
-			auto& button = canvas.addWidget(std::make_unique<CppUtils::Terminal::Button>(size, "Custom"));
+			auto textWidget = std::make_unique<CppUtils::Terminal::Text>(size, "Custom Style", CppUtils::Terminal::Alignment::Center);
+			auto& button = canvas.newWidget<CppUtils::Terminal::Button>(size, std::move(textWidget));
 
 			auto customStyle = CppUtils::Terminal::ButtonStyle{};
 			customStyle.normal.backgroundColor = CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Red;
 			button.setStyle(customStyle);
 
 			canvas.print();
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({0, 0}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Red);
+			}
+		});
+
+		suite.addTest("CustomBorders", [&] {
+			const auto size = CppUtils::Container::Size2{20, 3};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			auto container = std::make_unique<CppUtils::Terminal::Container>(size);
+			container->setBorderStyle({.sides = CppUtils::Terminal::Element::Side::All});
+			const auto innerSize = CppUtils::Container::Size2{18, 1};
+			container->newWidget<CppUtils::Terminal::Text>(innerSize, "Custom Border", CppUtils::Terminal::Alignment::Center);
+
+			canvas.newWidget<CppUtils::Terminal::Button>(size, std::move(container));
+
+			canvas.print();
 			std::this_thread::sleep_for(200ms);
-			suite.expectEqual(canvas.getChar({0, 0}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Red);
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({0, 0}).character, U'┌');
+				suite.expectEqual(accessor->getChar({19, 0}).character, U'┐');
+				suite.expectEqual(accessor->getChar({0, 2}).character, U'└');
+				suite.expectEqual(accessor->getChar({19, 2}).character, U'┘');
+				suite.expectEqual(accessor->getChar({1, 0}).character, U'─');
+				suite.expectEqual(accessor->getChar({0, 1}).character, U'│');
+			}
+		});
+
+		suite.addTest("TextAlignment", [&] {
+			const auto size = CppUtils::Container::Size2{20, 1};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			auto text = std::make_unique<CppUtils::Terminal::Text>(size, "Click");
+			auto& textRef = *text;
+			canvas.newWidget<CppUtils::Terminal::Button>(size, std::move(text));
+
+			textRef.setHorizontalAlignment(CppUtils::Terminal::Alignment::Begin);
+			canvas.print();
+			std::this_thread::sleep_for(200ms);
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({0, 0}).character, U'C');
+			}
+
+			textRef.setHorizontalAlignment(CppUtils::Terminal::Alignment::Center);
+			canvas.print();
+			std::this_thread::sleep_for(200ms);
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({7, 0}).character, U'C');
+			}
+
+			textRef.setHorizontalAlignment(CppUtils::Terminal::Alignment::End);
+			canvas.print();
+			std::this_thread::sleep_for(200ms);
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({15, 0}).character, U'C');
+			}
+		});
+
+		suite.addTest("TextOverflow", [&] {
+			const auto size = CppUtils::Container::Size2{20, 1};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			auto text = std::make_unique<CppUtils::Terminal::Text>(size, "Lorem ipsum dolor sit amet, consectetur adipiscing elit", CppUtils::Terminal::Alignment::Begin);
+			canvas.newWidget<CppUtils::Terminal::Button>(size, std::move(text));
+
+			canvas.print();
+			std::this_thread::sleep_for(200ms);
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({17, 0}).character, U'…');
+			}
 		});
 	}};
 }

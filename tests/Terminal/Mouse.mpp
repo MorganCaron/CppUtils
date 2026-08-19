@@ -15,49 +15,60 @@ namespace CppUtils::UnitTest::Terminal::Mouse
 			auto mouseTracker = CppUtils::Terminal::Mouse::Tracker{};
 			auto rawTerminal = CppUtils::Terminal::RawTerminal{};
 
+			auto updateCanvas = [&](const CppUtils::Terminal::Mouse::Event& mouseEvent) -> void {
+				auto view = canvas.getWritableView();
+				view.clear();
+				CppUtils::Terminal::drawRectangle(
+					view,
+					{0, 0},
+					size,
+					CppUtils::Terminal::PrimitiveStyle::Outline,
+					CppUtils::Terminal::CharCell{U'#'});
+
+				const auto canvasOrigin = canvas.getAbsolutePosition();
+
+				if (const auto canvasAbsoluteViewport = CppUtils::Terminal::Viewport{size, canvasOrigin};
+					not canvasAbsoluteViewport.contains(mouseEvent.absolutePosition))
+					return;
+
+				const auto relativePosition = mouseEvent.absolutePosition - canvasOrigin;
+				if (relativePosition.x() < size.width() and relativePosition.y() < size.height())
+				{
+					auto c = ' ';
+					switch (mouseEvent.button)
+					{
+					case CppUtils::Terminal::Mouse::Button::Left: c = 'L'; break;
+					case CppUtils::Terminal::Mouse::Button::Middle: c = 'M'; break;
+					case CppUtils::Terminal::Mouse::Button::Right: c = 'R'; break;
+					case CppUtils::Terminal::Mouse::Button::ScrollUp: c = '^'; break;
+					case CppUtils::Terminal::Mouse::Button::ScrollDown: c = 'v'; break;
+					default: c = '.'; break;
+					}
+
+					c = mouseEvent.pressed ? static_cast<char>(std::toupper(c)) : static_cast<char>(std::tolower(c));
+					view.setChar(relativePosition, CppUtils::Terminal::CharCell{c});
+
+					view.printText({1, 1}, std::format("Position: {}, {}", mouseEvent.absolutePosition.x(), mouseEvent.absolutePosition.y()));
+					view.printText({1, 2}, std::format("Button: {} Pressed: {}", static_cast<int>(mouseEvent.button), mouseEvent.pressed));
+					view.printText({1, 3}, std::format("Modifiers: {}{}{}", mouseEvent.ctrl ? "C" : "", mouseEvent.alt ? "A" : "", mouseEvent.shift ? "S" : ""));
+				}
+			};
+
+			updateCanvas(CppUtils::Terminal::Mouse::Event{});
+			canvas.print();
+
 			for (const auto startTime = std::chrono::steady_clock::now();
 				std::chrono::steady_clock::now() - startTime < 5s;
 				std::this_thread::sleep_for(16ms))
 			{
-				if (const auto event = CppUtils::Terminal::Mouse::getEvent())
+				auto needPrint = false;
+				while (const auto event = CppUtils::Terminal::Mouse::getEvent())
 				{
-					canvas.fill(' ');
-
-					auto view = canvas.getWritableView();
-					CppUtils::Terminal::drawRectangle(
-						view,
-						{0, 0},
-						size,
-						CppUtils::Terminal::PrimitiveStyle::Outline,
-						CppUtils::Terminal::CharCell{});
-
-					if (const auto origin = canvas.getAbsolutePosition();
-						event->position.x() >= origin.x() and event->position.y() >= origin.y())
-					{
-						const auto relativePosition = event->position - origin;
-						if (relativePosition.x() < size.width() and relativePosition.y() < size.height())
-						{
-							auto c = ' ';
-							switch (event->button)
-							{
-							case CppUtils::Terminal::Mouse::Button::Left: c = 'L'; break;
-							case CppUtils::Terminal::Mouse::Button::Middle: c = 'M'; break;
-							case CppUtils::Terminal::Mouse::Button::Right: c = 'R'; break;
-							case CppUtils::Terminal::Mouse::Button::ScrollUp: c = '^'; break;
-							case CppUtils::Terminal::Mouse::Button::ScrollDown: c = 'v'; break;
-							default: c = '.'; break;
-							}
-
-							c = event->pressed ? static_cast<char>(std::toupper(c)) : static_cast<char>(std::tolower(c));
-							canvas.setChar(relativePosition, CppUtils::Terminal::CharCell{c});
-
-							canvas.printText({1, 1}, std::format("Position: {}, {}", event->position.x(), event->position.y()));
-							canvas.printText({1, 2}, std::format("Button: {} Pressed: {}", (int)event->button, event->pressed));
-							canvas.printText({1, 3}, std::format("Modifiers: {}{}{}", event->ctrl ? "C" : "", event->alt ? "A" : "", event->shift ? "S" : ""));
-						}
-					}
-					canvas.print();
+					updateCanvas(event.value());
+					needPrint = true;
 				}
+				if (needPrint)
+					canvas.print();
 			}
 		});
 	}};

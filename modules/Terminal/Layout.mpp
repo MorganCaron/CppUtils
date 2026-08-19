@@ -3,77 +3,290 @@ export module CppUtils.Terminal.Layout;
 import std;
 import CppUtils.Container.Size;
 import CppUtils.Terminal.Area;
+import CppUtils.Terminal.Element;
+import CppUtils.Terminal.Mouse;
 
 export namespace CppUtils::Terminal
 {
-	class Layout: public Widget
+	enum class Direction : std::uint8_t
+	{
+		Row,
+		Column
+	};
+
+	enum class JustifyContent : std::uint8_t
+	{
+		Start,
+		Center,
+		End,
+		SpaceBetween,
+		SpaceAround,
+		SpaceEvenly
+	};
+
+	enum class AlignItems : std::uint8_t
+	{
+		Start,
+		Center,
+		End,
+		Stretch
+	};
+
+	class Layout final: public Element
 	{
 	public:
-		enum class Direction
-		{
-			Horizontal,
-			Vertical
-		};
+		explicit inline Layout(
+			const CppUtils::Container::Size2<>& size = {0, 0},
+			Direction direction = Direction::Column,
+			JustifyContent justifyContent = JustifyContent::Start,
+			AlignItems alignItems = AlignItems::Start):
+			Element{size},
+			m_direction{direction},
+			m_justifyContent{justifyContent},
+			m_alignItems{alignItems}
+		{}
 
-		virtual ~Layout() = default;
-
-		template<std::derived_from<Widget> T>
-		inline auto addWidget(std::unique_ptr<T> widget) -> T&
+		template<std::derived_from<Element> T>
+		inline auto addWidget(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]], std::unique_ptr<T> widget) -> T&
 		{
-			widget->setWidgetManager(getWidgetManager());
-			return dynamic_cast<T&>(*m_widgets.emplace_back(std::move(widget)));
+			self.m_elements.push_back(std::move(widget));
+			if (self.hasWidgetManager())
+				self.m_elements.back()->setWidgetManager(self.getWidgetManager());
+			self.requestUpdate();
+			return dynamic_cast<T&>(*self.m_elements.back());
 		}
 
-		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 final
+	protected:
+		inline auto onWidgetManagerSet(WidgetManager& widgetManager) noexcept -> void override
 		{
-			auto totalSize = Container::Size2{0, 0};
-			for (const auto& widget : m_widgets)
+			for (auto& element : m_elements)
+				element->setWidgetManager(widgetManager);
+		}
+
+	public:
+		inline auto setDirection(this auto&& self, Direction direction) noexcept -> decltype(auto)
+		{
+			self.m_direction = direction;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getDirection() const noexcept -> Direction
+		{
+			return m_direction;
+		}
+
+		inline auto setJustifyContent(this auto&& self, JustifyContent justifyContent) noexcept -> decltype(auto)
+		{
+			self.m_justifyContent = justifyContent;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getJustifyContent() const noexcept -> JustifyContent
+		{
+			return m_justifyContent;
+		}
+
+		inline auto setAlignItems(this auto&& self, AlignItems alignItems) noexcept -> decltype(auto)
+		{
+			self.m_alignItems = alignItems;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getAlignItems() const noexcept -> AlignItems
+		{
+			return m_alignItems;
+		}
+
+		inline auto onMouseEvent(const Mouse::Event& event) -> bool override
+		{
+			auto handled = false;
+			const auto layoutPositions = calculateLayout();
+
+			for (auto i = 0uz; i < std::ranges::size(m_elements); ++i)
 			{
-				if (direction == Direction::Horizontal)
+				const auto& viewport = layoutPositions[i];
+
+				if (viewport.contains(event.relativePosition))
 				{
-					totalSize.width() += widget->getSize().width();
-					totalSize.height() = std::ranges::max(totalSize.height(), widget->getSize().height());
-				}
-				else
-				{
-					totalSize.width() = std::ranges::max(totalSize.width(), widget->getSize().width());
-					totalSize.height() += widget->getSize().height();
+					auto translatedEvent = event;
+					translatedEvent.relativePosition -= viewport.getPosition();
+					if (m_elements[i]->onMouseEvent(translatedEvent))
+						handled = true;
 				}
 			}
-			return totalSize;
+			return handled;
 		}
 
-		inline auto draw(WritableAreaView& view) noexcept -> void override final
+		inline auto draw(WritableAreaView& view) noexcept -> void override
 		{
-			auto origin = view.getViewport().getPosition();
-			auto size = view.getViewport().getSize();
-			for (const auto& widget : m_widgets)
+			const auto width = m_size.width();
+			const auto height = m_size.height();
+
+			if (width == 0uz or height == 0uz)
 			{
-				auto widgetSize = widget->getSize();
-				widgetSize.width() = std::ranges::min(widgetSize.width(), size.width());
-				widgetSize.height() = std::ranges::min(widgetSize.height(), size.height());
-
-				auto subview = view.getSubView(Viewport{widgetSize, origin});
-				if (not subview)
-					continue;
-				widget->draw(subview.value());
-
-				if (direction == Direction::Horizontal and size.width() < widgetSize.width())
-				{
-					origin.width() += widgetSize.width();
-					size.width() -= widgetSize.width();
-				}
-				else
-				{
-					origin.height() += widgetSize.height();
-					size.height() -= widgetSize.height();
-				}
+				drawFinished();
+				return;
 			}
-		}
 
-		Direction direction = Direction::Vertical;
+			Element::draw(view);
+
+			const auto layoutPositions = calculateLayout();
+
+			struct RenderItem final
+			{
+				std::size_t index;
+				int zIndex;
+			};
+			auto renderOrder = std::vector<RenderItem>{};
+			renderOrder.reserve(std::ranges::size(m_elements));
+
+			for (auto i = 0uz; i < std::ranges::size(m_elements); ++i)
+				renderOrder.push_back({i, m_elements[i]->getZIndex()});
+
+			std::ranges::stable_sort(renderOrder, [](const RenderItem& lhs, const RenderItem& rhs) {
+				return lhs.zIndex < rhs.zIndex;
+			});
+
+			for (const auto& item : renderOrder)
+			{
+				const auto& viewport = layoutPositions[item.index];
+				if (viewport.getSize().width() > 0uz and viewport.getSize().height() > 0uz)
+					if (auto subView = view.getSubView(viewport))
+						m_elements[item.index]->draw(*subView);
+			}
+
+			drawFinished();
+		}
 
 	private:
-		std::vector<std::unique_ptr<Widget>> m_widgets;
+		[[nodiscard]] inline auto calculateLayout() const -> std::vector<Viewport>
+		{
+			const auto nbElements = std::ranges::size(m_elements);
+			auto viewports = std::vector<Viewport>(nbElements);
+			if (nbElements == 0uz)
+				return viewports;
+
+			const auto containerWidth = m_size.width();
+			const auto containerHeight = m_size.height();
+
+			auto relativeIndices = std::vector<std::size_t>{};
+			auto totalRelativeSize = 0uz;
+
+			for (auto i = 0uz; i < nbElements; ++i)
+			{
+				auto& element = *m_elements[i];
+				if (element.getPositionType() == PositionType::Absolute)
+				{
+					const auto& position = element.getPosition();
+					const auto size = element.getSize();
+
+					auto x = 0uz;
+					if (position.left().has_value())
+						x = *position.left();
+					else if (position.right().has_value())
+						x = (containerWidth > size.width() + *position.right()) ? containerWidth - size.width() - *position.right() : 0uz;
+
+					auto y = 0uz;
+					if (position.top().has_value())
+						y = *position.top();
+					else if (position.bottom().has_value())
+						y = (containerHeight > size.height() + *position.bottom()) ? containerHeight - size.height() - *position.bottom() : 0uz;
+
+					viewports[i] = Viewport{size, CppUtils::Container::Size2{x, y}};
+				}
+				else
+				{
+					relativeIndices.push_back(i);
+					const auto size = element.getSize();
+					totalRelativeSize += (m_direction == Direction::Row) ? size.width() : size.height();
+				}
+			}
+
+			const auto nbRelativeElements = std::ranges::size(relativeIndices);
+			if (nbRelativeElements == 0uz)
+				return viewports;
+
+			const auto containerPrimarySize = (m_direction == Direction::Row) ? containerWidth : containerHeight;
+			const auto containerSecondarySize = (m_direction == Direction::Row) ? containerHeight : containerWidth;
+
+			const auto nbFillParentElements = static_cast<std::size_t>(std::ranges::count_if(relativeIndices, [&](const auto elementIndex) {
+				const auto& element = *m_elements[elementIndex];
+				const auto policy = (m_direction == Direction::Row) ? element.getSizePolicy().width : element.getSizePolicy().height;
+				return policy == SizePolicyType::FillParent;
+			}));
+
+			const auto availablePrimarySpace = (containerPrimarySize > totalRelativeSize) ? containerPrimarySize - totalRelativeSize : 0uz;
+			const auto extraSpacePerFill = (nbFillParentElements > 0uz) ? availablePrimarySpace / nbFillParentElements : 0uz;
+
+			auto currentPrimaryPosition = 0uz;
+			auto primarySpacing = 0uz;
+			if (nbFillParentElements == 0uz and availablePrimarySpace > 0uz)
+			{
+				if (m_justifyContent == JustifyContent::Center)
+					currentPrimaryPosition = availablePrimarySpace / 2uz;
+				else if (m_justifyContent == JustifyContent::End)
+					currentPrimaryPosition = availablePrimarySpace;
+				else if (m_justifyContent == JustifyContent::SpaceBetween and nbRelativeElements > 1uz)
+					primarySpacing = availablePrimarySpace / (nbRelativeElements - 1uz);
+				else if (m_justifyContent == JustifyContent::SpaceAround and nbRelativeElements > 0uz)
+				{
+					primarySpacing = availablePrimarySpace / nbRelativeElements;
+					currentPrimaryPosition = primarySpacing / 2uz;
+				}
+				else if (m_justifyContent == JustifyContent::SpaceEvenly and nbRelativeElements > 0uz)
+				{
+					primarySpacing = availablePrimarySpace / (nbRelativeElements + 1uz);
+					currentPrimaryPosition = primarySpacing;
+				}
+			}
+
+			for (auto relativeIndex = 0uz; relativeIndex < nbRelativeElements; ++relativeIndex)
+			{
+				const auto elementIndex = relativeIndices[relativeIndex];
+				auto& element = *m_elements[elementIndex];
+				auto elementSize = element.getSize();
+
+				const auto widthPolicy = element.getSizePolicy().width;
+				const auto heightPolicy = element.getSizePolicy().height;
+
+				const auto primaryPolicy = (m_direction == Direction::Row) ? widthPolicy : heightPolicy;
+				const auto secondaryPolicy = (m_direction == Direction::Row) ? heightPolicy : widthPolicy;
+
+				auto primaryDimension = (m_direction == Direction::Row) ? elementSize.width() : elementSize.height();
+				auto secondaryDimension = (m_direction == Direction::Row) ? elementSize.height() : elementSize.width();
+				if (primaryPolicy == SizePolicyType::FillParent)
+					primaryDimension += extraSpacePerFill;
+				if (secondaryPolicy == SizePolicyType::FillParent)
+					secondaryDimension = containerSecondarySize;
+
+				auto secondaryPosition = 0uz;
+				auto finalSecondaryDimension = secondaryDimension;
+				if (m_alignItems == AlignItems::Center and containerSecondarySize > secondaryDimension)
+					secondaryPosition = (containerSecondarySize - secondaryDimension) / 2uz;
+				else if (m_alignItems == AlignItems::End and containerSecondarySize > secondaryDimension)
+					secondaryPosition = containerSecondarySize - secondaryDimension;
+				else if (m_alignItems == AlignItems::Stretch)
+				{
+					secondaryPosition = 0uz;
+					finalSecondaryDimension = containerSecondarySize;
+				}
+
+				auto finalSize = (m_direction == Direction::Row) ? CppUtils::Container::Size2{primaryDimension, finalSecondaryDimension} : CppUtils::Container::Size2{finalSecondaryDimension, primaryDimension};
+				auto finalPosition = (m_direction == Direction::Row) ? CppUtils::Container::Size2{currentPrimaryPosition, secondaryPosition} : CppUtils::Container::Size2{secondaryPosition, currentPrimaryPosition};
+				viewports[elementIndex] = Viewport{finalSize, finalPosition};
+
+				currentPrimaryPosition += primaryDimension + primarySpacing;
+			}
+
+			return viewports;
+		}
+
+		Direction m_direction = Direction::Column;
+		JustifyContent m_justifyContent = JustifyContent::Start;
+		AlignItems m_alignItems = AlignItems::Start;
+		std::vector<std::unique_ptr<Element>> m_elements;
 	};
 }

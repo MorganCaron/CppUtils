@@ -85,8 +85,8 @@ export namespace CppUtils::Language::JSON
 			return result;
 		}
 
-		[[nodiscard]] inline auto operator[](this auto&& self [[lifetimebound]], std::string_view key) -> const Value&;
-		[[nodiscard]] inline auto operator[](this auto&& self [[lifetimebound]], std::size_t index) -> const Value&;
+		[[nodiscard]] inline auto operator[](this auto&& self [[clang::lifetimebound, msvc::lifetimebound]], std::string_view key) -> const Value&;
+		[[nodiscard]] inline auto operator[](this auto&& self [[clang::lifetimebound, msvc::lifetimebound]], std::size_t index) -> const Value&;
 
 		template<std::output_iterator<char> Iterator>
 		inline auto dump(Iterator out) const -> Iterator
@@ -137,7 +137,7 @@ export namespace CppUtils::Language::JSON
 
 	inline constinit const auto nullValue = Value{};
 
-	[[nodiscard]] inline auto Value::operator[](this auto&& self [[lifetimebound]], std::string_view key) -> const Value&
+	[[nodiscard]] inline auto Value::operator[](this auto&& self [[clang::lifetimebound, msvc::lifetimebound]], std::string_view key) -> const Value&
 	{
 		if (auto object = self.template getIf<Object>())
 		{
@@ -148,7 +148,7 @@ export namespace CppUtils::Language::JSON
 		return nullValue;
 	}
 
-	[[nodiscard]] inline auto Value::operator[](this auto&& self [[lifetimebound]], std::size_t index) -> const Value&
+	[[nodiscard]] inline auto Value::operator[](this auto&& self [[clang::lifetimebound, msvc::lifetimebound]], std::size_t index) -> const Value&
 	{
 		if (auto array = self.template getIf<Array>())
 		{
@@ -187,7 +187,8 @@ export namespace CppUtils::Language::JSON
 					else
 						return {};
 				};
-				const auto& value = jsonValue[getKeyString()];
+				const auto key = getKeyString();
+				const auto& value = jsonValue[key];
 				if (not value.isNull())
 				{
 					constexpr auto memberPointer = std::get<0>(StructMapping::template toRhs<token>());

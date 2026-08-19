@@ -1,0 +1,352 @@
+export module CppUtils.Terminal.Text;
+
+import std;
+import CppUtils.Container.Size;
+import CppUtils.Terminal.Area;
+import CppUtils.Terminal.CharCell;
+import CppUtils.Terminal.CharAttributes;
+import CppUtils.Terminal.Element;
+import CppUtils.String;
+
+export namespace CppUtils::Terminal
+{
+	class Text final: public Element
+	{
+	public:
+		enum class WordWrap : std::uint8_t
+		{
+			None,
+			Wrap
+		};
+
+		enum class Overflow : std::uint8_t
+		{
+			Clip,
+			Ellipsis
+		};
+
+		struct Format final
+		{
+			WordWrap wrap = WordWrap::Wrap;
+			Overflow overflow = Overflow::Ellipsis;
+		};
+
+		explicit inline Text(
+			const Container::Size2<>& size = {0, 0},
+			std::string text = ""):
+			Text{size, std::move(text), Alignments{}, Format{}, CharAttributes{}}
+		{}
+
+		inline Text(
+			const Container::Size2<>& size,
+			std::string text,
+			Alignments alignment,
+			Format format,
+			CharAttributes attributes):
+			Element{size},
+			m_text{std::move(text)},
+			m_alignment{alignment},
+			m_format{format},
+			m_attributes{attributes}
+		{}
+
+		inline Text(
+			const Container::Size2<>& size,
+			std::string text,
+			Alignment horizontalAlignment):
+			Text{size, std::move(text), Alignments{horizontalAlignment}, Format{}, CharAttributes{}}
+		{}
+
+		inline Text(
+			const Container::Size2<>& size,
+			std::string text,
+			Alignment horizontalAlignment,
+			WordWrap wordWrap,
+			Overflow overflow = Overflow::Ellipsis):
+			Text{size, std::move(text), Alignments{horizontalAlignment}, Format{.wrap = wordWrap, .overflow = overflow}, CharAttributes{}}
+		{}
+
+		inline Text(
+			const Container::Size2<>& size,
+			std::string text,
+			WordWrap wordWrap,
+			Overflow overflow = Overflow::Ellipsis):
+			Text{size, std::move(text), Alignments{}, Format{.wrap = wordWrap, .overflow = overflow}, CharAttributes{}}
+		{}
+
+		inline auto setText(this auto&& self, std::string text) noexcept -> decltype(auto)
+		{
+			self.m_text = std::move(text);
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getText() const noexcept -> std::string_view
+		{
+			return m_text;
+		}
+
+		inline auto setAlignment(this auto&& self, Alignments alignment) noexcept -> decltype(auto)
+		{
+			self.m_alignment = alignment;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getAlignment() const noexcept -> Alignments
+		{
+			return m_alignment;
+		}
+
+		inline auto setHorizontalAlignment(this auto&& self, Alignment alignment) noexcept -> decltype(auto)
+		{
+			self.m_alignment.horizontal() = alignment;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getHorizontalAlignment() const noexcept -> Alignment
+		{
+			return m_alignment.horizontal();
+		}
+
+		inline auto setVerticalAlignment(this auto&& self, Alignment alignment) noexcept -> decltype(auto)
+		{
+			self.m_alignment.vertical() = alignment;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getVerticalAlignment() const noexcept -> Alignment
+		{
+			return m_alignment.vertical();
+		}
+
+		inline auto setFormat(this auto&& self, Format format) noexcept -> decltype(auto)
+		{
+			self.m_format = format;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getFormat() const noexcept -> Format
+		{
+			return m_format;
+		}
+
+		inline auto setWordWrap(this auto&& self, WordWrap wordWrap) noexcept -> decltype(auto)
+		{
+			self.m_format.wrap = wordWrap;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getWordWrap() const noexcept -> WordWrap
+		{
+			return m_format.wrap;
+		}
+
+		inline auto setTextOverflow(this auto&& self, Overflow textOverflow) noexcept -> decltype(auto)
+		{
+			self.m_format.overflow = textOverflow;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getTextOverflow() const noexcept -> Overflow
+		{
+			return m_format.overflow;
+		}
+
+		inline auto setAttributes(this auto&& self, const CharAttributes& attributes) noexcept -> decltype(auto)
+		{
+			self.m_attributes = attributes;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getAttributes() const noexcept -> const CharAttributes&
+		{
+			return m_attributes;
+		}
+
+		inline auto draw(WritableAreaView& view) noexcept -> void override
+		{
+			const auto size = view.getSize();
+			const auto width = size.width();
+			const auto height = size.height();
+
+			if (width == 0uz or height == 0uz)
+			{
+				drawFinished();
+				return;
+			}
+
+			Element::draw(view);
+			view.fill(m_attributes);
+
+			if (std::ranges::empty(m_text))
+			{
+				drawFinished();
+				return;
+			}
+
+			wrapText(m_text, width);
+			const auto hasVerticalOverflow = std::ranges::size(m_lines) > height;
+			const auto visibleLineCount = std::ranges::min(std::ranges::size(m_lines), height);
+
+			auto startY = 0uz;
+			if (m_alignment.vertical() == Alignment::Center)
+				startY = (height > visibleLineCount) ? (height - visibleLineCount) / 2uz : 0uz;
+			else if (m_alignment.vertical() == Alignment::End)
+				startY = (height > visibleLineCount) ? (height - visibleLineCount) : 0uz;
+
+			for (auto i = 0uz; i < visibleLineCount; ++i)
+			{
+				const auto isLastOverflowLine = hasVerticalOverflow and i == visibleLineCount - 1uz and m_format.overflow == Overflow::Ellipsis;
+				const auto lineString = truncateLine(m_lines[i], width, isLastOverflowLine ? Overflow::Ellipsis : Overflow::Clip);
+				const auto fullString = isLastOverflowLine ? std::string{lineString} + "…" : std::string{lineString};
+				const auto lineWidth = String::getDisplayWidth(fullString);
+
+				auto startX = 0uz;
+				if (m_alignment.horizontal() == Alignment::Center)
+					startX = (width > lineWidth) ? (width - lineWidth) / 2uz : 0uz;
+				else if (m_alignment.horizontal() == Alignment::End)
+					startX = (width > lineWidth) ? (width - lineWidth) : 0uz;
+
+				view.printText({startX, startY + i}, fullString, m_attributes);
+			}
+
+			drawFinished();
+		}
+
+	private:
+		[[nodiscard]] inline auto truncateLine(std::string_view line, std::size_t maxWidth, Overflow overflow) const -> std::string_view
+		{
+			if (String::getDisplayWidth(line) <= maxWidth)
+				return line;
+
+			const auto targetWidth = (overflow == Overflow::Ellipsis and maxWidth > 1uz) ? maxWidth - 1uz : maxWidth;
+			auto currentWidth = 0uz;
+			auto charCount = 0uz;
+			for (auto offset = 0uz; offset < std::ranges::size(line);)
+			{
+				auto [codePoint, length] = String::toUtf32(line.substr(offset));
+				if (length == 0uz)
+					break;
+				auto charWidth = String::getDisplayWidth(codePoint);
+				if (currentWidth + charWidth > targetWidth)
+					break;
+				currentWidth += charWidth;
+				offset += length;
+				++charCount;
+			}
+			return String::utf32Substr(line, 0uz, charCount);
+		}
+
+		inline auto wrapText(std::string_view text, std::size_t maxWidth) -> void
+		{
+			m_lines.clear();
+			if (m_format.wrap == WordWrap::None)
+			{
+				auto lineStart = 0uz;
+				for (auto i = 0uz; i < std::ranges::size(text); ++i)
+				{
+					if (text[i] == '\n')
+					{
+						m_lines.emplace_back(text.substr(lineStart, i - lineStart));
+						lineStart = i + 1uz;
+					}
+				}
+				m_lines.emplace_back(text.substr(lineStart));
+				return;
+			}
+
+			auto lineStart = 0uz;
+			auto lastWordEnd = 0uz;
+			auto currentLineWidth = 0uz;
+			for (auto offset = 0uz; offset < std::ranges::size(text);)
+			{
+				if (text[offset] == '\n')
+				{
+					m_lines.push_back(text.substr(lineStart, offset - lineStart));
+					++offset;
+					lineStart = offset;
+					lastWordEnd = offset;
+					currentLineWidth = 0uz;
+					continue;
+				}
+
+				if (text[offset] == ' ')
+				{
+					++offset;
+					continue;
+				}
+
+				auto wordStart = offset;
+				while (offset < std::ranges::size(text) and text[offset] != ' ' and text[offset] != '\n')
+					++offset;
+
+				auto word = text.substr(wordStart, offset - wordStart);
+				auto wordWidth = String::getDisplayWidth(word);
+				if (wordWidth > maxWidth)
+				{
+					for (auto wordOffset = 0uz; wordOffset < std::ranges::size(word);)
+					{
+						auto [codePoint, length] = String::toUtf32(word.substr(wordOffset));
+						if (length == 0uz)
+							break;
+						auto charWidth = String::getDisplayWidth(codePoint);
+
+						if (currentLineWidth + charWidth > maxWidth and currentLineWidth > 0uz)
+						{
+							m_lines.push_back(text.substr(lineStart, wordStart + wordOffset - lineStart));
+							lineStart = wordStart + wordOffset;
+							currentLineWidth = 0uz;
+						}
+
+						currentLineWidth += charWidth;
+						wordOffset += length;
+					}
+					lastWordEnd = offset;
+				}
+				else if (currentLineWidth == 0uz)
+				{
+					currentLineWidth = wordWidth;
+					lastWordEnd = offset;
+				}
+				else
+				{
+					const auto spaceCount = wordStart - lastWordEnd;
+					if (currentLineWidth + spaceCount + wordWidth <= maxWidth)
+					{
+						currentLineWidth += spaceCount + wordWidth;
+						lastWordEnd = offset;
+					}
+					else
+					{
+						m_lines.push_back(text.substr(lineStart, lastWordEnd - lineStart));
+						lineStart = wordStart;
+						currentLineWidth = wordWidth;
+						lastWordEnd = offset;
+					}
+				}
+			}
+
+			if (lineStart < std::ranges::size(text))
+			{
+				auto lineSlice = text.substr(lineStart);
+				while (not std::ranges::empty(lineSlice) and lineSlice.back() == ' ')
+					lineSlice.remove_suffix(1uz);
+				if (not std::ranges::empty(lineSlice))
+					m_lines.push_back(lineSlice);
+			}
+		}
+
+		std::string m_text;
+		Alignments m_alignment;
+		Format m_format;
+		CharAttributes m_attributes;
+		std::vector<std::string_view> m_lines;
+	};
+}

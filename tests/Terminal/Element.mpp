@@ -1,0 +1,63 @@
+export module CppUtils.UnitTests.Terminal.Element;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Terminal::Element
+{
+	auto _ = TestSuite{"Terminal/Element", {"Terminal/Canvas"}, [](TestSuite& suite) {
+		using namespace std::chrono_literals;
+
+		suite.addTest("Borders", [&] {
+			const auto size = CppUtils::Container::Size2{10, 3};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			auto& element = canvas.newWidget<CppUtils::Terminal::Element>(size);
+			element.setBorderStyle({.sides = CppUtils::Terminal::Element::Side::All});
+
+			canvas.print();
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({0, 0}).character, U'┌');
+				suite.expectEqual(accessor->getChar({9, 0}).character, U'┐');
+				suite.expectEqual(accessor->getChar({0, 2}).character, U'└');
+				suite.expectEqual(accessor->getChar({9, 2}).character, U'┘');
+				suite.expectEqual(accessor->getChar({1, 0}).character, U'─');
+				suite.expectEqual(accessor->getChar({0, 1}).character, U'│');
+			}
+		});
+
+		suite.addTest("Padding", [&] {
+			struct ChildWidget final: public CppUtils::Terminal::Element
+			{
+				explicit inline ChildWidget(const CppUtils::Container::Size2<>& size):
+					Element{size}
+				{}
+
+				inline auto draw(CppUtils::Terminal::WritableAreaView& view) noexcept -> void override
+				{
+					view.setChar({0, 0}, CppUtils::Terminal::CharCell{U'A'});
+				}
+			};
+
+			const auto size = CppUtils::Container::Size2{12, 5};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			auto& container = canvas.newWidget<CppUtils::Terminal::Container>(size);
+			container.setBorderStyle({.sides = CppUtils::Terminal::Element::Side::All});
+			container.setPadding(CppUtils::Terminal::Element::Padding{1uz});
+
+			const auto innerSize = CppUtils::Container::Size2{8, 1};
+			container.newWidget<ChildWidget>(innerSize);
+
+			canvas.print();
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({0, 0}).character, U'┌');
+				suite.expectEqual(accessor->getChar({2, 2}).character, U'A');
+			}
+		});
+	}};
+}

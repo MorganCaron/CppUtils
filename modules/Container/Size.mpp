@@ -1,11 +1,55 @@
 export module CppUtils.Container.Size;
 
 import std;
-import CppUtils.Container.Vec2;
-import CppUtils.Container.Vec3;
+import CppUtils.Container.Vec;
 
 export namespace CppUtils::Container
 {
-	using Size2 = Vec2<std::size_t>;
-	using Size3 = Vec3<std::size_t>;
+	template<class T = std::size_t>
+	requires (std::unsigned_integral<T>)
+	struct Size2: public Vec<2, T>
+	{
+		inline constexpr Size2() = default;
+
+		template<std::convertible_to<T>... Args>
+		requires (sizeof...(Args) == 2)
+		inline constexpr Size2(Args&&... args):
+			Vec<2, T>{std::forward<Args>(args)...}
+		{}
+
+		[[nodiscard]] inline constexpr auto x(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto y(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto width(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto height(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+	};
+
+	template<class T>
+	Size2(T, T) -> Size2<T>;
+
+	template<class T = std::size_t>
+	requires (std::unsigned_integral<T>)
+	struct Size3: public Vec<3, T>
+	{
+		inline constexpr Size3() = default;
+
+		template<std::convertible_to<T>... Args>
+		requires (sizeof...(Args) == 3)
+		inline constexpr Size3(Args&&... args):
+			Vec<3, T>{std::forward<Args>(args)...}
+		{}
+
+		[[nodiscard]] inline constexpr auto x(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto y(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto z(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[2]; }
+		[[nodiscard]] inline constexpr auto width(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto height(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto depth(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[2]; }
+	};
+
+	template<class T>
+	Size3(T, T, T) -> Size3<T>;
+
+	static_assert(Size2{10uz, 20uz}.width() == 10);
+	static_assert(Size2{10uz, 20uz}.height() == 20);
+	static_assert(Size3{10uz, 20uz, 30uz}.depth() == 30);
 }

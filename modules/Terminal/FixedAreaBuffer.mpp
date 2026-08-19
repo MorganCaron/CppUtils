@@ -15,7 +15,7 @@ export namespace CppUtils::Terminal
 		using Buffer = std::array<Line, Height>;
 		static constexpr auto size = Container::Size2{Width, Height};
 
-		[[nodiscard]] inline constexpr auto getSize() const noexcept -> Container::Size2 override
+		[[nodiscard]] inline constexpr auto getSize() const noexcept -> Container::Size2<> override
 		{
 			return size;
 		}
@@ -38,19 +38,19 @@ export namespace CppUtils::Terminal
 			m_buffer{buffer}
 		{}
 
-		[[nodiscard]] constexpr auto getChar(const Container::Size2& position) const noexcept -> const CharCell& final
+		[[nodiscard]] constexpr auto getChar(const Container::Size2<>& position) const noexcept -> const CharCell& final
 		{
 			return m_buffer[position.y()][position.x()];
 		}
 
-		constexpr auto setChar(const Container::Size2& position, const CharCell& c) noexcept -> void final
+		constexpr auto setChar(const Container::Size2<>& position, const CharCell& c) noexcept -> void final
 		{
 			if (position.x() >= size.width() or position.y() >= size.height())
 				return;
 			m_buffer[position.y()][position.x()] = c;
 		}
 
-		[[nodiscard]] inline constexpr auto getBuffer() const noexcept [[lifetimebound]] -> const Buffer&
+		[[nodiscard]] inline constexpr auto getBuffer() const noexcept [[clang::lifetimebound, msvc::lifetimebound]] -> const Buffer&
 		{
 			return m_buffer;
 		}

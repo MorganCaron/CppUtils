@@ -11,9 +11,9 @@ export namespace CppUtils::Terminal
 	class AreaBuffer
 	{
 	public:
-		[[nodiscard]] virtual auto getChar(const Container::Size2& position) const noexcept -> const CharCell& = 0;
-		virtual auto setChar(const Container::Size2& position, const CharCell& c) noexcept -> void = 0;
-		[[nodiscard]] virtual auto getSize() const noexcept -> Container::Size2 = 0;
+		[[nodiscard]] virtual auto getChar(const Container::Size2<>& position) const noexcept -> const CharCell& = 0;
+		virtual auto setChar(const Container::Size2<>& position, const CharCell& c) noexcept -> void = 0;
+		[[nodiscard]] virtual auto getSize() const noexcept -> Container::Size2<> = 0;
 
 		[[nodiscard]] inline virtual auto toString() const -> std::string
 		{
@@ -31,7 +31,7 @@ export namespace CppUtils::Terminal
 			return result;
 		}
 
-		inline auto printText(Container::Size2 position, std::string_view text, const CharAttributes& style = {}) noexcept -> void
+		inline auto printText(Container::Size2<> position, std::string_view text, const CharAttributes& style = {}) noexcept -> void
 		{
 			for (auto i = 0uz; i < std::ranges::size(text);)
 			{
@@ -44,7 +44,7 @@ export namespace CppUtils::Terminal
 					return;
 
 				auto bytesConsumed = 0uz;
-				const auto cell = CharCell{text.substr(i), style, bytesConsumed};
+				const auto cell = CharCell::fromString(text.substr(i), bytesConsumed, style);
 				setChar(position, cell);
 
 				if (cell.displayWidth == 2 and position.x() + 1 < getSize().width())

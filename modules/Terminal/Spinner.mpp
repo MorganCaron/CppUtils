@@ -2,6 +2,7 @@ export module CppUtils.Terminal.Spinner;
 
 import std;
 import CppUtils.Terminal.Area;
+import CppUtils.Terminal.Element;
 import CppUtils.Container.Size;
 import CppUtils.Chrono.Concept;
 export import CppUtils.Terminal.FixedAreaBuffer;
@@ -9,7 +10,7 @@ export import CppUtils.Terminal.FixedAreaBuffer;
 export namespace CppUtils::Terminal
 {
 	template<std::size_t Width, std::size_t Height, std::size_t NbFrames, Chrono::Duration Duration = std::chrono::milliseconds>
-	class Spinner final: public Widget
+	class Spinner final: public Element
 	{
 	public:
 		using Frame = FixedAreaBuffer<Width, Height>;
@@ -17,14 +18,10 @@ export namespace CppUtils::Terminal
 		static constexpr auto size = Frame::size;
 
 		inline Spinner(const Frames& frames, const Duration& duration = std::chrono::milliseconds{50}):
+			Element{size},
 			m_frames{frames},
 			m_duration{duration}
 		{}
-
-		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 final
-		{
-			return size;
-		}
 
 		inline auto draw(WritableAreaView& view) noexcept -> void
 		{

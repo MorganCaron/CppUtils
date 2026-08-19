@@ -1,53 +1,55 @@
+module;
+
+#include <cassert>
+
 export module CppUtils.Terminal.Area:DynamicAreaBuffer;
 
 import std;
 import CppUtils.Container.Size;
 import CppUtils.Terminal.AreaBuffer;
 import CppUtils.Terminal.CharCell;
+import CppUtils.Thread.SharedLocker;
 
 export namespace CppUtils::Terminal
 {
-	class DynamicAreaBuffer: public AreaBuffer
+	class DynamicAreaBufferStorage final: public AreaBuffer
 	{
 	public:
 		using Line = std::vector<CharCell>;
 		using Buffer = std::vector<Line>;
 
-		inline DynamicAreaBuffer(const Container::Size2& size, CharCell defaultCell = {}):
-			DynamicAreaBuffer{size, Buffer(size.height(), Line(size.width(), defaultCell))}
-		{}
-
-		inline DynamicAreaBuffer(const Container::Size2& size, char defaultChar):
-			DynamicAreaBuffer{size, CharCell{defaultChar}}
-		{}
-
-		inline DynamicAreaBuffer(const Container::Size2& size, Buffer&& buffer):
+		inline DynamicAreaBufferStorage(const Container::Size2<>& size, Buffer&& buffer):
 			m_size{size},
 			m_buffer{std::move(buffer)}
 		{}
 
-		inline auto setSize(const Container::Size2& size) noexcept -> void
+		inline DynamicAreaBufferStorage(const Container::Size2<>& size = {0, 0}, CharCell defaultCell = {}):
+			DynamicAreaBufferStorage{size, Buffer(size.height(), Line(size.width(), defaultCell))}
+		{}
+
+		inline DynamicAreaBufferStorage(const Container::Size2<>& size, char defaultChar):
+			DynamicAreaBufferStorage{size, CharCell{defaultChar}}
+		{}
+
+		inline auto setSize(const Container::Size2<>& size) noexcept -> void
 		{
-			auto lock = std::unique_lock{m_mutex};
 			m_size = size;
 			m_buffer = Buffer(m_size.height(), Line(m_size.width()));
 		}
 
-		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 override
+		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2<> final
 		{
-			auto lock = std::unique_lock{m_mutex};
 			return m_size;
 		}
 
-		[[nodiscard]] auto getChar(const Container::Size2& position) const noexcept -> const CharCell& final
+		[[nodiscard]] inline auto getChar(const Container::Size2<>& position) const noexcept -> const CharCell& final
 		{
-			auto lock = std::unique_lock{m_mutex};
+			assert(position.x() < m_size.width() and position.y() < m_size.height());
 			return m_buffer[position.y()][position.x()];
 		}
 
-		auto setChar(const Container::Size2& position, const CharCell& c) noexcept -> void final
+		inline auto setChar(const Container::Size2<>& position, const CharCell& c) noexcept -> void final
 		{
-			auto lock = std::unique_lock{m_mutex};
 			if (position.x() >= m_size.width() or position.y() >= m_size.height())
 				return;
 
@@ -73,14 +75,15 @@ export namespace CppUtils::Terminal
 			m_buffer[position.y()][position.x()] = c;
 		}
 
-		[[nodiscard]] inline auto getBuffer() const noexcept [[lifetimebound]] -> const Buffer&
+		[[nodiscard]] inline auto getBuffer() const noexcept [[clang::lifetimebound, msvc::lifetimebound]] -> const Buffer&
 		{
 			return m_buffer;
 		}
 
 	private:
-		mutable std::mutex m_mutex;
-		Container::Size2 m_size;
+		Container::Size2<> m_size;
 		Buffer m_buffer;
 	};
+
+	using DynamicAreaBuffer = Thread::SharedLocker<DynamicAreaBufferStorage>;
 }

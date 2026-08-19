@@ -29,7 +29,8 @@ export namespace CppUtils::Terminal::Mouse
 		bool shift = false;
 		bool alt = false;
 		bool ctrl = false;
-		Container::Size2 position;
+		Container::Size2<> relativePosition;
+		Container::Size2<> absolutePosition;
 	};
 
 	namespace Ansi
@@ -103,7 +104,8 @@ export namespace CppUtils::Terminal::Mouse
 			return std::nullopt;
 
 		auto event = Event{};
-		event.position = Container::Size2{static_cast<std::size_t>(x - 1), static_cast<std::size_t>(y - 1)};
+		event.relativePosition = Container::Size2{static_cast<std::size_t>(x - 1), static_cast<std::size_t>(y - 1)};
+		event.absolutePosition = event.relativePosition;
 		event.shift = (buttonData & 4) != 0;
 		event.alt = (buttonData & 8) != 0;
 		event.ctrl = (buttonData & 16) != 0;
@@ -129,10 +131,10 @@ export namespace CppUtils::Terminal::Mouse
 		return event;
 	}
 
-	[[nodiscard]] inline auto getPosition() -> std::optional<Container::Size2>
+	[[nodiscard]] inline auto getPosition() -> std::optional<Container::Size2<>>
 	{
 		if (const auto event = getEvent())
-			return event->position;
+			return event->relativePosition;
 		return std::nullopt;
 	}
 }

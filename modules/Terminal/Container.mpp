@@ -1,0 +1,102 @@
+export module CppUtils.Terminal.Container;
+
+import std;
+import CppUtils.Container.Size;
+import CppUtils.Terminal.Area;
+import CppUtils.Terminal.Element;
+import CppUtils.Terminal.Mouse;
+
+export namespace CppUtils::Terminal
+{
+	class Container: public Element
+	{
+	public:
+		explicit inline Container(
+			const CppUtils::Container::Size2<>& size = {0, 0},
+			PositionType position = PositionType::Relative,
+			Margin margin = {},
+			Padding padding = {},
+			BorderStyle borderStyle = {}):
+			Element{size, position, margin, padding, borderStyle}
+		{}
+
+		explicit inline Container(
+			const CppUtils::Container::Size2<>& size,
+			std::unique_ptr<Widget> widget,
+			PositionType position = PositionType::Relative,
+			Margin margin = {},
+			Padding padding = {},
+			BorderStyle borderStyle = {}):
+			Element{size, position, margin, padding, borderStyle}
+		{
+			addWidget(std::move(widget));
+		}
+
+		template<std::derived_from<Widget> T>
+		inline auto addWidget(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]], std::unique_ptr<T> widget) -> T&
+		{
+			self.m_widget = std::move(widget);
+			if (self.hasWidgetManager())
+				self.m_widget->setWidgetManager(self.getWidgetManager());
+			self.requestUpdate();
+			return dynamic_cast<T&>(*self.m_widget);
+		}
+
+		template<typename T, typename... Args>
+		requires std::derived_from<T, Widget>
+		inline auto newWidget(Args&&... args) -> T&
+		{
+			return addWidget(std::make_unique<T>(std::forward<Args>(args)...));
+		}
+
+		[[nodiscard]] inline auto getWidget(this auto&& self) noexcept -> decltype(auto)
+		{
+			using PtrType = std::conditional_t<std::is_const_v<std::remove_reference_t<decltype(self)>>, const Widget*, Widget*>;
+			return static_cast<PtrType>(self.m_widget.get());
+		}
+
+		template<std::derived_from<Widget> T>
+		[[nodiscard]] inline auto getWidgetAs(this auto&& self) -> decltype(auto)
+		{
+			using RefType = std::conditional_t<std::is_const_v<std::remove_reference_t<decltype(self)>>, const T&, T&>;
+			return dynamic_cast<RefType>(*self.m_widget);
+		}
+
+	protected:
+		inline auto onWidgetManagerSet(WidgetManager& widgetManager) noexcept -> void override
+		{
+			if (m_widget)
+				m_widget->setWidgetManager(widgetManager);
+		}
+
+		inline auto onMouseEvent(const Mouse::Event& event) -> bool override
+		{
+			if (not m_widget)
+				return false;
+
+			const auto innerViewport = getInnerViewport();
+			if (not innerViewport.contains(event.relativePosition))
+				return false;
+
+			auto translatedEvent = event;
+			translatedEvent.relativePosition -= innerViewport.getPosition();
+			return m_widget->onMouseEvent(translatedEvent);
+		}
+
+		inline auto draw(WritableAreaView& view) noexcept -> void override
+		{
+			Element::draw(view);
+
+			if (m_widget)
+			{
+				const auto innerViewport = getInnerViewport();
+				if (innerViewport.getSize().width() > 0uz and innerViewport.getSize().height() > 0uz)
+					if (auto innerView = view.getSubView(innerViewport))
+						m_widget->draw(innerView.value());
+			}
+		}
+
+	protected:
+		std::unique_ptr<Widget> m_widget;
+	};
+}

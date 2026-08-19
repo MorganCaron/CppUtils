@@ -1,0 +1,413 @@
+export module CppUtils.Terminal.Element;
+
+import std;
+import CppUtils.Container.Size;
+import CppUtils.Container.Vec;
+import CppUtils.Terminal.Area;
+import CppUtils.Terminal.Primitive;
+import CppUtils.Terminal.CharCell;
+import CppUtils.Terminal.TextColor;
+
+export namespace CppUtils::Terminal
+{
+	class Element: public Widget
+	{
+	public:
+		enum class PositionType : std::uint8_t
+		{
+			Relative,
+			Absolute
+		};
+
+		enum class Side : std::uint8_t
+		{
+			None = 0b0000,
+			Top = 0b0001,
+			Right = 0b0010,
+			Bottom = 0b0100,
+			Left = 0b1000,
+			All = Top | Right | Bottom | Left
+		};
+
+		[[nodiscard]] inline constexpr friend auto operator|(Side lhs, Side rhs) noexcept -> Side
+		{
+			return static_cast<Side>(static_cast<std::uint8_t>(lhs) | static_cast<std::uint8_t>(rhs));
+		}
+
+		[[nodiscard]] inline constexpr friend auto operator&(Side lhs, Side rhs) noexcept -> Side
+		{
+			return static_cast<Side>(static_cast<std::uint8_t>(lhs) & static_cast<std::uint8_t>(rhs));
+		}
+
+		[[nodiscard]] inline constexpr friend auto operator~(Side flags) noexcept -> Side
+		{
+			return static_cast<Side>(~static_cast<std::uint8_t>(flags) & static_cast<std::uint8_t>(Side::All));
+		}
+
+		inline constexpr friend auto operator|=(Side& lhs, Side rhs) noexcept -> Side&
+		{
+			lhs = lhs | rhs;
+			return lhs;
+		}
+
+		inline constexpr friend auto operator&=(Side& lhs, Side rhs) noexcept -> Side&
+		{
+			lhs = lhs & rhs;
+			return lhs;
+		}
+
+		static inline auto applySides(Side sides, auto&& function) noexcept -> void
+		{
+			for (auto flags = static_cast<std::uint8_t>(sides); flags != 0;)
+			{
+				const auto bit = flags & -flags; // isole le bit 1 le plus faible
+				const auto index = static_cast<std::size_t>(std::countr_zero(static_cast<std::uint8_t>(bit)));
+				function(index);
+				flags &= flags - 1; // eteint le bit le plus faible
+			}
+		}
+
+		struct Position final: Container::Vec<4, std::optional<std::size_t>>
+		{
+			inline constexpr Position() = default;
+			inline constexpr Position(
+				std::optional<std::size_t> top,
+				std::optional<std::size_t> right,
+				std::optional<std::size_t> bottom,
+				std::optional<std::size_t> left):
+				Container::Vec<4, std::optional<std::size_t>>{top, right, bottom, left}
+			{}
+
+			[[nodiscard]] inline constexpr auto top(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+			[[nodiscard]] inline constexpr auto right(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+			[[nodiscard]] inline constexpr auto bottom(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[2]; }
+			[[nodiscard]] inline constexpr auto left(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[3]; }
+		};
+
+		enum class SizePolicyType : std::uint8_t
+		{
+			Fixed,
+			FillParent,
+			Auto
+		};
+
+		struct SizePolicy final
+		{
+			SizePolicyType width = SizePolicyType::Fixed;
+			SizePolicyType height = SizePolicyType::Fixed;
+		};
+
+		struct Spacing: Container::Vec<4, std::size_t>
+		{
+			inline constexpr Spacing() = default;
+			inline constexpr Spacing(std::size_t all): Container::Vec<4, std::size_t>{all, all, all, all} {}
+			inline constexpr Spacing(std::size_t vertical, std::size_t horizontal): Container::Vec<4, std::size_t>{vertical, horizontal, vertical, horizontal} {}
+			inline constexpr Spacing(std::size_t top, std::size_t right, std::size_t bottom, std::size_t left): Container::Vec<4, std::size_t>{top, right, bottom, left} {}
+
+			[[nodiscard]] inline constexpr auto top(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+			[[nodiscard]] inline constexpr auto right(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+			[[nodiscard]] inline constexpr auto bottom(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[2]; }
+			[[nodiscard]] inline constexpr auto left(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[3]; }
+		};
+
+		struct Margin final: Spacing
+		{
+			using Spacing::Spacing;
+		};
+
+		struct Padding final: Spacing
+		{
+			using Spacing::Spacing;
+		};
+
+		struct BorderStyle final
+		{
+			Side sides = Side::None;
+			CharCell top = {U'─', TextColor::TextColorEnum::White};
+			CharCell bottom = {U'─', TextColor::TextColorEnum::White};
+			CharCell left = {U'│', TextColor::TextColorEnum::White};
+			CharCell right = {U'│', TextColor::TextColorEnum::White};
+			CharCell topLeft = {U'┌', TextColor::TextColorEnum::White};
+			CharCell topRight = {U'┐', TextColor::TextColorEnum::White};
+			CharCell bottomLeft = {U'└', TextColor::TextColorEnum::White};
+			CharCell bottomRight = {U'┘', TextColor::TextColorEnum::White};
+		};
+
+		inline Element(
+			const Container::Size2<>& size,
+			PositionType positionType,
+			Margin margin,
+			Padding padding,
+			BorderStyle borderStyle):
+			m_size{size},
+			m_positionType{positionType},
+			m_margin{margin},
+			m_padding{padding},
+			m_borderStyle{borderStyle}
+		{}
+
+		inline Element(
+			const Container::Size2<>& size,
+			PositionType positionType,
+			Position position,
+			Margin margin,
+			Padding padding,
+			BorderStyle borderStyle):
+			m_size{size},
+			m_positionType{positionType},
+			m_position{position},
+			m_margin{margin},
+			m_padding{padding},
+			m_borderStyle{borderStyle}
+		{}
+
+		explicit inline Element(
+			const Container::Size2<>& size = {0, 0},
+			PositionType positionType = PositionType::Relative):
+			m_size{size},
+			m_positionType{positionType}
+		{}
+
+		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2<> override
+		{
+			return m_size;
+		}
+
+		inline auto setSize(this auto&& self, const Container::Size2<>& size) noexcept -> decltype(auto)
+		{
+			self.m_size = size;
+			self.requestUpdate();
+			return self;
+		}
+
+		inline auto setPositionType(this auto&& self, PositionType positionType) noexcept -> decltype(auto)
+		{
+			self.m_positionType = positionType;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getPositionType() const noexcept -> PositionType
+		{
+			return m_positionType;
+		}
+
+		inline auto setPosition(this auto&& self, const Position& position) noexcept -> decltype(auto)
+		{
+			self.m_position = position;
+			self.requestUpdate();
+			return self;
+		}
+
+		inline auto setPosition(this auto&& self, std::size_t left, std::size_t top) noexcept -> decltype(auto)
+		{
+			self.m_position.left() = left;
+			self.m_position.top() = top;
+			self.m_position.right().reset();
+			self.m_position.bottom().reset();
+			self.requestUpdate();
+			return self;
+		}
+
+		template<Side sides>
+		inline auto setPosition(this auto&& self, std::size_t value) noexcept -> decltype(auto)
+		{
+			self.applySides(sides, [&](std::size_t index) {
+				self.m_position[index] = value;
+				const auto oppositeIndex = (index + 2uz) % 4uz;
+				const auto oppositeSide = static_cast<Side>(1uz << oppositeIndex);
+				if ((sides & oppositeSide) == Side::None)
+					self.m_position[oppositeIndex].reset();
+			});
+			self.requestUpdate();
+			return self;
+		}
+
+		template<Side side>
+		[[nodiscard]] inline auto getPosition() const noexcept -> std::optional<std::size_t>
+		{
+			constexpr auto index = static_cast<std::size_t>(std::countr_zero(static_cast<std::uint8_t>(side)));
+			return m_position[index];
+		}
+
+		[[nodiscard]] inline auto getPosition() const noexcept -> const Position&
+		{
+			return m_position;
+		}
+
+		inline auto setZIndex(this auto&& self, int zIndex) noexcept -> decltype(auto)
+		{
+			self.m_zIndex = zIndex;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getZIndex() const noexcept -> int
+		{
+			return m_zIndex;
+		}
+
+		template<Side sides>
+		inline auto setMargin(this auto&& self, std::size_t value) noexcept -> decltype(auto)
+		{
+			self.applySides(sides, [&](std::size_t index) {
+				self.m_margin[index] = value;
+			});
+			self.requestUpdate();
+			return self;
+		}
+
+		inline auto setMargin(this auto&& self, const Margin& margin) noexcept -> decltype(auto)
+		{
+			self.m_margin = margin;
+			self.requestUpdate();
+			return self;
+		}
+
+		template<Side side>
+		[[nodiscard]] inline auto getMargin() const noexcept -> std::size_t
+		{
+			constexpr auto index = static_cast<std::size_t>(std::countr_zero(static_cast<std::uint8_t>(side)));
+			return m_margin[index];
+		}
+
+		[[nodiscard]] inline auto getMargin() const noexcept -> const Margin&
+		{
+			return m_margin;
+		}
+
+		template<Side sides>
+		inline auto setPadding(this auto&& self, std::size_t value) noexcept -> decltype(auto)
+		{
+			self.applySides(sides, [&](std::size_t index) {
+				self.m_padding[index] = value;
+			});
+			self.requestUpdate();
+			return self;
+		}
+
+		inline auto setPadding(this auto&& self, const Padding& padding) noexcept -> decltype(auto)
+		{
+			self.m_padding = padding;
+			self.requestUpdate();
+			return self;
+		}
+
+		template<Side side>
+		[[nodiscard]] inline auto getPadding() const noexcept -> std::size_t
+		{
+			constexpr auto index = static_cast<std::size_t>(std::countr_zero(static_cast<std::uint8_t>(side)));
+			return m_padding[index];
+		}
+
+		[[nodiscard]] inline auto getPadding() const noexcept -> const Padding&
+		{
+			return m_padding;
+		}
+
+		inline auto setBorderStyle(this auto&& self, const BorderStyle& borderStyle) noexcept -> decltype(auto)
+		{
+			self.m_borderStyle = borderStyle;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getBorderStyle() const noexcept -> const BorderStyle&
+		{
+			return m_borderStyle;
+		}
+
+		inline auto setSizePolicy(this auto&& self, SizePolicy policy) noexcept -> decltype(auto)
+		{
+			self.m_sizePolicy = policy;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getSizePolicy() const noexcept -> SizePolicy
+		{
+			return m_sizePolicy;
+		}
+
+		[[nodiscard]] inline constexpr auto hasSide(Side side) const noexcept -> bool
+		{
+			return (m_borderStyle.sides & side) != Side::None;
+		}
+
+		[[nodiscard]] inline auto getInnerViewport() const noexcept -> Viewport
+		{
+			const auto borderTop = hasSide(Side::Top) ? 1uz : 0uz;
+			const auto borderBottom = hasSide(Side::Bottom) ? 1uz : 0uz;
+			const auto borderLeft = hasSide(Side::Left) ? 1uz : 0uz;
+			const auto borderRight = hasSide(Side::Right) ? 1uz : 0uz;
+
+			const auto innerX = m_margin.left() + borderLeft + m_padding.left();
+			const auto innerY = m_margin.top() + borderTop + m_padding.top();
+			const auto totalHorizontalSpacing = innerX + m_margin.right() + borderRight + m_padding.right();
+			const auto totalVerticalSpacing = innerY + m_margin.bottom() + borderBottom + m_padding.bottom();
+
+			const auto innerWidth = (m_size.width() > totalHorizontalSpacing) ? m_size.width() - totalHorizontalSpacing : 0uz;
+			const auto innerHeight = (m_size.height() > totalVerticalSpacing) ? m_size.height() - totalVerticalSpacing : 0uz;
+
+			return Viewport{CppUtils::Container::Size2{innerWidth, innerHeight}, CppUtils::Container::Size2{innerX, innerY}};
+		}
+
+		inline auto draw(WritableAreaView& view) noexcept -> void override
+		{
+			const auto width = m_size.width();
+			const auto height = m_size.height();
+
+			if (width == 0uz or height == 0uz or m_borderStyle.sides == Side::None)
+				return;
+
+			const auto hasTop = hasSide(Side::Top);
+			const auto hasBottom = hasSide(Side::Bottom);
+			const auto hasLeft = hasSide(Side::Left);
+			const auto hasRight = hasSide(Side::Right);
+
+			const auto boxStartX = m_margin.left();
+			const auto boxStartY = m_margin.top();
+			const auto boxWidth = (width > m_margin.left() + m_margin.right()) ? width - m_margin.left() - m_margin.right() : 0uz;
+			const auto boxHeight = (height > m_margin.top() + m_margin.bottom()) ? height - m_margin.top() - m_margin.bottom() : 0uz;
+
+			if (boxWidth == 0uz or boxHeight == 0uz)
+				return;
+
+			const auto startX = boxStartX + (hasLeft ? 1uz : 0uz);
+			const auto endX = boxStartX + ((hasRight and boxWidth > 0uz) ? boxWidth - 1uz : boxWidth);
+			const auto startY = boxStartY + (hasTop ? 1uz : 0uz);
+			const auto endY = boxStartY + ((hasBottom and boxHeight > 0uz) ? boxHeight - 1uz : boxHeight);
+
+			if (hasTop and startX < endX)
+				drawLine(view, {startX, boxStartY}, {endX - 1uz, boxStartY}, m_borderStyle.top);
+
+			if (hasBottom and startX < endX)
+				drawLine(view, {startX, boxStartY + boxHeight - 1uz}, {endX - 1uz, boxStartY + boxHeight - 1uz}, m_borderStyle.bottom);
+
+			if (hasLeft and startY < endY)
+				drawLine(view, {boxStartX, startY}, {boxStartX, endY - 1uz}, m_borderStyle.left);
+
+			if (hasRight and startY < endY)
+				drawLine(view, {boxStartX + boxWidth - 1uz, startY}, {boxStartX + boxWidth - 1uz, endY - 1uz}, m_borderStyle.right);
+
+			if (hasTop and hasLeft)
+				view.setChar({boxStartX, boxStartY}, m_borderStyle.topLeft);
+			if (hasTop and hasRight)
+				view.setChar({boxStartX + boxWidth - 1uz, boxStartY}, m_borderStyle.topRight);
+			if (hasBottom and hasLeft)
+				view.setChar({boxStartX, boxStartY + boxHeight - 1uz}, m_borderStyle.bottomLeft);
+			if (hasBottom and hasRight)
+				view.setChar({boxStartX + boxWidth - 1uz, boxStartY + boxHeight - 1uz}, m_borderStyle.bottomRight);
+		}
+
+	protected:
+		Container::Size2<> m_size;
+		PositionType m_positionType = PositionType::Relative;
+		Position m_position;
+		int m_zIndex = 0;
+		Margin m_margin;
+		Padding m_padding;
+		BorderStyle m_borderStyle;
+		SizePolicy m_sizePolicy;
+	};
+}

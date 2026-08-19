@@ -25,6 +25,7 @@ export namespace CppUtils::Thread
 			TimePoint time;
 			Task task;
 			std::atomic_bool cancelled = false;
+			const void* owner = nullptr;
 		};
 
 		struct Compare final
@@ -45,6 +46,7 @@ export namespace CppUtils::Thread
 
 			Set set;
 			Map map;
+			std::vector<std::shared_ptr<Item>> activeItems;
 			std::size_t processingTasks = 0;
 		};
 
@@ -85,20 +87,20 @@ export namespace CppUtils::Thread
 			cancelAll();
 		}
 
-		inline auto schedule(Task task, TimePoint when) -> std::size_t
+		inline auto schedule(Task task, TimePoint when, const void* owner = nullptr) -> std::size_t
 		{
-			auto item = std::make_shared<Item>(m_nextId.fetch_add(1, std::memory_order_relaxed), when, std::move(task));
+			auto item = std::make_shared<Item>(m_nextId.fetch_add(1, std::memory_order_relaxed), when, std::move(task), false, owner);
 			auto accessor = m_items.access();
-			auto& [set, map, processingTasks] = accessor.value();
+			auto& [set, map, activeItems, processingTasks] = accessor.value();
 			set.insert(item);
 			map.emplace(item->id, item);
 			m_workCondition.notify_all();
 			return item->id;
 		}
 
-		inline auto schedule(Task task, Chrono::Duration auto delay) -> std::size_t
+		inline auto schedule(Task task, Chrono::Duration auto delay, const void* owner = nullptr) -> std::size_t
 		{
-			return schedule(std::move(task), Clock::now() + delay);
+			return schedule(std::move(task), Clock::now() + delay, owner);
 		}
 
 		inline auto waitUntilFinished() -> void
@@ -122,7 +124,7 @@ export namespace CppUtils::Thread
 				auto tasksToRun = std::vector<std::shared_ptr<Item>>{};
 				{
 					auto accessor = m_items.access();
-					auto& [set, map, processingTasks] = accessor.value();
+					auto& [set, map, activeItems, processingTasks] = accessor.value();
 
 					if (std::ranges::empty(set))
 					{
@@ -150,7 +152,7 @@ export namespace CppUtils::Thread
 		inline auto cancel(std::size_t id) -> void
 		{
 			auto accessor = m_items.access();
-			auto& [set, map, processingTasks] = accessor.value();
+			auto& [set, map, activeItems, processingTasks] = accessor.value();
 			if (auto it = map.find(id); it != std::ranges::end(map))
 			{
 				it->second->cancelled = true;
@@ -161,11 +163,45 @@ export namespace CppUtils::Thread
 			}
 		}
 
+		inline auto cancelOwner(const void* owner) -> void
+		{
+			if (owner == nullptr)
+				return;
+
+			auto accessor = m_items.access();
+			auto& [set, map, activeItems, processingTasks] = accessor.value();
+
+			for (auto it = std::ranges::begin(map); it != std::ranges::end(map);)
+				if (it->second->owner == owner)
+				{
+					it->second->cancelled = true;
+					set.erase(it->second);
+					it = map.erase(it);
+				}
+				else
+					++it;
+
+			for (auto& item : activeItems)
+				if (item->owner == owner)
+					item->cancelled = true;
+
+			m_finishedCondition.wait(accessor.getLockGuard(), [&] {
+				return std::ranges::none_of(activeItems, [&](const auto& item) {
+					return item->owner == owner;
+				});
+			});
+
+			m_workCondition.notify_all();
+			m_finishedCondition.notify_all();
+		}
+
 		inline auto cancelAll() -> void
 		{
 			auto accessor = m_items.access();
-			auto& [set, map, processingTasks] = accessor.value();
+			auto& [set, map, activeItems, processingTasks] = accessor.value();
 			for (auto& [_, item] : map)
+				item->cancelled = true;
+			for (auto& item : activeItems)
 				item->cancelled = true;
 			map.clear();
 			set.clear();
@@ -179,7 +215,7 @@ export namespace CppUtils::Thread
 			auto tasksToRun = std::vector<std::shared_ptr<Item>>{};
 			{
 				auto accessor = m_items.access();
-				auto& [set, map, processingTasks] = accessor.value();
+				auto& [set, map, activeItems, processingTasks] = accessor.value();
 
 				if (std::ranges::empty(set))
 					m_workCondition.wait(accessor.getLockGuard(), [this, &set] {
@@ -219,9 +255,20 @@ export namespace CppUtils::Thread
 		{
 			for (auto&& item : tasks)
 			{
+				{
+					auto accessor = m_items.access();
+					accessor.value().activeItems.push_back(item);
+				}
+
 				try
 				{
-					m_threadPool.call([item] {
+					m_threadPool.call([this, item] {
+						auto scope = Execution::ScopeGuard{[this, &item] {
+							auto accessor = m_items.access();
+							std::erase(accessor.value().activeItems, item);
+							m_finishedCondition.notify_all();
+						}};
+
 						if (not item->cancelled)
 							std::invoke(item->task);
 					});
@@ -229,6 +276,7 @@ export namespace CppUtils::Thread
 				catch (...)
 				{
 					auto accessor = m_items.access();
+					std::erase(accessor.value().activeItems, item);
 					if (--accessor.value().processingTasks == 0)
 						m_finishedCondition.notify_all();
 				}

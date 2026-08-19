@@ -14,40 +14,67 @@ export namespace CppUtils::Terminal
 		Filled
 	};
 
-	inline auto drawLine(WritableAreaView& view, const Container::Size2& start, const Container::Size2& end, const CharCell& c) -> void
+	inline auto drawLine(WritableAreaView& view, const Container::Size2<>& start, const Container::Size2<>& end, const CharCell& c) -> void
 	{
-		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_de_segment_de_Bresenham
-		auto x0 = static_cast<int>(start.x());
-		auto y0 = static_cast<int>(start.y());
-		const auto x1 = static_cast<int>(end.x());
-		const auto y1 = static_cast<int>(end.y());
+		{
+			const auto startX = start.x();
+			const auto startY = start.y();
+			const auto endX = end.x();
+			const auto endY = end.y();
 
-		const auto deltaX = std::abs(x1 - x0);
-		const auto deltaY = -std::abs(y1 - y0);
-		const auto stepX = x0 < x1 ? 1 : -1;
-		const auto stepY = y0 < y1 ? 1 : -1;
+			if (startY == endY)
+			{
+				const auto minX = std::ranges::min(startX, endX);
+				const auto maxX = std::ranges::max(startX, endX);
+				for (auto x = minX; x <= maxX; ++x)
+					view.setChar({x, startY}, c);
+				return;
+			}
+
+			if (startX == endX)
+			{
+				const auto minY = std::ranges::min(startY, endY);
+				const auto maxY = std::ranges::max(startY, endY);
+				for (auto y = minY; y <= maxY; ++y)
+					view.setChar({startX, y}, c);
+				return;
+			}
+		}
+
+		auto startX = static_cast<int>(start.x());
+		auto startY = static_cast<int>(start.y());
+		const auto endX = static_cast<int>(end.x());
+		const auto endY = static_cast<int>(end.y());
+
+		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_de_segment_de_Bresenham
+		const auto deltaX = std::abs(endX - startX);
+		const auto deltaY = -std::abs(endY - startY);
+		const auto stepX = startX < endX ? 1 : -1;
+		const auto stepY = startY < endY ? 1 : -1;
 		auto drift = deltaX + deltaY;
 
 		while (true)
 		{
-			view.setChar({static_cast<std::size_t>(x0), static_cast<std::size_t>(y0)}, c);
-			if (x0 == x1 and y0 == y1)
+			if (startX >= 0 and startY >= 0)
+				view.setChar({static_cast<std::size_t>(startX), static_cast<std::size_t>(startY)}, c);
+
+			if (startX == endX and startY == endY)
 				break;
-			auto doubleDrift = 2 * drift;
+			const auto doubleDrift = 2 * drift;
 			if (doubleDrift >= deltaY)
 			{
 				drift += deltaY;
-				x0 += stepX;
+				startX += stepX;
 			}
 			if (doubleDrift <= deltaX)
 			{
 				drift += deltaX;
-				y0 += stepY;
+				startY += stepY;
 			}
 		}
 	}
 
-	inline auto drawRectangle(WritableAreaView& view, const Container::Size2& topLeft, const Container::Size2& size, PrimitiveStyle style, const CharCell& c) -> void
+	inline auto drawRectangle(WritableAreaView& view, const Container::Size2<>& topLeft, const Container::Size2<>& size, PrimitiveStyle style, const CharCell& c) -> void
 	{
 		if (size.width() == 0 or size.height() == 0)
 			return;
@@ -74,7 +101,7 @@ export namespace CppUtils::Terminal
 					view.setChar({currentX, currentY}, c);
 	}
 
-	inline auto drawCircle(WritableAreaView& view, const Container::Size2& center, std::size_t radius, PrimitiveStyle style, const CharCell& c) -> void
+	inline auto drawCircle(WritableAreaView& view, const Container::Size2<>& center, std::size_t radius, PrimitiveStyle style, const CharCell& c) -> void
 	{
 		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_d%27arc_de_cercle_de_Bresenham
 		auto centerX = static_cast<int>(center.x());
@@ -128,21 +155,21 @@ export namespace CppUtils::Terminal
 		}
 	}
 
-	inline auto drawEllipse(WritableAreaView& view, const Container::Size2& p1, const Container::Size2& p2, PrimitiveStyle style, const CharCell& c) -> void
+	inline auto drawEllipse(WritableAreaView& view, const Container::Size2<>& start, const Container::Size2<>& end, PrimitiveStyle style, const CharCell& c) -> void
 	{
 		// https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_d%27arc_de_cercle_de_Bresenham
-		auto x0 = static_cast<int>(p1.x());
-		auto y0 = static_cast<int>(p1.y());
-		auto x1 = static_cast<int>(p2.x());
-		auto y1 = static_cast<int>(p2.y());
+		auto startX = static_cast<int>(start.x());
+		auto startY = static_cast<int>(start.y());
+		auto endX = static_cast<int>(end.x());
+		auto endY = static_cast<int>(end.y());
 
-		if (x0 > x1)
-			std::ranges::swap(x0, x1);
-		if (y0 > y1)
-			std::ranges::swap(y0, y1);
+		if (startX > endX)
+			std::ranges::swap(startX, endX);
+		if (startY > endY)
+			std::ranges::swap(startY, endY);
 
-		auto width = std::abs(x1 - x0);
-		auto height = std::abs(y1 - y0);
+		auto width = std::abs(endX - startX);
+		auto height = std::abs(endY - startY);
 		auto isHeightOdd = height & 1;
 
 		auto deltaX = 4 * (1.0 - width) * height * height;
@@ -150,8 +177,8 @@ export namespace CppUtils::Terminal
 		auto drift = deltaX + deltaY + isHeightOdd * width * width;
 		auto doubleDrift = 0.0;
 
-		y0 += (height + 1) / 2;
-		y1 = y0 - isHeightOdd;
+		startY += (height + 1) / 2;
+		endY = startY - isHeightOdd;
 		width *= 8 * width;
 		isHeightOdd = 8 * height * height;
 
@@ -164,52 +191,52 @@ export namespace CppUtils::Terminal
 		{
 			if (style == PrimitiveStyle::Outline)
 			{
-				drawPoint(x1, y0);
-				drawPoint(x0, y0);
-				drawPoint(x0, y1);
-				drawPoint(x1, y1);
+				drawPoint(endX, startY);
+				drawPoint(startX, startY);
+				drawPoint(startX, endY);
+				drawPoint(endX, endY);
 			}
 			else
-				for (auto x = x0; x <= x1; ++x)
+				for (auto x = startX; x <= endX; ++x)
 				{
-					drawPoint(x, y0);
-					drawPoint(x, y1);
+					drawPoint(x, startY);
+					drawPoint(x, endY);
 				}
 
 			doubleDrift = 2 * drift;
 			if (doubleDrift <= deltaY)
 			{
-				++y0;
-				--y1;
+				++startY;
+				--endY;
 				drift += deltaY += width;
 			}
 			if (doubleDrift >= deltaX || 2 * drift > deltaY)
 			{
-				++x0;
-				--x1;
+				++startX;
+				--endX;
 				drift += deltaX += isHeightOdd;
 			}
 		}
-		while (x0 <= x1);
+		while (startX <= endX);
 
-		while (y0 - y1 < height)
+		while (startY - endY < height)
 		{
 			if (style == PrimitiveStyle::Outline)
 			{
-				drawPoint(x0 - 1, y0);
-				drawPoint(x1 + 1, y0++);
-				drawPoint(x0 - 1, y1);
-				drawPoint(x1 + 1, y1--);
+				drawPoint(startX - 1, startY);
+				drawPoint(endX + 1, startY++);
+				drawPoint(startX - 1, endY);
+				drawPoint(endX + 1, endY--);
 			}
 			else
 			{
-				for (auto x = x0 - 1; x <= x1 + 1; ++x)
+				for (auto x = startX - 1; x <= endX + 1; ++x)
 				{
-					drawPoint(x, y0);
-					drawPoint(x, y1);
+					drawPoint(x, startY);
+					drawPoint(x, endY);
 				}
-				++y0;
-				--y1;
+				++startY;
+				--endY;
 			}
 		}
 	}

@@ -1,0 +1,96 @@
+export module CppUtils.UnitTests.Terminal.Text;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Terminal::Text
+{
+	auto _ = TestSuite{"Terminal/Text", {"Terminal/Canvas", "Terminal/Element"}, [](TestSuite& suite) {
+		suite.addTest("WordWrap", [&] {
+			const auto size = CppUtils::Container::Size2{10, 3};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			canvas.newWidget<CppUtils::Terminal::Text>(size, "Hello World!", CppUtils::Terminal::Alignment::Begin);
+
+			canvas.print();
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({0, 0}).character, U'H');
+				suite.expectEqual(accessor->getChar({0, 1}).character, U'W');
+				suite.expectEqual(accessor->getChar({0, 2}).character, U' ');
+			}
+		});
+
+		suite.addTest("NoWordWrap", [&] {
+			const auto size = CppUtils::Container::Size2{10, 2};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			canvas.newWidget<CppUtils::Terminal::Text>(
+				size,
+				"Hello World!",
+				CppUtils::Terminal::Alignment::Begin,
+				CppUtils::Terminal::Text::WordWrap::None,
+				CppUtils::Terminal::Text::Overflow::Clip);
+
+			canvas.print();
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({0, 0}).character, U'H');
+				suite.expectEqual(accessor->getChar({6, 0}).character, U'W');
+				suite.expectEqual(accessor->getChar({9, 0}).character, U'l');
+				suite.expectEqual(accessor->getChar({0, 1}).character, U' ');
+			}
+		});
+
+		suite.addTest("OverflowEllipsis", [&] {
+			const auto size = CppUtils::Container::Size2{10, 2};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			canvas.newWidget<CppUtils::Terminal::Text>(size, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", CppUtils::Terminal::Alignment::Begin);
+
+			canvas.print();
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({5, 1}).character, U'…');
+			}
+		});
+
+		suite.addTest("OverflowClip", [&] {
+			const auto size = CppUtils::Container::Size2{10, 1};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			canvas.newWidget<CppUtils::Terminal::Text>(
+				size,
+				"Lorem ipsum dolor",
+				CppUtils::Terminal::Alignment::Begin,
+				CppUtils::Terminal::Text::WordWrap::None,
+				CppUtils::Terminal::Text::Overflow::Clip);
+
+			canvas.print();
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({9, 0}).character, U'u');
+			}
+		});
+
+		suite.addTest("Alignments", [&] {
+			const auto size = CppUtils::Container::Size2{10, 3};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			canvas.newWidget<CppUtils::Terminal::Text>(size, "Hi", CppUtils::Terminal::Alignment::Center)
+				.setVerticalAlignment(CppUtils::Terminal::Alignment::Center);
+
+			canvas.print();
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({4, 1}).character, U'H');
+				suite.expectEqual(accessor->getChar({5, 1}).character, U'i');
+			}
+		});
+	}};
+}

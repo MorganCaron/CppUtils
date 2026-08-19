@@ -100,6 +100,25 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 			suite.expectEqual(number.load(), 0uz);
 		});
 
+		suite.addTest("Cancel tasks by owner", [&] {
+			auto scheduler = CppUtils::Thread::Scheduler{};
+			auto number1 = std::atomic_size_t{0};
+			auto number2 = std::atomic_size_t{0};
+
+			auto dummyOwner1 = 1;
+			auto dummyOwner2 = 2;
+
+			scheduler.schedule([&number1] { ++number1; }, 200ms, &dummyOwner1);
+			scheduler.schedule([&number2] { ++number2; }, 200ms, &dummyOwner2);
+
+			scheduler.cancelOwner(&dummyOwner1);
+
+			scheduler.waitUntilFinished();
+
+			suite.expectEqual(number1.load(), 0uz);
+			suite.expectEqual(number2.load(), 1uz);
+		});
+
 		suite.addTest("Order of execution", [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto executionOrder = std::vector<std::size_t>{};

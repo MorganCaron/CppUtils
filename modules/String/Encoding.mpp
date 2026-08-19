@@ -276,4 +276,38 @@ export namespace CppUtils::String
 
 	static_assert(getDisplayWidth(std::u32string_view{U"⚽"}) == 2);
 	static_assert(getDisplayWidth(std::u32string_view{U"😊"}) == 2);
+
+	[[nodiscard]] inline constexpr auto getDisplayWidth(std::string_view text) -> std::size_t
+	{
+		auto width = 0uz;
+		for (auto offset = 0uz; offset < std::ranges::size(text);)
+		{
+			auto [codePoint, length] = toUtf32(text.substr(offset));
+			if (length == 0uz)
+				break;
+			width += getDisplayWidth(codePoint);
+			offset += length;
+		}
+		return width;
+	}
+
+	static_assert(getDisplayWidth("Hello World") == 11uz);
+	static_assert(getDisplayWidth("🐊") == 2uz);
+
+	[[nodiscard]] inline constexpr auto getCharCount(std::string_view text) -> std::size_t
+	{
+		auto count = 0uz;
+		for (auto offset = 0uz; offset < std::ranges::size(text);)
+		{
+			auto [codePoint, length] = toUtf32(text.substr(offset));
+			if (length == 0uz)
+				break;
+			offset += length;
+			++count;
+		}
+		return count;
+	}
+
+	static_assert(getCharCount("Hello World") == 11uz);
+	static_assert(getCharCount("🐊") == 1uz);
 }

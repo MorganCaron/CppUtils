@@ -1,0 +1,207 @@
+export module CppUtils.Terminal.AutoScroll;
+
+import std;
+import CppUtils.Container.Size;
+import CppUtils.Terminal.Area;
+import CppUtils.Terminal.AreaBuffer;
+import CppUtils.Terminal.Container;
+import CppUtils.Terminal.CharCell;
+import CppUtils.Terminal.Mouse;
+
+export namespace CppUtils::Terminal
+{
+	class AutoScroll final: public Container
+	{
+	public:
+		enum class Direction : std::uint8_t
+		{
+			Horizontal,
+			Vertical
+		};
+
+		explicit inline AutoScroll(
+			const CppUtils::Container::Size2<>& size = {0, 0},
+			std::unique_ptr<Widget> widget = nullptr,
+			Direction direction = Direction::Horizontal,
+			std::chrono::milliseconds interval = std::chrono::milliseconds{100},
+			Margin margin = {},
+			Padding padding = {},
+			BorderStyle borderStyle = {}):
+			Container{size, std::move(widget), PositionType::Relative, margin, padding, borderStyle},
+			m_direction{direction},
+			m_interval{interval}
+		{}
+
+		inline auto setScrollOffset(this auto&& self, std::size_t offset) noexcept -> decltype(auto)
+		{
+			self.m_scrollOffset = offset;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getScrollOffset() const noexcept -> std::size_t
+		{
+			return m_scrollOffset;
+		}
+
+		inline auto setDirection(this auto&& self, Direction direction) noexcept -> decltype(auto)
+		{
+			self.m_direction = direction;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getDirection() const noexcept -> Direction
+		{
+			return m_direction;
+		}
+
+		inline auto setInterval(this auto&& self, std::chrono::milliseconds interval) noexcept -> decltype(auto)
+		{
+			self.m_interval = interval;
+			return self;
+		}
+
+		[[nodiscard]] inline auto getInterval() const noexcept -> std::chrono::milliseconds
+		{
+			return m_interval;
+		}
+
+		inline auto startAutoScroll(this auto&& self) -> decltype(auto)
+		{
+			self.m_running = true;
+			self.scheduleNextStep();
+			return self;
+		}
+
+		inline auto stopAutoScroll(this auto&& self) -> decltype(auto)
+		{
+			self.m_running = false;
+			return self;
+		}
+
+		[[nodiscard]] inline auto isAutoScrolling() const noexcept -> bool
+		{
+			return m_running;
+		}
+
+		inline auto setScrollOnHover(this auto&& self, bool scrollOnHover = true) noexcept -> decltype(auto)
+		{
+			self.m_scrollOnHover = scrollOnHover;
+			return self;
+		}
+
+		[[nodiscard]] inline auto isScrollOnHover() const noexcept -> bool
+		{
+			return m_scrollOnHover;
+		}
+
+		inline auto onMouseEvent(const Mouse::Event& event) -> bool override
+		{
+			if (m_scrollOnHover)
+			{
+				const auto size = getSize();
+				if (const auto isHovered = (event.relativePosition.x() < size.width() and event.relativePosition.y() < size.height());
+					isHovered != m_isHovered)
+				{
+					m_isHovered = isHovered;
+					if (m_isHovered)
+					{
+						if (m_widget)
+						{
+							const auto elementSize = m_widget->getSize();
+							const auto viewportSize = getSize();
+							const auto overflows = (m_direction == Direction::Horizontal) ? elementSize.width() > viewportSize.width() : elementSize.height() > viewportSize.height();
+							if (overflows and not m_running)
+								startAutoScroll();
+						}
+					}
+					else
+					{
+						if (m_running)
+							stopAutoScroll();
+						m_scrollOffset = 0uz;
+						requestUpdate();
+					}
+				}
+			}
+			return Container::onMouseEvent(event);
+		}
+
+		inline auto draw(WritableAreaView& view) noexcept -> void final
+		{
+			Element::draw(view);
+
+			if (not m_widget)
+				return;
+
+			const auto viewportSize = getSize();
+			if (viewportSize.width() == 0uz or viewportSize.height() == 0uz)
+				return;
+
+			const auto widgetSize = m_widget->getSize();
+			auto bufferResized = false;
+			if (auto accessor = m_fullContentArea.getBuffer().uniqueAccess();
+				accessor->getSize() != widgetSize)
+			{
+				accessor->setSize(widgetSize);
+				m_fullContentArea.setViewport(Viewport{widgetSize});
+				bufferResized = true;
+			}
+
+			if (bufferResized or m_widget->needUpdate())
+			{
+				auto fullContentAreaView = m_fullContentArea.getWritableView();
+				m_widget->draw(fullContentAreaView);
+			}
+
+			const auto accessor = m_fullContentArea.getBuffer().sharedAccess();
+			const auto contentSize = accessor->getSize();
+			const auto scrollPosition = (m_direction == Direction::Horizontal) ? CppUtils::Container::Size2{m_scrollOffset, 0uz} : CppUtils::Container::Size2{0uz, m_scrollOffset};
+
+			Viewport{viewportSize}.forEach([&](const auto& position) {
+				const auto sourcePosition = position + scrollPosition;
+				if (sourcePosition.x() < contentSize.width() and sourcePosition.y() < contentSize.height())
+					view.setChar(position, accessor->getChar(sourcePosition));
+				else
+					view.setChar(position, CharCell{U' '});
+			});
+
+			drawFinished();
+		}
+
+	private:
+		inline auto scheduleNextStep() -> void
+		{
+			if (not m_running or not hasWidgetManager())
+				return;
+
+			getWidgetManager().scheduler.schedule([this]() -> void {
+				if (not m_running or not hasWidgetManager())
+					return;
+
+				if (m_widget)
+				{
+					const auto elementSize = m_widget->getSize();
+					const auto viewportSize = getSize();
+					const auto totalDistance = (m_direction == Direction::Horizontal) ? elementSize.width() + viewportSize.width() : elementSize.height() + viewportSize.height();
+					if (totalDistance > 0uz and m_scrollOffset >= totalDistance)
+						m_scrollOffset = 0uz;
+					else
+						++m_scrollOffset;
+				}
+
+				requestUpdate();
+				scheduleNextStep();
+			}, m_interval, this);
+		}
+
+		Area m_fullContentArea{{0, 0}};
+		Direction m_direction = Direction::Horizontal;
+		std::size_t m_scrollOffset = 0uz;
+		std::chrono::milliseconds m_interval{100};
+		bool m_running = false;
+		bool m_scrollOnHover = false;
+		bool m_isHovered = false;
+	};
+}

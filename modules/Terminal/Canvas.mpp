@@ -24,8 +24,12 @@ export namespace CppUtils::Terminal
 		using Area::draw;
 
 	public:
-		inline Canvas(const Container::Size2& size = getTerminalSize(), const std::optional<Viewport>& optionalViewport = std::nullopt):
+		explicit inline Canvas(
+			const Container::Size2<>& size = getTerminalSize(),
+			const std::optional<Viewport>& optionalViewport = std::nullopt,
+			bool clearOnClose = false):
 			Area{size, optionalViewport.value_or(Viewport{size, {0, 0}})},
+			m_clearOnClose{clearOnClose},
 			m_previousBuffer{size}
 		{
 			m_widgetManager.eventDispatcher.subscribe<"RequestUpdate">([this] {
@@ -36,6 +40,23 @@ export namespace CppUtils::Terminal
 			enableAnsi();
 		}
 
+		inline ~Canvas() noexcept
+		{
+			if (m_clearOnClose and not m_firstPrint)
+			{
+				const auto terminalSize = getTerminalSize();
+				const auto viewportSize = m_viewport.getSize();
+				const auto startLine = terminalSize.height() > viewportSize.height() ? terminalSize.height() - viewportSize.height() - 1 : 0;
+				for (auto y = 0uz; y < viewportSize.height(); ++y)
+				{
+					setCursorPosition({0, startLine + y});
+					std::print("\x1b[2K");
+				}
+				setCursorPosition({0, startLine});
+				std::fflush(stdout);
+			}
+		}
+
 		inline auto applyDifferences() noexcept -> void
 		{
 			using namespace std::literals;
@@ -43,13 +64,27 @@ export namespace CppUtils::Terminal
 
 			const auto terminalSize = getTerminalSize();
 			const auto viewportSize = m_viewport.getSize();
+			if (viewportSize.width() == 0 or viewportSize.height() == 0)
+				return;
+
 			const auto startLine = terminalSize.height() > viewportSize.height() ? terminalSize.height() - viewportSize.height() - 1 : 0;
 			auto stringBuffer = ""s;
 			auto needFlush = false;
 			auto lastAttributes = CharAttributes{};
+			auto previousAccessor = m_previousBuffer.uniqueAccess();
+			auto currentAccessor = m_buffer.sharedAccess();
+
+			auto flushBuffer = [&]() noexcept {
+				if (std::ranges::empty(stringBuffer))
+					return;
+				std::fwrite(std::ranges::data(stringBuffer), sizeof(decltype(stringBuffer)::value_type), std::ranges::size(stringBuffer), stdout);
+				stringBuffer.clear();
+				needFlush = true;
+			};
+
 			m_viewport.forEach([&](const auto& position) noexcept {
-				const auto& currentChar = getChar(position);
-				const auto& previousChar = m_previousBuffer.getChar(position);
+				const auto& currentChar = currentAccessor->getChar(position);
+				const auto& previousChar = previousAccessor->getChar(position);
 
 				const auto& currentAttributes = currentChar.attributes;
 				const auto& previousAttributes = previousChar.attributes;
@@ -60,14 +95,18 @@ export namespace CppUtils::Terminal
 					or currentAttributes.textColor != previousAttributes.textColor
 					or currentAttributes.backgroundColor != previousAttributes.backgroundColor;
 
-				const auto needUpdateTextStyle = currentAttributes.textStyle != lastAttributes.textStyle;
-				const auto needUpdateTextColor = currentAttributes.textColor != lastAttributes.textColor;
-				const auto needUpdateBackgroundColor = currentAttributes.backgroundColor != lastAttributes.backgroundColor;
-
 				if (cellChanged)
 				{
-					if (std::ranges::empty(stringBuffer))
+					if (std::ranges::empty(stringBuffer) or position.x() == 0)
+					{
+						flushBuffer();
 						setCursorPosition({position.x(), startLine + position.y()});
+					}
+
+					const auto needUpdateTextStyle = currentAttributes.textStyle != lastAttributes.textStyle;
+					const auto needUpdateTextColor = currentAttributes.textColor != lastAttributes.textColor;
+					const auto needUpdateBackgroundColor = currentAttributes.backgroundColor != lastAttributes.backgroundColor;
+
 					if (needUpdateTextStyle)
 					{
 						stringBuffer += TextStyle::getTextStyleCode(currentAttributes.textStyle);
@@ -85,32 +124,33 @@ export namespace CppUtils::Terminal
 					}
 					if (currentChar.displayWidth > 0)
 						stringBuffer = String::toUtf8(currentChar.character, std::move(stringBuffer));
-					m_previousBuffer.setChar(position, currentChar);
-					if (not std::ranges::empty(stringBuffer) and position.x() + 1 == viewportSize.width())
-						stringBuffer += '\n';
+					previousAccessor->setChar(position, currentChar);
 				}
-				else if (not std::ranges::empty(stringBuffer))
-				{
-					std::fwrite(std::ranges::data(stringBuffer), sizeof(decltype(stringBuffer)::value_type), std::ranges::size(stringBuffer), stdout);
-					stringBuffer.clear();
-					needFlush = true;
-				}
+				else
+					flushBuffer();
 			});
-			if (not std::ranges::empty(stringBuffer))
-			{
-				std::fwrite(std::ranges::data(stringBuffer), sizeof(decltype(stringBuffer)::value_type), std::ranges::size(stringBuffer), stdout);
-				needFlush = true;
-			}
+
+			flushBuffer();
 			if (needFlush)
 				std::fflush(stdout);
+
+			if (const auto endLine = startLine + viewportSize.height();
+				endLine < terminalSize.height())
+				setCursorPosition({0, endLine});
+			else
 			{
 				const auto terminalHeight = getTerminalSize().height();
 				setCursorPosition({0, terminalHeight > 0 ? terminalHeight - 1 : 0});
+				std::fwrite("\n", sizeof(char), 1, stdout);
+				std::fflush(stdout);
 			}
 		}
 
 		inline auto print() noexcept -> void
 		{
+			if (m_viewport.getSize().width() == 0 or m_viewport.getSize().height() == 0)
+				return;
+
 			auto lock = std::scoped_lock{m_printMutex};
 			if (m_widget)
 			{
@@ -137,7 +177,27 @@ export namespace CppUtils::Terminal
 			m_stopEvent.notify_all();
 		}
 
-		[[nodiscard]] inline auto getAbsolutePosition() const noexcept -> Container::Size2
+		[[nodiscard]] inline auto toString() const -> std::string
+		{
+			using namespace std::literals;
+
+			auto result = ""s;
+			const auto size = getSize();
+			auto accessor = m_buffer.sharedAccess();
+			for (auto y = 0uz; y < size.height(); ++y)
+			{
+				for (auto x = 0uz; x < size.width(); ++x)
+				{
+					const auto cell = accessor->getChar({x, y});
+					if (cell.displayWidth > 0)
+						result = String::toUtf8(cell.character, std::move(result));
+				}
+				result += '\n';
+			}
+			return result;
+		}
+
+		[[nodiscard]] inline auto getAbsolutePosition() const noexcept -> Container::Size2<>
 		{
 			const auto terminalSize = getTerminalSize();
 			const auto viewportSize = m_viewport.getSize();
@@ -148,11 +208,11 @@ export namespace CppUtils::Terminal
 		inline auto onMouseEvent(const Mouse::Event& event) -> bool override
 		{
 			const auto canvasViewport = Viewport{getSize(), getAbsolutePosition()};
-			if (not canvasViewport.contains(event.position))
+			if (not canvasViewport.contains(event.absolutePosition))
 				return false;
 
 			auto translatedEvent = event;
-			translatedEvent.position -= canvasViewport.getPosition();
+			translatedEvent.relativePosition = event.absolutePosition - canvasViewport.getPosition();
 			return Area::onMouseEvent(translatedEvent);
 		}
 
@@ -160,6 +220,7 @@ export namespace CppUtils::Terminal
 		std::mutex m_printMutex;
 		bool m_firstPrint = true;
 		std::atomic_bool m_stopEvent = false;
+		bool m_clearOnClose = false;
 		DynamicAreaBuffer m_previousBuffer;
 		WidgetManager m_widgetManager;
 	};

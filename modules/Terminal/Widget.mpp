@@ -2,6 +2,8 @@ export module CppUtils.Terminal.Area:Widget;
 
 import std;
 
+import CppUtils.Container.Vec;
+
 import :WidgetManager;
 import :WritableAreaView;
 import CppUtils.Chrono.Concept;
@@ -10,16 +12,44 @@ import CppUtils.Terminal.Mouse;
 
 export namespace CppUtils::Terminal
 {
+	enum class Alignment : std::uint8_t
+	{
+		Begin,
+		Center,
+		End
+	};
+
+	struct Alignments: Container::Vec<2, Alignment>
+	{
+		inline constexpr Alignments() = default;
+		explicit inline constexpr Alignments(Alignment horizontal, Alignment vertical = Alignment::Begin):
+			Container::Vec<2, Alignment>{horizontal, vertical}
+		{}
+
+		[[nodiscard]] inline constexpr auto horizontal(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto vertical(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+	};
+
 	class Widget
 	{
 	public:
-		virtual ~Widget() = default;
-		[[nodiscard]] virtual auto getSize() const noexcept -> Container::Size2 = 0;
+		virtual inline ~Widget() noexcept
+		{
+			if (hasWidgetManager())
+				getWidgetManager().scheduler.cancelOwner(this);
+		}
+		[[nodiscard]] virtual auto getSize() const noexcept -> Container::Size2<> = 0;
 		virtual auto draw(WritableAreaView& view) noexcept -> void = 0;
 
 		inline virtual auto onMouseEvent([[maybe_unused]] const Mouse::Event& event) -> bool
 		{
 			return false;
+		}
+
+		template<std::derived_from<Widget> T, class... Args>
+		inline auto newWidget(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]], Args&&... args) -> T&
+		{
+			return self.addWidget(std::make_unique<T>(std::forward<Args>(args)...));
 		}
 
 		inline auto drawFinished() noexcept -> void
@@ -32,9 +62,10 @@ export namespace CppUtils::Terminal
 			return m_needUpdate;
 		}
 
-		virtual inline auto setWidgetManager(WidgetManager& widgetManager) noexcept -> void
+		inline auto setWidgetManager(WidgetManager& widgetManager) noexcept -> void
 		{
 			m_widgetManagerRef = widgetManager;
+			onWidgetManagerSet(widgetManager);
 		}
 
 		[[nodiscard]] inline auto getWidgetManager() -> WidgetManager&
@@ -57,13 +88,19 @@ export namespace CppUtils::Terminal
 			requestUpdateImpl(std::chrono::duration_cast<Thread::Scheduler::Clock::duration>(delay));
 		}
 
+	protected:
+		virtual inline auto onWidgetManagerSet([[maybe_unused]] WidgetManager& widgetManager) noexcept -> void {}
+
 	private:
 		inline auto requestUpdateImpl(Thread::Scheduler::Clock::duration delay) -> void
 		{
+			if (not hasWidgetManager())
+				return;
 			getWidgetManager().scheduler.schedule([this]() -> void {
 				m_needUpdate = true;
-				getWidgetManager().eventDispatcher.emit<"RequestUpdate">();
-			}, delay);
+				if (hasWidgetManager())
+					getWidgetManager().eventDispatcher.emit<"RequestUpdate">();
+			}, delay, this);
 		}
 
 		std::optional<std::reference_wrapper<WidgetManager>> m_widgetManagerRef = std::nullopt;

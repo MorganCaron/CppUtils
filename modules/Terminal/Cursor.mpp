@@ -15,7 +15,7 @@ import CppUtils.Terminal.Handle;
 export namespace CppUtils::Terminal
 {
 #if defined(OS_WINDOWS)
-	[[nodiscard]] inline auto getCursorPosition() -> std::expected<Container::Size2, std::string_view>
+	[[nodiscard]] inline auto getCursorPosition() -> std::expected<Container::Size2<>, std::string_view>
 	{
 		auto consoleScreenBufferInfo = CONSOLE_SCREEN_BUFFER_INFO{};
 		GetConsoleScreenBufferInfo(getTerminalHandle(stdout), std::addressof(consoleScreenBufferInfo));
@@ -24,7 +24,7 @@ export namespace CppUtils::Terminal
 			consoleScreenBufferInfo.dwCursorPosition.Y};
 	}
 #elif defined(OS_LINUX) or defined(OS_MACOS)
-	[[nodiscard]] inline auto getCursorPosition() -> std::expected<Container::Size2, std::string_view>
+	[[nodiscard]] inline auto getCursorPosition() -> std::expected<Container::Size2<>, std::string_view>
 	{
 		using namespace std::literals;
 
@@ -44,12 +44,12 @@ export namespace CppUtils::Terminal
 #endif
 
 #if defined(OS_WINDOWS)
-	inline auto setCursorPosition(Container::Size2 position) -> void
+	inline auto setCursorPosition(Container::Size2<> position) -> void
 	{
 		SetConsoleCursorPosition(getTerminalHandle(stdout), COORD{static_cast<SHORT>(position.x()), static_cast<SHORT>(position.y())});
 	}
 #elif defined(OS_LINUX) or defined(OS_MACOS)
-	inline auto setCursorPosition(Container::Size2 position) -> void
+	inline auto setCursorPosition(Container::Size2<> position) -> void
 	{
 		std::print(Ansi::EscapeCode::SetCursorPosition, position.y() + 1, position.x() + 1);
 	}

@@ -3,7 +3,6 @@ export module CppUtils.Container.MeshNetwork;
 import std;
 import CppUtils.Container.NetworkPtr;
 import CppUtils.Container.SafeShared;
-import CppUtils.Thread.UniqueLocker;
 import CppUtils.Thread.SharedLocker;
 import CppUtils.Thread.SharedPtr;
 import CppUtils.Type.Utility;
@@ -178,7 +177,7 @@ export namespace CppUtils::Container
 			{}
 
 		private:
-			[[nodiscard]] auto getVectorAccessor(this auto&& self [[lifetimebound]]) -> auto&
+			[[nodiscard]] auto getVectorAccessor(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) -> auto&
 			{
 				if (not self.m_vectorAccessor) [[unlikely]]
 				{
@@ -363,8 +362,8 @@ export namespace CppUtils::Container
 
 			static_assert(std::random_access_iterator<Iterator>);
 
-			[[nodiscard]] auto begin() const [[lifetimebound]] { return Iterator{this, 0uz}; }
-			[[nodiscard]] auto end() const [[lifetimebound]] { return Iterator{this, size()}; }
+			[[nodiscard]] auto begin() const [[clang::lifetimebound, msvc::lifetimebound]] { return Iterator{this, 0uz}; }
+			[[nodiscard]] auto end() const [[clang::lifetimebound, msvc::lifetimebound]] { return Iterator{this, size()}; }
 
 		private:
 			MeshNodePtr m_parent;
@@ -482,12 +481,12 @@ export namespace CppUtils::Container
 				m_node->uniqueAccess()->value.policy = std::move(policy);
 		}
 
-		[[nodiscard]] auto operator->(this auto&& self [[lifetimebound]])
+		[[nodiscard]] auto operator->(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]])
 		{
 			return std::addressof(std::forward_like<decltype(self)>(*self.m_node));
 		}
 
-		[[nodiscard]] auto operator*(this auto&& self [[lifetimebound]]) -> decltype(auto)
+		[[nodiscard]] auto operator*(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) -> decltype(auto)
 		{
 			return std::forward_like<decltype(self)>(*self.m_node);
 		}

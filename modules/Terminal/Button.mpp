@@ -3,42 +3,67 @@ export module CppUtils.Terminal.Button;
 import std;
 import CppUtils.Container.Size;
 import CppUtils.Terminal.Area;
+import CppUtils.Terminal.CharCell;
 import CppUtils.Terminal.CharAttributes;
 import CppUtils.Terminal.TextColor;
 import CppUtils.Terminal.BackgroundColor;
 import CppUtils.Terminal.Mouse;
+import CppUtils.Terminal.Element;
+import CppUtils.Terminal.Container;
 
 export namespace CppUtils::Terminal
 {
-	struct ButtonStyle
+	struct ButtonStyle final
 	{
 		CharAttributes normal = {TextColor::TextColorEnum::White, BackgroundColor::BackgroundColorEnum::Blue};
 		CharAttributes hovered = {TextColor::TextColorEnum::White, BackgroundColor::BackgroundColorEnum::Cyan};
 		CharAttributes pressed = {TextColor::TextColorEnum::White, BackgroundColor::BackgroundColorEnum::Black};
 	};
 
-	class Button: public Widget
+	class Button final: public Container
 	{
 	public:
-		inline Button(const Container::Size2& size, std::string text, std::function<void()> onClick = {}):
-			m_size{size},
-			m_text{std::move(text)},
+		explicit inline Button(
+			const CppUtils::Container::Size2<>& size,
+			std::unique_ptr<Widget> widget = nullptr,
+			std::function<void()> onClick = {},
+			Margin margin = {},
+			Padding padding = {},
+			BorderStyle borderStyle = {}):
+			Container{size, std::move(widget), PositionType::Relative, margin, padding, borderStyle},
 			m_onClick{std::move(onClick)}
-		{}
-
-		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 override
 		{
-			return m_size;
+			if (m_widget)
+				m_widget->requestUpdate();
 		}
 
-		inline auto setStyle(const ButtonStyle& style) noexcept -> void
+		inline auto setStyle(this auto&& self, const ButtonStyle& style) noexcept -> decltype(auto)
 		{
-			m_style = style;
-			requestUpdate();
+			self.m_style = style;
+			self.requestUpdate();
+			return self;
+		}
+
+		[[nodiscard]] inline auto getStyle() const noexcept -> const ButtonStyle&
+		{
+			return m_style;
+		}
+
+		inline auto setOnClick(this auto&& self, std::function<void()> onClick) noexcept -> decltype(auto)
+		{
+			self.m_onClick = std::move(onClick);
+			return self;
 		}
 
 		inline auto draw(WritableAreaView& view) noexcept -> void override
 		{
+			const auto size = getSize();
+			if (size.width() == 0uz or size.height() == 0uz)
+			{
+				drawFinished();
+				return;
+			}
+
 			auto attributes = m_style.normal;
 			if (m_isPressed)
 				attributes = m_style.pressed;
@@ -47,13 +72,16 @@ export namespace CppUtils::Terminal
 
 			view.fill(attributes);
 
-			if (not std::ranges::empty(m_text))
-			{
-				const auto textSize = std::ranges::size(m_text);
-				const auto x = (m_size.width() > textSize) ? (m_size.width() - textSize) / 2 : 0;
-				const auto y = m_size.height() / 2;
-				view.printText({x, y}, m_text, attributes);
-			}
+			Container::draw(view);
+
+			for (auto y = 0uz; y < size.height(); ++y)
+				for (auto x = 0uz; x < size.width(); ++x)
+				{
+					auto cell = view.getChar({x, y});
+					cell.attributes = attributes;
+					view.setChar({x, y}, cell);
+				}
+
 			drawFinished();
 		}
 
@@ -62,7 +90,8 @@ export namespace CppUtils::Terminal
 			const auto wasHovered = m_isHovered;
 			const auto wasPressed = m_isPressed;
 
-			m_isHovered = (event.position.x() < m_size.width() and event.position.y() < m_size.height());
+			const auto size = getSize();
+			m_isHovered = (event.relativePosition.x() < size.width() and event.relativePosition.y() < size.height());
 
 			if (m_isHovered)
 			{
@@ -81,6 +110,8 @@ export namespace CppUtils::Terminal
 			else
 				m_isPressed = false;
 
+			Container::onMouseEvent(event);
+
 			if (wasHovered != m_isHovered or wasPressed != m_isPressed)
 				requestUpdate();
 
@@ -88,8 +119,6 @@ export namespace CppUtils::Terminal
 		}
 
 	private:
-		Container::Size2 m_size;
-		std::string m_text;
 		std::function<void()> m_onClick;
 		ButtonStyle m_style;
 		bool m_isHovered = false;

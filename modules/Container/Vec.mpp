@@ -1,0 +1,178 @@
+module;
+
+#include <cassert>
+
+export module CppUtils.Container.Vec;
+
+import std;
+
+export namespace CppUtils::Container
+{
+	template<std::size_t N, class T>
+	requires (N > 0)
+	struct Vec
+	{
+		inline constexpr Vec() = default;
+
+		template<std::convertible_to<T>... Args>
+		requires (sizeof...(Args) == N)
+		inline constexpr Vec(Args&&... args):
+			m_values{static_cast<T>(std::forward<Args>(args))...}
+		{}
+
+		[[nodiscard]] inline constexpr auto operator[](this auto&& self [[clang::lifetimebound, msvc::lifetimebound]], std::size_t axis) noexcept -> decltype(auto)
+		{
+			assert(axis < N);
+			return self.m_values[axis];
+		}
+
+		[[nodiscard]] inline constexpr auto operator==(const Vec<N, T>& rhs) const noexcept -> bool
+		{
+			for (auto axis = 0uz; axis < N; ++axis)
+				if (m_values[axis] != rhs.m_values[axis])
+					return false;
+			return true;
+		}
+
+		inline constexpr auto apply(this auto&& self, auto&& function) noexcept -> decltype(auto)
+		{
+			for (auto axis = 0uz; axis < N; ++axis)
+				function(axis);
+			return self;
+		}
+
+		inline constexpr auto operator+=(this auto&& self, const Vec<N, T>& rhs) noexcept -> decltype(auto)
+		requires (std::is_arithmetic_v<T>)
+		{
+			return self.apply([&](std::size_t axis) { self.m_values[axis] += rhs[axis]; });
+		}
+
+		inline constexpr auto operator-=(this auto&& self, const Vec<N, T>& rhs) noexcept -> decltype(auto)
+		requires (std::is_arithmetic_v<T>)
+		{
+			return self.apply([&](std::size_t axis) { self.m_values[axis] -= rhs[axis]; });
+		}
+
+		inline constexpr auto operator*=(this auto&& self, T value) noexcept -> decltype(auto)
+		requires (std::is_arithmetic_v<T>)
+		{
+			return self.apply([&](std::size_t axis) { self.m_values[axis] *= value; });
+		}
+
+		inline constexpr auto operator/=(this auto&& self, T value) noexcept -> decltype(auto)
+		requires (std::is_arithmetic_v<T>)
+		{
+			return self.apply([&](std::size_t axis) { self.m_values[axis] /= value; });
+		}
+
+		[[nodiscard]] inline constexpr auto operator+(this auto&& self, const Vec<N, T>& rhs) noexcept -> std::remove_cvref_t<decltype(self)>
+		requires (std::is_arithmetic_v<T>)
+		{
+			auto result = self;
+			result += rhs;
+			return result;
+		}
+
+		[[nodiscard]] inline constexpr auto operator-(this auto&& self, const Vec<N, T>& rhs) noexcept -> std::remove_cvref_t<decltype(self)>
+		requires (std::is_arithmetic_v<T>)
+		{
+			auto result = self;
+			result -= rhs;
+			return result;
+		}
+
+		[[nodiscard]] inline constexpr auto operator*(this auto&& self, T value) noexcept -> std::remove_cvref_t<decltype(self)>
+		requires (std::is_arithmetic_v<T>)
+		{
+			auto result = self;
+			result *= value;
+			return result;
+		}
+
+		[[nodiscard]] inline constexpr auto operator/(this auto&& self, T value) noexcept -> std::remove_cvref_t<decltype(self)>
+		requires (std::is_arithmetic_v<T>)
+		{
+			auto result = self;
+			result /= value;
+			return result;
+		}
+
+		std::array<T, N> m_values{};
+	};
+
+	template<std::size_t N, class T>
+	requires (std::is_arithmetic_v<T>)
+	[[nodiscard]] inline constexpr auto operator*(T value, const Vec<N, T>& rhs) noexcept -> Vec<N, T>
+	{
+		return rhs * value;
+	}
+
+	template<class T, class... Args>
+	requires (std::same_as<T, Args> and ...)
+	Vec(T, Args...) -> Vec<1 + sizeof...(Args), T>;
+
+	static_assert(Vec{1, 2}[0] == 1);
+	static_assert(Vec{1, 2}[1] == 2);
+	static_assert(Vec{1, 2, 3}[0] == 1);
+	static_assert(Vec{1, 2, 3}[1] == 2);
+	static_assert(Vec{1, 2, 3}[2] == 3);
+
+	static_assert(Vec{1, 2} == Vec{1, 2});
+	static_assert(Vec{1, 2} != Vec{3, 4});
+	static_assert(Vec{1, 2, 3} == Vec{1, 2, 3});
+	static_assert(Vec{1, 2, 3} != Vec{4, 5, 6});
+
+	static_assert((Vec{1, 2} += Vec{3, 4}) == Vec{4, 6});
+	static_assert((Vec{1, 2, 3} += Vec{4, 5, 6}) == Vec{5, 7, 9});
+
+	static_assert((Vec{1, 2} -= Vec{3, 4}) == Vec{-2, -2});
+	static_assert((Vec{1, 2, 3} -= Vec{4, 5, 6}) == Vec{-3, -3, -3});
+
+	static_assert((Vec{1, 2} *= 2) == Vec{2, 4});
+	static_assert((Vec{1, 2, 3} *= 2) == Vec{2, 4, 6});
+
+	static_assert((Vec{2, 4} /= 2) == Vec{1, 2});
+	static_assert((Vec{2, 4, 6} /= 2) == Vec{1, 2, 3});
+
+	static_assert(Vec{1, 2} + Vec{3, 4} == Vec{4, 6});
+	static_assert(Vec{4, 6} - Vec{3, 4} == Vec{1, 2});
+	static_assert(Vec{2, 3} * 2 == Vec{4, 6});
+	static_assert(Vec{4, 6} / 2 == Vec{2, 3});
+
+	template<class T>
+	using Vec2 = Vec<2, T>;
+
+	template<class T>
+	using Vec3 = Vec<3, T>;
+
+	template<class T>
+	using Vec4 = Vec<4, T>;
+}
+
+export namespace std
+{
+	template<std::size_t N, class T, class CharT>
+	struct formatter<CppUtils::Container::Vec<N, T>, CharT>
+	{
+		formatter<T, CharT> m_formatter;
+
+		inline constexpr auto parse(auto& context)
+		{
+			return m_formatter.parse(context);
+		}
+
+		inline auto format(const CppUtils::Container::Vec<N, T>& vec, auto& context) const
+		{
+			auto out = context.out();
+			out = std::format_to(out, "(");
+			for (auto i = 0uz; i < N; ++i)
+			{
+				if (i > 0uz)
+					out = std::format_to(out, ", ");
+				context.advance_to(out);
+				out = m_formatter.format(vec[i], context);
+			}
+			return std::format_to(out, ")");
+		}
+	};
+}

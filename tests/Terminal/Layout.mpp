@@ -1,0 +1,100 @@
+export module CppUtils.UnitTests.Terminal.Layout;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Terminal::Layout
+{
+	auto _ = TestSuite{"Terminal/Layout", {"Terminal/Canvas", "Terminal/Text"}, [](TestSuite& suite) {
+		using namespace std::chrono_literals;
+
+		suite.addTest("Column", [&] {
+			const auto size = CppUtils::Container::Size2{10, 4};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			auto& layout = canvas.newWidget<CppUtils::Terminal::Layout>(size, CppUtils::Terminal::Direction::Column);
+			layout.newWidget<CppUtils::Terminal::Text>(CppUtils::Container::Size2{10, 1}, "Line 1");
+			layout.newWidget<CppUtils::Terminal::Text>(CppUtils::Container::Size2{10, 1}, "Line 2");
+
+			canvas.print();
+
+			const auto accessor = canvas.getBuffer().sharedAccess();
+			suite.expectEqual(accessor->getChar({0, 0}).character, U'L');
+			suite.expectEqual(accessor->getChar({5, 0}).character, U'1');
+			suite.expectEqual(accessor->getChar({0, 1}).character, U'L');
+			suite.expectEqual(accessor->getChar({5, 1}).character, U'2');
+		});
+
+		suite.addTest("Row JustifyCenter", [&] {
+			const auto size = CppUtils::Container::Size2{20, 1};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			auto& layout = canvas.newWidget<CppUtils::Terminal::Layout>(
+				size,
+				CppUtils::Terminal::Direction::Row,
+				CppUtils::Terminal::JustifyContent::Center);
+			layout.newWidget<CppUtils::Terminal::Text>(CppUtils::Container::Size2{4, 1}, "Item");
+
+			canvas.print();
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({8, 0}).character, U'I');
+				suite.expectEqual(accessor->getChar({11, 0}).character, U'm');
+			}
+		});
+
+		suite.addTest("AbsolutePosition & ZIndex", [&] {
+			const auto size = CppUtils::Container::Size2{10, 2};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			auto& layout = canvas.newWidget<CppUtils::Terminal::Layout>(size);
+
+			auto& item1 = layout.newWidget<CppUtils::Terminal::Text>(CppUtils::Container::Size2{5, 1}, "AAA");
+			item1.setPositionType(CppUtils::Terminal::Element::PositionType::Absolute)
+				.setPosition(0, 0)
+				.setZIndex(2);
+
+			auto& item2 = layout.newWidget<CppUtils::Terminal::Text>(CppUtils::Container::Size2{5, 1}, "BBB");
+			item2.setPositionType(CppUtils::Terminal::Element::PositionType::Absolute)
+				.setPosition(0, 0)
+				.setZIndex(3);
+
+			canvas.print();
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({0, 0}).character, U'B');
+			}
+			std::this_thread::sleep_for(200ms);
+
+			item2.setZIndex(1);
+			canvas.print();
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({0, 0}).character, U'A');
+			}
+			std::this_thread::sleep_for(200ms);
+		});
+
+		suite.addTest("Absolute right bottom positioning", [&] {
+			const auto size = CppUtils::Container::Size2{10, 3};
+			auto canvas = CppUtils::Terminal::Canvas{size};
+
+			auto& layout = canvas.newWidget<CppUtils::Terminal::Layout>(size);
+
+			auto& item = layout.newWidget<CppUtils::Terminal::Text>(CppUtils::Container::Size2{3, 1}, "End");
+			item.setPositionType(CppUtils::Terminal::Element::PositionType::Absolute)
+				.setPosition<CppUtils::Terminal::Element::Side::Right>(1uz)
+				.setPosition<CppUtils::Terminal::Element::Side::Bottom>(0uz);
+
+			canvas.print();
+
+			{
+				const auto accessor = canvas.getBuffer().sharedAccess();
+				suite.expectEqual(accessor->getChar({6, 2}).character, U'E');
+				suite.expectEqual(accessor->getChar({8, 2}).character, U'd');
+			}
+		});
+	}};
+}

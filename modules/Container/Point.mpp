@@ -1,0 +1,52 @@
+export module CppUtils.Container.Point;
+
+import std;
+import CppUtils.Container.Vec;
+
+export namespace CppUtils::Container
+{
+	template<class T = std::size_t>
+	requires (std::is_arithmetic_v<T>)
+	struct Point2D: public Vec<2, T>
+	{
+		inline constexpr Point2D() = default;
+
+		template<std::convertible_to<T>... Args>
+		requires (sizeof...(Args) == 2)
+		inline constexpr Point2D(Args&&... args):
+			Vec<2, T>{std::forward<Args>(args)...}
+		{}
+
+		[[nodiscard]] inline constexpr auto x(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto y(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+	};
+
+	template<class T>
+	Point2D(T, T) -> Point2D<T>;
+
+	template<class T = std::size_t>
+	requires (std::is_arithmetic_v<T>)
+	struct Point3D: public Vec<3, T>
+	{
+		inline constexpr Point3D() = default;
+
+		template<std::convertible_to<T>... Args>
+		requires (sizeof...(Args) == 3)
+		inline constexpr Point3D(Args&&... args):
+			Vec<3, T>{std::forward<Args>(args)...}
+		{}
+
+		[[nodiscard]] inline constexpr auto x(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[0]; }
+		[[nodiscard]] inline constexpr auto y(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[1]; }
+		[[nodiscard]] inline constexpr auto z(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto) { return self[2]; }
+	};
+
+	template<class T>
+	Point3D(T, T, T) -> Point3D<T>;
+
+	static_assert(Point2D{10uz, 20uz}.x() == 10);
+	static_assert(Point2D{10uz, 20uz}.y() == 20);
+	static_assert(Point2D{-10.f, 20.f}.x() == -10.f);
+	static_assert(Point3D{10uz, 20uz, 30uz}.z() == 30);
+	static_assert((Point2D{10uz, 20uz} + Point2D{5uz, 5uz}) == Point2D{15uz, 25uz});
+}

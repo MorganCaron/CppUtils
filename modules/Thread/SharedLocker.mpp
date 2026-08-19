@@ -1,7 +1,7 @@
 export module CppUtils.Thread.SharedLocker;
 
 import std;
-import CppUtils.Thread.UniqueLocker;
+export import CppUtils.Thread.UniqueLocker;
 
 export namespace CppUtils::Thread
 {
@@ -18,22 +18,22 @@ export namespace CppUtils::Thread
 			m_value{std::cref(value)}
 		{}
 
-		[[nodiscard]] inline auto value(this auto&& self [[lifetimebound]]) noexcept -> decltype(auto)
+		[[nodiscard]] inline auto value(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return self.m_value.get();
 		}
 
-		[[nodiscard]] inline auto operator->(this auto&& self [[lifetimebound]]) noexcept -> const T*
+		[[nodiscard]] inline auto operator->(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> const T*
 		{
 			return std::addressof(self.value());
 		}
 
-		[[nodiscard]] inline auto operator*(this auto&& self [[lifetimebound]]) noexcept -> decltype(auto)
+		[[nodiscard]] inline auto operator*(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return self.value();
 		}
 
-		[[nodiscard]] inline auto getLockGuard(this auto&& self [[lifetimebound]]) noexcept -> auto&
+		[[nodiscard]] inline auto getLockGuard(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto&
 		{
 			return self.m_lockGuard;
 		}
@@ -58,16 +58,19 @@ export namespace CppUtils::Thread
 	class SharedLocker final
 	{
 	public:
+		using UniqueAccessor = Accessor<T, std::shared_mutex>;
+		using SharedAccessor = ReadOnlyAccessor<T>;
+
 		inline explicit SharedLocker(auto&&... args):
 			m_value{std::forward<decltype(args)>(args)...}
 		{}
 
-		[[nodiscard]] inline auto uniqueAccess() -> Accessor<T, std::shared_mutex>
+		[[nodiscard]] inline auto uniqueAccess() -> UniqueAccessor
 		{
 			return Accessor{m_mutex, m_value};
 		}
 
-		[[nodiscard]] inline auto sharedAccess() const -> ReadOnlyAccessor<T>
+		[[nodiscard]] inline auto sharedAccess() const -> SharedAccessor
 		{
 			return ReadOnlyAccessor{m_mutex, m_value};
 		}

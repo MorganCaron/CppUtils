@@ -2,6 +2,7 @@ export module CppUtils.Terminal.ProgressBar;
 
 import std;
 import CppUtils.Terminal.Area;
+import CppUtils.Terminal.Element;
 import CppUtils.Container.Size;
 import CppUtils.String.Encoding;
 
@@ -97,39 +98,43 @@ export namespace CppUtils::Terminal
 		inline const auto Retro = ProgressBarStyle{"{0} [{1:#.}] {2:>3}%"};
 	}
 
-	class ProgressBar final: public Widget
+	class ProgressBar final: public Element
 	{
 	public:
-		inline ProgressBar(std::string title = "", ProgressBarStyle style = ProgressBarStyles::Clean):
+		explicit inline ProgressBar(
+			std::string title = "",
+			ProgressBarStyle style = ProgressBarStyles::Clean,
+			Container::Size2<> size = {0, 1}):
+			Element{size},
 			m_title{std::move(title)},
 			m_style{std::move(style)}
-		{}
-
-		inline auto setPercent(float percent) noexcept -> void
 		{
-			using namespace std::chrono_literals;
-			m_percent = std::ranges::clamp(percent, 0.f, 100.f);
-			if (hasWidgetManager())
-				requestUpdate(10ms);
+			setSizePolicy(SizePolicy{.width = SizePolicyType::FillParent, .height = SizePolicyType::Fixed});
 		}
 
-		inline auto setStyle(ProgressBarStyle style) noexcept -> void
+		inline auto setPercent(this auto&& self, float percent) noexcept -> decltype(auto)
 		{
 			using namespace std::chrono_literals;
-			m_style = std::move(style);
-			if (hasWidgetManager())
-				requestUpdate(10ms);
+			self.m_percent = std::ranges::clamp(percent, 0.f, 100.f);
+			if (self.hasWidgetManager())
+				self.requestUpdate(10ms);
+			return self;
 		}
 
-		[[nodiscard]] inline auto getSize() const noexcept -> Container::Size2 final
+		inline auto setStyle(this auto&& self, ProgressBarStyle style) noexcept -> decltype(auto)
 		{
-			return Container::Size2{std::numeric_limits<std::size_t>::max(), 1};
+			using namespace std::chrono_literals;
+			self.m_style = std::move(style);
+			if (self.hasWidgetManager())
+				self.requestUpdate(10ms);
+			return self;
 		}
 
 		inline auto draw(WritableAreaView& view) noexcept -> void final
 		{
 			using namespace std::literals;
-			const auto size = view.getViewport().getSize();
+			const auto viewSize = view.getSize();
+			const auto barWidth = (m_sizePolicy.width == SizePolicyType::FillParent) ? viewSize.width() : m_size.width();
 			const auto percent = static_cast<float>(m_percent);
 			const auto percentInt = static_cast<std::size_t>(percent);
 
@@ -137,10 +142,10 @@ export namespace CppUtils::Terminal
 			const auto overheadText = std::vformat(m_style, std::make_format_args(m_title, dummyBarRenderer, percentInt));
 			const auto overheadWidth = std::ranges::size(overheadText);
 
-			if (size.width() <= overheadWidth + 2)
+			if (barWidth <= overheadWidth + 2)
 				return;
 
-			const auto availableBarWidth = size.width() - overheadWidth;
+			const auto availableBarWidth = barWidth - overheadWidth;
 			auto barRenderer = BarRenderer{percent, availableBarWidth};
 
 			const auto text = std::vformat(m_style, std::make_format_args(m_title, barRenderer, percentInt));
