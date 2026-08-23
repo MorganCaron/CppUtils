@@ -38,6 +38,7 @@ export import CppUtils.UnitTests.Language.VirtualMachine;
 export import CppUtils.UnitTests.Log.FileSink;
 export import CppUtils.UnitTests.LogRotate;
 export import CppUtils.UnitTests.Logger;
+export import CppUtils.UnitTests.Math.BigInt;
 export import CppUtils.UnitTests.Math.Endian;
 export import CppUtils.UnitTests.Math.Random;
 export import CppUtils.UnitTests.Memory;

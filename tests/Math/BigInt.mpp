@@ -1,0 +1,141 @@
+export module CppUtils.UnitTests.Math.BigInt;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Math
+{
+	auto _ = TestSuite{"Math/BigInt", [](auto& suite) {
+		using namespace CppUtils::Math::Literals;
+		using CppUtils::Math::BigUInt;
+		using CppUtils::Math::BigInt;
+
+		suite.addTest("BigUInt Construction & Equality", [&] {
+			const auto firstValue = 12'345_bigUInt;
+			const auto secondValue = 0x30'39_bigUInt;
+
+			suite.expect(firstValue == secondValue);
+
+			const auto bytes = firstValue.toBytes();
+			suite.expectEqual(std::ranges::size(bytes), 2uz);
+			suite.expectEqual(static_cast<int>(bytes[0]), 0x30);
+			suite.expectEqual(static_cast<int>(bytes[1]), 0x39);
+		});
+
+		suite.addTest("BigInt Signed Construction & Negation", [&] {
+			const auto positiveValue = 12'345_bigInt;
+			const auto negativeValue = -positiveValue;
+
+			suite.expect(positiveValue.isNegative() == false);
+			suite.expect(negativeValue.isNegative() == true);
+			suite.expect(negativeValue < positiveValue);
+			suite.expect(positiveValue + negativeValue == 0_bigInt);
+
+			const auto parsedNegativeValue = "-12345"_bigInt;
+			suite.expect(parsedNegativeValue == negativeValue);
+		});
+
+		suite.addTest("BigInt Signed Addition & Subtraction", [&] {
+			auto value = 10_bigInt;
+			value += 20_bigInt;
+			suite.expect(value == 30_bigInt);
+
+			value -= 50_bigInt;
+			suite.expect(value == -20_bigInt);
+			suite.expect(value.isNegative());
+
+			value += 30_bigInt;
+			suite.expect(value == 10_bigInt);
+			suite.expect(value.isNegative() == false);
+		});
+
+		suite.addTest("BigInt Signed Multiplication & Division", [&] {
+			const auto firstOperand = -10_bigInt;
+			const auto secondOperand = 20_bigInt;
+
+			const auto product = firstOperand * secondOperand;
+			suite.expect(product == -200_bigInt);
+			suite.expect(product.isNegative());
+
+			const auto quotient = product / firstOperand;
+			suite.expect(quotient == 20_bigInt);
+			suite.expect(quotient.isNegative() == false);
+		});
+
+		suite.addTest("ModPow", [&] {
+			const auto base = 2_bigUInt;
+			const auto exponent = 10_bigUInt;
+			const auto modulus = 1'000_bigUInt;
+
+			const auto result = base.modPow(exponent, modulus);
+			suite.expectEqual(result, 24_bigUInt);
+		});
+
+		suite.addTest("Large ModPow", [&] {
+			const auto base = 123_bigUInt;
+			const auto exponent = 456_bigUInt;
+			const auto modulus = 789_bigUInt;
+
+			const auto result = base.modPow(exponent, modulus);
+			suite.expectEqual(result, 699_bigUInt);
+		});
+
+		suite.addTest("Decimal Literal (Large)", [&] {
+			const auto value = 12'345'678'901'234'567'890_bigUInt;
+
+			const auto bytes = value.toBytes();
+			suite.expectEqual(std::ranges::size(bytes), 8uz);
+			suite.expectEqual(static_cast<int>(bytes[0]), 0xAB);
+			suite.expectEqual(static_cast<int>(bytes[7]), 0xD2);
+		});
+
+		suite.addTest("Parsing (decimal)", [&] {
+			const auto validPositive = BigInt::parse("12345");
+			suite.expect(validPositive.has_value());
+			suite.expect(validPositive.value() == 12345_bigInt);
+		});
+
+		suite.addTest("Parsing (negative decimal)", [&] {
+			const auto validSigned = BigInt::parse("-12345");
+			suite.expect(validSigned.has_value());
+			suite.expect(validSigned.value() == -12345_bigInt);
+		});
+
+		suite.addTest("Parsing (invalid unsigned)", [&] {
+			const auto invalidUnsigned = BigUInt::parse("-10");
+			suite.expect(not invalidUnsigned.has_value());
+		});
+
+		suite.addTest("Parsing (hexadecimal)", [&] {
+			const auto validHex = BigInt::parse("0x3039");
+			suite.expect(validHex.has_value());
+			suite.expect(validHex.value() == 12345_bigInt);
+		});
+
+		suite.addTest("Parsing (invalid hexadecimal)", [&] {
+			const auto invalidHex = BigInt::parse("0xGHI");
+			suite.expect(not invalidHex.has_value());
+		});
+
+		suite.addTest("divMod", [&] {
+			const auto numerator = 100_bigInt;
+			const auto denominator = 7_bigInt;
+			const auto divResult = numerator.divMod(denominator);
+			suite.expect(divResult.has_value());
+			suite.expectEqual(divResult->quotient, 14_bigInt);
+			suite.expectEqual(divResult->remainder, 2_bigInt);
+
+			const auto divZeroResult = numerator.divMod(0_bigInt);
+			suite.expect(not divZeroResult.has_value());
+		});
+
+		suite.addTest("Constexpr Support", [&] {
+			const auto result = []() constexpr {
+				auto leftOperand = 10_bigInt;
+				auto rightOperand = -20_bigInt;
+				return leftOperand + rightOperand == -10_bigInt;
+			}();
+			suite.expect(result);
+		});
+	}};
+}

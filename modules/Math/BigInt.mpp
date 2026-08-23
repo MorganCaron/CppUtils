@@ -1,0 +1,718 @@
+export module CppUtils.Math.BigInt;
+
+import std;
+import CppUtils.Math.Binary;
+
+namespace CppUtils::Math::Internal
+{
+	template<bool IsSigned>
+	struct BigIntSignData
+	{};
+
+	template<>
+	struct BigIntSignData<true>
+	{
+		bool m_isNegative{false};
+	};
+}
+
+export namespace CppUtils::Math
+{
+	template<bool IsSigned = false>
+	class BasicBigInt final: private Internal::BigIntSignData<IsSigned>
+	{
+	public:
+		static constexpr auto blockMask = makeMask<std::uint64_t>(32, HorizontalAlignment::Right);
+		static constexpr auto byteMask = makeMask<std::uint32_t>(8, HorizontalAlignment::Right);
+
+		constexpr BasicBigInt() = default;
+
+		explicit constexpr BasicBigInt(std::unsigned_integral auto value)
+		{
+			if (const auto value64 = static_cast<std::uint64_t>(value); value64 != 0)
+			{
+				m_data.push_back(static_cast<std::uint32_t>(value64 & blockMask));
+				if (const auto high = static_cast<std::uint32_t>(value64 >> 32); high != 0)
+					m_data.push_back(high);
+			}
+		}
+
+		explicit constexpr BasicBigInt(std::signed_integral auto value)
+		{
+			if (value < 0)
+				if constexpr (IsSigned)
+				{
+					const auto absoluteValue = -static_cast<std::uint64_t>(value);
+					*this = BasicBigInt{absoluteValue};
+					setNegative(true);
+				}
+				else
+					throw std::invalid_argument{"Cannot construct BigUInt from negative integer"};
+			else
+				*this = BasicBigInt{static_cast<std::uint64_t>(value)};
+		}
+
+		explicit constexpr BasicBigInt(std::string_view string)
+		{
+			const auto parsedResult = parse(string);
+			if (not parsedResult)
+				throw std::invalid_argument{std::string{parsedResult.error()}};
+			*this = parsedResult.value();
+		}
+
+		[[nodiscard]] static constexpr auto parse(std::string_view string) -> std::expected<BasicBigInt, std::string_view>
+		{
+			if (std::ranges::empty(string))
+				return BasicBigInt{};
+
+			auto isNegative = false;
+			if (string.starts_with('-'))
+				if constexpr (IsSigned)
+				{
+					isNegative = true;
+					string.remove_prefix(1);
+				}
+				else
+					return std::unexpected{"Cannot parse negative string into BigUInt"};
+			else if (string.starts_with('+'))
+				string.remove_prefix(1);
+
+			auto result = BasicBigInt{};
+			if (string.starts_with("0x") or string.starts_with("0X"))
+				for (auto i = 2uz; i < std::ranges::size(string); ++i)
+				{
+					const auto c = string[i];
+					if (c == '\'')
+						continue;
+					const auto digitResult = hexCharToInt(c);
+					if (not digitResult)
+						return std::unexpected{digitResult.error()};
+					result *= 16uz;
+					result += digitResult.value();
+				}
+			else
+				for (auto i = 0uz; i < std::ranges::size(string); ++i)
+				{
+					const auto c = string[i];
+					if (c == '\'')
+						continue;
+					if (c < '0' or c > '9')
+						return std::unexpected{"Invalid decimal digit"};
+					const auto digit = static_cast<std::uint64_t>(c - '0');
+					result *= 10uz;
+					result += digit;
+				}
+
+			if constexpr (IsSigned)
+				result.setNegative(isNegative);
+
+			return result;
+		}
+
+		template<bool OtherSigned>
+		requires (OtherSigned != IsSigned)
+		explicit constexpr BasicBigInt(const BasicBigInt<OtherSigned>& other)
+		{
+			m_data = std::ranges::data(other);
+			if constexpr (IsSigned)
+				setNegative(other.isNegative());
+			else if (other.isNegative())
+				throw std::invalid_argument{"Cannot convert negative BigInt to BigUInt"};
+		}
+
+		[[nodiscard]] static constexpr auto fromBytes(std::span<const std::byte> bytes) -> BasicBigInt
+		{
+			if (std::ranges::empty(bytes))
+				return BasicBigInt{};
+
+			auto result = BasicBigInt{};
+			const auto totalBytes = std::ranges::size(bytes);
+			result.m_data.reserve((totalBytes + 3) / 4);
+
+			auto byteIndex = totalBytes;
+			while (byteIndex >= 4)
+			{
+				byteIndex -= 4;
+				const auto b0 = static_cast<std::uint32_t>(bytes[byteIndex + 3]);
+				const auto b1 = static_cast<std::uint32_t>(bytes[byteIndex + 2]);
+				const auto b2 = static_cast<std::uint32_t>(bytes[byteIndex + 1]);
+				const auto b3 = static_cast<std::uint32_t>(bytes[byteIndex]);
+
+				const auto block = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
+				result.m_data.push_back(block);
+			}
+
+			if (byteIndex > 0)
+			{
+				auto block = std::uint32_t{0};
+				for (auto i = 0uz; i < byteIndex; ++i)
+					block = (block << 8) | static_cast<std::uint32_t>(bytes[i]);
+				result.m_data.push_back(block);
+			}
+
+			result.trim();
+			return result;
+		}
+
+		[[nodiscard]] constexpr auto toBytes() const -> std::vector<std::byte>
+		{
+			if (isZero())
+				return {std::byte{0}};
+
+			auto bytes = std::vector<std::byte>{};
+			bytes.reserve(std::ranges::size(m_data) * 4);
+
+			for (auto i = std::ranges::size(m_data); i-- > 0;)
+			{
+				const auto block = m_data[i];
+				bytes.push_back(static_cast<std::byte>((block >> 24) & byteMask));
+				bytes.push_back(static_cast<std::byte>((block >> 16) & byteMask));
+				bytes.push_back(static_cast<std::byte>((block >> 8) & byteMask));
+				bytes.push_back(static_cast<std::byte>(block & byteMask));
+			}
+
+			auto firstNonZeroIndex = 0uz;
+			while (firstNonZeroIndex < std::ranges::size(bytes) - 1 and bytes[firstNonZeroIndex] == std::byte{0})
+				++firstNonZeroIndex;
+
+			if (firstNonZeroIndex > 0)
+				bytes.erase(std::ranges::begin(bytes), std::ranges::next(std::ranges::begin(bytes), static_cast<std::ptrdiff_t>(firstNonZeroIndex)));
+
+			return bytes;
+		}
+
+		[[nodiscard]] constexpr auto isZero() const -> bool
+		{
+			return std::ranges::empty(m_data) or (std::ranges::size(m_data) == 1 and m_data[0] == 0);
+		}
+
+		[[nodiscard]] constexpr auto isNegative() const -> bool
+		{
+			if constexpr (IsSigned)
+				return this->m_isNegative;
+			else
+				return false;
+		}
+
+		constexpr auto setNegative(bool isNegative) -> void
+		{
+			if constexpr (IsSigned)
+				this->m_isNegative = isNegative and not isZero();
+			else
+				static_assert(IsSigned, "Cannot call setNegative on BigUInt");
+		}
+
+		[[nodiscard]] constexpr auto data() const -> const std::vector<std::uint32_t>&
+		{
+			return m_data;
+		}
+
+		constexpr auto operator+=(const BasicBigInt& other) -> BasicBigInt&
+		{
+			if constexpr (IsSigned)
+			{
+				if (isNegative() == other.isNegative())
+					addMagnitude(other);
+				else
+				{
+					const auto comparison = compareMagnitude(other);
+					if (comparison >= 0)
+						subtractMagnitude(other);
+					else
+					{
+						const auto targetIsNegative = other.isNegative();
+						auto temporary = other;
+						temporary.subtractMagnitude(*this);
+						*this = std::move(temporary);
+						setNegative(targetIsNegative);
+					}
+				}
+			}
+			else
+				addMagnitude(other);
+			return *this;
+		}
+
+		constexpr auto operator+=(std::unsigned_integral auto other) -> BasicBigInt&
+		{
+			return *this += BasicBigInt{other};
+		}
+
+		constexpr auto operator-=(const BasicBigInt& other) -> BasicBigInt&
+		{
+			if constexpr (IsSigned)
+			{
+				auto temporary = other;
+				temporary.setNegative(not other.isNegative());
+				return *this += temporary;
+			}
+			else
+			{
+				subtractMagnitude(other);
+				return *this;
+			}
+		}
+
+		constexpr auto operator-=(std::unsigned_integral auto other) -> BasicBigInt&
+		{
+			return *this -= BasicBigInt{other};
+		}
+
+		constexpr auto operator*=(std::uint32_t other) -> BasicBigInt&
+		{
+			if (other == 0)
+			{
+				m_data.clear();
+				if constexpr (IsSigned)
+					setNegative(false);
+				return *this;
+			}
+
+			auto carry = std::uint64_t{0};
+			for (auto& block : m_data)
+			{
+				const auto product = static_cast<std::uint64_t>(block) * other + carry;
+				block = static_cast<std::uint32_t>(product & blockMask);
+				carry = product >> 32;
+			}
+			if (carry > 0)
+				m_data.push_back(static_cast<std::uint32_t>(carry));
+			return *this;
+		}
+
+		constexpr auto operator*=(const BasicBigInt& other) -> BasicBigInt&
+		{
+			if (isZero() or other.isZero())
+			{
+				m_data.clear();
+				if constexpr (IsSigned)
+					setNegative(false);
+				return *this;
+			}
+
+			if (const auto shift = other.singleBitIndex(); shift.has_value())
+			{
+				*this <<= shift.value();
+				if constexpr (IsSigned)
+					setNegative(isNegative() != other.isNegative());
+				return *this;
+			}
+
+			auto result = std::vector<std::uint32_t>(std::ranges::size(m_data) + std::ranges::size(other.m_data), 0);
+			for (auto i = 0uz; i < std::ranges::size(m_data); ++i)
+			{
+				auto carry = std::uint64_t{0};
+				for (auto j = 0uz; j < std::ranges::size(other.m_data); ++j)
+				{
+					const auto product = static_cast<std::uint64_t>(m_data[i]) * other.m_data[j] + result[i + j] + carry;
+					result[i + j] = static_cast<std::uint32_t>(product & blockMask);
+					carry = product >> 32;
+				}
+				result[i + std::ranges::size(other.m_data)] += static_cast<std::uint32_t>(carry);
+			}
+			m_data = std::move(result);
+			trim();
+			if constexpr (IsSigned)
+				setNegative(isNegative() != other.isNegative());
+			return *this;
+		}
+
+		constexpr auto operator*=(std::unsigned_integral auto other) -> BasicBigInt&
+		{
+			if (other == 0)
+			{
+				m_data.clear();
+				if constexpr (IsSigned)
+					setNegative(false);
+				return *this;
+			}
+			if (std::has_single_bit(other))
+				return *this <<= static_cast<std::size_t>(std::countr_zero(other));
+			if (other <= blockMask)
+				return *this *= static_cast<std::uint32_t>(other);
+			return *this *= BasicBigInt{other};
+		}
+
+		constexpr auto operator/=(std::unsigned_integral auto divisor) -> BasicBigInt&
+		{
+			const auto result = divMod(static_cast<std::uint64_t>(divisor));
+			if (not result)
+				throw std::invalid_argument{std::string{result.error()}};
+			return *this;
+		}
+
+		constexpr auto operator%=(std::unsigned_integral auto divisor) -> BasicBigInt&
+		{
+			const auto result = divMod(static_cast<std::uint64_t>(divisor));
+			if (not result)
+				throw std::invalid_argument{std::string{result.error()}};
+			*this = BasicBigInt{result.value()};
+			return *this;
+		}
+
+		constexpr auto operator>>=(std::size_t shift) -> BasicBigInt&
+		{
+			if (shift == 0 or isZero())
+				return *this;
+
+			const auto blockShift = shift / 32;
+			const auto bitShift = shift % 32;
+
+			if (blockShift >= std::ranges::size(m_data))
+			{
+				m_data.clear();
+				if constexpr (IsSigned)
+					setNegative(false);
+				return *this;
+			}
+
+			if (blockShift > 0)
+			{
+				for (auto i = 0uz; i + blockShift < std::ranges::size(m_data); ++i)
+					m_data[i] = m_data[i + blockShift];
+				m_data.resize(std::ranges::size(m_data) - blockShift);
+			}
+
+			if (bitShift > 0)
+			{
+				auto carry = std::uint32_t{0};
+				for (auto i = std::ranges::size(m_data); i-- > 0;)
+				{
+					const auto temporaryValue = m_data[i];
+					m_data[i] = (temporaryValue >> bitShift) | carry;
+					carry = temporaryValue << (32 - bitShift);
+				}
+			}
+			trim();
+			return *this;
+		}
+
+		constexpr auto operator<<=(std::size_t shift) -> BasicBigInt&
+		{
+			if (shift == 0 or isZero())
+				return *this;
+
+			const auto blockShift = shift / 32;
+			const auto bitShift = shift % 32;
+
+			if (bitShift > 0)
+			{
+				auto carry = std::uint32_t{0};
+				for (auto& block : m_data)
+				{
+					const auto temporaryValue = (static_cast<std::uint64_t>(block) << bitShift) | carry;
+					block = static_cast<std::uint32_t>(temporaryValue & blockMask);
+					carry = static_cast<std::uint32_t>(temporaryValue >> 32);
+				}
+				if (carry > 0)
+					m_data.push_back(carry);
+			}
+
+			if (blockShift > 0)
+				m_data.insert(std::ranges::begin(m_data), blockShift, 0);
+
+			return *this;
+		}
+
+		[[nodiscard]] constexpr auto operator<=>(const BasicBigInt& other) const
+		{
+			if constexpr (IsSigned)
+			{
+				if (isNegative() != other.isNegative())
+					return isNegative() ? std::strong_ordering::less : std::strong_ordering::greater;
+
+				const auto comparison = compareMagnitude(other);
+				if (isNegative())
+					return 0 <=> comparison;
+				return comparison;
+			}
+			else
+				return compareMagnitude(other);
+		}
+
+		[[nodiscard]] constexpr auto operator==(const BasicBigInt& other) const -> bool
+		{
+			return (*this <=> other) == 0;
+		}
+
+		struct DivModResult final
+		{
+			BasicBigInt quotient;
+			BasicBigInt remainder;
+		};
+
+		[[nodiscard]] constexpr auto divMod(const BasicBigInt& divisor) const -> std::expected<DivModResult, std::string_view>
+		{
+			if (divisor.isZero())
+				return std::unexpected{"Division by zero"};
+
+			const auto quotientIsNegative = isNegative() != divisor.isNegative();
+			const auto remainderIsNegative = isNegative();
+
+			if (compareMagnitude(divisor) < 0)
+			{
+				auto remainderResult = *this;
+				auto quotientResult = BasicBigInt{0};
+				return DivModResult{quotientResult, remainderResult};
+			}
+
+			auto quotient = BasicBigInt{0};
+			auto remainder = BasicBigInt{0};
+
+			for (auto i = bitLength(); i-- > 0;)
+			{
+				remainder <<= 1uz;
+				const auto blockIndex = i / 32;
+				const auto bitIndex = i % 32;
+				if (blockIndex < std::ranges::size(m_data) and (m_data[blockIndex] & (1U << bitIndex)))
+					remainder.addMagnitude(BasicBigInt{1});
+
+				if (remainder.compareMagnitude(divisor) >= 0)
+				{
+					remainder.subtractMagnitude(divisor);
+					quotient.setBit(i);
+				}
+			}
+
+			if constexpr (IsSigned)
+			{
+				quotient.setNegative(quotientIsNegative);
+				remainder.setNegative(remainderIsNegative);
+			}
+			return DivModResult{quotient, remainder};
+		}
+
+		constexpr auto operator/=(const BasicBigInt& divisor) -> BasicBigInt&
+		{
+			const auto result = divMod(divisor);
+			if (not result)
+				throw std::invalid_argument{std::string{result.error()}};
+			*this = std::move(result->quotient);
+			return *this;
+		}
+
+		constexpr auto operator%=(const BasicBigInt& divisor) -> BasicBigInt&
+		{
+			const auto result = divMod(divisor);
+			if (not result)
+				throw std::invalid_argument{std::string{result.error()}};
+			*this = std::move(result->remainder);
+			return *this;
+		}
+
+		[[nodiscard]] constexpr auto bitLength() const -> std::size_t
+		{
+			if (isZero())
+				return 0;
+			return ((std::ranges::size(m_data) - 1) * 32) + static_cast<std::size_t>(std::bit_width(m_data.back()));
+		}
+
+		[[nodiscard]] constexpr auto operator-() const -> BasicBigInt
+		requires (IsSigned)
+		{
+			auto result = *this;
+			if (not result.isZero())
+				result.setNegative(not result.isNegative());
+			return result;
+		}
+
+		[[nodiscard]] constexpr auto modPow(BasicBigInt exponent, const BasicBigInt& modulus) const -> BasicBigInt
+		{
+			auto result = BasicBigInt{1};
+			auto currentBase = *this % modulus;
+
+			while (not exponent.isZero())
+			{
+				if (exponent.m_data[0] & 1)
+				{
+					result *= currentBase;
+					result %= modulus;
+				}
+				exponent >>= 1uz;
+				currentBase *= currentBase;
+				currentBase %= modulus;
+			}
+			return result;
+		}
+
+		friend constexpr auto operator+(BasicBigInt lhs, const BasicBigInt& rhs) -> BasicBigInt { return lhs += rhs; }
+		friend constexpr auto operator+(BasicBigInt lhs, std::unsigned_integral auto rhs) -> BasicBigInt { return lhs += rhs; }
+		friend constexpr auto operator-(BasicBigInt lhs, const BasicBigInt& rhs) -> BasicBigInt { return lhs -= rhs; }
+		friend constexpr auto operator-(BasicBigInt lhs, std::unsigned_integral auto rhs) -> BasicBigInt { return lhs -= rhs; }
+		friend constexpr auto operator*(BasicBigInt lhs, const BasicBigInt& rhs) -> BasicBigInt { return lhs *= rhs; }
+		friend constexpr auto operator*(BasicBigInt lhs, std::unsigned_integral auto rhs) -> BasicBigInt { return lhs *= rhs; }
+		friend constexpr auto operator/(BasicBigInt lhs, const BasicBigInt& rhs) -> BasicBigInt { return lhs /= rhs; }
+		friend constexpr auto operator/(BasicBigInt lhs, std::unsigned_integral auto rhs) -> BasicBigInt { return lhs /= rhs; }
+		friend constexpr auto operator%(BasicBigInt lhs, const BasicBigInt& rhs) -> BasicBigInt { return lhs %= rhs; }
+		friend constexpr auto operator%(BasicBigInt lhs, std::unsigned_integral auto rhs) -> BasicBigInt { return lhs %= rhs; }
+		friend constexpr auto operator>>(BasicBigInt lhs, std::size_t rhs) -> BasicBigInt { return lhs >>= rhs; }
+		friend constexpr auto operator<<(BasicBigInt lhs, std::size_t rhs) -> BasicBigInt { return lhs <<= rhs; }
+
+	private:
+		constexpr auto setBit(std::size_t index) -> void
+		{
+			const auto blockIndex = index / 32;
+			const auto bitIndex = index % 32;
+			if (blockIndex >= std::ranges::size(m_data))
+				m_data.resize(blockIndex + 1, 0);
+			m_data[blockIndex] |= (1U << bitIndex);
+		}
+
+		constexpr auto divMod(std::uint32_t divisor) -> std::expected<std::uint32_t, std::string_view>
+		{
+			if (divisor == 0)
+				return std::unexpected{"Division by zero"};
+
+			auto remainder = std::uint64_t{0};
+			for (auto i = std::ranges::size(m_data); i-- > 0;)
+			{
+				const auto current = (remainder << 32) | m_data[i];
+				m_data[i] = static_cast<std::uint32_t>(current / divisor);
+				remainder = current % divisor;
+			}
+			trim();
+			return static_cast<std::uint32_t>(remainder);
+		}
+
+		constexpr auto divMod(std::uint64_t divisor) -> std::expected<std::uint64_t, std::string_view>
+		{
+			if (divisor <= blockMask)
+				return divMod(static_cast<std::uint32_t>(divisor));
+			const auto result = divMod(BasicBigInt{divisor});
+			if (not result)
+				return std::unexpected{result.error()};
+			auto [quotient, remainder] = result.value();
+			*this = std::move(quotient);
+			auto remainderValue = std::uint64_t{0};
+			if (not std::ranges::empty(remainder.m_data))
+			{
+				remainderValue = static_cast<std::uint64_t>(remainder.m_data[0]);
+				if (std::ranges::size(remainder.m_data) > 1)
+					remainderValue |= (static_cast<std::uint64_t>(remainder.m_data[1]) << 32);
+			}
+			return remainderValue;
+		}
+
+		[[nodiscard]] constexpr auto singleBitIndex() const -> std::optional<std::size_t>
+		{
+			if (isZero())
+				return std::nullopt;
+			auto nonZeroCount = 0uz;
+			auto lastNonZeroIndex = 0uz;
+			for (auto i = 0uz; i < std::ranges::size(m_data); ++i)
+			{
+				if (m_data[i] != 0)
+				{
+					if (++nonZeroCount > 1)
+						return std::nullopt;
+					lastNonZeroIndex = i;
+				}
+			}
+			if (nonZeroCount == 1 and std::has_single_bit(m_data[lastNonZeroIndex]))
+				return (lastNonZeroIndex * 32) + static_cast<std::size_t>(std::countr_zero(m_data[lastNonZeroIndex]));
+			return std::nullopt;
+		}
+
+		[[nodiscard]] constexpr auto compareMagnitude(const BasicBigInt& other) const -> std::strong_ordering
+		{
+			const auto size = std::ranges::size(m_data);
+			const auto otherSize = std::ranges::size(other.m_data);
+			if (size != otherSize)
+				return size <=> otherSize;
+
+			const auto [mismatchLeft, mismatchRight] = std::ranges::mismatch(std::views::reverse(m_data), std::views::reverse(other.m_data));
+			if (mismatchLeft != std::ranges::rend(m_data))
+				return *mismatchLeft <=> *mismatchRight;
+
+			return std::strong_ordering::equal;
+		}
+
+		constexpr auto addMagnitude(const BasicBigInt& other) -> void
+		{
+			auto carry = std::uint64_t{0};
+			const auto size = std::ranges::max(std::ranges::size(m_data), std::ranges::size(other.m_data));
+			m_data.resize(size, 0);
+
+			for (auto i = 0uz; i < size; ++i)
+			{
+				const auto leftBlock = static_cast<std::uint64_t>(m_data[i]);
+				const auto rightBlock = (i < std::ranges::size(other.m_data)) ? static_cast<std::uint64_t>(other.m_data[i]) : std::uint64_t{0};
+				const auto sum = leftBlock + rightBlock + carry;
+				m_data[i] = static_cast<std::uint32_t>(sum & blockMask);
+				carry = sum >> 32;
+			}
+			if (carry > 0)
+				m_data.push_back(static_cast<std::uint32_t>(carry));
+		}
+
+		constexpr auto subtractMagnitude(const BasicBigInt& other) -> void
+		{
+			auto borrow = std::int64_t{0};
+			for (auto i = 0uz; i < std::ranges::size(m_data); ++i)
+			{
+				const auto leftBlock = static_cast<std::int64_t>(m_data[i]);
+				const auto rightBlock = (i < std::ranges::size(other.m_data)) ? static_cast<std::int64_t>(other.m_data[i]) : std::int64_t{0};
+				const auto difference = leftBlock - rightBlock - borrow;
+				if (difference < 0)
+				{
+					m_data[i] = static_cast<std::uint32_t>(difference + 0x1'0000'0000LL);
+					borrow = 1;
+				}
+				else
+				{
+					m_data[i] = static_cast<std::uint32_t>(difference);
+					borrow = 0;
+				}
+			}
+			trim();
+		}
+
+		constexpr auto trim() -> void
+		{
+			while (std::ranges::size(m_data) > 0 and m_data.back() == 0)
+				m_data.pop_back();
+			if constexpr (IsSigned)
+				if (isZero())
+					setNegative(false);
+		}
+
+		[[nodiscard]] static constexpr auto hexCharToInt(char c) -> std::expected<std::uint64_t, std::string_view>
+		{
+			if (c >= '0' and c <= '9')
+				return static_cast<std::uint64_t>(c - '0');
+			if (c >= 'a' and c <= 'f')
+				return static_cast<std::uint64_t>(c - 'a' + 10);
+			if (c >= 'A' and c <= 'F')
+				return static_cast<std::uint64_t>(c - 'A' + 10);
+			return std::unexpected{"Invalid hex char"};
+		}
+
+		std::vector<std::uint32_t> m_data;
+	};
+
+	using BigUInt = BasicBigInt<false>;
+	using BigInt = BasicBigInt<true>;
+
+	namespace Literals
+	{
+		[[nodiscard]] constexpr auto operator""_bigUInt(const char* string, std::size_t length) -> BigUInt
+		{
+			return BigUInt{std::string_view{string, length}};
+		}
+
+		[[nodiscard]] constexpr auto operator""_bigUInt(const char* string) -> BigUInt
+		{
+			return BigUInt{std::string_view{string}};
+		}
+
+		[[nodiscard]] constexpr auto operator""_bigInt(const char* string, std::size_t length) -> BigInt
+		{
+			return BigInt{std::string_view{string, length}};
+		}
+
+		[[nodiscard]] constexpr auto operator""_bigInt(const char* string) -> BigInt
+		{
+			return BigInt{std::string_view{string}};
+		}
+	}
+}
