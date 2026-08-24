@@ -1,0 +1,197 @@
+export module CppUtils.Crypto.SHA256;
+
+import std;
+import CppUtils.Math.Endian;
+
+export namespace CppUtils::Crypto
+{
+	class SHA256 final
+	{
+	public:
+		// Constantes SHA-256
+		// https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (Page 3)
+		static constexpr auto DigestSize = 32uz; // 256 bits (32 bytes)
+		static constexpr auto BlockSize = 64uz; // 512 bits (64 bytes)
+
+		inline SHA256()
+		{
+			reset();
+		}
+
+		inline auto update(std::span<const std::byte> data) -> void
+		{
+			for (auto input = data; not std::ranges::empty(input);)
+			{
+				const auto copySize = std::ranges::min(std::ranges::size(input), BlockSize - m_bufferSize);
+				std::ranges::copy(input.first(copySize), std::ranges::begin(m_buffer) + static_cast<std::ptrdiff_t>(m_bufferSize));
+				m_bufferSize += copySize;
+				input = input.subspan(copySize);
+
+				if (m_bufferSize == BlockSize)
+				{
+					processBlock(m_buffer);
+					m_bufferSize = 0;
+				}
+			}
+			m_totalBytes += std::ranges::size(data);
+		}
+
+		inline auto update(std::string_view string) -> void
+		{
+			update(std::as_bytes(std::span{string}));
+		}
+
+		[[nodiscard]] inline auto digest() const -> std::array<std::byte, DigestSize>
+		{
+			const auto finalizedContext = finalize();
+			auto result = std::array<std::byte, DigestSize>{};
+			for (auto i = 0uz; i < std::ranges::size(finalizedContext.m_hashState); ++i)
+			{
+				const auto value = Math::toBigEndian(finalizedContext.m_hashState[i]);
+				std::memcpy(std::data(result) + i * sizeof(value), std::addressof(value), sizeof(value));
+			}
+			return result;
+		}
+
+		[[nodiscard]] static inline auto hash(std::string_view string) -> std::array<std::byte, DigestSize>
+		{
+			auto sha = SHA256{};
+			sha.update(string);
+			return sha.digest();
+		}
+
+		[[nodiscard]] static inline auto hash(std::span<const std::byte> data) -> std::array<std::byte, DigestSize>
+		{
+			auto sha = SHA256{};
+			sha.update(data);
+			return sha.digest();
+		}
+
+	private:
+		// Constantes SHA-256
+		// https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (Page 15, Section 5.3.3)
+		// Sert de hash initial. Représentent les premiers 32 bits de la partie décimale des racines carrées des 8 premiers nombres premiers
+		inline auto reset() -> void
+		{
+			m_hashState[0] = 0x6a'09'e6'67;
+			m_hashState[1] = 0xbb'67'ae'85;
+			m_hashState[2] = 0x3c'6e'f3'72;
+			m_hashState[3] = 0xa5'4f'f5'3a;
+			m_hashState[4] = 0x51'0e'52'7f;
+			m_hashState[5] = 0x9b'05'68'8c;
+			m_hashState[6] = 0x1f'83'd9'ab;
+			m_hashState[7] = 0x5b'e0'cd'19;
+			m_bufferSize = 0;
+			m_totalBytes = 0;
+		}
+
+		// Padding SHA-256
+		// https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (Page 13, Section 5.1.1)
+		// On ajoute un bit 1 suivi de zéros, et on remplit de zéros jusqu'à l'octet 56, puis ajoute la taille totale du message sur 64 bits (8 octets)
+		[[nodiscard]] inline auto finalize() const -> SHA256
+		{
+			auto context = *this;
+			context.m_buffer[context.m_bufferSize++] = std::byte{0b1000'0000};
+			if (context.m_bufferSize > 56)
+			{
+				std::ranges::fill(context.m_buffer | std::views::drop(context.m_bufferSize), std::byte{0});
+				context.processBlock(context.m_buffer);
+				context.m_bufferSize = 0;
+			}
+			std::ranges::fill(context.m_buffer | std::views::drop(context.m_bufferSize), std::byte{0});
+
+			const auto totalBits = context.m_totalBytes * 8;
+			const auto totalBitsBigEndian = Math::toBigEndian(totalBits);
+			std::memcpy(std::data(context.m_buffer) + 56, std::addressof(totalBitsBigEndian), 8);
+			context.processBlock(context.m_buffer);
+			return context;
+		}
+
+		inline auto processBlock(const std::array<std::byte, BlockSize>& block) -> void
+		{
+			// Constantes SHA-256
+			// https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (Page 11, Section 4.2.2)
+			// Représentent les premiers 32 bits de la partie décimale des racines cubiques des 64 premiers nombres premiers
+			// clang-format off
+			static constexpr auto roundConstants = std::array<std::uint32_t, 64>{
+				0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+				0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+				0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+				0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+				0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+				0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+				0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+				0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
+			// clang-format on
+
+			// Préparation du message schedule (W0..W63)
+			// https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (Page 22, Section 6.2.2, étape 1)
+			auto messageSchedule = std::array<std::uint32_t, std::ranges::size(roundConstants)>{};
+			for (auto i = 0uz; i < 16; ++i)
+			{
+				auto value = std::uint32_t{};
+				std::memcpy(std::addressof(value), std::data(block) + i * sizeof(value), sizeof(value));
+				messageSchedule[i] = Math::toBigEndian(value);
+			}
+
+			// Expansion de W16..W63 avec les fonctions sigma0 et sigma1
+			// https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (Page 10, Section 4.1.2, équations 4.6 & 4.7)
+			for (auto i = 16uz; i < std::ranges::size(messageSchedule); ++i)
+			{
+				const auto sigma0 = std::rotr(messageSchedule[i - 15], 7) ^ std::rotr(messageSchedule[i - 15], 18) ^ (messageSchedule[i - 15] >> 3); // équation 4.6
+				const auto sigma1 = std::rotr(messageSchedule[i - 2], 17) ^ std::rotr(messageSchedule[i - 2], 19) ^ (messageSchedule[i - 2] >> 10); // équation 4.7
+				messageSchedule[i] = messageSchedule[i - 16] + sigma0 + messageSchedule[i - 7] + sigma1; // Wt dans la section 6.2.2 (page 22)
+			}
+
+			// Initialisation des 8 variables de travail a..h avec l'état de hachage précédent
+			// https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (Page 22, Section 6.2.2, étape 2)
+			auto a = m_hashState[0];
+			auto b = m_hashState[1];
+			auto c = m_hashState[2];
+			auto d = m_hashState[3];
+			auto e = m_hashState[4];
+			auto f = m_hashState[5];
+			auto g = m_hashState[6];
+			auto h = m_hashState[7];
+
+			// Les 64 tours de compression SHA-256
+			// https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (Page 23, Section 6.2.2, étape 3)
+			for (auto i = 0uz; i < std::ranges::size(messageSchedule); ++i)
+			{
+				// Fonctions de compression
+				// https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (Page 10, Section 4.1.2)
+				const auto Sigma1 = std::rotr(e, 6) ^ std::rotr(e, 11) ^ std::rotr(e, 25); // équation 4.5
+				const auto choice = (e & f) ^ (~e & g); // équation 4.2
+				const auto temporaryFirst = h + Sigma1 + choice + roundConstants[i] + messageSchedule[i]; // T1 dans l'étape 3 de la section 6.2.2 (page 23)
+				const auto Sigma0 = std::rotr(a, 2) ^ std::rotr(a, 13) ^ std::rotr(a, 22); // équation 4.4
+				const auto majority = (a & b) ^ (a & c) ^ (b & c); // équation 4.3
+				const auto temporarySecond = Sigma0 + majority; // T2 dans l'étape 3 de la section 6.2.2 (page 23)
+
+				h = g;
+				g = f;
+				f = e;
+				e = d + temporaryFirst;
+				d = c;
+				c = b;
+				b = a;
+				a = temporaryFirst + temporarySecond;
+			}
+
+			// Calcul de la valeur de hachage intermédiaire par accumulation dans m_hashState
+			// https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (Page 22, Section 6.2.2, étape 4)
+			m_hashState[0] += a;
+			m_hashState[1] += b;
+			m_hashState[2] += c;
+			m_hashState[3] += d;
+			m_hashState[4] += e;
+			m_hashState[5] += f;
+			m_hashState[6] += g;
+			m_hashState[7] += h;
+		}
+
+		std::array<std::uint32_t, 8> m_hashState;
+		std::array<std::byte, BlockSize> m_buffer;
+		std::size_t m_bufferSize;
+		std::uint64_t m_totalBytes;
+	};
+}

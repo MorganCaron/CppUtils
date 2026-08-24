@@ -129,7 +129,7 @@ namespace CppUtils::UnitTest::Math
 			suite.expect(not divZeroResult.has_value());
 		});
 
-		suite.addTest("Constexpr Support", [&] {
+		suite.addTest("constexpr support", [&] {
 			const auto result = []() constexpr {
 				auto leftOperand = 10_bigInt;
 				auto rightOperand = -20_bigInt;

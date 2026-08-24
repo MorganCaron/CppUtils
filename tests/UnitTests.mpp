@@ -14,6 +14,7 @@ export import CppUtils.UnitTests.Container.Stack;
 export import CppUtils.UnitTests.Container.Tree;
 export import CppUtils.UnitTests.Container.TypedStack;
 export import CppUtils.UnitTests.Container.Vector;
+export import CppUtils.UnitTests.Crypto.SHA256;
 export import CppUtils.UnitTests.Execution.Event;
 export import CppUtils.UnitTests.Execution.EventDispatcher;
 export import CppUtils.UnitTests.Execution.EventQueue;

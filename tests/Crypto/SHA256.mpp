@@ -1,0 +1,44 @@
+export module CppUtils.UnitTests.Crypto.SHA256;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Crypto
+{
+	[[nodiscard]] inline auto toHexString(std::span<const std::byte> data) -> std::string
+	{
+		using namespace std::literals;
+
+		auto result = ""s;
+		result.reserve(std::ranges::size(data) * 2);
+		for (auto byte : data)
+			result += std::format("{:02x}", static_cast<unsigned char>(byte));
+		return result;
+	}
+
+	auto _ = TestSuite{"Crypto/SHA256", [](auto& suite) {
+		suite.addTest("Empty string", [&] {
+			const auto hash = CppUtils::Crypto::SHA256::hash("");
+			suite.expectEqual(toHexString(hash), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+		});
+
+		suite.addTest("Test vector 1", [&] {
+			const auto hash = CppUtils::Crypto::SHA256::hash("abc");
+			suite.expectEqual(toHexString(hash), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+		});
+
+		suite.addTest("Test vector 2", [&] {
+			const auto hash = CppUtils::Crypto::SHA256::hash("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq");
+			suite.expectEqual(toHexString(hash), "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1");
+		});
+
+		suite.addTest("Multi-step update", [&] {
+			auto sha = CppUtils::Crypto::SHA256{};
+			sha.update("a");
+			sha.update("b");
+			sha.update("c");
+			const auto hash = sha.digest();
+			suite.expectEqual(toHexString(hash), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+		});
+	}};
+}
