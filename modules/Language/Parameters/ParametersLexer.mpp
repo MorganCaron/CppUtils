@@ -17,27 +17,6 @@ export namespace CppUtils::Language::Parameters
 			using namespace std::literals;
 			using namespace String::Literals;
 
-			static const auto stringKeywordParser = [](auto& context) -> bool
-			{
-				auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
-				const auto keyword = String::getKeywordAndSkip(cursor);
-				if (std::ranges::empty(keyword))
-					return false;
-				parentNode.get().nodes.emplace_back(std::string{keyword});
-				return true;
-			};
-
-			static const auto contentParser = [](auto& context) -> bool
-			{
-				auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
-				const auto string = std::string{String::trimString(String::getStringAndSkipIf(cursor, [](char c) -> bool
-				{
-					return c != ']';
-				}))};
-				parentNode.get().nodes.emplace_back(string);
-				return true;
-			};
-
 			m_grammarLexer.addParsingFunction("spaceParser"_token, Lexer::spaceParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("keywordParser"_token, stringKeywordParser);
 			m_grammarLexer.addParsingFunction("contentParser"_token, contentParser);
@@ -126,6 +105,27 @@ export namespace CppUtils::Language::Parameters
 		}
 
 	private:
+		[[nodiscard]] static inline auto stringKeywordParser(Lexer::Context<Type::Token, std::string>& context) -> bool
+		{
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			const auto keyword = String::getKeywordAndSkip(cursor);
+			if (std::ranges::empty(keyword))
+				return false;
+			parentNode.get().nodes.emplace_back(std::string{keyword});
+			return true;
+		}
+
+		[[nodiscard]] static inline auto contentParser(Lexer::Context<Type::Token, std::string>& context) -> bool
+		{
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			const auto string = std::string{String::trimString(String::getStringAndSkipIf(cursor, [](char character) -> bool
+			{
+				return character != ']';
+			}))};
+			parentNode.get().nodes.emplace_back(string);
+			return true;
+		}
+
 		Lexer::GrammarLexer<Type::Token, std::string> m_grammarLexer;
 	};
 

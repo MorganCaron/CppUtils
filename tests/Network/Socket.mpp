@@ -6,7 +6,7 @@ import CppUtils.Network.Socket;
 import CppUtils.Network.Server;
 import CppUtils.Network.Client;
 
-namespace CppUtils::UnitTest::Network
+namespace CppUtils::UnitTest::Network::Socket
 {
 	auto _ = TestSuite{"Network/Socket", {"Logger", "Thread/TryAsync"}, [](auto& suite) {
 		using namespace std::literals;

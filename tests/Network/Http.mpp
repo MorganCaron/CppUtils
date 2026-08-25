@@ -4,7 +4,7 @@ import std;
 import CppUtils;
 import CppUtils.Network.Http;
 
-namespace CppUtils::UnitTest::Network
+namespace CppUtils::UnitTest::Network::Http
 {
 	auto _ = TestSuite{"Network/Http", {"Logger", "Thread/TryAsync", "Network/Server", "Network/Client", "Network/DNS", "Network/Socket"}, [](auto& suite) {
 		suite.addTest("Client/Server Exchange", [&] {

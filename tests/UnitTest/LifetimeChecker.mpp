@@ -3,7 +3,7 @@ export module CppUtils.UnitTests.UnitTest.LifetimeChecker;
 import std;
 import CppUtils;
 
-namespace CppUtils::UnitTest
+namespace CppUtils::UnitTest::LifetimeCheckerTest
 {
 	auto _ = TestSuite{"UnitTest/LifetimeChecker", [](TestSuite& suite) {
 		using Logger = TestSuite::Logger;

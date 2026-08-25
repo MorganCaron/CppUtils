@@ -4,7 +4,7 @@ import std;
 import CppUtils;
 import CppUtils.Network.DNS;
 
-namespace CppUtils::UnitTest::Network
+namespace CppUtils::UnitTest::Network::DNS
 {
 	auto _ = TestSuite{"Network/DNS", {"Logger"}, [](auto& suite) {
 		using Logger = TestSuite::Logger;

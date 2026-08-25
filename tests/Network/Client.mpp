@@ -4,7 +4,7 @@ import std;
 import CppUtils;
 import CppUtils.Network.Client;
 
-namespace CppUtils::UnitTest::Network
+namespace CppUtils::UnitTest::Network::Client
 {
 	auto _ = TestSuite{"Network/Client", {"Logger", "Network/Socket"}, [](auto& suite) {
 		suite.addTest("Client Creation", [&] {

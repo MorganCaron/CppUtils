@@ -3,7 +3,7 @@ export module CppUtils.UnitTests.LogRotate;
 import std;
 import CppUtils;
 
-namespace CppUtils::UnitTest::LogRotate
+namespace CppUtils::UnitTest::Log::LogRotate
 {
 	auto _ = TestSuite{"LogRotate", {"Logger", "FileSystem/Directory"}, [](TestSuite& suite) {
 		using namespace std::literals;

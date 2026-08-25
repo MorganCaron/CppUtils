@@ -16,47 +16,13 @@ export namespace CppUtils::Language::Ini
 			using namespace std::literals;
 			using namespace String::Literals;
 
-			static const auto identifierParser = [](auto& context, char delimiter) -> bool
-			{
-				auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
-				const auto string = std::string{String::trimString(String::getStringAndSkipIf(cursor, [delimiter](char c) -> bool
-				{
-					return c != delimiter and c != ';' and c != '[' and c != ']' and (std::isspace(static_cast<unsigned char>(c)) or std::isgraph(static_cast<unsigned char>(c)));
-				}))};
-				if (std::ranges::empty(string))
-					return false;
-				auto stringToken = Type::hash(string);
-				parentNode.get().nodes.emplace_back(stringToken);
-				return true;
-			};
-
 			m_grammarLexer.addParsingFunction("spaceParser"_token, Lexer::spaceParser<Type::Token, bool, float>);
-			m_grammarLexer.addParsingFunction("commentParser"_token, [](auto& context)
-			{
-				auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
-				if (String::isEndOfString(cursor) or String::getChar(cursor) != ';')
-					return false;
-				++cursor.position;
-				while (not String::isEndOfString(cursor) and String::getChar(cursor) != '\n')
-					++cursor.position;
-				if (not String::isEndOfString(cursor))
-					++cursor.position;
-				return true;
-			});
-			m_grammarLexer.addParsingFunction("sectionIdentifierParser"_token, [](auto& context)
-			{
-				return identifierParser(context, ']');
-			});
-			m_grammarLexer.addParsingFunction("keyIdentifierParser"_token, [](auto& context)
-			{
-				return identifierParser(context, '=');
-			});
+			m_grammarLexer.addParsingFunction("commentParser"_token, commentParser);
+			m_grammarLexer.addParsingFunction("sectionIdentifierParser"_token, sectionIdentifierParser);
+			m_grammarLexer.addParsingFunction("keyIdentifierParser"_token, keyIdentifierParser);
 			m_grammarLexer.addParsingFunction("booleanParser"_token, Lexer::booleanParser<Type::Token, bool, float>);
 			m_grammarLexer.addParsingFunction("floatParser"_token, Lexer::floatParser<Type::Token, bool, float>);
-			m_grammarLexer.addParsingFunction("stringParser"_token, [](auto& context)
-			{
-				return identifierParser(context, '\n');
-			});
+			m_grammarLexer.addParsingFunction("stringParser"_token, stringParser);
 
 			static constexpr auto grammarSrc = R"(
 			main: (line >= 0) spaceParser;
@@ -83,6 +49,48 @@ export namespace CppUtils::Language::Ini
 		}
 
 	private:
+		[[nodiscard]] static inline auto identifierParser(Lexer::Context<Type::Token, bool, float>& context, char delimiter) -> bool
+		{
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			const auto string = std::string{String::trimString(String::getStringAndSkipIf(cursor, [delimiter](char character) -> bool
+			{
+				return character != delimiter and character != ';' and character != '[' and character != ']' and (std::isspace(static_cast<unsigned char>(character)) or std::isgraph(static_cast<unsigned char>(character)));
+			}))};
+			if (std::ranges::empty(string))
+				return false;
+			auto stringToken = Type::hash(string);
+			parentNode.get().nodes.emplace_back(stringToken);
+			return true;
+		}
+
+		[[nodiscard]] static inline auto commentParser(Lexer::Context<Type::Token, bool, float>& context) -> bool
+		{
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			if (String::isEndOfString(cursor) or String::getChar(cursor) != ';')
+				return false;
+			++cursor.position;
+			while (not String::isEndOfString(cursor) and String::getChar(cursor) != '\n')
+				++cursor.position;
+			if (not String::isEndOfString(cursor))
+				++cursor.position;
+			return true;
+		}
+
+		[[nodiscard]] static inline auto sectionIdentifierParser(Lexer::Context<Type::Token, bool, float>& context) -> bool
+		{
+			return identifierParser(context, ']');
+		}
+
+		[[nodiscard]] static inline auto keyIdentifierParser(Lexer::Context<Type::Token, bool, float>& context) -> bool
+		{
+			return identifierParser(context, '=');
+		}
+
+		[[nodiscard]] static inline auto stringParser(Lexer::Context<Type::Token, bool, float>& context) -> bool
+		{
+			return identifierParser(context, '\n');
+		}
+
 		Lexer::GrammarLexer<Type::Token, bool, float> m_grammarLexer;
 	};
 

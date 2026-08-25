@@ -3,7 +3,7 @@ export module CppUtils.UnitTests.Log.FileSink;
 import std;
 import CppUtils;
 
-namespace CppUtils::UnitTest::Logger
+namespace CppUtils::UnitTest::Log::FileSink
 {
 	auto _ = TestSuite{"Log/FileSink", {"Logger", "FileSystem/Directory"}, [](TestSuite& suite) {
 		using namespace std::literals;

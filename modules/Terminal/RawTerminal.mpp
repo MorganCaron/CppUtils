@@ -178,7 +178,7 @@ export namespace CppUtils::Terminal
 								highSurrogate = utf16CodeUnit;
 								continue;
 							}
-							codePoint = utf16CodeUnit;
+							codePoint = static_cast<char32_t>(utf16CodeUnit);
 						}
 					}
 					else if (String::isHighSurrogate(utf16CodeUnit))
@@ -187,7 +187,7 @@ export namespace CppUtils::Terminal
 						continue;
 					}
 					else
-						codePoint = utf16CodeUnit;
+						codePoint = static_cast<char32_t>(utf16CodeUnit);
 
 					const auto utf8String = String::toUtf8(codePoint);
 					for (const auto byte : utf8String)

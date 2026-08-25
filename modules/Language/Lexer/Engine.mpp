@@ -269,8 +269,15 @@ export namespace CppUtils::Language::Lexer
 			case RecurrenceType::MoreOrEqualTo:
 			{
 				auto i = 0uz;
-				while (parseLexeme(recurrenceLexeme, context))
+				while (true)
+				{
+					const auto previousPosition = cursor.position;
+					if (not parseLexeme(recurrenceLexeme, context))
+						break;
+					if (cursor.position == previousPosition)
+						break;
 					++i;
+				}
 				if ((recurrenceType == RecurrenceType::MoreThan and i <= repetitions) or
 					(recurrenceType == RecurrenceType::MoreOrEqualTo and i < repetitions))
 				{

@@ -16,37 +16,6 @@ export namespace CppUtils::Language::Xml
 			using namespace std::literals;
 			using namespace String::Literals;
 
-			static const auto textParser = [](auto& context) -> bool
-			{
-				auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
-				const auto string = std::string{String::trimString(String::getStringAndSkipIf(cursor, [](char c) -> bool
-				{
-					return c != '<';
-				}))};
-				if (std::ranges::empty(string))
-					return false;
-				parentNode.get().nodes.emplace_back(std::move(string));
-				return true;
-			};
-
-			static const auto openingTagParser = [](auto& context) -> bool
-			{
-				auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
-				return (not String::isEndOfString(cursor) and String::getCharAndSkip(cursor) == '<' and not String::isEndOfString(cursor) and String::getChar(cursor) != '/');
-			};
-
-			static const auto closingTagValidator = [](auto& context) -> bool
-			{
-				auto& parentNode = context.parentNode.get();
-				if (std::ranges::empty(parentNode.nodes))
-					return false;
-				const auto& closingTag = parentNode.nodes.back().value;
-				if (closingTag != parentNode.value)
-					return false;
-				parentNode.nodes.pop_back();
-				return true;
-			};
-
 			m_grammarLexer.addParsingFunction("spaceParser"_token, Lexer::spaceParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("keywordParser"_token, Lexer::keywordParser<Type::Token, std::string>);
 			m_grammarLexer.addParsingFunction("quoteParser"_token, Lexer::quoteParser<Type::Token, std::string>);
@@ -78,6 +47,37 @@ export namespace CppUtils::Language::Xml
 		}
 
 	private:
+		[[nodiscard]] static inline auto textParser(Lexer::Context<Type::Token, std::string>& context) -> bool
+		{
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			const auto string = std::string{String::trimString(String::getStringAndSkipIf(cursor, [](char character) -> bool
+			{
+				return character != '<';
+			}))};
+			if (std::ranges::empty(string))
+				return false;
+			parentNode.get().nodes.emplace_back(std::move(string));
+			return true;
+		}
+
+		[[nodiscard]] static inline auto openingTagParser(Lexer::Context<Type::Token, std::string>& context) -> bool
+		{
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			return (not String::isEndOfString(cursor) and String::getCharAndSkip(cursor) == '<' and not String::isEndOfString(cursor) and String::getChar(cursor) != '/');
+		}
+
+		[[nodiscard]] static inline auto closingTagValidator(Lexer::Context<Type::Token, std::string>& context) -> bool
+		{
+			auto& parentNode = context.parentNode.get();
+			if (std::ranges::empty(parentNode.nodes))
+				return false;
+			const auto& closingTag = parentNode.nodes.back().value;
+			if (closingTag != parentNode.value)
+				return false;
+			parentNode.nodes.pop_back();
+			return true;
+		}
+
 		Lexer::GrammarLexer<Type::Token, std::string> m_grammarLexer;
 	};
 

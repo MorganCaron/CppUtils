@@ -4,7 +4,7 @@ import std;
 import CppUtils;
 import CppUtils.Network.Server;
 
-namespace CppUtils::UnitTest::Network
+namespace CppUtils::UnitTest::Network::Server
 {
 	auto _ = TestSuite{"Network/Server", {"Logger", "Network/Socket"}, [](auto& suite) {
 		using Logger = TestSuite::Logger;

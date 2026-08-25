@@ -3,7 +3,7 @@ export module CppUtils.UnitTests.ChronoLogger;
 import std;
 import CppUtils;
 
-namespace CppUtils::UnitTest::ChronoLogger
+namespace CppUtils::UnitTest::Log::ChronoLogger
 {
 	auto _ = TestSuite{"Log", {"Logger", "Chrono"}, [](TestSuite& suite) {
 		using Logger = TestSuite::Logger;

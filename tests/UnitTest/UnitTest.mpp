@@ -3,7 +3,7 @@ export module CppUtils.UnitTests.UnitTest;
 import std;
 import CppUtils;
 
-namespace CppUtils::UnitTest
+namespace CppUtils::UnitTest::UnitTest
 {
 	auto _ = TestSuite{"UnitTest", [](TestSuite& suite) {
 		suite.addTest("empty test", [] {});
