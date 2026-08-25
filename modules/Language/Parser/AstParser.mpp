@@ -1,0 +1,74 @@
+export module CppUtils.Language.Parser.AstParser;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.Language.AST;
+
+export namespace CppUtils::Language::Parser
+{
+	template<class Element = char>
+	inline auto parseAst(String::Cursor<std::basic_string_view<Element>>& cursor, Container::ASTNode<Element>& parentNode, Container::AST<Element>& ast) -> void
+	{
+		auto tokenNameBuffer = std::string{};
+		while (not String::isEndOfString(cursor))
+		{
+			auto value = cursor.source[cursor.position];
+			if (value == '}')
+				break;
+			++cursor.position;
+			switch (value)
+			{
+			case ' ': case '\n': case '\t': case '\r':
+				tokenNameBuffer.clear();
+				break;
+			case '{':
+			{
+				tokenNameBuffer.clear();
+				if (std::ranges::empty(parentNode.nodes))
+					throw std::logic_error{"Missing parent node before '{'"};
+				parseAst(cursor, parentNode.nodes.back(), ast);
+				if (String::isEndOfString(cursor) or cursor.source[cursor.position] != '}')
+					throw std::logic_error{"Missing '}'"};
+				++cursor.position;
+				break;
+			}
+			case '_':
+			{
+				const auto nbLetters = std::ranges::size(tokenNameBuffer);
+				if (nbLetters == 0)
+					throw std::logic_error{"Token name missing before '_' char"};
+				const auto token = Type::hash(tokenNameBuffer);
+				ast.hashTable[token] = tokenNameBuffer;
+				tokenNameBuffer.clear();
+				parentNode.nodes.erase(std::ranges::cend(parentNode.nodes) - static_cast<std::ptrdiff_t>(nbLetters), std::ranges::cend(parentNode.nodes));
+				parentNode.nodes.push_back(Container::ASTNode<Element>{token});
+				break;
+			}
+			case '\\':
+			{
+				if (String::isEndOfString(cursor))
+					throw std::logic_error{"Missing character after '\\'"};
+				value = cursor.source[cursor.position++];
+				value = String::escape(value);
+				[[fallthrough]];
+			}
+			default:
+				parentNode.nodes.emplace_back(Container::ASTNode<Element>{static_cast<std::uint64_t>(static_cast<unsigned char>(value))});
+				tokenNameBuffer += value;
+			}
+		}
+	}
+
+	template<class CharT = char>
+	[[nodiscard]] inline auto parseAst(std::basic_string_view<CharT> src) -> Container::AST<CharT>
+	{
+		auto ast = Container::AST<CharT>{};
+		auto cursor = String::Cursor<std::basic_string_view<CharT>>{src};
+		parseAst(cursor, ast.root, ast);
+		if (not String::isEndOfString(cursor))
+			throw std::logic_error{"Unknown element remaining in AST parse"};
+		return ast;
+	}
+}

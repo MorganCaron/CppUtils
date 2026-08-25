@@ -1,0 +1,137 @@
+export module CppUtils.UnitTests.Language.Json.JsonLexer;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::Json::JsonLexer
+{
+	using namespace CppUtils::String::Literals;
+
+	auto _ = TestSuite{"Language/Json/JsonLexer", {}, [](TestSuite& suite) {
+		using namespace std::literals;
+		using namespace CppUtils::Language::Json::Literals;
+
+		suite.addTest("Empty json", [&] {
+			const auto jsonTree = R"(
+			{}
+			)"_json;
+			CppUtils::Log::TreeNodeLogger::log(jsonTree);
+
+			suite.expect(std::ranges::empty(jsonTree.nodes));
+		});
+
+		suite.addTest("Null", [&] {
+			const auto jsonTree = R"(
+			{
+				"key": null
+			}
+			)"_json;
+			CppUtils::Log::TreeNodeLogger::log(jsonTree);
+
+			suite.expectEqual(std::ranges::size(jsonTree.nodes), 1uz);
+			suite.expect(jsonTree.exists("key"_token));
+			const auto& keyNode = jsonTree["key"_token];
+			suite.expect(keyNode.exists("null"_token));
+		});
+
+		suite.addTest("Boolean", [&] {
+			const auto jsonTree = R"(
+			{
+				"bool0": true,
+				"bool1": false
+			}
+			)"_json;
+			CppUtils::Log::TreeNodeLogger::log(jsonTree);
+
+			suite.expectEqual(std::ranges::size(jsonTree.nodes), 2uz);
+			suite.expect(jsonTree.exists("bool0"_token));
+			suite.expect(jsonTree.exists("bool1"_token));
+			const auto& bool0Node = jsonTree["bool0"_token];
+			const auto& bool1Node = jsonTree["bool1"_token];
+			suite.expect(bool0Node.exists("boolean"_token));
+			suite.expect(bool1Node.exists("boolean"_token));
+			suite.expectEqual(std::get<bool>(bool0Node["boolean"_token].nodes.at(0).value), true);
+			suite.expectEqual(std::get<bool>(bool1Node["boolean"_token].nodes.at(0).value), false);
+		});
+
+		suite.addTest("Number", [&] {
+			const auto jsonTree = R"(
+			{
+				"number0": 42,
+				"number1": -21,
+				"number2": 3.141592
+			}
+			)"_json;
+			CppUtils::Log::TreeNodeLogger::log(jsonTree);
+
+			suite.expectEqual(std::ranges::size(jsonTree.nodes), 3uz);
+			suite.expect(jsonTree.exists("number0"_token));
+			suite.expect(jsonTree.exists("number1"_token));
+			suite.expect(jsonTree.exists("number2"_token));
+			const auto& n0 = jsonTree["number0"_token];
+			const auto& n1 = jsonTree["number1"_token];
+			const auto& n2 = jsonTree["number2"_token];
+			suite.expect(n0.exists("float"_token));
+			suite.expect(n1.exists("float"_token));
+			suite.expect(n2.exists("float"_token));
+			suite.expectEqual(std::get<float>(n0["float"_token].nodes.at(0).value), 42.0f);
+			suite.expectEqual(std::get<float>(n1["float"_token].nodes.at(0).value), -21.0f);
+			suite.expectEqual(std::get<float>(n2["float"_token].nodes.at(0).value), 3.141592f);
+		});
+
+		suite.addTest("String", [&] {
+			const auto jsonTree = R"(
+			{
+				"key": "hello"
+			}
+			)"_json;
+			CppUtils::Log::TreeNodeLogger::log(jsonTree);
+
+			suite.expectEqual(std::ranges::size(jsonTree.nodes), 1uz);
+			suite.expect(jsonTree.exists("key"_token));
+			const auto& keyNode = jsonTree["key"_token];
+			suite.expect(keyNode.exists("string"_token));
+			suite.expectEqual(std::get<Type::Token>(keyNode["string"_token].nodes.at(0).value), "hello"_token);
+		});
+
+		suite.addTest("Array", [&] {
+			const auto jsonTree = R"(
+			{
+				"key": [1, "abc", true]
+			}
+			)"_json;
+			CppUtils::Log::TreeNodeLogger::log(jsonTree);
+
+			suite.expectEqual(std::ranges::size(jsonTree.nodes), 1uz);
+			suite.expect(jsonTree.exists("key"_token));
+			const auto& keyNode = jsonTree["key"_token];
+			suite.expect(keyNode.exists("array"_token));
+			const auto& arrayNode = keyNode["array"_token];
+			suite.expectEqual(std::ranges::size(arrayNode.nodes), 3uz);
+			suite.expectEqual(std::get<Type::Token>(arrayNode.nodes.at(0).value), "float"_token);
+			suite.expectEqual(std::get<float>(arrayNode.nodes.at(0).nodes.at(0).value), 1.0f);
+			suite.expectEqual(std::get<Type::Token>(arrayNode.nodes.at(1).value), "string"_token);
+			suite.expectEqual(std::get<Type::Token>(arrayNode.nodes.at(1).nodes.at(0).value), "abc"_token);
+			suite.expectEqual(std::get<Type::Token>(arrayNode.nodes.at(2).value), "boolean"_token);
+			suite.expectEqual(std::get<bool>(arrayNode.nodes.at(2).nodes.at(0).value), true);
+		});
+
+		suite.addTest("Object", [&] {
+			const auto jsonTree = R"(
+			{
+				"key": {
+					"number0": 0,
+					"number1": 1
+				}
+			}
+			)"_json;
+			CppUtils::Log::TreeNodeLogger::log(jsonTree);
+
+			suite.expectEqual(std::ranges::size(jsonTree.nodes), 1uz);
+			suite.expect(jsonTree.exists("key"_token));
+			const auto& keyNode = jsonTree["key"_token];
+			suite.expect(keyNode.exists("number0"_token));
+			suite.expect(keyNode.exists("number1"_token));
+		});
+	}};
+}

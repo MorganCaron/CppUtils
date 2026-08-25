@@ -1,0 +1,160 @@
+export module CppUtils.Language.Lexer.Lexemes;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+
+export namespace CppUtils::Language::Lexer
+{
+	using namespace String::Literals;
+
+	struct ILexeme
+	{
+		virtual ~ILexeme() = default;
+		[[nodiscard]] virtual auto getType() const noexcept -> const Type::Token& = 0;
+		[[nodiscard]] virtual auto getPrintable() const noexcept -> std::string = 0;
+	};
+
+	struct ParsingError final
+	{
+		std::size_t cursorPosition = 0;
+		ILexeme* lexeme = nullptr;
+	};
+
+	template<class... Types>
+	struct Context final
+	{
+		String::Cursor<std::string_view> cursor;
+		std::reference_wrapper<Container::Tree::VariantNode<Types...>> parentNode;
+		std::size_t firstChildPosition = 0;
+		std::vector<ParsingError> parsingErrors = {};
+	};
+
+	template<class... Types>
+	using ParsingFunction = std::function<bool(Context<Types...>&)>;
+
+	template<const Type::Token& StorageToken, class StorageType>
+	struct Typed final: public ILexeme
+	{
+		static constexpr auto Type = StorageToken;
+		using Storage = StorageType;
+
+		Storage value;
+
+		inline explicit Typed(Storage c_value):
+			value{std::move(c_value)}
+		{}
+
+		[[nodiscard]] inline auto getType() const noexcept -> const Type::Token& override final
+		{
+			return Type;
+		}
+
+		[[nodiscard]] inline auto getPrintable() const noexcept -> std::string override final
+		{
+			return std::format("{}", StorageToken);
+		}
+	};
+
+	template<const Type::Token& StorageToken>
+	struct Typed<StorageToken, void> final: public ILexeme
+	{
+		static constexpr auto Type = StorageToken;
+		using Storage = void;
+
+		inline Typed() = default;
+
+		[[nodiscard]] inline auto getType() const noexcept -> const Type::Token& override final
+		{
+			return Type;
+		}
+
+		[[nodiscard]] inline auto getPrintable() const noexcept -> std::string override final
+		{
+			return std::format("{}", StorageToken);
+		}
+	};
+
+	template<class TargetType>
+	[[nodiscard]] inline auto ensureType(const std::unique_ptr<ILexeme>& lexeme) -> TargetType&
+	{
+		return dynamic_cast<TargetType&>(*lexeme);
+	}
+
+	inline constexpr auto BreakPointLexemeType = "breakpoint"_token;
+	using BreakPointLexeme = Typed<BreakPointLexemeType, void>;
+
+	inline constexpr auto StringLexemeType = "string"_token;
+	using StringLexeme = Typed<StringLexemeType, std::string>;
+
+	template<class... Types>
+	struct NamedParser final
+	{
+		std::string name;
+		ParsingFunction<Types...> parsingFunction;
+
+		inline NamedParser(std::string c_name, ParsingFunction<Types...> c_parsingFunction):
+			name{std::move(c_name)},
+			parsingFunction{std::move(c_parsingFunction)}
+		{}
+	};
+
+	template<class... Types>
+	NamedParser(std::string, ParsingFunction<Types...>) -> NamedParser<Types...>;
+
+	template<class... Types>
+	NamedParser(std::string, bool(Context<Types...>&)) -> NamedParser<Types...>;
+
+	inline constexpr auto ParserLexemeType = "parser"_token;
+	template<class... Types>
+	using ParserLexeme = Typed<ParserLexemeType, NamedParser<Types...>>;
+
+	inline constexpr auto TokenLexemeType = "token"_token;
+	using TokenLexeme = Typed<TokenLexemeType, Type::Token>;
+
+	inline constexpr auto TagLexemeType = "tag"_token;
+	using TagLexeme = Typed<TagLexemeType, std::unique_ptr<ILexeme>>;
+
+	inline constexpr auto MutedLexemeType = "muted"_token;
+	using MutedLexeme = Typed<MutedLexemeType, std::unique_ptr<ILexeme>>;
+
+	enum class RecurrenceType : char
+	{
+		Optional,
+		EqualTo,
+		MoreThan,
+		MoreOrEqualTo
+	};
+
+	struct Recurrence final
+	{
+		std::unique_ptr<ILexeme> lexeme;
+		RecurrenceType type;
+		std::size_t repetitions;
+	};
+
+	inline constexpr auto RecurrentLexemeType = "recurrence"_token;
+	using RecurrentLexeme = Typed<RecurrentLexemeType, Recurrence>;
+
+	struct Alternative final
+	{
+		std::vector<std::unique_ptr<ILexeme>> lexemes;
+
+		inline explicit Alternative(std::vector<std::unique_ptr<ILexeme>> c_lexemes):
+			lexemes{std::move(c_lexemes)}
+		{}
+	};
+
+	inline constexpr auto AlternativeLexemeType = "alternative"_token;
+	using AlternativeLexeme = Typed<AlternativeLexemeType, Alternative>;
+
+	struct Exclusion final
+	{
+		std::unique_ptr<ILexeme> lexeme;
+		std::unique_ptr<ILexeme> excluded;
+	};
+
+	inline constexpr auto ExcludeLexemeType = "exclusion"_token;
+	using ExcludeLexeme = Typed<ExcludeLexemeType, Exclusion>;
+}

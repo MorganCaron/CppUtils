@@ -1,0 +1,50 @@
+export module CppUtils.UnitTests.Language.Parameters.ParametersLexer;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::Parameters::ParametersLexer
+{
+	struct ProgramSettings final
+	{
+		bool verbose = false;
+		std::string parameter;
+	};
+
+	auto _ = TestSuite{"Language/Parameters/ParametersLexer", {}, [](TestSuite& suite) {
+		using namespace std::literals;
+
+		suite.addTest("parseParameters", [&] {
+			const char* const argv[] = {"executable", "A[aaa]", "B[", "0", "]", "C", "DDD[]", "E[e e e ]"};
+			const auto parametersLexer = CppUtils::Language::Parameters::ParametersLexer{};
+			const auto parameters = parametersLexer.parseParameters(8, argv);
+
+			suite.expectEqual(std::ranges::size(parameters), 5uz);
+			suite.expectEqual(parameters.at("A"), "aaa"s);
+			suite.expectEqual(parameters.at("B"), "0"s);
+			suite.expectEqual(parameters.at("C"), ""s);
+			suite.expectEqual(parameters.at("DDD"), ""s);
+			suite.expectEqual(parameters.at("E"), "e e e"s);
+		});
+
+		suite.addTest("executeCommands", [&] {
+			const char* const argv[] = {"executable", "info", "verbose", "parameter[value]"};
+			auto settings = ProgramSettings{};
+			const auto parametersLexer = CppUtils::Language::Parameters::ParametersLexer{};
+			const auto abort = parametersLexer.executeCommands(4, argv, {{"info", []([[maybe_unused]] auto value) -> bool {
+				return false;
+			}},
+																			{"verbose", [&settings]([[maybe_unused]] auto value) -> bool {
+				settings.verbose = true;
+				return false;
+			}},
+																			{"parameter", [&settings]([[maybe_unused]] auto value) -> bool {
+				settings.parameter = value;
+				return false;
+			}}});
+			suite.expectEqual(abort, false);
+			suite.expectEqual(settings.verbose, true);
+			suite.expectEqual(settings.parameter, "value"s);
+		});
+	}};
+}

@@ -1,0 +1,9 @@
+export module CppUtils.Language.Lexer;
+
+export import CppUtils.Language.Lexer.Lexemes;
+export import CppUtils.Language.Lexer.Parsers;
+export import CppUtils.Language.Lexer.Expression;
+export import CppUtils.Language.Lexer.Engine;
+export import CppUtils.Language.Lexer.GrammarLexer;
+export import CppUtils.Language.Lexer.AstLexer;
+export import CppUtils.Language.Lexer.Grammar;

@@ -1,7 +1,9 @@
 export module CppUtils.TreeNodeLogger;
 
+import std;
 import CppUtils.Container;
 import CppUtils.Terminal;
+import CppUtils.String;
 
 export namespace CppUtils::Log
 {
@@ -36,6 +38,29 @@ export namespace CppUtils::Log
 			default:
 				return Terminal::TextColor::TextColorEnum::Default;
 			}
+		}
+
+		template<class T>
+		static inline auto log(const Container::Tree::Node<T>& treeNode, const std::string& prefix = "") -> void
+		{
+			std::print("{}", formatNode(treeNode, prefix));
+		}
+
+		template<class T>
+		[[nodiscard]] static inline auto formatNode(const Container::Tree::Node<T>& treeNode, const std::string& prefix = "") -> std::string
+		{
+			auto result = std::string{};
+			result += String::formatValue(treeNode.value);
+			result += "\n";
+
+			const auto nbNodes = std::ranges::size(treeNode.nodes);
+			for (auto i = 0uz; i < nbNodes; ++i)
+			{
+				const auto isLast = (i == nbNodes - 1);
+				result += prefix + (isLast ? "└" : "├") + "─ ";
+				result += formatNode(treeNode.nodes.at(i), prefix + (isLast ? " " : "│") + "  ");
+			}
+			return result;
 		}
 	};
 }

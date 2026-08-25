@@ -1,16 +1,18 @@
-#pragma once
+export module CppUtils.UnitTests.Language.Ini.IniLexer;
 
-#include <CppUtils.hpp>
+import std;
+import CppUtils;
 
-namespace CppUtils::UnitTests::Language::Ini::IniLexer
+namespace CppUtils::UnitTest::Language::Ini::IniLexer
 {
-	TEST_GROUP("Language/Ini/IniLexer")
-	{
-		using namespace CppUtils::Type::Literals;
+	using namespace CppUtils::String::Literals;
+
+	auto _ = TestSuite{"Language/Ini/IniLexer", {"Language/Json/JsonLexer"}, [](TestSuite& suite) {
+		using namespace std::literals;
 		using namespace CppUtils::Language::Ini::Literals;
 		using namespace CppUtils::Language::Json::Literals;
 
-		addTest("Minimalist", [] {
+		suite.addTest("Minimalist", [&] {
 			const auto iniTree = R"(
 			[Section 1]
 			key=value
@@ -21,17 +23,16 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			{
 				"section": {
 					"Section 1": {
-						"key": {
-							"string": "value"
-						}
+						"key": "value"
 					}
 				}
 			}
 			)"_json;
-			EXPECT(iniTree == jsonTree);
+
+			suite.expectEqual(iniTree, jsonTree);
 		});
 
-		addTest("Number", [] {
+		suite.addTest("Number", [&] {
 			const auto iniTree = R"(
 			[Numbers]
 			pi=3.14
@@ -42,17 +43,16 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			{
 				"section": {
 					"Numbers": {
-						"pi": {
-							"float": 3.14
-						}
+						"pi": 3.14
 					}
 				}
 			}
 			)"_json;
-			EXPECT(iniTree == jsonTree);
+
+			suite.expectEqual(iniTree, jsonTree);
 		});
 
-		addTest("Comments", [] {
+		suite.addTest("Comments", [&] {
 			const auto iniTree = R"(
 			;comment
 			[Section 1];comment
@@ -65,17 +65,16 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			{
 				"section": {
 					"Section 1": {
-						"key": {
-							"string": "value"
-						}
+						"key": "value"
 					}
 				}
 			}
 			)"_json;
-			EXPECT(iniTree == jsonTree);
+
+			suite.expectEqual(iniTree, jsonTree);
 		});
 
-		addTest("Full", [] {
+		suite.addTest("Full", [&] {
 			const auto iniTree = R"(
 			[Section 1]
 			; comment
@@ -104,20 +103,17 @@ namespace CppUtils::UnitTests::Language::Ini::IniLexer
 			{
 				"section": {
 					"Section 1": {
-						"Option 1": {
-							"string": "value1"
-						},
-						"oPtion 1": {
-							"string": "value 2"
-						}
+						"Option 1": "value1",
+						"oPtion 1": "value 2"
 					}
 				}
 			}
 			)"_json;
-			EXPECT(iniTree.children.size() == 3);
-			EXPECT(iniTree.children[0] == jsonTree.children.at(0));
-			EXPECT(iniTree.children[1].at("Numbers"_token).children.size() == 8);
-			EXPECT(iniTree.children[2].at("Booleans"_token).children.size() == 2);
+
+			suite.expectEqual(std::ranges::size(iniTree.nodes), 3uz);
+			suite.expectEqual(iniTree.nodes.at(0), jsonTree.nodes.at(0));
+			suite.expectEqual(std::ranges::size(iniTree.nodes.at(1)["Numbers"_token].nodes), 8uz);
+			suite.expectEqual(std::ranges::size(iniTree.nodes.at(2)["Booleans"_token].nodes), 2uz);
 		});
-	}
+	}};
 }

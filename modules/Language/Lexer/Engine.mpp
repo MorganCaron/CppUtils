@@ -1,0 +1,334 @@
+export module CppUtils.Language.Lexer.Engine;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.Container.Vector;
+import CppUtils.Language.Lexer.Lexemes;
+import CppUtils.Language.Lexer.Parsers;
+import CppUtils.Language.Lexer.Expression;
+
+export namespace CppUtils::Language::Lexer
+{
+	template<class... Types>
+	class Lexer final
+	{
+	public:
+		Lexer() = default;
+
+		inline auto newExpression(Type::Token token, Type::Token name) -> Expression<Types...>&
+		{
+			auto [it, _] = m_expressions.insert_or_assign(token, Expression<Types...>{token, name});
+			return it->second;
+		}
+
+		inline auto newExpression(Type::Token token) -> Expression<Types...>&
+		{
+			return newExpression(token, token);
+		}
+
+		inline auto createExpression(Type::Token token, Type::Token name) -> Expression<Types...>&
+		{
+			return newExpression(token, name);
+		}
+
+		inline auto createExpression(Type::Token token) -> Expression<Types...>&
+		{
+			return newExpression(token, token);
+		}
+
+		[[nodiscard]] inline auto getExpression(Type::Token token) -> Expression<Types...>&
+		{
+			auto it = m_expressions.find(token);
+			if (it == m_expressions.end())
+				throw std::runtime_error{"Expression not found: " + std::format("{}", token)};
+			return it->second;
+		}
+
+		[[nodiscard]] inline auto getExpression(Type::Token token) const -> const Expression<Types...>&
+		{
+			auto it = m_expressions.find(token);
+			if (it == m_expressions.end())
+				throw std::runtime_error{"Expression not found: " + std::format("{}", token)};
+			return it->second;
+		}
+
+		[[nodiscard]] inline auto parseString(Type::Token token, std::string_view src) const -> Container::Tree::VariantNode<Types...>
+		{
+			const auto& expression = getExpression(token);
+			auto rootNode = Container::Tree::VariantNode<Types...>{expression.name == 0 ? token : expression.name};
+			auto cursor = String::Cursor<std::string_view>{src, 0uz};
+			auto context = Context<Types...>{cursor, rootNode, 0uz};
+			if (not parseExpression(expression, context))
+				throw std::runtime_error{"Parsing failed for " + std::format("{}", token) + " at position " + std::to_string(cursor.position) + ": " + std::string{src.substr(cursor.position, 30)}};
+			return rootNode;
+		}
+
+		inline auto parseContext(Type::Token token, Context<Types...>& context) const -> void
+		{
+			if (not parseSegment(token, context))
+				throw std::runtime_error{"Parsing failed"};
+		}
+
+		[[nodiscard]] inline auto parseSegment(Type::Token token, Context<Types...>& context) const -> bool
+		{
+			const auto& expression = getExpression(token);
+			return parseNode(expression, context);
+		}
+
+		[[nodiscard]] inline auto parseNode(const Expression<Types...>& expression, Context<Types...>& context) const -> bool
+		{
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			if (expression.name != 0)
+			{
+				auto newNode = Container::Tree::VariantNode<Types...>{expression.name};
+				auto newContext = Context<Types...>{
+					cursor,
+					newNode,
+					0,
+					context.parsingErrors};
+				if (not parseExpression(expression, newContext))
+				{
+					context.parsingErrors = std::move(newContext.parsingErrors);
+					return false;
+				}
+				cursor = newContext.cursor;
+				context.parsingErrors = std::move(newContext.parsingErrors);
+				parentNode.get().nodes.emplace_back(std::move(newNode));
+			}
+			else
+			{
+				auto newContext = Context<Types...>{cursor, parentNode, std::ranges::size(parentNode.get().nodes), context.parsingErrors};
+				if (not parseExpression(expression, newContext))
+				{
+					context.parsingErrors = std::move(newContext.parsingErrors);
+					return false;
+				}
+				cursor = newContext.cursor;
+				context.parsingErrors = std::move(newContext.parsingErrors);
+			}
+			return true;
+		}
+
+		[[nodiscard]] inline auto parseExpression(const Expression<Types...>& expression, Context<Types...>& context) const -> bool
+		{
+			if (std::ranges::empty(expression.lexemes))
+				throw std::runtime_error{"Expression is empty."};
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			const auto startPosition = cursor.position;
+			auto newParentNode = parentNode.get();
+			auto newContext = Context<Types...>{
+				cursor,
+				newParentNode,
+				firstChildPosition,
+				context.parsingErrors};
+			for (const auto& lexeme : expression.lexemes)
+			{
+				if (not parseLexeme(lexeme, newContext))
+				{
+					cursor.position = startPosition;
+					context.parsingErrors = std::move(newContext.parsingErrors);
+					return false;
+				}
+			}
+			cursor = newContext.cursor;
+			context.parsingErrors = std::move(newContext.parsingErrors);
+			parentNode.get() = std::move(newParentNode);
+			return true;
+		}
+
+		[[nodiscard]] inline auto parseLexeme(const std::unique_ptr<ILexeme>& lexeme, Context<Types...>& context) const -> bool
+		{
+			const auto& lexemeType = lexeme->getType();
+			if (lexemeType == BreakPointLexemeType)
+				return parseBreakPointLexeme(context);
+			if (lexemeType == StringLexemeType)
+				return parseStringLexeme(lexeme, context);
+			if (lexemeType == ParserLexemeType)
+				return parseParserLexeme(lexeme, context);
+			if (lexemeType == TagLexemeType)
+				return parseTagLexeme(lexeme, context);
+			if (lexemeType == MutedLexemeType)
+				return parseMutedLexeme(lexeme, context);
+			if (lexemeType == RecurrentLexemeType)
+				return parseRecurrentLexeme(lexeme, context);
+			if (lexemeType == AlternativeLexemeType)
+				return parseAlternativeLexeme(lexeme, context);
+			if (lexemeType == TokenLexemeType)
+				return parseTokenLexeme(lexeme, context);
+			if (lexemeType == ExcludeLexemeType)
+				return parseExcludeLexeme(lexeme, context);
+			throw std::runtime_error{"Unknown lexeme type."};
+		}
+
+	private:
+		[[nodiscard]] inline auto parseBreakPointLexeme(const Context<Types...>&) const -> bool
+		{
+			return true;
+		}
+
+		[[nodiscard]] inline auto parseStringLexeme(const std::unique_ptr<ILexeme>& lexeme, Context<Types...>& context) const -> bool
+		{
+			const auto& string = ensureType<StringLexeme>(lexeme).value;
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			if (not String::isEqualAndSkip(cursor, string))
+			{
+				parsingErrors.push_back(ParsingError{
+					.cursorPosition = cursor.position,
+					.lexeme = lexeme.get()});
+				return false;
+			}
+			return true;
+		}
+
+		[[nodiscard]] inline auto parseParserLexeme(const std::unique_ptr<ILexeme>& lexeme, Context<Types...>& context) const -> bool
+		{
+			const auto& namedParser = ensureType<ParserLexeme<Types...>>(lexeme).value;
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			if (not namedParser.parsingFunction(context))
+			{
+				parsingErrors.push_back(ParsingError{
+					.cursorPosition = cursor.position,
+					.lexeme = lexeme.get()});
+				return false;
+			}
+			return true;
+		}
+
+		[[nodiscard]] inline auto parseTokenLexeme(const std::unique_ptr<ILexeme>& lexeme, Context<Types...>& context) const -> bool
+		{
+			const auto& token = ensureType<TokenLexeme>(lexeme).value;
+			const auto& expression = getExpression(token);
+			return parseNode(expression, context);
+		}
+
+		[[nodiscard]] inline auto parseTagLexeme(const std::unique_ptr<ILexeme>& lexeme, Context<Types...>& context) const -> bool
+		{
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			auto& parentNodes = parentNode.get().nodes;
+			const auto tagPosition = std::ranges::size(parentNodes);
+			const auto& tagLexeme = ensureType<TagLexeme>(lexeme).value;
+			if (not parseLexeme(tagLexeme, context) or std::ranges::size(parentNodes) <= tagPosition)
+			{
+				parsingErrors.push_back(ParsingError{
+					.cursorPosition = cursor.position,
+					.lexeme = lexeme.get()});
+				return false;
+			}
+			auto tagNode = std::move(parentNodes.at(tagPosition));
+			auto newTagNodes = std::vector<Container::Tree::VariantNode<Types...>>{};
+			if (tagPosition > firstChildPosition)
+				std::ranges::move(std::ranges::subrange(std::ranges::begin(parentNodes) + static_cast<std::ptrdiff_t>(firstChildPosition), std::ranges::begin(parentNodes) + static_cast<std::ptrdiff_t>(tagPosition)), std::back_inserter(newTagNodes));
+			std::ranges::move(tagNode.nodes, std::back_inserter(newTagNodes));
+			if (std::ranges::size(parentNodes) > tagPosition + 1)
+				std::ranges::move(std::ranges::subrange(std::ranges::begin(parentNodes) + static_cast<std::ptrdiff_t>(tagPosition + 1), std::ranges::end(parentNodes)), std::back_inserter(newTagNodes));
+			parentNodes.erase(std::ranges::begin(parentNodes) + static_cast<std::ptrdiff_t>(firstChildPosition), std::ranges::end(parentNodes));
+			tagNode.nodes = std::move(newTagNodes);
+			auto& insertedTagNode = parentNodes.emplace_back(std::move(tagNode));
+			parentNode = std::ref(insertedTagNode);
+			firstChildPosition = std::ranges::size(insertedTagNode.nodes);
+			return true;
+		}
+
+		[[nodiscard]] inline auto parseMutedLexeme(const std::unique_ptr<ILexeme>& lexeme, Context<Types...>& context) const -> bool
+		{
+			const auto& mutedLexeme = ensureType<MutedLexeme>(lexeme).value;
+			auto newNode = context.parentNode.get();
+			auto newContext = Context<Types...>{context.cursor, newNode, 0};
+			if (not parseLexeme(mutedLexeme, newContext))
+			{
+				std::ranges::copy(newContext.parsingErrors, std::back_inserter(context.parsingErrors));
+				return false;
+			}
+			context.cursor = newContext.cursor;
+			std::ranges::copy(newContext.parsingErrors, std::back_inserter(context.parsingErrors));
+			return true;
+		}
+
+		[[nodiscard]] inline auto parseRecurrentLexeme(const std::unique_ptr<ILexeme>& lexeme, Context<Types...>& context) const -> bool
+		{
+			const auto& recurrence = ensureType<RecurrentLexeme>(lexeme).value;
+			const auto& [recurrenceLexeme, recurrenceType, repetitions] = recurrence;
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			switch (recurrenceType)
+			{
+			case RecurrenceType::Optional:
+			{
+				static_cast<void>(parseLexeme(recurrenceLexeme, context));
+				break;
+			}
+			case RecurrenceType::EqualTo:
+			{
+				for (auto i = repetitions; i > 0; --i)
+					if (not parseLexeme(recurrenceLexeme, context))
+						return false;
+				break;
+			}
+			case RecurrenceType::MoreThan:
+			case RecurrenceType::MoreOrEqualTo:
+			{
+				auto i = 0uz;
+				while (parseLexeme(recurrenceLexeme, context))
+					++i;
+				if ((recurrenceType == RecurrenceType::MoreThan and i <= repetitions) or
+					(recurrenceType == RecurrenceType::MoreOrEqualTo and i < repetitions))
+				{
+					parsingErrors.push_back(ParsingError{
+						.cursorPosition = cursor.position,
+						.lexeme = recurrenceLexeme.get()});
+					return false;
+				}
+				break;
+			}
+			default:
+				throw std::runtime_error{"Unknown recurrence type"};
+			}
+			return true;
+		}
+
+		[[nodiscard]] inline auto parseAlternativeLexeme(const std::unique_ptr<ILexeme>& lexeme, Context<Types...>& context) const -> bool
+		{
+			const auto& alternative = ensureType<AlternativeLexeme>(lexeme).value;
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			const auto startPosition = cursor.position;
+			const auto nbParsingErrors = std::ranges::size(parsingErrors);
+			for (const auto& alternativeLexeme : alternative.lexemes)
+			{
+				if (parseLexeme(alternativeLexeme, context))
+					return true;
+				cursor.position = startPosition;
+			}
+			parsingErrors.erase(parsingErrors.begin() + static_cast<std::ptrdiff_t>(nbParsingErrors), parsingErrors.end());
+			parsingErrors.push_back(ParsingError{
+				.cursorPosition = startPosition,
+				.lexeme = lexeme.get()});
+			return false;
+		}
+
+		[[nodiscard]] inline auto parseExcludeLexeme(const std::unique_ptr<ILexeme>& lexeme, Context<Types...>& context) const -> bool
+		{
+			const auto& exclusion = ensureType<ExcludeLexeme>(lexeme).value;
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			auto newParentNode = Container::Tree::VariantNode<Types...>{parentNode.get().value};
+			auto newContext = Context<Types...>{cursor, newParentNode, firstChildPosition};
+			const auto startPosition = cursor.position;
+			const auto excludedLexemeFound = parseLexeme(exclusion.excluded, newContext);
+			cursor.position = startPosition;
+			if (excludedLexemeFound)
+			{
+				context.parsingErrors.insert(context.parsingErrors.end(), newContext.parsingErrors.begin(), newContext.parsingErrors.end());
+				return false;
+			}
+			if (parseLexeme(exclusion.lexeme, context))
+				return true;
+			cursor.position = startPosition;
+			parsingErrors.push_back(ParsingError{
+				.cursorPosition = startPosition,
+				.lexeme = lexeme.get()});
+			return false;
+		}
+
+		std::unordered_map<Type::Token, Expression<Types...>> m_expressions;
+	};
+}

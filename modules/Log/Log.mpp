@@ -9,3 +9,4 @@ export import CppUtils.Log.Config.File;
 export import CppUtils.Log.Config.CppUtils;
 export import CppUtils.Log.Config.Default;
 export import CppUtils.Log.Config.UnitTests;
+export import CppUtils.TreeNodeLogger;

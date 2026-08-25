@@ -146,7 +146,7 @@ export namespace CppUtils::Container
 namespace std
 {
 	template<class T, class CharT>
-	requires CppUtils::Type::Specializes<T, CppUtils::Container::Tree::Node> and CppUtils::Type::Printable<typename T::ValueType>
+	requires CppUtils::Type::Specializes<T, CppUtils::Container::Tree::Node>
 	struct formatter<T, CharT>
 	{
 		inline constexpr auto parse(std::format_parse_context& context) -> auto
@@ -167,7 +167,7 @@ namespace std
 		inline auto formatNode(const T& node, FormatContext& context, const std::basic_string<CharT>& prefix = "") const -> void
 		{
 			auto&& out = context.out();
-			std::format_to(out, "{}\n", node.value);
+			std::format_to(out, "{}\n", CppUtils::String::formatValue(node.value));
 			const auto nbNodes = std::ranges::size(node.nodes);
 			for (auto i = 0uz; i < nbNodes; ++i)
 			{
@@ -179,7 +179,7 @@ namespace std
 	};
 
 	template<class CharT, class OutputCharT>
-	struct formatter<CppUtils::Container::ASTNodeView<CharT>, OutputCharT>
+	struct formatter<CppUtils::Container::Tree::NodeView<CharT>, OutputCharT>
 	{
 		inline constexpr auto parse(std::format_parse_context& context) -> auto
 		{
@@ -187,7 +187,7 @@ namespace std
 		}
 
 		template<class FormatContext>
-		inline auto format(const CppUtils::Container::ASTNodeView<CharT>& nodeView, FormatContext& context) const -> decltype(context.out())
+		inline auto format(const CppUtils::Container::Tree::NodeView<CharT>& nodeView, FormatContext& context) const -> decltype(context.out())
 		{
 			auto&& out = context.out();
 			formatNode(nodeView, context);
@@ -196,7 +196,7 @@ namespace std
 
 	private:
 		template<class FormatContext>
-		inline auto formatNode(const CppUtils::Container::ASTNodeView<CharT>& nodeView, FormatContext& context, const std::basic_string<OutputCharT>& prefix = "") const -> void
+		inline auto formatNode(const CppUtils::Container::Tree::NodeView<CharT>& nodeView, FormatContext& context, const std::basic_string<OutputCharT>& prefix = "") const -> void
 		{
 			const auto& [node, tree] = nodeView;
 			auto&& out = context.out();
@@ -206,7 +206,7 @@ namespace std
 			{
 				const auto isLastNode = (i == nbNodes - 1);
 				std::format_to(out, "{}{}─ ", prefix, isLastNode ? "└" : "├");
-				auto child = CppUtils::Container::ASTNodeView<CharT>{node.get().nodes.at(i), tree};
+				auto child = CppUtils::Container::Tree::NodeView<CharT>{node.get().nodes.at(i), tree};
 				formatNode(child, context, prefix + (isLastNode ? " " : "│") + "  ");
 			}
 		}

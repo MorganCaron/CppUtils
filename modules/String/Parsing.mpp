@@ -1,0 +1,116 @@
+export module CppUtils.String.Parsing;
+
+import std;
+import CppUtils.String.Concept;
+import CppUtils.String.Cursor;
+
+export namespace CppUtils::String
+{
+	template<StringView Source>
+	[[nodiscard]] inline constexpr auto isEndOfString(const Cursor<Source>& cursor) noexcept -> bool
+	{
+		return (cursor.position >= std::ranges::size(cursor.source));
+	}
+
+	template<StringView Source>
+	[[nodiscard]] inline constexpr auto getChar(const Cursor<Source>& cursor) -> char
+	{
+		return cursor.source.at(cursor.position);
+	}
+
+	template<StringView Source>
+	inline constexpr auto getCharAndSkip(Cursor<Source>& cursor) -> char
+	{
+		return cursor.source.at(cursor.position++);
+	}
+
+	template<StringView Source, std::predicate<char> Validator>
+	[[nodiscard]] inline auto getStringIf(const Cursor<Source>& cursor, Validator&& validator) -> std::string_view
+	{
+		const auto length = std::ranges::size(cursor.source);
+		auto nbChars = 0uz;
+		while ((cursor.position + nbChars) < length and validator(cursor.source.at(cursor.position + nbChars)))
+			++nbChars;
+		return std::string_view{cursor.source}.substr(cursor.position, nbChars);
+	}
+
+	template<StringView Source, std::predicate<char> Validator>
+	inline auto getStringAndSkipIf(Cursor<Source>& cursor, Validator&& validator) -> std::string_view
+	{
+		const auto string = getStringIf(cursor, std::forward<Validator>(validator));
+		cursor.position += std::ranges::size(string);
+		return string;
+	}
+
+	template<StringView Source, std::predicate<char> Validator>
+	inline auto skipWhile(Cursor<Source>& cursor, Validator&& validator) -> void
+	{
+		while (not isEndOfString(cursor) and validator(getChar(cursor)))
+			++cursor.position;
+	}
+
+	template<StringView Source>
+	inline auto skipSpaces(Cursor<Source>& cursor) -> void
+	{
+		skipWhile(cursor, [](char c) -> bool {
+			return std::isspace(static_cast<unsigned char>(c));
+		});
+	}
+
+	template<StringView Source>
+	[[nodiscard]] inline auto isEqual(const Cursor<Source>& cursor, std::string_view expected) noexcept -> bool
+	{
+		const auto remaining = std::ranges::size(cursor.source) - cursor.position;
+		if (remaining < std::ranges::size(expected))
+			return false;
+		return std::string_view{cursor.source}.substr(cursor.position, std::ranges::size(expected)) == expected;
+	}
+
+	template<StringView Source>
+	inline auto isEqualAndSkip(Cursor<Source>& cursor, std::string_view expected) noexcept -> bool
+	{
+		if (isEqual(cursor, expected))
+		{
+			cursor.position += std::ranges::size(expected);
+			return true;
+		}
+		return false;
+	}
+
+	template<StringView Source>
+	[[nodiscard]] inline auto getKeyword(const Cursor<Source>& cursor) -> std::string_view
+	{
+		const auto srcLength = std::ranges::size(cursor.source);
+		auto subPosition = cursor.position;
+
+		if (subPosition < srcLength and (std::isalpha(static_cast<unsigned char>(cursor.source.at(subPosition))) or cursor.source.at(subPosition) == '_'))
+		{
+			do
+				++subPosition;
+			while (subPosition < srcLength and (std::isalnum(static_cast<unsigned char>(cursor.source.at(subPosition))) or cursor.source.at(subPosition) == '_'));
+		}
+		return std::string_view{cursor.source}.substr(cursor.position, subPosition - cursor.position);
+	}
+
+	template<StringView Source>
+	inline auto getKeywordAndSkip(Cursor<Source>& cursor) -> std::string_view
+	{
+		const auto keyword = getKeyword(cursor);
+		cursor.position += std::ranges::size(keyword);
+		return keyword;
+	}
+
+	template<StringView Source>
+	[[nodiscard]] inline auto getLineNumber(const Cursor<Source>& cursor) noexcept -> std::size_t
+	{
+		const auto subString = std::string_view{cursor.source}.substr(0, cursor.position);
+		return static_cast<std::size_t>(std::ranges::count(subString, '\n')) + 1uz;
+	}
+
+	template<StringView Source>
+	[[nodiscard]] inline auto getPositionInLine(const Cursor<Source>& cursor) noexcept -> std::size_t
+	{
+		const auto startingLinePosition = std::string_view{cursor.source}.find_last_of('\n', cursor.position);
+		return (startingLinePosition == std::string_view::npos) ? cursor.position : (cursor.position - startingLinePosition);
+	}
+}

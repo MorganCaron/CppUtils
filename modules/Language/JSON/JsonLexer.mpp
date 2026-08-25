@@ -1,0 +1,67 @@
+export module CppUtils.Language.Json;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.Language.Lexer;
+
+export namespace CppUtils::Language::Json
+{
+	class JsonLexer final
+	{
+	public:
+		inline JsonLexer()
+		{
+			using namespace std::literals;
+			using namespace String::Literals;
+
+			m_grammarLexer.addParsingFunction("spaceParser"_token, Lexer::spaceParser<Type::Token, bool, float>);
+			m_grammarLexer.addParsingFunction("booleanParser"_token, Lexer::booleanParser<Type::Token, bool, float>);
+			m_grammarLexer.addParsingFunction("floatParser"_token, Lexer::floatParser<Type::Token, bool, float>);
+			m_grammarLexer.addParsingFunction("doubleQuoteParser"_token, Lexer::doubleQuoteParser<Type::Token, bool, float>);
+
+			static constexpr auto grammarSrc = R"(
+			main: _object spaceParser;
+			!_object: spaceParser '{' ~pairs spaceParser '}';
+			!pairs: pair ~nextPair;
+			!nextPair: spaceParser ',' pairs;
+			!_string: doubleQuoteParser;
+			!pair: spaceParser [_string] spaceParser ':' value;
+			string: _string;
+			!value: spaceParser (_object || string || float || array || boolean || null);
+			float: floatParser;
+			
+			array: '[' values spaceParser ']';
+			!values: value ~nextValue;
+			!nextValue: spaceParser ',' values;
+			boolean: booleanParser;
+			null: "null";
+			)"sv;
+			m_grammarLexer.parseGrammar(grammarSrc);
+		}
+
+		[[nodiscard]] inline auto parse(std::string_view src) const -> Container::Tree::VariantNode<Type::Token, bool, float>
+		{
+			using namespace String::Literals;
+			return m_grammarLexer.parseLanguage("main"_token, src);
+		}
+
+	private:
+		Lexer::GrammarLexer<Type::Token, bool, float> m_grammarLexer;
+	};
+
+	[[nodiscard]] inline auto parse(std::string_view src) -> Container::Tree::VariantNode<Type::Token, bool, float>
+	{
+		static const auto jsonLexer = JsonLexer{};
+		return jsonLexer.parse(src);
+	}
+
+	namespace Literals
+	{
+		[[nodiscard]] inline auto operator""_json(const char* cstring, std::size_t) -> Container::Tree::VariantNode<Type::Token, bool, float>
+		{
+			return parse(cstring);
+		}
+	}
+}

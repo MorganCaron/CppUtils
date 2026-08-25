@@ -1,0 +1,131 @@
+export module CppUtils.UnitTests.Language.Markdown.MarkdownLexer;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::Markdown::MarkdownLexer
+{
+	using namespace CppUtils::String::Literals;
+	using namespace CppUtils::Language::Markdown::Literals;
+
+	auto _ = TestSuite{"Language/Markdown/MarkdownLexer", {}, [](TestSuite& suite) {
+		using namespace std::literals;
+
+		suite.addTest("Minimalist", [&] {
+			const auto markdownAst = R"(
+			# Hello World!
+			)"_markdown;
+			CppUtils::Log::TreeNodeLogger::log(markdownAst);
+
+			suite.expect(markdownAst.exists("h1"_token));
+			suite.expect(markdownAst["h1"_token].exists("content"_token));
+			suite.expectEqual(std::get<std::string>(markdownAst["h1"_token]["content"_token].nodes.at(0).value), "Hello World!"s);
+		});
+
+		suite.addTest("Format", [&] {
+			const auto markdownAst = R"(
+			*italic*
+			_italic_
+			**bold**
+			__bold__
+			*__italic and bold__*
+			_**italic and bold**_
+			__*italic and bold*__
+			**_italic and bold_**
+			___italic and bold___
+			)"_markdown;
+			CppUtils::Log::TreeNodeLogger::log(markdownAst);
+
+			suite.expectEqual(std::ranges::size(markdownAst.nodes), 9uz);
+			suite.expectEqual(std::ranges::size(markdownAst.nodes.at(0).nodes), 1uz);
+			suite.expectEqual(std::get<Type::Token>(markdownAst.nodes.at(0).value), "italic"_token);
+		});
+
+		suite.addTest("Title", [&] {
+			const auto markdownAst = R"(
+			# H1
+			## H2
+			### H3
+			#### H4
+			##### H5
+			###### H6
+			)"_markdown;
+			CppUtils::Log::TreeNodeLogger::log(markdownAst);
+
+			suite.expect(markdownAst.exists("h1"_token));
+			suite.expect(markdownAst.exists("h2"_token));
+			suite.expect(markdownAst.exists("h3"_token));
+			suite.expect(markdownAst.exists("h4"_token));
+			suite.expect(markdownAst.exists("h5"_token));
+			suite.expect(markdownAst.exists("h6"_token));
+		});
+
+		suite.addTest("Checkbox", [&] {
+			const auto markdownAst = R"(
+			[ ]
+			[x]
+			)"_markdown;
+			CppUtils::Log::TreeNodeLogger::log(markdownAst);
+
+			suite.expectEqual(std::get<Type::Token>(markdownAst.nodes.at(0).value), "checkbox"_token);
+			suite.expectEqual(std::get<Type::Token>(markdownAst.nodes.at(1).value), "checkbox"_token);
+			suite.expect(markdownAst.nodes.at(0).nodes.empty());
+			suite.expect(markdownAst.nodes.at(1).exists("attributes"_token));
+			suite.expectEqual(std::get<Type::Token>(markdownAst.nodes.at(1)["attributes"_token].nodes.at(0).value), "checked"_token);
+		});
+
+		suite.addTest("Image", [&] {
+			const auto markdownAst = R"(
+			![title](url)
+			)"_markdown;
+			CppUtils::Log::TreeNodeLogger::log(markdownAst);
+
+			suite.expect(markdownAst.exists("image"_token));
+			suite.expect(markdownAst["image"_token].exists("attributes"_token));
+			const auto& attributes = markdownAst["image"_token]["attributes"_token];
+			suite.expectEqual(std::get<std::string>(attributes["alt"_token].nodes.at(0).value), "title"s);
+			suite.expectEqual(std::get<std::string>(attributes["src"_token].nodes.at(0).value), "url"s);
+		});
+
+		suite.addTest("Link", [&] {
+			const auto markdownAst = R"(
+			[title](url)
+			)"_markdown;
+			CppUtils::Log::TreeNodeLogger::log(markdownAst);
+
+			suite.expect(markdownAst.exists("link"_token));
+			suite.expect(markdownAst["link"_token].exists("attributes"_token));
+			const auto& attributes = markdownAst["link"_token]["attributes"_token];
+			suite.expectEqual(std::get<std::string>(attributes["alt"_token].nodes.at(0).value), "title"s);
+			suite.expectEqual(std::get<std::string>(attributes["src"_token].nodes.at(0).value), "url"s);
+		});
+
+		suite.addTest("Code", [&] {
+			const auto markdownAst = R"(
+			`const variable = 42;`
+			)"_markdown;
+			CppUtils::Log::TreeNodeLogger::log(markdownAst);
+
+			suite.expect(markdownAst.exists("code"_token));
+			suite.expect(markdownAst["code"_token].exists("content"_token));
+			suite.expectEqual(std::get<std::string>(markdownAst["code"_token]["content"_token].nodes.at(0).value), "const variable = 42;"s);
+		});
+
+		suite.addTest("Blockcode", [&] {
+			const auto markdownAst = R"(
+			```js
+			const variable = 42;
+			```
+			)"_markdown;
+			CppUtils::Log::TreeNodeLogger::log(markdownAst);
+
+			suite.expect(markdownAst.exists("blockcode"_token));
+			const auto& blockcode = markdownAst["blockcode"_token];
+			suite.expect(blockcode.exists("attributes"_token));
+			suite.expect(blockcode["attributes"_token].exists("lang"_token));
+			suite.expectEqual(std::get<Type::Token>(blockcode["attributes"_token]["lang"_token].nodes.at(0).value), "js"_token);
+			suite.expect(blockcode.exists("content"_token));
+			suite.expectEqual(std::get<std::string>(blockcode["content"_token].nodes.at(0).value), "const variable = 42;"s);
+		});
+	}};
+}

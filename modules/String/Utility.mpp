@@ -3,6 +3,7 @@ export module CppUtils.String.Utility;
 import std;
 
 import CppUtils.Math;
+import CppUtils.Type.Specialization;
 import CppUtils.String.Concept;
 
 export namespace CppUtils::String
@@ -138,9 +139,14 @@ export namespace CppUtils::String
 			| std::ranges::to<std::basic_string<CharT>>();
 	}
 
-	[[nodiscard]] inline constexpr auto formatValue(const auto& value)
+	[[nodiscard]] inline auto formatValue(const auto& value) -> std::string
 	{
-		if constexpr (std::formattable<std::remove_cvref_t<decltype(value)>, char>)
+		using DecayedT = std::remove_cvref_t<decltype(value)>;
+		if constexpr (Type::Specializes<DecayedT, std::variant>)
+			return std::visit([](const auto& value) -> std::string {
+				return formatValue(value);
+			}, value);
+		else if constexpr (std::formattable<DecayedT, char>)
 			return std::format("{}", value);
 		else
 			return "<non printable>";

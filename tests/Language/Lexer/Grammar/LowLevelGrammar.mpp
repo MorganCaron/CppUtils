@@ -1,42 +1,45 @@
-#pragma once
+export module CppUtils.UnitTests.Language.Lexer.Grammar.LowLevelGrammar;
 
-#include <CppUtils.hpp>
+import std;
+import CppUtils;
 
-namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
+namespace CppUtils::UnitTest::Language::Lexer::Grammar::LowLevelGrammar
 {
-	TEST_GROUP("Language/Lexer/Grammar/lowLevelGrammar")
-	{
-		using namespace std::literals;
-		using namespace CppUtils::String::Literals;
+	using namespace CppUtils::String::Literals;
 
-		addTest("empty grammar", [] {
+	auto _ = TestSuite{"Language/Lexer/Grammar/lowLevelGrammar", {}, [](TestSuite& suite) {
+		using namespace std::literals;
+
+		suite.addTest("empty grammar", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
-			lowLevelGrammarAst.log();
+			std::println("{}", lowLevelGrammarAst);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
 					main: ;
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse(""sv, grammarAst);
+			std::println("{}", outputAst);
 
-			EXPECT(std::empty(outputAst.root.nodes));
+			suite.expect(std::ranges::empty(outputAst.root.nodes));
 		});
 
-		addTest("end", [] {
+		suite.addTest("end", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
 					main: end();
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse(""sv, grammarAst);
+			std::println("{}", outputAst);
 
-			EXPECT(std::empty(outputAst.root.nodes));
+			suite.expect(std::ranges::empty(outputAst.root.nodes));
 		});
 
-		addTest("comment", [] {
+		suite.addTest("comment", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
@@ -44,83 +47,86 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 					main: ;
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse(""sv, grammarAst);
+			std::println("{}", outputAst);
 
-			EXPECT(std::empty(outputAst.root.nodes));
+			suite.expect(std::ranges::empty(outputAst.root.nodes));
 		});
 
-		addTest("char", [] {
+		suite.addTest("char", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
 					main: 'c';
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
+			std::println("{}", outputAst);
 
-			EXPECT(std::empty(outputAst.root.nodes));
+			suite.expect(std::ranges::empty(outputAst.root.nodes));
 		});
 
-		addTest("is char", [] {
+		suite.addTest("is char", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
 					main: is('c') 'c';
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
+			std::println("{}", outputAst);
 
-			EXPECT(std::empty(outputAst.root.nodes));
+			suite.expect(std::ranges::empty(outputAst.root.nodes));
 		});
 
-		addTest("escaped chars", [] {
+		suite.addTest("escaped chars", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
 					main: "\ \n\t\r\"";
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse(" \n\t\r\""sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::empty(outputAst.root.nodes));
+			suite.expect(std::ranges::empty(outputAst.root.nodes));
 		});
 
-		addTest("add char", [] {
+		suite.addTest("add char", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
 					main: 'c' add('c');
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 1);
-			EXPECT(outputAst.root.nodes[0].value == 'c');
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 1uz);
+			suite.expectEqual(outputAst.root.nodes[0].value, static_cast<std::uint64_t>('c'));
 		});
 
-		addTest("read char", [] {
+		suite.addTest("read char", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
 					main: read()+;
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 1);
-			EXPECT(outputAst.root.nodes[0].value == 'c');
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 1uz);
+			suite.expectEqual(outputAst.root.nodes[0].value, static_cast<std::uint64_t>('c'));
 		});
 
-		addTest("token", [] {
+		suite.addTest("token", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
@@ -128,14 +134,14 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 					c: 'c';
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("c"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::empty(outputAst.root.nodes));
+			suite.expect(std::ranges::empty(outputAst.root.nodes));
 		});
 
-		addTest("string", [] {
+		suite.addTest("string", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
@@ -143,14 +149,14 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 					word: "Hello World!";
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("Hello World!"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::empty(outputAst.root.nodes));
+			suite.expect(std::ranges::empty(outputAst.root.nodes));
 		});
 
-		addTest("recurrence", [] {
+		suite.addTest("recurrence", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
@@ -159,16 +165,16 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 					char: read()+;
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAA"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 3);
-			for (auto i = 0uz; i < 3; ++i)
-				EXPECT(outputAst.root.nodes[i].value == 'A');
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 3uz);
+			for (auto i = 0uz; i < 3uz; ++i)
+				suite.expectEqual(outputAst.root.nodes[i].value, static_cast<std::uint64_t>('A'));
 		});
 
-		addTest("optional", [] {
+		suite.addTest("optional", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
@@ -177,46 +183,46 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 					char: read()+;
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAA"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 3);
-			for (auto i = 0uz; i < 3; ++i)
-				EXPECT(outputAst.root.nodes[i].value == 'A');
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 3uz);
+			for (auto i = 0uz; i < 3uz; ++i)
+				suite.expectEqual(outputAst.root.nodes[i].value, static_cast<std::uint64_t>('A'));
 		});
 
-		addTest("or", [] {
+		suite.addTest("or", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
 					main: or('A', 'B') read()+;
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("BC"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 1);
-			EXPECT(outputAst.root.nodes[0].value == 'C');
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 1uz);
+			suite.expectEqual(outputAst.root.nodes[0].value, static_cast<std::uint64_t>('C'));
 		});
 
-		addTest("parenthesis", [] {
+		suite.addTest("parenthesis", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
 					main: ('A' 'B') read()+;
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 1);
-			EXPECT(outputAst.root.nodes[0].value == 'C');
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 1uz);
+			suite.expectEqual(outputAst.root.nodes[0].value, static_cast<std::uint64_t>('C'));
 		});
 
-		addTest("comparison", [] {
+		suite.addTest("comparison", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
@@ -226,15 +232,15 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 					maj: ['A', 'Z']+ add(maj);
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("C"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 1);
-			EXPECT(outputAst.root.nodes[0].value == "maj"_token);
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 1uz);
+			suite.expectEqual(outputAst.root.nodes[0].value, "maj"_token);
 		});
 
-		addTest("hash", [] {
+		suite.addTest("hash", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
@@ -242,15 +248,15 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 					keyword: read()+ ~keyword;
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("variable"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 1);
-			EXPECT(outputAst.root.nodes[0].value == "variable"_token);
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 1uz);
+			suite.expectEqual(outputAst.root.nodes[0].value, "variable"_token);
 		});
 
-		addTest("not", [] {
+		suite.addTest("not", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
@@ -259,19 +265,19 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 					quoteContent: !'"' read()+ ~quoteContent;
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse(R"("Hello")"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 5);
-			EXPECT(outputAst.root.nodes[0].value == 'H');
-			EXPECT(outputAst.root.nodes[1].value == 'e');
-			EXPECT(outputAst.root.nodes[2].value == 'l');
-			EXPECT(outputAst.root.nodes[3].value == 'l');
-			EXPECT(outputAst.root.nodes[4].value == 'o');
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 5uz);
+			suite.expectEqual(outputAst.root.nodes[0].value, static_cast<std::uint64_t>('H'));
+			suite.expectEqual(outputAst.root.nodes[1].value, static_cast<std::uint64_t>('e'));
+			suite.expectEqual(outputAst.root.nodes[2].value, static_cast<std::uint64_t>('l'));
+			suite.expectEqual(outputAst.root.nodes[3].value, static_cast<std::uint64_t>('l'));
+			suite.expectEqual(outputAst.root.nodes[4].value, static_cast<std::uint64_t>('o'));
 		});
 
-		addTest("sub", [] {
+		suite.addTest("sub", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
@@ -279,39 +285,39 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 					node: read()+ ~sub(node);
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 2);
-			auto aNode = outputAst.root.nodes[0];
-			EXPECT(aNode.value == 'A');
-			EXPECT(std::size(aNode.nodes) == 1);
-			auto bNode = aNode.nodes[0];
-			EXPECT(bNode.value == 'B');
-			EXPECT(std::size(bNode.nodes) == 1);
-			auto cNode = bNode.nodes[0];
-			EXPECT(cNode.value == 'C');
-			EXPECT(std::empty(cNode.nodes));
-			EXPECT(outputAst.root.nodes[1].value == ';');
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 2uz);
+			const auto& aNode = outputAst.root.nodes[0];
+			suite.expectEqual(aNode.value, static_cast<std::uint64_t>('A'));
+			suite.expectEqual(std::ranges::size(aNode.nodes), 1uz);
+			const auto& bNode = aNode.nodes[0];
+			suite.expectEqual(bNode.value, static_cast<std::uint64_t>('B'));
+			suite.expectEqual(std::ranges::size(bNode.nodes), 1uz);
+			const auto& cNode = bNode.nodes[0];
+			suite.expectEqual(cNode.value, static_cast<std::uint64_t>('C'));
+			suite.expect(std::ranges::empty(cNode.nodes));
+			suite.expectEqual(outputAst.root.nodes[1].value, static_cast<std::uint64_t>(';'));
 		});
 
-		addTest("repeat", [] {
+		suite.addTest("repeat", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
 					main: repeat('A') repeat('B', ',') read()+;
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("AAAB,B,BC"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 1);
-			EXPECT(outputAst.root.nodes[0].value == 'C');
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 1uz);
+			suite.expectEqual(outputAst.root.nodes[0].value, static_cast<std::uint64_t>('C'));
 		});
 
-		addTest("push-pop", [] {
+		suite.addTest("push-pop", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
@@ -319,15 +325,15 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 					keyword: read()+ ~keyword;
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("ABC"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 1);
-			EXPECT(outputAst.root.nodes[0].value == "ABC"_token);
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 1uz);
+			suite.expectEqual(outputAst.root.nodes[0].value, "ABC"_token);
 		});
 
-		addTest("unsigned int", [] {
+		suite.addTest("unsigned int", [&] {
 			const auto lowLevelGrammarAst = CppUtils::Language::Parser::parseAst(CppUtils::Language::Lexer::Grammar::lowLevelGrammarSrc);
 
 			const auto grammarAst = CppUtils::Language::Lexer::parse(R"(
@@ -336,12 +342,12 @@ namespace CppUtils::UnitTests::Language::Lexer::Grammar::LowLevelGrammar
 					digit: ['0', '9'] read()+;
 				)"sv,
 				lowLevelGrammarAst);
-			grammarAst.log();
+			std::println("{}", grammarAst);
 			const auto outputAst = CppUtils::Language::Lexer::parse("42"sv, grammarAst);
-			outputAst.log();
+			std::println("{}", outputAst);
 
-			EXPECT(std::size(outputAst.root.nodes) == 1);
-			EXPECT(outputAst.root.nodes[0].value == 42);
+			suite.expectEqual(std::ranges::size(outputAst.root.nodes), 1uz);
+			suite.expectEqual(outputAst.root.nodes[0].value, 42uz);
 		});
-	}
+	}};
 }

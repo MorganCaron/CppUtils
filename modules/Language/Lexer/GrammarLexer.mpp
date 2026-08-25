@@ -1,0 +1,263 @@
+export module CppUtils.Language.Lexer.GrammarLexer;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.Language.Lexer.Lexemes;
+import CppUtils.Language.Lexer.Parsers;
+import CppUtils.Language.Lexer.Expression;
+import CppUtils.Language.Lexer.Engine;
+
+export namespace CppUtils::Language::Lexer
+{
+	template<class... Types>
+	class GrammarLexer final
+	{
+	public:
+		using GrammarLexerTreeNode = Container::Tree::VariantNode<Type::Token, unsigned int, std::string>;
+
+		inline GrammarLexer()
+		{
+			using namespace String::Literals;
+			auto& main = m_grammarLexer.newExpression("main"_token, "root"_token);
+			auto& identifier = m_grammarLexer.newExpression("identifier"_token, 0);
+			auto& token = m_grammarLexer.newExpression("token"_token, "token"_token);
+			auto& statement = m_grammarLexer.newExpression("statement"_token, 0);
+			auto& hideStatement = m_grammarLexer.newExpression("hideStatement"_token, "hideStatement"_token);
+			auto& statementName = m_grammarLexer.newExpression("statementName"_token, "statementName"_token);
+			auto& lexemes = m_grammarLexer.newExpression("lexemes"_token, 0);
+			auto& lexeme = m_grammarLexer.newExpression("lexeme"_token, 0);
+			auto& string = m_grammarLexer.newExpression("string"_token, "string"_token);
+			auto& breakPoint = m_grammarLexer.newExpression("breakPoint"_token, "breakPoint"_token);
+			auto& tag = m_grammarLexer.newExpression("tag"_token, "tag"_token);
+			auto& muted = m_grammarLexer.newExpression("muted"_token, "muted"_token);
+			auto& optional = m_grammarLexer.newExpression("optional"_token, "optional"_token);
+			auto& parenthesis = m_grammarLexer.newExpression("parenthesis"_token, 0);
+			auto& recurrence = m_grammarLexer.newExpression("recurrence"_token, "recurrence"_token);
+			auto& alternative = m_grammarLexer.newExpression("alternative"_token, "alternative"_token);
+			auto& alternativeArgument = m_grammarLexer.newExpression("alternativeArgument"_token, 0);
+			auto& exclusion = m_grammarLexer.newExpression("exclusion"_token, "exclusion"_token);
+			auto& recurrenceOperator = m_grammarLexer.newExpression("recurrenceOperator"_token, 0);
+			auto& equalTo = m_grammarLexer.newExpression("equalTo"_token, "equalTo"_token);
+			auto& moreOrEqualTo = m_grammarLexer.newExpression("moreOrEqualTo"_token, "moreOrEqualTo"_token);
+			auto& moreThan = m_grammarLexer.newExpression("moreThan"_token, "moreThan"_token);
+
+			main >> (statement >= 0) >> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>};
+			identifier >> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> NamedParser{"keyword", keywordParser<Type::Token, unsigned int, std::string>};
+			token >> identifier;
+			statement
+				>> ~hideStatement
+				>> TagLexeme{std::make_unique<TokenLexeme>(identifier.token)}
+				>> ~statementName
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> ':'
+				>> lexemes
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> ';';
+			hideStatement >> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> '!';
+			statementName
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> '['
+				>> identifier
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> ']';
+			lexemes >> (lexeme >= 1);
+			lexeme >> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> (breakPoint || string || token || tag || muted || optional || parenthesis);
+			breakPoint >> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> '.';
+			string >> NamedParser{"quote", quoteParser<Type::Token, unsigned int, std::string>};
+			tag
+				>> '['
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> lexeme
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> ']';
+			muted >> '!' >> lexeme;
+			optional >> '~' >> lexeme;
+			parenthesis
+				>> '('
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> (recurrence || alternative || exclusion || lexemes)
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> ')';
+			recurrence
+				>> lexeme
+				>> recurrenceOperator
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> NamedParser{"uint", uintParser<Type::Token, unsigned int, std::string>};
+			alternative >> lexeme >> (alternativeArgument >= 1);
+			alternativeArgument
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> "||"
+				>> lexeme;
+			exclusion
+				>> lexeme
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> "!="
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> lexeme;
+			recurrenceOperator
+				>> NamedParser{"space", spaceParser<Type::Token, unsigned int, std::string>} >> (equalTo || moreOrEqualTo || moreThan);
+			equalTo >> "*";
+			moreOrEqualTo >> ">=";
+			moreThan >> '>';
+		}
+
+		inline auto addParsingFunction(Type::Token token, ParsingFunction<Types...> parsingFunction) -> void
+		{
+			m_parsingFunctions[token] = std::move(parsingFunction);
+		}
+
+		inline auto parseGrammar(std::string_view src) -> GrammarLexerTreeNode
+		{
+			try
+			{
+				using namespace String::Literals;
+				auto tokenTree = m_grammarLexer.parseString("main"_token, src);
+				createStatements(tokenTree);
+				for (const auto& statement : tokenTree.nodes)
+				{
+					if (not std::holds_alternative<Type::Token>(statement.value))
+						continue;
+					auto& expression = m_languageLexer.getExpression(std::get<Type::Token>(statement.value));
+					for (const auto& lexeme : statement.nodes)
+					{
+						if (not std::holds_alternative<Type::Token>(lexeme.value))
+							continue;
+						const auto val = std::get<Type::Token>(lexeme.value);
+						if (val != "hideStatement"_token and val != "statementName"_token)
+						{
+							try
+							{
+								expression.lexemes.emplace_back(parseLexeme(lexeme));
+							}
+							catch (const std::exception& exception)
+							{
+								throw std::runtime_error{std::format("In statement {}: {} (lexeme has {} children)", std::get<Type::Token>(statement.value), exception.what(), std::ranges::size(lexeme.nodes))};
+							}
+						}
+					}
+				}
+				return tokenTree;
+			}
+			catch (const std::exception& e)
+			{
+				throw std::runtime_error{"In parseGrammar: " + std::string{e.what()}};
+			}
+		}
+
+		[[nodiscard]] inline auto parseLanguage(Type::Token token, std::string_view src) const -> Container::Tree::VariantNode<Types...>
+		{
+			return m_languageLexer.parseString(token, src);
+		}
+
+		[[nodiscard]] inline auto parseSegment(Type::Token token, Context<Types...>& context) const -> bool
+		{
+			return m_languageLexer.parseSegment(token, context);
+		}
+
+		inline auto parseContext(Type::Token token, Context<Types...>& context) const -> void
+		{
+			m_languageLexer.parseContext(token, context);
+		}
+
+	private:
+		inline auto createStatements(const GrammarLexerTreeNode& tokenTree) -> void
+		{
+			using namespace String::Literals;
+			for (const auto& statement : tokenTree.nodes)
+			{
+				if (not std::holds_alternative<Type::Token>(statement.value))
+					continue;
+				const auto token = std::get<Type::Token>(statement.value);
+				const auto& lexemes = statement.nodes;
+				const auto nbLexemes = std::ranges::size(lexemes);
+				const auto isHidden = (nbLexemes > 0 and std::holds_alternative<Type::Token>(lexemes.at(0).value) and std::get<Type::Token>(lexemes.at(0).value) == "hideStatement"_token);
+				const auto hasDifferentName = (nbLexemes > 0 and std::holds_alternative<Type::Token>(lexemes.at(0).value) and std::get<Type::Token>(lexemes.at(0).value) == "statementName"_token);
+				const auto name = (isHidden ? 0 : (hasDifferentName ? std::get<Type::Token>(lexemes.at(0).nodes.at(0).value) : token));
+				if (nbLexemes > 1 and std::holds_alternative<Type::Token>(lexemes.at(1).value) and std::get<Type::Token>(lexemes.at(1).value) == "statementName"_token)
+					throw std::runtime_error{"A muted expression cannot have a name."};
+				m_languageLexer.createExpression(token, name);
+			}
+		}
+
+		[[nodiscard]] inline auto parseLexeme(const GrammarLexerTreeNode& lexeme) -> std::unique_ptr<ILexeme>
+		{
+			using namespace String::Literals;
+			if (not std::holds_alternative<Type::Token>(lexeme.value))
+				throw std::runtime_error{"Lexeme value is not a token"};
+			const auto lexemeType = std::get<Type::Token>(lexeme.value);
+			if (lexemeType == "token"_token)
+				return parseToken(lexeme.nodes);
+			if (lexemeType == "breakPoint"_token)
+				return std::make_unique<BreakPointLexeme>();
+			if (lexemeType == "string"_token)
+				return parseString(lexeme.nodes);
+			if (lexemeType == "tag"_token)
+				return parseTag(lexeme.nodes);
+			if (lexemeType == "muted"_token)
+				return parseMuted(lexeme.nodes);
+			if (lexemeType == "optional"_token)
+				return parseOptional(lexeme.nodes);
+			if (lexemeType == "recurrence"_token)
+				return parseRecurrence(lexeme.nodes);
+			if (lexemeType == "alternative"_token)
+				return parseAlternative(lexeme.nodes);
+			if (lexemeType == "exclusion"_token)
+				return parseExclusion(lexeme.nodes);
+			throw std::runtime_error{"Unknown lexeme type: " + String::formatValue(lexeme.value)};
+		}
+
+		[[nodiscard]] inline auto parseToken(const std::vector<GrammarLexerTreeNode>& attributes) -> std::unique_ptr<ILexeme>
+		{
+			const auto token = std::get<Type::Token>(attributes.at(0).value);
+			if (m_parsingFunctions.contains(token))
+				return std::make_unique<ParserLexeme<Types...>>(NamedParser<Types...>{"custom", m_parsingFunctions.at(token)});
+			else
+				return std::make_unique<TokenLexeme>(m_languageLexer.getExpression(token).token);
+		}
+
+		[[nodiscard]] inline auto parseString(const std::vector<GrammarLexerTreeNode>& attributes) -> std::unique_ptr<ILexeme>
+		{
+			return std::make_unique<StringLexeme>(std::get<std::string>(attributes.at(0).value));
+		}
+
+		[[nodiscard]] inline auto parseTag(const std::vector<GrammarLexerTreeNode>& attributes) -> std::unique_ptr<ILexeme>
+		{
+			return std::make_unique<TagLexeme>(parseLexeme(attributes.at(0)));
+		}
+
+		[[nodiscard]] inline auto parseMuted(const std::vector<GrammarLexerTreeNode>& attributes) -> std::unique_ptr<ILexeme>
+		{
+			const auto& lex = attributes.at(0);
+			return std::make_unique<MutedLexeme>(parseLexeme(lex));
+		}
+
+		[[nodiscard]] inline auto parseOptional(const std::vector<GrammarLexerTreeNode>& attributes) -> std::unique_ptr<ILexeme>
+		{
+			const auto& lex = attributes.at(0);
+			return std::make_unique<RecurrentLexeme>(Recurrence{parseLexeme(lex), RecurrenceType::Optional, 0});
+		}
+
+		[[nodiscard]] inline auto parseRecurrence(const std::vector<GrammarLexerTreeNode>& attributes) -> std::unique_ptr<ILexeme>
+		{
+			using namespace String::Literals;
+			const auto recurrenceOperator = std::get<Type::Token>(attributes.at(1).value);
+			const auto repetitions = static_cast<std::size_t>(std::get<unsigned int>(attributes.at(2).value));
+			auto recurrenceType = RecurrenceType::EqualTo;
+			if (recurrenceOperator == "equalTo"_token)
+				recurrenceType = RecurrenceType::EqualTo;
+			else if (recurrenceOperator == "moreOrEqualTo"_token)
+				recurrenceType = RecurrenceType::MoreOrEqualTo;
+			else if (recurrenceOperator == "moreThan"_token)
+				recurrenceType = RecurrenceType::MoreThan;
+			return std::make_unique<RecurrentLexeme>(Recurrence{parseLexeme(attributes.at(0)), recurrenceType, repetitions});
+		}
+
+		[[nodiscard]] inline auto parseAlternative(const std::vector<GrammarLexerTreeNode>& attributes) -> std::unique_ptr<ILexeme>
+		{
+			auto lexemes = std::vector<std::unique_ptr<ILexeme>>{};
+			lexemes.reserve(std::ranges::size(attributes));
+			for (const auto& lexeme : attributes)
+				lexemes.emplace_back(parseLexeme(lexeme));
+			return std::make_unique<AlternativeLexeme>(Alternative{std::move(lexemes)});
+		}
+
+		[[nodiscard]] inline auto parseExclusion(const std::vector<GrammarLexerTreeNode>& attributes) -> std::unique_ptr<ILexeme>
+		{
+			return std::make_unique<ExcludeLexeme>(Exclusion{parseLexeme(attributes.at(0)), parseLexeme(attributes.at(1))});
+		}
+
+		std::unordered_map<Type::Token, ParsingFunction<Types...>> m_parsingFunctions = {};
+		Lexer<Type::Token, unsigned int, std::string> m_grammarLexer = {};
+		Lexer<Types...> m_languageLexer = {};
+	};
+}

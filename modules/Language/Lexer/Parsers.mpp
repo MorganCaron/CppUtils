@@ -1,0 +1,281 @@
+export module CppUtils.Language.Lexer.Parsers;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.Language.Lexer.Lexemes;
+
+export namespace CppUtils::Language::Lexer
+{
+	template<class... Types>
+	inline auto spaceParser(Context<Types...>& context) -> bool
+	{
+		String::skipSpaces(context.cursor);
+		return true;
+	}
+
+	template<class... Types>
+	requires (std::same_as<Type::Token, Types> or ...) or (std::same_as<std::string, Types> or ...)
+	[[nodiscard]] inline auto keywordParser(Context<Types...>& context) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		const auto keyword = String::getKeywordAndSkip(cursor);
+		if (std::ranges::empty(keyword))
+			return false;
+		if constexpr ((std::same_as<Type::Token, Types> or ...))
+		{
+			auto keywordToken = Type::hash(keyword);
+			parentNode.get().nodes.emplace_back(keywordToken);
+			return true;
+		}
+		else
+		{
+			parentNode.get().nodes.emplace_back(std::string{keyword});
+			return true;
+		}
+	}
+
+	template<class... Types>
+	requires (std::same_as<std::string, Types> or ...)
+	[[nodiscard]] inline auto charParser(Context<Types...>& context) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		if (String::isEndOfString(cursor))
+			return false;
+		const auto c = String::getCharAndSkip(cursor);
+		if (std::ranges::empty(parentNode.get().nodes) or not std::holds_alternative<std::string>(parentNode.get().nodes.back().value))
+			parentNode.get().nodes.emplace_back(std::string{c});
+		else
+			std::get<std::string>(parentNode.get().nodes.back().value) += c;
+		return true;
+	}
+
+	template<class... Types>
+	requires (std::same_as<std::string, Types> or ...)
+	[[nodiscard]] inline auto escapeCharParser(Context<Types...>& context) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		if (String::isEndOfString(cursor))
+			return false;
+		auto c = String::getCharAndSkip(cursor);
+		if (c == '\\' and not String::isEndOfString(cursor))
+		{
+			const auto escapedChar = String::getCharAndSkip(cursor);
+			if (escapedChar == 'n')
+				c = '\n';
+			else if (escapedChar == 't')
+				c = '\t';
+			else if (escapedChar == 'r')
+				c = '\r';
+			else
+				c = escapedChar;
+		}
+		if (std::ranges::empty(parentNode.get().nodes) or not std::holds_alternative<std::string>(parentNode.get().nodes.back().value))
+			parentNode.get().nodes.emplace_back(std::string{c});
+		else
+			std::get<std::string>(parentNode.get().nodes.back().value) += c;
+		return true;
+	}
+
+	template<class... Types>
+	[[nodiscard]] inline auto delimiterParser(
+		Context<Types...>& context,
+		std::string_view delimiter,
+		std::type_identity_t<ParsingFunction<Types...>> contentParsingFunction,
+		bool multipleContent,
+		bool skipDelimiter) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		if (String::isEndOfString(cursor))
+			return false;
+		auto delimiterFound = (skipDelimiter ? String::isEqualAndSkip(cursor, delimiter) : String::isEqual(cursor, delimiter));
+		while (not delimiterFound)
+		{
+			if (String::isEndOfString(cursor) or not contentParsingFunction(context))
+				return false;
+			delimiterFound = (skipDelimiter ? String::isEqualAndSkip(cursor, delimiter) : String::isEqual(cursor, delimiter));
+			if (not multipleContent)
+				break;
+		}
+		return delimiterFound;
+	}
+
+	template<class... Types>
+	requires (std::same_as<std::string, Types> or ...)
+	[[nodiscard]] inline auto stringParser(Context<Types...>& context, std::string_view delimiter, bool skipDelimiter) -> bool
+	{
+		return delimiterParser<Types...>(context, delimiter, escapeCharParser<Types...>, true, skipDelimiter);
+	}
+
+	template<class... Types>
+	requires (std::same_as<Type::Token, Types> or ...) or (std::same_as<std::string, Types> or ...)
+	[[nodiscard]] inline auto quoteParser(Context<Types...>& context) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		if (String::isEndOfString(cursor))
+			return false;
+		const auto quote = String::getChar(cursor);
+		if (quote != '\'' and quote != '"')
+			return false;
+		++cursor.position;
+		if constexpr ((std::same_as<std::string, Types> or ...))
+			return stringParser<Types...>(context, std::string_view{&quote, 1}, true);
+		else
+		{
+			const auto startPosition = cursor.position;
+			while (not String::isEndOfString(cursor) and String::getChar(cursor) != quote)
+			{
+				if (String::getChar(cursor) == '\\' and not String::isEndOfString(cursor))
+					++cursor.position;
+				++cursor.position;
+			}
+			if (String::isEndOfString(cursor) or String::getChar(cursor) != quote)
+				return false;
+			const auto content = std::string_view{cursor.source}.substr(startPosition, cursor.position - startPosition);
+			auto stringToken = Type::hash(content);
+			parentNode.get().nodes.emplace_back(stringToken);
+			++cursor.position;
+			return true;
+		}
+	}
+
+	template<class... Types>
+	requires (std::same_as<Type::Token, Types> or ...) or (std::same_as<std::string, Types> or ...)
+	[[nodiscard]] inline auto singleQuoteParser(Context<Types...>& context) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		if (String::isEndOfString(cursor) or String::getChar(cursor) != '\'')
+			return false;
+		return quoteParser(context);
+	}
+
+	template<class... Types>
+	requires (std::same_as<Type::Token, Types> or ...) or (std::same_as<std::string, Types> or ...)
+	[[nodiscard]] inline auto doubleQuoteParser(Context<Types...>& context) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		if (String::isEndOfString(cursor) or String::getChar(cursor) != '"')
+			return false;
+		return quoteParser(context);
+	}
+
+	template<class... Types>
+	requires ((std::integral<Types> and std::unsigned_integral<Types> and sizeof(Types) >= 4) or ...)
+	[[nodiscard]] inline auto uintParser(Context<Types...>& context) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		if (String::isEndOfString(cursor) or not std::isdigit(static_cast<unsigned char>(String::getChar(cursor))))
+			return false;
+		auto numberLength = 0uz;
+		const auto rest = std::string_view{cursor.source}.substr(cursor.position);
+		const auto number = std::stoul(std::string{rest}, &numberLength);
+		if (number != static_cast<unsigned int>(number))
+			throw std::out_of_range{"Number too large"};
+		cursor.position += numberLength;
+		parentNode.get().nodes.emplace_back(static_cast<unsigned int>(number));
+		return true;
+	}
+
+	template<class... Types>
+	requires ((std::integral<Types> and std::signed_integral<Types> and sizeof(Types) >= 4) or ...)
+	[[nodiscard]] inline auto intParser(Context<Types...>& context) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		if (String::isEndOfString(cursor))
+			return false;
+		auto hasDigit = std::isdigit(static_cast<unsigned char>(String::getChar(cursor)));
+		if (String::getChar(cursor) == '+' or String::getChar(cursor) == '-')
+		{
+			++cursor.position;
+			if (String::isEndOfString(cursor))
+				return false;
+			hasDigit |= static_cast<bool>(std::isdigit(static_cast<unsigned char>(String::getChar(cursor))));
+			--cursor.position;
+		}
+		if (not hasDigit)
+			return false;
+		auto numberLength = 0uz;
+		const auto rest = std::string_view{cursor.source}.substr(cursor.position);
+		const auto number = std::stoi(std::string{rest}, &numberLength);
+		cursor.position += numberLength;
+		parentNode.get().nodes.emplace_back(number);
+		return true;
+	}
+
+	template<class... Types>
+	requires (std::floating_point<Types> or ...)
+	[[nodiscard]] inline auto floatParser(Context<Types...>& context) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		if (String::isEndOfString(cursor))
+			return false;
+		auto hasDigit = std::isdigit(static_cast<unsigned char>(String::getChar(cursor)));
+		auto isInfinity = String::isEqual(cursor, "inf") or String::isEqual(cursor, "INF") or String::isEqual(cursor, "infinity") or String::isEqual(cursor, "INFINITY");
+		if (String::getChar(cursor) == '+' or String::getChar(cursor) == '-')
+		{
+			++cursor.position;
+			if (String::isEndOfString(cursor))
+				return false;
+			hasDigit |= static_cast<bool>(std::isdigit(static_cast<unsigned char>(String::getChar(cursor))));
+			isInfinity |= (String::isEqual(cursor, "inf") or String::isEqual(cursor, "INF") or String::isEqual(cursor, "infinity") or String::isEqual(cursor, "INFINITY"));
+			--cursor.position;
+		}
+		if (not hasDigit and not isInfinity)
+			return false;
+		auto numberLength = 0uz;
+		const auto rest = std::string_view{cursor.source}.substr(cursor.position);
+		const auto number = std::stof(std::string{rest}, &numberLength);
+		cursor.position += numberLength;
+		parentNode.get().nodes.emplace_back(number);
+		return true;
+	}
+
+	template<class... Types>
+	requires (std::same_as<bool, Types> or ...)
+	[[nodiscard]] inline auto booleanParser(Context<Types...>& context) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		if (String::isEqualAndSkip(cursor, "true"))
+		{
+			parentNode.get().nodes.emplace_back(true);
+			return true;
+		}
+		if (String::isEqualAndSkip(cursor, "false"))
+		{
+			parentNode.get().nodes.emplace_back(false);
+			return true;
+		}
+		return false;
+	}
+
+	template<class... Types>
+	requires (std::same_as<std::string, Types> or ...)
+	[[nodiscard]] inline auto trimModifier(Context<Types...>& context) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		if (std::ranges::empty(parentNode.get().nodes))
+			return false;
+		auto& lastChild = parentNode.get().nodes.back();
+		if (not std::holds_alternative<std::string>(lastChild.value))
+			return false;
+		auto& string = std::get<std::string>(lastChild.value);
+		string = std::string{String::trimString(string)};
+		return true;
+	}
+
+	template<class... Types>
+	requires (std::same_as<std::string, Types> or ...) and (std::same_as<Type::Token, Types> or ...)
+	[[nodiscard]] inline auto stringToTokenModifier(Context<Types...>& context) -> bool
+	{
+		auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+		if (std::ranges::empty(parentNode.get().nodes))
+			return false;
+		auto& lastChild = parentNode.get().nodes.back();
+		if (not std::holds_alternative<std::string>(lastChild.value))
+			return false;
+		const auto& string = std::get<std::string>(lastChild.value);
+		lastChild.value = Type::hash(string);
+		return true;
+	}
+}

@@ -1,6 +1,14 @@
-#pragma once
+export module CppUtils.Language.Lexer.Grammar;
 
-namespace CppUtils::Language::Lexer::Grammar
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.Language.AST;
+import CppUtils.Language.Parser.AstParser;
+import CppUtils.Language.Lexer.AstLexer;
+
+export namespace CppUtils::Language::Lexer::Grammar
 {
 	using namespace std::literals;
 
@@ -8,7 +16,7 @@ namespace CppUtils::Language::Lexer::Grammar
 		main_{ token_{decls_} token_{spaces_} }
 
 		decls_{ token_{spaces_} or_{ token_{comment_} token_{decl_} } optional_{token_{decls_}} }
-		decl_{ token_{token_} token_{spaces_} string_{:} optional_{sub_{token_{lexemes_}}} token_{spaces_} comma_ string_{;} }
+		decl_{ token_{token_} token_{spaces_} string_{:} optional_{sub_{token_{lexemes_}}} token_{spaces_} string_{;} }
 
 		comment_{ string_{#} token_{commentContent_} optional_{string_{\n}} }
 		commentContent_{ not_{or_{ end_ string_{\n} }}+ optional_{token_{commentContent_}} }
@@ -68,7 +76,8 @@ namespace CppUtils::Language::Lexer::Grammar
 		keywordContinuation_{ token_{keywordChar_} optional_{token_{keywordContinuation_}} }
 		firstKeywordChar_{ token_{alphaChar_} }
 		keywordChar_{ token_{alphaNumChar_} }
-		alphaChar_{ or_{ token_{escapeChar_} token_{min_} token_{maj_} } }
+		alphaChar_{ or_{ token_{escapeChar_} token_{min_} token_{maj_} token_{underscoreChar_} } }
+		underscoreChar_{ string_{\_} read_+ }
 		alphaNumChar_{ or_{ token_{alphaChar_} token_{digit_} } }
 		min_{ >=_{a} <=_{z} read_+ }
 		maj_{ >=_{A} <=_{Z} read_+ }
@@ -119,7 +128,6 @@ namespace CppUtils::Language::Lexer::Grammar
 			push,
 			pop,
 			endLexeme,
-			recurrence,
 			parenthesis,
 			tokenLexeme
 		);
@@ -155,7 +163,7 @@ namespace CppUtils::Language::Lexer::Grammar
 		keywordContinuation: keywordChar ~keywordContinuation;
 		firstKeywordChar: alphaChar;
 		keywordChar: alphaNumChar;
-		alphaChar: or(escapeChar, (or(['a', 'z'], ['A', 'Z']) read()+));
+		alphaChar: or(escapeChar, ('_' read()+), (or(['a', 'z'], ['A', 'Z']) read()+));
 		alphaNumChar: or(alphaChar, (['0', '9'] read()+));
 
 		char: or(escapeChar, (read()+));
@@ -175,16 +183,16 @@ namespace CppUtils::Language::Lexer::Grammar
 		space: or(' ', '\n', '\t', '\r');
 	)"sv;
 
-	[[nodiscard]] auto parse(std::string_view src) -> Parser::Ast
+	[[nodiscard]] inline auto parse(std::string_view src) -> Container::AST<char>
 	{
-		const auto lowLevelGrammarAst = Parser::parseAst(lowLevelGrammarSrc);
-		const auto highLevelGrammarAst = Lexer::parse(highLevelGrammarSrc, lowLevelGrammarAst);
+		static const auto lowLevelGrammarAst = Parser::parseAst(lowLevelGrammarSrc);
+		static const auto highLevelGrammarAst = Lexer::parse(highLevelGrammarSrc, lowLevelGrammarAst);
 		return Lexer::parse(src, highLevelGrammarAst);
 	}
 
 	namespace Literals
 	{
-		[[nodiscard]] auto operator""_grammar(const char* cString, std::size_t) -> Parser::Ast
+		[[nodiscard]] inline auto operator""_grammar(const char* cString, std::size_t) -> Container::AST<char>
 		{
 			return parse(cString);
 		}

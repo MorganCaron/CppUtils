@@ -1,0 +1,162 @@
+export module CppUtils.Language.Lexer.Expression;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.Language.Lexer.Lexemes;
+
+export namespace CppUtils::Language::Lexer
+{
+	template<class... Types>
+	struct Expression final
+	{
+		Type::Token token = 0;
+		Type::Token name = 0;
+		std::vector<std::unique_ptr<ILexeme>> lexemes = {};
+
+		inline Expression() = default;
+		inline explicit Expression(Type::Token c_token, Type::Token c_name = 0, std::vector<std::unique_ptr<ILexeme>> c_lexemes = {}):
+			token{c_token},
+			name{c_name},
+			lexemes{std::move(c_lexemes)}
+		{}
+
+		inline auto operator>>(std::unique_ptr<ILexeme>&& lexeme) -> Expression&
+		{
+			lexemes.push_back(std::move(lexeme));
+			return *this;
+		}
+
+		inline auto operator>>(std::string string) -> Expression&
+		{
+			lexemes.emplace_back(std::make_unique<StringLexeme>(std::move(string)));
+			return *this;
+		}
+
+		inline auto operator>>(char c) -> Expression&
+		{
+			lexemes.emplace_back(std::make_unique<StringLexeme>(std::string{c}));
+			return *this;
+		}
+
+		inline auto operator>>(const Expression& expression) -> Expression&
+		{
+			lexemes.emplace_back(std::make_unique<TokenLexeme>(expression.token));
+			return *this;
+		}
+
+		inline auto operator>>(NamedParser<Types...> namedParser) -> Expression&
+		{
+			lexemes.emplace_back(std::make_unique<ParserLexeme<Types...>>(std::move(namedParser)));
+			return *this;
+		}
+
+		inline auto operator>>(TagLexeme tagLexeme) -> Expression&
+		{
+			lexemes.emplace_back(std::make_unique<TagLexeme>(std::move(tagLexeme)));
+			return *this;
+		}
+
+		inline auto operator>>(Recurrence recurrence) -> Expression&
+		{
+			lexemes.emplace_back(std::make_unique<RecurrentLexeme>(std::move(recurrence)));
+			return *this;
+		}
+
+		inline auto operator>>(Alternative alternative) -> Expression&
+		{
+			lexemes.emplace_back(std::make_unique<AlternativeLexeme>(std::move(alternative)));
+			return *this;
+		}
+
+		[[nodiscard]] inline auto operator~() const -> Recurrence
+		{
+			return Recurrence{std::make_unique<TokenLexeme>(token), RecurrenceType::Optional, 0};
+		}
+
+		[[nodiscard]] inline auto operator>(std::size_t repetitions) const -> Recurrence
+		{
+			return Recurrence{std::make_unique<TokenLexeme>(token), RecurrenceType::MoreThan, repetitions};
+		}
+
+		[[nodiscard]] inline auto operator>=(std::size_t repetitions) const -> Recurrence
+		{
+			return Recurrence{std::make_unique<TokenLexeme>(token), RecurrenceType::MoreOrEqualTo, repetitions};
+		}
+
+		[[nodiscard]] inline auto operator*(std::size_t repetitions) const -> Recurrence
+		{
+			return Recurrence{std::make_unique<TokenLexeme>(token), RecurrenceType::EqualTo, repetitions};
+		}
+
+		[[nodiscard]] inline auto operator||(const Expression& rhs) const -> Alternative
+		{
+			auto mergedLexemes = std::vector<std::unique_ptr<ILexeme>>{};
+			mergedLexemes.emplace_back(std::make_unique<TokenLexeme>(token));
+			mergedLexemes.emplace_back(std::make_unique<TokenLexeme>(rhs.token));
+			return Alternative{std::move(mergedLexemes)};
+		}
+
+		friend inline auto operator||(Alternative&& lhs, const Expression& rhs) -> Alternative
+		{
+			lhs.lexemes.emplace_back(std::make_unique<TokenLexeme>(rhs.token));
+			return std::move(lhs);
+		}
+
+		friend inline auto operator||(Alternative& lhs, const Expression& rhs) -> Alternative&
+		{
+			lhs.lexemes.emplace_back(std::make_unique<TokenLexeme>(rhs.token));
+			return lhs;
+		}
+
+		[[nodiscard]] inline auto operator!=(std::string string) const -> Exclusion
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<StringLexeme>(std::move(string))};
+		}
+
+		[[nodiscard]] inline auto operator!=(char c) const -> Exclusion
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<StringLexeme>(std::string{c})};
+		}
+
+		[[nodiscard]] inline auto operator!=(const Expression& expression) const -> Exclusion
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<TokenLexeme>(expression.token)};
+		}
+
+		[[nodiscard]] inline auto operator!=(ParsingFunction<Types...> function) const -> Exclusion
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<ParserLexeme<Types...>>(std::move(function))};
+		}
+
+		[[nodiscard]] inline auto operator!=(TagLexeme tagLexeme) const -> Exclusion
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<TagLexeme>(std::move(tagLexeme))};
+		}
+
+		[[nodiscard]] inline auto operator!=(Recurrence recurrence) const -> Exclusion
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<RecurrentLexeme>(std::move(recurrence))};
+		}
+
+		[[nodiscard]] inline auto operator!=(Alternative alternative) const -> Exclusion
+		{
+			return Exclusion{
+				std::make_unique<TokenLexeme>(token),
+				std::make_unique<AlternativeLexeme>(std::move(alternative))};
+		}
+	};
+}

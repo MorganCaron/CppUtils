@@ -1,0 +1,143 @@
+export module CppUtils.Language.Parameters;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Logger;
+import CppUtils.Container.Tree;
+import CppUtils.Language.Lexer;
+
+export namespace CppUtils::Language::Parameters
+{
+	class ParametersLexer final
+	{
+	public:
+		inline ParametersLexer()
+		{
+			using namespace std::literals;
+			using namespace String::Literals;
+
+			static const auto stringKeywordParser = [](auto& context) -> bool
+			{
+				auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+				const auto keyword = String::getKeywordAndSkip(cursor);
+				if (std::ranges::empty(keyword))
+					return false;
+				parentNode.get().nodes.emplace_back(std::string{keyword});
+				return true;
+			};
+
+			static const auto contentParser = [](auto& context) -> bool
+			{
+				auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+				const auto string = std::string{String::trimString(String::getStringAndSkipIf(cursor, [](char c) -> bool
+				{
+					return c != ']';
+				}))};
+				parentNode.get().nodes.emplace_back(string);
+				return true;
+			};
+
+			m_grammarLexer.addParsingFunction("spaceParser"_token, Lexer::spaceParser<Type::Token, std::string>);
+			m_grammarLexer.addParsingFunction("keywordParser"_token, stringKeywordParser);
+			m_grammarLexer.addParsingFunction("contentParser"_token, contentParser);
+
+			static constexpr auto grammarSrc = R"(
+			main: spaceParser (command >= 0) spaceParser;
+			command: spaceParser [key] ~value;
+			!key: keywordParser;
+			!value: spaceParser '[' contentParser ']';
+			)"sv;
+			m_grammarLexer.parseGrammar(grammarSrc);
+		}
+
+		[[nodiscard]] inline auto parseParameters(std::span<const std::string_view> args) const -> std::map<std::string, std::string>
+		{
+			using namespace String::Literals;
+			if (std::ranges::empty(args))
+				return {};
+			auto src = std::string{};
+			for (const auto arg : args)
+			{
+				if (not std::ranges::empty(src))
+					src += ' ';
+				src += arg;
+			}
+			const auto commandTree = m_grammarLexer.parseLanguage("main"_token, src);
+			auto parameters = std::map<std::string, std::string>{};
+			for (const auto& commandWrapper : commandTree.nodes)
+			{
+				if (std::ranges::empty(commandWrapper.nodes))
+					continue;
+				const auto& tagNode = commandWrapper.nodes.at(0);
+				const auto key = std::holds_alternative<std::string>(tagNode.value) ? std::get<std::string>(tagNode.value) : std::string{};
+				const auto value = not std::ranges::empty(tagNode.nodes) ? (std::holds_alternative<std::string>(tagNode.nodes.at(0).value) ? std::get<std::string>(tagNode.nodes.at(0).value) : std::string{}) : std::string{};
+				if (not std::ranges::empty(key))
+					parameters[key] = value;
+			}
+			return parameters;
+		}
+
+		[[nodiscard]] inline auto parseParameters(int argc, const char* const argv[]) const -> std::map<std::string, std::string>
+		{
+			if (argc <= 1 or argv == nullptr)
+				return {};
+			auto args = std::vector<std::string_view>{};
+			args.reserve(static_cast<std::size_t>(argc - 1));
+			for (auto i = 1; i < argc; ++i)
+				if (argv[i] != nullptr)
+					args.emplace_back(argv[i]);
+			return parseParameters(args);
+		}
+
+		[[nodiscard]] inline auto executeCommands(
+			std::span<const std::string_view> args,
+			const std::unordered_map<std::string_view, std::function<bool(std::string_view)>>& commands) const -> bool
+		{
+			const auto parameters = parseParameters(args);
+			for (const auto& [parameterName, parameterValue] : parameters)
+			{
+				if (const auto it = commands.find(parameterName); it != commands.end())
+				{
+					if (it->second(parameterValue))
+						return true;
+				}
+				else
+				{
+					Logger<"CppUtils">::print<"warning">("Unknown command: {}", parameterName);
+				}
+			}
+			return false;
+		}
+
+		[[nodiscard]] inline auto executeCommands(
+			int argc,
+			const char* const argv[],
+			const std::unordered_map<std::string_view, std::function<bool(std::string_view)>>& commands) const -> bool
+		{
+			if (argc <= 1 or argv == nullptr)
+				return false;
+			auto args = std::vector<std::string_view>{};
+			args.reserve(static_cast<std::size_t>(argc - 1));
+			for (auto i = 1; i < argc; ++i)
+				if (argv[i] != nullptr)
+					args.emplace_back(argv[i]);
+			return executeCommands(args, commands);
+		}
+
+	private:
+		Lexer::GrammarLexer<Type::Token, std::string> m_grammarLexer;
+	};
+
+	[[nodiscard]] inline auto parseParameters(std::span<const std::string_view> args) -> std::map<std::string, std::string>
+	{
+		static const auto parametersLexer = ParametersLexer{};
+		return parametersLexer.parseParameters(args);
+	}
+
+	[[nodiscard]] inline auto parseParameters(int argc, const char* const argv[]) -> std::map<std::string, std::string>
+	{
+		static const auto parametersLexer = ParametersLexer{};
+		return parametersLexer.parseParameters(argc, argv);
+	}
+}

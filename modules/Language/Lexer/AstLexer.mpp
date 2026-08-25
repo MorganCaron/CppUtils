@@ -1,0 +1,304 @@
+export module CppUtils.Language.Lexer.AstLexer;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.Language.AST;
+
+export namespace CppUtils::Language::Lexer
+{
+	using namespace String::Literals;
+
+	template<class Element = char>
+	[[nodiscard]] inline auto parseLexeme(
+		String::Cursor<std::basic_string_view<Element>>& cursor,
+		std::reference_wrapper<Container::ASTNode<Element>>& parentNode,
+		Container::AST<Element>& ast,
+		const Container::ASTNode<Element>& lexeme,
+		const Container::AST<Element>& grammar,
+		std::vector<Container::ASTNode<Element>>& memory) -> bool;
+
+	template<class Element = char>
+	[[nodiscard]] inline auto parseLexemes(
+		String::Cursor<std::basic_string_view<Element>>& cursor,
+		std::reference_wrapper<Container::ASTNode<Element>>& parentNode,
+		Container::AST<Element>& ast,
+		const Container::ASTNode<Element>& lexeme,
+		const Container::AST<Element>& grammar,
+		std::vector<Container::ASTNode<Element>>& memory) -> bool
+	{
+		for (const auto& node : lexeme.nodes)
+		{
+			if (not parseLexeme(cursor, parentNode, ast, node, grammar, memory))
+				return false;
+		}
+		return true;
+	}
+
+	template<class Element = char>
+	[[nodiscard]] inline auto parseDeclaration(
+		String::Cursor<std::basic_string_view<Element>>& cursor,
+		std::reference_wrapper<Container::ASTNode<Element>>& parentNode,
+		Container::AST<Element>& ast,
+		const Container::ASTNode<Element>& declaration,
+		const Container::AST<Element>& grammar,
+		std::vector<Container::ASTNode<Element>>& memory) -> bool
+	{
+		auto newParentNode = parentNode.get();
+		auto commaPosition = 0uz;
+		const auto& lexemes = declaration.nodes;
+		const auto nbLexemes = std::ranges::size(lexemes);
+		for (auto i = 0uz; i < nbLexemes; ++i)
+		{
+			const auto& lex = lexemes[i];
+			if (lex.value == static_cast<std::uint64_t>(','))
+				commaPosition = i;
+			else if (not parseLexeme(cursor, parentNode, ast, lex, grammar, memory))
+			{
+				if (commaPosition != 0)
+					throw std::logic_error{"Unknown element"};
+				parentNode.get() = newParentNode;
+				return false;
+			}
+		}
+		return true;
+	}
+
+	template<class Element = char>
+	[[nodiscard]] inline auto parseMultipleDeclaration(
+		String::Cursor<std::basic_string_view<Element>>& cursor,
+		std::reference_wrapper<Container::ASTNode<Element>>& parentNode,
+		Container::AST<Element>& ast,
+		const Container::ASTNode<Element>& declarationLexeme,
+		const Container::AST<Element>& grammar,
+		std::vector<Container::ASTNode<Element>>& memory) -> bool
+	{
+		const auto declarationToken = declarationLexeme.value;
+		for (const auto& declaration : grammar.root.getNodesWithValue(declarationToken))
+		{
+			auto startCursor = cursor;
+			auto currentParent = parentNode.get();
+			if (parseDeclaration(cursor, parentNode, ast, declaration, grammar, memory))
+				return true;
+			cursor = startCursor;
+			parentNode.get() = currentParent;
+		}
+		return false;
+	}
+
+	template<class Element>
+	[[nodiscard]] inline auto parseLexeme(
+		String::Cursor<std::basic_string_view<Element>>& cursor,
+		std::reference_wrapper<Container::ASTNode<Element>>& parentNode,
+		Container::AST<Element>& ast,
+		const Container::ASTNode<Element>& lexeme,
+		const Container::AST<Element>& grammar,
+		std::vector<Container::ASTNode<Element>>& memory) -> bool
+	{
+		const auto startPos = cursor.position;
+		switch (lexeme.value)
+		{
+		case "optional"_token:
+		{
+			static_cast<void>(parseLexemes(cursor, parentNode, ast, lexeme, grammar, memory));
+			return true;
+		}
+		case "token"_token:
+		{
+			if (std::ranges::empty(lexeme.nodes))
+				throw std::logic_error{"Missing element in 'token' token"};
+			return parseMultipleDeclaration(cursor, parentNode, ast, lexeme.nodes[0], grammar, memory);
+		}
+		case "string"_token:
+		{
+			const auto size = std::ranges::size(lexeme.nodes);
+			if (size == 0)
+				throw std::logic_error{"Missing element in 'string' token"};
+			if (cursor.position + size > std::ranges::size(cursor.source))
+				return false;
+			for (auto i = 0uz; i < size; ++i)
+			{
+				const auto c = static_cast<Element>(lexeme.nodes[i].value);
+				if (cursor.source[cursor.position] == c)
+					++cursor.position;
+				else
+				{
+					cursor.position = startPos;
+					return false;
+				}
+			}
+			return true;
+		}
+		case "read"_token:
+		{
+			if (cursor.position >= std::ranges::size(cursor.source))
+				return false;
+			const auto c = static_cast<std::uint64_t>(static_cast<unsigned char>(cursor.source[cursor.position]));
+			if (not parentNode.get().nodes.empty() and (c >= '0' and c <= '9') and parentNode.get().nodes.back().nodes.empty() and parentNode.get().nodes.back().value == 0)
+				parentNode.get().nodes.back().value = c - '0';
+			else if (not parentNode.get().nodes.empty() and (c >= '0' and c <= '9') and parentNode.get().nodes.back().nodes.empty() and parentNode.get().nodes.back().value > 0 and parentNode.get().nodes.back().value < 1844674407370955161ULL)
+				parentNode.get().nodes.back().value = parentNode.get().nodes.back().value * 10 + (c - '0');
+			else
+				parentNode.get().nodes.push_back(Container::ASTNode<Element>{c});
+			return true;
+		}
+		case "add"_token:
+		{
+			if (std::ranges::empty(lexeme.nodes))
+				throw std::logic_error{"Missing element in 'add' token"};
+			const auto& nodeToAdd = lexeme.nodes[0];
+			if (nodeToAdd.value == "token"_token and not std::ranges::empty(nodeToAdd.nodes))
+			{
+				auto tokenName = std::string{};
+				for (const auto& charNode : nodeToAdd.nodes)
+					tokenName += static_cast<char>(charNode.value);
+				const auto token = Type::hash(tokenName);
+				ast.hashTable[token] = tokenName;
+				parentNode.get().nodes.push_back(Container::ASTNode<Element>{token});
+			}
+			else
+				parentNode.get().nodes.push_back(nodeToAdd);
+			return true;
+		}
+		case "or"_token:
+		{
+			for (const auto& node : lexeme.nodes)
+			{
+				if (parseLexeme(cursor, parentNode, ast, node, grammar, memory))
+					return true;
+			}
+			return false;
+		}
+		case "hash"_token:
+		{
+			auto tempNode = Container::ASTNode<Element>{parentNode.get().value};
+			auto tempParentRef = std::ref(tempNode);
+			if (not parseLexemes(cursor, tempParentRef, ast, lexeme, grammar, memory))
+				return false;
+			auto string = std::string{};
+			for (const auto& node : tempNode.nodes)
+				string += static_cast<char>(node.value);
+			const auto token = Type::hash(string);
+			ast.hashTable[token] = string;
+			parentNode.get().nodes.push_back(Container::ASTNode<Element>{token});
+			return true;
+		}
+		case "sub"_token:
+		{
+			if (std::ranges::empty(lexeme.nodes))
+				throw std::logic_error{"Missing element in 'sub' token"};
+			if (std::ranges::empty(parentNode.get().nodes))
+				throw std::logic_error{"No node in parent to enter sub into"};
+			auto subParentRef = std::ref(parentNode.get().nodes.back());
+			return parseLexemes(cursor, subParentRef, ast, lexeme, grammar, memory);
+		}
+		case ">="_token:
+			return cursor.position < std::ranges::size(cursor.source) and cursor.source[cursor.position] >= static_cast<char>(lexeme.nodes[0].value);
+		case "<="_token:
+			return cursor.position < std::ranges::size(cursor.source) and cursor.source[cursor.position] <= static_cast<char>(lexeme.nodes[0].value);
+		case '+':
+		{
+			if (cursor.position >= std::ranges::size(cursor.source))
+				return false;
+			++cursor.position;
+			return true;
+		}
+		case "not"_token:
+		{
+			if (std::ranges::empty(lexeme.nodes))
+				throw std::logic_error{"Missing element in 'not' token"};
+			const auto prevPos = cursor.position;
+			auto tempNode = parentNode.get();
+			auto tempParentRef = std::ref(tempNode);
+			const auto result = parseLexeme(cursor, tempParentRef, ast, lexeme.nodes[0], grammar, memory);
+			cursor.position = prevPos;
+			return not result;
+		}
+		case "parenthesis"_token:
+			return parseLexemes(cursor, parentNode, ast, lexeme, grammar, memory);
+		case "end"_token:
+			return cursor.position >= std::ranges::size(cursor.source);
+		case "repeat"_token:
+		{
+			const auto nbLexemes = std::ranges::size(lexeme.nodes);
+			if (nbLexemes == 0)
+				throw std::logic_error{"Missing element in 'repeat' token"};
+			const auto& repeatedLexeme = lexeme.nodes[0];
+			if (nbLexemes == 1)
+			{
+				if (not parseLexeme(cursor, parentNode, ast, repeatedLexeme, grammar, memory))
+					return false;
+				while (parseLexeme(cursor, parentNode, ast, repeatedLexeme, grammar, memory)) {}
+				return true;
+			}
+			const auto& separatorLexeme = lexeme.nodes[1];
+			if (not parseLexeme(cursor, parentNode, ast, repeatedLexeme, grammar, memory))
+				return false;
+			while (true)
+			{
+				const auto beforeSepPos = cursor.position;
+				auto beforeSepNode = parentNode.get();
+				if (not parseLexeme(cursor, parentNode, ast, separatorLexeme, grammar, memory))
+				{
+					cursor.position = beforeSepPos;
+					parentNode.get() = beforeSepNode;
+					break;
+				}
+				if (not parseLexeme(cursor, parentNode, ast, repeatedLexeme, grammar, memory))
+				{
+					cursor.position = beforeSepPos;
+					parentNode.get() = beforeSepNode;
+					break;
+				}
+			}
+			return true;
+		}
+		case "push"_token:
+		{
+			auto tempNode = Container::ASTNode<Element>{parentNode.get().value};
+			auto tempParentRef = std::ref(tempNode);
+			if (not parseLexemes(cursor, tempParentRef, ast, lexeme, grammar, memory))
+				return false;
+			memory.insert(memory.end(), tempNode.nodes.begin(), tempNode.nodes.end());
+			return true;
+		}
+		case "pop"_token:
+		{
+			if (memory.empty())
+				return false;
+			parentNode.get().nodes.push_back(std::move(memory.back()));
+			memory.pop_back();
+			return true;
+		}
+		case "=="_token:
+			return cursor.position < std::ranges::size(cursor.source) and cursor.source[cursor.position] == static_cast<char>(lexeme.nodes[0].value);
+		case "comma"_token:
+			return true;
+		}
+		return false;
+	}
+
+	template<class CharT = char>
+	[[nodiscard]] inline auto parse(std::basic_string_view<CharT> src, const Container::AST<CharT>& grammar) -> Container::AST<CharT>
+	{
+		if (std::ranges::empty(grammar.root.nodes))
+			throw std::logic_error{"Empty grammar"};
+		auto ast = Container::AST<CharT>{};
+		ast.hashTable = grammar.hashTable;
+		auto memory = std::vector<Container::ASTNode<CharT>>{};
+		const auto declarationIt = std::ranges::find_if(grammar.root.nodes, [](const auto& declaration) -> bool {
+			return declaration.value == "main"_token;
+		});
+		if (declarationIt == grammar.root.nodes.cend())
+			throw std::logic_error{"Entry point \"main\" not found"};
+		auto mainLexeme = *declarationIt;
+		auto cursor = String::Cursor<std::basic_string_view<CharT>>{src};
+		auto parentRef = std::ref(ast.root);
+		const auto success = parseDeclaration(cursor, parentRef, ast, mainLexeme, grammar, memory);
+		if (not success or not String::isEndOfString(cursor))
+			throw std::logic_error{std::format("Parsing failed: success={}, pos={}/{}, remaining: \"{}\"",
+				success, cursor.position, cursor.source.size(), cursor.source.substr(cursor.position))};
+		return ast;
+	}
+}

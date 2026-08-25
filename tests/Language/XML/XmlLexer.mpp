@@ -1,0 +1,61 @@
+export module CppUtils.UnitTests.Language.Xml.XmlLexer;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::Xml::XmlLexer
+{
+	using namespace CppUtils::String::Literals;
+
+	auto _ = TestSuite{"Language/Xml/XmlLexer", {}, [](TestSuite& suite) {
+		using namespace std::literals;
+		using namespace CppUtils::Language::Xml::Literals;
+
+		suite.addTest("Tag", [&] {
+			const auto xmlTree = R"(
+			<h1>Title</h1>
+			)"_xml;
+			CppUtils::Log::TreeNodeLogger::log(xmlTree);
+
+			suite.expect(xmlTree.exists("h1"_token));
+			const auto& h1 = xmlTree["h1"_token];
+			suite.expectEqual(std::get<std::string>(h1.nodes.at(0).value), "Title"s);
+		});
+
+		suite.addTest("Nested tags", [&] {
+			const auto xmlTree = R"(
+			<ul>
+				<li>First</li>
+				<li>Second</li>
+				<li>Third</li>
+			</ul>
+			)"_xml;
+			CppUtils::Log::TreeNodeLogger::log(xmlTree);
+
+			suite.expect(xmlTree.exists("ul"_token));
+			const auto& ul = xmlTree["ul"_token];
+			suite.expectEqual(std::ranges::size(ul.nodes), 3uz);
+			for (const auto& li : ul.nodes)
+				suite.expectEqual(std::get<CppUtils::Type::Token>(li.value), "li"_token);
+			suite.expectEqual(std::ranges::size(ul.nodes.at(0).nodes), 1uz);
+			suite.expectEqual(std::get<std::string>(ul.nodes.at(0).nodes.at(0).value), "First"s);
+			suite.expectEqual(std::get<std::string>(ul.nodes.at(1).nodes.at(0).value), "Second"s);
+			suite.expectEqual(std::get<std::string>(ul.nodes.at(2).nodes.at(0).value), "Third"s);
+		});
+
+		suite.addTest("Attributes", [&] {
+			const auto xmlTree = R"(
+			<h1 color="red">Title</h1>
+			)"_xml;
+			CppUtils::Log::TreeNodeLogger::log(xmlTree);
+
+			suite.expect(xmlTree.exists("h1"_token));
+			const auto& h1 = xmlTree["h1"_token];
+			suite.expect(h1.exists("attributes"_token));
+			const auto& attrs = h1["attributes"_token];
+			suite.expect(attrs.exists("color"_token));
+			suite.expectEqual(std::get<std::string>(attrs["color"_token].nodes.at(0).value), "red"s);
+			suite.expectEqual(std::get<std::string>(h1.nodes.at(1).value), "Title"s);
+		});
+	}};
+}
