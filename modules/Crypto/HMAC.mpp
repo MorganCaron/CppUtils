@@ -1,0 +1,77 @@
+export module CppUtils.Crypto.HMAC;
+
+import std;
+
+export namespace CppUtils::Crypto
+{
+	// keyed-Hash Message Authentication Code
+	// https://en.wikipedia.org/wiki/HMAC
+	// RFC 2104: https://datatracker.ietf.org/doc/html/rfc2104
+	template<class HashAlgorithm>
+	class HMAC final
+	{
+	public:
+		explicit inline HMAC(std::span<const std::byte> key)
+		{
+			auto keyBlock = std::array<std::byte, HashAlgorithm::BlockSize>{};
+			std::ranges::fill(keyBlock, std::byte{0});
+
+			// https://datatracker.ietf.org/doc/html/rfc2104#section-2
+			if (std::ranges::size(key) > HashAlgorithm::BlockSize)
+			{
+				const auto hash = HashAlgorithm::hash(key);
+				std::ranges::copy(hash, std::ranges::begin(keyBlock));
+			}
+			else
+				std::ranges::copy(key, std::ranges::begin(keyBlock));
+
+			for (auto i = 0uz; i < std::ranges::size(keyBlock); ++i)
+			{
+				// https://datatracker.ietf.org/doc/html/rfc2104#section-2 (ipad = 0x36, opad = 0x5C)
+				// https://fr.wikipedia.org/wiki/Distance_de_Hamming
+				m_ipad[i] = keyBlock[i] ^ std::byte{0b0011'0110}; // 0x36
+				m_opad[i] = keyBlock[i] ^ std::byte{0b0101'1100}; // 0x5c
+			}
+
+			m_innerHash.update(m_ipad);
+		}
+
+		explicit inline HMAC(std::string_view key): HMAC{std::as_bytes(std::span{key})} {}
+
+		inline auto update(std::span<const std::byte> data) -> void
+		{
+			m_innerHash.update(data);
+		}
+
+		inline auto update(std::string_view string) -> void
+		{
+			update(std::as_bytes(std::span{string}));
+		}
+
+		[[nodiscard]] inline auto digest() const -> std::array<std::byte, HashAlgorithm::DigestSize>
+		{
+			const auto innerDigest = m_innerHash.digest();
+			auto outerHash = HashAlgorithm{};
+			outerHash.update(m_opad);
+			outerHash.update(innerDigest);
+			return outerHash.digest();
+		}
+
+		[[nodiscard]] static inline auto sign(std::span<const std::byte> key, std::span<const std::byte> message) -> std::array<std::byte, HashAlgorithm::DigestSize>
+		{
+			auto hmac = HMAC{key};
+			hmac.update(message);
+			return hmac.digest();
+		}
+
+		[[nodiscard]] static inline auto sign(std::string_view key, std::string_view message) -> std::array<std::byte, HashAlgorithm::DigestSize>
+		{
+			return sign(std::as_bytes(std::span{key}), std::as_bytes(std::span{message}));
+		}
+
+	private:
+		std::array<std::byte, HashAlgorithm::BlockSize> m_ipad;
+		std::array<std::byte, HashAlgorithm::BlockSize> m_opad;
+		HashAlgorithm m_innerHash;
+	};
+}

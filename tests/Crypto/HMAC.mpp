@@ -1,0 +1,19 @@
+export module CppUtils.UnitTests.Crypto.HMAC;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Crypto
+{
+	auto _ = TestSuite{"Crypto/HMAC", {"String/Utility", "Crypto/SHA256"}, [](auto& suite) {
+		suite.addTest("Empty key, empty message", [&] {
+			auto hmac = CppUtils::Crypto::HMAC<CppUtils::Crypto::SHA256>::sign("", "");
+			suite.expectEqual(CppUtils::String::toHexString(hmac), "b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad");
+		});
+
+		suite.addTest("Test Case 1", [&] {
+			auto hmac = CppUtils::Crypto::HMAC<CppUtils::Crypto::SHA256>::sign("key", "The quick brown fox jumps over the lazy dog");
+			suite.expectEqual(CppUtils::String::toHexString(hmac), "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8");
+		});
+	}};
+}

@@ -1,3 +1,4 @@
 export module CppUtils.Crypto;
 
+export import CppUtils.Crypto.HMAC;
 export import CppUtils.Crypto.SHA256;

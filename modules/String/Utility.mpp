@@ -256,4 +256,33 @@ export namespace CppUtils::String
 		static_assert("AB"_excelColumn == 27);
 		static_assert("BA"_excelColumn == 52);
 	}
+
+	[[nodiscard]] inline auto toHexString(std::span<const std::byte> data) -> std::string
+	{
+		auto result = std::string{};
+		result.reserve(std::ranges::size(data) * 2);
+		for (auto byte : data)
+			result += std::format("{:02x}", static_cast<std::uint8_t>(byte));
+		return result;
+	}
+
+	[[nodiscard]] inline auto toHexString(std::string_view string) -> std::string
+	{
+		return toHexString(std::as_bytes(std::span{string}));
+	}
+
+	[[nodiscard]] inline auto fromHexString(std::string_view string) -> std::vector<std::byte>
+	{
+		const auto stringLength = std::ranges::size(string);
+		auto result = std::vector<std::byte>{};
+		result.reserve(stringLength / 2);
+		for (auto i = 0uz; i + 1 < stringLength; i += 2)
+		{
+			auto value = std::uint8_t{0};
+			const auto [endPointer, errorCode] = std::from_chars(std::ranges::data(string) + i, std::ranges::data(string) + i + 2, value, 16);
+			if (errorCode == std::errc{})
+				result.push_back(static_cast<std::byte>(value));
+		}
+		return result;
+	}
 }

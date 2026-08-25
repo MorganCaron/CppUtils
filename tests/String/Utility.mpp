@@ -76,5 +76,17 @@ namespace CppUtils::UnitTest::String::Utility
 			suite.expectEqual(splitString[0], "Hello"sv);
 			suite.expectEqual(splitString[1], "World!"sv);
 		});
+
+		suite.addTest("toHexString", [&] {
+			const auto data = std::array{std::byte{0x00}, std::byte{0x0f}, std::byte{0x10}, std::byte{0xff}};
+			suite.expectEqual(CppUtils::String::toHexString(data), "000f10ff");
+			suite.expectEqual(CppUtils::String::toHexString("Hello"), "48656c6c6f");
+		});
+
+		suite.addTest("fromHexString", [&] {
+			const auto decoded = CppUtils::String::fromHexString("000f10ff");
+			const auto expectedData = std::array{std::byte{0x00}, std::byte{0x0f}, std::byte{0x10}, std::byte{0xff}};
+			suite.expect(std::ranges::equal(decoded, expectedData));
+		});
 	}};
 }
