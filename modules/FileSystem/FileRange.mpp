@@ -1,0 +1,87 @@
+export module CppUtils.FileSystem.FileRange;
+
+import std;
+
+export namespace CppUtils::FileSystem
+{
+	class LineIterator final
+	{
+	public:
+		using iterator_concept = std::input_iterator_tag;
+		using value_type = std::string;
+		using difference_type = std::ptrdiff_t;
+
+		LineIterator() = default;
+
+		explicit LineIterator(std::filesystem::path path):
+			m_stream{std::ifstream{std::move(path)}}
+		{
+			if (m_stream.is_open() and m_stream.good())
+				++(*this);
+		}
+
+		[[nodiscard]] auto operator*() const -> const std::string& { return m_line; }
+		[[nodiscard]] auto operator->() const -> const std::string* { return std::addressof(m_line); }
+
+		auto operator++() -> LineIterator&
+		{
+			if (m_stream.is_open() and std::getline(m_stream, m_line))
+			{
+				if (not std::ranges::empty(m_line) and m_line.back() == '\r')
+					m_line.pop_back();
+			}
+			else
+				m_stream.close();
+			return *this;
+		}
+		auto operator++(int) -> void { ++(*this); }
+
+		[[nodiscard]] auto operator==(std::default_sentinel_t) const -> bool { return not m_stream.is_open(); }
+
+	private:
+		std::ifstream m_stream;
+		std::string m_line;
+	};
+
+	static_assert(std::input_iterator<LineIterator>);
+
+	struct FileLineReader final: std::ranges::view_interface<FileLineReader>
+	{
+		FileLineReader() = default;
+
+		explicit FileLineReader(std::filesystem::path path): path{std::move(path)}
+		{}
+
+		std::filesystem::path path;
+		[[nodiscard]] auto begin() const { return LineIterator(path); }
+		[[nodiscard]] auto end() const { return std::default_sentinel; }
+	};
+
+	[[nodiscard]] inline auto readLines(std::filesystem::path path)
+	{
+		return FileLineReader{std::move(path)};
+	}
+
+	struct FileLineWriter final
+	{
+		std::filesystem::path path;
+
+		friend auto operator|(std::ranges::input_range auto&& range, FileLineWriter writer) -> void
+		{
+			auto file = std::ofstream{writer.path};
+			if (not file.is_open())
+				throw std::runtime_error{"Failed to open " + writer.path.string() + " file"};
+
+			for (const auto& line : range)
+			{
+				file.write(std::ranges::data(line), static_cast<std::streamsize>(std::ranges::size(line)));
+				file.put('\n');
+			}
+		}
+	};
+
+	[[nodiscard]] inline auto writeLines(std::filesystem::path path)
+	{
+		return FileLineWriter{std::move(path)};
+	}
+}

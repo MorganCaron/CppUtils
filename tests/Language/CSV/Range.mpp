@@ -1,0 +1,69 @@
+export module CppUtils.UnitTests.Language.CSV.Range;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::CSV::Range
+{
+	using namespace CppUtils::String::Literals;
+
+	struct User final
+	{
+		std::string name;
+		int age;
+
+		auto operator==(const User&) const -> bool = default;
+	};
+
+	using CSVMapping = CppUtils::Type::Mapping<
+		CppUtils::Type::Pair<"name"_token, 0>,
+		CppUtils::Type::Pair<"age"_token, 1>>;
+
+	using StructMapping = CppUtils::Type::Mapping<
+		CppUtils::Type::Pair<"name"_token, &User::name>,
+		CppUtils::Type::Pair<"age"_token, &User::age>>;
+
+	struct UserMapping final
+	{
+		using CSVMapping = CSVMapping;
+		using StructMapping = StructMapping;
+		using FunctionMapping = CppUtils::Type::Mapping<>;
+	};
+
+	auto _ = TestSuite{"Language/CSV/Range", {"Language/CSV/Parsing", "Language/CSV/Mapping", "FileSystem/File", "FileSystem/Directory"}, [](TestSuite& suite) {
+		suite.addTest("Full Pipeline", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& directory) {
+				const auto inputFilePath = directory / "input.csv";
+				const auto outputFilePath = directory / "output.csv";
+
+				CppUtils::FileSystem::String::write(inputFilePath, R"(Alice;30
+Bob; 25 
+
+  
+Charlie;40)");
+
+				CppUtils::FileSystem::readLines(inputFilePath)
+					| CppUtils::Language::CSV::parseLines(";")
+					| CppUtils::Language::CSV::toStruct<User, UserMapping>()
+					| std::views::transform([](User user) {
+					user.age += 1;
+					return user;
+				})
+					| CppUtils::Language::CSV::toCSV<User, UserMapping>(";")
+					| CppUtils::FileSystem::writeLines(outputFilePath);
+
+				const auto fileContent = CppUtils::FileSystem::String::read(outputFilePath);
+				auto lines = fileContent
+					| std::views::split('\n')
+					| std::views::transform([](auto&& range) { return std::string_view{range}; })
+					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
+					| std::ranges::to<std::vector<std::string>>();
+
+				suite.expectEqual(std::ranges::size(lines), 3uz);
+				suite.expectEqual(lines[0], "Alice;31");
+				suite.expectEqual(lines[1], "Bob;26");
+				suite.expectEqual(lines[2], "Charlie;41");
+			}};
+		});
+	}};
+}

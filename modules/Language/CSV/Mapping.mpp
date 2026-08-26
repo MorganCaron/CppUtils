@@ -104,4 +104,40 @@ export namespace CppUtils::Language::CSV
 		}
 		return csv;
 	}
+
+	template<class Object, class Mapping>
+	struct ToStruct final
+	{
+		friend auto operator|(std::ranges::input_range auto&& range, ToStruct)
+		{
+			return range | std::views::transform([](auto&& line) {
+				return toStruct<Object, Mapping>(line);
+			});
+		}
+	};
+
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto toStruct()
+	{
+		return ToStruct<Object, Mapping>{};
+	}
+
+	template<class Object, class Mapping>
+	struct ToCSV final
+	{
+		std::string_view separator = ";";
+
+		friend auto operator|(std::ranges::input_range auto&& range, ToCSV self)
+		{
+			return range | std::views::transform([separator = self.separator](const Object& object) {
+				return toCSV<Object, Mapping>(object, separator);
+			});
+		}
+	};
+
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto toCSV(std::string_view separator = ";")
+	{
+		return ToCSV<Object, Mapping>{separator};
+	}
 }

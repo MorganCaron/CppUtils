@@ -1,0 +1,71 @@
+export module CppUtils.UnitTests.FileSystem.FileRange;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::FileSystem::FileRange
+{
+	auto _ = TestSuite{"FileSystem/FileRange", {"FileSystem/File", "FileSystem/Directory"}, [](TestSuite& suite) {
+		using namespace std::literals;
+
+		suite.addTest("readLines", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& directory) {
+				const auto filePath = directory / "lines.txt";
+				CppUtils::FileSystem::String::write(filePath, "Line 1\nLine 2\nLine 3");
+
+				auto lines = std::vector<std::string>{};
+				for (const auto& line : CppUtils::FileSystem::readLines(filePath))
+					lines.push_back(line);
+
+				suite.expectEqual(std::ranges::size(lines), 3uz);
+				suite.expectEqual(lines[0], "Line 1"s);
+				suite.expectEqual(lines[1], "Line 2"s);
+				suite.expectEqual(lines[2], "Line 3"s);
+			}};
+		});
+
+		suite.addTest("readLines with CRLF", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& directory) {
+				const auto filePath = directory / "crlf.txt";
+				CppUtils::FileSystem::String::write(filePath, "Line 1\r\nLine 2\r\nLine 3\r\n");
+
+				auto lines = std::vector<std::string>{};
+				for (const auto& line : CppUtils::FileSystem::readLines(filePath))
+					lines.push_back(line);
+
+				suite.expectEqual(std::ranges::size(lines), 3uz);
+				suite.expectEqual(lines[0], "Line 1"s);
+				suite.expectEqual(lines[1], "Line 2"s);
+				suite.expectEqual(lines[2], "Line 3"s);
+			}};
+		});
+
+		suite.addTest("readLines empty file", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& directory) {
+				const auto filePath = directory / "empty.txt";
+				CppUtils::FileSystem::String::write(filePath, "");
+
+				const auto reader = CppUtils::FileSystem::readLines(filePath);
+				suite.expect(std::ranges::cbegin(reader) == std::ranges::cend(reader));
+			}};
+		});
+
+		suite.addTest("writeLines and pipeline", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& directory) {
+				const auto sourceFilePath = directory / "source.txt";
+				const auto destinationFilePath = directory / "destination.txt";
+
+				CppUtils::FileSystem::String::write(sourceFilePath, "Line 1\nLine 2\nLine 3");
+
+				CppUtils::FileSystem::readLines(sourceFilePath)
+					| std::views::transform([](std::string_view line) {
+						return std::format("[{}]", line);
+					})
+					| CppUtils::FileSystem::writeLines(destinationFilePath);
+
+				const auto fileContent = CppUtils::FileSystem::String::read(destinationFilePath);
+				suite.expectEqual(fileContent, "[Line 1]\n[Line 2]\n[Line 3]\n"s);
+			}};
+		});
+	}};
+}

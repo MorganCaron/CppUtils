@@ -7,12 +7,18 @@ import CppUtils.Language.CSV.Mapping;
 
 export namespace CppUtils::Language::CSV
 {
-	[[nodiscard]] inline auto splitLine(std::string_view line, std::string_view separator = ";") -> std::vector<std::string_view>
+	[[nodiscard]] inline auto splitLineView(std::string_view line, std::string_view separator = ";")
 	{
 		return line
 			| std::views::split(separator)
-			| std::views::transform([](auto&& range) { return String::trimString(std::string_view{range}); })
-			| std::ranges::to<std::vector<std::string_view>>();
+			| std::views::transform([](auto&& range) {
+			return String::trimString(std::string_view{range});
+		});
+	}
+
+	[[nodiscard]] inline auto splitLine(std::string_view line, std::string_view separator = ";") -> std::vector<std::string_view>
+	{
+		return splitLineView(line, separator) | std::ranges::to<std::vector<std::string_view>>();
 	}
 
 	[[nodiscard]] inline auto parseCSV(std::string_view csv, std::string_view columnSeparator = ";", std::string_view lineSeparator = "\n") -> std::vector<std::vector<std::string_view>>
@@ -48,5 +54,23 @@ export namespace CppUtils::Language::CSV
 		{
 			return parseCSV(std::string_view{cString, size});
 		}
+	}
+
+	struct ParseLines final
+	{
+		std::string_view separator = ";";
+
+		friend auto operator|(std::ranges::input_range auto&& range, ParseLines self)
+		{
+			return range
+				| std::views::transform([](const auto& line) { return String::trimString(line); })
+				| std::views::filter([](std::string_view line) { return not std::ranges::empty(line); })
+				| std::views::transform([separator = self.separator](std::string_view line) { return splitLine(line, separator); });
+		}
+	};
+
+	[[nodiscard]] inline auto parseLines(std::string_view separator = ";")
+	{
+		return ParseLines{separator};
 	}
 }
