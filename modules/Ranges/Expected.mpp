@@ -1,0 +1,202 @@
+export module CppUtils.Ranges.Expected;
+
+import std;
+
+export namespace CppUtils::Ranges
+{
+	struct FilterValues final
+	{
+		friend auto operator|(std::ranges::input_range auto&& range, FilterValues)
+		{
+			return range
+				| std::views::filter([](const auto& result) { return result.has_value(); })
+				| std::views::transform([](auto&& result) { return std::move(result.value()); });
+		}
+	};
+
+	static_assert(std::copy_constructible<FilterValues>);
+
+	[[nodiscard]] inline auto filterValues() -> FilterValues
+	{
+		return FilterValues{};
+	}
+
+	struct FilterErrors final
+	{
+		friend auto operator|(std::ranges::input_range auto&& range, FilterErrors)
+		{
+			return range
+				| std::views::filter([](const auto& result) { return not result.has_value(); })
+				| std::views::transform([](auto&& result) { return std::move(result.error()); });
+		}
+	};
+
+	static_assert(std::copy_constructible<FilterErrors>);
+
+	[[nodiscard]] inline auto filterErrors() -> FilterErrors
+	{
+		return FilterErrors{};
+	}
+
+	template<class FallbackValue>
+	struct ValueOr final
+	{
+		FallbackValue fallbackValue;
+
+		friend auto operator|(std::ranges::input_range auto&& range, ValueOr self)
+		{
+			return range | std::views::transform([fallback = std::move(self.fallbackValue)](auto&& result) {
+				return result.value_or(fallback);
+			});
+		}
+	};
+
+	[[nodiscard]] inline auto valueOr(auto&& fallbackValue)
+	{
+		return ValueOr{std::forward<decltype(fallbackValue)>(fallbackValue)};
+	}
+
+	template<class RecoveryFunction>
+	struct Recover final
+	{
+		RecoveryFunction recoveryFunction;
+
+		friend auto operator|(std::ranges::input_range auto&& range, Recover self)
+		{
+			return range | std::views::transform([recovery = std::move(self.recoveryFunction)](auto&& result) {
+				if (result.has_value())
+					return std::move(result.value());
+				return recovery(std::move(result.error()));
+			});
+		}
+	};
+
+	[[nodiscard]] inline auto recover(auto&& recoveryFunction)
+	{
+		return Recover{std::forward<decltype(recoveryFunction)>(recoveryFunction)};
+	}
+
+	template<class ErrorInspector>
+	struct InspectError final
+	{
+		ErrorInspector errorInspector;
+
+		friend auto operator|(std::ranges::input_range auto&& range, InspectError self)
+		{
+			return range | std::views::transform([inspector = std::move(self.errorInspector)](auto&& result) {
+				if (not result.has_value())
+					inspector(result.error());
+				return std::forward<decltype(result)>(result);
+			});
+		}
+	};
+
+	[[nodiscard]] inline auto inspectError(auto&& errorInspector)
+	{
+		return InspectError{std::forward<decltype(errorInspector)>(errorInspector)};
+	}
+
+	namespace Detail
+	{
+		template<std::ranges::input_range Range, class ErrorHandler>
+		class RouteErrorsView: public std::ranges::view_interface<RouteErrorsView<Range, ErrorHandler>>
+		{
+			Range m_range{};
+			ErrorHandler m_errorHandler{};
+
+			class Iterator final
+			{
+			private:
+				using BaseIterator = std::ranges::iterator_t<Range>;
+				using BaseSentinel = std::ranges::sentinel_t<Range>;
+
+				BaseIterator m_current{};
+				BaseSentinel m_end{};
+				ErrorHandler* m_errorHandler = nullptr;
+
+				auto advanceToNextValid() -> void
+				{
+					for (; m_current != m_end; ++m_current)
+					{
+						if ((*m_current).has_value())
+							break;
+						(*m_errorHandler)((*m_current).error());
+					}
+				}
+
+			public:
+				using iterator_concept = std::input_iterator_tag;
+				using difference_type = std::ptrdiff_t;
+				using value_type = typename std::ranges::range_value_t<Range>::value_type;
+
+				Iterator() = default;
+				Iterator(BaseIterator current, BaseSentinel end, ErrorHandler& errorHandler):
+					m_current{std::move(current)},
+					m_end{std::move(end)},
+					m_errorHandler{std::addressof(errorHandler)}
+				{
+					advanceToNextValid();
+				}
+
+				auto operator*() const -> value_type
+				{
+					return (*m_current).value();
+				}
+
+				auto operator++() -> Iterator&
+				{
+					++m_current;
+					advanceToNextValid();
+					return *this;
+				}
+
+				auto operator++(int) -> void
+				{
+					++(*this);
+				}
+
+				auto operator==(std::default_sentinel_t) const -> bool
+				{
+					return m_current == m_end;
+				}
+			};
+
+			static_assert(std::input_iterator<Iterator>);
+
+		public:
+			RouteErrorsView() = default;
+			RouteErrorsView(Range range, ErrorHandler errorHandler):
+				m_range{std::move(range)},
+				m_errorHandler{std::move(errorHandler)}
+			{}
+
+			auto begin()
+			{
+				return Iterator{std::ranges::begin(m_range), std::ranges::end(m_range), m_errorHandler};
+			}
+
+			auto end() const
+			{
+				return std::default_sentinel;
+			}
+		};
+	}
+
+	template<class ErrorHandler>
+	struct RouteErrors final
+	{
+		ErrorHandler errorHandler;
+
+		friend auto operator|(std::ranges::input_range auto&& range, RouteErrors self)
+		{
+			return Detail::RouteErrorsView{std::views::all(std::forward<decltype(range)>(range)), std::move(self.errorHandler)};
+		}
+	};
+
+	static_assert(std::copy_constructible<RouteErrors<void(*)(int)>>);
+
+	[[nodiscard]] inline auto routeErrors(auto&& errorHandler)
+	{
+		return RouteErrors{std::forward<decltype(errorHandler)>(errorHandler)};
+	}
+}

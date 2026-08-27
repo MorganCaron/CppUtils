@@ -206,5 +206,105 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 
 			suite.expectEqual(object, Object{"foo", "bar", 42, -1, 3.14f});
 		});
+
+		suite.addTest("toStructSafe valid", [&] {
+			const auto csvLine = "foo;bar;42;-1;3.14"_csv[0];
+			const auto result = CppUtils::Language::CSV::toStructSafe<Object, ObjectMapping>(csvLine);
+
+			suite.expect(result.has_value());
+			suite.expectEqual(result.value(), Object{"foo", "bar", 42, -1, 3.14f});
+		});
+
+		suite.addTest("toStructSafe invalid numeric", [&] {
+			const auto csvLine = "foo;bar;NaN;-1;3.14"_csv[0];
+			const auto result = CppUtils::Language::CSV::toStructSafe<Object, ObjectMapping>(csvLine);
+
+			suite.expect(not result.has_value());
+			suite.expectEqual(result.error().rawLine, "foo;bar;NaN;-1;3.14"sv);
+			suite.expect(not std::ranges::empty(result.error().reason));
+		});
+
+		suite.addTest("toStructSafe missing column", [&] {
+			const auto csvLine = "foo;bar"_csv[0];
+			const auto result = CppUtils::Language::CSV::toStructSafe<Object, ObjectMapping>(csvLine);
+
+			suite.expect(not result.has_value());
+			suite.expectEqual(result.error().rawLine, "foo;bar"sv);
+			suite.expect(not std::ranges::empty(result.error().reason));
+		});
+
+		suite.addTest("routeRejected", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto inputFilePath = directory / "input.csv";
+				const auto outputFilePath = directory / "output.csv";
+				const auto rejectedFilePath = directory / "rejected.csv";
+
+				CppUtils::FileSystem::String::write(inputFilePath, R"(foo;bar;42;-1;3.14
+bad;line;not_num;0;0.0
+hello;world;100;-200;1.5
+missing_cols)");
+
+				CppUtils::FileSystem::readLines(inputFilePath)
+					| CppUtils::Language::CSV::parseLines(";")
+					| CppUtils::Language::CSV::toStructSafe<FileObject, FileMapping>()
+					| CppUtils::Language::CSV::routeRejected(rejectedFilePath)
+					| CppUtils::Language::CSV::toCSV<FileObject, FileMapping>(";")
+					| CppUtils::FileSystem::writeLines(outputFilePath);
+
+				const auto cleanContent = CppUtils::FileSystem::String::read(outputFilePath);
+				auto cleanLines = cleanContent
+					| std::views::split('\n')
+					| std::views::transform([](auto&& range) { return std::string_view{range}; })
+					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
+					| std::ranges::to<std::vector<std::string>>();
+
+				suite.expectEqual(std::ranges::size(cleanLines), 2uz);
+				suite.expectEqual(cleanLines[0], "foo;bar;42;-1;3.14");
+				suite.expectEqual(cleanLines[1], "hello;world;100;-200;1.5");
+
+				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedFilePath);
+				auto rejectedLines = rejectedContent
+					| std::views::split('\n')
+					| std::views::transform([](auto&& range) { return std::string_view{range}; })
+					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
+					| std::ranges::to<std::vector<std::string>>();
+
+				suite.expectEqual(std::ranges::size(rejectedLines), 2uz);
+				suite.expect(rejectedLines[0].starts_with("bad;line;not_num;0;0.0;ERROR:"));
+				suite.expect(rejectedLines[1].starts_with("missing_cols;ERROR:"));
+			}};
+		});
+
+		suite.addTest("recover", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto inputFilePath = directory / "input.csv";
+				const auto outputFilePath = directory / "output.csv";
+
+				CppUtils::FileSystem::String::write(inputFilePath, R"(foo;bar;42;-1;3.14
+corrupted_line
+hello;world;100;-200;1.5)");
+
+				CppUtils::FileSystem::readLines(inputFilePath)
+					| CppUtils::Language::CSV::parseLines(";")
+					| CppUtils::Language::CSV::toStructSafe<FileObject, FileMapping>()
+					| CppUtils::Ranges::recover([](const CppUtils::Language::CSV::RejectEntry& error) {
+					return FileObject{.a = "repaired", .b = error.rawLine, .c = 0, .d = 0, .e = 0.0f};
+				})
+					| CppUtils::Language::CSV::toCSV<FileObject, FileMapping>(";")
+					| CppUtils::FileSystem::writeLines(outputFilePath);
+
+				const auto cleanContent = CppUtils::FileSystem::String::read(outputFilePath);
+				auto cleanLines = cleanContent
+					| std::views::split('\n')
+					| std::views::transform([](auto&& range) { return std::string_view{range}; })
+					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
+					| std::ranges::to<std::vector<std::string>>();
+
+				suite.expectEqual(std::ranges::size(cleanLines), 3uz);
+				suite.expectEqual(cleanLines[0], "foo;bar;42;-1;3.14");
+				suite.expectEqual(cleanLines[1], "repaired;corrupted_line;0;0;0");
+				suite.expectEqual(cleanLines[2], "hello;world;100;-200;1.5");
+			}};
+		});
 	}};
 }

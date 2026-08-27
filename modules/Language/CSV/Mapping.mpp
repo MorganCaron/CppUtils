@@ -10,6 +10,7 @@ export module CppUtils.Language.CSV.Mapping;
 
 import std;
 
+import CppUtils.Ranges;
 import CppUtils.String;
 import CppUtils.Type.Mapping;
 
@@ -24,6 +25,7 @@ export namespace CppUtils::Language::CSV
 		using StructMapping = typename Mapping::StructMapping;
 		using FunctionMapping = typename Mapping::FunctionMapping;
 		static_assert(std::is_default_constructible_v<Object>);
+
 		auto object = Object{};
 		std::apply([&](auto&&... csvPairs) -> void {
 			([&](auto&& csvPair) -> void {
@@ -69,6 +71,7 @@ export namespace CppUtils::Language::CSV
 	{
 		using CSVMapping = typename Mapping::CSVMapping;
 		using StructMapping = typename Mapping::StructMapping;
+
 		constexpr auto maxPosition = []() -> std::size_t {
 			auto max = 0uz;
 			std::apply([&](auto&&... pairs) {
@@ -76,6 +79,7 @@ export namespace CppUtils::Language::CSV
 			}, typename CSVMapping::Values{});
 			return max;
 		}();
+
 		auto columns = std::vector<std::string>(maxPosition + 1);
 		std::apply([&](auto&&... csvPairs) -> void {
 			([&](auto&& csvPair) -> void {
@@ -86,6 +90,7 @@ export namespace CppUtils::Language::CSV
 				columns[csvColumnPosition] = String::formatValue(object.*memberPointer);
 			}(csvPairs), ...);
 		}, typename CSVMapping::Values{});
+
 		return columns | std::views::join_with(separator) | std::ranges::to<std::string>();
 	}
 
@@ -139,5 +144,134 @@ export namespace CppUtils::Language::CSV
 	[[nodiscard]] inline auto toCSV(std::string_view separator = ";")
 	{
 		return ToCSV<Object, Mapping>{separator};
+	}
+
+	struct RejectEntry final
+	{
+		std::string rawLine;
+		std::string reason;
+		std::size_t lineNumber = 0;
+
+		auto operator==(const RejectEntry&) const -> bool = default;
+	};
+
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto toStructSafe(const auto& csvLine, std::string_view separator = ";", std::size_t lineNumber = 0) -> std::expected<Object, RejectEntry>
+	{
+		using CSVMapping = typename Mapping::CSVMapping;
+		using StructMapping = typename Mapping::StructMapping;
+		using FunctionMapping = typename Mapping::FunctionMapping;
+		static_assert(std::is_default_constructible_v<Object>);
+
+		auto object = Object{};
+		auto errorReason = std::string{};
+
+		std::apply([&](auto&&... csvPairs) -> void {
+			([&](auto&& csvPair) -> void {
+				if (not std::ranges::empty(errorReason))
+					return;
+
+				using CSVPair = std::remove_cvref_t<decltype(csvPair)>;
+				constexpr auto token = CSVPair::lhs;
+				constexpr auto csvColumnPosition = std::get<0>(CSVPair::rhs);
+				if (csvColumnPosition >= std::ranges::size(csvLine))
+				{
+					errorReason = std::format("Missing column at index {} for property '{}'", csvColumnPosition, token);
+					return;
+				}
+
+				constexpr auto memberPointer = std::get<0>(StructMapping::template toRhs<token>());
+				auto& member = object.*memberPointer;
+				using MemberType = std::remove_cvref_t<decltype(member)>;
+				auto value = std::string_view{csvLine[csvColumnPosition]};
+
+				try
+				{
+					if constexpr (FunctionMapping::template containsLhs<token>())
+						FunctionMapping::template toSingleRhs<token>()(member, value);
+					else if constexpr (std::same_as<MemberType, std::string_view> or std::same_as<MemberType, std::string>)
+						member = value;
+					else if constexpr (std::integral<MemberType> or std::floating_point<MemberType>)
+					{
+#if defined(OS_MACOS)
+						auto result = Stl::from_chars(std::ranges::data(value), std::ranges::data(value) + std::ranges::size(value), member);
+#else
+						auto result = std::from_chars(std::ranges::data(value), std::ranges::data(value) + std::ranges::size(value), member);
+#endif
+						if (result.ec != std::errc{} or result.ptr != std::ranges::data(value) + std::ranges::size(value))
+						{
+							errorReason = std::format("Failed to parse '{}' into numeric property '{}'", value, token);
+							return;
+						}
+					}
+				}
+				catch (const std::exception& exception)
+				{
+					errorReason = std::format("Exception on property '{}': {}", token, exception.what());
+				}
+			}(csvPairs), ...);
+		}, typename CSVMapping::Values{});
+
+		if (not std::ranges::empty(errorReason))
+		{
+			auto rawLine = csvLine | std::views::join_with(separator) | std::ranges::to<std::string>();
+			return std::unexpected{RejectEntry{
+				.rawLine = std::move(rawLine),
+				.reason = std::move(errorReason),
+				.lineNumber = lineNumber}};
+		}
+
+		return object;
+	}
+
+	template<class Object, class Mapping>
+	struct ToStructSafe final
+	{
+		std::string_view separator = ";";
+
+		friend auto operator|(std::ranges::input_range auto&& range, ToStructSafe self)
+		{
+			return range | std::views::transform([separator = self.separator](const auto& line) {
+				return toStructSafe<Object, Mapping>(line, separator);
+			});
+		}
+	};
+
+	template<class Object, class Mapping>
+	[[nodiscard]] inline auto toStructSafe(std::string_view separator = ";")
+	{
+		return ToStructSafe<Object, Mapping>{separator};
+	}
+
+	struct RouteRejectedFile final
+	{
+		std::filesystem::path rejectedFilePath;
+		std::string_view separator = ";";
+		std::shared_ptr<std::ofstream> outputStream;
+
+		explicit RouteRejectedFile(std::filesystem::path path, std::string_view separator = ";"):
+			rejectedFilePath{std::move(path)},
+			separator{separator},
+			outputStream{std::make_shared<std::ofstream>(rejectedFilePath, std::ios::app)}
+		{
+			if (not outputStream->is_open())
+				throw std::runtime_error{"Failed to open rejected file: " + rejectedFilePath.string()};
+		}
+
+		friend auto operator|(std::ranges::input_range auto&& range, RouteRejectedFile self)
+		{
+			return range | Ranges::routeErrors([stream = self.outputStream, separator = self.separator](const RejectEntry& error) {
+				const auto line = std::format("{}{}ERROR: {}\n", error.rawLine, separator, error.reason);
+				stream->write(std::ranges::data(line), static_cast<std::streamsize>(std::ranges::size(line)));
+				stream->flush();
+			});
+		}
+	};
+
+	static_assert(std::copy_constructible<RouteRejectedFile>);
+
+	[[nodiscard]] inline auto routeRejected(std::filesystem::path path, std::string_view separator = ";")
+	{
+		return RouteRejectedFile{std::move(path), separator};
 	}
 }

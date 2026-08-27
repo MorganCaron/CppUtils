@@ -57,6 +57,9 @@ export namespace CppUtils::FileSystem
 		[[nodiscard]] auto end() const { return std::default_sentinel; }
 	};
 
+	static_assert(std::ranges::input_range<FileLineReader>);
+	static_assert(std::ranges::view<FileLineReader>);
+
 	[[nodiscard]] inline auto readLines(std::filesystem::path path)
 	{
 		return FileLineReader{std::move(path)};
