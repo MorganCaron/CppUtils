@@ -1,4 +1,4 @@
-export module CppUtils.FileSystem.Staging;
+export module CppUtils.FileSystem.FileStaging;
 
 import std;
 

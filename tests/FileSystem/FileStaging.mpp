@@ -1,11 +1,11 @@
-export module CppUtils.UnitTests.FileSystem.Staging;
+export module CppUtils.UnitTests.FileSystem.FileStaging;
 
 import std;
 import CppUtils;
 
-namespace CppUtils::UnitTest::FileSystem::Staging
+namespace CppUtils::UnitTest::FileSystem::FileStaging
 {
-	auto _ = TestSuite{"FileSystem/Staging", {"FileSystem/Directory"}, [](TestSuite& suite) {
+	auto _ = TestSuite{"FileSystem/FileStaging", {"FileSystem/Directory"}, [](TestSuite& suite) {
 		suite.addTest("FileStaging stage and complete with archive", [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
 				const auto inputDirectory = sandbox / "input";

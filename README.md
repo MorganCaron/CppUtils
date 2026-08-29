@@ -37,6 +37,10 @@
 - [`TypedStack`](modules/Container/TypedStack.mpp) - Multi-type stack with exact object size layout, suitable for argument passing and VM stacks
 - [`Vec2`](modules/Container/Vec2.mpp) / [`Vec3`](modules/Container/Vec3.mpp) - 2D/3D math vectors with operators and common functions
 
+### 🔐 Crypto
+- [`HMAC`](modules/Crypto/HMAC.mpp) - Keyed-Hash Message Authentication Code (HMAC-SHA256)
+- [`SHA256`](modules/Crypto/SHA256.mpp) - SHA-256 cryptographic hashing implementation
+
 ### 🚀 Execution
 - [`Event`](modules/Execution/Event.mpp) - An event for thread synchronization
 - [`EventDispatcher`](modules/Execution/EventDispatcher.mpp) - Event system to subscribe functions and trigger actions by event name
@@ -44,7 +48,10 @@
 - [`ScopeGuard`](modules/Execution/ScopeGuard.mpp) - RAII utility to execute a function when leaving a scope, ensuring resource cleanup
 
 ### 📁 Filesystem
+- [`Directory`](modules/FileSystem/Directory.mpp) - Directory traversal (`forFiles`, `forDirectories`) and RAII temporary directories
 - [`File`](modules/FileSystem/File.mpp) - Binary and text file I/O, including optimized block-by-block reading
+- [`FileRange`](modules/FileSystem/FileRange.mpp) - Lazy line-by-line file streaming view
+- [`FileStaging`](modules/FileSystem/FileStaging.mpp) - File isolation and lifecycle management
 - [`IndexedStorage`](modules/FileSystem/IndexedStorage.mpp) - Thread-safe indexed storage engine for storing and retrieving serializable types in chunked binary files
 - [`MeshPager`](modules/FileSystem/MeshPager.mpp) - Paging mechanism for loading and saving `MeshNetwork` nodes on-demand using `IndexedStorage`
 - [`Watcher`](modules/FileSystem/Watcher.mpp) - File modification watcher
@@ -54,7 +61,8 @@
 
 ### 🔣 Languages (Parsers, Compilers, VM)
 - Tools to create parsers and compilers (CSS, INI, HTML, JSON, Markdown, XML) (work in progress <img src="resources/loading.gif" width="12" height="12"/>)
-- [`CSV Mapping`](modules/Language/CSV/Mapping.mpp) - Type-safe CSV to struct mapping with support for custom conversion functions
+- [`CSV Mapping`](modules/Language/CSV/Mapping.mpp) - Type-safe CSV to struct mapping with support for custom conversion functions and CSV generation
+- [`CSV Parsing`](modules/Language/CSV/Parsing.mpp) - Stream-based CSV line parser
 - [`CLikeCompiler`](modules/Language/CLikeCompiler.mpp) - Compiler for C-inspired language
 - [`GrammarParser`](modules/Language/GrammarParser.mpp) - A parser for defining and interpreting custom grammars, used for building language parsers
 - [`MetaCircularVirtualMachine`](modules/Language/MetaCircularVirtualMachine.mpp) - Homoiconic meta-circular virtual machine with extensible reflexivity
@@ -69,6 +77,7 @@
 - [`ChronoLogger`](modules/Log/ChronoLogger.mpp) - RAII timer that logs elapsed time at scope exit
 
 ### 🧮 Math
+- [`BigInt`](modules/Math/BigInt.mpp) - Arbitrary-precision integer arithmetic
 - [`Easing`](modules/Math/Easing.mpp) - Collection of easing functions for smooth animation
 - [`Random`](modules/Math/Random.mpp) - Pseudorandom number generation
 - [`Utility`](modules/Math/Utility.mpp) - Floating-point comparison with epsilon tolerance
@@ -84,6 +93,10 @@
 ### 🧩 Patterns
 - [`Singleton`](modules/Pattern/Singleton.mpp) - Generic Meyers Singleton implementation (thread-safe and lazy)
 - [`Multiton`](modules/Pattern/Multiton.mpp) - Generic Multiton implementation based on the Meyers Singleton
+
+### 🔄 Ranges
+- [`Expected`](modules/Ranges/Expected.mpp) - Range adaptors for `std::expected` streams
+- [`Parallel`](modules/Ranges/Parallel.mpp) - Multithreaded range pipelining
 
 ### 💻 Terminal
 - [`Area`](modules/Terminal/Area.mpp) - Dedicated drawing context for a single child widget
