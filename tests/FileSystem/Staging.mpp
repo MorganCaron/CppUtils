@@ -1,0 +1,158 @@
+export module CppUtils.UnitTests.FileSystem.Staging;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::FileSystem::Staging
+{
+	auto _ = TestSuite{"FileSystem/Staging", {"FileSystem/Directory"}, [](TestSuite& suite) {
+		suite.addTest("FileStaging stage and complete with archive", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
+				const auto inputDirectory = sandbox / "input";
+				const auto stagingDirectory = sandbox / "staging";
+				const auto archiveDirectory = sandbox / "archive";
+				const auto quarantineDirectory = sandbox / "quarantine";
+
+				std::filesystem::create_directories(inputDirectory);
+				const auto inputFilePath = inputDirectory / "orders.csv";
+				CppUtils::FileSystem::String::write(inputFilePath, "id;amount\n1;100\n2;200\n");
+
+				auto stageResult = CppUtils::FileSystem::FileStaging::stage(
+					inputFilePath,
+					stagingDirectory,
+					quarantineDirectory,
+					archiveDirectory);
+
+				suite.expect(stageResult.has_value());
+				const auto& staging = stageResult.value();
+
+				suite.expectEqual(staging.inputPath(), inputFilePath);
+				suite.expect(not std::filesystem::exists(inputFilePath));
+				suite.expect(std::filesystem::exists(staging.stagedPath()));
+
+				auto completeResult = staging.complete();
+				suite.expect(completeResult.has_value());
+				const auto& archivedPath = completeResult.value();
+
+				suite.expect(not std::filesystem::exists(staging.stagedPath()));
+				suite.expect(std::filesystem::exists(archivedPath));
+				suite.expectEqual(archivedPath.parent_path(), archiveDirectory);
+			}};
+		});
+
+		suite.addTest("FileStaging stage and complete with deletion", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
+				const auto inputDirectory = sandbox / "input";
+				const auto stagingDirectory = sandbox / "staging";
+
+				std::filesystem::create_directories(inputDirectory);
+				const auto inputFilePath = inputDirectory / "temp_data.csv";
+				CppUtils::FileSystem::String::write(inputFilePath, "temporary content\n");
+
+				auto stageResult = CppUtils::FileSystem::FileStaging::stage(
+					inputFilePath,
+					stagingDirectory);
+
+				suite.expect(stageResult.has_value());
+				const auto& staging = stageResult.value();
+
+				suite.expect(std::filesystem::exists(staging.stagedPath()));
+
+				auto completeResult = staging.complete();
+				suite.expect(completeResult.has_value());
+				suite.expectEqual(completeResult.value().string(), "");
+				suite.expect(not std::filesystem::exists(staging.stagedPath()));
+			}};
+		});
+
+		suite.addTest("FileStaging stage and abort with quarantine", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
+				const auto inputDirectory = sandbox / "input";
+				const auto stagingDirectory = sandbox / "staging";
+				const auto archiveDirectory = sandbox / "archive";
+				const auto quarantineDirectory = sandbox / "quarantine";
+
+				std::filesystem::create_directories(inputDirectory);
+				const auto inputFilePath = inputDirectory / "corrupted.csv";
+				CppUtils::FileSystem::String::write(inputFilePath, "corrupted content\n");
+
+				auto stageResult = CppUtils::FileSystem::FileStaging::stage(
+					inputFilePath,
+					stagingDirectory,
+					quarantineDirectory,
+					archiveDirectory);
+
+				suite.expect(stageResult.has_value());
+				const auto& staging = stageResult.value();
+
+				auto abortResult = staging.abort();
+				suite.expect(abortResult.has_value());
+				const auto& quarantinedPath = abortResult.value();
+
+				suite.expect(not std::filesystem::exists(staging.stagedPath()));
+				suite.expect(std::filesystem::exists(quarantinedPath));
+				suite.expectEqual(quarantinedPath.parent_path(), quarantineDirectory);
+			}};
+		});
+
+		suite.addTest("FileStaging stage and abort with deletion", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
+				const auto inputDirectory = sandbox / "input";
+				const auto stagingDirectory = sandbox / "staging";
+
+				std::filesystem::create_directories(inputDirectory);
+				const auto inputFilePath = inputDirectory / "corrupted.csv";
+				CppUtils::FileSystem::String::write(inputFilePath, "corrupted content\n");
+
+				auto stageResult = CppUtils::FileSystem::FileStaging::stage(
+					inputFilePath,
+					stagingDirectory
+				);
+
+				suite.expect(stageResult.has_value());
+				const auto& staging = stageResult.value();
+
+				auto abortResult = staging.abort();
+				suite.expect(abortResult.has_value());
+				suite.expectEqual(abortResult.value().string(), "");
+
+				suite.expect(not std::filesystem::exists(staging.stagedPath()));
+				suite.expect(not std::filesystem::exists(inputFilePath));
+			}};
+		});
+
+		suite.addTest("FileStaging stage and retry", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
+				const auto inputDirectory = sandbox / "input";
+				const auto stagingDirectory = sandbox / "staging";
+
+				std::filesystem::create_directories(inputDirectory);
+				const auto inputFilePath = inputDirectory / "retry_me.csv";
+				CppUtils::FileSystem::String::write(inputFilePath, "retry content\n");
+
+				auto stageResult = CppUtils::FileSystem::FileStaging::stage(
+					inputFilePath,
+					stagingDirectory);
+
+				suite.expect(stageResult.has_value());
+				const auto& staging = stageResult.value();
+
+				auto retryResult = staging.retry();
+				suite.expect(retryResult.has_value());
+				suite.expectEqual(retryResult.value(), inputFilePath);
+
+				suite.expect(not std::filesystem::exists(staging.stagedPath()));
+				suite.expect(std::filesystem::exists(inputFilePath));
+			}};
+		});
+
+		suite.addTest("FileStaging non-existent file error", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
+				const auto inputFilePath = sandbox / "does_not_exist.csv";
+
+				auto stageResult = CppUtils::FileSystem::FileStaging::stage(inputFilePath);
+				suite.expect(not stageResult.has_value());
+			}};
+		});
+	}};
+}

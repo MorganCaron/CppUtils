@@ -7,3 +7,4 @@ export import CppUtils.FileSystem.FileRange;
 export import CppUtils.FileSystem.IndexedStorage;
 export import CppUtils.FileSystem.Watcher;
 export import CppUtils.FileSystem.MeshPager;
+export import CppUtils.FileSystem.Staging;

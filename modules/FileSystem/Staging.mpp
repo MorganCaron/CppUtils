@@ -1,0 +1,132 @@
+export module CppUtils.FileSystem.Staging;
+
+import std;
+
+export namespace CppUtils::FileSystem
+{
+	class FileStaging final
+	{
+	private:
+		std::filesystem::path m_inputPath{};
+		std::filesystem::path m_stagedPath{};
+		std::filesystem::path m_quarantineDirectory{};
+		std::filesystem::path m_archiveDirectory{};
+
+	public:
+		FileStaging() = default;
+
+		FileStaging(
+			std::filesystem::path inputPath,
+			std::filesystem::path stagedPath,
+			std::filesystem::path quarantineDirectory = "",
+			std::filesystem::path archiveDirectory = ""):
+			m_inputPath{std::move(inputPath)},
+			m_stagedPath{std::move(stagedPath)},
+			m_quarantineDirectory{std::move(quarantineDirectory)},
+			m_archiveDirectory{std::move(archiveDirectory)}
+		{}
+
+		[[nodiscard]] static auto stage(
+			const std::filesystem::path& inputFilePath,
+			const std::filesystem::path& stagingDirectory = "staging",
+			const std::filesystem::path& quarantineDirectory = "",
+			const std::filesystem::path& archiveDirectory = "") -> std::expected<FileStaging, std::error_code>
+		{
+			auto errorCode = std::error_code{};
+			std::filesystem::create_directories(stagingDirectory, errorCode);
+			if (errorCode)
+				return std::unexpected{errorCode};
+
+			const auto now = std::chrono::system_clock::now().time_since_epoch();
+			const auto timestamp = std::chrono::duration_cast<std::chrono::microseconds>(now).count();
+			const auto uniqueFilename = std::format("{}_{}{}", inputFilePath.stem().string(), timestamp, inputFilePath.extension().string());
+			const auto targetStagedPath = stagingDirectory / uniqueFilename;
+
+			std::filesystem::rename(inputFilePath, targetStagedPath, errorCode);
+			if (errorCode)
+				return std::unexpected{errorCode};
+
+			return FileStaging{
+				inputFilePath,
+				targetStagedPath,
+				quarantineDirectory,
+				archiveDirectory};
+		}
+
+		[[nodiscard]] auto inputPath() const noexcept -> const std::filesystem::path&
+		{
+			return m_inputPath;
+		}
+
+		[[nodiscard]] auto stagedPath() const noexcept -> const std::filesystem::path&
+		{
+			return m_stagedPath;
+		}
+
+		[[nodiscard]] auto archiveDirectory() const noexcept -> const std::filesystem::path&
+		{
+			return m_archiveDirectory;
+		}
+
+		[[nodiscard]] auto quarantineDirectory() const noexcept -> const std::filesystem::path&
+		{
+			return m_quarantineDirectory;
+		}
+
+		auto complete() const -> std::expected<std::filesystem::path, std::error_code>
+		{
+			auto errorCode = std::error_code{};
+			if (std::ranges::empty(m_archiveDirectory))
+			{
+				std::filesystem::remove(m_stagedPath, errorCode);
+				if (errorCode)
+					return std::unexpected{errorCode};
+				return "";
+			}
+
+			std::filesystem::create_directories(m_archiveDirectory, errorCode);
+			if (errorCode)
+				return std::unexpected{errorCode};
+
+			const auto archivePath = m_archiveDirectory / m_stagedPath.filename();
+			std::filesystem::rename(m_stagedPath, archivePath, errorCode);
+			if (errorCode)
+				return std::unexpected{errorCode};
+
+			return archivePath;
+		}
+
+		auto abort() const -> std::expected<std::filesystem::path, std::error_code>
+		{
+			auto errorCode = std::error_code{};
+			if (std::ranges::empty(m_quarantineDirectory))
+			{
+				std::filesystem::remove(m_stagedPath, errorCode);
+				if (errorCode)
+					return std::unexpected{errorCode};
+				return "";
+			}
+
+			std::filesystem::create_directories(m_quarantineDirectory, errorCode);
+			if (errorCode)
+				return std::unexpected{errorCode};
+
+			const auto quarantinePath = m_quarantineDirectory / m_stagedPath.filename();
+			std::filesystem::rename(m_stagedPath, quarantinePath, errorCode);
+			if (errorCode)
+				return std::unexpected{errorCode};
+
+			return quarantinePath;
+		}
+
+		auto retry() const -> std::expected<std::filesystem::path, std::error_code>
+		{
+			auto errorCode = std::error_code{};
+			std::filesystem::rename(m_stagedPath, m_inputPath, errorCode);
+			if (errorCode)
+				return std::unexpected{errorCode};
+
+			return m_inputPath;
+		}
+	};
+}
