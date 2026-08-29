@@ -1,0 +1,122 @@
+export module CppUtils.UnitTests.Ranges.Parallel;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Ranges::Parallel
+{
+	auto _ = TestSuite{"Ranges/Parallel", {}, [](TestSuite& suite) {
+		suite.addTest("parallel scalar transformation", [&] {
+			auto threadPool = Thread::ThreadPool{4};
+			const auto inputs = std::vector<int>{1, 2, 3, 4, 5};
+
+			const auto results = inputs
+				| CppUtils::Ranges::parallel(threadPool, [](int value) {
+					return value * 10;
+				})
+				| std::ranges::to<std::vector<int>>();
+
+			suite.expectEqual(std::ranges::size(results), 5uz);
+			suite.expectEqual(results, std::vector<int>{10, 20, 30, 40, 50});
+		});
+
+		suite.addTest("parallel empty range", [&] {
+			auto threadPool = Thread::ThreadPool{2};
+			const auto inputs = std::vector<std::string>{};
+
+			const auto results = inputs
+				| CppUtils::Ranges::parallel(threadPool, [](const std::string& text) {
+					return text + "!";
+				})
+				| std::ranges::to<std::vector<std::string>>();
+
+			suite.expect(std::ranges::empty(results));
+		});
+
+		suite.addTest("parallelChunk simple transformation", [&] {
+			auto threadPool = Thread::ThreadPool{4};
+			const auto inputs = std::vector<int>{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+			const auto results = inputs
+				| CppUtils::Ranges::parallelChunk(threadPool, 3, [](std::vector<int> chunk) {
+					for (auto& value : chunk)
+						value *= 2;
+					return chunk;
+				})
+				| std::ranges::to<std::vector<int>>();
+
+			suite.expectEqual(std::ranges::size(results), 10uz);
+			suite.expectEqual(results, std::vector<int>{2, 4, 6, 8, 10, 12, 14, 16, 18, 20});
+		});
+
+		suite.addTest("parallelChunk empty range", [&] {
+			auto threadPool = Thread::ThreadPool{2};
+			const auto inputs = std::vector<int>{};
+
+			const auto results = inputs
+				| CppUtils::Ranges::parallelChunk(threadPool, 5, [](std::vector<int> chunk) {
+					return chunk;
+				})
+				| std::ranges::to<std::vector<int>>();
+
+			suite.expect(std::ranges::empty(results));
+		});
+
+		suite.addTest("parallelChunk input smaller than chunk size", [&] {
+			auto threadPool = Thread::ThreadPool{2};
+			const auto inputs = std::vector<int>{10, 20, 30};
+
+			const auto results = inputs
+				| CppUtils::Ranges::parallelChunk(threadPool, 100, [](std::vector<int> chunk) {
+					for (auto& value : chunk)
+						value += 1;
+					return chunk;
+				})
+				| std::ranges::to<std::vector<int>>();
+
+			suite.expectEqual(std::ranges::size(results), 3uz);
+			suite.expectEqual(results, std::vector<int>{11, 21, 31});
+		});
+
+		suite.addTest("parallelChunk large dataset order and count", [&] {
+			auto threadPool = Thread::ThreadPool{4};
+			constexpr auto totalItems = 5000uz;
+			auto inputs = std::vector<std::size_t>(totalItems);
+			std::ranges::iota(inputs, 0uz);
+
+			const auto results = inputs
+				| CppUtils::Ranges::parallelChunk(threadPool, 250, [](std::vector<std::size_t> chunk) {
+					for (auto& value : chunk)
+						value *= 10;
+					return chunk;
+				})
+				| std::ranges::to<std::vector<std::size_t>>();
+
+			suite.expectEqual(std::ranges::size(results), totalItems);
+			for (auto index = 0uz; index < totalItems; ++index)
+				suite.expectEqual(results[index], index * 10);
+		});
+
+		suite.addTest("parallelChunk type transformation", [&] {
+			auto threadPool = Thread::ThreadPool{3};
+			const auto inputs = std::vector<int>{1, 2, 3, 4, 5};
+
+			const auto results = inputs
+				| CppUtils::Ranges::parallelChunk(threadPool, 2, [](std::vector<int> chunk) {
+					auto stringChunk = std::vector<std::string>{};
+					stringChunk.reserve(std::ranges::size(chunk));
+					for (const auto value : chunk)
+						stringChunk.push_back(std::format("item_{}", value));
+					return stringChunk;
+				})
+				| std::ranges::to<std::vector<std::string>>();
+
+			suite.expectEqual(std::ranges::size(results), 5uz);
+			suite.expectEqual(results[0], "item_1");
+			suite.expectEqual(results[1], "item_2");
+			suite.expectEqual(results[2], "item_3");
+			suite.expectEqual(results[3], "item_4");
+			suite.expectEqual(results[4], "item_5");
+		});
+	}};
+}

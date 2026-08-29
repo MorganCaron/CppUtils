@@ -1,3 +1,4 @@
 export module CppUtils.Ranges;
 
 export import CppUtils.Ranges.Expected;
+export import CppUtils.Ranges.Parallel;

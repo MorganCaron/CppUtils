@@ -84,6 +84,11 @@ export namespace CppUtils::Thread
 			m_onError = std::move(onError);
 		}
 
+		[[nodiscard]] inline auto numberThreads() const noexcept -> std::size_t
+		{
+			return m_numberThreads;
+		}
+
 	private:
 		inline auto workerThread() -> void
 		{

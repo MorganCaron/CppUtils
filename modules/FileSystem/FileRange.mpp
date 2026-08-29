@@ -36,7 +36,7 @@ export namespace CppUtils::FileSystem
 		}
 		auto operator++(int) -> void { ++(*this); }
 
-		[[nodiscard]] auto operator==(std::default_sentinel_t) const -> bool { return not m_stream.is_open(); }
+		[[nodiscard]] auto operator==(std::default_sentinel_t) const noexcept -> bool { return not m_stream.is_open(); }
 
 	private:
 		std::ifstream m_stream;
@@ -54,7 +54,7 @@ export namespace CppUtils::FileSystem
 
 		std::filesystem::path path;
 		[[nodiscard]] auto begin() const { return LineIterator(path); }
-		[[nodiscard]] auto end() const { return std::default_sentinel; }
+		[[nodiscard]] auto end() const noexcept { return std::default_sentinel; }
 	};
 
 	static_assert(std::ranges::input_range<FileLineReader>);

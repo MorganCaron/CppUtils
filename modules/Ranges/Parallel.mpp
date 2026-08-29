@@ -1,0 +1,353 @@
+export module CppUtils.Ranges.Parallel;
+
+import std;
+import CppUtils.Thread.ThreadPool;
+
+export namespace CppUtils::Ranges
+{
+	namespace Detail
+	{
+		template<std::ranges::input_range Range, std::invocable<std::ranges::range_value_t<Range>> TransformFunction>
+		class ParallelView: public std::ranges::view_interface<ParallelView<Range, TransformFunction>>
+		{
+		private:
+			using InputItem = std::ranges::range_value_t<Range>;
+			using OutputItem = std::decay_t<std::invoke_result_t<TransformFunction, InputItem>>;
+
+			Range m_range{};
+			Thread::ThreadPool* m_threadPool = nullptr;
+			TransformFunction m_transformFunction{};
+			std::size_t m_maxInFlight = 4;
+
+			class Iterator final
+			{
+			private:
+				using BaseIterator = std::ranges::iterator_t<Range>;
+				using BaseSentinel = std::ranges::sentinel_t<Range>;
+
+				BaseIterator m_sourceCurrent{};
+				BaseSentinel m_sourceEnd{};
+				Thread::ThreadPool* m_threadPool = nullptr;
+				TransformFunction* m_transformFunction = nullptr;
+				std::size_t m_maxInFlight = 4;
+
+				std::queue<std::future<OutputItem>> m_pendingFutures{};
+				std::optional<OutputItem> m_currentValue = std::nullopt;
+				bool m_finished = false;
+
+				auto scheduleMore() -> void
+				{
+					while (std::ranges::size(m_pendingFutures) < m_maxInFlight and m_sourceCurrent != m_sourceEnd)
+						m_pendingFutures.push(m_threadPool->call([item = std::ranges::iter_move(m_sourceCurrent++), transformFunction = *m_transformFunction]() mutable -> OutputItem {
+							return std::invoke(transformFunction, std::move(item));
+						}));
+				}
+
+				auto advanceToNextElement() -> void
+				{
+					scheduleMore();
+
+					if (std::ranges::empty(m_pendingFutures))
+					{
+						m_finished = true;
+						m_currentValue = std::nullopt;
+						return;
+					}
+
+					m_currentValue = m_pendingFutures.front().get();
+					m_pendingFutures.pop();
+				}
+
+			public:
+				using iterator_concept = std::input_iterator_tag;
+				using difference_type = std::ptrdiff_t;
+				using value_type = OutputItem;
+
+				Iterator() = default;
+
+				Iterator(
+					BaseIterator sourceCurrent,
+					BaseSentinel sourceEnd,
+					Thread::ThreadPool& threadPool,
+					TransformFunction& transformFunction,
+					std::size_t maxInFlight):
+					m_sourceCurrent{std::move(sourceCurrent)},
+					m_sourceEnd{std::move(sourceEnd)},
+					m_threadPool{std::addressof(threadPool)},
+					m_transformFunction{std::addressof(transformFunction)},
+					m_maxInFlight{std::ranges::max(1uz, maxInFlight)}
+				{
+					advanceToNextElement();
+				}
+
+				[[nodiscard]] auto operator*() const -> const OutputItem&
+				{
+					return m_currentValue.value();
+				}
+
+				auto operator++() -> Iterator&
+				{
+					advanceToNextElement();
+					return *this;
+				}
+
+				auto operator++(int) -> void
+				{
+					++(*this);
+				}
+
+				[[nodiscard]] auto operator==(std::default_sentinel_t) const noexcept -> bool
+				{
+					return m_finished;
+				}
+			};
+
+			static_assert(std::input_iterator<Iterator>);
+
+		public:
+			ParallelView() = default;
+
+			ParallelView(
+				Range range,
+				Thread::ThreadPool& threadPool,
+				TransformFunction transformFunction,
+				std::size_t maxInFlight):
+				m_range{std::move(range)},
+				m_threadPool{std::addressof(threadPool)},
+				m_transformFunction{std::move(transformFunction)},
+				m_maxInFlight{maxInFlight == 0 ? std::ranges::max(1uz, threadPool.numberThreads() * 2) : maxInFlight}
+			{}
+
+			[[nodiscard]] auto begin()
+			{
+				return Iterator{
+					std::ranges::begin(m_range),
+					std::ranges::end(m_range),
+					*m_threadPool,
+					m_transformFunction,
+					m_maxInFlight};
+			}
+
+			[[nodiscard]] auto end() const noexcept
+			{
+				return std::default_sentinel;
+			}
+		};
+
+		template<std::ranges::input_range Range, std::invocable<std::vector<std::ranges::range_value_t<Range>>> TransformFunction>
+		class ParallelChunkView: public std::ranges::view_interface<ParallelChunkView<Range, TransformFunction>>
+		{
+		private:
+			using InputItem = std::ranges::range_value_t<Range>;
+			using ChunkInput = std::vector<InputItem>;
+			using ChunkOutput = std::decay_t<std::invoke_result_t<TransformFunction, ChunkInput>>;
+			using OutputItem = typename ChunkOutput::value_type;
+
+			Range m_range{};
+			Thread::ThreadPool* m_threadPool = nullptr;
+			std::size_t m_chunkSize = 1000;
+			TransformFunction m_transformFunction{};
+			std::size_t m_maxInFlight = 4;
+
+			class Iterator final
+			{
+			private:
+				using BaseIterator = std::ranges::iterator_t<Range>;
+				using BaseSentinel = std::ranges::sentinel_t<Range>;
+
+				BaseIterator m_sourceCurrent{};
+				BaseSentinel m_sourceEnd{};
+				Thread::ThreadPool* m_threadPool = nullptr;
+				std::size_t m_chunkSize = 1000;
+				TransformFunction* m_transformFunction = nullptr;
+				std::size_t m_maxInFlight = 4;
+
+				std::queue<std::future<ChunkOutput>> m_pendingFutures{};
+				ChunkOutput m_currentChunk{};
+				std::size_t m_currentChunkIndex = 0;
+				bool m_finished = false;
+
+				auto scheduleMore() -> void
+				{
+					while (std::ranges::size(m_pendingFutures) < m_maxInFlight and m_sourceCurrent != m_sourceEnd)
+					{
+						auto chunk = ChunkInput{};
+						chunk.reserve(m_chunkSize);
+						for (auto i = 0uz; i < m_chunkSize and m_sourceCurrent != m_sourceEnd; ++i)
+							chunk.push_back(std::ranges::iter_move(m_sourceCurrent++));
+
+						if (not std::ranges::empty(chunk))
+							m_pendingFutures.push(m_threadPool->call([chunk = std::move(chunk), transformFunction = *m_transformFunction]() mutable -> ChunkOutput {
+								return std::invoke(transformFunction, std::move(chunk));
+							}));
+					}
+				}
+
+				auto advanceToNextElement() -> void
+				{
+					while (not m_finished)
+					{
+						if (m_currentChunkIndex < std::ranges::size(m_currentChunk))
+							return;
+
+						scheduleMore();
+
+						if (std::ranges::empty(m_pendingFutures))
+						{
+							m_finished = true;
+							return;
+						}
+
+						m_currentChunk = m_pendingFutures.front().get();
+						m_pendingFutures.pop();
+						m_currentChunkIndex = 0;
+					}
+				}
+
+			public:
+				using iterator_concept = std::input_iterator_tag;
+				using difference_type = std::ptrdiff_t;
+				using value_type = OutputItem;
+
+				Iterator() = default;
+
+				Iterator(
+					BaseIterator sourceCurrent,
+					BaseSentinel sourceEnd,
+					Thread::ThreadPool& threadPool,
+					std::size_t chunkSize,
+					TransformFunction& transformFunction,
+					std::size_t maxInFlight):
+					m_sourceCurrent{std::move(sourceCurrent)},
+					m_sourceEnd{std::move(sourceEnd)},
+					m_threadPool{std::addressof(threadPool)},
+					m_chunkSize{std::ranges::max(1uz, chunkSize)},
+					m_transformFunction{std::addressof(transformFunction)},
+					m_maxInFlight{std::ranges::max(1uz, maxInFlight)}
+				{
+					advanceToNextElement();
+				}
+
+				[[nodiscard]] auto operator*() const -> const OutputItem&
+				{
+					return m_currentChunk[m_currentChunkIndex];
+				}
+
+				auto operator++() -> Iterator&
+				{
+					++m_currentChunkIndex;
+					advanceToNextElement();
+					return *this;
+				}
+
+				auto operator++(int) -> void
+				{
+					++(*this);
+				}
+
+				[[nodiscard]] auto operator==(std::default_sentinel_t) const noexcept -> bool
+				{
+					return m_finished;
+				}
+			};
+
+			static_assert(std::input_iterator<Iterator>);
+
+		public:
+			ParallelChunkView() = default;
+
+			ParallelChunkView(
+				Range range,
+				Thread::ThreadPool& threadPool,
+				std::size_t chunkSize,
+				TransformFunction transformFunction,
+				std::size_t maxInFlight):
+				m_range{std::move(range)},
+				m_threadPool{std::addressof(threadPool)},
+				m_chunkSize{std::ranges::max(1uz, chunkSize)},
+				m_transformFunction{std::move(transformFunction)},
+				m_maxInFlight{maxInFlight == 0 ? std::ranges::max(1uz, threadPool.numberThreads() * 2) : maxInFlight}
+			{}
+
+			[[nodiscard]] auto begin()
+			{
+				return Iterator{
+					std::ranges::begin(m_range),
+					std::ranges::end(m_range),
+					*m_threadPool,
+					m_chunkSize,
+					m_transformFunction,
+					m_maxInFlight};
+			}
+
+			[[nodiscard]] auto end() const noexcept
+			{
+				return std::default_sentinel;
+			}
+		};
+	}
+
+	template<class TransformFunction>
+	struct Parallel final
+	{
+		Thread::ThreadPool* threadPool = nullptr;
+		TransformFunction transformFunction;
+		std::size_t maxInFlight = 0;
+
+		friend auto operator|(std::ranges::input_range auto&& range, Parallel self)
+		{
+			return Detail::ParallelView{
+				std::views::all(std::forward<decltype(range)>(range)),
+				*self.threadPool,
+				std::move(self.transformFunction),
+				self.maxInFlight};
+		}
+	};
+
+	static_assert(std::copy_constructible<Parallel<void (*)(int)>>);
+
+	[[nodiscard]] inline auto parallel(
+		Thread::ThreadPool& threadPool,
+		auto&& transformFunction,
+		std::size_t maxInFlight = 0)
+	{
+		return Parallel{
+			.threadPool = std::addressof(threadPool),
+			.transformFunction = std::forward<decltype(transformFunction)>(transformFunction),
+			.maxInFlight = maxInFlight};
+	}
+
+	template<class TransformFunction>
+	struct ParallelChunk final
+	{
+		Thread::ThreadPool* threadPool = nullptr;
+		std::size_t chunkSize = 1000;
+		TransformFunction transformFunction;
+		std::size_t maxInFlight = 0;
+
+		friend auto operator|(std::ranges::input_range auto&& range, ParallelChunk self)
+		{
+			return Detail::ParallelChunkView{
+				std::views::all(std::forward<decltype(range)>(range)),
+				*self.threadPool,
+				self.chunkSize,
+				std::move(self.transformFunction),
+				self.maxInFlight};
+		}
+	};
+
+	static_assert(std::copy_constructible<ParallelChunk<void (*)(std::vector<int>)>>);
+
+	[[nodiscard]] inline auto parallelChunk(
+		Thread::ThreadPool& threadPool,
+		std::size_t chunkSize,
+		auto&& transformFunction,
+		std::size_t maxInFlight = 0)
+	{
+		return ParallelChunk{
+			.threadPool = std::addressof(threadPool),
+			.chunkSize = chunkSize,
+			.transformFunction = std::forward<decltype(transformFunction)>(transformFunction),
+			.maxInFlight = maxInFlight};
+	}
+}
