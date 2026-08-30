@@ -79,7 +79,7 @@ namespace CppUtils::UnitTest::Terminal::ProgressBar
 					bar.draw(view);
 				}
 				canvas.print();
-				std::this_thread::sleep_for(20ms);
+				std::this_thread::sleep_for(5ms);
 			}
 		});
 	}};

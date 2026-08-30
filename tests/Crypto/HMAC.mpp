@@ -3,7 +3,7 @@ export module CppUtils.UnitTests.Crypto.HMAC;
 import std;
 import CppUtils;
 
-namespace CppUtils::UnitTest::Crypto
+namespace CppUtils::UnitTest::Crypto::HMAC
 {
 	auto _ = TestSuite{"Crypto/HMAC", {"String/Utility", "Crypto/SHA256"}, [](auto& suite) {
 		suite.addTest("Empty key, empty message", [&] {

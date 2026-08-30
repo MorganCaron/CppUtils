@@ -3,7 +3,7 @@ export module CppUtils.UnitTests.Thread.TryAsync;
 import std;
 import CppUtils;
 
-namespace CppUtils::UnitTest::Thread
+namespace CppUtils::UnitTest::Thread::TryAsync
 {
 	auto _ = TestSuite{"Thread/TryAsync", {"Logger"}, [](TestSuite& suite) {
 		using namespace std::literals;

@@ -35,8 +35,16 @@ export namespace CppUtils::Terminal
 	public:
 		virtual inline ~Widget() noexcept
 		{
+			clearWidgetManager();
+		}
+
+		inline auto clearWidgetManager() noexcept -> void
+		{
 			if (hasWidgetManager())
+			{
 				getWidgetManager().scheduler.cancelOwner(this);
+				m_widgetManagerRef = std::nullopt;
+			}
 		}
 		[[nodiscard]] virtual auto getSize() const noexcept -> Container::Size2<> = 0;
 		virtual auto draw(WritableAreaView& view) noexcept -> void = 0;

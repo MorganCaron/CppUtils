@@ -128,12 +128,14 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 				executionOrder.push_back(value);
 			};
 
-			scheduler.schedule([&] { record(1); }, 100ms);
-			scheduler.schedule([&] { record(2); }, 50ms);
-			scheduler.schedule([&] { record(3); }, 200ms);
+			const auto now = CppUtils::Thread::Scheduler::Clock::now();
+			scheduler.schedule([&] { record(1); }, now + 100ms);
+			scheduler.schedule([&] { record(2); }, now + 50ms);
+			scheduler.schedule([&] { record(3); }, now + 200ms);
 
 			scheduler.waitUntilFinished();
 
+			suite.expectEqual(std::ranges::size(executionOrder), 3uz);
 			suite.expectEqual(executionOrder[0], 2uz);
 			suite.expectEqual(executionOrder[1], 1uz);
 			suite.expectEqual(executionOrder[2], 3uz);
@@ -196,12 +198,13 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 				executionOrder.push_back(value);
 			};
 
-			scheduler.schedule([&] { record(2); }, 200ms);
-			scheduler.schedule([&] { record(1); }, 100ms);
+			const auto now = CppUtils::Thread::Scheduler::Clock::now();
+			scheduler.schedule([&] { record(2); }, now + 200ms);
+			scheduler.schedule([&] { record(1); }, now + 100ms);
 
 			scheduler.waitUntilFinished();
 
-			suite.expectEqual(executionOrder.size(), 2uz);
+			suite.expectEqual(std::ranges::size(executionOrder), 2uz);
 			suite.expectEqual(executionOrder[0], 1uz);
 			suite.expectEqual(executionOrder[1], 2uz);
 		});

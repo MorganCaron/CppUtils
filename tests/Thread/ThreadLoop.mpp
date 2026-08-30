@@ -10,7 +10,9 @@ namespace CppUtils::UnitTest::Thread::ThreadLoop
 		using Logger = TestSuite::Logger;
 
 		suite.addTest("isRunning", [&] {
-			auto threadLoop = CppUtils::Thread::ThreadLoop{[] {}};
+			auto threadLoop = CppUtils::Thread::ThreadLoop{[] {
+				std::this_thread::sleep_for(10ms);
+			}};
 			suite.expect(not threadLoop.isRunning());
 			threadLoop.start();
 			suite.expect(threadLoop.isRunning());
@@ -27,10 +29,8 @@ namespace CppUtils::UnitTest::Thread::ThreadLoop
 					auto accessor = lockedNumber.access();
 					auto& nb = accessor.value();
 					if (nb < 5uz)
-					{
 						++nb;
-						std::this_thread::sleep_for(10ms);
-					}
+					std::this_thread::sleep_for(10ms);
 				}};
 				threadLoop.start();
 				std::this_thread::sleep_for(250ms);
@@ -42,11 +42,12 @@ namespace CppUtils::UnitTest::Thread::ThreadLoop
 
 		suite.addTest("onError callback", [&] {
 			auto onErrorCalled = std::atomic_bool{false};
+			auto count = 0;
 
-			auto threadLoop = CppUtils::Thread::ThreadLoop{[] {
-				static auto count = 0;
+			auto threadLoop = CppUtils::Thread::ThreadLoop{[&count] {
 				if (++count == 1)
 					throw std::runtime_error{"Exception"};
+				std::this_thread::sleep_for(10ms);
 			}, nullptr, [&](std::exception_ptr exceptionPointer) {
 				onErrorCalled = true;
 				try

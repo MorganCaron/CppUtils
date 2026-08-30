@@ -3,7 +3,7 @@ export module CppUtils.UnitTests.Crypto.SHA256;
 import std;
 import CppUtils;
 
-namespace CppUtils::UnitTest::Crypto
+namespace CppUtils::UnitTest::Crypto::SHA256
 {
 	auto _ = TestSuite{"Crypto/SHA256", {"String/Utility"}, [](auto& suite) {
 		suite.addTest("Empty string", [&] {

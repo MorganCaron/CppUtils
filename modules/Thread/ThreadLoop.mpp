@@ -132,7 +132,7 @@ export namespace CppUtils::Thread
 				auto interruptFunction = std::function<void()>{};
 				{
 					auto lockGuard = std::unique_lock{m_mutex};
-					if (not m_thread.joinable() or m_thread.get_stop_token().stop_requested())
+					if (not m_thread.joinable())
 						return;
 					m_thread.request_stop();
 					interruptFunction = m_interruptFunction;
@@ -149,7 +149,8 @@ export namespace CppUtils::Thread
 						std::println(stderr, "ThreadLoop: interruptFunction threw during stop");
 					}
 				}
-				if (m_thread.joinable())
+				auto lockGuard = std::unique_lock{m_mutex};
+				if (m_thread.joinable() and m_thread.get_id() != std::this_thread::get_id())
 					m_thread.join();
 			}
 			catch (const std::exception& exception)

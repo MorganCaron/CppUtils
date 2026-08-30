@@ -55,6 +55,8 @@ export namespace CppUtils::Terminal
 				setCursorPosition({0, startLine});
 				std::fflush(stdout);
 			}
+			m_widget.reset();
+			clearWidgetManager();
 		}
 
 		inline auto applyDifferences() noexcept -> void
