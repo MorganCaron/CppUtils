@@ -61,6 +61,7 @@ export import CppUtils.UnitTests.Network.Server;
 export import CppUtils.UnitTests.Network.Socket;
 export import CppUtils.UnitTests.Pattern;
 export import CppUtils.UnitTests.Ranges.Expected;
+export import CppUtils.UnitTests.Ranges.Inspect;
 export import CppUtils.UnitTests.Ranges.Parallel;
 export import CppUtils.UnitTests.Stl.Format;
 export import CppUtils.UnitTests.String.Encoding;

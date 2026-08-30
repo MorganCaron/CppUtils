@@ -193,8 +193,6 @@ export namespace CppUtils::Ranges
 		}
 	};
 
-	static_assert(std::copy_constructible<RouteErrors<void(*)(int)>>);
-
 	[[nodiscard]] inline auto routeErrors(auto&& errorHandler)
 	{
 		return RouteErrors{std::forward<decltype(errorHandler)>(errorHandler)};

@@ -1,0 +1,72 @@
+export module CppUtils.UnitTests.Ranges.Inspect;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Ranges::Inspect
+{
+	auto _ = TestSuite{"Ranges/Inspect", {}, [](TestSuite& suite) {
+		using namespace std::literals;
+
+		suite.addTest("Pipe syntax", [&] {
+			const auto numbers = std::vector<int>{1, 2, 3, 4, 5};
+			auto observed = std::vector<int>{};
+
+			const auto results = numbers
+				| CppUtils::Ranges::inspect([&observed](int value) { observed.push_back(value); })
+				| std::views::transform([](int value) { return value * 10; })
+				| std::ranges::to<std::vector<int>>();
+
+			suite.expectEqual(observed, numbers);
+			suite.expectEqual(results, std::vector<int>{10, 20, 30, 40, 50});
+		});
+
+		suite.addTest("Direct call", [&] {
+			const auto words = std::vector<std::string>{"hello", "world", "!"};
+			auto count = 0uz;
+
+			const auto view = CppUtils::Ranges::inspect(words, [&count](std::string_view) {
+				++count;
+			});
+
+			const auto collected = view | std::ranges::to<std::vector<std::string>>();
+
+			suite.expectEqual(count, 3uz);
+			suite.expectEqual(collected, words);
+		});
+
+		suite.addTest("Mutable elements", [&] {
+			struct Item final
+			{
+				int id = 0;
+				std::string name{};
+			};
+
+			auto items = std::vector<Item>{{1, "alpha"}, {2, "beta"}};
+			auto seenIds = std::vector<int>{};
+
+			for (auto& item : items | CppUtils::Ranges::inspect([&seenIds](const Item& itemElement) { seenIds.push_back(itemElement.id); }))
+				item.name += "_processed";
+
+			suite.expectEqual(seenIds, std::vector<int>{1, 2});
+			suite.expectEqual(items[0].name, "alpha_processed");
+			suite.expectEqual(items[1].name, "beta_processed");
+		});
+
+		suite.addTest("Chained inspect", [&] {
+			const auto inputs = std::vector<int>{10, 20, 30};
+			auto step1Logs = std::vector<int>{};
+			auto step2Logs = std::vector<int>{};
+
+			const auto results = inputs
+				| CppUtils::Ranges::inspect([&step1Logs](int value) { step1Logs.push_back(value); })
+				| std::views::transform([](int value) { return value * 2; })
+				| CppUtils::Ranges::inspect([&step2Logs](int value) { step2Logs.push_back(value); })
+				| std::ranges::to<std::vector<int>>();
+
+			suite.expectEqual(step1Logs, std::vector<int>{10, 20, 30});
+			suite.expectEqual(step2Logs, std::vector<int>{20, 40, 60});
+			suite.expectEqual(results, std::vector<int>{20, 40, 60});
+		});
+	}};
+}

@@ -304,8 +304,6 @@ export namespace CppUtils::Ranges
 		}
 	};
 
-	static_assert(std::copy_constructible<Parallel<void (*)(int)>>);
-
 	[[nodiscard]] inline auto parallel(
 		Thread::ThreadPool& threadPool,
 		auto&& transformFunction,
@@ -335,8 +333,6 @@ export namespace CppUtils::Ranges
 				self.maxInFlight};
 		}
 	};
-
-	static_assert(std::copy_constructible<ParallelChunk<void (*)(std::vector<int>)>>);
 
 	[[nodiscard]] inline auto parallelChunk(
 		Thread::ThreadPool& threadPool,

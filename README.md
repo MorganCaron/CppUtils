@@ -96,6 +96,7 @@
 
 ### 🔄 Ranges
 - [`Expected`](modules/Ranges/Expected.mpp) - Range adaptors for `std::expected` streams
+- [`Inspect`](modules/Ranges/Inspect.mpp) - Range element inspection for side-effects and logging
 - [`Parallel`](modules/Ranges/Parallel.mpp) - Multithreaded range pipelining
 
 ### 💻 Terminal

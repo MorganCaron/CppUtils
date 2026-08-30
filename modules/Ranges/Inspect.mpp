@@ -1,0 +1,32 @@
+export module CppUtils.Ranges.Inspect;
+
+import std;
+
+export namespace CppUtils::Ranges
+{
+	template<class InspectorFunction>
+	struct Inspect final
+	{
+		InspectorFunction inspectorFunction;
+
+		friend auto operator|(std::ranges::input_range auto&& range, Inspect self)
+		requires std::invocable<InspectorFunction, std::ranges::range_reference_t<decltype(range)>>
+		{
+			using ReferenceType = std::ranges::range_reference_t<decltype(range)>;
+			return std::forward<decltype(range)>(range) | std::views::transform([inspector = std::move(self.inspectorFunction)](auto&& element) -> ReferenceType {
+				inspector(element);
+				return static_cast<ReferenceType>(element);
+			});
+		}
+	};
+
+	[[nodiscard]] inline auto inspect(auto&& inspectorFunction)
+	{
+		return Inspect<std::decay_t<decltype(inspectorFunction)>>{std::forward<decltype(inspectorFunction)>(inspectorFunction)};
+	}
+
+	[[nodiscard]] inline auto inspect(std::ranges::input_range auto&& range, std::invocable<std::ranges::range_reference_t<decltype(range)>> auto&& inspectorFunction)
+	{
+		return std::forward<decltype(range)>(range) | inspect(std::forward<decltype(inspectorFunction)>(inspectorFunction));
+	}
+}
