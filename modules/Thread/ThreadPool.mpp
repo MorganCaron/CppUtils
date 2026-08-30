@@ -50,15 +50,22 @@ export namespace CppUtils::Thread
 			using ReturnType = std::invoke_result_t<std::decay_t<decltype(function)>>;
 			auto task = std::make_shared<std::packaged_task<ReturnType()>>([this, function = std::forward<decltype(function)>(function)]() mutable -> ReturnType {
 				auto _ = Execution::ScopeGuard{m_finally};
+				auto exceptionPointer = std::exception_ptr{};
 				try
 				{
 					return std::invoke(function);
 				}
 				catch (...)
 				{
-					handleError(std::current_exception());
-					throw;
+					exceptionPointer = std::current_exception();
 				}
+
+				if (exceptionPointer)
+				{
+					handleError(exceptionPointer);
+					std::rethrow_exception(exceptionPointer);
+				}
+				std::unreachable();
 			});
 			auto future = task->get_future();
 			{

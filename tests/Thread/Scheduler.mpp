@@ -120,7 +120,7 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 		});
 
 		suite.addTest("Order of execution", [&] {
-			auto scheduler = CppUtils::Thread::Scheduler{};
+			auto scheduler = CppUtils::Thread::Scheduler{0s, 1uz};
 			auto executionOrder = std::vector<std::size_t>{};
 			auto mutex = std::mutex{};
 			auto record = [&](std::size_t value) {
@@ -144,7 +144,7 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 		suite.addTest("Without bucketing", [&] {
 			using Clock = CppUtils::Thread::Scheduler::Clock;
 			using TimePoint = CppUtils::Thread::Scheduler::TimePoint;
-			auto scheduler = CppUtils::Thread::Scheduler{};
+			auto scheduler = CppUtils::Thread::Scheduler{0s, 1uz};
 			auto times = std::vector<TimePoint>{};
 			auto mutex = std::mutex{};
 
@@ -153,22 +153,23 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 				times.push_back(timePoint);
 			};
 
-			scheduler.schedule([&] { record(Clock::now()); }, 100ms);
-			scheduler.schedule([&] { record(Clock::now()); }, 250ms);
-			scheduler.schedule([&] { record(Clock::now()); }, 300ms);
-			scheduler.schedule([&] { record(Clock::now()); }, 700ms);
+			const auto now = Clock::now();
+			scheduler.schedule([&] { record(Clock::now()); }, now + 100ms);
+			scheduler.schedule([&] { record(Clock::now()); }, now + 350ms);
+			scheduler.schedule([&] { record(Clock::now()); }, now + 700ms);
+			scheduler.schedule([&] { record(Clock::now()); }, now + 1200ms);
 
 			scheduler.waitUntilFinished();
 
-			suite.expect(times[1] - times[0] > 80ms);
-			suite.expect(times[2] - times[1] < 100ms);
-			suite.expect(times[3] - times[2] > 200ms);
+			suite.expect(times[1] - times[0] > 100ms);
+			suite.expect(times[2] - times[1] > 200ms);
+			suite.expect(times[3] - times[2] > 300ms);
 		});
 
 		suite.addTest("With bucketing", [&] {
 			using Clock = CppUtils::Thread::Scheduler::Clock;
 			using TimePoint = CppUtils::Thread::Scheduler::TimePoint;
-			auto scheduler = CppUtils::Thread::Scheduler{200ms};
+			auto scheduler = CppUtils::Thread::Scheduler{300ms, 1uz};
 			auto times = std::vector<TimePoint>{};
 			auto mutex = std::mutex{};
 
@@ -177,20 +178,21 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 				times.push_back(timePoint);
 			};
 
-			scheduler.schedule([&] { record(Clock::now()); }, 100ms);
-			scheduler.schedule([&] { record(Clock::now()); }, 250ms);
-			scheduler.schedule([&] { record(Clock::now()); }, 300ms);
-			scheduler.schedule([&] { record(Clock::now()); }, 700ms);
+			const auto now = Clock::now();
+			scheduler.schedule([&] { record(Clock::now()); }, now + 100ms);
+			scheduler.schedule([&] { record(Clock::now()); }, now + 350ms);
+			scheduler.schedule([&] { record(Clock::now()); }, now + 700ms);
+			scheduler.schedule([&] { record(Clock::now()); }, now + 1200ms);
 
 			scheduler.waitUntilFinished();
 
-			suite.expect(times[1] - times[0] < 80ms);
-			suite.expect(times[2] - times[1] > 100ms);
-			suite.expect(times[3] - times[2] > 200ms);
+			suite.expect(times[1] - times[0] < 100ms);
+			suite.expect(times[2] - times[1] > 300ms);
+			suite.expect(times[3] - times[2] > 300ms);
 		});
 
 		suite.addTest("Schedule events in reverse order", [&] {
-			auto scheduler = CppUtils::Thread::Scheduler{};
+			auto scheduler = CppUtils::Thread::Scheduler{0s, 1uz};
 			auto executionOrder = std::vector<std::size_t>{};
 			auto mutex = std::mutex{};
 			auto record = [&](std::size_t value) {
