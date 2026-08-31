@@ -24,6 +24,7 @@ auto start([[maybe_unused]] std::span<const std::string_view> args) -> int
 
 auto main(const int argc, const char* argv[]) -> int
 {
+	CppUtils::System::installCrashHandler();
 	CppUtils::Terminal::setConsoleOutputUTF8();
 	return start(std::vector<std::string_view>{argv, argv + argc});
 }

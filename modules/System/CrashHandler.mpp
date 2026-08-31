@@ -1,0 +1,190 @@
+module;
+
+#include <CppUtils/System/Windows.hpp>
+#include <cstdio>
+
+#if defined(OS_LINUX) or defined(OS_MACOS)
+#	include <csignal>
+#	include <unistd.h>
+#	if defined(__GLIBC__) or defined(OS_MACOS)
+#		include <execinfo.h>
+#	endif
+#endif
+
+export module CppUtils.System.CrashHandler;
+
+import std;
+
+export namespace CppUtils::System
+{
+	struct CrashInformation final
+	{
+		std::string_view signalOrExceptionName;
+		std::string_view description;
+		std::uint32_t rawCode = 0;
+		const void* faultAddress = nullptr;
+		std::span<const void* const> stackFrames;
+	};
+
+	using CrashCallback = std::function<void(const CrashInformation&)>;
+
+	inline auto defaultCrashHandler(const CrashInformation& information) -> void
+	{
+		std::fprintf(stderr, "\n==========================================\n");
+		std::fprintf(stderr, "CRASH DETECTED: %.*s\n", static_cast<int>(std::ranges::size(information.signalOrExceptionName)), std::ranges::data(information.signalOrExceptionName));
+
+		if (not std::ranges::empty(information.description))
+			std::fprintf(stderr, "Description: %.*s\n", static_cast<int>(std::ranges::size(information.description)), std::ranges::data(information.description));
+
+		if (information.rawCode != 0)
+		{
+			std::fprintf(stderr, "Code: 0x%08X\n", information.rawCode);
+#if defined(OS_WINDOWS)
+			std::fprintf(stderr, "https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55\n");
+#endif
+		}
+
+		if (information.faultAddress != nullptr)
+			std::fprintf(stderr, "Fault address: %p\n", information.faultAddress);
+
+		std::fprintf(stderr, "Stack frames (%zu):\n", std::ranges::size(information.stackFrames));
+		for (auto i = 0uz; i < std::ranges::size(information.stackFrames); ++i)
+			std::fprintf(stderr, "  [%02zu] %p\n", i, information.stackFrames[i]);
+
+		std::fprintf(stderr, "==========================================\n\n");
+		std::fflush(stderr);
+	}
+
+	namespace Implementation
+	{
+		inline auto globalCrashCallback = CrashCallback{defaultCrashHandler};
+
+#if defined(OS_WINDOWS)
+		// https://devblogs.microsoft.com/oldnewthing/20100730-00/?p=13273
+		inline constexpr auto msvcCppException = 0xE06D7363u;
+
+		// Plages: https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/using-ntstatus-values
+		// Valeurs: https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55
+		inline constexpr auto outputDebugStringException = static_cast<std::uint32_t>(DBG_PRINTEXCEPTION_C);
+		inline constexpr auto statusHeapCorruption = 0xC0000374u; // STATUS_HEAP_CORRUPTION
+		inline constexpr auto statusStackBufferOverrun = 0xC0000409u; // STATUS_STACK_BUFFER_OVERRUN
+
+		inline auto windowsCrashHandler(PEXCEPTION_POINTERS exceptionPointers) -> LONG
+		{
+			if (exceptionPointers and exceptionPointers->ExceptionRecord)
+				if (const auto code = static_cast<std::uint32_t>(exceptionPointers->ExceptionRecord->ExceptionCode);
+					code != msvcCppException and code != outputDebugStringException)
+				{
+					const auto description = [code]() -> std::string_view {
+						switch (code)
+						{
+						case static_cast<std::uint32_t>(EXCEPTION_ACCESS_VIOLATION): return "STATUS_ACCESS_VIOLATION";
+						case static_cast<std::uint32_t>(EXCEPTION_DATATYPE_MISALIGNMENT): return "STATUS_DATATYPE_MISALIGNMENT";
+						case static_cast<std::uint32_t>(EXCEPTION_BREAKPOINT): return "STATUS_BREAKPOINT";
+						case static_cast<std::uint32_t>(EXCEPTION_SINGLE_STEP): return "STATUS_SINGLE_STEP";
+						case static_cast<std::uint32_t>(EXCEPTION_ARRAY_BOUNDS_EXCEEDED): return "STATUS_ARRAY_BOUNDS_EXCEEDED";
+						case static_cast<std::uint32_t>(EXCEPTION_FLT_DENORMAL_OPERAND): return "STATUS_FLOAT_DENORMAL_OPERAND";
+						case static_cast<std::uint32_t>(EXCEPTION_FLT_DIVIDE_BY_ZERO): return "STATUS_FLOAT_DIVIDE_BY_ZERO";
+						case static_cast<std::uint32_t>(EXCEPTION_FLT_INEXACT_RESULT): return "STATUS_FLOAT_INEXACT_RESULT";
+						case static_cast<std::uint32_t>(EXCEPTION_FLT_INVALID_OPERATION): return "STATUS_FLOAT_INVALID_OPERATION";
+						case static_cast<std::uint32_t>(EXCEPTION_FLT_OVERFLOW): return "STATUS_FLOAT_OVERFLOW";
+						case static_cast<std::uint32_t>(EXCEPTION_FLT_STACK_CHECK): return "STATUS_FLOAT_STACK_CHECK";
+						case static_cast<std::uint32_t>(EXCEPTION_FLT_UNDERFLOW): return "STATUS_FLOAT_UNDERFLOW";
+						case static_cast<std::uint32_t>(EXCEPTION_INT_DIVIDE_BY_ZERO): return "STATUS_INTEGER_DIVIDE_BY_ZERO";
+						case static_cast<std::uint32_t>(EXCEPTION_INT_OVERFLOW): return "STATUS_INTEGER_OVERFLOW";
+						case static_cast<std::uint32_t>(EXCEPTION_PRIV_INSTRUCTION): return "STATUS_PRIVILEGED_INSTRUCTION";
+						case static_cast<std::uint32_t>(EXCEPTION_IN_PAGE_ERROR): return "STATUS_IN_PAGE_ERROR";
+						case static_cast<std::uint32_t>(EXCEPTION_ILLEGAL_INSTRUCTION): return "STATUS_ILLEGAL_INSTRUCTION";
+						case static_cast<std::uint32_t>(EXCEPTION_NONCONTINUABLE_EXCEPTION): return "STATUS_NONCONTINUABLE_EXCEPTION";
+						case static_cast<std::uint32_t>(EXCEPTION_STACK_OVERFLOW): return "STATUS_STACK_OVERFLOW";
+						case static_cast<std::uint32_t>(EXCEPTION_INVALID_DISPOSITION): return "STATUS_INVALID_DISPOSITION";
+						case statusHeapCorruption: return "STATUS_HEAP_CORRUPTION";
+						case statusStackBufferOverrun: return "STATUS_STACK_BUFFER_OVERRUN";
+						default: return "";
+						}
+					}();
+
+					auto stackFrames = std::array<const void*, 64>{};
+					const auto capturedFrames = CaptureStackBackTrace(
+						0,
+						static_cast<DWORD>(std::ranges::size(stackFrames)),
+						const_cast<void**>(std::ranges::data(stackFrames)),
+						nullptr);
+
+					const auto information = CrashInformation{
+						.signalOrExceptionName = "Windows Structured Exception",
+						.description = description,
+						.rawCode = code,
+						.faultAddress = exceptionPointers->ExceptionRecord->ExceptionAddress,
+						.stackFrames = std::span<const void* const>{std::ranges::data(stackFrames), capturedFrames}};
+
+					if (globalCrashCallback)
+						globalCrashCallback(information);
+				}
+			return EXCEPTION_CONTINUE_SEARCH;
+		}
+
+#elif defined(OS_LINUX) or defined(OS_MACOS)
+		inline auto posixSignalHandler(int signalNumber, siginfo_t* signalInformation, [[maybe_unused]] void* context) -> void
+		{
+			const auto signalName = [signalNumber]() -> std::string_view {
+				switch (signalNumber)
+				{
+				case SIGSEGV: return "SIGSEGV (Segmentation Fault)";
+				case SIGABRT: return "SIGABRT (Abort)";
+				case SIGBUS: return "SIGBUS (Bus Error)";
+				case SIGFPE: return "SIGFPE (Floating Point Exception)";
+				case SIGILL: return "SIGILL (Illegal Instruction)";
+				default: return "Unknown Signal";
+				}
+			}();
+
+			auto stackFrames = std::array<const void*, 64>{};
+#	if defined(__GLIBC__) or defined(OS_MACOS)
+			const auto frameCount = static_cast<std::size_t>(backtrace(
+				const_cast<void**>(std::ranges::data(stackFrames)),
+				static_cast<int>(std::ranges::size(stackFrames))));
+#	else
+			const auto frameCount = 0uz;
+#	endif
+
+			const auto information = CrashInformation{
+				.signalOrExceptionName = signalName,
+				.description = "",
+				.rawCode = static_cast<std::uint32_t>(signalNumber),
+				.faultAddress = signalInformation ? signalInformation->si_addr : nullptr,
+				.stackFrames = std::span<const void* const>{std::ranges::data(stackFrames), frameCount}};
+
+			if (globalCrashCallback)
+				globalCrashCallback(information);
+
+			std::signal(signalNumber, SIG_DFL);
+			std::raise(signalNumber);
+		}
+#endif
+	}
+
+	inline auto installCrashHandler(CrashCallback customHandler = defaultCrashHandler) -> void
+	{
+		static auto handlerInstalled = false;
+		Implementation::globalCrashCallback = std::move(customHandler);
+		if (not handlerInstalled)
+		{
+#if defined(OS_WINDOWS)
+			AddVectoredExceptionHandler(1, Implementation::windowsCrashHandler);
+#elif defined(OS_LINUX) or defined(OS_MACOS)
+			struct sigaction signalAction = {};
+			signalAction.sa_flags = static_cast<decltype(signalAction.sa_flags)>(SA_SIGINFO | SA_RESETHAND);
+			signalAction.sa_sigaction = Implementation::posixSignalHandler;
+			sigemptyset(std::addressof(signalAction.sa_mask));
+
+			::sigaction(SIGSEGV, std::addressof(signalAction), nullptr);
+			::sigaction(SIGABRT, std::addressof(signalAction), nullptr);
+			::sigaction(SIGBUS, std::addressof(signalAction), nullptr);
+			::sigaction(SIGFPE, std::addressof(signalAction), nullptr);
+			::sigaction(SIGILL, std::addressof(signalAction), nullptr);
+#endif
+			handlerInstalled = true;
+		}
+	}
+}

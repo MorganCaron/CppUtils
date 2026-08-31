@@ -89,6 +89,7 @@ namespace CppUtils::UnitTest
 			{
 				Logger::emit<"separator">();
 				Logger::print<"detail">("{}:", test.name);
+				Logger::waitUntilFinished(10s);
 			}
 			try
 			{

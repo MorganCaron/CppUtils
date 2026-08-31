@@ -9,6 +9,7 @@ module;
 export module CppUtils.System;
 
 import std;
+export import CppUtils.System.CrashHandler;
 export import CppUtils.System.Error;
 export import CppUtils.System.FileDescriptor;
 export import CppUtils.System.Main;

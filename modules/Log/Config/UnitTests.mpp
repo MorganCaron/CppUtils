@@ -19,57 +19,63 @@ export namespace CppUtils
 	{
 		eventQueue.subscribe([](const std::string& message) {
 			std::println("{}", message);
+			std::fflush(stdout);
 		});
 
 		eventQueue.subscribe<"info">([](const std::string& message) {
 			std::println("{}", message);
+			std::fflush(stdout);
 		});
 
 		eventQueue.subscribe<"important">([](const std::string& message) {
 			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Cyan};
 			std::println("🛈 {}", message);
+			std::fflush(stdout);
 		});
 
 		eventQueue.subscribe<"success">([](const std::string& message) {
 			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Green};
 			std::println("{} ✓", message);
+			std::fflush(stdout);
 		});
 
 		eventQueue.subscribe<"debug">([](const std::string& message) {
 			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Magenta};
 			std::println("🛠 DEBUG: {}", message);
+			std::fflush(stdout);
 		});
 
 		eventQueue.subscribe<"detail">([](const std::string& message) {
 			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Blue};
 			std::println("{}", message);
+			std::fflush(stdout);
 		});
 
 		eventQueue.subscribe<"warning">([](const std::string& message) {
 			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Yellow};
 			std::println("{:^{}}\n{} ⚠", "🛆 WARNING 🛆", Terminal::getTerminalSize().width(), message);
+			std::fflush(stdout);
 		});
 
 		eventQueue.subscribe<"error">([](const std::string& message) {
 			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
 			std::println("{:^{}}\n{} ✕", "🛇 ERROR 🛇", Terminal::getTerminalSize().width(), message);
+			std::fflush(stdout);
 		});
 
 		eventQueue.subscribe<"color">([](Terminal::TextColor::TextColorEnum color, const std::string& message) {
 			auto _ = Terminal::TextModifier{stdout, color};
 			std::println("{}", message);
+			std::fflush(stdout);
 		});
 
 		eventQueue.subscribe<"separator">([]() {
-			using namespace std::literals;
 			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Blue};
 			const auto width = Terminal::getTerminalSize().width();
-			auto separator = ""s;
-			constexpr auto separatorChar = "─"sv;
-			separator.reserve(width * std::ranges::size(separatorChar));
 			for (auto i = 0uz; i < width; ++i)
-				separator += separatorChar;
-			std::println("{}", separator);
+				std::fputs("─", stdout);
+			std::fputc('\n', stdout);
+			std::fflush(stdout);
 		});
 	}
 }
