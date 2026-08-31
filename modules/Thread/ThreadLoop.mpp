@@ -95,7 +95,7 @@ export namespace CppUtils::Thread
 						{
 							try
 							{
-								onError(exceptionPointer);
+								onError(std::exchange(exceptionPointer, nullptr));
 							}
 							catch (const std::exception& exception)
 							{
@@ -155,6 +155,8 @@ export namespace CppUtils::Thread
 						std::println(stderr, "ThreadLoop: interruptFunction threw during stop");
 					}
 				}
+
+				auto lockGuard = std::unique_lock{m_mutex};
 				if (m_thread.joinable() and m_thread.get_id() != std::this_thread::get_id())
 					m_thread.join();
 			}

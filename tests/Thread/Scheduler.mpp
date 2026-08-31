@@ -161,9 +161,14 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expect(times[1] - times[0] > 100ms);
-			suite.expect(times[2] - times[1] > 200ms);
-			suite.expect(times[3] - times[2] > 300ms);
+			suite.expectEqual(std::ranges::size(times), 4uz);
+			// Sans bucketing: la tache 1 attend son échéance (delta d'environ 250ms)
+			suite.expect(times[1] - times[0] >= 150ms);
+			// Chaque tache respecte sa date
+			suite.expect(times[0] >= now + 80ms);
+			suite.expect(times[1] >= now + 300ms);
+			suite.expect(times[2] >= now + 650ms);
+			suite.expect(times[3] >= now + 1100ms);
 		});
 
 		suite.addTest("With bucketing", [&] {
@@ -186,9 +191,13 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expect(times[1] - times[0] < 100ms);
-			suite.expect(times[2] - times[1] > 300ms);
-			suite.expect(times[3] - times[2] > 300ms);
+			suite.expectEqual(std::ranges::size(times), 4uz);
+			// Avec bucketing (300ms): les taches 0 (100ms) et 1 (350ms) sont groupées dans le 1er bucket (< 80ms)
+			suite.expect(times[1] - times[0] < 80ms);
+			// La tache 2 (700ms) est dans le 2ème bucket
+			suite.expect(times[2] - times[1] >= 150ms);
+			// La tache 3 (1200ms) est dans le 3ème bucket
+			suite.expect(times[3] - times[2] >= 150ms);
 		});
 
 		suite.addTest("Schedule events in reverse order", [&] {

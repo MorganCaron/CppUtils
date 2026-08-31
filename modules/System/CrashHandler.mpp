@@ -47,9 +47,33 @@ export namespace CppUtils::System
 		if (information.faultAddress != nullptr)
 			std::fprintf(stderr, "Fault address: %p\n", information.faultAddress);
 
-		std::fprintf(stderr, "Stack frames (%zu):\n", std::ranges::size(information.stackFrames));
-		for (auto i = 0uz; i < std::ranges::size(information.stackFrames); ++i)
-			std::fprintf(stderr, "  [%02zu] %p\n", i, information.stackFrames[i]);
+		const auto& stackFrames = information.stackFrames;
+		const auto totalFrames = std::ranges::size(stackFrames);
+		std::fprintf(stderr, "Stack frames (%zu):\n", totalFrames);
+		for (auto i = 0uz; i < totalFrames; ++i)
+		{
+			const auto frame = stackFrames[i];
+#if defined(OS_WINDOWS)
+			auto moduleHandle = HMODULE{nullptr};
+			if (GetModuleHandleExA(
+					GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+					static_cast<LPCSTR>(frame),
+					std::addressof(moduleHandle)))
+			{
+				auto modulePath = std::array<char, MAX_PATH>{};
+				GetModuleFileNameA(moduleHandle, std::ranges::data(modulePath), static_cast<DWORD>(std::ranges::size(modulePath)));
+				const auto fileName = std::string_view{std::ranges::data(modulePath)};
+				const auto lastSlash = fileName.find_last_of("\\/");
+				const auto baseName = (lastSlash == std::string_view::npos) ? fileName : fileName.substr(lastSlash + 1);
+				const auto offset = reinterpret_cast<std::uintptr_t>(frame) - reinterpret_cast<std::uintptr_t>(moduleHandle);
+				std::fprintf(stderr, "  [%02zu] %p (%.*s+0x%llX)\n", i, frame, static_cast<int>(std::ranges::size(baseName)), std::ranges::data(baseName), static_cast<unsigned long long>(offset));
+			}
+			else
+				std::fprintf(stderr, "  [%02zu] %p\n", i, frame);
+#else
+			std::fprintf(stderr, "  [%02zu] %p\n", i, frame);
+#endif
+		}
 
 		std::fprintf(stderr, "==========================================\n\n");
 		std::fflush(stderr);
