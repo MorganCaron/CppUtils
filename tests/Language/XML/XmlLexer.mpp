@@ -5,11 +5,21 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Language::Xml::XmlLexer
 {
-	using namespace CppUtils::String::Literals;
-
 	auto _ = TestSuite{"Language/Xml/XmlLexer", {}, [](TestSuite& suite) {
 		using namespace std::literals;
+		using namespace CppUtils::String::Literals;
 		using namespace CppUtils::Language::Xml::Literals;
+
+		suite.addTest("Empty tag", [&] {
+			const auto xmlTree = R"(
+			<div></div>
+			)"_xml;
+			CppUtils::Log::TreeNodeLogger::log(xmlTree);
+
+			suite.expect(xmlTree.exists("div"_token));
+			const auto& divNode = xmlTree["div"_token];
+			suite.expect(std::ranges::empty(divNode.nodes));
+		});
 
 		suite.addTest("Tag", [&] {
 			const auto xmlTree = R"(
@@ -56,6 +66,22 @@ namespace CppUtils::UnitTest::Language::Xml::XmlLexer
 			suite.expect(attrs.exists("color"_token));
 			suite.expectEqual(std::get<std::string>(attrs["color"_token].nodes.at(0).value), "red"s);
 			suite.expectEqual(std::get<std::string>(h1.nodes.at(1).value), "Title"s);
+		});
+
+		suite.addTest("Self-closing tag", [&] {
+			const auto xmlTree = R"(
+			<img src="avatar.png" alt="Profile"/>
+			)"_xml;
+			CppUtils::Log::TreeNodeLogger::log(xmlTree);
+
+			suite.expect(xmlTree.exists("img"_token));
+			const auto& imageNode = xmlTree["img"_token];
+			suite.expect(imageNode.exists("attributes"_token));
+			const auto& attributesNode = imageNode["attributes"_token];
+			suite.expect(attributesNode.exists("src"_token));
+			suite.expectEqual(std::get<std::string>(attributesNode["src"_token].nodes.at(0).value), "avatar.png"s);
+			suite.expect(attributesNode.exists("alt"_token));
+			suite.expectEqual(std::get<std::string>(attributesNode["alt"_token].nodes.at(0).value), "Profile"s);
 		});
 	}};
 }

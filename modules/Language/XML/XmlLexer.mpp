@@ -26,7 +26,9 @@ export namespace CppUtils::Language::Xml
 			static constexpr auto grammarSrc = R"(
 			main: tags spaceParser;
 			!tags: (tag >= 0);
-			!tag: [openingTag] content closingTag;
+			!tag: (pairedTag || selfClosingTag);
+			!pairedTag: [openingTag] ~content closingTag;
+			!selfClosingTag: spaceParser openingTagParser [tagName] ~attributes spaceParser "/>";
 			!openingTag: spaceParser openingTagParser [tagName] ~attributes spaceParser '>';
 			!closingTag: spaceParser "</" tagName closingTagValidator spaceParser '>';
 			!tagName: spaceParser keywordParser;
