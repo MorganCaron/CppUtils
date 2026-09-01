@@ -1,0 +1,71 @@
+export module CppUtils.Execution.Retry;
+
+import std;
+import CppUtils.Type.Specialization;
+
+export namespace CppUtils::Execution
+{
+	struct RetryPolicy final
+	{
+		std::size_t maxAttempts = 3;
+		std::chrono::milliseconds initialDelay{0};
+		double delayMultiplier = 1.0;
+		std::chrono::milliseconds maxDelay{std::chrono::milliseconds::max()};
+	};
+
+	[[nodiscard]] inline auto retry(
+		const RetryPolicy& policy,
+		std::invocable auto&& operation,
+		auto&& onFailure)
+	requires (Type::Specializes<std::invoke_result_t<decltype(operation)>, std::expected>
+		or std::same_as<std::invoke_result_t<decltype(operation)>, bool>)
+	{
+		using ResultType = std::invoke_result_t<decltype(operation)>;
+		auto currentDelay = policy.initialDelay;
+		const auto totalAttempts = std::ranges::max(policy.maxAttempts, 1uz);
+
+		for (auto attempt = 1uz; attempt <= totalAttempts; ++attempt)
+		{
+			if constexpr (std::same_as<ResultType, bool>)
+			{
+				const auto success = operation();
+				if (success)
+					return true;
+
+				onFailure(attempt, false);
+
+				if (attempt == totalAttempts)
+					return false;
+			}
+			else
+			{
+				auto result = operation();
+				if (result.has_value())
+					return result;
+
+				onFailure(attempt, result.error());
+
+				if (attempt == totalAttempts)
+					return result;
+			}
+
+			if (currentDelay.count() > 0)
+			{
+				std::this_thread::sleep_for(currentDelay);
+				currentDelay = std::ranges::min(
+					policy.maxDelay,
+					std::chrono::duration_cast<std::chrono::milliseconds>(currentDelay * policy.delayMultiplier));
+			}
+		}
+		std::unreachable();
+	}
+
+	[[nodiscard]] inline auto retry(
+		const RetryPolicy& policy,
+		std::invocable auto&& operation)
+	requires (Type::Specializes<std::invoke_result_t<decltype(operation)>, std::expected>
+		or std::same_as<std::invoke_result_t<decltype(operation)>, bool>)
+	{
+		return retry(policy, std::forward<decltype(operation)>(operation), [](std::size_t, const auto&) {});
+	}
+}

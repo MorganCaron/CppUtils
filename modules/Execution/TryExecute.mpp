@@ -1,0 +1,31 @@
+export module CppUtils.Execution.TryExecute;
+
+import std;
+
+export namespace CppUtils::Execution
+{
+	[[nodiscard]] inline auto tryExecute(std::invocable auto&& operation)
+	{
+		using namespace std::literals;
+		using ResultType = std::invoke_result_t<decltype(operation)>;
+
+		try
+		{
+			if constexpr (std::is_void_v<ResultType>)
+			{
+				operation();
+				return std::expected<void, std::string>{};
+			}
+			else
+				return std::expected<ResultType, std::string>{operation()};
+		}
+		catch (const std::exception& exception)
+		{
+			return std::expected<ResultType, std::string>{std::unexpected{std::string{exception.what()}}};
+		}
+		catch (...)
+		{
+			return std::expected<ResultType, std::string>{std::unexpected{"Unknown exception"s}};
+		}
+	}
+}

@@ -1,0 +1,48 @@
+export module CppUtils.UnitTests.Execution.TryExecute;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Execution::TryExecute
+{
+	auto _ = TestSuite{"Execution/TryExecute", {}, [](TestSuite& suite) {
+		using namespace std::literals;
+
+		suite.addTest("Function returning value", [&] {
+			const auto result = CppUtils::Execution::tryExecute([] {
+				return 42;
+			});
+
+			suite.expect(result.has_value());
+			suite.expectEqual(result.value(), 42);
+		});
+
+		suite.addTest("Function returning void", [&] {
+			auto executed = false;
+			const auto result = CppUtils::Execution::tryExecute([&] {
+				executed = true;
+			});
+
+			suite.expect(executed);
+			suite.expect(result.has_value());
+		});
+
+		suite.addTest("Function throwing std::exception", [&] {
+			const auto result = CppUtils::Execution::tryExecute([] -> int {
+				throw std::runtime_error{"disk read failed"};
+			});
+
+			suite.expect(not result.has_value());
+			suite.expectEqual(result.error(), "disk read failed"s);
+		});
+
+		suite.addTest("Function throwing non-std exception", [&] {
+			const auto result = CppUtils::Execution::tryExecute([] -> int {
+				throw 123;
+			});
+
+			suite.expect(not result.has_value());
+			suite.expectEqual(result.error(), "Unknown exception"s);
+		});
+	}};
+}

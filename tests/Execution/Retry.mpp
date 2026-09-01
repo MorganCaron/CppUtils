@@ -1,0 +1,144 @@
+export module CppUtils.UnitTests.Execution.Retry;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Execution::Retry
+{
+	auto _ = TestSuite{"Execution/Retry", {}, [](TestSuite& suite) {
+		using namespace std::literals;
+
+		suite.addTest("Immediate success", [&] {
+			auto attemptsCount = 0uz;
+
+			const auto result = CppUtils::Execution::retry(
+				CppUtils::Execution::RetryPolicy{.maxAttempts = 3},
+				[&] -> std::expected<int, std::string> {
+				++attemptsCount;
+				return 42;
+			});
+
+			suite.expectEqual(attemptsCount, 1uz);
+			suite.expect(result.has_value());
+			suite.expectEqual(result.value(), 42);
+		});
+
+		suite.addTest("Success after retries", [&] {
+			auto attemptsCount = 0uz;
+			struct FailureReport final
+			{
+				std::size_t attempt = 0;
+				std::string error;
+			};
+			auto capturedErrors = std::vector<FailureReport>{};
+
+			const auto result = CppUtils::Execution::retry(
+				CppUtils::Execution::RetryPolicy{.maxAttempts = 5},
+				[&] -> std::expected<std::string, std::string> {
+				++attemptsCount;
+				if (attemptsCount < 3)
+					return std::unexpected{std::format("temporary failure {}", attemptsCount)};
+				return "success"s;
+			},
+				[&](std::size_t attempt, const std::string& error) {
+				capturedErrors.push_back({.attempt = attempt, .error = error});
+			});
+
+			suite.expectEqual(attemptsCount, 3uz);
+			suite.expect(result.has_value());
+			suite.expectEqual(result.value(), "success");
+			suite.expectEqual(std::ranges::size(capturedErrors), 2uz);
+			suite.expectEqual(capturedErrors[0].attempt, 1uz);
+			suite.expectEqual(capturedErrors[0].error, "temporary failure 1");
+			suite.expectEqual(capturedErrors[1].attempt, 2uz);
+			suite.expectEqual(capturedErrors[1].error, "temporary failure 2");
+		});
+
+		suite.addTest("All attempts failed", [&] {
+			auto attemptsCount = 0uz;
+			auto failureReportsCount = 0uz;
+
+			const auto result = CppUtils::Execution::retry(
+				CppUtils::Execution::RetryPolicy{.maxAttempts = 3},
+				[&] -> std::expected<int, std::string> {
+				return std::unexpected{std::format("fatal error {}", ++attemptsCount)};
+			},
+				[&](std::size_t attempt, const std::string&) {
+				++failureReportsCount;
+				suite.expectEqual(attempt, attemptsCount);
+			});
+
+			suite.expectEqual(attemptsCount, 3uz);
+			suite.expectEqual(failureReportsCount, 3uz);
+			suite.expect(not result.has_value());
+			suite.expectEqual(result.error(), "fatal error 3");
+		});
+
+		suite.addTest("Boolean operation", [&] {
+			auto attemptsCount = 0uz;
+
+			const auto success = CppUtils::Execution::retry(
+				CppUtils::Execution::RetryPolicy{.maxAttempts = 3},
+				[&] -> bool {
+				++attemptsCount;
+				return attemptsCount >= 2;
+			});
+
+			suite.expectEqual(attemptsCount, 2uz);
+			suite.expect(success);
+		});
+
+		suite.addTest("Throwing operation", [&] {
+			auto attemptsCount = 0uz;
+			struct FailureReport final
+			{
+				std::size_t attempt = 0;
+				std::string error;
+			};
+			auto capturedExceptions = std::vector<FailureReport>{};
+
+			const auto result = CppUtils::Execution::retry(
+				CppUtils::Execution::RetryPolicy{.maxAttempts = 3},
+				[&] {
+				return CppUtils::Execution::tryExecute([&] -> int {
+					if (++attemptsCount < 2)
+						throw std::runtime_error{"temporary exception"};
+					return 42;
+				});
+			},
+				[&](std::size_t attempt, const std::string& error) {
+				capturedExceptions.push_back({.attempt = attempt, .error = error});
+			});
+
+			suite.expectEqual(attemptsCount, 2uz);
+			suite.expect(result.has_value());
+			suite.expectEqual(result.value(), 42);
+			suite.expectEqual(std::ranges::size(capturedExceptions), 1uz);
+			suite.expectEqual(capturedExceptions[0].attempt, 1uz);
+			suite.expectEqual(capturedExceptions[0].error, "temporary exception"s);
+		});
+
+		suite.addTest("Delay between attempts", [&] {
+			auto attemptsCount = 0uz;
+			const auto startTime = std::chrono::steady_clock::now();
+
+			const auto result = CppUtils::Execution::retry(
+				CppUtils::Execution::RetryPolicy{
+					.maxAttempts = 3,
+					.initialDelay = 5ms,
+					.delayMultiplier = 2.0,
+					.maxDelay = 100ms},
+				[&] -> std::expected<int, std::string> {
+				if (++attemptsCount < 3)
+					return std::unexpected{"retry needed"};
+				return 42;
+			});
+
+			const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime);
+			suite.expectEqual(attemptsCount, 3uz);
+			suite.expect(result.has_value());
+			suite.expectEqual(result.value(), 42);
+			suite.expect(elapsedTime >= 10ms);
+		});
+	}};
+}
