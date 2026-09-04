@@ -160,12 +160,12 @@ export namespace CppUtils::Type
 			constexpr auto totalRhs = (std::tuple_size_v<decltype(Pairs::rhs)> + ...);
 			auto result = std::array<Entry, totalRhs>{};
 			auto i = 0uz;
-			auto pairIdx = 0uz;
+			auto pairIndex = 0uz;
 			([&](auto&& pair) {
 				std::apply([&](auto&&... values) {
-					((result[i++] = {static_cast<RhsType>(values), pairIdx}), ...);
+					((result[i++] = {static_cast<RhsType>(values), pairIndex}), ...);
 				}, pair.rhs);
-				++pairIdx;
+				++pairIndex;
 			}(Pairs{}), ...);
 			std::ranges::sort(result, [](const auto& lhs, const auto& rhs) { return lhs.key < rhs.key; });
 			return result;
@@ -377,4 +377,44 @@ export namespace CppUtils::Type
 			return defaultValue;
 		}
 	};
+
+	template<class Target, class Mapping, class Source>
+	[[nodiscard]] inline constexpr auto toStruct(const Source& source) -> Target
+	{
+		auto target = Target{};
+		std::apply([&](auto&&... pairs) {
+			([&](auto&& pair) {
+				using PairType = std::remove_cvref_t<decltype(pair)>;
+				constexpr auto targetPointer = PairType::lhs;
+				constexpr auto sourcePointer = std::get<0>(PairType::rhs);
+				target.*targetPointer = source.*sourcePointer;
+			}(pairs), ...);
+		}, typename Mapping::Values{});
+		return target;
+	}
+
+	template<class Target, class TargetMapping, class SourceMapping, class Source>
+	[[nodiscard]] inline constexpr auto toStruct(const Source& source) -> Target
+	{
+		auto target = Target{};
+		std::apply([&](auto&&... targetPairs) {
+			([&](auto&& targetPair) {
+				using TargetPairType = std::remove_cvref_t<decltype(targetPair)>;
+				constexpr auto token = TargetPairType::lhs;
+				constexpr auto targetPointer = std::get<0>(TargetPairType::rhs);
+
+				std::apply([&](auto&&... sourcePairs) {
+					([&](auto&& sourcePair) {
+						using SourcePairType = std::remove_cvref_t<decltype(sourcePair)>;
+						if constexpr (SourcePairType::lhs == token)
+						{
+							constexpr auto sourcePointer = std::get<0>(SourcePairType::rhs);
+							target.*targetPointer = source.*sourcePointer;
+						}
+					}(sourcePairs), ...);
+				}, typename SourceMapping::Values{});
+			}(targetPairs), ...);
+		}, typename TargetMapping::Values{});
+		return target;
+	}
 }

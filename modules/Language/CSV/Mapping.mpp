@@ -243,35 +243,16 @@ export namespace CppUtils::Language::CSV
 		return ToStructSafe<Object, Mapping>{separator};
 	}
 
-	struct RouteRejectedFile final
-	{
-		std::filesystem::path rejectedFilePath;
-		std::string_view separator = ";";
-		std::shared_ptr<std::ofstream> outputStream;
-
-		explicit RouteRejectedFile(std::filesystem::path path, std::string_view separator = ";"):
-			rejectedFilePath{std::move(path)},
-			separator{separator},
-			outputStream{std::make_shared<std::ofstream>(rejectedFilePath, std::ios::app)}
-		{
-			if (not outputStream->is_open())
-				throw std::runtime_error{"Failed to open rejected file: " + rejectedFilePath.string()};
-		}
-
-		friend auto operator|(std::ranges::input_range auto&& range, RouteRejectedFile self)
-		{
-			return range | Ranges::routeErrors([stream = self.outputStream, separator = self.separator](const RejectEntry& error) {
-				const auto line = std::format("{}{}ERROR: {}\n", error.rawLine, separator, error.reason);
-				stream->write(std::ranges::data(line), static_cast<std::streamsize>(std::ranges::size(line)));
-				stream->flush();
-			});
-		}
-	};
-
-	static_assert(std::copy_constructible<RouteRejectedFile>);
-
 	[[nodiscard]] inline auto routeRejected(std::filesystem::path path, std::string_view separator = ";")
 	{
-		return RouteRejectedFile{std::move(path), separator};
+		auto stream = std::make_shared<std::ofstream>(path, std::ios::app);
+		if (not stream->is_open())
+			throw std::runtime_error{"Failed to open rejected file: " + path.string()};
+
+		return Ranges::routeErrors([stream = std::move(stream), separator](const RejectEntry& error) {
+			const auto line = std::format("{}{}ERROR: {}\n", error.rawLine, separator, error.reason);
+			stream->write(std::ranges::data(line), static_cast<std::streamsize>(std::ranges::size(line)));
+			stream->flush();
+		});
 	}
 }

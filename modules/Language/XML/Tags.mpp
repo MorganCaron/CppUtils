@@ -1,0 +1,668 @@
+export module CppUtils.Language.Xml.Tags;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.Language.Xml;
+import CppUtils.Language.Xml.Pipeline;
+import CppUtils.Language.CSV.Mapping;
+import CppUtils.FileSystem;
+import CppUtils.Thread.UniqueLocker;
+import CppUtils.Logger;
+
+namespace CppUtils::Language::Xml::Detail
+{
+	template<class Mapping>
+	inline auto findFunction(Type::Token token, auto&& callableHandler) -> bool
+	{
+		using FunctionMapping = typename Mapping::FunctionMapping;
+		auto found = false;
+		std::apply([&](auto&&... pairs) {
+			([&](auto&& pair) {
+				using PairType = std::remove_cvref_t<decltype(pair)>;
+				if (PairType::lhs == token)
+				{
+					constexpr auto function = std::get<0>(PairType::rhs);
+					callableHandler(function);
+					found = true;
+				}
+			}(pairs), ...);
+		}, typename FunctionMapping::Values{});
+		return found;
+	}
+
+	template<class Object, class Mapping>
+	inline auto handleLetTag(
+		const Container::Tree::VariantNode<Type::Token, std::string>& node,
+		Pipeline<Object>& pipeline) -> void
+	{
+		using namespace CppUtils::String::Literals;
+		const auto name = extractAttribute(node, "name"_token);
+		if (not name.has_value())
+			return;
+
+		const auto valueString = extractAttribute(node, "value"_token);
+		if (not valueString.has_value())
+			return;
+
+		const auto token = Type::hash(name.value());
+		const auto stringValue = valueString.value();
+		const auto typeString = extractAttribute(node, "type"_token);
+
+		if (typeString.has_value())
+		{
+			if (typeString.value() == "bool")
+			{
+				pipeline.setVariable(token, stringValue == "true" or stringValue == "1");
+				return;
+			}
+			if (typeString.value() == "int")
+			{
+				auto intValue = std::int64_t{0};
+				std::from_chars(std::ranges::data(stringValue), std::ranges::data(stringValue) + std::ranges::size(stringValue), intValue);
+				pipeline.setVariable(token, intValue);
+				return;
+			}
+			if (typeString.value() == "double" or typeString.value() == "float")
+			{
+				auto doubleValue = double{0.0};
+				std::from_chars(std::ranges::data(stringValue), std::ranges::data(stringValue) + std::ranges::size(stringValue), doubleValue);
+				pipeline.setVariable(token, doubleValue);
+				return;
+			}
+			if (typeString.value() == "string")
+			{
+				pipeline.setVariable(token, stringValue);
+				return;
+			}
+		}
+
+		if (stringValue == "true" or stringValue == "false")
+		{
+			pipeline.setVariable(token, stringValue == "true");
+			return;
+		}
+
+		auto intValue = std::int64_t{0};
+		if (const auto [pointer, errorCode] = std::from_chars(std::ranges::data(stringValue), std::ranges::data(stringValue) + std::ranges::size(stringValue), intValue);
+			errorCode == std::errc{} and pointer == std::ranges::data(stringValue) + std::ranges::size(stringValue))
+		{
+			pipeline.setVariable(token, intValue);
+			return;
+		}
+
+		auto doubleValue = 0.0;
+		if (const auto [pointer, errorCode] = std::from_chars(std::ranges::data(stringValue), std::ranges::data(stringValue) + std::ranges::size(stringValue), doubleValue);
+			errorCode == std::errc{} and pointer == std::ranges::data(stringValue) + std::ranges::size(stringValue))
+		{
+			pipeline.setVariable(token, doubleValue);
+			return;
+		}
+
+		pipeline.setVariable(token, stringValue);
+	}
+
+	inline auto evaluateComparison(const auto& left, const auto& right, std::string_view operatorString) -> bool
+	{
+		if constexpr (requires { left == right; })
+			if (operatorString == "==")
+				return left == right;
+		if constexpr (requires { left != right; })
+			if (operatorString == "!=")
+				return left != right;
+		if constexpr (requires { left >= right; })
+			if (operatorString == ">=")
+				return left >= right;
+		if constexpr (requires { left <= right; })
+			if (operatorString == "<=")
+				return left <= right;
+		if constexpr (requires { left > right; })
+			if (operatorString == ">")
+				return left > right;
+		if constexpr (requires { left < right; })
+			if (operatorString == "<")
+				return left < right;
+		return false;
+	}
+
+	inline auto applyOperation(auto& target, const auto& operand, std::string_view operatorString) -> void
+	{
+		if constexpr (requires { target += operand; })
+			if (operatorString == "+=")
+			{
+				target += operand;
+				return;
+			}
+		if constexpr (requires { target -= operand; })
+			if (operatorString == "-=")
+			{
+				target -= operand;
+				return;
+			}
+		if constexpr (requires { target *= operand; })
+			if (operatorString == "*=")
+			{
+				target *= operand;
+				return;
+			}
+		if constexpr (requires { target /= operand; })
+			if (operatorString == "/=" and operand != 0)
+			{
+				target /= operand;
+				return;
+			}
+		if constexpr (requires { target = operand; })
+			if (operatorString == "=")
+			{
+				target = operand;
+				return;
+			}
+	}
+
+	template<class Object, class Mapping>
+	inline auto buildCondition(
+		const Container::Tree::VariantNode<Type::Token, std::string>& node,
+		const std::shared_ptr<typename Pipeline<Object>::Context>& context) -> std::function<bool(const Object&)>
+	{
+		using namespace CppUtils::String::Literals;
+		using StructMapping = typename Mapping::StructMapping;
+
+		if (auto predicateName = extractAttribute(node, "predicate"_token))
+		{
+			const auto token = Type::hash(predicateName.value());
+			auto resultFunction = std::function<bool(const Object&)>{};
+			findFunction<Mapping>(token, [&](auto function) {
+				if constexpr (std::is_invocable_r_v<bool, decltype(function), const Object&>)
+					resultFunction = [function](const Object& object) -> bool {
+						return std::invoke(function, object);
+					};
+				else if constexpr (std::is_invocable_r_v<bool, decltype(function), Object&>)
+					resultFunction = [function](const Object& object) -> bool {
+						auto copy = object;
+						return std::invoke(function, copy);
+					};
+			});
+			if (resultFunction)
+				return resultFunction;
+		}
+
+		const auto columnName = extractAttribute(node, "column"_token);
+		if (not columnName.has_value())
+			return [](const Object&) { return true; };
+
+		const auto operatorAttribute = extractAttribute(node, "operator"_token);
+		if (not operatorAttribute.has_value())
+			return [](const Object&) { return true; };
+
+		const auto operatorString = operatorAttribute.value();
+		const auto token = Type::hash(columnName.value());
+		auto resultFunction = std::function<bool(const Object&)>{};
+
+		std::apply([&](auto&&... structPairs) {
+			([&](auto&& structPair) {
+				using PairType = std::remove_cvref_t<decltype(structPair)>;
+				if (PairType::lhs == token)
+				{
+					constexpr auto memberPointer = std::get<0>(PairType::rhs);
+					using MemberType = std::remove_cvref_t<decltype(std::declval<Object>().*memberPointer)>;
+
+					if (const auto variableName = extractAttribute(node, "variable"_token))
+					{
+						const auto variableToken = Type::hash(variableName.value());
+						resultFunction = [variableToken, context, operatorString](const Object& object) -> bool {
+							if (const auto iterator = context->variables.find(variableToken); iterator != std::ranges::end(context->variables))
+								return std::visit([&](const auto& value) -> bool {
+									using ValueType = std::remove_cvref_t<decltype(value)>;
+									if constexpr (std::is_arithmetic_v<MemberType> and std::is_arithmetic_v<ValueType>)
+										return evaluateComparison(object.*memberPointer, static_cast<MemberType>(value), operatorString);
+									else if constexpr ((std::same_as<MemberType, std::string> or std::same_as<MemberType, std::string_view>) and std::same_as<ValueType, std::string>)
+										return evaluateComparison(object.*memberPointer, value, operatorString);
+									return false;
+								}, iterator->second);
+							return false;
+						};
+					}
+					else if (const auto valueString = extractAttribute(node, "value"_token))
+					{
+						if constexpr (std::same_as<MemberType, std::string_view> or std::same_as<MemberType, std::string>)
+						{
+							const auto expected = valueString.value();
+							resultFunction = [expected, operatorString](const Object& object) -> bool {
+								return evaluateComparison(object.*memberPointer, expected, operatorString);
+							};
+						}
+						else if constexpr (std::integral<MemberType> or std::floating_point<MemberType>)
+						{
+							auto expectedNumber = MemberType{0};
+							const auto [pointer, errorCode] = std::from_chars(std::ranges::data(valueString.value()), std::ranges::data(valueString.value()) + std::ranges::size(valueString.value()), expectedNumber);
+							if (errorCode == std::errc{} and pointer == std::ranges::data(valueString.value()) + std::ranges::size(valueString.value()))
+								resultFunction = [expectedNumber, operatorString](const Object& object) -> bool {
+									return evaluateComparison(object.*memberPointer, expectedNumber, operatorString);
+								};
+						}
+					}
+				}
+			}(structPairs), ...);
+		}, typename StructMapping::Values{});
+
+		if (resultFunction)
+			return resultFunction;
+		return [](const Object&) { return true; };
+	}
+
+	template<class Object, class Mapping>
+	inline auto buildCompositeCondition(
+		const Container::Tree::VariantNode<Type::Token, std::string>& node,
+		const std::shared_ptr<typename Pipeline<Object>::Context>& context) -> std::function<bool(const Object&)>
+	{
+		using namespace CppUtils::String::Literals;
+
+		const auto* tokenPointer = std::get_if<Type::Token>(std::addressof(node.value));
+		if (not tokenPointer)
+			return [](const Object&) { return true; };
+
+		if (const auto token = *tokenPointer;
+			token == "Any"_token)
+		{
+			auto subConditions = std::vector<std::function<bool(const Object&)>>{};
+			for (const auto& child : node.nodes)
+				subConditions.push_back(buildCompositeCondition<Object, Mapping>(child, context));
+
+			return [subConditions = std::move(subConditions)](const Object& object) -> bool {
+				return std::ranges::any_of(subConditions, [&](const auto& condition) {
+					return condition(object);
+				});
+			};
+		}
+		else if (token == "All"_token)
+		{
+			auto subConditions = std::vector<std::function<bool(const Object&)>>{};
+			for (const auto& child : node.nodes)
+				subConditions.push_back(buildCompositeCondition<Object, Mapping>(child, context));
+
+			return [subConditions = std::move(subConditions)](const Object& object) -> bool {
+				return std::ranges::all_of(subConditions, [&](const auto& condition) {
+					return condition(object);
+				});
+			};
+		}
+
+		for (const auto& child : node.nodes)
+		{
+			if (const auto* childToken = std::get_if<Type::Token>(std::addressof(child.value));
+				childToken and (*childToken == "All"_token or *childToken == "Any"_token or *childToken == "Condition"_token))
+				return buildCompositeCondition<Object, Mapping>(child, context);
+		}
+
+		return buildCondition<Object, Mapping>(node, context);
+	}
+
+	template<class Object, class Mapping>
+	inline auto handleFilterTag(
+		const Container::Tree::VariantNode<Type::Token, std::string>& node,
+		Pipeline<Object>& pipeline) -> void
+	{
+		auto condition = buildCondition<Object, Mapping>(node, pipeline.context);
+		pipeline.addStage([condition = std::move(condition)](Object object) -> std::optional<Object> {
+			if (condition(object))
+				return object;
+			return std::nullopt;
+		});
+	}
+
+	template<class Object, class Mapping>
+	inline auto handleOperationTag(
+		const Container::Tree::VariantNode<Type::Token, std::string>& node,
+		Pipeline<Object>& pipeline) -> void
+	{
+		using namespace CppUtils::String::Literals;
+		using StructMapping = typename Mapping::StructMapping;
+
+		const auto columnName = extractAttribute(node, "column"_token);
+		if (not columnName.has_value())
+			return;
+
+		const auto operatorAttribute = extractAttribute(node, "operator"_token);
+		if (not operatorAttribute.has_value())
+			return;
+
+		const auto operatorString = operatorAttribute.value();
+		const auto token = Type::hash(columnName.value());
+
+		std::apply([&](auto&&... structPairs) {
+			([&](auto&& structPair) {
+				using PairType = std::remove_cvref_t<decltype(structPair)>;
+				if (PairType::lhs == token)
+				{
+					constexpr auto memberPointer = std::get<0>(PairType::rhs);
+					using MemberType = std::remove_cvref_t<decltype(std::declval<Object>().*memberPointer)>;
+
+					if (const auto variableName = extractAttribute(node, "variable"_token))
+					{
+						const auto variableToken = Type::hash(variableName.value());
+						pipeline.addStage([variableToken, context = pipeline.context, operatorString](Object object) -> std::optional<Object> {
+							if (const auto iterator = context->variables.find(variableToken); iterator != std::ranges::end(context->variables))
+								std::visit([&](const auto& value) {
+									using ValueType = std::remove_cvref_t<decltype(value)>;
+									if constexpr (std::is_arithmetic_v<MemberType> and std::is_arithmetic_v<ValueType>)
+										applyOperation(object.*memberPointer, static_cast<MemberType>(value), operatorString);
+									else if constexpr (std::same_as<MemberType, std::string> and std::same_as<ValueType, std::string>)
+										applyOperation(object.*memberPointer, value, operatorString);
+								}, iterator->second);
+							return object;
+						});
+					}
+					else if (const auto valueString = extractAttribute(node, "value"_token))
+					{
+						if constexpr (std::same_as<MemberType, std::string>)
+						{
+							const auto value = valueString.value();
+							pipeline.addStage([value, operatorString](Object object) -> std::optional<Object> {
+								applyOperation(object.*memberPointer, value, operatorString);
+								return object;
+							});
+						}
+						else if constexpr (std::integral<MemberType> or std::floating_point<MemberType>)
+						{
+							auto value = MemberType{0};
+							const auto [pointer, errorCode] = std::from_chars(std::ranges::data(valueString.value()), std::ranges::data(valueString.value()) + std::ranges::size(valueString.value()), value);
+							if (errorCode == std::errc{} and pointer == std::ranges::data(valueString.value()) + std::ranges::size(valueString.value()))
+								pipeline.addStage([value, operatorString](Object object) -> std::optional<Object> {
+									applyOperation(object.*memberPointer, value, operatorString);
+									return object;
+								});
+						}
+					}
+				}
+			}(structPairs), ...);
+		}, typename StructMapping::Values{});
+	}
+
+	template<class Object, class Mapping>
+	inline auto handleCallTag(
+		const Container::Tree::VariantNode<Type::Token, std::string>& node,
+		Pipeline<Object>& pipeline) -> void
+	{
+		using namespace CppUtils::String::Literals;
+
+		const auto functionName = extractAttribute(node, "function"_token);
+		if (not functionName.has_value())
+			return;
+
+		const auto token = Type::hash(functionName.value());
+
+		const auto found = findFunction<Mapping>(token, [&](auto function) {
+			if constexpr (std::is_invocable_v<decltype(function), Object&>)
+				pipeline.addStage([function](Object object) -> std::optional<Object> {
+					std::invoke(function, object);
+					return object;
+				});
+			else if constexpr (std::is_invocable_v<decltype(function)>)
+				pipeline.addStage([function](Object object) -> std::optional<Object> {
+					std::invoke(function);
+					return object;
+				});
+		});
+
+		if (not found)
+			pipeline.addStage([context = pipeline.context, token](Object object) -> std::optional<Object> {
+				if (const auto iterator = context->callFunctions.find(token); iterator != std::ranges::end(context->callFunctions))
+					iterator->second(object);
+				return object;
+			});
+	}
+
+	template<class Object, class Mapping>
+	inline auto handleValidateTag(
+		const Container::Tree::VariantNode<Type::Token, std::string>& node,
+		Pipeline<Object>& pipeline) -> void
+	{
+		using namespace CppUtils::String::Literals;
+
+		const auto errorMessage = extractAttribute(node, "error"_token).value_or("Validation failed");
+		auto condition = buildCompositeCondition<Object, Mapping>(node, pipeline.context);
+
+		pipeline.addStage([condition = std::move(condition), errorMessage = std::move(errorMessage), context = pipeline.context](Object object) -> std::optional<Object> {
+			if (condition(object))
+				return object;
+			context->routeError("", errorMessage);
+			return std::nullopt;
+		});
+	}
+
+	template<class Object, class Mapping, String::Hasher loggerName = "CppUtils">
+	inline auto handleLogTag(
+		const Container::Tree::VariantNode<Type::Token, std::string>& node,
+		Pipeline<Object>& pipeline) -> void
+	{
+		using namespace CppUtils::String::Literals;
+		using StructMapping = typename Mapping::StructMapping;
+
+		const auto typeString = extractAttribute(node, "type"_token).value_or("info");
+		const auto messageString = extractAttribute(node, "message"_token);
+		const auto columnName = extractAttribute(node, "column"_token);
+		const auto typeToken = Type::hash(typeString);
+
+		if (columnName.has_value())
+		{
+			const auto token = Type::hash(columnName.value());
+			std::apply([&](auto&&... structPairs) {
+				([&](auto&& structPair) {
+					using PairType = std::remove_cvref_t<decltype(structPair)>;
+					if (PairType::lhs == token)
+					{
+						constexpr auto memberPointer = std::get<0>(PairType::rhs);
+						pipeline.addStage([typeToken, messageString](Object object) -> std::optional<Object> {
+							auto columnFormatted = std::format("{}", object.*memberPointer);
+							if (messageString.has_value())
+							{
+								auto line = messageString.value().contains("{}") ?
+									std::vformat(messageString.value(), std::make_format_args(columnFormatted)) :
+									std::format("{}: {}", messageString.value(), columnFormatted);
+								Logger<loggerName>::emit(typeToken, std::move(line));
+							}
+							else
+								Logger<loggerName>::emit(typeToken, std::move(columnFormatted));
+							return object;
+						});
+					}
+				}(structPairs), ...);
+			}, typename StructMapping::Values{});
+		}
+		else
+		{
+			pipeline.addStage([typeToken, messageString](Object object) -> std::optional<Object> {
+				if (messageString.has_value())
+					if constexpr (std::formattable<Object, char>)
+					{
+						auto line = messageString.value().contains("{}") ?
+							std::vformat(messageString.value(), std::make_format_args(object)) :
+							std::format("{}: {}", messageString.value(), object);
+						Logger<loggerName>::emit(typeToken, std::move(line));
+					}
+					else
+						Logger<loggerName>::emit(typeToken, messageString.value());
+				else if constexpr (std::formattable<Object, char>)
+					Logger<loggerName>::emit(typeToken, std::format("{}", object));
+				else
+					Logger<loggerName>::emit(typeToken, "Object");
+				return object;
+			});
+		}
+	}
+
+	template<class Object, class Mapping>
+	inline auto handleRejectedTag(
+		const Container::Tree::VariantNode<Type::Token, std::string>& node,
+		Pipeline<Object>& pipeline) -> void
+	{
+		using namespace CppUtils::String::Literals;
+
+		if (auto filePath = extractAttribute(node, "file"_token))
+		{
+			const auto separator = extractAttribute(node, "separator"_token).value_or(";");
+			auto lockedStream = std::make_shared<Thread::UniqueLocker<std::ofstream>>(filePath.value(), std::ios::app);
+			{
+				auto accessor = lockedStream->access();
+				if (not accessor->is_open())
+					throw std::runtime_error{"Failed to open rejected file: " + filePath.value()};
+			}
+
+			pipeline.registerRejectHandler([lockedStream = std::move(lockedStream), separator = std::move(separator)](const CppUtils::Language::CSV::RejectEntry& error) {
+				auto accessor = lockedStream->access();
+				if (accessor->is_open())
+				{
+					const auto line = std::format("{}{}ERROR: {}\n", error.rawLine, separator, error.reason);
+					accessor->write(std::ranges::data(line), static_cast<std::streamsize>(std::ranges::size(line)));
+					accessor->flush();
+				}
+			});
+		}
+		if (auto handlerName = extractAttribute(node, "handler"_token))
+		{
+			const auto token = Type::hash(handlerName.value());
+
+			const auto found = findFunction<Mapping>(token, [&](auto function) {
+				if constexpr (std::is_invocable_v<decltype(function), const CppUtils::Language::CSV::RejectEntry&>)
+					pipeline.registerRejectHandler([function](const CppUtils::Language::CSV::RejectEntry& entry) {
+						std::invoke(function, entry);
+					});
+				else if constexpr (std::is_invocable_v<decltype(function), std::string_view, std::string_view>)
+					pipeline.registerRejectHandler([function](const CppUtils::Language::CSV::RejectEntry& entry) {
+						std::invoke(function, entry.rawLine, entry.reason);
+					});
+				else if constexpr (std::is_invocable_v<decltype(function)>)
+					pipeline.registerRejectHandler([function](const CppUtils::Language::CSV::RejectEntry&) {
+						std::invoke(function);
+					});
+			});
+
+			if (not found)
+				pipeline.registerRejectHandler([context = pipeline.context, token](const CppUtils::Language::CSV::RejectEntry& entry) {
+					if (const auto iterator = context->namedRejectHandlers.find(token); iterator != std::ranges::end(context->namedRejectHandlers))
+						iterator->second(entry);
+				});
+		}
+	}
+
+	template<class Object, class Mapping>
+	inline auto handleWhenTag(
+		const Container::Tree::VariantNode<Type::Token, std::string>& node,
+		Pipeline<Object>& pipeline) -> void
+	{
+		using namespace CppUtils::String::Literals;
+
+		auto conditions = std::vector<std::function<bool(const Object&)>>{};
+		auto actionNodes = std::vector<Container::Tree::VariantNode<Type::Token, std::string>>{};
+
+		if (extractAttribute(node, "column"_token).has_value() or extractAttribute(node, "predicate"_token).has_value())
+			conditions.push_back(buildCondition<Object, Mapping>(node, pipeline.context));
+
+		for (const auto& childNode : node.nodes)
+		{
+			if (const auto* childToken = std::get_if<Type::Token>(std::addressof(childNode.value));
+				childToken and (*childToken == "All"_token or *childToken == "Any"_token or *childToken == "Condition"_token))
+			{
+				conditions.push_back(buildCompositeCondition<Object, Mapping>(childNode, pipeline.context));
+				continue;
+			}
+			actionNodes.push_back(childNode);
+		}
+
+		auto combinedCondition = [conditions = std::move(conditions)](const Object& object) -> bool {
+			return std::ranges::all_of(conditions, [&](const auto& condition) {
+				return condition(object);
+			});
+		};
+
+		auto subPipeline = Pipeline<Object>{};
+		subPipeline.tagRegistry = pipeline.tagRegistry;
+		subPipeline.context = pipeline.context;
+		for (const auto& actionNode : actionNodes)
+			subPipeline.dispatchNode(actionNode);
+
+		pipeline.addStage([combinedCondition = std::move(combinedCondition), subStages = std::move(subPipeline.stages)](Object object) -> std::optional<Object> {
+			if (combinedCondition(object))
+			{
+				auto current = std::optional<Object>{std::move(object)};
+				for (const auto& stage : subStages)
+				{
+					if (not current.has_value())
+						return std::nullopt;
+					current = stage(std::move(current.value()));
+				}
+				return current;
+			}
+			return object;
+		});
+	}
+
+	template<class Object, class Mapping>
+	inline auto handleIncludeTag(
+		const Container::Tree::VariantNode<Type::Token, std::string>& node,
+		Pipeline<Object>& pipeline) -> void
+	{
+		using namespace CppUtils::String::Literals;
+		using namespace CppUtils::Language::Xml::Literals;
+
+		const auto filePath = extractAttribute(node, "file"_token);
+		if (not filePath.has_value())
+			throw std::runtime_error{"<Include> tag missing required 'file' attribute"};
+
+		const auto path = std::filesystem::path{filePath.value()};
+		if (not std::filesystem::exists(path))
+			throw std::runtime_error{"Include file not found: " + path.string()};
+
+		const auto content = CppUtils::FileSystem::String::read(path);
+		const auto subTree = operator""_xml(std::ranges::data(content), std::ranges::size(content));
+		pipeline.dispatchNode(subTree);
+	}
+
+	template<class Object, class Mapping>
+	inline auto handlePipelineTag(
+		const Container::Tree::VariantNode<Type::Token, std::string>& node,
+		Pipeline<Object>& pipeline) -> void
+	{
+		for (const auto& childNode : node.nodes)
+			pipeline.dispatchNode(childNode);
+	}
+}
+
+export namespace CppUtils::Language::Xml
+{
+	template<class Object, class Mapping, String::Hasher loggerName = "CppUtils">
+	inline auto registerStandardPipelineTags(Pipeline<Object>& pipeline) -> void
+	{
+		using namespace CppUtils::String::Literals;
+
+		pipeline.registerTagHandler("Pipeline"_token, Detail::handlePipelineTag<Object, Mapping>);
+		pipeline.registerTagHandler("Scope"_token, Detail::handlePipelineTag<Object, Mapping>);
+		pipeline.registerTagHandler("Filter"_token, Detail::handleFilterTag<Object, Mapping>);
+		pipeline.registerTagHandler("Operation"_token, Detail::handleOperationTag<Object, Mapping>);
+		pipeline.registerTagHandler("Validate"_token, Detail::handleValidateTag<Object, Mapping>);
+		pipeline.registerTagHandler("Call"_token, Detail::handleCallTag<Object, Mapping>);
+		pipeline.registerTagHandler("Let"_token, Detail::handleLetTag<Object, Mapping>);
+		pipeline.registerTagHandler("Log"_token, Detail::handleLogTag<Object, Mapping, loggerName>);
+		pipeline.registerTagHandler("Rejected"_token, Detail::handleRejectedTag<Object, Mapping>);
+		pipeline.registerTagHandler("When"_token, Detail::handleWhenTag<Object, Mapping>);
+		pipeline.registerTagHandler("Include"_token, Detail::handleIncludeTag<Object, Mapping>);
+	}
+
+	template<class Object, class Mapping, String::Hasher loggerName = "CppUtils">
+	[[nodiscard]] inline auto buildPipeline(const Container::Tree::VariantNode<Type::Token, std::string>& node) -> Pipeline<Object>
+	{
+		auto pipeline = Pipeline<Object>{};
+		registerStandardPipelineTags<Object, Mapping, loggerName>(pipeline);
+		pipeline.dispatchNode(node);
+		return pipeline;
+	}
+
+	template<class Object, class Mapping, String::Hasher loggerName = "CppUtils">
+	[[nodiscard]] inline auto buildPipeline(std::string_view xmlSource) -> Pipeline<Object>
+	{
+		using namespace CppUtils::Language::Xml::Literals;
+
+		return buildPipeline<Object, Mapping, loggerName>(operator""_xml(std::ranges::data(xmlSource), std::ranges::size(xmlSource)));
+	}
+}

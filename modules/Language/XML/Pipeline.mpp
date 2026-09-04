@@ -1,0 +1,243 @@
+export module CppUtils.Language.Xml.Pipeline;
+
+import std;
+import CppUtils.Type;
+import CppUtils.Type.Specialization;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.Language.Xml;
+import CppUtils.Language.CSV.Mapping;
+
+export namespace CppUtils::Language::Xml
+{
+	template<class Item, class... SupportedVariables>
+	struct Pipeline final
+	{
+		using Stage = std::function<std::optional<Item>(Item)>;
+		using ErrorHandler = std::function<void(const CppUtils::Language::CSV::RejectEntry& error)>;
+		using TagHandler = std::function<void(const Container::Tree::VariantNode<Type::Token, std::string>& node, Pipeline<Item, SupportedVariables...>& pipeline)>;
+		using VariableValue = std::conditional_t<
+			sizeof...(SupportedVariables) == 0,
+			std::variant<bool, std::int64_t, double, std::string>,
+			std::variant<SupportedVariables...>>;
+
+		struct Context final
+		{
+			std::vector<ErrorHandler> rejectHandlers;
+			std::unordered_map<Type::Token, ErrorHandler> namedRejectHandlers;
+			std::unordered_map<Type::Token, std::function<void(const Item&)>> callFunctions;
+			std::unordered_map<Type::Token, VariableValue> variables;
+
+			auto routeError(const CppUtils::Language::CSV::RejectEntry& error) const -> void
+			{
+				for (const auto& handler : rejectHandlers)
+					handler(error);
+			}
+
+			auto routeError(std::string rawLine, std::string reason) const -> void
+			{
+				routeError(CppUtils::Language::CSV::RejectEntry{
+					.rawLine = std::move(rawLine),
+					.reason = std::move(reason)});
+			}
+		};
+
+		std::vector<Stage> stages;
+		std::shared_ptr<Context> context = std::make_shared<Context>();
+		std::unordered_map<Type::Token, TagHandler> tagRegistry;
+
+		auto registerTagHandler(Type::Token name, TagHandler handler) -> void
+		{
+			tagRegistry[name] = std::move(handler);
+		}
+
+		auto dispatchNode(const Container::Tree::VariantNode<Type::Token, std::string>& node) -> void
+		{
+			using namespace CppUtils::String::Literals;
+
+			if (const auto* token = std::get_if<Type::Token>(std::addressof(node.value)))
+			{
+				if (*token == "main"_token)
+				{
+					for (const auto& childNode : node.nodes)
+						dispatchNode(childNode);
+					return;
+				}
+				if (*token == "attributes"_token)
+					return;
+
+				if (const auto iterator = tagRegistry.find(*token); iterator != std::ranges::end(tagRegistry))
+				{
+					iterator->second(node, *this);
+					return;
+				}
+				throw std::runtime_error{"Unknown pipeline tag"};
+			}
+		}
+
+		auto dispatchNode(std::string_view xmlSource) -> void
+		{
+			using namespace CppUtils::Language::Xml::Literals;
+
+			dispatchNode(operator""_xml(std::ranges::data(xmlSource), std::ranges::size(xmlSource)));
+		}
+
+		template<class Value>
+		auto setVariable(Type::Token name, Value&& value) -> void
+		{
+			context->variables[name] = std::forward<Value>(value);
+		}
+
+		auto registerRejectHandler(ErrorHandler handler) -> void
+		{
+			context->rejectHandlers.push_back(std::move(handler));
+		}
+
+		auto registerRejectHandler(Type::Token name, ErrorHandler handler) -> void
+		{
+			context->namedRejectHandlers[name] = std::move(handler);
+		}
+
+		auto registerCall(Type::Token name, std::function<void(const Item&)> function) -> void
+		{
+			context->callFunctions[name] = std::move(function);
+		}
+
+		auto addStage(Stage stage) -> void
+		{
+			stages.push_back(std::move(stage));
+		}
+
+		template<std::ranges::input_range Range>
+		class View: public std::ranges::view_interface<View<Range>>
+		{
+			Range m_range;
+			std::shared_ptr<std::vector<Stage>> m_stages;
+			std::shared_ptr<Context> m_context;
+
+			class Iterator final
+			{
+			private:
+				using BaseIterator = std::ranges::iterator_t<Range>;
+				using BaseSentinel = std::ranges::sentinel_t<Range>;
+
+				BaseIterator m_current;
+				BaseSentinel m_end;
+				std::shared_ptr<std::vector<Stage>> m_stages;
+				std::shared_ptr<Context> m_context;
+				std::optional<Item> m_value = std::nullopt;
+
+				auto advance() -> void
+				{
+					m_value = std::nullopt;
+					for (; m_current != m_end; ++m_current)
+					{
+						auto currentItem = std::optional<Item>{};
+						auto element = *m_current;
+						if constexpr (Type::Specializes<decltype(element), std::expected>)
+						{
+							if (not element.has_value())
+							{
+								const auto& error = element.error();
+								if constexpr (std::same_as<std::remove_cvref_t<decltype(error)>, CppUtils::Language::CSV::RejectEntry>)
+									m_context->routeError(error);
+								else if constexpr (std::convertible_to<decltype(error), std::string>)
+									m_context->routeError("", std::move(element).error());
+								else
+									m_context->routeError("", "Processing error");
+								continue;
+							}
+							currentItem = std::move(element).value();
+						}
+						else
+							currentItem = std::move(element);
+
+						for (const auto& stage : *m_stages)
+						{
+							if (not currentItem.has_value())
+								break;
+							currentItem = stage(std::move(currentItem.value()));
+						}
+
+						if (currentItem.has_value())
+						{
+							m_value = std::move(currentItem);
+							return;
+						}
+					}
+				}
+
+			public:
+				using iterator_concept = std::input_iterator_tag;
+				using difference_type = std::ptrdiff_t;
+				using value_type = Item;
+
+				Iterator()
+				requires std::default_initializable<BaseIterator> and std::default_initializable<BaseSentinel>
+				= default;
+				Iterator(BaseIterator current, BaseSentinel end, std::shared_ptr<std::vector<Stage>> stages, std::shared_ptr<Context> context):
+					m_current{std::move(current)},
+					m_end{std::move(end)},
+					m_stages{std::move(stages)},
+					m_context{std::move(context)}
+				{
+					advance();
+				}
+
+				[[nodiscard]] auto operator*() const -> const Item&
+				{
+					return m_value.value();
+				}
+
+				auto operator++() -> Iterator&
+				{
+					++m_current;
+					advance();
+					return *this;
+				}
+
+				auto operator++(int) -> void
+				{
+					++(*this);
+				}
+
+				[[nodiscard]] auto operator==(std::default_sentinel_t) const noexcept -> bool
+				{
+					return not m_value.has_value();
+				}
+			};
+
+		public:
+			View()
+			requires std::default_initializable<Range>
+			= default;
+			View(Range range, std::shared_ptr<std::vector<Stage>> stages, std::shared_ptr<Context> context):
+				m_range{std::move(range)},
+				m_stages{std::move(stages)},
+				m_context{std::move(context)}
+			{}
+
+			[[nodiscard]] auto begin()
+			{
+				return Iterator{std::ranges::begin(m_range), std::ranges::end(m_range), m_stages, m_context};
+			}
+
+			[[nodiscard]] auto end() const noexcept
+			{
+				return std::default_sentinel;
+			}
+		};
+
+		template<std::ranges::input_range Range>
+		friend auto operator|(Range&& range, const Pipeline& self)
+		{
+			return View<std::remove_cvref_t<Range>>{std::forward<Range>(range), std::make_shared<std::vector<Stage>>(self.stages), self.context};
+		}
+
+		template<std::ranges::input_range Range>
+		friend auto operator|(Range&& range, Pipeline&& self)
+		{
+			return View<std::remove_cvref_t<Range>>{std::forward<Range>(range), std::make_shared<std::vector<Stage>>(std::move(self.stages)), std::move(self.context)};
+		}
+	};
+}

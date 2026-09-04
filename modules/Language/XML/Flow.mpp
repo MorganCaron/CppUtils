@@ -1,0 +1,400 @@
+export module CppUtils.Language.Xml.Flow;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.FileSystem;
+import CppUtils.FileSystem.Watcher;
+import CppUtils.FileSystem.FileStaging;
+import CppUtils.Thread.ThreadPool;
+import CppUtils.Thread.UniqueLocker;
+import CppUtils.Ranges.Parallel;
+import CppUtils.Language.Xml;
+import CppUtils.Language.Xml.Pipeline;
+import CppUtils.Language.Xml.Tags;
+import CppUtils.Language.CSV.Mapping;
+import CppUtils.Language.CSV.Parsing;
+import CppUtils.Logger;
+
+export namespace CppUtils::Language::Xml
+{
+	template<class Object, class Mapping>
+	class Flow final
+	{
+	public:
+		using TagHandler = std::function<void(const Container::Tree::VariantNode<Type::Token, std::string>& node, Flow<Object, Mapping>& flow)>;
+		using FormatProcessor = std::function<std::vector<Object>(const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath)>;
+
+		explicit Flow(Thread::ThreadPool& threadPool): m_threadPool{std::ref(threadPool)}
+		{}
+
+		auto registerTagHandler(Type::Token name, TagHandler handler) -> void
+		{
+			m_tagRegistry[name] = std::move(handler);
+		}
+
+		auto registerFormatProcessor(Type::Token formatToken, FormatProcessor processor) -> void
+		{
+			m_formatRegistry[formatToken] = std::move(processor);
+		}
+
+		auto dispatchNode(const Container::Tree::VariantNode<Type::Token, std::string>& node) -> void
+		{
+			using namespace CppUtils::String::Literals;
+
+			if (const auto* token = std::get_if<Type::Token>(std::addressof(node.value)))
+			{
+				if (*token == "main"_token or *token == "Flow"_token)
+				{
+					for (const auto& childNode : node.nodes)
+						dispatchNode(childNode);
+					return;
+				}
+				if (*token == "attributes"_token)
+					return;
+
+				if (const auto iterator = m_tagRegistry.find(*token); iterator != std::ranges::end(m_tagRegistry))
+				{
+					iterator->second(node, *this);
+					return;
+				}
+				throw std::runtime_error{"Unknown Flow tag"};
+			}
+		}
+
+		auto dispatchNode(std::string_view xmlSource) -> void
+		{
+			using namespace CppUtils::Language::Xml::Literals;
+			dispatchNode(operator""_xml(std::ranges::data(xmlSource), std::ranges::size(xmlSource)));
+		}
+
+		auto execute() -> std::vector<Object>
+		{
+			if (m_watch and m_sourceDirectory.has_value())
+			{
+				startWatching();
+				return {};
+			}
+
+			if (m_sourceDirectory.has_value())
+			{
+				auto processedObjects = std::vector<Object>{};
+				if (m_outputDirectory.has_value())
+					std::filesystem::create_directories(m_outputDirectory.value());
+
+				if (std::filesystem::exists(m_sourceDirectory.value()))
+					for (const auto& entry : std::filesystem::directory_iterator(m_sourceDirectory.value()))
+						if (entry.is_regular_file() and matchesPattern(entry.path()))
+						{
+							auto fileResults = processFileWithStaging(entry.path(), computeOutputFile(entry.path()));
+							processedObjects.insert(std::ranges::cend(processedObjects), std::ranges::begin(fileResults), std::ranges::end(fileResults));
+						}
+				return processedObjects;
+			}
+
+			if (m_sourceFile.has_value())
+				return processFileWithStaging(m_sourceFile.value(), computeOutputFile(m_sourceFile.value()));
+
+			return {};
+		}
+
+		auto startWatching() -> void
+		{
+			if (not m_sourceDirectory.has_value() or m_watcher)
+				return;
+
+			if (m_outputDirectory.has_value())
+				std::filesystem::create_directories(m_outputDirectory.value());
+
+			m_watcher = std::make_unique<FileSystem::Watcher>();
+			m_watcher->onEvent([this](auto, const std::filesystem::path& filePath) {
+				if (matchesPattern(filePath))
+					processFileWithStaging(filePath, computeOutputFile(filePath));
+			});
+			m_watcher->watch(m_sourceDirectory.value());
+		}
+
+		auto stopWatching() -> void
+		{
+			if (not m_watcher)
+				return;
+
+			m_watcher->stop();
+			m_watcher.reset();
+		}
+
+	private:
+		[[nodiscard]] auto matchesPattern(const std::filesystem::path& path) const -> bool
+		{
+			const auto filename = path.filename().string();
+			const auto matchesPattern = (m_pattern == "*" or filename.contains(m_pattern));
+			const auto matchesFormat = std::ranges::empty(m_sourceFormat) or path.extension() == ("." + m_sourceFormat);
+			return matchesPattern and matchesFormat;
+		}
+
+		[[nodiscard]] auto computeOutputFile(const std::filesystem::path& inputPath) const -> std::filesystem::path
+		{
+			if (m_outputDirectory.has_value())
+				return m_outputDirectory.value() / inputPath.filename();
+			return m_outputFile.value_or("");
+		}
+
+		[[nodiscard]] auto createFilePipeline(const std::filesystem::path& inputFilePath) const -> Pipeline<Object>
+		{
+			auto filePipeline = Pipeline<Object>{};
+			filePipeline.tagRegistry = m_pipeline.tagRegistry;
+			*filePipeline.context = *m_pipeline.context;
+
+			auto targetFile = std::optional<std::filesystem::path>{};
+			if (m_rejectedDirectory.has_value())
+			{
+				std::filesystem::create_directories(m_rejectedDirectory.value());
+				targetFile = m_rejectedDirectory.value() / (inputFilePath.stem().string() + "_rejected" + inputFilePath.extension().string());
+			}
+			else if (m_rejectedFile.has_value())
+				targetFile = m_rejectedFile.value();
+
+			if (targetFile.has_value())
+			{
+				auto lockedStream = std::make_shared<Thread::UniqueLocker<std::ofstream>>(targetFile.value(), std::ios::app);
+				{
+					auto accessor = lockedStream->access();
+					if (not accessor->is_open())
+						throw std::runtime_error{"Failed to open rejected file: " + targetFile.value().string()};
+				}
+
+				const auto separator = m_rejectedSeparator.value_or(m_sourceSeparator);
+				filePipeline.registerRejectHandler([lockedStream = std::move(lockedStream), separator](const CppUtils::Language::CSV::RejectEntry& error) {
+					auto accessor = lockedStream->access();
+					if (accessor->is_open())
+					{
+						const auto line = std::format("{}{}ERROR: {}\n", error.rawLine, separator, error.reason);
+						accessor->write(std::ranges::data(line), static_cast<std::streamsize>(std::ranges::size(line)));
+						accessor->flush();
+					}
+				});
+			}
+
+			for (const auto& node : m_pipelineNodes)
+				filePipeline.dispatchNode(node);
+
+			return filePipeline;
+		}
+
+		auto processCsvFile(const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath) -> std::vector<Object>
+		{
+			const auto effectiveChunkSize = m_chunkSize > 0 ? m_chunkSize : 100uz;
+
+			auto processedObjects = CppUtils::FileSystem::readLines(inputFilePath.string())
+				| CppUtils::Ranges::parallelChunk(m_threadPool.get(), effectiveChunkSize, [pipeline = createFilePipeline(inputFilePath), separator = m_sourceSeparator](std::vector<std::string> chunk) -> std::vector<Object> {
+				return chunk
+					| CppUtils::Language::CSV::parseLines(separator)
+					| CppUtils::Language::CSV::toStructSafe<Object, Mapping>()
+					| pipeline
+					| std::ranges::to<std::vector<Object>>();
+			});
+
+			if (not std::ranges::empty(outputFilePath))
+			{
+				processedObjects
+					| CppUtils::Language::CSV::toCSV<Object, Mapping>(m_outputSeparator)
+					| CppUtils::FileSystem::writeLines(outputFilePath.string());
+				return {};
+			}
+
+			return processedObjects | std::ranges::to<std::vector<Object>>();
+		}
+
+		auto processFile(const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath) -> std::vector<Object>
+		{
+			const auto formatToken = Type::hash(m_sourceFormat);
+			if (const auto iterator = m_formatRegistry.find(formatToken); iterator != std::ranges::end(m_formatRegistry))
+				return iterator->second(inputFilePath, outputFilePath);
+
+			Logger<"Flow">::template print<"error">("Unsupported source format: {}", m_sourceFormat);
+			return {};
+		}
+
+		auto processFileWithStaging(const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath) -> std::vector<Object>
+		{
+			if (not m_stagingDirectory.has_value())
+				return processFile(inputFilePath, outputFilePath);
+
+			auto stageResult = CppUtils::FileSystem::FileStaging::stage(
+				inputFilePath,
+				m_stagingDirectory.value(),
+				m_quarantineDirectory.value_or(""),
+				m_archiveDirectory.value_or(""));
+			if (not stageResult.has_value())
+			{
+				Logger<"Flow">::template print<"error">("Failed to stage file {}: {}", inputFilePath.string(), stageResult.error().message());
+				return {};
+			}
+
+			auto& staging = stageResult.value();
+			try
+			{
+				auto result = processFile(staging.stagedPath(), outputFilePath);
+				staging.complete();
+				return result;
+			}
+			catch (const std::exception& exception)
+			{
+				Logger<"Flow">::template print<"error">("Error processing file {}: {}", inputFilePath.string(), exception.what());
+				staging.abort();
+				return {};
+			}
+		}
+
+		Pipeline<Object> m_pipeline;
+
+		std::optional<std::filesystem::path> m_sourceFile;
+		std::optional<std::filesystem::path> m_sourceDirectory;
+		std::string m_sourceFormat = "csv";
+		std::string m_sourceSeparator = ";";
+		std::string m_pattern = "*";
+
+		std::optional<std::filesystem::path> m_outputFile;
+		std::optional<std::filesystem::path> m_outputDirectory;
+		std::string m_outputFormat = "csv";
+		std::string m_outputSeparator = ";";
+
+		std::optional<std::filesystem::path> m_rejectedFile;
+		std::optional<std::filesystem::path> m_rejectedDirectory;
+		std::optional<std::string> m_rejectedSeparator;
+
+		std::optional<std::filesystem::path> m_stagingDirectory;
+		std::optional<std::filesystem::path> m_archiveDirectory;
+		std::optional<std::filesystem::path> m_quarantineDirectory;
+
+		std::size_t m_chunkSize = 100;
+		std::reference_wrapper<Thread::ThreadPool> m_threadPool;
+		bool m_watch = false;
+
+		std::unique_ptr<FileSystem::Watcher> m_watcher;
+		std::unordered_map<Type::Token, TagHandler> m_tagRegistry;
+		std::unordered_map<Type::Token, FormatProcessor> m_formatRegistry;
+		std::vector<Container::Tree::VariantNode<Type::Token, std::string>> m_pipelineNodes;
+
+	public:
+		template<String::Hasher loggerName = "CppUtils">
+		auto registerStandardTags() -> void
+		{
+			using namespace CppUtils::String::Literals;
+			registerStandardPipelineTags<Object, Mapping, loggerName>(m_pipeline);
+
+			registerFormatProcessor("csv"_token, [this](const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath) {
+				return processCsvFile(inputFilePath, outputFilePath);
+			});
+
+			registerTagHandler("Flow"_token, [](const auto& node, auto& self) {
+				for (const auto& childNode : node.nodes)
+					self.dispatchNode(childNode);
+			});
+
+			registerTagHandler("Input"_token, [](const auto& node, auto& self) {
+				if (auto filePath = extractAttribute(node, "file"_token))
+					self.m_sourceFile = filePath.value();
+				if (auto directoryPath = extractAttribute(node, "directory"_token))
+					self.m_sourceDirectory = directoryPath.value();
+				if (auto format = extractAttribute(node, "format"_token))
+					self.m_sourceFormat = format.value();
+				if (auto separator = extractAttribute(node, "separator"_token))
+					self.m_sourceSeparator = separator.value();
+				if (auto pattern = extractAttribute(node, "pattern"_token))
+					self.m_pattern = pattern.value();
+				if (auto watch = extractAttribute(node, "watch"_token))
+					self.m_watch = (watch.value() == "true" or watch.value() == "1");
+				if (auto staging = extractAttribute(node, "staging"_token))
+					self.m_stagingDirectory = staging.value();
+				if (auto archive = extractAttribute(node, "archive"_token))
+					self.m_archiveDirectory = archive.value();
+				if (auto quarantine = extractAttribute(node, "quarantine"_token))
+					self.m_quarantineDirectory = quarantine.value();
+			});
+
+			registerTagHandler("Output"_token, [](const auto& node, auto& self) {
+				if (auto filePath = extractAttribute(node, "file"_token))
+					self.m_outputFile = filePath.value();
+				if (auto directoryPath = extractAttribute(node, "directory"_token))
+					self.m_outputDirectory = directoryPath.value();
+				if (auto format = extractAttribute(node, "format"_token))
+					self.m_outputFormat = format.value();
+				if (auto separator = extractAttribute(node, "separator"_token))
+					self.m_outputSeparator = separator.value();
+			});
+
+			registerTagHandler("Rejected"_token, [](const auto& node, auto& self) {
+				if (auto filePath = extractAttribute(node, "file"_token))
+					self.m_rejectedFile = filePath.value();
+				if (auto directoryPath = extractAttribute(node, "directory"_token))
+					self.m_rejectedDirectory = directoryPath.value();
+				if (auto separator = extractAttribute(node, "separator"_token))
+					self.m_rejectedSeparator = separator.value();
+
+				if (extractAttribute(node, "handler"_token).has_value())
+					self.m_pipeline.dispatchNode(node);
+			});
+
+			registerTagHandler("Pipeline"_token, [](const auto& node, auto& self) {
+				if (auto chunkSizeString = extractAttribute(node, "chunkSize"_token))
+				{
+					auto chunkSize = 100uz;
+					std::from_chars(std::ranges::data(chunkSizeString.value()), std::ranges::data(chunkSizeString.value()) + std::ranges::size(chunkSizeString.value()), chunkSize);
+					self.m_chunkSize = chunkSize;
+				}
+				self.m_pipelineNodes.push_back(node);
+			});
+
+			registerTagHandler("Scope"_token, [](const auto& node, auto& self) {
+				for (const auto& childNode : node.nodes)
+					self.dispatchNode(childNode);
+			});
+
+			registerTagHandler("Include"_token, [](const auto& node, auto& self) {
+				using namespace CppUtils::Language::Xml::Literals;
+
+				const auto filePath = extractAttribute(node, "file"_token);
+				if (not filePath.has_value())
+					throw std::runtime_error{"<Include> tag missing required 'file' attribute"};
+
+				const auto path = std::filesystem::path{filePath.value()};
+				if (not std::filesystem::exists(path))
+					throw std::runtime_error{"Include file not found: " + path.string()};
+
+				const auto content = CppUtils::FileSystem::String::read(path);
+				const auto subTree = operator""_xml(std::ranges::data(content), std::ranges::size(content));
+				self.dispatchNode(subTree);
+			});
+		}
+	};
+
+	template<class Object, class Mapping, String::Hasher loggerName = "CppUtils">
+	[[nodiscard]] inline auto buildFlow(const Container::Tree::VariantNode<Type::Token, std::string>& node, Thread::ThreadPool& threadPool) -> Flow<Object, Mapping>
+	{
+		auto flow = Flow<Object, Mapping>{threadPool};
+		flow.template registerStandardTags<loggerName>();
+		flow.dispatchNode(node);
+		return flow;
+	}
+
+	template<class Object, class Mapping, String::Hasher loggerName = "CppUtils">
+	[[nodiscard]] inline auto buildFlow(std::string_view xmlSource, Thread::ThreadPool& threadPool) -> Flow<Object, Mapping>
+	{
+		using namespace CppUtils::Language::Xml::Literals;
+		return buildFlow<Object, Mapping, loggerName>(operator""_xml(std::ranges::data(xmlSource), std::ranges::size(xmlSource)), threadPool);
+	}
+
+	template<class Object, class Mapping, String::Hasher loggerName = "CppUtils">
+	inline auto executeFlow(const Container::Tree::VariantNode<Type::Token, std::string>& node, Thread::ThreadPool& threadPool) -> std::vector<Object>
+	{
+		return buildFlow<Object, Mapping, loggerName>(node, threadPool).execute();
+	}
+
+	template<class Object, class Mapping, String::Hasher loggerName = "CppUtils">
+	inline auto executeFlow(std::string_view xmlSource, Thread::ThreadPool& threadPool) -> std::vector<Object>
+	{
+		return buildFlow<Object, Mapping, loggerName>(xmlSource, threadPool).execute();
+	}
+}

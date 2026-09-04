@@ -47,6 +47,7 @@ export import CppUtils.UnitTests.Language.Parameters.ParametersLexer;
 export import CppUtils.UnitTests.Language.Lexer.Grammar.LowLevelGrammar;
 export import CppUtils.UnitTests.Language.Lexer.Grammar.HighLevelGrammar;
 export import CppUtils.UnitTests.Language.Markdown.MarkdownLexer;
+export import CppUtils.UnitTests.Language.Xml.Pipeline;
 export import CppUtils.UnitTests.Language.Xml.XmlLexer;
 export import CppUtils.UnitTests.Language.VirtualMachine;
 export import CppUtils.UnitTests.Log.FileSink;

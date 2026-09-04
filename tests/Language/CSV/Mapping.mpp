@@ -111,7 +111,7 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 		}
 	};
 
-	auto _ = TestSuite{"Language/CSV/Mapping", {"FileSystem/Directory", "Language/CSV/Parsing"}, [](TestSuite& suite) {
+	auto _ = TestSuite{"Language/CSV/Mapping", {"FileSystem/Directory", "FileSystem/File", "Language/CSV/Parsing"}, [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::Language::CSV::Literals;
 
@@ -231,6 +231,31 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 			suite.expect(not result.has_value());
 			suite.expectEqual(result.error().rawLine, "foo;bar"sv);
 			suite.expect(not std::ranges::empty(result.error().reason));
+		});
+
+		suite.addTest("toStructSafe with Ranges::routeErrors", [&] {
+			const auto inputCSVLines = R"(
+				foo;bar;42;-1;3.14
+				bad;line;not_num;0;0.0
+				hello;world;100;-200;1.5
+			)"_csv;
+
+			auto capturedErrors = std::vector<CppUtils::Language::CSV::RejectEntry>{};
+
+			const auto outputObjects = inputCSVLines
+				| CppUtils::Language::CSV::toStructSafe<Object, ObjectMapping>()
+				| CppUtils::Ranges::routeErrors([&capturedErrors](const CppUtils::Language::CSV::RejectEntry& error) {
+				capturedErrors.push_back(error);
+			})
+				| std::ranges::to<std::vector<Object>>();
+
+			suite.expectEqual(std::ranges::size(outputObjects), 2uz);
+			suite.expectEqual(outputObjects[0], Object{"foo", "bar", 42, -1, 3.14f});
+			suite.expectEqual(outputObjects[1], Object{"hello", "world", 100, -200, 1.5f});
+
+			suite.expectEqual(std::ranges::size(capturedErrors), 1uz);
+			suite.expect(capturedErrors[0].rawLine.contains("bad;line;not_num;0;0.0"));
+			suite.expect(not std::ranges::empty(capturedErrors[0].reason));
 		});
 
 		suite.addTest("routeRejected", [&] {

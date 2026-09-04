@@ -5,7 +5,7 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Language::JSON::Parsing
 {
-	auto _ = TestSuite{"Language/JSON/Parsing", {}, [](TestSuite& suite) {
+	auto _ = TestSuite{"Language/JSON/Parsing", {"Language/Json/JsonLexer"}, [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::Language::JSON::Literals;
 

@@ -178,4 +178,83 @@ namespace CppUtils::UnitTest::Type::Mapping
 			});
 		}};
 	}
+
+	namespace ToStruct
+	{
+		using namespace CppUtils::String::Literals;
+
+		struct User final
+		{
+			std::string name;
+			std::string email;
+			int score;
+			auto operator==(const User&) const -> bool = default;
+		};
+
+		struct EligibleLoyaltyMember final
+		{
+			std::string fullName;
+			std::string email;
+			int loyaltyPoints;
+			auto operator==(const EligibleLoyaltyMember&) const -> bool = default;
+		};
+
+		using UserToEligibleLoyaltyMemberMapping = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<&EligibleLoyaltyMember::fullName, &User::name>,
+			CppUtils::Type::Pair<&EligibleLoyaltyMember::email, &User::email>,
+			CppUtils::Type::Pair<&EligibleLoyaltyMember::loyaltyPoints, &User::score>>;
+
+		using UserMapping = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<"Name"_token, &User::name>,
+			CppUtils::Type::Pair<"Email"_token, &User::email>,
+			CppUtils::Type::Pair<"Score"_token, &User::score>>;
+
+		using LoyaltyMemberMapping = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<"Name"_token, &EligibleLoyaltyMember::fullName>,
+			CppUtils::Type::Pair<"Email"_token, &EligibleLoyaltyMember::email>,
+			CppUtils::Type::Pair<"Score"_token, &EligibleLoyaltyMember::loyaltyPoints>>;
+
+		auto _ = TestSuite{"Type/Mapping/toStruct", {}, [](auto& suite) {
+			suite.addTest("Direct member pointer mapping", [&] {
+				const auto user = User{"Alice", "alice@example.com", 150};
+				const auto member = CppUtils::Type::toStruct<EligibleLoyaltyMember, UserToEligibleLoyaltyMemberMapping>(user);
+				suite.expectEqual(member, EligibleLoyaltyMember{"Alice", "alice@example.com", 150});
+			});
+
+			suite.addTest("Token bridge mapping", [&] {
+				const auto user = User{"Bob", "bob@example.com", 300};
+				const auto member = CppUtils::Type::toStruct<EligibleLoyaltyMember, LoyaltyMemberMapping, UserMapping>(user);
+				suite.expectEqual(member, EligibleLoyaltyMember{"Bob", "bob@example.com", 300});
+			});
+		}};
+
+		struct Point2D final
+		{
+			int x;
+			int y;
+			auto operator==(const Point2D&) const -> bool = default;
+		};
+
+		struct ScreenPosition final
+		{
+			int horizontal;
+			int vertical;
+			auto operator==(const ScreenPosition&) const -> bool = default;
+		};
+
+		using PointToScreenPositionMapping = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<&ScreenPosition::horizontal, &Point2D::x>,
+			CppUtils::Type::Pair<&ScreenPosition::vertical, &Point2D::y>>;
+
+		using PointMapping = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<"X"_token, &Point2D::x>,
+			CppUtils::Type::Pair<"Y"_token, &Point2D::y>>;
+
+		using ScreenPositionMapping = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<"X"_token, &ScreenPosition::horizontal>,
+			CppUtils::Type::Pair<"Y"_token, &ScreenPosition::vertical>>;
+
+		static_assert(CppUtils::Type::toStruct<ScreenPosition, PointToScreenPositionMapping>(Point2D{10, 20}) == ScreenPosition{10, 20});
+		static_assert(CppUtils::Type::toStruct<ScreenPosition, ScreenPositionMapping, PointMapping>(Point2D{10, 20}) == ScreenPosition{10, 20});
+	}
 }

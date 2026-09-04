@@ -1,0 +1,880 @@
+export module CppUtils.UnitTests.Language.Xml.Pipeline;
+
+import std;
+import CppUtils;
+
+namespace CppUtils
+{
+	template<>
+	inline auto configureLogger<"CustomPipelineLogger">(Execution::EventQueue& eventQueue) -> void
+	{
+		eventQueue.subscribe<"debug">([](const std::string& message) {
+			std::println("[CustomPipelineLogger] {}", message);
+		});
+	}
+}
+
+namespace CppUtils::UnitTest::Language::Xml::Pipeline
+{
+	using namespace CppUtils::String::Literals;
+	using namespace CppUtils::Language::CSV::Literals;
+
+	struct User final
+	{
+		std::string name;
+		std::string email;
+		std::size_t age;
+		int score;
+		float rating;
+
+		auto operator==(const User&) const -> bool = default;
+
+		auto applyBonus() -> void
+		{
+			score += 50;
+		}
+
+		[[nodiscard]] constexpr auto isAdult() const -> bool
+		{
+			return age >= 18;
+		}
+	};
+
+	constexpr auto isAdult(const User& user) -> bool
+	{
+		return user.age >= 18;
+	}
+
+	constexpr auto applyBonus(User& user) -> void
+	{
+		user.score += 50;
+	}
+
+	using CSVMapping = CppUtils::Type::Mapping<
+		CppUtils::Type::Pair<"Name"_token, "A"_excelColumn>,
+		CppUtils::Type::Pair<"Email"_token, "B"_excelColumn>,
+		CppUtils::Type::Pair<"Age"_token, "C"_excelColumn>,
+		CppUtils::Type::Pair<"Score"_token, "D"_excelColumn>,
+		CppUtils::Type::Pair<"Rating"_token, "E"_excelColumn>>;
+
+	using StructMapping = CppUtils::Type::Mapping<
+		CppUtils::Type::Pair<"Name"_token, &User::name>,
+		CppUtils::Type::Pair<"Email"_token, &User::email>,
+		CppUtils::Type::Pair<"Age"_token, &User::age>,
+		CppUtils::Type::Pair<"Score"_token, &User::score>,
+		CppUtils::Type::Pair<"Rating"_token, &User::rating>>;
+
+	using MemberFunctionMapping = CppUtils::Type::Mapping<
+		CppUtils::Type::Pair<"ApplyBonus"_token, &User::applyBonus>,
+		CppUtils::Type::Pair<"IsAdult"_token, &User::isAdult>>;
+
+	using FreeFunctionMapping = CppUtils::Type::Mapping<
+		CppUtils::Type::Pair<"ApplyBonus"_token, static_cast<void (*)(User&)>(&applyBonus)>,
+		CppUtils::Type::Pair<"IsAdult"_token, static_cast<bool (*)(const User&)>(&isAdult)>>;
+
+	struct UserMapping final
+	{
+		using CSVMapping = CSVMapping;
+		using StructMapping = StructMapping;
+		using FunctionMapping = MemberFunctionMapping;
+	};
+
+	struct UserFreeFunctionMapping final
+	{
+		using CSVMapping = CSVMapping;
+		using StructMapping = StructMapping;
+		using FunctionMapping = FreeFunctionMapping;
+	};
+
+	auto _ = TestSuite{"Language/Xml/Pipeline",
+		{"Language/Xml/XmlLexer",
+			"Language/CSV/Mapping",
+			"Language/CSV/Parsing",
+			"FileSystem/Directory",
+			"FileSystem/File",
+			"FileSystem/FileStaging",
+			"FileSystem/Watcher",
+			"Ranges/Parallel"},
+		[](TestSuite& suite) {
+		using namespace std::literals;
+		using namespace std::chrono_literals;
+		using namespace CppUtils::Language::Xml::Literals;
+
+		suite.addTest("Empty pipeline", [&] {
+			const auto xmlTree = R"(
+			<Pipeline>
+			</Pipeline>
+			)"_xml;
+
+			auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlTree);
+
+			const auto inputUsers = std::vector<User>{
+				User{"Alice", "alice@example.com", 25, 100, 4.5f},
+				User{"Bob", "bob@example.com", 15, 50, 3.0f}};
+
+			const auto outputUsers = inputUsers
+				| pipeline
+				| std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(outputUsers, inputUsers);
+		});
+
+		suite.addTest("Operation value", [&] {
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(R"(
+			<Pipeline>
+				<Operation column="Score" operator="+=" value="20"/>
+			</Pipeline>
+			)"sv);
+
+			const auto inputUsers = std::vector<User>{User{"Alice", "alice@example.com", 25, 100, 4.5f}};
+			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+			suite.expectEqual(outputUsers[0].score, 120);
+		});
+
+		suite.addTest("Operation variable", [&] {
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(R"(
+			<Pipeline>
+				<Let name="Bonus" value="35"/>
+				<Operation column="Score" operator="+=" variable="Bonus"/>
+			</Pipeline>
+			)"sv);
+
+			const auto inputUsers = std::vector<User>{User{"Alice", "alice@example.com", 25, 100, 4.5f}};
+			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+			suite.expectEqual(outputUsers[0].score, 135);
+		});
+
+		suite.addTest("Filter value", [&] {
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(R"(
+			<Pipeline>
+				<Filter column="Age" operator=">=" value="18"/>
+			</Pipeline>
+			)"sv);
+
+			const auto inputUsers = std::vector<User>{
+				User{"Alice", "alice@example.com", 25, 100, 4.5f},
+				User{"Bob", "bob@example.com", 15, 50, 3.0f},
+				User{"Charlie", "charlie@example.com", 18, 80, 4.0f}};
+			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 2uz);
+			suite.expectEqual(outputUsers[0].name, "Alice");
+			suite.expectEqual(outputUsers[1].name, "Charlie");
+		});
+
+		suite.addTest("Filter variable", [&] {
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(R"(
+			<Pipeline>
+				<Let name="MinAge" value="18"/>
+				<Filter column="Age" operator=">=" variable="MinAge"/>
+			</Pipeline>
+			)"sv);
+
+			const auto inputUsers = std::vector<User>{
+				User{"Alice", "alice@example.com", 25, 100, 4.5f},
+				User{"Bob", "bob@example.com", 15, 50, 3.0f}};
+			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+			suite.expectEqual(outputUsers[0].name, "Alice");
+		});
+
+		suite.addTest("Filter predicate", [&] {
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(R"(
+			<Pipeline>
+				<Filter predicate="IsAdult"/>
+			</Pipeline>
+			)"sv);
+
+			const auto inputUsers = std::vector<User>{
+				User{"Alice", "alice@example.com", 25, 100, 4.5f},
+				User{"Bob", "bob@example.com", 15, 50, 3.0f}};
+			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+			suite.expectEqual(outputUsers[0].name, "Alice");
+		});
+
+		suite.addTest("Call member function", [&] {
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(R"(
+			<Pipeline>
+				<Call function="ApplyBonus"/>
+			</Pipeline>
+			)"sv);
+
+			const auto inputUsers = std::vector<User>{User{"Alice", "alice@example.com", 25, 100, 4.5f}};
+			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+			suite.expectEqual(outputUsers[0].score, 150);
+		});
+
+		suite.addTest("Call free function", [&] {
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserFreeFunctionMapping>(R"(
+			<Pipeline>
+				<Call function="ApplyBonus"/>
+			</Pipeline>
+			)"sv);
+
+			const auto inputUsers = std::vector<User>{User{"Alice", "alice@example.com", 25, 100, 4.5f}};
+			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+			suite.expectEqual(outputUsers[0].score, 150);
+		});
+
+		suite.addTest("Call lambda", [&] {
+			auto pipeline = CppUtils::Language::Xml::Pipeline<User>{};
+			CppUtils::Language::Xml::registerStandardPipelineTags<User, UserMapping>(pipeline);
+
+			auto called = false;
+			pipeline.registerCall("TrackUser"_token, [&called](const User&) {
+				called = true;
+			});
+
+			pipeline.dispatchNode(R"(
+			<Pipeline>
+				<Call function="TrackUser"/>
+			</Pipeline>
+			)"sv);
+
+			const auto inputUsers = std::vector<User>{User{"Alice", "alice@example.com", 25, 100, 4.5f}};
+			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+			suite.expect(called);
+		});
+
+		suite.addTest("Validate and Rejected", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto rejectedPath = directory / "rejected.csv";
+				const auto xmlSource = std::format(R"(
+				<Pipeline>
+					<Rejected file="{}"/>
+					<Validate column="Age" operator=">=" value="18" error="Too young"/>
+				</Pipeline>
+				)",
+					rejectedPath.string());
+
+				const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
+
+				const auto inputUsers = std::vector<User>{
+					User{"Alice", "alice@example.com", 25, 100, 4.5f},
+					User{"Bob", "bob@example.com", 15, 50, 3.0f}};
+				const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
+
+				suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+				suite.expectEqual(outputUsers[0].name, "Alice");
+
+				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
+				suite.expect(rejectedContent.contains("Too young"));
+			}};
+		});
+
+		suite.addTest("Rejected handler callback", [&] {
+			auto pipeline = CppUtils::Language::Xml::Pipeline<User>{};
+			CppUtils::Language::Xml::registerStandardPipelineTags<User, UserMapping>(pipeline);
+
+			auto rejectedErrors = std::vector<std::string>{};
+			pipeline.registerRejectHandler("CustomHandler"_token, [&rejectedErrors](const auto& entry) {
+				rejectedErrors.push_back(entry.reason);
+			});
+
+			pipeline.dispatchNode(R"(
+			<Pipeline>
+				<Rejected handler="CustomHandler"/>
+				<Validate column="Age" operator=">=" value="18" error="Too young"/>
+			</Pipeline>
+			)"sv);
+
+			const auto inputUsers = std::vector<User>{User{"Bob", "bob@example.com", 15, 50, 3.0f}};
+			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 0uz);
+			suite.expectEqual(std::ranges::size(rejectedErrors), 1uz);
+			suite.expectEqual(rejectedErrors[0], "Too young");
+		});
+
+		suite.addTest("executeFlow", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto inputPath = directory / "input_users.csv";
+				const auto outputPath = directory / "output_users.csv";
+				const auto rejectedPath = directory / "rejected_users.csv";
+
+				CppUtils::FileSystem::String::write(inputPath, R"(Alice;alice@example.com;25;100;4.5
+Invalid;bad_line;NaN;0;0.0
+Bob;bob@example.com;15;50;3.0
+Charlie;charlie@example.com;30;80;4.8)"sv);
+
+				const auto xmlSource = std::format(R"(
+				<Flow>
+					<Input file="{}" format="csv" separator=";"/>
+					<Rejected file="{}"/>
+					<Pipeline>
+						<Validate column="Age" operator=">=" value="18" error="Underage user"/>
+						<Operation column="Score" operator="+=" value="15"/>
+					</Pipeline>
+					<Output file="{}" format="csv" separator=";"/>
+				</Flow>
+				)",
+					inputPath.string(),
+					rejectedPath.string(),
+					outputPath.string());
+
+				auto threadPool = CppUtils::Thread::ThreadPool{2};
+				CppUtils::Language::Xml::executeFlow<User, UserMapping>(xmlSource, threadPool);
+
+				const auto outputContent = CppUtils::FileSystem::String::read(outputPath);
+				const auto outputLines = outputContent
+					| std::views::split('\n')
+					| std::views::transform([](auto&& range) { return std::string_view{range}; })
+					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
+					| std::ranges::to<std::vector<std::string_view>>();
+
+				suite.expectEqual(std::ranges::size(outputLines), 2uz);
+				suite.expectEqual(outputLines[0], "Alice;alice@example.com;25;115;4.5");
+				suite.expectEqual(outputLines[1], "Charlie;charlie@example.com;30;95;4.8");
+
+				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
+				const auto rejectedLines = rejectedContent
+					| std::views::split('\n')
+					| std::views::transform([](auto&& range) { return std::string_view{range}; })
+					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
+					| std::ranges::to<std::vector<std::string_view>>();
+
+				suite.expectEqual(std::ranges::size(rejectedLines), 2uz);
+				suite.expect(rejectedContent.contains("Invalid;bad_line;NaN;0;0.0"));
+				suite.expect(rejectedContent.contains("Underage user"));
+			}};
+		});
+
+		suite.addTest("executeFlow parallelChunk", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto inputPath = directory / "input_users.csv";
+				const auto outputPath = directory / "output_users.csv";
+				const auto rejectedPath = directory / "rejected_users.csv";
+
+				CppUtils::FileSystem::String::write(inputPath, R"(Alice;alice@example.com;25;100;4.5
+Invalid;bad_line;NaN;0;0.0
+Bob;bob@example.com;15;50;3.0
+Charlie;charlie@example.com;30;80;4.8
+David;david@example.com;22;90;4.0
+Emma;emma@example.com;17;40;2.5
+Frank;frank@example.com;35;70;3.5)"sv);
+
+				const auto xmlSource = std::format(R"(
+				<Flow>
+					<Input file="{}" format="csv" separator=";"/>
+					<Rejected file="{}"/>
+					<Pipeline chunkSize="2">
+						<Validate column="Age" operator=">=" value="18" error="Underage user"/>
+						<Operation column="Score" operator="+=" value="10"/>
+					</Pipeline>
+					<Output file="{}" format="csv" separator=";"/>
+				</Flow>
+				)",
+					inputPath.string(),
+					rejectedPath.string(),
+					outputPath.string());
+
+				auto threadPool = CppUtils::Thread::ThreadPool{4};
+				CppUtils::Language::Xml::executeFlow<User, UserMapping>(xmlSource, threadPool);
+
+				const auto outputContent = CppUtils::FileSystem::String::read(outputPath);
+				const auto outputLines = outputContent
+					| std::views::split('\n')
+					| std::views::transform([](auto&& range) { return std::string_view{range}; })
+					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
+					| std::ranges::to<std::vector<std::string_view>>();
+
+				suite.expectEqual(std::ranges::size(outputLines), 4uz);
+				suite.expectEqual(outputLines[0], "Alice;alice@example.com;25;110;4.5");
+				suite.expectEqual(outputLines[1], "Charlie;charlie@example.com;30;90;4.8");
+				suite.expectEqual(outputLines[2], "David;david@example.com;22;100;4");
+				suite.expectEqual(outputLines[3], "Frank;frank@example.com;35;80;3.5");
+
+				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
+				suite.expect(rejectedContent.contains("Invalid;bad_line;NaN;0;0.0"));
+				suite.expect(rejectedContent.contains("Underage user"));
+			}};
+		});
+
+		suite.addTest("executeFlow FileStaging", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto inputDir = directory / "input";
+				const auto stagingDir = directory / "staging";
+				const auto archiveDir = directory / "archive";
+				const auto quarantineDir = directory / "quarantine";
+				const auto outputDir = directory / "output";
+
+				std::filesystem::create_directories(inputDir);
+				std::filesystem::create_directories(stagingDir);
+				std::filesystem::create_directories(archiveDir);
+				std::filesystem::create_directories(quarantineDir);
+				std::filesystem::create_directories(outputDir);
+
+				const auto inputFile = inputDir / "input_users.csv";
+				const auto outputFile = outputDir / "output_users.csv";
+
+				CppUtils::FileSystem::String::write(inputFile, R"(Alice;alice@example.com;25;100;4.5
+Bob;bob@example.com;30;80;4.8)"sv);
+
+				const auto xmlSource = std::format(R"(
+				<Flow>
+					<Input file="{}" format="csv" separator=";" staging="{}" archive="{}" quarantine="{}"/>
+					<Pipeline>
+						<Operation column="Score" operator="+=" value="5"/>
+					</Pipeline>
+					<Output file="{}" format="csv" separator=";"/>
+				</Flow>
+				)",
+					inputFile.string(),
+					stagingDir.string(),
+					archiveDir.string(),
+					quarantineDir.string(),
+					outputFile.string());
+
+				auto threadPool = CppUtils::Thread::ThreadPool{2};
+				CppUtils::Language::Xml::executeFlow<User, UserMapping>(xmlSource, threadPool);
+
+				suite.expect(not std::filesystem::exists(inputFile));
+				suite.expect(std::filesystem::exists(outputFile));
+
+				const auto archiveFiles = std::ranges::count_if(
+					std::filesystem::directory_iterator{archiveDir},
+					[](const auto& entry) { return entry.is_regular_file(); });
+				suite.expectEqual(archiveFiles, 1);
+
+				const auto outputContent = CppUtils::FileSystem::String::read(outputFile);
+				suite.expect(outputContent.contains("Alice;alice@example.com;25;105;4.5"));
+				suite.expect(outputContent.contains("Bob;bob@example.com;30;85;4.8"));
+			}};
+		});
+
+		suite.addTest("Flow Watcher", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto inputDir = directory / "input";
+				const auto outputDir = directory / "output";
+
+				std::filesystem::create_directories(inputDir);
+				std::filesystem::create_directories(outputDir);
+
+				const auto xmlSource = std::format(R"(
+				<Flow>
+					<Input directory="{}" format="csv" separator=";" watch="true"/>
+					<Pipeline>
+						<Operation column="Score" operator="+=" value="20"/>
+					</Pipeline>
+					<Output directory="{}" format="csv" separator=";"/>
+				</Flow>
+				)",
+					inputDir.string(),
+					outputDir.string());
+
+				auto threadPool = CppUtils::Thread::ThreadPool{2};
+				auto flow = CppUtils::Language::Xml::buildFlow<User, UserMapping>(xmlSource, threadPool);
+				flow.startWatching();
+
+				const auto incomingFile = inputDir / "incoming.csv";
+				CppUtils::FileSystem::String::write(incomingFile, "Alice;alice@example.com;25;100;4.5\n");
+
+				const auto expectedOutputFile = outputDir / "incoming.csv";
+				for (auto iteration = 0uz; iteration < 50uz and not std::filesystem::exists(expectedOutputFile); ++iteration)
+					std::this_thread::sleep_for(20ms);
+
+				flow.stopWatching();
+
+				suite.expect(std::filesystem::exists(expectedOutputFile));
+				const auto content = CppUtils::FileSystem::String::read(expectedOutputFile);
+				suite.expect(content.contains("Alice;alice@example.com;25;120;4.5"));
+			}};
+		});
+
+		suite.addTest("_csv literal", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto rejectedPath = directory / "rejected.csv";
+				const auto xmlSource = std::format(R"(
+				<Pipeline>
+					<Rejected file="{}"/>
+					<Filter column="Age" operator=">" value="18"/>
+					<Operation column="Score" operator="+=" value="10"/>
+				</Pipeline>
+				)",
+					rejectedPath.string());
+
+				const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
+
+				const auto inputCSVLines = R"(
+					Alice;alice@example.com;25;100;4.5
+					Invalid;corrupted_age;NaN;0;0.0
+					Bob;bob@example.com;15;50;3.0
+					Charlie;charlie@example.com;30;80;4.8
+				)"_csv;
+
+				const auto outputUsers = inputCSVLines
+					| CppUtils::Language::CSV::toStructSafe<User, UserMapping>()
+					| pipeline
+					| std::ranges::to<std::vector<User>>();
+
+				suite.expectEqual(std::ranges::size(outputUsers), 2uz);
+				suite.expectEqual(outputUsers[0], User{"Alice", "alice@example.com", 25, 110, 4.5f});
+				suite.expectEqual(outputUsers[1], User{"Charlie", "charlie@example.com", 30, 90, 4.8f});
+
+				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
+				suite.expect(rejectedContent.contains("Invalid;corrupted_age;NaN;0;0.0"));
+			}};
+		});
+
+		suite.addTest("Custom tag", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto rejectedPath = directory / "rejected.csv";
+
+				const auto xmlSource = std::format(R"(
+				<Pipeline>
+					<Rejected file="{}"/>
+					<Prefix value="Dr. "/>
+					<Filter column="Score" operator="==" value="100"/>
+				</Pipeline>
+				)",
+					rejectedPath.string());
+
+				auto pipeline = CppUtils::Language::Xml::Pipeline<User>{};
+				CppUtils::Language::Xml::registerStandardPipelineTags<User, UserMapping>(pipeline);
+
+				pipeline.registerTagHandler("Prefix"_token, [](const auto& node, auto& targetPipeline) {
+					const auto prefix = CppUtils::Language::Xml::extractAttribute(node, "value"_token).value_or("Mr. ");
+					targetPipeline.addStage([prefix](User user) -> std::optional<User> {
+						user.name = prefix + user.name;
+						return user;
+					});
+				});
+
+				pipeline.dispatchNode(xmlSource);
+
+				const auto inputCSVLines = R"(
+					Alice;alice@example.com;25;100;4.5
+					Invalid;corrupt@example.com;NaN;0;0.0
+					Bob;bob@example.com;30;50;3.0
+				)"_csv;
+
+				const auto outputUsers = inputCSVLines
+					| CppUtils::Language::CSV::toStructSafe<User, UserMapping>()
+					| pipeline
+					| std::ranges::to<std::vector<User>>();
+
+				suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+				suite.expectEqual(outputUsers[0], User{"Dr. Alice", "alice@example.com", 25, 100, 4.5f});
+
+				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
+				suite.expect(rejectedContent.contains("Invalid;corrupt@example.com;NaN;0;0.0"));
+			}};
+		});
+
+		suite.addTest("<When> condition", [&] {
+			const auto xmlSource = R"(
+			<Pipeline>
+				<When column="Age" operator=">" value="18">
+					<Operation column="Score" operator="+=" value="20"/>
+				</When>
+			</Pipeline>
+			)"sv;
+
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
+
+			const auto inputCSVLines = R"(
+				Alice;alice@example.com;25;100;4.5
+				Bob;bob@example.com;15;50;3.0
+			)"_csv;
+
+			const auto outputUsers = inputCSVLines
+				| CppUtils::Language::CSV::toStructSafe<User, UserMapping>()
+				| pipeline
+				| std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 2uz);
+			suite.expectEqual(outputUsers[0], User{"Alice", "alice@example.com", 25, 120, 4.5f});
+			suite.expectEqual(outputUsers[1], User{"Bob", "bob@example.com", 15, 50, 3.0f});
+		});
+
+		suite.addTest("<When> with <All> and <Any>", [&] {
+			const auto xmlSource = R"(
+			<Pipeline>
+				<When>
+					<All>
+						<Condition column="Age" operator=">" value="18"/>
+						<Any>
+							<Condition column="Score" operator=">=" value="100"/>
+							<Condition column="Name" operator="==" value="Charlie"/>
+						</Any>
+					</All>
+					<Operation column="Score" operator="+=" value="50"/>
+				</When>
+			</Pipeline>
+			)"sv;
+
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
+
+			const auto inputCSVLines = R"(
+				Alice;alice@example.com;25;100;4.5
+				Bob;bob@example.com;30;40;3.0
+				Charlie;charlie@example.com;20;30;4.0
+				David;david@example.com;15;100;3.5
+			)"_csv;
+
+			const auto outputUsers = inputCSVLines
+				| CppUtils::Language::CSV::toStructSafe<User, UserMapping>()
+				| pipeline
+				| std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 4uz);
+			suite.expectEqual(outputUsers[0], User{"Alice", "alice@example.com", 25, 150, 4.5f});
+			suite.expectEqual(outputUsers[1], User{"Bob", "bob@example.com", 30, 40, 3.0f});
+			suite.expectEqual(outputUsers[2], User{"Charlie", "charlie@example.com", 20, 80, 4.0f});
+			suite.expectEqual(outputUsers[3], User{"David", "david@example.com", 15, 100, 3.5f});
+		});
+
+		suite.addTest("<Scope>", [&] {
+			const auto xmlSource = R"(
+			<Pipeline>
+				<Scope>
+					<Let name="bonus" value="30"/>
+					<Operation column="Score" operator="+=" variable="bonus"/>
+				</Scope>
+			</Pipeline>
+			)"sv;
+
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
+
+			const auto inputCSVLines = R"(
+				Alice;alice@example.com;25;100;4.5
+			)"_csv;
+
+			const auto outputUsers = inputCSVLines
+				| CppUtils::Language::CSV::toStructSafe<User, UserMapping>()
+				| pipeline
+				| std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+			suite.expectEqual(outputUsers[0], User{"Alice", "alice@example.com", 25, 130, 4.5f});
+		});
+
+		suite.addTest("<Include>", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto rulesPath = directory / "rules.xml";
+				CppUtils::FileSystem::String::write(rulesPath, R"(
+				<Scope>
+					<When column="Age" operator=">" value="18">
+						<Operation column="Score" operator="+=" value="15"/>
+					</When>
+				</Scope>
+				)");
+
+				const auto xmlSource = std::format(R"(
+				<Pipeline>
+					<Include file="{}"/>
+				</Pipeline>
+				)",
+					rulesPath.string());
+
+				const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
+
+				const auto inputCSVLines = R"(
+					Alice;alice@example.com;25;100;4.5
+					Bob;bob@example.com;16;50;3.0
+				)"_csv;
+
+				const auto outputUsers = inputCSVLines
+					| CppUtils::Language::CSV::toStructSafe<User, UserMapping>()
+					| pipeline
+					| std::ranges::to<std::vector<User>>();
+
+				suite.expectEqual(std::ranges::size(outputUsers), 2uz);
+				suite.expectEqual(outputUsers[0], User{"Alice", "alice@example.com", 25, 115, 4.5f});
+				suite.expectEqual(outputUsers[1], User{"Bob", "bob@example.com", 16, 50, 3.0f});
+			}};
+		});
+
+		suite.addTest("<Log>", [&] {
+			const auto xmlSource = R"(
+			<Pipeline>
+				<Log type="info" column="Name"/>
+			</Pipeline>
+			)"sv;
+
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
+
+			const auto inputCSVLines = R"(
+				Alice;alice@example.com;25;100;4.5
+			)"_csv;
+
+			const auto outputUsers = inputCSVLines
+				| CppUtils::Language::CSV::toStructSafe<User, UserMapping>()
+				| pipeline
+				| std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+			suite.expectEqual(outputUsers[0].name, "Alice");
+		});
+
+		suite.addTest("<Log> with custom loggerName", [&] {
+			auto loggedMessages = std::make_shared<std::vector<std::string>>();
+			CppUtils::Logger<"CustomPipelineLogger">::subscribe<"debug">([loggedMessages](const std::string& message) {
+				loggedMessages->push_back(message);
+			});
+
+			const auto xmlSource = R"(
+			<Pipeline>
+				<Log type="debug" message="Processing user"/>
+			</Pipeline>
+			)"sv;
+
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping, "CustomPipelineLogger">(xmlSource);
+
+			const auto inputCSVLines = R"(
+				Alice;alice@example.com;25;100;4.5
+			)"_csv;
+
+			const auto outputUsers = inputCSVLines
+				| CppUtils::Language::CSV::toStructSafe<User, UserMapping>()
+				| pipeline
+				| std::ranges::to<std::vector<User>>();
+
+			CppUtils::Logger<"CustomPipelineLogger">::waitUntilFinished();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+			suite.expectEqual(outputUsers[0].name, "Alice");
+			suite.expectEqual(std::ranges::size(*loggedMessages), 1uz);
+			suite.expectEqual((*loggedMessages)[0], "Processing user");
+		});
+
+		suite.addTest("Flow with ThreadPool", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+				const auto inputPath = directory / "input.csv";
+				const auto outputPath = directory / "output.csv";
+
+				CppUtils::FileSystem::String::write(inputPath, "Alice;alice@example.com;25;100;4.5\n");
+
+				const auto xmlSourceWithOutput = std::format(R"(
+				<Flow>
+					<Input file="{}"/>
+					<Pipeline chunkSize="1">
+						<Operation column="Score" operator="+=" value="10"/>
+					</Pipeline>
+					<Output file="{}"/>
+				</Flow>
+				)",
+					inputPath.string(),
+					outputPath.string());
+
+				auto threadPool = CppUtils::Thread::ThreadPool{2};
+				auto flowWithOutput = CppUtils::Language::Xml::buildFlow<User, UserMapping>(xmlSourceWithOutput, threadPool);
+				flowWithOutput.execute();
+
+				suite.expect(std::filesystem::exists(outputPath));
+				const auto outputContent = CppUtils::FileSystem::String::read(outputPath);
+				suite.expect(outputContent.contains("Alice"));
+				suite.expect(outputContent.contains("110"));
+
+				const auto xmlSourceInMemory = std::format(R"(
+				<Flow>
+					<Input file="{}"/>
+					<Pipeline chunkSize="1">
+						<Operation column="Score" operator="+=" value="10"/>
+					</Pipeline>
+				</Flow>
+				)",
+					inputPath.string());
+
+				auto flowInMemory = CppUtils::Language::Xml::buildFlow<User, UserMapping>(xmlSourceInMemory, threadPool);
+				const auto results = flowInMemory.execute();
+
+				suite.expectEqual(std::ranges::size(results), 1uz);
+				suite.expectEqual(results[0].score, 110);
+			}};
+		});
+
+		suite.addTest("Unknown pipeline tag throws", [&] {
+			const auto xmlSource = R"(
+			<Pipeline>
+				<UnknownTag/>
+			</Pipeline>
+			)"sv;
+
+			suite.expectThrow<std::runtime_error>([&] {
+				auto _ = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
+			});
+		});
+
+		suite.addTest("Unknown Flow tag throws", [&] {
+			const auto xmlSource = R"(
+			<Flow>
+				<UnknownFlowTag foo="bar"/>
+			</Flow>
+			)"sv;
+
+			auto threadPool = CppUtils::Thread::ThreadPool{1};
+			suite.expectThrow<std::runtime_error>([&] {
+				auto _ = CppUtils::Language::Xml::buildFlow<User, UserMapping>(xmlSource, threadPool);
+			});
+		});
+
+		suite.addTest("<Let> with typed and auto-detected variables", [&] {
+			const auto xmlSource = R"(
+			<Pipeline>
+				<Let name="Bonus" type="int" value="25"/>
+				<Let name="NameOverride" type="string" value="Alice_Updated"/>
+				<Operation column="Score" operator="+=" variable="Bonus"/>
+				<Operation column="Name" operator="=" variable="NameOverride"/>
+			</Pipeline>
+			)"sv;
+
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
+
+			const auto inputCSVLines = R"(
+				Alice;alice@example.com;25;100;4.5
+			)"_csv;
+
+			const auto outputUsers = inputCSVLines
+				| CppUtils::Language::CSV::toStructSafe<User, UserMapping>()
+				| pipeline
+				| std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+			suite.expectEqual(outputUsers[0].score, 125);
+			suite.expectEqual(outputUsers[0].name, "Alice_Updated");
+		});
+
+		suite.addTest("<Validate> with composite condition", [&] {
+			const auto xmlSource = R"(
+			<Pipeline>
+				<Validate error="Invalid adult user">
+					<All>
+						<Condition column="Age" operator=">=" value="18"/>
+						<Condition column="Score" operator=">=" value="50"/>
+					</All>
+				</Validate>
+			</Pipeline>
+			)"sv;
+
+			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
+
+			const auto inputCSVLines = R"(
+				Alice;alice@example.com;25;100;4.5
+				Bob;bob@example.com;15;60;3.0
+				Charlie;charlie@example.com;20;30;4.0
+			)"_csv;
+
+			const auto outputUsers = inputCSVLines
+				| CppUtils::Language::CSV::toStructSafe<User, UserMapping>()
+				| pipeline
+				| std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
+			suite.expectEqual(outputUsers[0].name, "Alice");
+		});
+	}};
+}

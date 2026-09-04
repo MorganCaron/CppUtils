@@ -41,7 +41,7 @@
 - [`HMAC`](modules/Crypto/HMAC.mpp) - Keyed-Hash Message Authentication Code (HMAC-SHA256)
 - [`SHA256`](modules/Crypto/SHA256.mpp) - SHA-256 cryptographic hashing implementation
 
-### 🚀 Execution
+### 🎯 Execution
 - [`Event`](modules/Execution/Event.mpp) - An event for thread synchronization
 - [`EventDispatcher`](modules/Execution/EventDispatcher.mpp) - Event system to subscribe functions and trigger actions by event name
 - [`EventQueue`](modules/Execution/EventQueue.mpp) - Thread-safe event queue running on a dedicated thread for asynchronous event processing (preserves event order)
@@ -57,6 +57,11 @@
 - [`IndexedStorage`](modules/FileSystem/IndexedStorage.mpp) - Thread-safe indexed storage engine for storing and retrieving serializable types in chunked binary files
 - [`MeshPager`](modules/FileSystem/MeshPager.mpp) - Paging mechanism for loading and saving `MeshNetwork` nodes on-demand using `IndexedStorage`
 - [`Watcher`](modules/FileSystem/Watcher.mpp) - File modification watcher
+
+### ⛓️ Flow
+- [`Flow`](modules/Language/XML/Flow.mpp) - Declarative data transformation and file orchestration with staging, watching, and parallel chunking
+- [`Pipeline`](modules/Language/XML/Pipeline.mpp) - Lazy C++20 range pipeline compiled from XML tags
+- [`Tags`](modules/Language/XML/Tags.mpp) - Standard pipeline tags (`<Filter>`, `<Validate>`, `<Operation>`, `<Call>`, `<When>`, `<Let>`, `<Log>`, `<Rejected>`, `<Scope>`, `<Include>`)
 
 ### 🧠 Functional
 - [`LambdaCalculus`](modules/Functional/LambdaCalculus.mpp) - Compile-time utilities for lambda calculus manipulation
@@ -96,7 +101,7 @@
 - [`Singleton`](modules/Pattern/Singleton.mpp) - Generic Meyers Singleton implementation (thread-safe and lazy)
 - [`Multiton`](modules/Pattern/Multiton.mpp) - Generic Multiton implementation based on the Meyers Singleton
 
-### 🔄 Ranges
+### 📶 Ranges
 - [`Expected`](modules/Ranges/Expected.mpp) - Range adaptors for `std::expected` streams
 - [`Inspect`](modules/Ranges/Inspect.mpp) - Range element inspection for side-effects and logging
 - [`Parallel`](modules/Ranges/Parallel.mpp) - Multithreaded range pipelining

@@ -48,7 +48,7 @@ namespace CppUtils::UnitTest::Language::JSON::Mapping
 		using FunctionMapping = Type::Mapping<>;
 	};
 
-	auto _ = TestSuite{"Language/JSON/Mapping", {"Logger"}, [](TestSuite& suite) {
+	auto _ = TestSuite{"Language/JSON/Mapping", {"Logger", "Language/Json/JsonLexer", "Language/JSON/Parsing"}, [](TestSuite& suite) {
 		using namespace CppUtils::Language::JSON::Literals;
 		using Logger = TestSuite::Logger;
 

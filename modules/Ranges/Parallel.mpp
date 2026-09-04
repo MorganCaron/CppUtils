@@ -174,7 +174,10 @@ export namespace CppUtils::Ranges
 						auto chunk = ChunkInput{};
 						chunk.reserve(m_chunkSize);
 						for (auto i = 0uz; i < m_chunkSize and m_sourceCurrent != m_sourceEnd; ++i)
-							chunk.push_back(std::ranges::iter_move(m_sourceCurrent++));
+						{
+							chunk.push_back(std::ranges::iter_move(m_sourceCurrent));
+							++m_sourceCurrent;
+						}
 
 						if (not std::ranges::empty(chunk))
 							m_pendingFutures.push(m_threadPool->call([chunk = std::move(chunk), transformFunction = *m_transformFunction]() mutable -> ChunkOutput {
