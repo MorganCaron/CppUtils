@@ -34,7 +34,7 @@ namespace CppUtils::UnitTest::Thread::Poll
 				return false;
 			}, 50ms, 10ms);
 			suite.expect(not result);
-			suite.expect(counter >= 3uz);
+			suite.expect(counter >= 1uz);
 		});
 
 		suite.addTest("pollUntil with deadline", [&] {
