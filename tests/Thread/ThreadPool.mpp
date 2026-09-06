@@ -46,10 +46,54 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 			suite.expect(called);
 		});
 
+		suite.addTest("Canary: LLVM #221609 std::runtime_error double-free", [&] {
+#if defined(_WIN32)
+			suite.skip("Waiting for LLVM issue #221609 fix: https://github.com/llvm/llvm-project/issues/221609");
+#else
+			auto exceptionPointer = std::exception_ptr{};
+			try
+			{
+				throw std::runtime_error{"Canary"};
+			}
+			catch (...)
+			{
+				exceptionPointer = std::current_exception();
+			}
+			try
+			{
+				if (exceptionPointer)
+					std::rethrow_exception(exceptionPointer);
+			}
+			catch (const std::exception& exception)
+			{
+				suite.expectEqual(exception.what(), "Canary"sv);
+			}
+#endif
+		});
+
+		// Workaround on Windows (MSVC ABI)
+		// https://github.com/llvm/llvm-project/issues/221609
+#if defined(_WIN32)
+		struct WorkaroundException final: std::exception
+		{
+			explicit WorkaroundException(const char* message) noexcept: m_message{message} {}
+			[[nodiscard]] auto what() const noexcept -> const char* override
+			{
+				return m_message;
+			}
+
+		private:
+			const char* m_message;
+		};
+		using TestException = WorkaroundException;
+#else
+		using TestException = std::runtime_error;
+#endif
+
 		suite.addTest("Error handling with future", [&] {
 			auto threadPool = CppUtils::Thread::ThreadPool{};
 			auto future = threadPool.call([] {
-				throw std::runtime_error{"Test error"};
+				throw TestException{"Test error"}; // throw std::runtime_error{"Test error"};
 			});
 
 			auto called = std::atomic_bool{false};
@@ -86,7 +130,7 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 				}
 			});
 			threadPool.call([] {
-				throw std::runtime_error{"Test error"};
+				throw TestException{"Test error"};
 			});
 			threadPool.waitUntilFinished();
 			suite.expect(called);

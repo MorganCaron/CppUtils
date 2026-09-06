@@ -37,5 +37,30 @@ namespace CppUtils::UnitTest::UnitTest
 				}, 30ms, 10ms);
 			});
 		});
+
+		suite.addTest("Canary: LLVM #221609 std::throw_with_nested double-free", [&] {
+#if defined(_WIN32)
+			suite.skip("Waiting for LLVM issue #221609 fix: https://github.com/llvm/llvm-project/issues/221609");
+#else
+			using namespace std::literals;
+			auto caughtMessage = std::string{};
+			try
+			{
+				try
+				{
+					throw std::runtime_error{"Canary inner"};
+				}
+				catch (const std::exception&)
+				{
+					std::throw_with_nested(std::runtime_error{"Canary outer"});
+				}
+			}
+			catch (const std::exception& exception)
+			{
+				caughtMessage = exception.what();
+			}
+			suite.expectEqual(caughtMessage, "Canary outer"s);
+#endif
+		});
 	}};
 }

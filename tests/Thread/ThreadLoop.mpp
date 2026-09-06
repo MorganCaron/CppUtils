@@ -41,13 +41,32 @@ namespace CppUtils::UnitTest::Thread::ThreadLoop
 			suite.expectEqual(nb, 5uz);
 		});
 
+		// Workaround on Windows (MSVC ABI)
+		// https://github.com/llvm/llvm-project/issues/221609
+#if defined(_WIN32)
+		struct WorkaroundException final: std::exception
+		{
+			explicit WorkaroundException(const char* message) noexcept: m_message{message} {}
+			[[nodiscard]] auto what() const noexcept -> const char* override
+			{
+				return m_message;
+			}
+
+		private:
+			const char* m_message;
+		};
+		using TestException = WorkaroundException;
+#else
+		using TestException = std::runtime_error;
+#endif
+
 		suite.addTest("onError callback", [&] {
 			auto caughtMessage = CppUtils::Thread::UniqueLocker{""s};
 			auto count = 0uz;
 
 			auto threadLoop = CppUtils::Thread::ThreadLoop{[&count] {
 				if (++count == 1)
-					throw std::runtime_error{"Exception"};
+					throw TestException{"Exception"}; // throw std::runtime_error{"Exception"};
 				std::this_thread::sleep_for(10ms);
 			}, nullptr, [&](std::exception_ptr exceptionPointer) {
 				try

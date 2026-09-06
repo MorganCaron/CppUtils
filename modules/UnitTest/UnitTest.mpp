@@ -130,13 +130,27 @@ namespace CppUtils::UnitTest
 						Logger::print<"warning">("Skipped: {}", skipped.what());
 					return {TestStatus::Skipped, skipped.what()};
 				}
-				catch (const TestException&)
+				catch ([[maybe_unused]] const TestException& exception)
 				{
+					// Workaround on Windows (MSVC ABI)
+					// https://github.com/llvm/llvm-project/issues/221609
+#if defined(_WIN32)
+					Logger::print<"error">("The following test didn't pass:\n{}\n  {}", test.name, exception.what());
+					return {TestStatus::Failure, ""};
+#else
 					std::throw_with_nested(std::runtime_error{std::format("The following test didn't pass:\n{}", test.name)});
+#endif
 				}
 				catch (const std::exception& exception)
 				{
+					// Workaround on Windows (MSVC ABI)
+					// https://github.com/llvm/llvm-project/issues/221609
+#if defined(_WIN32)
+					Logger::print<"error">("An exception occurred during the test:\n{}\n  {}", test.name, exception.what());
+					return {TestStatus::Failure, ""};
+#else
 					std::throw_with_nested(std::runtime_error{std::format("An exception occurred during the test:\n{}\n{}", test.name, exception.what())});
+#endif
 				}
 			}
 			catch (const std::exception& exception)

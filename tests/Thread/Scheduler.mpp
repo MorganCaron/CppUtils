@@ -250,6 +250,25 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 			suite.expectEqual(executedCount.load(), numTasks);
 		});
 
+		// Workaround on Windows (MSVC ABI)
+		// https://github.com/llvm/llvm-project/issues/221609
+#if defined(_WIN32)
+		struct WorkaroundException final: std::exception
+		{
+			explicit WorkaroundException(const char* message) noexcept: m_message{message} {}
+			[[nodiscard]] auto what() const noexcept -> const char* override
+			{
+				return m_message;
+			}
+
+		private:
+			const char* m_message;
+		};
+		using TestException = WorkaroundException;
+#else
+		using TestException = std::runtime_error;
+#endif
+
 		suite.addTest("onError callback is invoked on exception", [&] {
 			auto onErrorInvoked = std::atomic_bool{false};
 			auto scheduler = CppUtils::Thread::Scheduler{
@@ -260,7 +279,7 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 			}};
 
 			scheduler.schedule([] {
-				throw std::runtime_error{"Test exception"};
+				throw TestException{"Test exception"}; // throw std::runtime_error{"Test exception"};
 			}, 10ms);
 
 			scheduler.waitUntilFinished();

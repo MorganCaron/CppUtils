@@ -20,6 +20,25 @@ namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 			suite.expect(received);
 		});
 
+		// Workaround on Windows (MSVC ABI)
+		// https://github.com/llvm/llvm-project/issues/221609
+#if defined(_WIN32)
+		struct WorkaroundException final: std::exception
+		{
+			explicit WorkaroundException(const char* message) noexcept: m_message{message} {}
+			[[nodiscard]] auto what() const noexcept -> const char* override
+			{
+				return m_message;
+			}
+
+		private:
+			const char* m_message;
+		};
+		using TestException = WorkaroundException;
+#else
+		using TestException = std::runtime_error;
+#endif
+
 		suite.addTest("Error Handling", [&] {
 			auto errorCaught = std::atomic_bool{false};
 			auto onError = [&](std::exception_ptr) {
@@ -28,7 +47,7 @@ namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 			auto dispatcher = CppUtils::Thread::AsyncEventDispatcher{1, onError};
 
 			dispatcher.subscribe<"Event">([&](std::nullptr_t) {
-				throw std::runtime_error{"Test Error"};
+				throw TestException{"Test Error"}; // throw std::runtime_error{"Test Error"};
 			});
 			dispatcher.emit<"Event">(nullptr);
 
