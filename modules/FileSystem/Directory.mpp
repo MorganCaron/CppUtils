@@ -30,13 +30,15 @@ export namespace CppUtils::FileSystem
 	public:
 		inline explicit TemporaryDirectory(std::string_view directoryName = "temp")
 		{
-			auto nbTemporaryFiles = 0u;
+			static auto temporaryDirectoryIndex = std::atomic_size_t{0};
+			auto temporaryFileIndex = temporaryDirectoryIndex.fetch_add(1);
 			do
 			{
-				m_tempDirectory = std::filesystem::temp_directory_path() / std::format("{}{}", directoryName, nbTemporaryFiles++);
+				m_tempDirectory = std::filesystem::temp_directory_path() / std::format("{}{}", directoryName, temporaryFileIndex++);
 			}
 			while (std::filesystem::exists(m_tempDirectory));
 			std::filesystem::create_directory(m_tempDirectory);
+			m_tempDirectory = std::filesystem::canonical(m_tempDirectory);
 		}
 
 		inline explicit TemporaryDirectory(std::invocable<std::filesystem::path> auto&& function, [[maybe_unused]] auto&&... args):

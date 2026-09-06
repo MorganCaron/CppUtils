@@ -18,5 +18,24 @@ namespace CppUtils::UnitTest::UnitTest
 			suite.expectEqual(1, 1);
 			suite.expectEqual("test"sv, "test"sv);
 		});
+
+		suite.addTest("expectWait", [&] {
+			using namespace std::chrono_literals;
+
+			suite.expectWait([] {
+				return true;
+			});
+
+			auto counter = 0uz;
+			suite.expectWait([&] {
+				return ++counter >= 3uz;
+			}, 200ms, 10ms);
+
+			suite.expectThrow<CppUtils::UnitTest::TestException>([&] {
+				suite.expectWait([] {
+					return false;
+				}, 30ms, 10ms);
+			});
+		});
 	}};
 }

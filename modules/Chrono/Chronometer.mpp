@@ -36,7 +36,7 @@ export namespace CppUtils::Chrono
 		return not std::ranges::empty(string) ? string.substr(1) : "0ns";
 	}
 
-	template<Clock Clock = std::chrono::high_resolution_clock>
+	template<Clock Clock = std::chrono::steady_clock>
 	class Chronometer final
 	{
 	public:

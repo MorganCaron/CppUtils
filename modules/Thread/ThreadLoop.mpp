@@ -95,7 +95,7 @@ export namespace CppUtils::Thread
 						{
 							try
 							{
-								onError(std::exchange(exceptionPointer, nullptr));
+								onError(exceptionPointer);
 							}
 							catch (const std::exception& exception)
 							{

@@ -15,30 +15,56 @@ export namespace CppUtils::FileSystem
 {
 #if defined(OS_LINUX)
 	using INotifyEvent = struct inotify_event;
+#endif
 
+	// https://man7.org/linux/man-pages/man7/inotify.7.html
+	// https://github.com/torvalds/linux/blob/master/include/uapi/linux/inotify.h
 	enum class Event : std::uint32_t
 	{
-		Access = IN_ACCESS,
-		Attribute = IN_ATTRIB,
-		CloseWrite = IN_CLOSE_WRITE,
-		CloseNoWrite = IN_CLOSE_NOWRITE,
-		Closed = IN_CLOSE,
-		Created = IN_CREATE,
-		Deleted = IN_DELETE,
-		DeletedSelf = IN_DELETE_SELF,
-		Modified = IN_MODIFY,
-		MoveSelf = IN_MOVE_SELF,
-		MovedFrom = IN_MOVED_FROM,
-		MovedTo = IN_MOVED_TO,
-		Moved = IN_MOVE,
-		Open = IN_OPEN,
-		IsDirectory = IN_ISDIR,
-		Unmount = IN_UNMOUNT,
-		QOverflow = IN_Q_OVERFLOW,
-		Ignored = IN_IGNORED,
-		Oneshot = IN_ONESHOT,
-		All = IN_ALL_EVENTS
+		Access = 1u << 0,
+		Modified = 1u << 1,
+		Attribute = 1u << 2,
+		CloseWrite = 1u << 3,
+		CloseNoWrite = 1u << 4,
+		Closed = CloseWrite | CloseNoWrite,
+		Open = 1u << 5,
+		MovedFrom = 1u << 6,
+		MovedTo = 1u << 7,
+		Moved = MovedFrom | MovedTo,
+		Created = 1u << 8,
+		Deleted = 1u << 9,
+		DeletedSelf = 1u << 10,
+		MoveSelf = 1u << 11,
+		Unmount = 1u << 13,
+		QOverflow = 1u << 14,
+		Ignored = 1u << 15,
+		IsDirectory = 1u << 30,
+		Oneshot = 1u << 31,
+		All = 0x0000'0FFF
 	};
+
+#if defined(OS_LINUX)
+	static_assert(static_cast<std::uint32_t>(Event::Access) == IN_ACCESS);
+	static_assert(static_cast<std::uint32_t>(Event::Modified) == IN_MODIFY);
+	static_assert(static_cast<std::uint32_t>(Event::Attribute) == IN_ATTRIB);
+	static_assert(static_cast<std::uint32_t>(Event::CloseWrite) == IN_CLOSE_WRITE);
+	static_assert(static_cast<std::uint32_t>(Event::CloseNoWrite) == IN_CLOSE_NOWRITE);
+	static_assert(static_cast<std::uint32_t>(Event::Closed) == IN_CLOSE);
+	static_assert(static_cast<std::uint32_t>(Event::Open) == IN_OPEN);
+	static_assert(static_cast<std::uint32_t>(Event::MovedFrom) == IN_MOVED_FROM);
+	static_assert(static_cast<std::uint32_t>(Event::MovedTo) == IN_MOVED_TO);
+	static_assert(static_cast<std::uint32_t>(Event::Moved) == IN_MOVE);
+	static_assert(static_cast<std::uint32_t>(Event::Created) == IN_CREATE);
+	static_assert(static_cast<std::uint32_t>(Event::Deleted) == IN_DELETE);
+	static_assert(static_cast<std::uint32_t>(Event::DeletedSelf) == IN_DELETE_SELF);
+	static_assert(static_cast<std::uint32_t>(Event::MoveSelf) == IN_MOVE_SELF);
+	static_assert(static_cast<std::uint32_t>(Event::Unmount) == IN_UNMOUNT);
+	static_assert(static_cast<std::uint32_t>(Event::QOverflow) == IN_Q_OVERFLOW);
+	static_assert(static_cast<std::uint32_t>(Event::Ignored) == IN_IGNORED);
+	static_assert(static_cast<std::uint32_t>(Event::IsDirectory) == IN_ISDIR);
+	static_assert(static_cast<std::uint32_t>(Event::Oneshot) == IN_ONESHOT);
+	static_assert(static_cast<std::uint32_t>(Event::All) == IN_ALL_EVENTS);
+#endif
 
 	[[nodiscard]] inline constexpr auto operator&(Event lhs, Event rhs) -> bool
 	{
@@ -51,12 +77,10 @@ export namespace CppUtils::FileSystem
 		return static_cast<Event>(
 			static_cast<std::underlying_type_t<Event>>(lhs) | static_cast<std::underlying_type_t<Event>>(rhs));
 	}
-#endif
 }
 
 namespace std
 {
-#if defined(OS_LINUX)
 	template<class CharT>
 	struct formatter<CppUtils::FileSystem::Event, CharT>
 	{
@@ -117,5 +141,4 @@ namespace std
 			return std::format_to(out, "{}", CppUtils::String::rightTrimString(string));
 		}
 	};
-#endif
 }

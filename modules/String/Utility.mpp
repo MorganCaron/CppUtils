@@ -148,6 +148,8 @@ export namespace CppUtils::String
 			}, value);
 		else if constexpr (std::formattable<DecayedT, char>)
 			return std::format("{}", value);
+		else if constexpr (requires { value.string(); })
+			return value.string();
 		else
 			return "<non printable>";
 	}

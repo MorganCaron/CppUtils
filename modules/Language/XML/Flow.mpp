@@ -236,13 +236,15 @@ export namespace CppUtils::Language::Xml
 			try
 			{
 				auto result = processFile(staging.stagedPath(), outputFilePath);
-				staging.complete();
+				if (auto completeResult = staging.complete(); not completeResult)
+					Logger<"Flow">::template print<"error">("Failed to complete staging for {}: {}", inputFilePath.string(), completeResult.error().message());
 				return result;
 			}
 			catch (const std::exception& exception)
 			{
 				Logger<"Flow">::template print<"error">("Error processing file {}: {}", inputFilePath.string(), exception.what());
-				staging.abort();
+				if (auto abortResult = staging.abort(); not abortResult)
+					Logger<"Flow">::template print<"error">("Failed to abort staging for {}: {}", inputFilePath.string(), abortResult.error().message());
 				return {};
 			}
 		}

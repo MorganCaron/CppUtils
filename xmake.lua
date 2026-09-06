@@ -48,6 +48,10 @@ target("CppUtils", function()
 	add_headerfiles("include/(CppUtils/**.hpp)")
 	add_headerfiles("include/(Stl/**.hpp)")
 
+	if is_plat("macosx") then
+		add_frameworks("CoreServices", "CoreFoundation", { public = true })
+	end
+
 	if get_config("compiler_verbose") then
 		add_cflags("-v")
 		add_cxxflags("-v")

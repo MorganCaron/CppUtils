@@ -1,0 +1,55 @@
+export module CppUtils.UnitTests.Thread.Poll;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Thread::Poll
+{
+	auto _ = TestSuite{"Thread/Poll", [](TestSuite& suite) {
+		using namespace std::chrono_literals;
+
+		suite.addTest("Immediate success", [&] {
+			auto counter = 0uz;
+			const auto result = CppUtils::Thread::pollFor([&] {
+				++counter;
+				return true;
+			}, 100ms, 10ms);
+			suite.expect(result);
+			suite.expectEqual(counter, 1uz);
+		});
+
+		suite.addTest("Delayed success", [&] {
+			auto counter = 0uz;
+			const auto result = CppUtils::Thread::pollFor([&] {
+				return ++counter >= 3uz;
+			}, 500ms, 10ms);
+			suite.expect(result);
+			suite.expectEqual(counter, 3uz);
+		});
+
+		suite.addTest("Timeout failure", [&] {
+			auto counter = 0uz;
+			const auto result = CppUtils::Thread::pollFor([&] {
+				++counter;
+				return false;
+			}, 50ms, 10ms);
+			suite.expect(not result);
+			suite.expect(counter >= 3uz);
+		});
+
+		suite.addTest("pollUntil with deadline", [&] {
+			auto flag = false;
+			auto thread = std::jthread{[&](std::stop_token) {
+				std::this_thread::sleep_for(30ms);
+				flag = true;
+			}};
+
+			const auto deadline = std::chrono::steady_clock::now() + 500ms;
+			const auto result = CppUtils::Thread::pollUntil([&] {
+				return flag;
+			}, deadline, 10ms);
+			suite.expect(result);
+			suite.expect(flag);
+		});
+	}};
+}

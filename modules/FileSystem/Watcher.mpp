@@ -11,6 +11,7 @@ module;
 #elif defined(OS_MACOS)
 #	include <sys/event.h>
 #	include <CoreServices/CoreServices.h>
+#	include <dispatch/dispatch.h>
 #endif
 
 export module CppUtils.FileSystem.Watcher;
@@ -38,23 +39,23 @@ export namespace CppUtils::FileSystem
 		static inline constexpr auto maxEvents = 2uz;
 
 	public:
-#if defined(OS_LINUX)
 		using SubscribeFunction = std::function<void(Event, const std::filesystem::path&)>;
-		using WatchDescriptor = int;
-#endif
 
+#if not defined(OS_MACOS)
 		inline Watcher():
-			m_threadLoop{std::bind(&Watcher::listener, this), std::bind(&Watcher::interruptFunction, this)}
+			m_threadLoop { std::bind(&Watcher::listener, this), std::bind(&Watcher::interruptFunction, this) }
+#else
+		inline Watcher()
+#endif
 		{
-			auto lockGuard = std::unique_lock{m_mutex};
 #if defined(OS_LINUX)
 			m_eventPoll = epoll_create1(0);
 			{
 				m_inotify = inotify_init1(IN_NONBLOCK);
-				m_event.events = EPOLLIN | EPOLLET;
-				m_event.data.fd = m_inotify;
+				m_inotifyEpollEvent.events = EPOLLIN | EPOLLET;
+				m_inotifyEpollEvent.data.fd = m_inotify;
 				System::throwErrno(
-					epoll_ctl(m_eventPoll, EPOLL_CTL_ADD, m_inotify, std::addressof(m_event)),
+					epoll_ctl(m_eventPoll, EPOLL_CTL_ADD, m_inotify, std::addressof(m_inotifyEpollEvent)),
 					"Can't add inotify file descriptor to epoll");
 			}
 			{
@@ -64,16 +65,11 @@ export namespace CppUtils::FileSystem
 					epoll_ctl(m_eventPoll, EPOLL_CTL_ADD, m_stopPipe.read, std::addressof(m_stopEvent)),
 					"Can't add pipe file descriptor to epoll");
 			}
+#elif defined(OS_WINDOWS)
+			m_stopEvent = CreateEventW(nullptr, true, false, nullptr);
+			m_wakeEvent = CreateEventW(nullptr, true, false, nullptr);
 #elif defined(OS_MACOS)
-			/*
-			m_filesystemEventStream = FSEventStreamCreate(CFAllocatorRef allocator,
-				FSEventStreamCallback callback,
-				FSEventStreamContext * context,
-				CFArrayRef pathsToWatch,
-				FSEventStreamEventId sinceWhen,
-				CFTimeInterval latency,
-				FSEventStreamCreateFlags flags);
-			*/
+			m_dispatchQueue = dispatch_queue_create("CppUtils.FileSystem.Watcher", nullptr);
 #endif
 			start();
 		}
@@ -85,42 +81,141 @@ export namespace CppUtils::FileSystem
 #if defined(OS_LINUX)
 			epoll_ctl(m_eventPoll, EPOLL_CTL_DEL, m_inotify, 0);
 			epoll_ctl(m_eventPoll, EPOLL_CTL_DEL, m_stopPipe.read, 0);
+#elif defined(OS_WINDOWS)
+			unwatchAll();
+			if (m_stopEvent != nullptr)
+				CloseHandle(m_stopEvent);
+			if (m_wakeEvent != nullptr)
+				CloseHandle(m_wakeEvent);
+#elif defined(OS_MACOS)
+			unwatchAll();
+			if (m_dispatchQueue != nullptr)
+				dispatch_release(m_dispatchQueue);
 #endif
 		}
 
 		[[nodiscard]] inline auto isRunning() const noexcept -> bool
 		{
+#if defined(OS_MACOS)
+			return m_isRunning.load();
+#else
 			return m_threadLoop.isRunning();
+#endif
 		}
 
 		inline auto start() -> void
 		{
+#if defined(OS_MACOS)
+			m_isRunning.store(true);
+#else
 			m_threadLoop.start();
+#endif
 		}
 
 		inline auto stop() -> void
 		{
+#if defined(OS_MACOS)
+			m_isRunning.store(false);
+#else
 			m_threadLoop.stop();
+#endif
 		}
 
+#if not defined(OS_MACOS)
 		inline auto listener() -> void
 		{
-#if defined(OS_WINDOWS)
-			switch (WaitForMultipleObjects(static_cast<DWORD>(std::ranges::size(m_changeHandles)), std::ranges::data(m_changeHandles), false, INFINITE))
+#	if defined(OS_WINDOWS)
+			static constexpr auto stopEventWaitResult = WAIT_OBJECT_0;
+			static constexpr auto wakeEventWaitResult = WAIT_OBJECT_0 + 1;
+			static constexpr auto itemsBaseWaitResult = WAIT_OBJECT_0 + 2;
+
+			auto waitHandles = std::vector<System::Handle>{};
 			{
-			case WAIT_OBJECT_0: // An event occurred on a file
-				System::throwLastErrorIf(not FindNextChangeNotification(m_changeHandles[0]), "FindNextChangeNotification failed");
-				break;
-			case WAIT_OBJECT_0 + 1: // An event occurred on a directory
-				System::throwLastErrorIf(not FindNextChangeNotification(m_changeHandles[1]), "FindNextChangeNotification failed");
-				break;
-			case WAIT_TIMEOUT: break;
-			default:
-				System::throwLastError("CppUtils/FileSystem/Watcher/listener: Unhandled wait status");
-				break;
+				auto itemsAccessor = m_watchedItems.access();
+				waitHandles.reserve(2 + std::ranges::size(itemsAccessor.value()));
+				waitHandles.push_back(m_stopEvent);
+				waitHandles.push_back(m_wakeEvent);
+				for (const auto& item : itemsAccessor.value())
+					waitHandles.push_back(item->overlapped.hEvent);
 			}
-			// Todo: https://learn.microsoft.com/fr-fr/windows/win32/fileio/obtaining-directory-change-notifications?redirectedfrom=MSDN
-#elif defined(OS_LINUX)
+
+			const auto waitResult = WaitForMultipleObjects(
+				static_cast<std::uint32_t>(std::ranges::size(waitHandles)),
+				std::ranges::data(waitHandles),
+				false,
+				50);
+
+			if (waitResult == stopEventWaitResult)
+				return;
+			if (waitResult == wakeEventWaitResult)
+			{
+				ResetEvent(m_wakeEvent);
+				return;
+			}
+			if (waitResult >= itemsBaseWaitResult and waitResult < WAIT_OBJECT_0 + std::ranges::size(waitHandles))
+			{
+				const auto itemIndex = waitResult - itemsBaseWaitResult;
+				auto itemsAccessor = m_watchedItems.access();
+				if (itemIndex < std::ranges::size(itemsAccessor.value()))
+				{
+					auto& item = itemsAccessor.value()[itemIndex];
+					if (auto bytesTransferred = DWORD{0};
+						GetOverlappedResult(item->directoryHandle, std::addressof(item->overlapped), std::addressof(bytesTransferred), false) and bytesTransferred > 0)
+					{
+						for (auto* info = reinterpret_cast<const FILE_NOTIFY_INFORMATION*>(std::ranges::data(item->buffer));
+							info != nullptr;
+							info = (info->NextEntryOffset == 0) ? nullptr : reinterpret_cast<const FILE_NOTIFY_INFORMATION*>(reinterpret_cast<const std::byte*>(info) + info->NextEntryOffset))
+						{
+							const auto relativeName = std::wstring_view{info->FileName, info->FileNameLength / sizeof(WCHAR)};
+							const auto fullPath = item->watchedPath / relativeName;
+
+							if (not item->isSingleFile or fullPath == item->targetPath)
+							{
+								auto notify = [&](Event eventToNotify) {
+									if (item->event & eventToNotify)
+										notifySubscribers(eventToNotify, fullPath);
+								};
+
+								switch (info->Action)
+								{
+								case FILE_ACTION_ADDED:
+									notify(Event::Created);
+									notify(Event::CloseWrite);
+									break;
+								case FILE_ACTION_REMOVED:
+									notify(Event::Deleted);
+									break;
+								case FILE_ACTION_MODIFIED:
+									notify(Event::Modified);
+									notify(Event::CloseWrite);
+									break;
+								case FILE_ACTION_RENAMED_OLD_NAME:
+									notify(Event::MovedFrom);
+									break;
+								case FILE_ACTION_RENAMED_NEW_NAME:
+									notify(Event::MovedTo);
+									break;
+								default:
+									break;
+								}
+							}
+						}
+					}
+
+					ResetEvent(item->overlapped.hEvent);
+					auto bytesReturned = DWORD{0};
+					ReadDirectoryChangesW(
+						item->directoryHandle,
+						std::ranges::data(item->buffer),
+						static_cast<DWORD>(std::ranges::size(item->buffer)),
+						true,
+						FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE,
+						std::addressof(bytesReturned),
+						std::addressof(item->overlapped),
+						nullptr);
+				}
+			}
+#	elif defined(OS_LINUX)
 			auto nbFileDescriptorsReady = 0uz;
 			{
 				auto epollWaitResult = epoll_wait(m_eventPoll, std::ranges::data(m_events), maxEvents, 1);
@@ -149,118 +244,360 @@ export namespace CppUtils::FileSystem
 					auto filename = std::string_view{reinterpret_cast<const char*>(std::ranges::data(buffer) + offset)};
 					offset += inotifyEvent.len;
 
-					auto lockGuard = std::unique_lock{m_mutex};
-					if (Event::Ignored & static_cast<Event>(inotifyEvent.mask))
+					auto path = std::filesystem::path{};
 					{
-						m_watchDescriptors.eraseRight(inotifyEvent.wd);
-						continue;
+						auto itemsAccessor = m_watchedItems.access();
+						if (Event::Ignored & static_cast<Event>(inotifyEvent.mask))
+						{
+							itemsAccessor.value().eraseRight(inotifyEvent.wd);
+							continue;
+						}
+						if (auto it = itemsAccessor.value().findRight(inotifyEvent.wd);
+							it != std::ranges::cend(itemsAccessor.value()))
+							path = it->first;
 					}
-					if (auto it = m_watchDescriptors.findRight(inotifyEvent.wd);
-						it != std::ranges::cend(m_watchDescriptors))
+					if (not std::ranges::empty(path))
 					{
-						auto path = it->first;
 						if (std::filesystem::is_directory(path))
 							path /= filename;
+						auto eventMask = inotifyEvent.mask;
 						if (std::filesystem::is_directory(path))
-							inotifyEvent.mask |= static_cast<std::underlying_type_t<Event>>(Event::IsDirectory);
-						for (const auto& [event, subscribedFunction] : m_subscribedFunctions)
-							if (event & static_cast<Event>(inotifyEvent.mask))
-								subscribedFunction(static_cast<Event>(inotifyEvent.mask), path);
+							eventMask |= static_cast<std::underlying_type_t<Event>>(Event::IsDirectory);
+						notifySubscribers(static_cast<Event>(eventMask), path);
 					}
 				}
 			}
-#endif
+#	endif
 		}
+#endif
 
-#if defined(OS_LINUX)
 		inline auto watch(const std::filesystem::path& path, Event event = Event::All) -> void
 		{
 			if (not std::filesystem::exists(path))
 				return;
-			forDirectories(path, [this, event](const auto& path) -> void {
+
+			const auto normalizedPath = std::filesystem::weakly_canonical(path);
+
+#if defined(OS_LINUX)
+			forDirectories(normalizedPath, [this, event](const auto& path) -> void {
 				watch(path, event);
 			}, true);
-			auto lockGuard = std::unique_lock{m_mutex};
 			auto watchDescriptor = System::throwErrno(
-				inotify_add_watch(m_inotify, path.string().c_str(), static_cast<std::underlying_type_t<Event>>(event)),
-				std::format("Failed to watch the file {}", path.string()));
-			m_watchDescriptors.insert({path, watchDescriptor});
-		}
+				inotify_add_watch(m_inotify, normalizedPath.string().c_str(), static_cast<std::underlying_type_t<Event>>(event)),
+				std::format("Failed to watch the file {}", normalizedPath.string()));
+			m_watchedItems.access()->insert({normalizedPath, watchDescriptor});
 #elif defined(OS_WINDOWS)
-		inline auto watch(const std::filesystem::path& path) -> void
-		{
-			auto changeHandle = FindFirstChangeNotification(
-				path.string().c_str(), true, FILE_NOTIFY_CHANGE_FILE_NAME);
-			if (changeHandle == INVALID_HANDLE_VALUE)
-				throw std::runtime_error{std::format("Failed to watch the file {}", path.string())}; // Todo: utiliser GetLastError()
-			m_changeHandles.push_back(changeHandle);
-		}
+			const auto isDirectory = std::filesystem::is_directory(normalizedPath);
+			const auto directoryToWatch = isDirectory ? normalizedPath : normalizedPath.parent_path();
+
+			auto directoryHandle = CreateFileW(
+				directoryToWatch.c_str(),
+				FILE_LIST_DIRECTORY,
+				FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+				nullptr,
+				OPEN_EXISTING,
+				FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
+				nullptr);
+
+			if (directoryHandle == INVALID_HANDLE_VALUE)
+				System::throwLastError(std::format("Failed to watch {}", normalizedPath.string()));
+
+			auto eventHandle = CreateEventW(nullptr, true, false, nullptr);
+			if (eventHandle == nullptr)
+			{
+				CloseHandle(directoryHandle);
+				System::throwLastError("Failed to create event handle for directory watcher");
+			}
+
+			auto overlapped = OVERLAPPED{};
+			overlapped.hEvent = eventHandle;
+
+			auto item = std::make_unique<WatchedItem>(
+				directoryHandle,
+				overlapped,
+				directoryToWatch,
+				normalizedPath,
+				not isDirectory,
+				event);
+
+			auto bytesReturned = DWORD{0};
+			const auto success = ReadDirectoryChangesW(
+				item->directoryHandle,
+				std::ranges::data(item->buffer),
+				static_cast<DWORD>(std::ranges::size(item->buffer)),
+				true,
+				FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE,
+				std::addressof(bytesReturned),
+				std::addressof(item->overlapped),
+				nullptr);
+
+			if (not success)
+			{
+				CloseHandle(eventHandle);
+				CloseHandle(directoryHandle);
+				System::throwLastError(std::format("ReadDirectoryChangesW failed for {}", normalizedPath.string()));
+			}
+
+			m_watchedItems.access()->push_back(std::move(item));
+			if (m_wakeEvent != nullptr)
+				SetEvent(m_wakeEvent);
+#elif defined(OS_MACOS)
+			const auto isDirectory = std::filesystem::is_directory(normalizedPath);
+			const auto directoryToWatch = isDirectory ? normalizedPath : normalizedPath.parent_path();
+
+			if (m_watchedItems.access()->contains(normalizedPath))
+				return;
+
+			auto* coreFoundationPath = CFStringCreateWithCString(kCFAllocatorDefault, directoryToWatch.c_str(), kCFStringEncodingUTF8);
+			if (not coreFoundationPath)
+				return;
+
+			const void* pathsArray[1] = {coreFoundationPath};
+			auto* pathsToWatch = CFArrayCreate(kCFAllocatorDefault, pathsArray, 1, std::addressof(kCFTypeArrayCallBacks));
+			CFRelease(coreFoundationPath);
+			if (not pathsToWatch)
+				return;
+
+			auto item = std::make_unique<WatchedItem>(
+				std::ref(*this),
+				nullptr,
+				directoryToWatch,
+				normalizedPath,
+				not isDirectory,
+				event);
+
+			auto context = FSEventStreamContext{0, item.get(), nullptr, nullptr, nullptr};
+			auto* stream = FSEventStreamCreate(
+				kCFAllocatorDefault,
+				&Watcher::fileSystemEventsCallback,
+				std::addressof(context),
+				pathsToWatch,
+				kFSEventStreamEventIdSinceNow,
+				0.01,
+				kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagNoDefer);
+			CFRelease(pathsToWatch);
+
+			if (stream != nullptr)
+			{
+				item->streamRef = stream;
+				FSEventStreamSetDispatchQueue(stream, m_dispatchQueue);
+				FSEventStreamStart(stream);
+				m_watchedItems.access()->insert_or_assign(normalizedPath, std::move(item));
+			}
 #endif
+		}
 
 		inline auto unwatch(const std::filesystem::path& directoryPath) -> void
 		{
-			forDirectories(directoryPath, [this](const auto& directoryPath) -> void {
+			const auto normalizedPath = std::filesystem::weakly_canonical(directoryPath);
+
+#if defined(OS_LINUX)
+			forDirectories(normalizedPath, [this](const auto& directoryPath) -> void {
 				unwatch(directoryPath);
 			}, true);
-			auto lockGuard = std::unique_lock{m_mutex};
-#if defined(OS_LINUX)
+			auto itemsAccessor = m_watchedItems.access();
 			System::throwErrno(
-				inotify_rm_watch(m_inotify, m_watchDescriptors.left(directoryPath)),
-				std::format("Failed to stop watching the file {}", directoryPath.string()));
-			m_watchDescriptors.eraseLeft(directoryPath);
+				inotify_rm_watch(m_inotify, itemsAccessor.value().left(normalizedPath)),
+				std::format("Failed to stop watching the file {}", normalizedPath.string()));
+			itemsAccessor.value().eraseLeft(normalizedPath);
+#elif defined(OS_WINDOWS)
+			auto itemsAccessor = m_watchedItems.access();
+			std::erase_if(itemsAccessor.value(), [&](const auto& item) {
+				if (item->targetPath == normalizedPath or item->watchedPath == normalizedPath)
+				{
+					CancelIo(item->directoryHandle);
+					CloseHandle(item->directoryHandle);
+					CloseHandle(item->overlapped.hEvent);
+					return true;
+				}
+				return false;
+			});
+			if (m_wakeEvent != nullptr)
+				SetEvent(m_wakeEvent);
+#elif defined(OS_MACOS)
+			auto itemsAccessor = m_watchedItems.access();
+			if (auto it = itemsAccessor.value().find(normalizedPath); it != std::ranges::end(itemsAccessor.value()))
+			{
+				auto item = std::move(it->second);
+				itemsAccessor.value().erase(it);
+				FSEventStreamStop(item->streamRef);
+				FSEventStreamInvalidate(item->streamRef);
+				FSEventStreamRelease(item->streamRef);
+			}
 #endif
 		}
 
 		inline auto unwatchAll() -> void
 		{
-			auto lockGuard = std::unique_lock{m_mutex};
+			auto itemsAccessor = m_watchedItems.access();
 #if defined(OS_LINUX)
-			for (const auto& [path, fileDescriptor] : m_watchDescriptors)
+			for (const auto& [path, fileDescriptor] : itemsAccessor.value())
 				System::throwErrno(
 					inotify_rm_watch(m_inotify, fileDescriptor),
 					std::format("Failed to stop watching the file {}", path.string()));
-			m_watchDescriptors.clear();
+#elif defined(OS_WINDOWS)
+			for (auto& item : itemsAccessor.value())
+			{
+				CancelIo(item->directoryHandle);
+				CloseHandle(item->directoryHandle);
+				CloseHandle(item->overlapped.hEvent);
+			}
+			if (m_wakeEvent != nullptr)
+				SetEvent(m_wakeEvent);
+#elif defined(OS_MACOS)
+			for (auto& [path, item] : itemsAccessor.value())
+			{
+				FSEventStreamStop(item->streamRef);
+				FSEventStreamInvalidate(item->streamRef);
+				FSEventStreamRelease(item->streamRef);
+			}
 #endif
+			itemsAccessor.value().clear();
 		}
 
-#if defined(OS_LINUX)
 		inline auto onEvent(Event event, const SubscribeFunction& function) -> void
 		{
-			auto lockGuard = std::unique_lock{m_mutex};
-			m_subscribedFunctions.push_back({event, function});
+			m_subscribedFunctions.access()->push_back({event, function});
 		}
 
 		inline auto onEvent(const SubscribeFunction& function) -> void
 		{
-			auto lockGuard = std::unique_lock{m_mutex};
-			m_subscribedFunctions.push_back({Event::All, function});
+			onEvent(Event::All, function);
 		}
-#endif
 
 	private:
+#if not defined(OS_MACOS)
 		inline auto interruptFunction() -> void
 		{
-#if defined(OS_LINUX)
+#	if defined(OS_LINUX)
 			auto value = std::uint8_t{0};
 			write(m_stopPipe.write, std::addressof(value), 1uz);
+#	elif defined(OS_WINDOWS)
+			if (m_stopEvent != nullptr)
+				SetEvent(m_stopEvent);
+#	endif
+		}
 #endif
+
+#if defined(OS_MACOS)
+		static auto fileSystemEventsCallback(
+			[[maybe_unused]] ConstFSEventStreamRef streamRef,
+			void* clientCallBackInfo,
+			std::size_t numEvents,
+			void* eventPaths,
+			const FSEventStreamEventFlags eventFlags[],
+			[[maybe_unused]] const FSEventStreamEventId eventIds[]) -> void
+		{
+			auto& item = *static_cast<WatchedItem*>(clientCallBackInfo);
+			auto& self = item.watcher.get();
+			if (not self.isRunning())
+				return;
+
+			const auto paths = std::span{static_cast<char**>(eventPaths), numEvents};
+			const auto flags = std::span{eventFlags, numEvents};
+
+			for (const auto [rawPath, flag] : std::views::zip(paths, flags))
+			{
+				const auto filePath = std::filesystem::path{rawPath};
+				if (item.isSingleFile and filePath != item.targetPath)
+					continue;
+
+				if (not item.isSingleFile and filePath == item.targetPath)
+					continue;
+
+				auto notify = [&](Event eventToNotify) {
+					if (item.event & eventToNotify)
+						self.notifySubscribers(eventToNotify, filePath);
+				};
+
+				if (flag & kFSEventStreamEventFlagItemCreated)
+				{
+					notify(Event::Created);
+					notify(Event::CloseWrite);
+				}
+
+				if (flag & kFSEventStreamEventFlagItemRemoved)
+					notify(Event::Deleted);
+
+				if (flag & kFSEventStreamEventFlagItemModified)
+				{
+					notify(Event::Modified);
+					notify(Event::CloseWrite);
+				}
+
+				if (flag & kFSEventStreamEventFlagItemRenamed)
+				{
+					if (std::filesystem::exists(filePath))
+					{
+						notify(Event::MovedTo);
+						notify(Event::CloseWrite);
+					}
+					else
+					{
+						notify(Event::MovedFrom);
+						notify(Event::Deleted);
+					}
+				}
+			}
+		}
+#endif
+
+		inline auto notifySubscribers(Event event, const std::filesystem::path& path) -> void
+		{
+			const auto subscribers = m_subscribedFunctions.access().value();
+			for (const auto& [subscribedEvent, subscribedFunction] : subscribers)
+				if (subscribedEvent & event)
+					subscribedFunction(event, path);
 		}
 
-		std::mutex m_mutex;
-		Thread::ThreadLoop m_threadLoop;
-#if defined(OS_WINDOWS)
-		std::vector<System::Handle> m_changeHandles;
-#elif defined(OS_LINUX)
+		using SubscribedFunctions = std::vector<std::pair<Event, SubscribeFunction>>;
+
+#if defined(OS_LINUX)
+		using WatchDescriptor = int;
+		using WatchedItems = Container::BidirectionalMap<std::filesystem::path, WatchDescriptor>;
+
 		System::FileDescriptor m_eventPoll;
 		System::FileDescriptor m_inotify;
 		System::Pipe m_stopPipe;
-		epoll_event m_event;
+		epoll_event m_inotifyEpollEvent;
 		epoll_event m_stopEvent;
 		std::array<epoll_event, maxEvents> m_events;
-		Container::BidirectionalMap<std::filesystem::path, WatchDescriptor> m_watchDescriptors;
-		std::vector<std::pair<Event, SubscribeFunction>> m_subscribedFunctions;
+#elif defined(OS_WINDOWS)
+		struct WatchedItem final
+		{
+			System::Handle directoryHandle{System::InvalidHandle};
+			OVERLAPPED overlapped{};
+			std::filesystem::path watchedPath;
+			std::filesystem::path targetPath;
+			bool isSingleFile{false};
+			Event event{Event::All};
+			alignas(std::uint32_t) std::array<std::byte, 4096> buffer{};
+		};
+		using WatchedItems = std::vector<std::unique_ptr<WatchedItem>>;
+
+		System::Handle m_stopEvent{nullptr};
+		System::Handle m_wakeEvent{nullptr};
 #elif defined(OS_MACOS)
-		[[maybe_unused]] FSEventStreamRef m_filesystemEventStream;
+		struct WatchedItem final
+		{
+			std::reference_wrapper<Watcher> watcher;
+			FSEventStreamRef streamRef{nullptr};
+			std::filesystem::path watchedPath;
+			std::filesystem::path targetPath;
+			bool isSingleFile{false};
+			Event event{Event::All};
+		};
+		using WatchedItems = std::unordered_map<std::filesystem::path, std::unique_ptr<WatchedItem>>;
+
+		dispatch_queue_t m_dispatchQueue{nullptr};
 #endif
+
+#if defined(OS_MACOS)
+		std::atomic<bool> m_isRunning{false};
+#else
+		Thread::ThreadLoop m_threadLoop;
+#endif
+		Thread::UniqueLocker<SubscribedFunctions> m_subscribedFunctions;
+		Thread::UniqueLocker<WatchedItems> m_watchedItems;
 	};
 }

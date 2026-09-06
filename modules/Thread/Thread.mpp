@@ -1,5 +1,8 @@
 export module CppUtils.Thread;
 
+export import CppUtils.Thread.AsyncEventDispatcher;
+export import CppUtils.Thread.Poll;
+export import CppUtils.Thread.ScheduledEventDispatcher;
 export import CppUtils.Thread.Scheduler;
 export import CppUtils.Thread.SharedLocker;
 export import CppUtils.Thread.SharedPtr;
@@ -7,6 +10,3 @@ export import CppUtils.Thread.ThreadLoop;
 export import CppUtils.Thread.ThreadPool;
 export import CppUtils.Thread.TryAsync;
 export import CppUtils.Thread.UniqueLocker;
-export import CppUtils.Thread.AsyncEventDispatcher;
-export import CppUtils.Thread.ScheduledEventDispatcher;
-export import CppUtils.Thread.Scheduler;

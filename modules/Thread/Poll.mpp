@@ -1,0 +1,32 @@
+export module CppUtils.Thread.Poll;
+
+import std;
+import CppUtils.Chrono.Concept;
+
+export namespace CppUtils::Thread
+{
+	template<Chrono::TimePoint TimePoint, Chrono::Duration StepDuration = std::chrono::milliseconds>
+	[[nodiscard]] inline auto pollUntil(
+		auto&& predicate,
+		TimePoint timePoint,
+		StepDuration step = std::chrono::milliseconds{20}) -> bool
+	{
+		using Clock = typename TimePoint::clock;
+		while (not predicate())
+		{
+			if (Clock::now() >= timePoint)
+				return false;
+			std::this_thread::sleep_for(step);
+		}
+		return true;
+	}
+
+	template<Chrono::Duration TimeoutDuration = std::chrono::milliseconds, Chrono::Duration StepDuration = std::chrono::milliseconds>
+	[[nodiscard]] inline auto pollFor(
+		auto&& predicate,
+		TimeoutDuration timeout = std::chrono::milliseconds{1'000},
+		StepDuration step = std::chrono::milliseconds{20}) -> bool
+	{
+		return pollUntil(std::forward<decltype(predicate)>(predicate), std::chrono::steady_clock::now() + timeout, step);
+	}
+}

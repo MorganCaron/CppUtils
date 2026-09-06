@@ -13,6 +13,7 @@ import CppUtils.Log.Exception;
 import CppUtils.Log.Config.UnitTests;
 import CppUtils.String;
 import CppUtils.Terminal;
+import CppUtils.Thread.Poll;
 import CppUtils.System.Main;
 
 export import CppUtils.UnitTest.LifetimeChecker;
@@ -34,7 +35,7 @@ namespace CppUtils::UnitTest
 		std::chrono::seconds timeout = std::chrono::seconds{10};
 	};
 
-	class TestException: public std::runtime_error
+	export class TestException: public std::runtime_error
 	{
 	public:
 		inline TestException(std::string message):
@@ -301,6 +302,20 @@ namespace CppUtils::UnitTest
 		{
 			if (not static_cast<bool>(condition)) [[unlikely]]
 				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expect(condition)",
+					sourceLocation.file_name(),
+					sourceLocation.line(),
+					sourceLocation.column())};
+		}
+
+		template<Chrono::Duration TimeoutDuration = std::chrono::milliseconds, Chrono::Duration StepDuration = std::chrono::milliseconds>
+		inline auto expectWait(
+			auto&& predicate,
+			TimeoutDuration timeout = std::chrono::milliseconds{1'000},
+			StepDuration step = std::chrono::milliseconds{20},
+			std::source_location sourceLocation = std::source_location::current()) -> void
+		{
+			if (not Thread::pollFor(std::forward<decltype(predicate)>(predicate), timeout, step)) [[unlikely]]
+				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectWait(predicate)\nTimed out waiting for predicate to become true",
 					sourceLocation.file_name(),
 					sourceLocation.line(),
 					sourceLocation.column())};
