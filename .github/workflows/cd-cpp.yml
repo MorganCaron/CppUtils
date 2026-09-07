@@ -1,148 +1,116 @@
-name: "CD C++: Release publication"
+name: "CD: Release"
 
 on:
   push:
-    branches:
-    - main
     tags:
-    - v*
-    - test-cd
+      - "v*"
 
 jobs:
-  build:
-    name: ${{ matrix.os.name }} (${{ matrix.compiler.cxx }}, ${{ matrix.library-type }})
-    runs-on: ${{ matrix.os.value }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-        - {
-          name: "Windows",
-          value: windows-latest,
-          install-ninja: choco install ninja
-        }
-        - {
-          name: "Ubuntu",
-          value: ubuntu-latest,
-          install-ninja: sudo apt-get install -y ninja-build
-        }
-# Commented until the concepts are supported by Apple Clang
-#       - {
-#         name: "MacOS",
-#         value: macos-latest,
-#         install-ninja: brew install ninja
-#       }
-        compiler:
-        - {
-          cc: "gcc",
-          cxx: "g++",
-          install-ubuntu: "sudo apt-get install -y gcc-10 g++-10",
-          alternative-cc: "sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 10",
-          alternative-cxx: "sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 10"
-        }
-        - {
-          cc: "clang",
-          cxx: "clang++",
-          install-ubuntu: "sudo apt-get install -y clang-11 lldb-11 lld-11",
-          alternative-cc: "sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-11 11",
-          alternative-cxx: "sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-11 11"
-        }
-        library-type: [static, shared]
+  release:
+    name: "Create GitHub Release"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-      if: ${{ matrix.os.name != 'Windows' }}
-      with:
-        python-version: '3.x'
-    - uses: msys2/setup-msys2@v2
-      if: ${{ matrix.os.name == 'Windows' }}
-      with:
-        install: >-
-          mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-clang
-          mingw-w64-x86_64-meson
-          mingw-w64-x86_64-ninja
-    - name: Install ${{ matrix.compiler.cc }}/${{ matrix.compiler.cxx }} on Ubuntu
-      if: ${{ matrix.os.name == 'Ubuntu' }}
-      run: |
-        ${{ matrix.compiler.install-ubuntu }}
-        ${{ matrix.compiler.alternative-cc }}
-        ${{ matrix.compiler.alternative-cxx }}
-    - name: Install Meson on Ubuntu and MacOS
-      if: ${{ matrix.os.name != 'Windows' }}
-      run: pip3 install meson
-    - name: Install Ninja on Ubuntu and MacOS
-      if: ${{ matrix.os.name != 'Windows' }}
-      run: ${{ matrix.os.install-ninja }}
-    - name: Compile on Ubuntu and MacOS
-      if: ${{ matrix.os.name != 'Windows' }}
-      env:
-        CC: ${{ matrix.compiler.cc }}
-        CXX: ${{ matrix.compiler.cxx }}
-        LDFLAGS: '-ldl'
-      run: |
-        meson build -Ddefault_library=${{ matrix.library-type }}
-        ninja -C build
-    - name: Compile on Windows
-      if: ${{ matrix.os.name == 'Windows' }}
-      shell: msys2 {0}
-      env:
-        CC: ${{ matrix.compiler.cc }}
-        CXX: ${{ matrix.compiler.cxx }}
-      run: |
-        meson build -Ddefault_library=${{ matrix.library-type }}
-        ninja -C build
-    - name: Move DLLs on Windows/Shared
-      if: ${{ matrix.os.name == 'Windows' && matrix.library-type == 'shared' }}
-      shell: msys2 {0}
-      run: |
-        cp ./build/Log/libCppUtils-Log.dll ./build/UnitTests
-        cp ./build/Type/libCppUtils-Type.dll ./build/UnitTests
-    - name: Generate Artifact on Ubuntu and MacOS
-      if: ${{ matrix.os.name != 'Windows' }}
-      run: |
-        zip --junk-paths CppUtils-Artifact-${{ matrix.os.name }}-${{ matrix.library-type }} \
-          ./LICENSE \
-          ./resources/README.txt \
-          ./build/Language/Parser/libCppUtils-Language-Parser.a \
-          ./build/Log/libCppUtils-Log.a \
-          ./build/Switch/libCppUtils-Switch.a \
-          ./build/Type/libCppUtils-Type.a
-        if [ ${{ matrix.library-type }} == "shared" ]; then
-          zip --junk-paths CppUtils-Artifact-${{ matrix.os.name }}-${{ matrix.library-type }} \
-            ./build/Log/libCppUtils-Log.so \
-            ./build/Type/libCppUtils-Type.so
-        fi
-    - name: Generate Artifact on Windows
-      if: ${{ matrix.os.name == 'Windows' }}
-      shell: msys2 {0}
-      run: |
-        zip --junk-paths CppUtils-Artifact-${{ matrix.os.name }}-${{ matrix.library-type }} \
-          ./LICENSE \
-          ./resources/README.txt \
-          ./build/Language/Parser/libCppUtils-Language-Parser.a \
-          ./build/Log/libCppUtils-Log.a \
-          ./build/Switch/libCppUtils-Switch.a \
-          ./build/Type/libCppUtils-Type.a
-        if [ ${{ matrix.library-type }} == "shared" ]; then
-          zip --junk-paths CppUtils-Artifact-${{ matrix.os.name }}-${{ matrix.library-type }} \
-            ./build/Log/libCppUtils-Log.dll \
-            ./build/Type/libCppUtils-Type.dll
-        fi
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./CppUtils-Artifact-${{ matrix.os.name }}-${{ matrix.library-type }}.zip
-        asset_name: CppUtils-Artifact-${{ matrix.os.name }}-${{ matrix.library-type }}.zip
-        asset_content_type: application/zip
+      - uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+
+  update-xmake-repo:
+    name: "Update xmake-repo"
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check XMAKE_REPO_TOKEN availability
+        id: token-check
+        run: |
+          if [ -z "${{ secrets.XMAKE_REPO_TOKEN }}" ]; then
+            echo "::warning::Secret XMAKE_REPO_TOKEN is not configured. Skipping automatic xmake-repo update."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract version and tag
+        if: steps.token-check.outputs.available == 'true'
+        id: meta
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Download release tarball and compute SHA-256
+        if: steps.token-check.outputs.available == 'true'
+        id: checksum
+        run: |
+          TARBALL_URL="https://github.com/${{ github.repository }}/archive/refs/tags/${{ steps.meta.outputs.tag }}.tar.gz"
+          echo "Downloading archive from ${TARBALL_URL}..."
+          curl -f -sSL "${TARBALL_URL}" -o "archive.tar.gz"
+          SHA256=$(sha256sum "archive.tar.gz" | awk '{print $1}')
+          if [ -z "$SHA256" ] || [ ${#SHA256} -ne 64 ]; then
+            echo "::error::Failed to compute valid SHA-256 checksum for ${TARBALL_URL}"
+            exit 1
+          fi
+          echo "Computed SHA-256: ${SHA256}"
+          echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout xmake-repo
+        if: steps.token-check.outputs.available == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: "MorganCaron/xmake-repo"
+          token: ${{ secrets.XMAKE_REPO_TOKEN }}
+          path: "xmake-repo"
+
+      - name: Update package in xmake-repo
+        if: steps.token-check.outputs.available == 'true'
+        run: |
+          python3 - << 'EOF'
+          import re
+
+          pkg_file = "xmake-repo/packages/c/cpputils/xmake.lua"
+          version = "${{ steps.meta.outputs.version }}"
+          sha256 = "${{ steps.checksum.outputs.sha256 }}"
+
+          with open(pkg_file, "r") as file_handle:
+              content = file_handle.read()
+
+          version_entry = f'\tadd_versions("{version}", "{sha256}")\n'
+
+          if re.search(rf'add_versions\(\s*"{re.escape(version)}"', content):
+              print(f"Version {version} already present. Updating checksum...")
+              content = re.sub(
+                  rf'(\tadd_versions\(\s*"{re.escape(version)}"\s*,\s*)"[^"]*"(\))',
+                  lambda match: f'{match.group(1)}"{sha256}"{match.group(2)}',
+                  content
+              )
+          else:
+              if "add_versions(" in content:
+                  content = re.sub(r'(\tadd_versions\()', version_entry + r'\1', content, count=1)
+              else:
+                  content = re.sub(r'(\ton_install\()', version_entry + r'\n\1', content, count=1)
+
+          with open(pkg_file, "w") as file_handle:
+              file_handle.write(content)
+          EOF
+
+      - name: Commit and push changes to xmake-repo
+        if: steps.token-check.outputs.available == 'true'
+        working-directory: "xmake-repo"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add packages/c/cpputils/xmake.lua
+          if git diff --staged --quiet; then
+            echo "No changes to commit in xmake-repo."
+          else
+            git commit -m "add CppUtils ${{ steps.meta.outputs.version }}"
+            git push origin master
+          fi
+

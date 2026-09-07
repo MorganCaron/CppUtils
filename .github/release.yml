@@ -1,0 +1,28 @@
+changelog:
+  categories:
+    - title: "⚠️ Breaking Changes"
+      labels:
+        - "breaking"
+    - title: "🚀 Features & Enhancements"
+      labels:
+        - "enhancement"
+    - title: "🐛 Bug Fixes"
+      labels:
+        - "bug"
+    - title: "📝 Documentation"
+      labels:
+        - "documentation"
+    - title: "🛠 Refactoring & CI"
+      labels:
+        - "refactoring"
+        - "ci"
+    - title: "🔍 Other Changes"
+      labels: "*"
+  exclude:
+    labels:
+      - "duplicate"
+      - "good first issue"
+      - "help wanted"
+      - "invalid"
+      - "question"
+      - "wontfix"

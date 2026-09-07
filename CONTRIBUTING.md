@@ -9,3 +9,9 @@ Have any questions or concerns? Did I forget something? Feel free to submit an i
 If you decide to contribute, after downloading a copy of the repository, be sure to install the tools locally to develop and test your contribution before submitting it.
 
 Thanks for taking the time to contribute :)
+
+---
+
+## Maintainers
+
+For the release and versioning process, see [RELEASING.md](RELEASING.md).

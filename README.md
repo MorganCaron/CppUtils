@@ -9,6 +9,7 @@
 ![Top Language](https://img.shields.io/github/languages/top/MorganCaron/CppUtils?style=for-the-badge)
 [![Discord](https://img.shields.io/discord/268838260153909249?label=Chat&logo=Discord&style=for-the-badge)](https://discord.gg/mxZvun4)
 [![License](https://img.shields.io/github/license/MorganCaron/CppUtils?style=for-the-badge)](https://github.com/MorganCaron/CppUtils/blob/master/LICENSE)
+[![Release](https://img.shields.io/github/v/release/MorganCaron/CppUtils?style=for-the-badge&logo=github)](https://github.com/MorganCaron/CppUtils/releases)
 ![GitHub Sponsors](https://img.shields.io/github/sponsors/MorganCaron?style=for-the-badge)
 
 ### Project Health
@@ -170,7 +171,7 @@ This library is used in my C++ projects, but you can also use it in your project
 In your XMake projects:
 ```lua
 add_repositories("xmake-repo git@github.com:MorganCaron/xmake-repo.git")
-add_requires("CppUtils")
+add_requires("CppUtils 0.0.0") -- or add_requires("CppUtils") for latest
 
 target("YourProject", function()
 	add_packages("CppUtils", {public = true})
