@@ -258,7 +258,7 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 					<Validate column="Age" operator=">=" value="18" error="Too young"/>
 				</Pipeline>
 				)",
-					rejectedPath.string());
+					rejectedPath.generic_string());
 
 				const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
 
@@ -321,9 +321,9 @@ Charlie;charlie@example.com;30;80;4.8)"sv);
 					<Output file="{}" format="csv" separator=";"/>
 				</Flow>
 				)",
-					inputPath.string(),
-					rejectedPath.string(),
-					outputPath.string());
+					inputPath.generic_string(),
+					rejectedPath.generic_string(),
+					outputPath.generic_string());
 
 				auto threadPool = CppUtils::Thread::ThreadPool{2};
 				CppUtils::Language::Xml::executeFlow<User, UserMapping>(xmlSource, threadPool);
@@ -377,9 +377,9 @@ Frank;frank@example.com;35;70;3.5)"sv);
 					<Output file="{}" format="csv" separator=";"/>
 				</Flow>
 				)",
-					inputPath.string(),
-					rejectedPath.string(),
-					outputPath.string());
+					inputPath.generic_string(),
+					rejectedPath.generic_string(),
+					outputPath.generic_string());
 
 				auto threadPool = CppUtils::Thread::ThreadPool{4};
 				CppUtils::Language::Xml::executeFlow<User, UserMapping>(xmlSource, threadPool);
@@ -432,11 +432,11 @@ Bob;bob@example.com;30;80;4.8)"sv);
 					<Output file="{}" format="csv" separator=";"/>
 				</Flow>
 				)",
-					inputFile.string(),
-					stagingDir.string(),
-					archiveDir.string(),
-					quarantineDir.string(),
-					outputFile.string());
+					inputFile.generic_string(),
+					stagingDir.generic_string(),
+					archiveDir.generic_string(),
+					quarantineDir.generic_string(),
+					outputFile.generic_string());
 
 				auto threadPool = CppUtils::Thread::ThreadPool{2};
 				CppUtils::Language::Xml::executeFlow<User, UserMapping>(xmlSource, threadPool);
@@ -472,8 +472,8 @@ Bob;bob@example.com;30;80;4.8)"sv);
 					<Output directory="{}" format="csv" separator=";"/>
 				</Flow>
 				)",
-					inputDir.string(),
-					outputDir.string());
+					inputDir.generic_string(),
+					outputDir.generic_string());
 
 				auto threadPool = CppUtils::Thread::ThreadPool{2};
 				auto flow = CppUtils::Language::Xml::buildFlow<User, UserMapping>(xmlSource, threadPool);
@@ -504,7 +504,7 @@ Bob;bob@example.com;30;80;4.8)"sv);
 					<Operation column="Score" operator="+=" value="10"/>
 				</Pipeline>
 				)",
-					rejectedPath.string());
+					rejectedPath.generic_string());
 
 				const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
 
@@ -540,7 +540,7 @@ Bob;bob@example.com;30;80;4.8)"sv);
 					<Filter column="Score" operator="==" value="100"/>
 				</Pipeline>
 				)",
-					rejectedPath.string());
+					rejectedPath.generic_string());
 
 				auto pipeline = CppUtils::Language::Xml::Pipeline<User>{};
 				CppUtils::Language::Xml::registerStandardPipelineTags<User, UserMapping>(pipeline);
@@ -678,7 +678,7 @@ Bob;bob@example.com;30;80;4.8)"sv);
 					<Include file="{}"/>
 				</Pipeline>
 				)",
-					rulesPath.string());
+					rulesPath.generic_string());
 
 				const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
 
@@ -767,8 +767,8 @@ Bob;bob@example.com;30;80;4.8)"sv);
 					<Output file="{}"/>
 				</Flow>
 				)",
-					inputPath.string(),
-					outputPath.string());
+					inputPath.generic_string(),
+					outputPath.generic_string());
 
 				auto threadPool = CppUtils::Thread::ThreadPool{2};
 				auto flowWithOutput = CppUtils::Language::Xml::buildFlow<User, UserMapping>(xmlSourceWithOutput, threadPool);
@@ -787,7 +787,7 @@ Bob;bob@example.com;30;80;4.8)"sv);
 					</Pipeline>
 				</Flow>
 				)",
-					inputPath.string());
+					inputPath.generic_string());
 
 				auto flowInMemory = CppUtils::Language::Xml::buildFlow<User, UserMapping>(xmlSourceInMemory, threadPool);
 				const auto results = flowInMemory.execute();

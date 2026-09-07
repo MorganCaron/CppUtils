@@ -22,7 +22,7 @@ export namespace CppUtils::Language::VirtualMachine
 
 		[[nodiscard]] inline auto makeReferences(auto&... variables) noexcept
 		{
-			return References{std::ref(variables)...};
+			return std::tuple{std::ref(variables)...};
 		}
 
 		template<Type::DefaultConstructible... Types, class Functions = NoFunctions, class References = NoReferences>
@@ -37,8 +37,8 @@ export namespace CppUtils::Language::VirtualMachine
 			static_assert(Type::Specializes<References, std::tuple>);
 
 			constexpr auto types = std::make_tuple(Types{}...);
-			constexpr auto nbFunctions = std::tuple_size_v<std::remove_cvref_t<decltype(functions)>>;
-			constexpr auto nbReferences = std::tuple_size_v<std::remove_cvref_t<decltype(references)>>;
+			constexpr auto nbFunctions = std::tuple_size_v<Functions>;
+			constexpr auto nbReferences = std::tuple_size_v<std::remove_cvref_t<References>>;
 
 			auto stack = Container::Stack{};
 			auto registers = std::unordered_map<std::size_t, std::size_t>{}; // constexpr en C++23
@@ -232,7 +232,7 @@ export namespace CppUtils::Language::VirtualMachine
 						return std::unexpected{"No type defined"sv};
 					else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
 						return std::unexpected{typeId.error()};
-					else if (typeId.value() >= std::tuple_size_v<decltype(types)>) [[unlikely]]
+					else if (typeId.value() >= sizeof...(Types)) [[unlikely]]
 						return std::unexpected{"Instruction push: Type identifier out of range"sv};
 					else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) {
 						return stack.push(value);
@@ -246,7 +246,7 @@ export namespace CppUtils::Language::VirtualMachine
 						return std::unexpected{"No type defined"sv};
 					else if (auto typeId = stack.template pop<std::size_t>(); not typeId) [[unlikely]]
 						return std::unexpected{typeId.error()};
-					else if (typeId.value() >= std::tuple_size_v<decltype(types)>) [[unlikely]]
+					else if (typeId.value() >= sizeof...(Types)) [[unlikely]]
 						return std::unexpected{"Instruction drop: Type identifier out of range"sv};
 					else if (auto result = Type::Tuple::visitAt(types, typeId.value(), [&stack](const auto& value) {
 						return stack.drop(sizeof(std::remove_cvref_t<decltype(value)>));

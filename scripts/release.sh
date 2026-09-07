@@ -116,7 +116,8 @@ try:
     updated_readme = re.sub(
         r'add_requires\("CppUtils [^"]*"\)',
         f'add_requires("CppUtils ${target_version}")',
-        readme_content
+        readme_content,
+        count=1
     )
 
     with open("README.md", "w") as file_handle:
