@@ -6,8 +6,21 @@ on:
       - "v*"
 
 jobs:
+  ci-linux:
+    name: "CI Linux"
+    uses: ./.github/workflows/ci-cpp-linux.yml
+
+  ci-macos:
+    name: "CI MacOS"
+    uses: ./.github/workflows/ci-cpp-macos.yml
+
+  ci-windows:
+    name: "CI Windows"
+    uses: ./.github/workflows/ci-cpp-windows.yml
+
   release:
     name: "Create GitHub Release"
+    needs: [ci-linux, ci-macos, ci-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write

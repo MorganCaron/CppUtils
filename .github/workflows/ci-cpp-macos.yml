@@ -1,6 +1,13 @@
 name: "CI C++: MacOS"
 
-on: [ push, pull_request ]
+on:
+  workflow_call:
+  push:
+    branches:
+      - "**"
+    tags-ignore:
+      - "v*"
+  pull_request:
 
 jobs:
   build:
