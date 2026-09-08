@@ -171,7 +171,7 @@ This library is used in my C++ projects, but you can also use it in your project
 In your XMake projects:
 ```lua
 add_repositories("xmake-repo git@github.com:MorganCaron/xmake-repo.git")
-add_requires("CppUtils 0.0.0") -- or add_requires("CppUtils") for latest
+add_requires("CppUtils 0.0.1") -- or add_requires("CppUtils") for latest
 
 target("YourProject", function()
 	add_packages("CppUtils", {public = true})

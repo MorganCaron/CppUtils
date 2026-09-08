@@ -1,5 +1,5 @@
 set_project("CppUtils")
-set_version("0.0.0", {build = "%Y%m%d%H%M"})
+set_version("0.0.1", {build = "%Y%m%d%H%M"})
 set_license("LGPL3")
 set_languages("c++26")
 set_warnings("allextra", "pedantic", "error")
