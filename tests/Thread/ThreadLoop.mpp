@@ -31,10 +31,11 @@ namespace CppUtils::UnitTest::Thread::ThreadLoop
 					auto& nb = accessor.value();
 					if (nb < 5uz)
 						++nb;
-					std::this_thread::sleep_for(10ms);
 				}};
 				threadLoop.start();
-				std::this_thread::sleep_for(250ms);
+				suite.expectWait([&lockedNumber] {
+					return lockedNumber.access().value() >= 5uz;
+				}, 500ms, 5ms);
 			}
 			auto accessor = lockedNumber.access();
 			auto nb = accessor.value();

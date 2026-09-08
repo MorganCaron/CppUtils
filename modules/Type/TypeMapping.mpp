@@ -1,0 +1,220 @@
+export module CppUtils.Type.TypeMapping;
+
+import std;
+
+import CppUtils.Type.Utility;
+
+export namespace CppUtils::Type
+{
+	template<class LeftHandSideType, class RightHandSideType>
+	struct TypePair final
+	{
+		using Lhs = LeftHandSideType;
+		using Rhs = RightHandSideType;
+		static inline constexpr auto isValueLhs = false;
+		static inline constexpr auto isValueRhs = false;
+	};
+
+	template<auto LeftHandSideValue, class RightHandSideType>
+	struct ValueTypePair final
+	{
+		static inline constexpr auto lhs = LeftHandSideValue;
+		using Rhs = RightHandSideType;
+		static inline constexpr auto isValueLhs = true;
+		static inline constexpr auto isValueRhs = false;
+	};
+
+	template<class LeftHandSideType, auto RightHandSideValue>
+	struct TypeValuePair final
+	{
+		using Lhs = LeftHandSideType;
+		static inline constexpr auto rhs = RightHandSideValue;
+		static inline constexpr auto isValueLhs = false;
+		static inline constexpr auto isValueRhs = true;
+	};
+
+	template<auto LeftHandSideValue, auto RightHandSideValue>
+	struct ValuePair final
+	{
+		static inline constexpr auto lhs = LeftHandSideValue;
+		static inline constexpr auto rhs = RightHandSideValue;
+		static inline constexpr auto isValueLhs = true;
+		static inline constexpr auto isValueRhs = true;
+	};
+
+	template<class... Pairs>
+	struct TypeMapping final
+	{
+		TypeMapping() = delete;
+
+	private:
+		template<class Pair, class TargetLeftHandSide>
+		[[nodiscard]] static inline consteval auto matchesLhsType() noexcept -> bool
+		{
+			if constexpr (not Pair::isValueLhs)
+				return std::is_same_v<typename Pair::Lhs, TargetLeftHandSide>;
+			else
+				return false;
+		}
+
+		template<class Pair, auto TargetLeftHandSideValue>
+		[[nodiscard]] static inline consteval auto matchesLhsValue() noexcept -> bool
+		{
+			if constexpr (Pair::isValueLhs)
+				if constexpr (std::is_same_v<std::remove_cvref_t<decltype(Pair::lhs)>, std::remove_cvref_t<decltype(TargetLeftHandSideValue)>>)
+					return Pair::lhs == TargetLeftHandSideValue;
+				else
+					return false;
+			else
+				return false;
+		}
+
+		template<class Pair, class TargetRightHandSide>
+		[[nodiscard]] static inline consteval auto matchesRhsType() noexcept -> bool
+		{
+			if constexpr (not Pair::isValueRhs)
+				return std::is_same_v<typename Pair::Rhs, TargetRightHandSide>;
+			else
+				return false;
+		}
+
+		template<class Pair, auto TargetRightHandSideValue>
+		[[nodiscard]] static inline consteval auto matchesRhsValue() noexcept -> bool
+		{
+			if constexpr (Pair::isValueRhs)
+				if constexpr (std::is_same_v<std::remove_cvref_t<decltype(Pair::rhs)>, std::remove_cvref_t<decltype(TargetRightHandSideValue)>>)
+					return Pair::rhs == TargetRightHandSideValue;
+				else
+					return false;
+			else
+				return false;
+		}
+
+	public:
+		template<class TargetLeftHandSide>
+		[[nodiscard]] static inline constexpr auto containsLhs() noexcept -> bool
+		{
+			return (matchesLhsType<Pairs, TargetLeftHandSide>() or ...);
+		}
+
+		template<auto TargetLeftHandSideValue>
+		[[nodiscard]] static inline constexpr auto containsLhs() noexcept -> bool
+		{
+			return (matchesLhsValue<Pairs, TargetLeftHandSideValue>() or ...);
+		}
+
+		template<class TargetRightHandSide>
+		[[nodiscard]] static inline constexpr auto containsRhs() noexcept -> bool
+		{
+			return (matchesRhsType<Pairs, TargetRightHandSide>() or ...);
+		}
+
+		template<auto TargetRightHandSideValue>
+		[[nodiscard]] static inline constexpr auto containsRhs() noexcept -> bool
+		{
+			return (matchesRhsValue<Pairs, TargetRightHandSideValue>() or ...);
+		}
+
+		template<class TargetLeftHandSide>
+		[[nodiscard]] static inline consteval auto toRhs() noexcept
+		{
+			if constexpr (sizeof...(Pairs) == 0)
+				static_assert(Type::FalseType<TargetLeftHandSide>, "TypeMapping: Left-hand side type not found in mapping.");
+			else
+				return []<class First, class... Rest>(this auto&& self) consteval {
+					if constexpr (matchesLhsType<First, TargetLeftHandSide>())
+						if constexpr (First::isValueRhs)
+							return First::rhs;
+						else
+							return std::type_identity<typename First::Rhs>{};
+					else if constexpr (sizeof...(Rest) == 0)
+						static_assert(Type::FalseType<TargetLeftHandSide>, "TypeMapping: Left-hand side type not found in mapping.");
+					else
+						return self.template operator()<Rest...>();
+				}.template operator()<Pairs...>();
+		}
+
+		template<auto TargetLeftHandSideValue>
+		[[nodiscard]] static inline consteval auto toRhs() noexcept
+		{
+			if constexpr (sizeof...(Pairs) == 0)
+				static_assert(Type::FalseValue<TargetLeftHandSideValue>, "TypeMapping: Left-hand side value not found in mapping.");
+			else
+				return []<class First, class... Rest>(this auto&& self) consteval {
+					if constexpr (matchesLhsValue<First, TargetLeftHandSideValue>())
+						if constexpr (First::isValueRhs)
+							return First::rhs;
+						else
+							return std::type_identity<typename First::Rhs>{};
+					else if constexpr (sizeof...(Rest) == 0)
+						static_assert(Type::FalseValue<TargetLeftHandSideValue>, "TypeMapping: Left-hand side value not found in mapping.");
+					else
+						return self.template operator()<Rest...>();
+				}.template operator()<Pairs...>();
+		}
+
+		template<class TargetRightHandSide>
+		[[nodiscard]] static inline consteval auto toLhs() noexcept
+		{
+			if constexpr (sizeof...(Pairs) == 0)
+				static_assert(Type::FalseType<TargetRightHandSide>, "TypeMapping: Right-hand side type not found in mapping.");
+			else
+				return []<class First, class... Rest>(this auto&& self) consteval {
+					if constexpr (matchesRhsType<First, TargetRightHandSide>())
+						if constexpr (First::isValueLhs)
+							return First::lhs;
+						else
+							return std::type_identity<typename First::Lhs>{};
+					else if constexpr (sizeof...(Rest) == 0)
+						static_assert(Type::FalseType<TargetRightHandSide>, "TypeMapping: Right-hand side type not found in mapping.");
+					else
+						return self.template operator()<Rest...>();
+				}.template operator()<Pairs...>();
+		}
+
+		template<auto TargetRightHandSideValue>
+		[[nodiscard]] static inline consteval auto toLhs() noexcept
+		{
+			if constexpr (sizeof...(Pairs) == 0)
+				static_assert(Type::FalseValue<TargetRightHandSideValue>, "TypeMapping: Right-hand side value not found in mapping.");
+			else
+				return []<class First, class... Rest>(this auto&& self) consteval {
+					if constexpr (matchesRhsValue<First, TargetRightHandSideValue>())
+						if constexpr (First::isValueLhs)
+							return First::lhs;
+						else
+							return std::type_identity<typename First::Lhs>{};
+					else if constexpr (sizeof...(Rest) == 0)
+						static_assert(Type::FalseValue<TargetRightHandSideValue>, "TypeMapping: Right-hand side value not found in mapping.");
+					else
+						return self.template operator()<Rest...>();
+				}.template operator()<Pairs...>();
+		}
+
+	private:
+		template<class Target>
+		struct UnwrapType final
+		{
+			static_assert(Type::FalseType<Target>, "TypeMapping: Target is mapped to a value, not a type.");
+		};
+
+		template<class Target>
+		struct UnwrapType<std::type_identity<Target>> final
+		{
+			using type = Target;
+		};
+
+	public:
+		template<class TargetLeftHandSide>
+		using ToRhs = typename UnwrapType<decltype(toRhs<TargetLeftHandSide>())>::type;
+
+		template<auto TargetLeftHandSideValue>
+		using ToRhsValue = typename UnwrapType<decltype(toRhs<TargetLeftHandSideValue>())>::type;
+
+		template<class TargetRightHandSide>
+		using ToLhs = typename UnwrapType<decltype(toLhs<TargetRightHandSide>())>::type;
+
+		template<auto TargetRightHandSideValue>
+		using ToLhsValue = typename UnwrapType<decltype(toLhs<TargetRightHandSideValue>())>::type;
+	};
+}

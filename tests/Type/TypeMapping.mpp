@@ -1,0 +1,127 @@
+export module CppUtils.UnitTests.Type.TypeMapping;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Type::TypeMapping
+{
+	enum class Priority
+	{
+		Low,
+		Medium,
+		High
+	};
+
+	struct LowPriorityTask final
+	{};
+	struct MediumPriorityTask final
+	{};
+	struct HighPriorityTask final
+	{};
+
+	namespace ValueToType
+	{
+		using PriorityMap = CppUtils::Type::TypeMapping<
+			CppUtils::Type::ValueTypePair<Priority::Low, LowPriorityTask>,
+			CppUtils::Type::ValueTypePair<Priority::Medium, MediumPriorityTask>,
+			CppUtils::Type::ValueTypePair<Priority::High, HighPriorityTask>>;
+
+		static_assert(std::is_same_v<PriorityMap::ToRhsValue<Priority::Low>, LowPriorityTask>);
+		static_assert(std::is_same_v<PriorityMap::ToRhsValue<Priority::Medium>, MediumPriorityTask>);
+		static_assert(std::is_same_v<PriorityMap::ToRhsValue<Priority::High>, HighPriorityTask>);
+
+		static_assert(std::is_same_v<typename decltype(PriorityMap::toRhs<Priority::Low>())::type, LowPriorityTask>);
+
+		static_assert(PriorityMap::toLhs<LowPriorityTask>() == Priority::Low);
+		static_assert(PriorityMap::toLhs<MediumPriorityTask>() == Priority::Medium);
+		static_assert(PriorityMap::toLhs<HighPriorityTask>() == Priority::High);
+
+		static_assert(PriorityMap::containsLhs<Priority::Low>());
+		static_assert(PriorityMap::containsLhs<Priority::High>());
+		static_assert(PriorityMap::containsRhs<LowPriorityTask>());
+		static_assert(PriorityMap::containsRhs<HighPriorityTask>());
+		static_assert(not PriorityMap::containsRhs<int>());
+	}
+
+	namespace TypeToType
+	{
+		using ConversionMap = CppUtils::Type::TypeMapping<
+			CppUtils::Type::TypePair<int, float>,
+			CppUtils::Type::TypePair<double, char>>;
+
+		static_assert(std::is_same_v<ConversionMap::ToRhs<int>, float>);
+		static_assert(std::is_same_v<ConversionMap::ToRhs<double>, char>);
+		static_assert(std::is_same_v<typename decltype(ConversionMap::toRhs<int>())::type, float>);
+
+		static_assert(std::is_same_v<ConversionMap::ToLhs<float>, int>);
+		static_assert(std::is_same_v<ConversionMap::ToLhs<char>, double>);
+		static_assert(std::is_same_v<typename decltype(ConversionMap::toLhs<float>())::type, int>);
+
+		static_assert(ConversionMap::containsLhs<int>());
+		static_assert(ConversionMap::containsRhs<float>());
+		static_assert(not ConversionMap::containsLhs<long>());
+	}
+
+	namespace TypeToValue
+	{
+		using ReversePriorityMap = CppUtils::Type::TypeMapping<
+			CppUtils::Type::TypeValuePair<LowPriorityTask, Priority::Low>,
+			CppUtils::Type::TypeValuePair<MediumPriorityTask, Priority::Medium>,
+			CppUtils::Type::TypeValuePair<HighPriorityTask, Priority::High>>;
+
+		static_assert(ReversePriorityMap::toRhs<LowPriorityTask>() == Priority::Low);
+		static_assert(ReversePriorityMap::toRhs<HighPriorityTask>() == Priority::High);
+		static_assert(std::is_same_v<ReversePriorityMap::ToLhsValue<Priority::Medium>, MediumPriorityTask>);
+
+		static_assert(ReversePriorityMap::containsLhs<LowPriorityTask>());
+		static_assert(ReversePriorityMap::containsRhs<Priority::High>());
+	}
+
+	namespace Heterogeneous
+	{
+		using MixedMap = CppUtils::Type::TypeMapping<
+			CppUtils::Type::TypePair<int, float>,
+			CppUtils::Type::ValueTypePair<Priority::Low, LowPriorityTask>,
+			CppUtils::Type::TypeValuePair<HighPriorityTask, Priority::High>,
+			CppUtils::Type::ValuePair<1, 42>>;
+
+		static_assert(MixedMap::containsLhs<int>());
+		static_assert(MixedMap::containsLhs<Priority::Low>());
+		static_assert(MixedMap::containsLhs<HighPriorityTask>());
+		static_assert(MixedMap::containsLhs<1>());
+		static_assert(not MixedMap::containsLhs<double>());
+		static_assert(not MixedMap::containsLhs<99>());
+
+		static_assert(MixedMap::containsRhs<float>());
+		static_assert(MixedMap::containsRhs<LowPriorityTask>());
+		static_assert(MixedMap::containsRhs<Priority::High>());
+		static_assert(MixedMap::containsRhs<42>());
+		static_assert(not MixedMap::containsRhs<char>());
+		static_assert(not MixedMap::containsRhs<99>());
+
+		static_assert(std::is_same_v<MixedMap::ToRhs<int>, float>);
+		static_assert(std::is_same_v<MixedMap::ToRhsValue<Priority::Low>, LowPriorityTask>);
+		static_assert(std::is_same_v<MixedMap::ToLhs<float>, int>);
+		static_assert(std::is_same_v<MixedMap::ToLhsValue<Priority::High>, HighPriorityTask>);
+
+		static_assert(std::is_same_v<typename decltype(MixedMap::toRhs<int>())::type, float>);
+		static_assert(std::is_same_v<typename decltype(MixedMap::toRhs<Priority::Low>())::type, LowPriorityTask>);
+		static_assert(MixedMap::toRhs<HighPriorityTask>() == Priority::High);
+		static_assert(MixedMap::toRhs<1>() == 42);
+
+		static_assert(std::is_same_v<typename decltype(MixedMap::toLhs<float>())::type, int>);
+		static_assert(std::is_same_v<typename decltype(MixedMap::toLhs<Priority::High>())::type, HighPriorityTask>);
+		static_assert(MixedMap::toLhs<LowPriorityTask>() == Priority::Low);
+		static_assert(MixedMap::toLhs<42>() == 1);
+	}
+
+	namespace Empty
+	{
+		using EmptyMap = CppUtils::Type::TypeMapping<>;
+
+		static_assert(not EmptyMap::containsLhs<int>());
+		static_assert(not EmptyMap::containsLhs<42>());
+		static_assert(not EmptyMap::containsRhs<float>());
+		static_assert(not EmptyMap::containsRhs<42>());
+	}
+}
