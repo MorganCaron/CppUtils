@@ -17,7 +17,8 @@ changelog:
         - "refactoring"
         - "ci"
     - title: "🔍 Other Changes"
-      labels: "*"
+      labels:
+        - "*"
   exclude:
     labels:
       - "duplicate"

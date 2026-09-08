@@ -134,8 +134,9 @@ echo "--------------------------------------------------"
 # 7. Prompt confirmation
 if [[ "${auto_confirm}" != true ]]; then
     read -r -p "Commit, tag (${tag_name}), and push to origin? [y/N] " confirmation_response
-    case "${confirmation_response}" in
-        [yY][eE][sS]|[yY])
+    normalized_confirmation_response="$(echo "${confirmation_response}" | tr -d " '\r\t\"" | tr '[:upper:]' '[:lower:]')"
+    case "${normalized_confirmation_response}" in
+        y|yes)
             ;;
         *)
             echo "Release aborted. Reverting version changes..."
