@@ -106,15 +106,19 @@ Ensure your working tree is clean (`git status`).
    ```
 
 2. **Update `packages/c/cpputils/xmake.lua`** in `xmake-repo`:
+   Ensure `add_urls` defines both the archive tarball and the Git repository, then add the new version:
    ```lua
-   add_versions("0.1.0", "<sha256_checksum_here>")
+   add_urls("https://github.com/MorganCaron/CppUtils/archive/refs/tags/$(version).tar.gz",
+            "https://github.com/MorganCaron/CppUtils.git")
+
+   add_versions("v0.1.0", "<sha256_checksum_here>")
    ```
 
 3. **Verify and push**:
    ```bash
    xrepo install --force CppUtils 0.1.0
    git add packages/c/cpputils/xmake.lua
-   git commit -m "add CppUtils 0.1.0"
+   git commit -m "add CppUtils v0.1.0"
    git push origin master
    ```
 

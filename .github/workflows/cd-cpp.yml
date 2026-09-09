@@ -88,18 +88,18 @@ jobs:
           import re
 
           pkg_file = "xmake-repo/packages/c/cpputils/xmake.lua"
-          version = "${{ steps.meta.outputs.version }}"
+          tag = "${{ steps.meta.outputs.tag }}"
           sha256 = "${{ steps.checksum.outputs.sha256 }}"
 
           with open(pkg_file, "r") as file_handle:
               content = file_handle.read()
 
-          version_entry = f'\tadd_versions("{version}", "{sha256}")\n'
+          version_entry = f'\tadd_versions("{tag}", "{sha256}")\n'
 
-          if re.search(rf'add_versions\(\s*"{re.escape(version)}"', content):
-              print(f"Version {version} already present. Updating checksum...")
+          if re.search(rf'add_versions\(\s*"{re.escape(tag)}"', content):
+              print(f"Version {tag} already present. Updating checksum...")
               content = re.sub(
-                  rf'(\tadd_versions\(\s*"{re.escape(version)}"\s*,\s*)"[^"]*"(\))',
+                  rf'(\tadd_versions\(\s*"{re.escape(tag)}"\s*,\s*)"[^"]*"(\))',
                   lambda match: f'{match.group(1)}"{sha256}"{match.group(2)}',
                   content
               )
@@ -123,7 +123,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit in xmake-repo."
           else
-            git commit -m "add CppUtils ${{ steps.meta.outputs.version }}"
+            git commit -m "add CppUtils ${{ steps.meta.outputs.tag }}"
             git push origin master
           fi
 

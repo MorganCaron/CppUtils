@@ -1,4 +1,6 @@
 # Artifacts
 /build
 /.xmake
+
+# IDE
 /.vscode/compile_commands.json

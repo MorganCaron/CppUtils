@@ -2,7 +2,7 @@ import std;
 import CppUtils;
 import CppUtils.UnitTests;
 
-auto start([[maybe_unused]] std::span<const std::string_view> args) -> int
+auto start([[maybe_unused]] std::span<const std::string_view> arguments) -> int
 {
 	try
 	{
