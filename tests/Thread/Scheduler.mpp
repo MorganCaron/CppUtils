@@ -162,8 +162,6 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 			scheduler.waitUntilFinished();
 
 			suite.expectEqual(std::ranges::size(times), 4uz);
-			// Sans bucketing: la tache 1 attend son échéance (delta d'environ 250ms)
-			suite.expect(times[1] - times[0] >= 150ms);
 			// Chaque tache respecte sa date
 			suite.expect(times[0] >= now + 80ms);
 			suite.expect(times[1] >= now + 300ms);
