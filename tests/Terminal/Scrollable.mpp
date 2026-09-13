@@ -91,10 +91,10 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 						});
 						scrollable.setScroll(currentScroll);
 						canvas.print();
-						std::this_thread::sleep_for(10ms);
+						std::this_thread::sleep_for(7ms);
 					}
 			}
-		});
+		}, 30s);
 
 		suite.addTest("MouseInteraction", [&] {
 			constexpr auto viewSize = CppUtils::Container::Size2{50, 20};
@@ -104,7 +104,7 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 			auto& scrollable = canvas.newWidget<CppUtils::Terminal::Scrollable>(viewSize, contentSize);
 
 			canvas.print();
-			std::this_thread::sleep_for(200ms);
+			std::this_thread::sleep_for(100ms);
 			suite.expectEqual(scrollable.getScroll(), CppUtils::Container::Size2{0uz, 0uz});
 
 			auto clickEvent = CppUtils::Terminal::Mouse::Event{
@@ -114,7 +114,7 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 				.absolutePosition = canvas.getAbsolutePosition() + CppUtils::Container::Size2{viewSize.width() - 1uz, 10uz}};
 			canvas.onMouseEvent(clickEvent);
 			canvas.print();
-			std::this_thread::sleep_for(200ms);
+			std::this_thread::sleep_for(100ms);
 
 			suite.expect(scrollable.getScroll().y() > 0);
 
@@ -123,7 +123,7 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 			dragEvent.absolutePosition.y() += 5;
 			canvas.onMouseEvent(dragEvent);
 			canvas.print();
-			std::this_thread::sleep_for(200ms);
+			std::this_thread::sleep_for(100ms);
 
 			suite.expect(scrollable.getScroll().y() > 10);
 
@@ -135,7 +135,7 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 			const auto prevScrollY = scrollable.getScroll().y();
 			const auto handled = canvas.onMouseEvent(scrollUpEvent);
 			canvas.print();
-			std::this_thread::sleep_for(200ms);
+			std::this_thread::sleep_for(100ms);
 
 			suite.expect(handled);
 			suite.expect(scrollable.getScroll().y() < prevScrollY);
@@ -153,7 +153,7 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 			scrollable.setScrollbarStyle(customStyle);
 
 			canvas.print();
-			std::this_thread::sleep_for(200ms);
+			std::this_thread::sleep_for(100ms);
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
