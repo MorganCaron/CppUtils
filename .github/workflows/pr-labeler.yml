@@ -1,0 +1,119 @@
+name: "PR: Semantic Labeler"
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  label:
+    name: "Auto-label PR from title"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Label Pull Request
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const title = context.payload.pull_request.title;
+            const pullRequestNumber = context.payload.pull_request.number;
+            const repositoryOwner = context.repo.owner;
+            const repositoryName = context.repo.repo;
+
+            const labelDefinitions = {
+              'breaking': { color: 'd93f0b', description: 'Changes that break backwards compatibility' },
+              'feature': { color: 'a2eeef', description: 'New feature' },
+              'bug': { color: 'd73a4a', description: "Something isn't working" },
+              'documentation': { color: '0075ca', description: 'Improvements or additions to documentation' },
+              'refactoring': { color: '63dc2d', description: 'Internal code improvements without changing functionality' },
+              'ci': { color: '57c2b7', description: 'Changes to CI configuration and workflows' }
+            };
+
+            const typeToLabel = {
+              feat: 'feature',
+              fix: 'bug',
+              docs: 'documentation',
+              refactor: 'refactoring',
+              style: 'refactoring',
+              perf: 'feature',
+              ci: 'ci',
+              test: 'ci'
+            };
+
+            const targetLabels = new Set();
+
+            // Regex for Conventional Commits: type(scope)!: description
+            // Captures: 1 = type, 2 = optional "!", 3 = description
+            const match = title.match(/^([a-z]+)(?:\([^\)]+\))?(!)?:\s*(.+)$/i);
+            if (match) {
+              const commitType = match[1].toLowerCase();
+              const hasExclamationMark = match[2] === '!';
+
+              if (typeToLabel[commitType]) {
+                targetLabels.add(typeToLabel[commitType]);
+              }
+
+              if (hasExclamationMark) {
+                targetLabels.add('breaking');
+              }
+            }
+
+            // Ensure required labels exist in repository before adding
+            if (targetLabels.size > 0) {
+              const { data: existingLabels } = await github.rest.issues.listLabelsForRepo({
+                owner: repositoryOwner,
+                repo: repositoryName,
+                per_page: 100
+              });
+              const existingLabelNames = new Set(existingLabels.map(label => label.name));
+
+              for (const labelName of targetLabels) {
+                if (!existingLabelNames.has(labelName)) {
+                  const definition = labelDefinitions[labelName];
+                  await github.rest.issues.createLabel({
+                    owner: repositoryOwner,
+                    repo: repositoryName,
+                    name: labelName,
+                    color: definition.color,
+                    description: definition.description
+                  });
+                  console.log(`Created missing label: ${labelName}`);
+                }
+              }
+            }
+
+            const currentLabels = (context.payload.pull_request.labels || []).map(label => label.name);
+
+            // Add labels that are not already present
+            const labelsToAdd = Array.from(targetLabels).filter(labelName => !currentLabels.includes(labelName));
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: repositoryOwner,
+                repo: repositoryName,
+                issue_number: pullRequestNumber,
+                labels: labelsToAdd
+              });
+              console.log(`Added labels: ${labelsToAdd.join(', ')}`);
+            }
+
+            // Remove obsolete managed labels if PR title was edited
+            const managedLabelNames = Object.keys(labelDefinitions);
+            const labelsToRemove = currentLabels.filter(
+              labelName => managedLabelNames.includes(labelName) && !targetLabels.has(labelName)
+            );
+            for (const labelName of labelsToRemove) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: repositoryOwner,
+                  repo: repositoryName,
+                  issue_number: pullRequestNumber,
+                  name: labelName
+                });
+                console.log(`Removed obsolete label: ${labelName}`);
+              } catch (error) {
+                console.warn(`Could not remove label ${labelName}: ${error.message}`);
+              }
+            }
