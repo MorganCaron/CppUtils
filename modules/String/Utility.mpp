@@ -103,40 +103,44 @@ export namespace CppUtils::String
 		return std::isprint(c) ? ("'"s + c + '\'') : std::to_string(c);
 	}
 
-	[[nodiscard]] inline constexpr auto isUppercase(auto c) noexcept -> bool
+	[[nodiscard]] inline constexpr auto isUppercase(Char auto c) noexcept -> bool
 	{
 		return (c >= 'A' and c <= 'Z');
 	}
 
-	[[nodiscard]] inline constexpr auto isLowercase(auto c) noexcept -> bool
+	[[nodiscard]] inline constexpr auto isLowercase(Char auto c) noexcept -> bool
 	{
 		return (c >= 'a' and c <= 'z');
 	}
 
-	[[nodiscard]] inline constexpr auto toLowercase(auto c) noexcept
+	[[nodiscard]] inline constexpr auto toLowercase(Char auto c) noexcept -> decltype(c)
 	{
-		return isUppercase(c) ? c + ('a' - 'A') : c;
+		return static_cast<decltype(c)>(isUppercase(c) ? c + ('a' - 'A') : c);
 	}
 
-	[[nodiscard]] inline constexpr auto toUppercase(auto c) noexcept
+	[[nodiscard]] inline constexpr auto toUppercase(Char auto c) noexcept -> decltype(c)
 	{
-		return isLowercase(c) ? c - ('a' - 'A') : c;
+		return static_cast<decltype(c)>(isLowercase(c) ? c - ('a' - 'A') : c);
 	}
 
-	template<class CharT>
-	[[nodiscard]] inline constexpr auto toLowercase(std::basic_string_view<CharT> originalString) -> std::basic_string<CharT>
+	[[nodiscard]] inline constexpr auto toLowercase(GenericText auto&& originalString)
+		-> std::basic_string<TextCharT<decltype(originalString)>>
 	{
-		return originalString
-			| std::views::transform([](CharT c) { return toLowercase(c); })
-			| std::ranges::to<std::basic_string<CharT>>();
+		using CharacterType = TextCharT<decltype(originalString)>;
+		auto result = std::basic_string<CharacterType>{std::forward<decltype(originalString)>(originalString)};
+		for (auto& character : result)
+			character = toLowercase(character);
+		return result;
 	}
 
-	template<class CharT>
-	[[nodiscard]] inline constexpr auto toUppercase(std::basic_string_view<CharT> originalString) -> std::basic_string<CharT>
+	[[nodiscard]] inline constexpr auto toUppercase(GenericText auto&& originalString)
+		-> std::basic_string<TextCharT<decltype(originalString)>>
 	{
-		return originalString
-			| std::views::transform([](CharT c) { return toUppercase(c); })
-			| std::ranges::to<std::basic_string<CharT>>();
+		using CharacterType = TextCharT<decltype(originalString)>;
+		auto result = std::basic_string<CharacterType>{std::forward<decltype(originalString)>(originalString)};
+		for (auto& character : result)
+			character = toUppercase(character);
+		return result;
 	}
 
 	[[nodiscard]] inline auto formatValue(const auto& value) -> std::string
