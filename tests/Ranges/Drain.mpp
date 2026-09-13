@@ -1,0 +1,51 @@
+export module CppUtils.UnitTests.Ranges.Drain;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Ranges::Drain
+{
+	auto _ = TestSuite{"Ranges/Drain", {}, [](TestSuite& suite) {
+		suite.addTest("Pipe syntax", [&] {
+			auto count = 0;
+			const auto numbers = std::vector<int>{1, 2, 3, 4, 5};
+
+			numbers
+				| std::views::transform([&count](int value) {
+				count += value;
+				return value;
+			})
+				| CppUtils::Ranges::drain;
+
+			suite.expectEqual(count, 15);
+		});
+
+		suite.addTest("Direct call", [&] {
+			auto count = 0;
+			const auto numbers = std::vector<int>{10, 20, 30};
+
+			CppUtils::Ranges::drain(
+				numbers | std::views::transform([&count](int value) {
+				count += value;
+				return value;
+			}));
+
+			suite.expectEqual(count, 60);
+		});
+
+		suite.addTest("Constexpr evaluation", [&] {
+			constexpr auto sum = [] {
+				auto count = 0;
+				const auto numbers = std::array{1, 2, 3};
+				numbers
+					| std::views::transform([&count](int value) {
+					count += value;
+					return value;
+				})
+					| CppUtils::Ranges::drain;
+				return count;
+			}();
+			static_assert(sum == 6);
+		});
+	}};
+}
