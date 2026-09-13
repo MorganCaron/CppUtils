@@ -3,9 +3,9 @@ changelog:
     - title: "⚠️ Breaking Changes"
       labels:
         - "breaking"
-    - title: "🚀 Features & Enhancements"
+    - title: "🚀 New Features"
       labels:
-        - "enhancement"
+        - "feature"
     - title: "🐛 Bug Fixes"
       labels:
         - "bug"
@@ -22,8 +22,6 @@ changelog:
   exclude:
     labels:
       - "duplicate"
-      - "good first issue"
-      - "help wanted"
       - "invalid"
       - "question"
       - "wontfix"
