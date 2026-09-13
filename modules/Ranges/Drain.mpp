@@ -1,0 +1,22 @@
+export module CppUtils.Ranges.Drain;
+
+import std;
+
+export namespace CppUtils::Ranges
+{
+	struct Drain final
+	{
+		friend constexpr auto operator|(std::ranges::input_range auto&& range, Drain) -> void
+		{
+			for (auto&& _ : range)
+			{}
+		}
+
+		constexpr auto operator()(std::ranges::input_range auto&& range) const -> void
+		{
+			std::forward<decltype(range)>(range) | *this;
+		}
+	};
+
+	inline constexpr auto drain = Drain{};
+}
