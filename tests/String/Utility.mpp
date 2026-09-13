@@ -88,5 +88,25 @@ namespace CppUtils::UnitTest::String::Utility
 			const auto expectedData = std::array{std::byte{0x00}, std::byte{0x0f}, std::byte{0x10}, std::byte{0xff}};
 			suite.expect(std::ranges::equal(decoded, expectedData));
 		});
+
+		suite.addTest("toLowercase", [&] {
+			suite.expectEqual(CppUtils::String::toLowercase('A'), 'a');
+			suite.expectEqual(CppUtils::String::toLowercase("HELLO"), "hello");
+			const auto original = std::string{"HELLO"};
+			suite.expectEqual(CppUtils::String::toLowercase(original), "hello");
+			suite.expectEqual(CppUtils::String::toLowercase(std::string{"HELLO"}), "hello");
+			suite.expectEqual(CppUtils::String::toLowercase("HELLO"sv), "hello");
+			suite.expectEqual(CppUtils::String::toLowercase(L"HELLO"sv), L"hello");
+		});
+
+		suite.addTest("toUppercase", [&] {
+			suite.expectEqual(CppUtils::String::toUppercase('a'), 'A');
+			suite.expectEqual(CppUtils::String::toUppercase("hello"), "HELLO");
+			const auto original = std::string{"hello"};
+			suite.expectEqual(CppUtils::String::toUppercase(original), "HELLO");
+			suite.expectEqual(CppUtils::String::toUppercase(std::string{"hello"}), "HELLO");
+			suite.expectEqual(CppUtils::String::toUppercase("hello"sv), "HELLO");
+			suite.expectEqual(CppUtils::String::toUppercase(L"hello"sv), L"HELLO");
+		});
 	}};
 }
