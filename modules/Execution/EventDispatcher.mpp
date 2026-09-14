@@ -3,6 +3,7 @@ export module CppUtils.Execution.EventDispatcher;
 import std;
 import CppUtils.Type.Callable;
 import CppUtils.String.Hash;
+import CppUtils.Container.MultiKeyMap;
 
 export namespace CppUtils::Execution
 {
@@ -11,6 +12,10 @@ export namespace CppUtils::Execution
 		using Key = std::pair<Type::Hash, std::type_index>;
 
 	public:
+		// clang-format off
+		enum class SubscriptionIdentifier : std::size_t {};
+		// clang-format on
+
 		template<String::Hasher eventName = Type::Hash{}, class... Args>
 		inline auto emit(const Args&... args) -> void
 		{
@@ -22,38 +27,90 @@ export namespace CppUtils::Execution
 		{
 			auto lockGuard = std::shared_lock{m_mutex};
 			using Tuple = std::tuple<std::decay_t<Args>...>;
-			auto key = std::make_pair(eventName, std::type_index{typeid(Tuple)});
-			if (auto subscriberIt = m_subscribers.find(key); subscriberIt != std::ranges::cend(m_subscribers))
+			const auto key = std::make_pair(eventName, std::type_index{typeid(Tuple)});
+			if (const auto subscribers = m_subscribers.find(key);
+				not std::ranges::empty(subscribers))
 			{
 				auto payload = std::make_tuple(args...);
-				for (auto& function : subscriberIt->second)
-					function(std::addressof(payload));
+				for (const auto& subscriber : subscribers)
+					subscriber.value(std::addressof(payload));
 			}
 		}
 
-		template<String::Hasher... eventNames>
-		inline auto subscribe(auto&& function) -> void
-		{
-			if constexpr (sizeof...(eventNames) == 0)
-				subscribe(Type::Hash{}, std::forward<decltype(function)>(function));
-			else
-				(subscribe(static_cast<Type::Hash>(eventNames), function), ...);
-		}
-
-		inline auto subscribe(Type::Hash eventHash, auto&& function) -> void
+		inline auto subscribe(Type::Hash eventHash, auto&& function) -> SubscriptionIdentifier
 		{
 			using FunctionType = std::decay_t<decltype(function)>;
 			using ArgumentsTypes = typename Type::CallableTrait<FunctionType>::ArgumentsTypes;
-			[&]<class... Args>(std::tuple<Args...>*) {
+			return [&]<class... Args>(std::tuple<Args...>*) -> SubscriptionIdentifier {
 				using Tuple = std::tuple<std::decay_t<Args>...>;
 				auto lockGuard = std::unique_lock{m_mutex};
-				auto key = std::make_pair(eventHash, std::type_index{typeid(Tuple)});
-				m_subscribers[key].emplace_back(
+				const auto subscriptionIdentifier = static_cast<SubscriptionIdentifier>(++m_nextSubscriptionIdentifier);
+				const auto key = std::make_pair(eventHash, std::type_index{typeid(Tuple)});
+				m_subscribers.emplace(
+					key,
+					subscriptionIdentifier,
 					[function = std::forward<decltype(function)>(function)](const void* payload) mutable -> void {
 					const auto& args = *static_cast<const Tuple*>(payload);
 					std::apply(function, args);
 				});
+				return subscriptionIdentifier;
 			}(static_cast<ArgumentsTypes*>(nullptr));
+		}
+
+		template<String::Hasher... eventNames>
+		inline auto subscribe(auto&& function)
+		{
+			if constexpr (sizeof...(eventNames) == 0)
+				return subscribe(Type::Hash{}, std::forward<decltype(function)>(function));
+			else if constexpr (sizeof...(eventNames) == 1)
+				return subscribe((static_cast<Type::Hash>(eventNames), ...), std::forward<decltype(function)>(function));
+			else
+			{
+				auto subscriptionIdentifiers = std::vector<SubscriptionIdentifier>{};
+				(subscriptionIdentifiers.push_back(subscribe(static_cast<Type::Hash>(eventNames), function)), ...);
+				return subscriptionIdentifiers;
+			}
+		}
+
+		inline auto unsubscribe(SubscriptionIdentifier subscriptionIdentifier) -> bool
+		{
+			auto lockGuard = std::unique_lock{m_mutex};
+			return m_subscribers.erase(subscriptionIdentifier);
+		}
+
+		inline auto unsubscribe(Type::Hash eventHash) -> bool
+		{
+			auto lockGuard = std::unique_lock{m_mutex};
+			auto removed = false;
+			for (auto iterator = std::ranges::begin(m_subscribers); iterator != std::ranges::end(m_subscribers);)
+				if (iterator->template key<Key>().first == eventHash)
+				{
+					iterator = m_subscribers.erase(iterator);
+					removed = true;
+				}
+				else
+					++iterator;
+			return removed;
+		}
+
+		template<String::Hasher... eventNames>
+		inline auto unsubscribe() -> bool
+		{
+			if constexpr (sizeof...(eventNames) == 0)
+				return unsubscribe(Type::Hash{});
+			else if constexpr (sizeof...(eventNames) == 1)
+				return (unsubscribe(static_cast<Type::Hash>(eventNames)), ...);
+			else
+			{
+				const auto results = std::array{unsubscribe(static_cast<Type::Hash>(eventNames))...};
+				return std::ranges::any_of(results, std::identity{});
+			}
+		}
+
+		inline auto clearSubscribers() -> void
+		{
+			auto lockGuard = std::unique_lock{m_mutex};
+			m_subscribers.clear();
 		}
 
 	private:
@@ -65,7 +122,13 @@ export namespace CppUtils::Execution
 			}
 		};
 
+		using Subscribers = Container::MultiKeyMap<
+			Container::NonUnique<Key, PairHasher>,
+			SubscriptionIdentifier,
+			std::function<void(const void*)>>;
+
 		std::shared_mutex m_mutex;
-		std::unordered_map<Key, std::vector<std::function<void(const void*)>>, PairHasher> m_subscribers;
+		std::size_t m_nextSubscriptionIdentifier = 0;
+		Subscribers m_subscribers;
 	};
 }

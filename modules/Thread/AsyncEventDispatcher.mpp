@@ -10,6 +10,8 @@ export namespace CppUtils::Thread
 	class AsyncEventDispatcher final
 	{
 	public:
+		using SubscriptionIdentifier = Execution::EventDispatcher::SubscriptionIdentifier;
+
 		explicit AsyncEventDispatcher(
 			std::size_t numberThreads = std::ranges::max(1uz, static_cast<std::size_t>(std::thread::hardware_concurrency())),
 			std::function<void(std::exception_ptr)> onError = nullptr,
@@ -34,9 +36,25 @@ export namespace CppUtils::Thread
 		}
 
 		template<String::Hasher... eventNames>
-		inline auto subscribe(auto&& function) -> void
+		inline auto subscribe(auto&& function)
 		{
-			m_eventDispatcher.subscribe<eventNames...>(std::forward<decltype(function)>(function));
+			return m_eventDispatcher.template subscribe<eventNames...>(std::forward<decltype(function)>(function));
+		}
+
+		template<String::Hasher... eventNames>
+		inline auto unsubscribe() -> bool
+		{
+			return m_eventDispatcher.template unsubscribe<eventNames...>();
+		}
+
+		inline auto unsubscribe(auto&& subscriptionIdentifierOrEventHash)
+		{
+			return m_eventDispatcher.unsubscribe(std::forward<decltype(subscriptionIdentifierOrEventHash)>(subscriptionIdentifierOrEventHash));
+		}
+
+		inline auto clearSubscribers() -> void
+		{
+			m_eventDispatcher.clearSubscribers();
 		}
 
 		inline auto waitUntilFinished() -> void

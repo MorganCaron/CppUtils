@@ -8,6 +8,7 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 	auto _ = TestSuite{
 		"Execution/EventDispatcher", {"Logger"}, [](TestSuite& suite) {
 		using namespace std::literals;
+		using namespace CppUtils::String::Literals;
 		using Logger = TestSuite::Logger;
 
 		suite.addTest("Empty", [&] {
@@ -32,13 +33,9 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 			});
 		});
 
-		suite.addTest("Emit", [&] {
+		suite.addTest("Emit without subscribers", [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 			eventDispatcher.emit<>("ping"s);
-		});
-
-		suite.addTest("Emit", [&] {
-			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 			eventDispatcher.emit<"Ping">("ping"s);
 		});
 
@@ -139,6 +136,66 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 			eventDispatcher.emit<"C">();
 			eventDispatcher.emit<"D">();
 
+			suite.expectEqual(count, 3uz);
+		});
+
+		suite.addTest("Unsubscribe", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+			auto count = 0uz;
+
+			const auto subscriptionIdentifier = eventDispatcher.subscribe<"Event">([&count] {
+				++count;
+			});
+
+			eventDispatcher.emit<"Event">();
+			suite.expectEqual(count, 1uz);
+
+			suite.expect(eventDispatcher.unsubscribe(subscriptionIdentifier));
+
+			eventDispatcher.emit<"Event">();
+			suite.expectEqual(count, 1uz);
+		});
+
+		suite.addTest("Clear subscribers", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+			auto count = 0uz;
+
+			eventDispatcher.subscribe<"A">([&count] { ++count; });
+			eventDispatcher.subscribe<"B">([&count] { ++count; });
+
+			eventDispatcher.emit<"A">();
+			eventDispatcher.emit<"B">();
+			suite.expectEqual(count, 2uz);
+
+			eventDispatcher.clearSubscribers();
+
+			eventDispatcher.emit<"A">();
+			eventDispatcher.emit<"B">();
+			suite.expectEqual(count, 2uz);
+		});
+
+		suite.addTest("Unsubscribe by event hash", [&] {
+			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
+			auto count = 0uz;
+
+			eventDispatcher.subscribe<"Event">([&count] { ++count; });
+			eventDispatcher.subscribe<"Other">([&count] { ++count; });
+
+			eventDispatcher.emit<"Event">();
+			eventDispatcher.emit<"Other">();
+			suite.expectEqual(count, 2uz);
+
+			suite.expect(eventDispatcher.unsubscribe<"Event">());
+
+			eventDispatcher.emit<"Event">();
+			eventDispatcher.emit<"Other">();
+			suite.expectEqual(count, 3uz);
+
+			suite.expect(not eventDispatcher.unsubscribe<"Event">());
+
+			suite.expect(eventDispatcher.unsubscribe("Other"_hash));
+
+			eventDispatcher.emit<"Other">();
 			suite.expectEqual(count, 3uz);
 		});
 	}};
