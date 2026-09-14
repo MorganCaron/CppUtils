@@ -29,5 +29,63 @@ namespace CppUtils::UnitTest::Container::BidirectionalMap
 			map.eraseLeft(42);
 			suite.expect(std::ranges::empty(map));
 		});
+
+		suite.addTest("Direct insert with two arguments", [&] {
+			auto map = CppUtils::Container::BidirectionalMap<int, std::string>{};
+			suite.expect(map.insert(1, "one"s));
+			suite.expect(map.insert(2, "two"s));
+			suite.expect(not map.insert(1, "another one"s)); // Collision on left
+			suite.expect(not map.insert(3, "two"s)); // Collision on right
+			suite.expectEqual(std::ranges::size(map), 2uz);
+			suite.expect(map.containsLeft(1));
+			suite.expect(map.containsRight("two"s));
+			suite.expect(not map.containsLeft(99));
+			suite.expect(not map.containsRight("unknown"s));
+		});
+
+		suite.addTest("Variadic construction", [&] {
+			using BidiMap = CppUtils::Container::BidirectionalMap<int, std::string>;
+			auto map = BidiMap{
+				std::pair{1, "un"s},
+				std::pair{2, "deux"s},
+				std::pair{3, "trois"s}
+			};
+			suite.expectEqual(std::ranges::size(map), 3uz);
+			suite.expectEqual(map.left(1), "un"s);
+			suite.expectEqual(map.right("deux"s), 2);
+		});
+
+		suite.addTest("Iterator constructor", [&] {
+			using Pair = std::pair<int, std::string>;
+			const auto source = std::vector<Pair>{
+				{10, "ten"s},
+				{20, "twenty"s}
+			};
+			const auto map = CppUtils::Container::BidirectionalMap<int, std::string>{std::ranges::begin(source), std::ranges::end(source)};
+			suite.expectEqual(std::ranges::size(map), 2uz);
+			suite.expectEqual(map.left(10), "ten"s);
+			suite.expectEqual(map.right("twenty"s), 20);
+		});
+
+		suite.addTest("Erase right", [&] {
+			auto map = CppUtils::Container::BidirectionalMap<int, std::string>{};
+			map.insert(10, "ten"s);
+			map.insert(20, "twenty"s);
+			suite.expect(map.eraseRight("ten"s));
+			suite.expectEqual(std::ranges::size(map), 1uz);
+			suite.expect(not map.containsLeft(10));
+			suite.expect(map.containsLeft(20));
+			suite.expect(not map.eraseRight("unknown"s));
+		});
+
+		suite.addTest("Clear", [&] {
+			auto map = CppUtils::Container::BidirectionalMap<int, std::string>{};
+			map.insert(1, "one"s);
+			map.insert(2, "two"s);
+			suite.expect(not std::ranges::empty(map));
+			map.clear();
+			suite.expect(std::ranges::empty(map));
+			suite.expectEqual(std::ranges::size(map), 0uz);
+		});
 	}};
 }
