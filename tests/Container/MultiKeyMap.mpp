@@ -1,0 +1,431 @@
+export module CppUtils.UnitTests.Container.MultiKeyMap;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Container::MultiKeyMap
+{
+	struct UserData final
+	{
+		int age;
+		std::string role;
+
+		[[nodiscard]] inline constexpr auto operator==(const UserData& other) const noexcept -> bool = default;
+	};
+
+	auto _ = TestSuite{"Container/MultiKeyMap", {"UnitTest"}, [](TestSuite& suite) {
+		using namespace std::literals;
+
+		using UserMap = CppUtils::Container::MultiKeyMap<
+			int,
+			std::string,
+			CppUtils::Container::NonUnique<std::string_view>,
+			UserData>;
+
+		static_assert(std::ranges::range<UserMap>);
+		static_assert(std::ranges::sized_range<UserMap>);
+		static_assert(std::ranges::common_range<UserMap>);
+		static_assert(std::ranges::bidirectional_range<UserMap>);
+		static_assert(std::ranges::random_access_range<UserMap>);
+
+		suite.addTest("Insertion and emplace", [&] {
+			auto users = UserMap{};
+			suite.expect(std::ranges::empty(users));
+			suite.expectEqual(std::ranges::size(users), 0uz);
+
+			const auto [aliceIterator, insertedAlice] = users.insert(1, "Alice"s, "Engineering"sv, UserData{.age = 30, .role = "Dev"});
+			suite.expect(insertedAlice);
+			suite.expect(aliceIterator != std::ranges::end(users));
+			suite.expectEqual(aliceIterator->value.age, 30);
+
+			const auto [bobIterator, insertedBob] = users.emplace(2, "Bob"s, "Design"sv, UserData{.age = 28, .role = "UI"});
+			suite.expect(insertedBob);
+			suite.expect(bobIterator != std::ranges::end(users));
+
+			suite.expectEqual(std::ranges::size(users), 2uz);
+			suite.expect(not std::ranges::empty(users));
+		});
+
+		suite.addTest("Direct construction with makeEntry", [&] {
+			const auto users = UserMap{
+				UserMap::makeEntry(1, "Alice"s, "Engineering"sv, UserData{.age = 30, .role = "Dev"}),
+				UserMap::makeEntry(2, "Bob"s, "Design"sv, UserData{.age = 28, .role = "UI"})};
+
+			suite.expectEqual(std::ranges::size(users), 2uz);
+			suite.expect(users.contains(1));
+			suite.expect(users.contains("Alice"s));
+			suite.expect(users.contains(2));
+			suite.expect(users.contains("Bob"s));
+			suite.expectEqual(users.at(1), UserData{.age = 30, .role = "Dev"});
+			suite.expectEqual(users.at("Bob"s), UserData{.age = 28, .role = "UI"});
+			suite.expectEqual(users.at(1).age, 30);
+			suite.expectEqual(users.at("Bob"s).role, "UI"s);
+		});
+
+		suite.addTest("Variadic construction with move-only values", [&] {
+			using MoveOnlyMap = CppUtils::Container::MultiKeyMap<int, std::string, std::unique_ptr<int>>;
+
+			auto map = MoveOnlyMap{
+				MoveOnlyMap::makeEntry(1, "one"s, std::make_unique<int>(100)),
+				MoveOnlyMap::makeEntry(2, "two"s, std::make_unique<int>(200))};
+
+			suite.expectEqual(std::ranges::size(map), 2uz);
+			suite.expect(map.contains(1));
+			suite.expect(map.contains("two"s));
+			suite.expectEqual(*map.at(1), 100);
+			suite.expectEqual(*map.at("two"s), 200);
+		});
+
+		suite.addTest("Type-deduced lookup by key type", [&] {
+			auto users = UserMap{};
+			users.insert(1, "Alice"s, "Engineering"sv, UserData{.age = 30, .role = "Dev"});
+			users.insert(2, "Bob"s, "Design"sv, UserData{.age = 28, .role = "UI"});
+
+			// Automatic type-deduced find (int uniquely resolves to Key 0)
+			const auto foundById = users.find(1);
+			suite.expect(foundById != std::ranges::end(users));
+			suite.expectEqual(foundById->value, UserData{.age = 30, .role = "Dev"});
+
+			// Automatic type-deduced find (std::string uniquely resolves to Key 1)
+			const auto foundByName = users.find("Bob"s);
+			suite.expect(foundByName != std::ranges::end(users));
+			suite.expectEqual(foundByName->value, UserData{.age = 28, .role = "UI"});
+
+			// Missing key
+			const auto notFound = users.find(999);
+			suite.expect(notFound == std::ranges::end(users));
+		});
+
+		suite.addTest("Tagged key lookup and containment", [&] {
+			using TaggedMap = CppUtils::Container::MultiKeyMap<
+				CppUtils::Container::TaggedKey<"Sender", int>,
+				CppUtils::Container::TaggedKey<"Receiver", int>,
+				std::string>;
+
+			auto messages = TaggedMap{};
+			messages.insert(100, 200, "Hello"s);
+			messages.insert(300, 400, "World"s);
+
+			suite.expect(messages.contains<"Sender">(100));
+			suite.expect(messages.contains<"Receiver">(200));
+			suite.expect(not messages.contains<"Sender">(200));
+			suite.expect(not messages.contains<"Receiver">(100));
+
+			const auto senderIterator = messages.find<"Sender">(100);
+			suite.expect(senderIterator != std::ranges::end(messages));
+			suite.expectEqual(senderIterator->value, "Hello"s);
+
+			const auto receiverIterator = messages.find<"Receiver">(400);
+			suite.expect(receiverIterator != std::ranges::end(messages));
+			suite.expectEqual(receiverIterator->value, "World"s);
+		});
+
+		suite.addTest("Positional index lookup and containment", [&] {
+			using TaggedMap = CppUtils::Container::MultiKeyMap<
+				CppUtils::Container::TaggedKey<"Sender", int>,
+				CppUtils::Container::TaggedKey<"Receiver", int>,
+				std::string>;
+
+			auto messages = TaggedMap{};
+			messages.insert(100, 200, "Hello"s);
+			messages.insert(300, 400, "World"s);
+
+			suite.expect(messages.containsAt<0uz>(100));
+			suite.expect(messages.containsAt<1uz>(200));
+			suite.expect(not messages.containsAt<0uz>(200));
+			suite.expect(not messages.containsAt<1uz>(100));
+
+			const auto senderIterator = messages.findAt<0uz>(100);
+			suite.expect(senderIterator != std::ranges::end(messages));
+			suite.expectEqual(senderIterator->value, "Hello"s);
+
+			const auto receiverIterator = messages.findAt<1uz>(400);
+			suite.expect(receiverIterator != std::ranges::end(messages));
+			suite.expectEqual(receiverIterator->value, "World"s);
+		});
+
+		suite.addTest("Key containment and count queries", [&] {
+			auto users = UserMap{};
+			users.insert(1, "Alice"s, "Engineering"sv, UserData{.age = 30, .role = "Dev"});
+
+			suite.expect(users.contains(1));
+			suite.expect(users.contains("Alice"s));
+			suite.expect(not users.contains(999));
+			suite.expect(not users.contains("Unknown"s));
+
+			suite.expectEqual(users.count(1), 1uz);
+			suite.expectEqual(users.count("Alice"s), 1uz);
+			suite.expectEqual(users.count(999), 0uz);
+			suite.expectEqual(users.count("Unknown"s), 0uz);
+		});
+
+		suite.addTest("Element access with at() and operator[]", [&] {
+			auto users = UserMap{};
+			users.insert(1, "Alice"s, "Engineering"sv, UserData{.age = 30, .role = "Dev"});
+			users.insert(2, "Bob"s, "Design"sv, UserData{.age = 28, .role = "UI"});
+
+			// at() reading
+			suite.expectEqual(users.at(1), UserData{.age = 30, .role = "Dev"});
+			suite.expectEqual(users.at("Alice"s), UserData{.age = 30, .role = "Dev"});
+			suite.expectThrow<std::out_of_range>([&] { auto _ = users.at(999); });
+
+			// operator[] reading and mutation
+			users[1].age = 31;
+			suite.expectEqual(users.at(1), UserData{.age = 31, .role = "Dev"});
+
+			users["Bob"s].role = "Senior UI";
+			suite.expectEqual(users.at(2), UserData{.age = 28, .role = "Senior UI"});
+		});
+
+		suite.addTest("Unique constraints across multiple keys", [&] {
+			auto users = UserMap{};
+			users.insert(1, "Alice"s, "Engineering"sv, UserData{.age = 30, .role = "Dev"});
+
+			// Duplicate identifier (Key 0)
+			const auto [duplicateIdentifierIterator, insertedDuplicateId] = users.insert(1, "Charlie"s, "Engineering"sv, UserData{.age = 22, .role = "Junior"});
+			suite.expect(not insertedDuplicateId);
+			suite.expect(duplicateIdentifierIterator == std::ranges::end(users));
+
+			// Duplicate name (Key 1)
+			const auto [duplicateNameIterator, insertedDuplicateName] = users.insert(3, "Alice"s, "Marketing"sv, UserData{.age = 35, .role = "Lead"});
+			suite.expect(not insertedDuplicateName);
+			suite.expect(duplicateNameIterator == std::ranges::end(users));
+
+			suite.expectEqual(std::ranges::size(users), 1uz);
+		});
+
+		suite.addTest("Non-unique key range lookup", [&] {
+			auto users = UserMap{};
+			users.insert(1, "Alice"s, "Engineering"sv, UserData{.age = 30, .role = "Dev"});
+			users.insert(2, "Bob"s, "Engineering"sv, UserData{.age = 28, .role = "Dev"});
+			users.insert(3, "Charlie"s, "Design"sv, UserData{.age = 25, .role = "UI"});
+
+			suite.expectEqual(users.count("Engineering"sv), 2uz);
+			suite.expectEqual(users.count("Design"sv), 1uz);
+			suite.expectEqual(users.count("HR"sv), 0uz);
+
+			const auto engineers = users.find("Engineering"sv);
+			static_assert(std::ranges::random_access_range<decltype(engineers)>);
+			suite.expectEqual(std::ranges::size(engineers), 2uz);
+			suite.expect(not std::ranges::empty(engineers));
+
+			const auto engineeringAges = engineers
+				| std::views::transform([](const auto& engineer) { return engineer.value.age; })
+				| std::ranges::to<std::vector>();
+
+			suite.expectEqual(std::ranges::size(engineeringAges), 2uz);
+			suite.expect(std::ranges::contains(engineeringAges, 30));
+			suite.expect(std::ranges::contains(engineeringAges, 28));
+		});
+
+		suite.addTest("Erase by key and swap-and-pop integrity", [&] {
+			auto users = UserMap{};
+			users.insert(1, "Alice"s, "Engineering"sv, UserData{.age = 30, .role = "Dev"});
+			users.insert(2, "Bob"s, "Engineering"sv, UserData{.age = 28, .role = "Dev"});
+			users.insert(3, "Charlie"s, "Design"sv, UserData{.age = 25, .role = "UI"});
+
+			// Erase by unique int key
+			const auto erasedAlice = users.erase(1);
+			suite.expect(erasedAlice);
+			suite.expectEqual(std::ranges::size(users), 2uz);
+			suite.expect(not users.contains(1));
+			suite.expect(not users.contains("Alice"s));
+
+			// Bob and Charlie must still be accessible via all keys after swap-and-pop
+			suite.expect(users.contains(2));
+			suite.expect(users.contains("Bob"s));
+			suite.expect(users.contains(3));
+			suite.expect(users.contains("Charlie"s));
+			suite.expectEqual(users.count("Engineering"sv), 1uz);
+
+			// Erase by unique string key
+			const auto erasedBob = users.erase("Bob"s);
+			suite.expect(erasedBob);
+			suite.expectEqual(std::ranges::size(users), 1uz);
+			suite.expect(users.contains(3));
+		});
+
+		suite.addTest("Erase by iterator", [&] {
+			auto users = UserMap{};
+			users.insert(1, "Alice"s, "Engineering"sv, UserData{.age = 30, .role = "Dev"});
+			users.insert(2, "Bob"s, "Engineering"sv, UserData{.age = 28, .role = "Dev"});
+
+			const auto iterator = std::ranges::begin(users);
+			const auto nextIterator = users.erase(iterator);
+			suite.expectEqual(std::ranges::size(users), 1uz);
+			suite.expect(nextIterator == std::ranges::begin(users));
+
+			users.erase(nextIterator);
+			suite.expect(std::ranges::empty(users));
+			suite.expectEqual(std::ranges::size(users), 0uz);
+		});
+
+		suite.addTest("Standard range algorithms and views pipeline", [&] {
+			auto users = UserMap{};
+			users.insert(1, "Alice"s, "Engineering"sv, UserData{.age = 30, .role = "Dev"});
+			users.insert(2, "Bob"s, "Engineering"sv, UserData{.age = 28, .role = "Dev"});
+			users.insert(3, "Charlie"s, "Design"sv, UserData{.age = 25, .role = "UI"});
+
+			// std::ranges::for_each
+			auto totalAge = 0;
+			std::ranges::for_each(users, [&](const auto& entry) {
+				totalAge += entry.value.age;
+			});
+			suite.expectEqual(totalAge, 83);
+
+			// std::ranges::max_element
+			const auto oldest = std::ranges::max_element(users, {}, [](const auto& entry) {
+				return entry.value.age;
+			});
+			suite.expect(oldest != std::ranges::end(users));
+			suite.expectEqual(oldest->value.age, 30);
+
+			// Views pipeline
+			const auto collectedRoles = users
+				| std::views::filter([](const auto& entry) { return entry.value.age >= 28; })
+				| std::views::transform([](const auto& entry) { return entry.value.role; })
+				| std::ranges::to<std::vector>();
+
+			suite.expectEqual(std::ranges::size(collectedRoles), 2uz);
+		});
+
+		suite.addTest("Structured binding on entries", [&] {
+			auto users = UserMap{};
+			users.insert(1, "Alice"s, "Engineering"sv, UserData{.age = 30, .role = "Dev"});
+			users.insert(2, "Bob"s, "Engineering"sv, UserData{.age = 28, .role = "Dev"});
+			users.insert(3, "Charlie"s, "Design"sv, UserData{.age = 25, .role = "UI"});
+
+			auto boundNames = std::vector<std::string>{};
+			for (const auto& [id, name, department, data] : users)
+			{
+				suite.expect(id > 0);
+				suite.expect(not std::ranges::empty(name));
+				boundNames.push_back(name);
+			}
+			suite.expectEqual(std::ranges::size(boundNames), 3uz);
+		});
+
+		suite.addTest("Single key map with value", [&] {
+			using SingleKeyMap = CppUtils::Container::MultiKeyMap<int, std::string>;
+
+			auto map = SingleKeyMap{};
+			const auto [firstIterator, insertedFirst] = map.insert(1, "one"s);
+			suite.expect(insertedFirst);
+			suite.expect(firstIterator != std::ranges::end(map));
+			suite.expectEqual(firstIterator->value, "one"s);
+
+			map.emplace(2, "two"s);
+			suite.expectEqual(std::ranges::size(map), 2uz);
+
+			// Duplicate key rejection
+			const auto [duplicateIterator, insertedDuplicate] = map.insert(1, "duplicate"s);
+			suite.expect(not insertedDuplicate);
+			suite.expect(duplicateIterator == std::ranges::end(map));
+
+			// Lookup & access
+			suite.expect(map.contains(1));
+			suite.expect(not map.contains(99));
+			suite.expectEqual(map.count(1), 1uz);
+			suite.expectEqual(map.count(99), 0uz);
+
+			const auto foundIterator = map.find(2);
+			suite.expect(foundIterator != std::ranges::end(map));
+			suite.expectEqual(foundIterator->value, "two"s);
+
+			suite.expectEqual(map.at(1), "one"s);
+			map[1] = "uno"s;
+			suite.expectEqual(map.at(1), "uno"s);
+
+			map[3] = "three"s;
+			suite.expectEqual(std::ranges::size(map), 3uz);
+			suite.expectEqual(map.at(3), "three"s);
+
+			// Erase
+			const auto erased = map.erase(1);
+			suite.expect(erased);
+			suite.expectEqual(std::ranges::size(map), 2uz);
+			suite.expect(not map.contains(1));
+		});
+
+		suite.addTest("Value=void bidirectional key container", [&] {
+			using BiKeyMap = CppUtils::Container::MultiKeyMap<int, std::string, void>;
+
+			auto pairs = BiKeyMap{};
+			pairs.insert(1, "one"s);
+			pairs.insert(2, "two"s);
+
+			suite.expectEqual(std::ranges::size(pairs), 2uz);
+			suite.expect(pairs.contains(1));
+			suite.expect(pairs.contains("one"s));
+
+			// at() on void value returns the counterpart key
+			suite.expectEqual(pairs.at(1), "one"s);
+			suite.expectEqual(pairs.at("two"s), 2);
+
+			// Structured binding
+			for (const auto& [number, text] : pairs)
+				suite.expect(number > 0 and not std::ranges::empty(text));
+		});
+
+		suite.addTest("Three keys and void value container", [&] {
+			using TripleKeyMap = CppUtils::Container::MultiKeyMap<
+				CppUtils::Container::TaggedKey<"Id", int>,
+				CppUtils::Container::TaggedKey<"Name", std::string>,
+				CppUtils::Container::TaggedKey<"Score", double>,
+				void>;
+
+			auto records = TripleKeyMap{};
+			const auto [aliceIterator, insertedAlice] = records.insert(1, "Alice"s, 95.5);
+			suite.expect(insertedAlice);
+			suite.expect(aliceIterator != std::ranges::end(records));
+
+			records.insert(2, "Bob"s, 82.0);
+			suite.expectEqual(std::ranges::size(records), 2uz);
+
+			// Uniqueness collision on any of the three keys
+			const auto [duplicateIdIterator, insertedDuplicateId] = records.insert(1, "Charlie"s, 70.0);
+			suite.expect(not insertedDuplicateId);
+			suite.expect(duplicateIdIterator == std::ranges::end(records));
+
+			const auto [duplicateNameIterator, insertedDuplicateName] = records.insert(3, "Alice"s, 60.0);
+			suite.expect(not insertedDuplicateName);
+			suite.expect(duplicateNameIterator == std::ranges::end(records));
+
+			const auto [duplicateScoreIterator, insertedDuplicateScore] = records.insert(4, "David"s, 95.5);
+			suite.expect(not insertedDuplicateScore);
+			suite.expect(duplicateScoreIterator == std::ranges::end(records));
+
+			// Lookups on each axis
+			suite.expect(records.contains(1));
+			suite.expect(records.contains("Bob"s));
+			suite.expect(records.contains(95.5));
+			suite.expect(not records.contains(999));
+
+			const auto foundById = records.find<"Id">(1);
+			suite.expect(foundById != std::ranges::end(records));
+			suite.expectEqual(foundById->template key<1uz>(), "Alice"s);
+			suite.expectEqual(foundById->template key<double>(), 95.5);
+
+			const auto foundByName = records.find<"Name">("Bob"s);
+			suite.expect(foundByName != std::ranges::end(records));
+			suite.expectEqual(foundByName->template key<0uz>(), 2);
+			suite.expectEqual(foundByName->template key<double>(), 82.0);
+
+			// Structured binding
+			for (const auto& [id, name, score] : records)
+			{
+				suite.expect(id > 0);
+				suite.expect(not std::ranges::empty(name));
+				suite.expect(score > 0.0);
+			}
+
+			// Erase on any axis
+			const auto erasedBob = records.erase("Bob"s);
+			suite.expect(erasedBob);
+			suite.expectEqual(std::ranges::size(records), 1uz);
+			suite.expect(not records.contains(2));
+			suite.expect(not records.contains("Bob"s));
+			suite.expect(not records.contains(82.0));
+		});
+	}};
+}

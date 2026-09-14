@@ -32,6 +32,7 @@
 - [`BTree`](modules/Container/BTree.mpp) - Balanced tree for large sorted datasets with efficient range queries and low memory access
 - [`DependencyGraph`](modules/Container/DependencyGraph.mpp) - Dependency graph for managing dependencies between objects
 - [`MeshNetwork`](modules/Container/MeshNetwork.mpp) - Graph of shared objects without hierarchy
+- [`MultiKeyMap`](modules/Container/MultiKeyMap.mpp) - Associative container with multi-axis O(1) lookup and contiguous storage
 - [`Size`](modules/Container/Size.mpp) - Semantic wrapper around `std::size_t` for representing 2D (`Size2`: width/height) and 3D (`Size3`: width/height/depth) sizes
 - [`Stack`](modules/Container/Stack.mpp) - Type-specific stack without predefined type list (unlike [`TypedStack`](modules/Container/TypedStack.mpp))
 - [`Tree`](modules/Container/Tree.mpp) - Hierarchical node structure with parent-child links
