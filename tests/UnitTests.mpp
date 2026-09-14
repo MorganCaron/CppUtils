@@ -6,6 +6,7 @@ export import CppUtils.UnitTests.Container.BidirectionalMap;
 export import CppUtils.UnitTests.Container.BTree;
 export import CppUtils.UnitTests.Container.DependencyGraph;
 export import CppUtils.UnitTests.Container.MeshNetwork;
+export import CppUtils.UnitTests.Container.MultiKeyMap;
 export import CppUtils.UnitTests.Container.NetworkPtr;
 export import CppUtils.UnitTests.Container.Pair;
 export import CppUtils.UnitTests.Container.SafeShared;

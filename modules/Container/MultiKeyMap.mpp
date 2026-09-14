@@ -1,0 +1,1009 @@
+export module CppUtils.Container.MultiKeyMap;
+
+import std;
+import CppUtils.String.Hash;
+import CppUtils.Type.Utility;
+
+export namespace CppUtils::Container
+{
+	template<class T>
+	struct DefaultHasher final
+	{
+		using is_transparent = void;
+
+		[[nodiscard]] inline auto operator()(const T& value) const noexcept -> std::size_t
+		{
+			return std::hash<T>{}(value);
+		}
+	};
+
+	template<>
+	struct DefaultHasher<std::string> final
+	{
+		using is_transparent = void;
+
+		[[nodiscard]] inline auto operator()(std::string_view value) const noexcept -> std::size_t
+		{
+			return std::hash<std::string_view>{}(value);
+		}
+
+		[[nodiscard]] inline auto operator()(const std::string& value) const noexcept -> std::size_t
+		{
+			return std::hash<std::string_view>{}(value);
+		}
+
+		[[nodiscard]] inline auto operator()(const char* value) const noexcept -> std::size_t
+		{
+			return std::hash<std::string_view>{}(std::string_view{value});
+		}
+	};
+
+	template<class First, class Second>
+	struct DefaultHasher<std::pair<First, Second>> final
+	{
+		[[nodiscard]] inline auto operator()(const std::pair<First, Second>& pair) const noexcept -> std::size_t
+		{
+			const auto hash1 = DefaultHasher<First>{}(pair.first);
+			const auto hash2 = DefaultHasher<Second>{}(pair.second);
+			return hash1 ^ (hash2 << 1);
+		}
+	};
+
+	template<class T, class Hasher = DefaultHasher<T>, class Equal = std::equal_to<T>>
+	struct Key final
+	{
+		using KeyType = T;
+		using HashType = Hasher;
+		using EqualType = Equal;
+		static constexpr auto isUnique = true;
+	};
+
+	template<class T, class Hasher = DefaultHasher<T>, class Equal = std::equal_to<T>>
+	struct NonUnique final
+	{
+		using KeyType = T;
+		using HashType = Hasher;
+		using EqualType = Equal;
+		static constexpr auto isUnique = false;
+	};
+
+	template<String::Hasher Tag, class T, class Hasher = DefaultHasher<T>, class Equal = std::equal_to<T>>
+	struct TaggedKey final
+	{
+		static constexpr auto tag = Tag;
+		using KeyType = T;
+		using HashType = Hasher;
+		using EqualType = Equal;
+		static constexpr auto isUnique = true;
+	};
+
+	template<String::Hasher Tag, class T, class Hasher = DefaultHasher<T>, class Equal = std::equal_to<T>>
+	struct TaggedNonUnique final
+	{
+		static constexpr auto tag = Tag;
+		using KeyType = T;
+		using HashType = Hasher;
+		using EqualType = Equal;
+		static constexpr auto isUnique = false;
+	};
+
+	namespace Detail
+	{
+		template<class T>
+		using DefaultEqualFor = std::conditional_t<std::same_as<T, std::string>, std::equal_to<>, std::equal_to<T>>;
+
+		template<class T>
+		struct KeyDescriptorTrait final
+		{
+			using KeyType = T;
+			using HashType = DefaultHasher<T>;
+			using EqualType = DefaultEqualFor<T>;
+			static constexpr auto isUnique = true;
+			static constexpr auto tag = Type::Hash{};
+			static constexpr auto hasTag = false;
+		};
+
+		template<class T, class Hasher, class Equal>
+		struct KeyDescriptorTrait<Key<T, Hasher, Equal>> final
+		{
+			using KeyType = T;
+			using HashType = Hasher;
+			using EqualType = Equal;
+			static constexpr auto isUnique = true;
+			static constexpr auto tag = Type::Hash{};
+			static constexpr auto hasTag = false;
+		};
+
+		template<class T, class Hasher, class Equal>
+		struct KeyDescriptorTrait<NonUnique<T, Hasher, Equal>> final
+		{
+			using KeyType = T;
+			using HashType = Hasher;
+			using EqualType = Equal;
+			static constexpr auto isUnique = false;
+			static constexpr auto tag = Type::Hash{};
+			static constexpr auto hasTag = false;
+		};
+
+		template<String::Hasher Tag, class T, class Hasher, class Equal>
+		struct KeyDescriptorTrait<TaggedKey<Tag, T, Hasher, Equal>> final
+		{
+			using KeyType = T;
+			using HashType = Hasher;
+			using EqualType = Equal;
+			static constexpr auto isUnique = true;
+			static constexpr auto tag = static_cast<Type::Hash>(Tag);
+			static constexpr auto hasTag = true;
+		};
+
+		template<String::Hasher Tag, class T, class Hasher, class Equal>
+		struct KeyDescriptorTrait<TaggedNonUnique<Tag, T, Hasher, Equal>> final
+		{
+			using KeyType = T;
+			using HashType = Hasher;
+			using EqualType = Equal;
+			static constexpr auto isUnique = false;
+			static constexpr auto tag = static_cast<Type::Hash>(Tag);
+			static constexpr auto hasTag = true;
+		};
+
+		template<class KeysTuple, class ValueType>
+		struct EntryStorage;
+
+		template<class... KeyTypes, class ValueType>
+		struct EntryStorage<std::tuple<KeyTypes...>, ValueType> final
+		{
+			using TupleType = std::tuple<KeyTypes..., ValueType>;
+
+			std::tuple<KeyTypes...> keys;
+			ValueType value;
+
+			template<std::size_t Index>
+			[[nodiscard]] inline constexpr decltype(auto) key(this auto&& self) noexcept
+			{
+				return std::get<Index>(self.keys);
+			}
+
+			template<class TargetKey>
+			[[nodiscard]] inline constexpr decltype(auto) key(this auto&& self) noexcept
+			{
+				return std::get<TargetKey>(self.keys);
+			}
+
+			template<std::size_t Index>
+			[[nodiscard]] inline constexpr decltype(auto) get(this auto&& self) noexcept
+			{
+				if constexpr (Index < sizeof...(KeyTypes))
+					return self.template key<Index>();
+				else
+					return (self.value);
+			}
+
+			[[nodiscard]] inline constexpr auto operator==(const EntryStorage& other) const noexcept -> bool = default;
+		};
+
+		template<class... KeyTypes>
+		struct EntryStorage<std::tuple<KeyTypes...>, void> final
+		{
+			using TupleType = std::tuple<KeyTypes...>;
+
+			std::tuple<KeyTypes...> keys;
+
+			constexpr EntryStorage() = default;
+			constexpr explicit EntryStorage(std::tuple<KeyTypes...> tuple): keys{std::move(tuple)} {}
+
+			template<std::size_t Index>
+			[[nodiscard]] inline constexpr decltype(auto) key(this auto&& self) noexcept
+			{
+				return std::get<Index>(self.keys);
+			}
+
+			template<class TargetKey>
+			[[nodiscard]] inline constexpr decltype(auto) key(this auto&& self) noexcept
+			{
+				return std::get<TargetKey>(self.keys);
+			}
+
+			template<std::size_t Index>
+			[[nodiscard]] inline constexpr decltype(auto) get(this auto&& self) noexcept
+			{
+				return std::get<Index>(self.keys);
+			}
+
+			[[nodiscard]] inline constexpr auto operator==(const EntryStorage& other) const noexcept -> bool = default;
+		};
+
+		template<class FirstKey, class SecondKey>
+		struct EntryStorage<std::tuple<FirstKey, SecondKey>, void> final
+		{
+			using TupleType = std::tuple<FirstKey, SecondKey>;
+
+			FirstKey first{};
+			SecondKey second{};
+
+			constexpr EntryStorage() = default;
+			constexpr EntryStorage(FirstKey first, SecondKey second): first{std::move(first)}, second{std::move(second)} {}
+			constexpr explicit EntryStorage(std::tuple<FirstKey, SecondKey> tuple): first{std::get<0>(std::move(tuple))}, second{std::get<1>(std::move(tuple))} {}
+
+			template<std::size_t Index>
+			[[nodiscard]] inline constexpr decltype(auto) key(this auto&& self) noexcept
+			{
+				if constexpr (Index == 0)
+					return (self.first);
+				else
+					return (self.second);
+			}
+
+			template<class TargetKey>
+			[[nodiscard]] inline constexpr decltype(auto) key(this auto&& self) noexcept
+			{
+				if constexpr (std::same_as<std::remove_cvref_t<TargetKey>, FirstKey>)
+					return (self.first);
+				else
+					return (self.second);
+			}
+
+			template<std::size_t Index>
+			[[nodiscard]] inline constexpr decltype(auto) get(this auto&& self) noexcept
+			{
+				return self.template key<Index>();
+			}
+
+			[[nodiscard]] inline constexpr auto operator==(const EntryStorage& other) const noexcept -> bool = default;
+		};
+
+		template<class IndexDescriptor>
+		struct KeyIndexTable;
+
+		template<class IndexDescriptor>
+		requires (IndexDescriptor::isUnique)
+		struct KeyIndexTable<IndexDescriptor> final
+		{
+		private:
+			using KeyType = typename IndexDescriptor::KeyType;
+			using Hasher = typename IndexDescriptor::HashType;
+			using Equal = typename IndexDescriptor::EqualType;
+			using Map = std::unordered_map<KeyType, std::size_t, Hasher, Equal>;
+
+		public:
+			Map map;
+		};
+
+		template<class IndexDescriptor>
+		requires (not IndexDescriptor::isUnique)
+		struct KeyIndexTable<IndexDescriptor> final
+		{
+		private:
+			using KeyType = typename IndexDescriptor::KeyType;
+			using Hasher = typename IndexDescriptor::HashType;
+			using Equal = typename IndexDescriptor::EqualType;
+			using Map = std::unordered_map<KeyType, std::vector<std::size_t>, Hasher, Equal>;
+
+		public:
+			Map map;
+		};
+	}
+
+	template<class EntryType>
+	class NonUniqueRange final
+	{
+	public:
+		using value_type = std::remove_cv_t<EntryType>;
+		using size_type = std::size_t;
+		using difference_type = std::ptrdiff_t;
+		using reference = EntryType&;
+		using const_reference = const EntryType&;
+		using pointer = EntryType*;
+		using const_pointer = const EntryType*;
+
+		struct Iterator final
+		{
+			using iterator_concept = std::random_access_iterator_tag;
+			using iterator_category = std::random_access_iterator_tag;
+			using value_type = std::remove_cv_t<EntryType>;
+			using difference_type = std::ptrdiff_t;
+			using pointer = EntryType*;
+			using const_pointer = const EntryType*;
+			using reference = EntryType&;
+			using const_reference = const EntryType&;
+
+			EntryType* entries = nullptr;
+			std::vector<std::size_t>::const_iterator indexIterator{};
+
+			[[nodiscard]] inline constexpr auto operator*() const noexcept -> reference { return entries[*indexIterator]; }
+			[[nodiscard]] inline constexpr auto operator->() const noexcept -> pointer { return std::addressof(entries[*indexIterator]); }
+
+			inline constexpr auto operator++() noexcept -> Iterator&
+			{
+				++indexIterator;
+				return *this;
+			}
+			inline constexpr auto operator++(int) noexcept -> Iterator
+			{
+				auto temporary = *this;
+				++indexIterator;
+				return temporary;
+			}
+			inline constexpr auto operator--() noexcept -> Iterator&
+			{
+				--indexIterator;
+				return *this;
+			}
+			inline constexpr auto operator--(int) noexcept -> Iterator
+			{
+				auto temporary = *this;
+				--indexIterator;
+				return temporary;
+			}
+
+			inline constexpr auto operator+=(difference_type offset) noexcept -> Iterator&
+			{
+				indexIterator += offset;
+				return *this;
+			}
+			inline constexpr auto operator-=(difference_type offset) noexcept -> Iterator&
+			{
+				indexIterator -= offset;
+				return *this;
+			}
+
+			[[nodiscard]] inline constexpr auto operator+(difference_type offset) const noexcept -> Iterator { return Iterator{entries, indexIterator + offset}; }
+			[[nodiscard]] friend inline constexpr auto operator+(difference_type offset, const Iterator& iterator) noexcept -> Iterator { return iterator + offset; }
+			[[nodiscard]] inline constexpr auto operator-(difference_type offset) const noexcept -> Iterator { return Iterator{entries, indexIterator - offset}; }
+			[[nodiscard]] inline constexpr auto operator-(const Iterator& other) const noexcept -> difference_type { return indexIterator - other.indexIterator; }
+
+			[[nodiscard]] inline constexpr auto operator[](difference_type offset) const noexcept -> reference { return entries[*(indexIterator + offset)]; }
+
+			[[nodiscard]] inline constexpr auto operator<=>(const Iterator& other) const noexcept = default;
+		};
+
+		using iterator = Iterator;
+		using const_iterator = Iterator;
+		using reverse_iterator = std::reverse_iterator<Iterator>;
+		using const_reverse_iterator = std::reverse_iterator<Iterator>;
+
+		EntryType* entries = nullptr;
+		const std::vector<std::size_t>* indices = nullptr;
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline constexpr auto begin() const noexcept -> Iterator
+		{
+			return Iterator{entries, indices ? std::ranges::cbegin(*indices) : std::vector<std::size_t>::const_iterator{}};
+		}
+
+		[[nodiscard]] inline constexpr auto end() const noexcept -> Iterator
+		{
+			return Iterator{entries, indices ? std::ranges::cend(*indices) : std::vector<std::size_t>::const_iterator{}};
+		}
+
+		[[nodiscard]] inline constexpr auto cbegin() const noexcept -> Iterator { return begin(); }
+		[[nodiscard]] inline constexpr auto cend() const noexcept -> Iterator { return end(); }
+		[[nodiscard]] inline constexpr auto rbegin() const noexcept -> reverse_iterator { return reverse_iterator{end()}; }
+		[[nodiscard]] inline constexpr auto rend() const noexcept -> reverse_iterator { return reverse_iterator{begin()}; }
+		[[nodiscard]] inline constexpr auto crbegin() const noexcept -> const_reverse_iterator { return const_reverse_iterator{cend()}; }
+		[[nodiscard]] inline constexpr auto crend() const noexcept -> const_reverse_iterator { return const_reverse_iterator{cbegin()}; }
+
+		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
+		{
+			return not indices or std::ranges::empty(*indices);
+		}
+
+		[[nodiscard]] inline constexpr auto size() const noexcept -> std::size_t
+		{
+			return indices ? std::ranges::size(*indices) : 0uz;
+		}
+
+		[[nodiscard]] inline constexpr auto front() const -> reference
+		{
+			return (*this)[0uz];
+		}
+
+		[[nodiscard]] inline constexpr auto back() const -> reference
+		{
+			return (*this)[size() - 1uz];
+		}
+
+		[[nodiscard]] inline constexpr auto operator[](std::size_t index) const -> reference
+		{
+			return entries[(*indices)[index]];
+		}
+	};
+
+	template<class... KeysAndValue>
+	class MultiKeyMap final
+	{
+		static_assert(sizeof...(KeysAndValue) >= 2, "MultiKeyMap requires at least one key and one value type (or void).");
+
+		using AllTypesTuple = std::tuple<KeysAndValue...>;
+
+	public:
+		static constexpr auto keyCount = sizeof...(KeysAndValue) - 1uz;
+		using ValueType = std::tuple_element_t<keyCount, AllTypesTuple>;
+
+	private:
+		template<std::size_t IndexPosition>
+		using KeyAt = std::tuple_element_t<IndexPosition, AllTypesTuple>;
+
+		template<std::size_t IndexPosition>
+		using DescriptorAt = Detail::KeyDescriptorTrait<KeyAt<IndexPosition>>;
+
+		template<std::size_t IndexPosition>
+		using KeyTypeAt = typename DescriptorAt<IndexPosition>::KeyType;
+
+		template<class IndexSequence>
+		struct PureKeysTupleBuilder;
+
+		template<std::size_t... I>
+		struct PureKeysTupleBuilder<std::index_sequence<I...>>
+		{
+			using type = std::tuple<KeyTypeAt<I>...>;
+		};
+
+		using PureKeysTuple = typename PureKeysTupleBuilder<std::make_index_sequence<keyCount>>::type;
+
+	public:
+		using Entry = Detail::EntryStorage<PureKeysTuple, ValueType>;
+		using value_type = Entry;
+		using size_type = std::size_t;
+		using difference_type = std::ptrdiff_t;
+		using reference = Entry&;
+		using const_reference = const Entry&;
+		using pointer = Entry*;
+		using const_pointer = const Entry*;
+
+		using StorageVector = std::vector<Entry>;
+		using iterator = typename StorageVector::iterator;
+		using const_iterator = typename StorageVector::const_iterator;
+		using reverse_iterator = typename StorageVector::reverse_iterator;
+		using const_reverse_iterator = typename StorageVector::const_reverse_iterator;
+
+	private:
+		template<class IndexSequence>
+		struct IndicesTupleBuilder;
+
+		template<std::size_t... I>
+		struct IndicesTupleBuilder<std::index_sequence<I...>> final
+		{
+			using type = std::tuple<Detail::KeyIndexTable<DescriptorAt<I>>...>;
+		};
+
+		using IndicesTuple = typename IndicesTupleBuilder<std::make_index_sequence<keyCount>>::type;
+
+	public:
+		// Complexité : O(n) à la compilation seulement
+		template<class TargetKey>
+		[[nodiscard]] static consteval auto resolveKeyIndex() noexcept -> std::size_t
+		{
+			struct MatchResult final
+			{
+				std::size_t count = 0uz;
+				std::size_t index = 0uz;
+			};
+
+			using PureTarget = std::remove_cvref_t<TargetKey>;
+
+			constexpr auto countMatches = [](auto matches) {
+				auto count = 0uz;
+				auto index = 0uz;
+				for (auto i = 0uz; i < std::ranges::size(matches); ++i)
+				{
+					if (matches[i])
+					{
+						++count;
+						index = i;
+					}
+				}
+				return MatchResult{.count = count, .index = index};
+			};
+
+			constexpr auto exact = [&]<std::size_t... I>(std::index_sequence<I...>) {
+				return countMatches(std::array<bool, sizeof...(I)>{std::same_as<PureTarget, KeyTypeAt<I>>...});
+			}(std::make_index_sequence<keyCount>{});
+
+			if constexpr (exact.count == 1uz)
+				return exact.index;
+			else if constexpr (exact.count > 1uz)
+				static_assert(Type::FalseType<TargetKey>, "MultiKeyMap: Ambiguous key type. Multiple keys share this type; use findAt<Index>(key) or find<Tag>(key).");
+			else
+			{
+				constexpr auto convertible = [&]<std::size_t... I>(std::index_sequence<I...>) {
+					return countMatches(std::array<bool, sizeof...(I)>{
+						(std::convertible_to<TargetKey, KeyTypeAt<I>> or std::constructible_from<KeyTypeAt<I>, TargetKey>)...});
+				}(std::make_index_sequence<keyCount>{});
+
+				if constexpr (convertible.count == 1uz)
+					return convertible.index;
+				else if constexpr (convertible.count > 1uz)
+					static_assert(Type::FalseType<TargetKey>, "MultiKeyMap: Ambiguous key type. Multiple keys can accept this argument; use findAt<Index>(key) or find<Tag>(key).");
+				else
+					static_assert(Type::FalseType<TargetKey>, "MultiKeyMap: No key matches the given argument type.");
+			}
+		}
+
+		// Complexité : O(n) à la compilation seulement
+		template<String::Hasher Tag>
+		[[nodiscard]] static consteval auto resolveTagPosition() noexcept -> std::size_t
+		{
+			constexpr auto tagHash = static_cast<Type::Hash>(Tag);
+			constexpr auto searchResult = []<std::size_t... I>(std::index_sequence<I...>) {
+				constexpr auto tagMatches = std::array<bool, sizeof...(I)>{(DescriptorAt<I>::hasTag and DescriptorAt<I>::tag == tagHash)...};
+				for (auto i = 0uz; i < sizeof...(I); ++i)
+					if (tagMatches[i])
+						return std::optional<std::size_t>{i};
+				return std::optional<std::size_t>{std::nullopt};
+			}(std::make_index_sequence<keyCount>{});
+
+			if constexpr (searchResult.has_value())
+				return searchResult.value();
+			else
+				static_assert(Type::FalseValue<tagHash>, "MultiKeyMap: Tag not found in key descriptors.");
+		}
+
+		inline MultiKeyMap() = default;
+
+		// Complexité : O(n) au runtime
+		inline explicit MultiKeyMap(auto&&... entries)
+		requires (sizeof...(entries) > 0 and (std::same_as<std::remove_cvref_t<decltype(entries)>, Entry> and ...))
+		{
+			reserve(sizeof...(entries));
+			(insert(std::forward<decltype(entries)>(entries)), ...);
+		}
+
+		// Complexité : O(n) au runtime
+		template<std::input_iterator InputIterator>
+		inline MultiKeyMap(InputIterator first, InputIterator last)
+		{
+			insert(first, last);
+		}
+
+		[[nodiscard]] static inline constexpr auto makeEntry(auto&&... args) -> Entry
+		{
+			if constexpr (std::is_void_v<ValueType>)
+			{
+				static_assert(sizeof...(args) == keyCount, "MultiKeyMap: Argument count must match key count when Value is void.");
+				return Entry{PureKeysTuple{std::forward<decltype(args)>(args)...}};
+			}
+			else
+			{
+				static_assert(sizeof...(args) == keyCount + 1, "MultiKeyMap: Argument count must match key count + 1 value.");
+				return []<std::size_t... I>(std::index_sequence<I...>, auto&&... pack) {
+					auto tupleOfArgs = std::forward_as_tuple(std::forward<decltype(pack)>(pack)...);
+					return Entry{
+						PureKeysTuple{std::get<I>(std::move(tupleOfArgs))...},
+						std::get<sizeof...(I)>(std::move(tupleOfArgs))};
+				}(std::make_index_sequence<keyCount>{}, std::forward<decltype(args)>(args)...);
+			}
+		}
+
+		// Complexité : O(1) au runtime
+		inline auto insert(Entry entry) -> std::pair<iterator, bool>
+		{
+			const auto hasCollision = [&]<std::size_t... I>(std::index_sequence<I...>) {
+				return ((DescriptorAt<I>::isUnique and std::get<I>(m_indices).map.contains(entry.template key<I>())) or ...);
+			}(std::make_index_sequence<keyCount>{});
+
+			if (hasCollision)
+				return {std::ranges::end(m_entries), false};
+
+			const auto newIndex = std::ranges::size(m_entries);
+			m_entries.push_back(std::move(entry));
+
+			[&]<std::size_t... I>(std::index_sequence<I...>) {
+				([&]() {
+					using Descriptor = DescriptorAt<I>;
+					const auto& key = m_entries[newIndex].template key<I>();
+					if constexpr (Descriptor::isUnique)
+						std::get<I>(m_indices).map.emplace(key, newIndex);
+					else
+						std::get<I>(m_indices).map[key].push_back(newIndex);
+				}(), ...);
+			}(std::make_index_sequence<keyCount>{});
+
+			return {std::ranges::begin(m_entries) + static_cast<difference_type>(newIndex), true};
+		}
+
+		// Complexité : O(1) au runtime
+		inline auto insert(auto&&... args) -> std::pair<iterator, bool>
+		requires (sizeof...(args) > 1 or (sizeof...(args) == 1 and (not std::same_as<std::remove_cvref_t<decltype(args)>, Entry> and ...)))
+		{
+			return insert(makeEntry(std::forward<decltype(args)>(args)...));
+		}
+
+		// Complexité : O(1) au runtime
+		inline auto emplace(auto&&... args) -> std::pair<iterator, bool>
+		{
+			if constexpr (sizeof...(args) == 1 and (std::same_as<std::remove_cvref_t<decltype(args)>, Entry> and ...))
+				return insert(std::forward<decltype(args)>(args)...);
+			else
+				return insert(makeEntry(std::forward<decltype(args)>(args)...));
+		}
+
+		// Complexité : O(1) au runtime
+		template<class... Args>
+		inline auto emplace_back(Args&&... args) -> reference
+		{
+			return *emplace(std::forward<Args>(args)...).first;
+		}
+
+		// Complexité : O(n) au runtime
+		template<std::input_iterator InputIterator>
+		inline auto insert(InputIterator first, InputIterator last) -> void
+		{
+			for (; first != last; ++first)
+				insert(*first);
+		}
+
+		// Complexité : O(n) au runtime
+		inline auto insert_range(std::ranges::input_range auto&& range) -> void
+		{
+			for (auto&& element : range)
+				insert(std::forward<decltype(element)>(element));
+		}
+
+		// Complexité : O(1) au runtime
+		template<std::size_t Index>
+		[[nodiscard]] inline auto findAt(this auto&& self, const auto& key) -> decltype(auto)
+		{
+			static_assert(Index < keyCount, "MultiKeyMap: Index position out of range.");
+			using Descriptor = DescriptorAt<Index>;
+			using MapEntry = std::conditional_t<std::is_const_v<std::remove_reference_t<decltype(self)>>, const Entry, Entry>;
+			auto& indexMap = std::get<Index>(self.m_indices).map;
+			auto iterator = indexMap.find(key);
+
+			if constexpr (Descriptor::isUnique)
+			{
+				if (iterator == std::ranges::end(indexMap))
+					return std::ranges::end(self.m_entries);
+				return std::ranges::begin(self.m_entries) + static_cast<difference_type>(iterator->second);
+			}
+			else
+			{
+				if (iterator == std::ranges::end(indexMap))
+					return NonUniqueRange<MapEntry>{std::ranges::data(self.m_entries), nullptr};
+				return NonUniqueRange<MapEntry>{std::ranges::data(self.m_entries), std::addressof(iterator->second)};
+			}
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto find(this auto&& self, const auto& key) -> decltype(auto)
+		{
+			return self.template findAt<resolveKeyIndex<decltype(key)>()>(key);
+		}
+
+		// Complexité : O(1) au runtime
+		template<String::Hasher Tag>
+		[[nodiscard]] inline auto find(this auto&& self, const auto& key) -> decltype(auto)
+		{
+			return self.template findAt<resolveTagPosition<Tag>()>(key);
+		}
+
+		// Complexité : O(1) au runtime
+		template<std::size_t Index>
+		[[nodiscard]] inline auto findIteratorAt(this auto&& self, const auto& key) -> decltype(auto)
+		{
+			static_assert(Index < keyCount, "MultiKeyMap: Index position out of range.");
+			using Descriptor = DescriptorAt<Index>;
+
+			if constexpr (Descriptor::isUnique)
+				return self.template findAt<Index>(key);
+			else
+			{
+				auto range = self.template findAt<Index>(key);
+				if (std::ranges::empty(range))
+					return std::ranges::end(self.m_entries);
+				return std::ranges::begin(self.m_entries) + static_cast<difference_type>(range.indices->front());
+			}
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto findIterator(this auto&& self, const auto& key) -> decltype(auto)
+		{
+			return self.template findIteratorAt<resolveKeyIndex<decltype(key)>()>(key);
+		}
+
+		// Complexité : O(1) au runtime
+		template<String::Hasher Tag>
+		[[nodiscard]] inline auto findIterator(this auto&& self, const auto& key) -> decltype(auto)
+		{
+			return self.template findIteratorAt<resolveTagPosition<Tag>()>(key);
+		}
+
+		// Complexité : O(1) au runtime
+		template<std::size_t Index>
+		[[nodiscard]] inline auto containsAt(const auto& key) const -> bool
+		{
+			static_assert(Index < keyCount, "MultiKeyMap: Index position out of range.");
+			return std::get<Index>(m_indices).map.contains(key);
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto contains(const auto& key) const -> bool
+		{
+			return containsAt<resolveKeyIndex<decltype(key)>()>(key);
+		}
+
+		// Complexité : O(1) au runtime
+		template<String::Hasher Tag>
+		[[nodiscard]] inline auto contains(const auto& key) const -> bool
+		{
+			return containsAt<resolveTagPosition<Tag>()>(key);
+		}
+
+		// Complexité : O(1) au runtime
+		template<std::size_t Index>
+		[[nodiscard]] inline auto countAt(const auto& key) const -> std::size_t
+		{
+			static_assert(Index < keyCount, "MultiKeyMap: Index position out of range.");
+			using Descriptor = DescriptorAt<Index>;
+			auto& indexMap = std::get<Index>(m_indices).map;
+			if constexpr (Descriptor::isUnique)
+				return indexMap.contains(key) ? 1uz : 0uz;
+			else
+			{
+				auto iterator = indexMap.find(key);
+				return iterator != std::ranges::end(indexMap) ? std::ranges::size(iterator->second) : 0uz;
+			}
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto count(const auto& key) const -> std::size_t
+		{
+			return countAt<resolveKeyIndex<decltype(key)>()>(key);
+		}
+
+		// Complexité : O(1) au runtime
+		template<String::Hasher Tag>
+		[[nodiscard]] inline auto count(const auto& key) const -> std::size_t
+		{
+			return countAt<resolveTagPosition<Tag>()>(key);
+		}
+
+	private:
+		template<std::size_t Index>
+		[[nodiscard]] static inline constexpr decltype(auto) mappedValue(auto&& entry) noexcept
+		{
+			if constexpr (not std::is_void_v<ValueType>)
+				return (entry.value);
+			else
+			{
+				static_assert(keyCount == 2, "MultiKeyMap: Access on void value requires exactly 2 keys.");
+				constexpr auto otherIndex = (Index == 0 ? 1uz : 0uz);
+				return (entry.template key<otherIndex>());
+			}
+		}
+
+	public:
+		// Complexité : O(1) au runtime
+		template<std::size_t Index>
+		[[nodiscard]] inline auto atIndex(this auto&& self, const auto& key) -> decltype(auto)
+		{
+			static_assert(Index < keyCount, "MultiKeyMap: Index position out of range.");
+			using Descriptor = DescriptorAt<Index>;
+			static_assert(Descriptor::isUnique, "MultiKeyMap: at() is only supported on unique keys.");
+
+			auto iterator = self.template findAt<Index>(key);
+			if (iterator == std::ranges::end(self.m_entries))
+				throw std::out_of_range{"MultiKeyMap: key not found"};
+
+			return mappedValue<Index>(*iterator);
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto at(this auto&& self, const auto& key) -> decltype(auto)
+		{
+			return self.template atIndex<resolveKeyIndex<decltype(key)>()>(key);
+		}
+
+		// Complexité : O(1) au runtime
+		template<String::Hasher Tag>
+		[[nodiscard]] inline auto at(this auto&& self, const auto& key) -> decltype(auto)
+		{
+			return self.template atIndex<resolveTagPosition<Tag>()>(key);
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto operator[](this auto&& self, const auto& key) -> decltype(auto)
+		{
+			constexpr auto index = resolveKeyIndex<decltype(key)>();
+			using Descriptor = DescriptorAt<index>;
+			static_assert(Descriptor::isUnique, "MultiKeyMap: operator[] is only supported on unique keys.");
+
+			auto iterator = self.template findAt<index>(key);
+			if (iterator != std::ranges::end(self.m_entries))
+				return mappedValue<index>(*iterator);
+
+			auto keysTuple = PureKeysTuple{};
+			std::get<index>(keysTuple) = key;
+
+			if constexpr (not std::is_void_v<ValueType>)
+			{
+				auto [insertedIterator, inserted] = self.insert(Entry{std::move(keysTuple), ValueType{}});
+				return mappedValue<index>(*insertedIterator);
+			}
+			else
+			{
+				auto [insertedIterator, inserted] = self.insert(Entry{std::move(keysTuple)});
+				return mappedValue<index>(*insertedIterator);
+			}
+		}
+
+	private:
+		// Complexité : O(1) au runtime
+		inline auto eraseAtIndex(std::size_t erasedIndex) -> iterator
+		{
+			if (erasedIndex >= std::ranges::size(m_entries))
+				return std::ranges::end(m_entries);
+
+			const auto lastIndex = std::ranges::size(m_entries) - 1uz;
+
+			[&]<std::size_t... I>(std::index_sequence<I...>) {
+				([&]() {
+					using Descriptor = DescriptorAt<I>;
+					const auto& key = m_entries[erasedIndex].template key<I>();
+					if constexpr (Descriptor::isUnique)
+						std::get<I>(m_indices).map.erase(key);
+					else
+					{
+						auto& vector = std::get<I>(m_indices).map[key];
+						std::erase(vector, erasedIndex);
+						if (std::ranges::empty(vector))
+							std::get<I>(m_indices).map.erase(key);
+					}
+				}(), ...);
+			}(std::make_index_sequence<keyCount>{});
+
+			if (erasedIndex != lastIndex)
+			{
+				[&]<std::size_t... I>(std::index_sequence<I...>) {
+					([&]() {
+						using Descriptor = DescriptorAt<I>;
+						const auto& key = m_entries[lastIndex].template key<I>();
+						if constexpr (Descriptor::isUnique)
+							std::get<I>(m_indices).map[key] = erasedIndex;
+						else
+						{
+							auto& vector = std::get<I>(m_indices).map[key];
+							auto iterator = std::ranges::find(vector, lastIndex);
+							if (iterator != std::ranges::end(vector))
+								*iterator = erasedIndex;
+						}
+					}(), ...);
+				}(std::make_index_sequence<keyCount>{});
+
+				m_entries[erasedIndex] = std::move(m_entries[lastIndex]);
+			}
+
+			m_entries.pop_back();
+
+			return std::ranges::begin(m_entries) + static_cast<difference_type>(erasedIndex);
+		}
+
+	public:
+		// Complexité : O(1) au runtime (clé unique) ou O(n) (clé non-unique)
+		template<std::size_t Index>
+		inline auto eraseAt(const auto& key)
+		{
+			static_assert(Index < keyCount, "MultiKeyMap: Index position out of range.");
+			using Descriptor = DescriptorAt<Index>;
+			auto& indexMap = std::get<Index>(m_indices).map;
+			auto iterator = indexMap.find(key);
+
+			if constexpr (Descriptor::isUnique)
+			{
+				if (iterator == std::ranges::end(indexMap))
+					return false;
+				const auto entryIndex = iterator->second;
+				eraseAtIndex(entryIndex);
+				return true;
+			}
+			else
+			{
+				if (iterator == std::ranges::end(indexMap))
+					return 0uz;
+				auto erasedCount = 0uz;
+				for (auto it = std::ranges::begin(m_entries); it != std::ranges::end(m_entries);)
+					if (it->template key<Index>() == key)
+					{
+						it = erase(it);
+						++erasedCount;
+					}
+					else
+						++it;
+				return erasedCount;
+			}
+		}
+
+		// Complexité : O(1) au runtime (clé unique) ou O(n) (clé non-unique)
+		inline auto erase(const auto& key)
+		requires (not std::same_as<std::remove_cvref_t<decltype(key)>, const_iterator> and not std::same_as<std::remove_cvref_t<decltype(key)>, iterator>)
+		{
+			return eraseAt<resolveKeyIndex<decltype(key)>()>(key);
+		}
+
+		// Complexité : O(1) au runtime (clé unique) ou O(n) (clé non-unique)
+		template<String::Hasher Tag>
+		inline auto erase(const auto& key)
+		{
+			return eraseAt<resolveTagPosition<Tag>()>(key);
+		}
+
+		// Complexité : O(1) au runtime
+		inline auto erase(const_iterator position) -> iterator
+		{
+			const auto index = static_cast<std::size_t>(position - std::ranges::cbegin(m_entries));
+			return eraseAtIndex(index);
+		}
+
+		// Complexité : O(n) au runtime
+		inline auto erase(const_iterator first, const_iterator last) -> iterator
+		{
+			while (first != last)
+			{
+				first = erase(first);
+				--last;
+			}
+			const auto index = static_cast<std::size_t>(first - std::ranges::cbegin(m_entries));
+			return std::ranges::begin(m_entries) + static_cast<difference_type>(index);
+		}
+
+		// Complexité : O(n) au runtime
+		inline auto clear() noexcept -> void
+		{
+			[&]<std::size_t... I>(std::index_sequence<I...>) {
+				(std::get<I>(m_indices).map.clear(), ...);
+			}(std::make_index_sequence<keyCount>{});
+			m_entries.clear();
+		}
+
+		// Complexité : O(n) au runtime
+		inline auto reserve(std::size_t newCapacity) -> void
+		{
+			m_entries.reserve(newCapacity);
+			[&]<std::size_t... I>(std::index_sequence<I...>) {
+				(std::get<I>(m_indices).map.reserve(newCapacity), ...);
+			}(std::make_index_sequence<keyCount>{});
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto begin() noexcept -> iterator { return std::ranges::begin(m_entries); }
+		[[nodiscard]] inline auto begin() const noexcept -> const_iterator { return std::ranges::cbegin(m_entries); }
+		[[nodiscard]] inline auto cbegin() const noexcept -> const_iterator { return std::ranges::cbegin(m_entries); }
+		[[nodiscard]] inline auto end() noexcept -> iterator { return std::ranges::end(m_entries); }
+		[[nodiscard]] inline auto end() const noexcept -> const_iterator { return std::ranges::cend(m_entries); }
+		[[nodiscard]] inline auto cend() const noexcept -> const_iterator { return std::ranges::cend(m_entries); }
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto rbegin() noexcept -> reverse_iterator { return std::ranges::rbegin(m_entries); }
+		[[nodiscard]] inline auto rbegin() const noexcept -> const_reverse_iterator { return std::ranges::crbegin(m_entries); }
+		[[nodiscard]] inline auto crbegin() const noexcept -> const_reverse_iterator { return std::ranges::crbegin(m_entries); }
+		[[nodiscard]] inline auto rend() noexcept -> reverse_iterator { return std::ranges::rend(m_entries); }
+		[[nodiscard]] inline auto rend() const noexcept -> const_reverse_iterator { return std::ranges::crend(m_entries); }
+		[[nodiscard]] inline auto crend() const noexcept -> const_reverse_iterator { return std::ranges::crend(m_entries); }
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto empty() const noexcept -> bool { return std::ranges::empty(m_entries); }
+		[[nodiscard]] inline auto size() const noexcept -> std::size_t { return std::ranges::size(m_entries); }
+		[[nodiscard]] inline auto max_size() const noexcept -> std::size_t { return m_entries.max_size(); }
+		[[nodiscard]] inline auto capacity() const noexcept -> std::size_t { return m_entries.capacity(); }
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto front() -> reference { return *std::ranges::begin(m_entries); }
+		[[nodiscard]] inline auto front() const -> const_reference { return *std::ranges::cbegin(m_entries); }
+		[[nodiscard]] inline auto back() -> reference { return *std::ranges::rbegin(m_entries); }
+		[[nodiscard]] inline auto back() const -> const_reference { return *std::ranges::crbegin(m_entries); }
+
+	private:
+		StorageVector m_entries;
+		IndicesTuple m_indices;
+	};
+}
+
+template<class KeysTuple, class ValueType>
+struct std::tuple_size<CppUtils::Container::Detail::EntryStorage<KeysTuple, ValueType>>:
+	std::tuple_size<typename CppUtils::Container::Detail::EntryStorage<KeysTuple, ValueType>::TupleType>
+{};
+
+template<std::size_t Index, class KeysTuple, class ValueType>
+struct std::tuple_element<Index, CppUtils::Container::Detail::EntryStorage<KeysTuple, ValueType>>:
+	std::tuple_element<Index, typename CppUtils::Container::Detail::EntryStorage<KeysTuple, ValueType>::TupleType>
+{};
