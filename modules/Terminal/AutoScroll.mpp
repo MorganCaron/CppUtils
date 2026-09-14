@@ -69,6 +69,8 @@ export namespace CppUtils::Terminal
 
 		inline auto startAutoScroll(this auto&& self) -> decltype(auto)
 		{
+			if (self.m_running)
+				return self;
 			self.m_running = true;
 			self.scheduleNextStep();
 			return self;
@@ -77,6 +79,8 @@ export namespace CppUtils::Terminal
 		inline auto stopAutoScroll(this auto&& self) -> decltype(auto)
 		{
 			self.m_running = false;
+			if (self.hasWidgetManager())
+				self.getWidgetManager().scheduler.cancelOwner(std::addressof(self));
 			return self;
 		}
 
@@ -198,9 +202,9 @@ export namespace CppUtils::Terminal
 
 		Area m_fullContentArea{{0, 0}};
 		Direction m_direction = Direction::Horizontal;
-		std::size_t m_scrollOffset = 0uz;
+		std::atomic<std::size_t> m_scrollOffset = 0uz;
 		std::chrono::milliseconds m_interval{100};
-		bool m_running = false;
+		std::atomic<bool> m_running = false;
 		bool m_scrollOnHover = false;
 		bool m_isHovered = false;
 	};

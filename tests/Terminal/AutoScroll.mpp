@@ -52,8 +52,7 @@ namespace CppUtils::UnitTest::Terminal::AutoScroll
 			canvas.onMouseEvent(hoverEvent);
 
 			suite.expectEqual(autoScroll.isAutoScrolling(), true);
-			std::this_thread::sleep_for(150ms);
-			suite.expect(autoScroll.getScrollOffset() > 0uz);
+			suite.expect(CppUtils::Thread::pollFor([&] { return autoScroll.getScrollOffset() > 0uz; }, 2s, 10ms));
 
 			auto leaveEvent = CppUtils::Terminal::Mouse::Event{};
 			leaveEvent.absolutePosition = canvasOrigin + CppUtils::Container::Size2{15uz, 0uz};
