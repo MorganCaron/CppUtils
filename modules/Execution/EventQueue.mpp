@@ -10,9 +10,11 @@ import CppUtils.Chrono.Concept;
 
 export namespace CppUtils::Execution
 {
-	class EventQueue
+	class EventQueue final
 	{
 	public:
+		using SubscriptionIdentifier = EventDispatcher::SubscriptionIdentifier;
+
 		inline EventQueue():
 			m_worker{
 				[this] { workerThread(); },
@@ -47,9 +49,25 @@ export namespace CppUtils::Execution
 		}
 
 		template<String::Hasher... eventNames>
-		inline auto subscribe(auto&& function) -> void
+		inline auto subscribe(auto&& function)
 		{
-			m_dispatcher.subscribe<eventNames...>(std::forward<decltype(function)>(function));
+			return m_dispatcher.template subscribe<eventNames...>(std::forward<decltype(function)>(function));
+		}
+
+		template<String::Hasher... eventNames>
+		inline auto unsubscribe() -> bool
+		{
+			return m_dispatcher.template unsubscribe<eventNames...>();
+		}
+
+		inline auto unsubscribe(auto&& subscriptionIdentifierOrEventHash)
+		{
+			return m_dispatcher.unsubscribe(std::forward<decltype(subscriptionIdentifierOrEventHash)>(subscriptionIdentifierOrEventHash));
+		}
+
+		inline auto clearSubscribers() -> void
+		{
+			m_dispatcher.clearSubscribers();
 		}
 
 		template<Chrono::Duration Duration = std::chrono::milliseconds>

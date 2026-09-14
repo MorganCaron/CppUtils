@@ -39,5 +39,64 @@ namespace CppUtils::UnitTest::Execution::EventQueue
 			queue.waitUntilFinished();
 			suite.expectEqual(count, 2uz);
 		});
+
+		suite.addTest("Unsubscribe", [&] {
+			auto queue = CppUtils::Execution::EventQueue{};
+			auto count = 0;
+
+			const CppUtils::Execution::EventQueue::SubscriptionIdentifier subscriptionIdentifier = queue.subscribe<"Event">([&count] {
+				++count;
+			});
+
+			queue.emit<"Event">();
+			queue.waitUntilFinished();
+			suite.expectEqual(count, 1);
+
+			suite.expect(queue.unsubscribe(subscriptionIdentifier));
+
+			queue.emit<"Event">();
+			queue.waitUntilFinished();
+			suite.expectEqual(count, 1);
+		});
+
+		suite.addTest("Clear subscribers", [&] {
+			auto queue = CppUtils::Execution::EventQueue{};
+			auto count = 0;
+
+			queue.subscribe<"A">([&count] { ++count; });
+			queue.subscribe<"B">([&count] { ++count; });
+
+			queue.emit<"A">();
+			queue.emit<"B">();
+			queue.waitUntilFinished();
+			suite.expectEqual(count, 2);
+
+			queue.clearSubscribers();
+
+			queue.emit<"A">();
+			queue.emit<"B">();
+			queue.waitUntilFinished();
+			suite.expectEqual(count, 2);
+		});
+
+		suite.addTest("Unsubscribe by event hash", [&] {
+			auto queue = CppUtils::Execution::EventQueue{};
+			auto count = 0;
+
+			queue.subscribe<"Event">([&count] { ++count; });
+			queue.subscribe<"Other">([&count] { ++count; });
+
+			queue.emit<"Event">();
+			queue.emit<"Other">();
+			queue.waitUntilFinished();
+			suite.expectEqual(count, 2);
+
+			suite.expect(queue.unsubscribe<"Event">());
+
+			queue.emit<"Event">();
+			queue.emit<"Other">();
+			queue.waitUntilFinished();
+			suite.expectEqual(count, 3);
+		});
 	}};
 }

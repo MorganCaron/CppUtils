@@ -37,6 +37,7 @@ export namespace CppUtils::Thread
 	public:
 		using Clock = std::chrono::steady_clock;
 		using TimePoint = Clock::time_point;
+		using SubscriptionIdentifier = Execution::EventDispatcher::SubscriptionIdentifier;
 
 		explicit ScheduledEventDispatcher(
 			Scheduler::Clock::duration step = std::chrono::milliseconds(10),
@@ -47,9 +48,25 @@ export namespace CppUtils::Thread
 		{}
 
 		template<String::Hasher... eventNames>
-		inline auto subscribe(auto&& function) -> void
+		inline auto subscribe(auto&& function)
 		{
-			m_eventDispatcher.subscribe<eventNames...>(std::forward<decltype(function)>(function));
+			return m_eventDispatcher.template subscribe<eventNames...>(std::forward<decltype(function)>(function));
+		}
+
+		template<String::Hasher... eventNames>
+		inline auto unsubscribe() -> bool
+		{
+			return m_eventDispatcher.template unsubscribe<eventNames...>();
+		}
+
+		inline auto unsubscribe(auto&& subscriptionIdentifierOrEventHash)
+		{
+			return m_eventDispatcher.unsubscribe(std::forward<decltype(subscriptionIdentifierOrEventHash)>(subscriptionIdentifierOrEventHash));
+		}
+
+		inline auto clearSubscribers() -> void
+		{
+			m_eventDispatcher.clearSubscribers();
 		}
 
 		template<String::Hasher eventName = Type::Hash{}, class... Args, Chrono::Duration Delay = std::chrono::milliseconds>
