@@ -5,109 +5,159 @@ module;
 export module CppUtils.Container.BidirectionalMap;
 
 import std;
-
-namespace std
-{
-	template<class First, class Second>
-	struct hash<std::pair<First, Second>>
-	{
-		[[nodiscard]] inline auto operator()(const std::pair<First, Second>& pair) const -> std::size_t
-		{
-			auto hash1 = std::hash<First>{}(pair.first);
-			auto hash2 = std::hash<Second>{}(pair.second);
-			return hash1 ^ (hash2 << 1);
-		}
-	};
-}
+import CppUtils.Container.MultiKeyMap;
 
 export namespace CppUtils::Container
 {
 	template<class Lhs, class Rhs>
-	struct BidirectionalMap final
+	class BidirectionalMap final
 	{
-		using Set = std::unordered_set<std::pair<Lhs, Rhs>>;
-
 	public:
+		using Pair = std::pair<Lhs, Rhs>;
+		using Map = MultiKeyMap<
+			TaggedKey<"Left", Lhs>,
+			TaggedKey<"Right", Rhs>,
+			void>;
+
+		using value_type = typename Map::value_type;
+		using size_type = std::size_t;
+		using difference_type = std::ptrdiff_t;
+		using reference = typename Map::reference;
+		using const_reference = typename Map::const_reference;
+		using pointer = typename Map::pointer;
+		using const_pointer = typename Map::const_pointer;
+		using iterator = typename Map::const_iterator;
+		using const_iterator = typename Map::const_iterator;
+
 		inline BidirectionalMap() = default;
-		explicit inline BidirectionalMap(std::initializer_list<typename Set::value_type> values):
-			values{values}
-		{}
 
-		[[nodiscard]] constexpr inline auto begin(this auto&& self) -> decltype(auto)
+		// Complexité : O(n) au runtime
+		inline explicit BidirectionalMap(auto&&... pairs)
+		requires (sizeof...(pairs) > 0 and (std::same_as<std::remove_cvref_t<decltype(pairs)>, Pair> and ...))
 		{
-			return std::ranges::begin(self.values);
+			(insert(std::forward<decltype(pairs)>(pairs)), ...);
 		}
 
-		[[nodiscard]] constexpr inline auto cbegin() const -> decltype(auto)
+		// Complexité : O(n) au runtime
+		template<std::input_iterator InputIterator>
+		inline BidirectionalMap(InputIterator first, InputIterator last)
 		{
-			return std::ranges::cbegin(values);
+			for (; first != last; ++first)
+				insert(*first);
 		}
 
-		[[nodiscard]] constexpr inline auto end(this auto&& self) -> decltype(auto)
+		// Complexité : O(n) au runtime
+		explicit inline BidirectionalMap(std::initializer_list<Pair> values)
 		{
-			return std::ranges::end(self.values);
-		}
-		[[nodiscard]] constexpr inline auto cend() const -> decltype(auto)
-		{
-			return std::ranges::cend(values);
+			for (const auto& value : values)
+				insert(value);
 		}
 
+		[[nodiscard]] inline constexpr auto begin(this auto&& self) noexcept -> decltype(auto)
+		{
+			return std::ranges::cbegin(self.m_map);
+		}
+
+		[[nodiscard]] inline constexpr auto cbegin() const noexcept -> decltype(auto)
+		{
+			return std::ranges::cbegin(m_map);
+		}
+
+		[[nodiscard]] inline constexpr auto end(this auto&& self) noexcept -> decltype(auto)
+		{
+			return std::ranges::cend(self.m_map);
+		}
+
+		[[nodiscard]] inline constexpr auto cend() const noexcept -> decltype(auto)
+		{
+			return std::ranges::cend(m_map);
+		}
+
+		// Complexité : O(1) au runtime
 		[[nodiscard]] inline constexpr auto empty() const noexcept -> bool
 		{
-			return std::ranges::empty(values);
+			return std::ranges::empty(m_map);
 		}
 
+		// Complexité : O(1) au runtime
 		[[nodiscard]] inline constexpr auto size() const noexcept -> std::size_t
 		{
-			return std::ranges::size(values);
+			return std::ranges::size(m_map);
 		}
 
+		// Complexité : O(n) au runtime
 		inline auto clear() noexcept -> void
 		{
-			values.clear();
+			m_map.clear();
 		}
 
-		inline auto insert(Set::value_type&& value) -> void
+		// Complexité : O(1) au runtime
+		inline auto insert(Lhs lhs, Rhs rhs) -> bool
 		{
-			values.insert(value);
+			return m_map.insert(std::move(lhs), std::move(rhs)).second;
 		}
 
-		[[nodiscard]] inline auto findLeft(const Lhs& lhs) -> decltype(auto)
+		// Complexité : O(1) au runtime
+		inline auto insert(Pair value) -> bool
 		{
-			return std::ranges::find_if(values, [&lhs](auto&& pair) -> bool { return pair.first == lhs; });
+			return insert(std::move(value.first), std::move(value.second));
 		}
 
-		[[nodiscard]] inline auto findRight(const Rhs& rhs) -> decltype(auto)
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto findLeft(const Lhs& lhs) const noexcept -> const_iterator
 		{
-			return std::ranges::find_if(values, [&rhs](auto&& pair) -> bool { return pair.second == rhs; });
+			return m_map.template find<"Left">(lhs);
 		}
 
-		[[nodiscard]] inline auto left(const Lhs& lhs) -> decltype(auto)
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto findRight(const Rhs& rhs) const noexcept -> const_iterator
 		{
-			if (auto it = findLeft(lhs); it == std::ranges::cend(values))
+			return m_map.template find<"Right">(rhs);
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto containsLeft(const Lhs& lhs) const noexcept -> bool
+		{
+			return m_map.template contains<"Left">(lhs);
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto containsRight(const Rhs& rhs) const noexcept -> bool
+		{
+			return m_map.template contains<"Right">(rhs);
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto left(const Lhs& lhs) const -> const Rhs&
+		{
+			auto iterator = m_map.template find<"Left">(lhs);
+			if (iterator == std::ranges::cend(m_map))
 				throw std::runtime_error{"Missing key in BidirectionalMap"};
-			else
-				return it->second;
+			return iterator->template key<1>();
 		}
 
-		[[nodiscard]] inline auto right(const Rhs& rhs) -> decltype(auto)
+		// Complexité : O(1) au runtime
+		[[nodiscard]] inline auto right(const Rhs& rhs) const -> const Lhs&
 		{
-			if (auto it = findRight(rhs); it == std::ranges::cend(values))
+			auto iterator = m_map.template find<"Right">(rhs);
+			if (iterator == std::ranges::cend(m_map))
 				throw std::runtime_error{"Missing key in BidirectionalMap"};
-			else
-				return it->first;
+			return iterator->template key<0>();
 		}
 
-		inline auto eraseLeft(const Lhs& lhs) noexcept -> void
+		// Complexité : O(1) au runtime
+		inline auto eraseLeft(const Lhs& lhs) noexcept -> bool
 		{
-			std::erase_if(values, [&lhs](auto&& pair) -> bool { return pair.first == lhs; });
+			return m_map.template erase<"Left">(lhs);
 		}
-		inline auto eraseRight(const Rhs& rhs) noexcept -> void
+
+		// Complexité : O(1) au runtime
+		inline auto eraseRight(const Rhs& rhs) noexcept -> bool
 		{
-			std::erase_if(values, [&rhs](auto&& pair) -> bool { return pair.second == rhs; });
+			return m_map.template erase<"Right">(rhs);
 		}
 
 	private:
-		Set values;
+		Map m_map;
 	};
 }
