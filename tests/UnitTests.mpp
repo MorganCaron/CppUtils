@@ -20,6 +20,7 @@ export import CppUtils.UnitTests.Crypto.SHA256;
 export import CppUtils.UnitTests.Execution.Event;
 export import CppUtils.UnitTests.Execution.EventDispatcher;
 export import CppUtils.UnitTests.Execution.EventQueue;
+export import CppUtils.UnitTests.Execution.Pipeline;
 export import CppUtils.UnitTests.Execution.Retry;
 export import CppUtils.UnitTests.Execution.ScopeGuard;
 export import CppUtils.UnitTests.Execution.TryExecute;

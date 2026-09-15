@@ -1,0 +1,181 @@
+export module CppUtils.UnitTests.Execution.Pipeline;
+
+import std;
+import CppUtils;
+
+export namespace CppUtils::UnitTest::Execution
+{
+	auto _ = CppUtils::UnitTest::TestSuite{"Execution/Pipeline", [](auto& suite) {
+		suite.addTest("Pipeline short-circuit", [&] {
+			auto pipeline = CppUtils::Execution::Pipeline<std::string_view>{};
+			auto executedStepsCount = 0uz;
+
+			auto success = [](std::size_t& counter) -> std::expected<int, std::string_view> {
+				++counter;
+				return 1;
+			};
+			auto failure = [](std::size_t& counter) -> std::expected<int, std::string_view> {
+				++counter;
+				return std::unexpected{"error 42"};
+			};
+
+			const auto result = pipeline.invoke(success, executedStepsCount);
+			auto _ = pipeline.invoke(failure, executedStepsCount);
+			auto _ = pipeline.invoke(success, executedStepsCount);
+
+			suite.expect(executedStepsCount == 2uz);
+			suite.expect(not pipeline.success());
+			suite.expect(result == 1);
+
+			const auto finalResult = pipeline.result();
+			suite.expect(not finalResult);
+			suite.expect(finalResult.error() == "error 42");
+		});
+
+		suite.addTest("Pipeline strictly expected", [&] {
+			auto pipeline = CppUtils::Execution::Pipeline<std::string_view>{};
+
+			auto success = []() -> std::expected<int, std::string_view> { return 10; };
+			auto failure = []() -> std::expected<int, std::string_view> { return std::unexpected{"error"}; };
+
+			const auto result = pipeline.invoke(success);
+			suite.expect(result == 10);
+			suite.expect(pipeline.success());
+
+			auto _ = pipeline.invoke(failure);
+			suite.expect(not pipeline.success());
+		});
+
+		suite.addTest("Pipeline with lambdas and state capture", [&] {
+			auto pipeline = CppUtils::Execution::Pipeline<std::string>{};
+			auto executedStepsCount = 0uz;
+
+			const auto result1 = pipeline.invoke([&](int a, int b) -> std::expected<int, std::string> {
+				++executedStepsCount;
+				return a + b;
+			}, 10, 20);
+
+			const auto result2 = pipeline.invoke([&](int value) -> std::expected<std::string, std::string> {
+				++executedStepsCount;
+				return std::to_string(value);
+			}, result1);
+
+			suite.expect(pipeline.success());
+			suite.expect(pipeline);
+			suite.expect(executedStepsCount == 2uz);
+			suite.expect(result1 == 30);
+			suite.expect(result2 == "30");
+			suite.expect(not pipeline.error().has_value());
+		});
+
+		suite.addTest("Pipeline with void return", [&] {
+			auto pipeline = CppUtils::Execution::Pipeline<std::string>{};
+			auto executedStepsCount = 0uz;
+
+			pipeline.invoke([&]() -> std::expected<void, std::string> {
+				++executedStepsCount;
+				return {};
+			});
+
+			pipeline.invoke([&]() -> std::expected<void, std::string> {
+				++executedStepsCount;
+				return std::unexpected{"action failed"};
+			});
+
+			pipeline.invoke([&]() -> std::expected<void, std::string> {
+				++executedStepsCount;
+				return {};
+			});
+
+			suite.expect(executedStepsCount == 2uz);
+			suite.expect(not pipeline.success());
+			suite.expect(pipeline.error().value() == "action failed");
+		});
+
+		suite.addTest("Pipeline tryInvoke with non-default-constructible type", [&] {
+			struct NonDefaultConstructible final
+			{
+				int value;
+				explicit NonDefaultConstructible(int initialValue): value{initialValue} {}
+			};
+
+			auto pipeline = CppUtils::Execution::Pipeline<std::string>{};
+
+			const auto result1 = pipeline.tryInvoke([]() -> std::expected<NonDefaultConstructible, std::string> {
+				return NonDefaultConstructible{42};
+			});
+
+			suite.expect(result1.has_value());
+			suite.expect(result1->value == 42);
+
+			const auto result2 = pipeline.tryInvoke([]() -> std::expected<NonDefaultConstructible, std::string> {
+				return std::unexpected{"failed creation"};
+			});
+
+			suite.expect(not result2.has_value());
+			suite.expect(not pipeline.success());
+
+			const auto result3 = pipeline.tryInvoke([]() -> std::expected<NonDefaultConstructible, std::string> {
+				return NonDefaultConstructible{99};
+			});
+
+			suite.expect(not result3.has_value());
+		});
+
+		suite.addTest("Pipeline reset and reuse", [&] {
+			auto pipeline = CppUtils::Execution::Pipeline<std::string>{};
+
+			pipeline.invoke([]() -> std::expected<int, std::string> {
+				return std::unexpected{"initial failure"};
+			});
+
+			suite.expect(not pipeline.success());
+			suite.expect(pipeline.error().value() == "initial failure");
+
+			pipeline.reset();
+
+			suite.expect(pipeline.success());
+			suite.expect(not pipeline.error().has_value());
+
+			const auto result = pipeline.invoke([]() -> std::expected<int, std::string> {
+				return 100;
+			});
+
+			suite.expect(pipeline.success());
+			suite.expect(result == 100);
+		});
+
+		suite.addTest("Pipeline with tryExecute interoperability", [&] {
+			auto pipeline = CppUtils::Execution::Pipeline<std::string>{};
+
+			const auto result = pipeline.invoke([] {
+				return CppUtils::Execution::tryExecute([] {
+					return 42 * 2;
+				});
+			});
+
+			suite.expect(pipeline.success());
+			suite.expect(result == 84);
+		});
+
+		suite.addTest("Pipeline result with value and move semantics", [&] {
+			auto successfulPipeline = CppUtils::Execution::Pipeline<std::string>{};
+			const auto computationResult = successfulPipeline.invoke([]() -> std::expected<int, std::string> {
+				return 42;
+			});
+
+			const auto finalSuccessResult = std::move(successfulPipeline).result(computationResult);
+			suite.expect(finalSuccessResult.has_value());
+			suite.expect(finalSuccessResult.value() == 42);
+
+			auto failedPipeline = CppUtils::Execution::Pipeline<std::string>{};
+			failedPipeline.invoke([]() -> std::expected<void, std::string> {
+				return std::unexpected{"pipeline failed"};
+			});
+
+			const auto finalFailedResult = std::move(failedPipeline).result(100);
+			suite.expect(not finalFailedResult.has_value());
+			suite.expect(finalFailedResult.error() == "pipeline failed");
+		});
+	}};
+}
