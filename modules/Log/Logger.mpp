@@ -24,6 +24,8 @@ export namespace CppUtils
 	template<String::Hasher loggerName = Type::Hash{}>
 	struct Logger final
 	{
+		using SubscriptionIdentifier = Execution::EventQueue::SubscriptionIdentifier;
+
 		[[nodiscard]] static inline auto& eventQueue() noexcept
 		{
 			auto& eventQueue = Pattern::Multiton<Execution::EventQueue, loggerName>::get();
@@ -55,9 +57,25 @@ export namespace CppUtils
 		}
 
 		template<String::Hasher... logTypes>
-		static inline auto subscribe(auto&& function) -> void
+		static inline auto subscribe(auto&& function)
 		{
-			eventQueue().template subscribe<logTypes...>(std::forward<decltype(function)>(function));
+			return eventQueue().template subscribe<logTypes...>(std::forward<decltype(function)>(function));
+		}
+
+		template<String::Hasher... logTypes>
+		static inline auto unsubscribe() -> bool
+		{
+			return eventQueue().template unsubscribe<logTypes...>();
+		}
+
+		static inline auto unsubscribe(auto&& subscriptionIdentifierOrLogTypeHash)
+		{
+			return eventQueue().unsubscribe(std::forward<decltype(subscriptionIdentifierOrLogTypeHash)>(subscriptionIdentifierOrLogTypeHash));
+		}
+
+		static inline auto clearSubscribers() -> void
+		{
+			eventQueue().clearSubscribers();
 		}
 
 		template<Chrono::Duration Duration = std::chrono::milliseconds>
