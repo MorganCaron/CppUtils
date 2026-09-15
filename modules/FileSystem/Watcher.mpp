@@ -249,10 +249,10 @@ export namespace CppUtils::FileSystem
 						auto itemsAccessor = m_watchedItems.access();
 						if (Event::Ignored & static_cast<Event>(inotifyEvent.mask))
 						{
-							itemsAccessor.value().eraseRight(inotifyEvent.wd);
+							itemsAccessor.value().eraseRight(static_cast<WatchDescriptor>(inotifyEvent.wd));
 							continue;
 						}
-						if (auto it = itemsAccessor.value().findRight(inotifyEvent.wd);
+						if (auto it = itemsAccessor.value().findRight(static_cast<WatchDescriptor>(inotifyEvent.wd));
 							it != std::ranges::cend(itemsAccessor.value()))
 							path = it->first;
 					}
@@ -282,9 +282,9 @@ export namespace CppUtils::FileSystem
 			forDirectories(normalizedPath, [this, event](const auto& path) -> void {
 				watch(path, event);
 			}, true);
-			auto watchDescriptor = System::throwErrno(
+			auto watchDescriptor = static_cast<WatchDescriptor>(System::throwErrno(
 				inotify_add_watch(m_inotify, normalizedPath.string().c_str(), static_cast<std::underlying_type_t<Event>>(event)),
-				std::format("Failed to watch the file {}", normalizedPath.string()));
+				std::format("Failed to watch the file {}", normalizedPath.string())));
 			m_watchedItems.access()->insert({normalizedPath, watchDescriptor});
 #elif defined(OS_WINDOWS)
 			const auto isDirectory = std::filesystem::is_directory(normalizedPath);
@@ -397,7 +397,7 @@ export namespace CppUtils::FileSystem
 			}, true);
 			auto itemsAccessor = m_watchedItems.access();
 			System::throwErrno(
-				inotify_rm_watch(m_inotify, itemsAccessor.value().left(normalizedPath)),
+				inotify_rm_watch(m_inotify, std::to_underlying(itemsAccessor.value().left(normalizedPath))),
 				std::format("Failed to stop watching the file {}", normalizedPath.string()));
 			itemsAccessor.value().eraseLeft(normalizedPath);
 #elif defined(OS_WINDOWS)
@@ -431,9 +431,9 @@ export namespace CppUtils::FileSystem
 		{
 			auto itemsAccessor = m_watchedItems.access();
 #if defined(OS_LINUX)
-			for (const auto& [path, fileDescriptor] : itemsAccessor.value())
+			for (const auto& [path, watchDescriptor] : itemsAccessor.value())
 				System::throwErrno(
-					inotify_rm_watch(m_inotify, fileDescriptor),
+					inotify_rm_watch(m_inotify, std::to_underlying(watchDescriptor)),
 					std::format("Failed to stop watching the file {}", path.string()));
 #elif defined(OS_WINDOWS)
 			for (auto& item : itemsAccessor.value())
@@ -553,7 +553,9 @@ export namespace CppUtils::FileSystem
 		using SubscribedFunctions = std::vector<std::pair<Event, SubscribeFunction>>;
 
 #if defined(OS_LINUX)
-		using WatchDescriptor = int;
+		// clang-format off
+		enum class WatchDescriptor : int {};
+		// clang-format on
 		using WatchedItems = Container::BidirectionalMap<std::filesystem::path, WatchDescriptor>;
 
 		System::FileDescriptor m_eventPoll;
