@@ -1,0 +1,106 @@
+export module CppUtils.Execution.Pipeline;
+
+import std;
+import CppUtils.Type.Specialization;
+
+export namespace CppUtils::Execution
+{
+	template<class ErrorType>
+	struct Pipeline final
+	{
+		std::optional<ErrorType> firstError = std::nullopt;
+
+		template<class Callable, class... Args>
+		requires CppUtils::Type::Specializes<std::invoke_result_t<Callable, Args...>, std::expected>
+			and std::convertible_to<typename std::invoke_result_t<Callable, Args...>::error_type, ErrorType>
+		inline auto invoke(Callable&& callable, Args&&... args)
+		{
+			using ResultType = std::invoke_result_t<Callable, Args...>;
+			using ValueType = typename ResultType::value_type;
+
+			if constexpr (std::is_void_v<ValueType>)
+				tryInvoke(std::forward<Callable>(callable), std::forward<Args>(args)...);
+			else
+			{
+				static_assert(std::default_initializable<ValueType>,
+					"ValueType must be default initializable for invoke() to return a default value on failure or short-circuit. Consider tryInvoke() for non-default-initializable types.");
+
+				auto optionalResult = tryInvoke(std::forward<Callable>(callable), std::forward<Args>(args)...);
+				if (optionalResult.has_value()) [[likely]]
+					return std::move(optionalResult).value();
+				return ValueType{};
+			}
+		}
+
+		template<class Callable, class... Args>
+		requires CppUtils::Type::Specializes<std::invoke_result_t<Callable, Args...>, std::expected>
+			and std::convertible_to<typename std::invoke_result_t<Callable, Args...>::error_type, ErrorType>
+		inline auto tryInvoke(Callable&& callable, Args&&... args)
+		{
+			using ResultType = std::invoke_result_t<Callable, Args...>;
+			using ValueType = typename ResultType::value_type;
+
+			if constexpr (std::is_void_v<ValueType>)
+			{
+				if (firstError) [[unlikely]]
+					return false;
+
+				auto result = std::invoke(std::forward<Callable>(callable), std::forward<Args>(args)...);
+				if (not result) [[unlikely]]
+				{
+					firstError = std::move(result).error();
+					return false;
+				}
+				return true;
+			}
+			else
+			{
+				if (firstError) [[unlikely]]
+					return std::optional<ValueType>{std::nullopt};
+
+				auto result = std::invoke(std::forward<Callable>(callable), std::forward<Args>(args)...);
+				if (not result) [[unlikely]]
+				{
+					firstError = std::move(result).error();
+					return std::optional<ValueType>{std::nullopt};
+				}
+				return std::optional<ValueType>{std::move(result).value()};
+			}
+		}
+
+		[[nodiscard]] inline auto result(this auto&& self) -> std::expected<void, ErrorType>
+		{
+			if (not self.firstError) [[likely]]
+				return {};
+			return std::unexpected{std::forward<decltype(self)>(self).firstError.value()};
+		}
+
+		template<class ValueType>
+		[[nodiscard]] inline auto result(this auto&& self, ValueType&& value) -> std::expected<std::remove_cvref_t<ValueType>, ErrorType>
+		{
+			if (not self.firstError) [[likely]]
+				return std::forward<ValueType>(value);
+			return std::unexpected{std::forward<decltype(self)>(self).firstError.value()};
+		}
+
+		[[nodiscard]] inline auto success() const noexcept -> bool
+		{
+			return not firstError.has_value();
+		}
+
+		[[nodiscard]] inline auto error() const noexcept -> const std::optional<ErrorType>&
+		{
+			return firstError;
+		}
+
+		[[nodiscard]] explicit inline operator bool() const noexcept
+		{
+			return success();
+		}
+
+		inline auto reset() noexcept -> void
+		{
+			firstError = std::nullopt;
+		}
+	};
+}

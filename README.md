@@ -47,6 +47,7 @@
 - [`Event`](modules/Execution/Event.mpp) - An event for thread synchronization
 - [`EventDispatcher`](modules/Execution/EventDispatcher.mpp) - Event system to subscribe functions and trigger actions by event name
 - [`EventQueue`](modules/Execution/EventQueue.mpp) - Thread-safe event queue running on a dedicated thread for asynchronous event processing (preserves event order)
+- [`Pipeline`](modules/Execution/Pipeline.mpp) - Monadic execution pipeline with short-circuiting on `std::expected` failures
 - [`Retry`](modules/Execution/Retry.mpp) - Retries operations with configurable attempts and delay
 - [`ScopeGuard`](modules/Execution/ScopeGuard.mpp) - RAII utility to execute a function when leaving a scope, ensuring resource cleanup
 - [`TryExecute`](modules/Execution/TryExecute.mpp) - Executes operations and captures exceptions as `std::expected`
