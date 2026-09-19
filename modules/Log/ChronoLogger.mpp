@@ -33,7 +33,7 @@ export namespace CppUtils::Log
 				return;
 			m_enabled = false;
 			m_chrono.stop();
-			m_callback(Chrono::durationToString(m_chrono.getDuration()));
+			m_callback(Chrono::durationToString(m_chrono.elapsed()));
 		}
 
 	private:
