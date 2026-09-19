@@ -55,9 +55,10 @@ export namespace CppUtils::Chrono
 			m_end = Clock::now();
 		}
 
-		[[nodiscard]] inline auto getDuration() const
+		template<class Duration = typename Clock::duration>
+		[[nodiscard]] inline auto elapsed() const -> Duration
 		{
-			return m_end - m_start;
+			return std::chrono::duration_cast<Duration>(m_end - m_start);
 		}
 
 	private:
