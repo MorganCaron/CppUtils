@@ -13,6 +13,9 @@ export namespace CppUtils::Type
 	template<class Type, class... Types>
 	concept IsOneOf = (std::same_as<Type, Types> or ...);
 
+	template<class Type, class Expected>
+	concept Exact = std::same_as<std::remove_cvref_t<Type>, Expected>;
+
 	template<class T>
 	concept Dereferenceable = requires (T value) {
 		*value;

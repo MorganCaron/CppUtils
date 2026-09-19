@@ -21,4 +21,14 @@ namespace CppUtils::UnitTest::Type::Concept
 
 	static_assert(Specializes<std::vector<int>, std::vector>);
 	static_assert(not Specializes<std::vector<int>, std::map>);
+
+	constexpr auto isPathWithoutExact(const std::filesystem::path&) -> std::true_type { return {}; }
+
+	static_assert(decltype(isPathWithoutExact("flow_name"))::value);
+
+	constexpr auto isPath(const Exact<std::filesystem::path> auto&) -> std::true_type { return {}; }
+	constexpr auto isPath(std::string_view) -> std::false_type { return {}; }
+
+	static_assert(decltype(isPath(std::declval<std::filesystem::path>()))::value);
+	static_assert(not decltype(isPath("flow_name"))::value);
 }
