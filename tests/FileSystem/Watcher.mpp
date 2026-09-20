@@ -174,5 +174,52 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 				suite.expectWait([&] { return expectDeleteFile.load(); });
 			}};
 		});
+
+		suite.addTest("Passive start and stop", [&] {
+			auto watcher = CppUtils::FileSystem::Watcher{};
+			suite.expect(not watcher.isRunning());
+
+			watcher.start();
+			suite.expect(watcher.isRunning());
+
+			watcher.stop();
+			suite.expect(not watcher.isRunning());
+
+			watcher.start();
+			suite.expect(watcher.isRunning());
+
+			watcher.stop();
+			suite.expect(not watcher.isRunning());
+		});
+
+		suite.addTest("Reset watcher", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+				auto watcher = CppUtils::FileSystem::Watcher{};
+				suite.expect(not watcher.isRunning());
+
+				watcher.watch(directory);
+				suite.expect(watcher.isRunning());
+
+				watcher.reset();
+				suite.expect(not watcher.isRunning());
+			}};
+		});
+
+		suite.addTest("Move watcher", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+				auto watcher1 = CppUtils::FileSystem::Watcher{};
+				suite.expect(not watcher1.isRunning());
+
+				watcher1.watch(directory);
+				suite.expect(watcher1.isRunning());
+
+				auto watcher2 = std::move(watcher1);
+				suite.expect(watcher2.isRunning());
+				suite.expect(not watcher1.isRunning());
+
+				watcher2.stop();
+				suite.expect(not watcher2.isRunning());
+			}};
+		});
 	}};
 }

@@ -195,8 +195,8 @@ export namespace CppUtils::Language::Xml
 			for (const auto& entry : m_flows)
 				entry.value->startWatching();
 
-			m_flowsWatcher = std::make_unique<FileSystem::Watcher>();
-			m_flowsWatcher->onEvent([this](FileSystem::Event event, const std::filesystem::path& filePath) {
+			m_flowsWatcher.reset();
+			m_flowsWatcher.onEvent([this](FileSystem::Event event, const std::filesystem::path& filePath) {
 				if (filePath.extension() != ".xml")
 					return;
 
@@ -246,7 +246,7 @@ export namespace CppUtils::Language::Xml
 							"Failed to load or reload workflow from '{}': {}", filePath.string(), exception.what());
 					}
 			});
-			m_flowsWatcher->watch(m_flowsDirectory);
+			m_flowsWatcher.watch(m_flowsDirectory);
 		}
 
 		auto stopWatching() -> void
@@ -261,6 +261,6 @@ export namespace CppUtils::Language::Xml
 		std::filesystem::path m_flowsDirectory;
 		FlowContainer m_flows;
 		std::unordered_map<std::string, FlowFactory> m_factories;
-		std::unique_ptr<FileSystem::Watcher> m_flowsWatcher;
+		FileSystem::Watcher m_flowsWatcher;
 	};
 }

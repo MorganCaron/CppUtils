@@ -121,26 +121,22 @@ export namespace CppUtils::Language::Xml
 
 		auto startWatching() -> void override
 		{
-			if (not m_sourceDirectory.has_value() or m_watcher)
+			if (not m_sourceDirectory.has_value() or m_watcher.isRunning())
 				return;
 
 			if (m_outputDirectory.has_value())
 				std::filesystem::create_directories(m_outputDirectory.value());
 
-			m_watcher = std::make_unique<FileSystem::Watcher>();
-			m_watcher->onEvent([this](auto, const std::filesystem::path& filePath) {
+			m_watcher.reset();
+			m_watcher.onEvent([this](auto, const std::filesystem::path& filePath) {
 				if (matchesPattern(filePath))
 					processFileWithStaging(filePath, computeOutputFile(filePath));
 			});
-			m_watcher->watch(m_sourceDirectory.value());
+			m_watcher.watch(m_sourceDirectory.value());
 		}
 
 		auto stopWatching() -> void override
 		{
-			if (not m_watcher)
-				return;
-
-			m_watcher->stop();
 			m_watcher.reset();
 		}
 
@@ -294,7 +290,7 @@ export namespace CppUtils::Language::Xml
 		std::reference_wrapper<Thread::ThreadPool> m_threadPool;
 		bool m_watch = false;
 
-		std::unique_ptr<FileSystem::Watcher> m_watcher;
+		FileSystem::Watcher m_watcher;
 		std::unordered_map<Type::Token, TagHandler> m_tagRegistry;
 		std::unordered_map<Type::Token, FormatProcessor> m_formatRegistry;
 		std::vector<Container::Tree::VariantNode<Type::Token, std::string>> m_pipelineNodes;
