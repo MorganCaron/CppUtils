@@ -89,9 +89,9 @@ namespace CppUtils::UnitTest::Language::Xml::FlowRunner
 				runner.registerMapping<Record, RecordAlphaMapping>("alpha");
 				runner.registerMapping<Record, RecordBetaMapping>("beta");
 
-				suite.expectEqual(std::ranges::size(runner.flows()), 0uz);
+				suite.expectEqual(std::ranges::size(runner.flows().value()), 0uz);
 				runner.loadFlows();
-				suite.expectEqual(std::ranges::size(runner.flows()), 2uz);
+				suite.expectEqual(std::ranges::size(runner.flows().value()), 2uz);
 				const auto configs = runner.discoverFlowConfigs();
 				suite.expectEqual(std::ranges::size(configs), 2uz);
 
@@ -121,6 +121,43 @@ namespace CppUtils::UnitTest::Language::Xml::FlowRunner
 				const auto out2Content = CppUtils::FileSystem::String::read(temporaryDirectory / "output/out2.csv");
 				suite.expect(out2Content.contains("25;catB;rec4"));
 				suite.expect(not out2Content.contains("rec3"));
+			}};
+		});
+
+		suite.addTest("Concurrent flow lookups and reloading", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& temporaryDirectory) -> void {
+				std::filesystem::create_directories(temporaryDirectory / "flows");
+				const auto flowXml = R"(
+					<Flow name="FlowAlpha" mapping="alpha">
+						<Pipeline />
+					</Flow>
+				)";
+				CppUtils::FileSystem::String::write(temporaryDirectory / "flows/alpha.xml", flowXml);
+
+				auto threadPool = CppUtils::Thread::ThreadPool{2};
+				auto runner = CppUtils::Language::Xml::FlowRunner{threadPool, temporaryDirectory / "flows"};
+				runner.registerMapping<Record, RecordAlphaMapping>("alpha");
+				runner.loadFlows();
+
+				auto running = std::atomic<bool>{true};
+				auto readerThreads = std::vector<std::jthread>{};
+				for (const auto _ : std::views::iota(0uz, 4uz))
+					readerThreads.emplace_back([&runner, &running] {
+						while (running.load(std::memory_order_relaxed))
+						{
+							auto _ = runner.flow("FlowAlpha");
+							auto allFlows = runner.flows();
+							volatile auto _ = std::ranges::size(allFlows.value());
+						}
+					});
+
+				for (const auto _ : std::views::iota(0uz, 100uz))
+					runner.loadFlows();
+
+				running.store(false, std::memory_order_relaxed);
+				readerThreads.clear();
+
+				suite.expect(runner.flow("FlowAlpha") != nullptr);
 			}};
 		});
 	}};
