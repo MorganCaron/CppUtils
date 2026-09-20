@@ -22,7 +22,11 @@ export namespace CppUtils::Thread
 			m_finally{std::move(finally)}
 		{
 			m_workers.reserve(m_numberThreads);
-			for (auto i = 0uz; i < m_numberThreads; ++i)
+#if defined(__cpp_lib_ranges_indices)
+			for (auto _ : std::views::indices(m_numberThreads))
+#else
+			for (auto _ : std::views::iota(0uz, m_numberThreads))
+#endif
 				m_workers.emplace_back(
 							 [this] { workerThread(); },
 							 [this] { m_startWorkingCondition.notify_all(); },
