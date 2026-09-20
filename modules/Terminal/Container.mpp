@@ -42,7 +42,7 @@ export namespace CppUtils::Terminal
 			return dynamic_cast<T&>(*self.m_widget);
 		}
 
-		template<typename T, typename... Args>
+		template<class T, class... Args>
 		requires std::derived_from<T, Widget>
 		inline auto newWidget(Args&&... args) -> T&
 		{
