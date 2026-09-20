@@ -83,7 +83,7 @@ export namespace CppUtils::Thread
 
 		inline ~Scheduler() noexcept
 		{
-			m_threadLoop.requestStop();
+			m_threadLoop.stop();
 			cancelAll();
 		}
 
@@ -136,6 +136,7 @@ export namespace CppUtils::Thread
 					}
 
 					tasksToRun.assign(std::ranges::begin(set), std::ranges::end(set));
+					activeItems.insert(std::ranges::end(activeItems), std::ranges::begin(set), std::ranges::end(set));
 					processingTasks += std::ranges::size(set);
 					map.clear();
 					set.clear();
@@ -161,6 +162,10 @@ export namespace CppUtils::Thread
 				m_workCondition.notify_all();
 				m_finishedCondition.notify_all();
 			}
+
+			for (auto& item : activeItems)
+				if (item->id == id)
+					item->cancelled = true;
 		}
 
 		inline auto cancelOwner(const void* owner) -> void
@@ -205,6 +210,11 @@ export namespace CppUtils::Thread
 				item->cancelled = true;
 			map.clear();
 			set.clear();
+
+			m_finishedCondition.wait(accessor.getLockGuard(), [&] {
+				return std::ranges::empty(activeItems);
+			});
+
 			m_workCondition.notify_all();
 			m_finishedCondition.notify_all();
 		}
@@ -236,6 +246,7 @@ export namespace CppUtils::Thread
 					if ((*it)->time <= endTime)
 					{
 						tasksToRun.push_back(*it);
+						activeItems.push_back(*it);
 						map.erase((*it)->id);
 						it = set.erase(it);
 						++accessor.value().processingTasks;
@@ -255,15 +266,10 @@ export namespace CppUtils::Thread
 		{
 			for (auto&& item : tasks)
 			{
-				{
-					auto accessor = m_items.access();
-					accessor.value().activeItems.push_back(item);
-				}
-
 				try
 				{
 					m_threadPool.call([this, item] {
-						auto scope = Execution::ScopeGuard{[this, &item] {
+						auto scope = Execution::ScopeGuard{[this, item] {
 							auto accessor = m_items.access();
 							std::erase(accessor.value().activeItems, item);
 							m_finishedCondition.notify_all();

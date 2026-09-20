@@ -16,6 +16,7 @@ import CppUtils.Terminal.CharAttributes;
 import CppUtils.Terminal.TextStyle;
 import CppUtils.Terminal.TextColor;
 import CppUtils.Terminal.BackgroundColor;
+import CppUtils.Execution.EventDispatcher;
 
 export namespace CppUtils::Terminal
 {
@@ -32,7 +33,7 @@ export namespace CppUtils::Terminal
 			m_clearOnClose{clearOnClose},
 			m_previousBuffer{size}
 		{
-			m_widgetManager.eventDispatcher.subscribe<"RequestUpdate">([this] {
+			m_updateSubscriptionIdentifier = m_widgetManager.eventDispatcher.subscribe<"RequestUpdate">([this] {
 				print();
 			});
 			setWidgetManager(m_widgetManager);
@@ -40,8 +41,13 @@ export namespace CppUtils::Terminal
 			enableAnsi();
 		}
 
-		inline ~Canvas() noexcept
+		inline ~Canvas() noexcept override
 		{
+			m_widgetManager.eventDispatcher.unsubscribe(m_updateSubscriptionIdentifier);
+			m_widgetManager.scheduler.cancelAll();
+			clearWidgetManager();
+
+			auto lock = std::scoped_lock{m_printMutex};
 			if (m_clearOnClose and not m_firstPrint)
 			{
 				const auto terminalSize = getTerminalSize();
@@ -56,7 +62,6 @@ export namespace CppUtils::Terminal
 				std::fflush(stdout);
 			}
 			m_widget.reset();
-			clearWidgetManager();
 		}
 
 		inline auto applyDifferences() noexcept -> void
@@ -225,5 +230,6 @@ export namespace CppUtils::Terminal
 		bool m_clearOnClose = false;
 		DynamicAreaBuffer m_previousBuffer;
 		WidgetManager m_widgetManager;
+		Execution::EventDispatcher::SubscriptionIdentifier m_updateSubscriptionIdentifier{};
 	};
 }

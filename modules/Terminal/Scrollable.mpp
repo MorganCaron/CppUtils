@@ -37,6 +37,11 @@ export namespace CppUtils::Terminal
 			m_fullContentArea{fullContentSize}
 		{}
 
+		inline ~Scrollable() noexcept override
+		{
+			clearWidgetManager();
+		}
+
 		template<std::derived_from<Widget> T>
 		inline auto addWidget(std::unique_ptr<T> widget) -> T&
 		{
@@ -47,6 +52,11 @@ export namespace CppUtils::Terminal
 		inline auto onWidgetManagerSet(WidgetManager& widgetManager) noexcept -> void override
 		{
 			m_fullContentArea.setWidgetManager(widgetManager);
+		}
+
+		inline auto onWidgetManagerClear() noexcept -> void override
+		{
+			m_fullContentArea.clearWidgetManager();
 		}
 
 	public:
