@@ -217,9 +217,9 @@ export namespace CppUtils::Type
 				map.clear();
 				map.reserve(length.value());
 #if defined(__cpp_lib_ranges_indices)
-				for ([[maybe_unused]] auto _ : std::views::indices(length.value()))
+				for (auto _ : std::views::indices(length.value()))
 #else
-				for ([[maybe_unused]] auto _ : std::views::iota(0uz, length.value()))
+				for (auto _ : std::views::iota(0uz, length.value()))
 #endif
 				{
 					auto key = Type::deserialize<Key>(source);

@@ -141,7 +141,11 @@ namespace CppUtils::UnitTest::Language::Xml::FlowRunner
 
 				auto running = std::atomic<bool>{true};
 				auto readerThreads = std::vector<std::jthread>{};
-				for (const auto _ : std::views::iota(0uz, 4uz))
+#if defined(__cpp_lib_ranges_indices)
+				for (auto _ : std::views::indices(4uz))
+#else
+				for (auto _ : std::views::iota(0uz, 4uz))
+#endif
 					readerThreads.emplace_back([&runner, &running] {
 						while (running.load(std::memory_order_relaxed))
 						{
@@ -151,7 +155,11 @@ namespace CppUtils::UnitTest::Language::Xml::FlowRunner
 						}
 					});
 
-				for (const auto _ : std::views::iota(0uz, 100uz))
+#if defined(__cpp_lib_ranges_indices)
+				for (auto _ : std::views::indices(100uz))
+#else
+				for (auto _ : std::views::iota(0uz, 100uz))
+#endif
 					runner.loadFlows();
 
 				running.store(false, std::memory_order_relaxed);

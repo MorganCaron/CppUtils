@@ -149,7 +149,11 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 			auto counter = std::atomic_size_t{0};
 			const auto numTasks = 10'000uz;
 
-			for (auto i = 0uz; i < numTasks; ++i)
+#if defined(__cpp_lib_ranges_indices)
+			for (auto _ : std::views::indices(numTasks))
+#else
+			for (auto _ : std::views::iota(0uz, numTasks))
+#endif
 				threadPool.call([&counter] {
 					++counter;
 				});
