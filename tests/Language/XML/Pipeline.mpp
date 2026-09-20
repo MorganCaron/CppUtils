@@ -70,7 +70,8 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 
 	using FreeFunctionMapping = CppUtils::Type::Mapping<
 		CppUtils::Type::Pair<"ApplyBonus"_token, static_cast<void (*)(User&)>(&applyBonus)>,
-		CppUtils::Type::Pair<"IsAdult"_token, static_cast<bool (*)(const User&)>(&isAdult)>>;
+		CppUtils::Type::Pair<"IsAdult"_token, static_cast<bool (*)(const User&)>(&isAdult)>,
+		CppUtils::Type::Pair<"toUppercase"_token, &CppUtils::String::toUppercase<std::string_view>>>;
 
 	struct UserMapping final
 	{
@@ -527,6 +528,28 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
 				suite.expect(rejectedContent.contains("Invalid;corrupted_age;NaN;0;0.0"));
 			}};
+		});
+
+		suite.addTest("<Transform> column tag", [&] {
+			const auto xmlSource = R"(
+			<Pipeline>
+				<Transform column="Name" function="toUppercase"/>
+			</Pipeline>
+			)";
+
+			auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserFreeFunctionMapping>(xmlSource);
+
+			const auto inputUsers = std::vector<User>{
+				User{"alice", "alice@example.com", 25, 100, 4.5f},
+				User{"bob", "bob@example.com", 30, 50, 3.0f}};
+
+			const auto outputUsers = inputUsers
+				| pipeline
+				| std::ranges::to<std::vector<User>>();
+
+			suite.expectEqual(std::ranges::size(outputUsers), 2uz);
+			suite.expectEqual(outputUsers[0].name, std::string{"ALICE"});
+			suite.expectEqual(outputUsers[1].name, std::string{"BOB"});
 		});
 
 		suite.addTest("Custom tag", [&] {
