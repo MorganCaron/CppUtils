@@ -99,6 +99,23 @@ export namespace CppUtils::Thread
 			m_value{std::forward<decltype(args)>(args)...}
 		{}
 
+		UniqueLocker(const UniqueLocker&) = delete;
+		auto operator=(const UniqueLocker&) -> UniqueLocker& = delete;
+
+		inline UniqueLocker(UniqueLocker&& other) noexcept(std::is_nothrow_move_constructible_v<T>):
+			m_value{std::move(other.access().value())}
+		{}
+
+		inline auto operator=(UniqueLocker&& other) noexcept(std::is_nothrow_move_assignable_v<T>) -> UniqueLocker&
+		{
+			if (this != std::addressof(other))
+			{
+				auto guard = std::scoped_lock{m_mutex, other.m_mutex};
+				m_value = std::move(other.m_value);
+			}
+			return *this;
+		}
+
 		[[nodiscard]] inline auto access() & -> Accessor<T, std::mutex>
 		{
 			return Accessor{m_mutex, m_value};
