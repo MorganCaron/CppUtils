@@ -1,0 +1,127 @@
+export module CppUtils.UnitTests.Language.Xml.FlowRunner;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::Xml::FlowRunner
+{
+	using namespace std::chrono_literals;
+	using namespace CppUtils::String::Literals;
+	using namespace CppUtils::Language::CSV::Literals;
+
+	struct Record final
+	{
+		std::string id;
+		std::string category;
+		int value = 0;
+
+		auto operator==(const Record&) const -> bool = default;
+	};
+
+	using RecordStructMapping = CppUtils::Type::Mapping<
+		CppUtils::Type::Pair<"Id"_token, &Record::id>,
+		CppUtils::Type::Pair<"Category"_token, &Record::category>,
+		CppUtils::Type::Pair<"Value"_token, &Record::value>>;
+
+	struct RecordAlphaMapping final
+	{
+		using CSVMapping = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<"Id"_token, "A"_excelColumn>,
+			CppUtils::Type::Pair<"Category"_token, "B"_excelColumn>,
+			CppUtils::Type::Pair<"Value"_token, "C"_excelColumn>>;
+
+		using StructMapping = RecordStructMapping;
+		using FunctionMapping = CppUtils::Type::Mapping<>;
+	};
+
+	struct RecordBetaMapping final
+	{
+		using CSVMapping = CppUtils::Type::Mapping<
+			CppUtils::Type::Pair<"Value"_token, "A"_excelColumn>,
+			CppUtils::Type::Pair<"Category"_token, "B"_excelColumn>,
+			CppUtils::Type::Pair<"Id"_token, "C"_excelColumn>>;
+
+		using StructMapping = RecordStructMapping;
+		using FunctionMapping = CppUtils::Type::Mapping<>;
+	};
+
+	auto _ = TestSuite{"Language/Xml/FlowRunner",
+		{"Language/Xml/Pipeline"},
+		[](TestSuite& suite) {
+		suite.addTest("Discover and execute flows from directory", [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& temporaryDirectory) -> void {
+				std::filesystem::create_directories(temporaryDirectory / "flows");
+				std::filesystem::create_directories(temporaryDirectory / "input");
+				std::filesystem::create_directories(temporaryDirectory / "output");
+
+				const auto flow1Xml = std::format(R"(
+					<Flow name="FlowAlpha" mapping="alpha">
+						<Input file="{}/input/data1.csv" format="csv" separator=";" />
+						<Pipeline>
+							<Validate column="Value" operator=">=" value="0" />
+						</Pipeline>
+						<Output file="{}/output/out1.csv" format="csv" separator=";" />
+					</Flow>
+				)",
+					temporaryDirectory.generic_string(),
+					temporaryDirectory.generic_string());
+
+				const auto flow2Xml = std::format(R"(
+					<Flow name="FlowBeta" mapping="beta">
+						<Input file="{}/input/data2.csv" format="csv" separator=";" />
+						<Pipeline>
+							<Validate column="Value" operator=">=" value="10" />
+						</Pipeline>
+						<Output file="{}/output/out2.csv" format="csv" separator=";" />
+					</Flow>
+				)",
+					temporaryDirectory.generic_string(),
+					temporaryDirectory.generic_string());
+
+				CppUtils::FileSystem::String::write(temporaryDirectory / "flows/alpha.xml", flow1Xml);
+				CppUtils::FileSystem::String::write(temporaryDirectory / "flows/beta.xml", flow2Xml);
+
+				CppUtils::FileSystem::String::write(temporaryDirectory / "input/data1.csv", "rec1;catA;5\nrec2;catB;15\n");
+				CppUtils::FileSystem::String::write(temporaryDirectory / "input/data2.csv", "5;catA;rec3\n25;catB;rec4\n");
+
+				auto threadPool = CppUtils::Thread::ThreadPool{2};
+				auto runner = CppUtils::Language::Xml::FlowRunner{threadPool, temporaryDirectory / "flows"};
+				runner.registerMapping<Record, RecordAlphaMapping>("alpha");
+				runner.registerMapping<Record, RecordBetaMapping>("beta");
+
+				suite.expectEqual(std::ranges::size(runner.flows()), 0uz);
+				runner.loadFlows();
+				suite.expectEqual(std::ranges::size(runner.flows()), 2uz);
+				const auto configs = runner.discoverFlowConfigs();
+				suite.expectEqual(std::ranges::size(configs), 2uz);
+
+				const auto alphaFlowByName = runner.flow("FlowAlpha");
+				const auto betaFlowByName = runner.flow("FlowBeta");
+				suite.expect(alphaFlowByName != nullptr);
+				suite.expect(betaFlowByName != nullptr);
+				suite.expect(runner.flow("NonExistent") == nullptr);
+
+				const auto alphaFlowByPath = runner.flow(temporaryDirectory / "flows/alpha.xml");
+				const auto betaFlowByPath = runner.flow(temporaryDirectory / "flows/beta.xml");
+				suite.expectEqual(alphaFlowByPath, alphaFlowByName);
+				suite.expectEqual(betaFlowByPath, betaFlowByName);
+				suite.expect(runner.flow(temporaryDirectory / "flows/missing.xml") == nullptr);
+
+				const auto stats = runner.execute();
+
+				suite.expectEqual(stats.processedFilesCount, 2uz);
+				suite.expect(stats.elapsedDuration >= 0ns);
+				suite.expect(std::filesystem::exists(temporaryDirectory / "output/out1.csv"));
+				suite.expect(std::filesystem::exists(temporaryDirectory / "output/out2.csv"));
+
+				const auto out1Content = CppUtils::FileSystem::String::read(temporaryDirectory / "output/out1.csv");
+				suite.expect(out1Content.contains("rec1;catA;5"));
+				suite.expect(out1Content.contains("rec2;catB;15"));
+
+				const auto out2Content = CppUtils::FileSystem::String::read(temporaryDirectory / "output/out2.csv");
+				suite.expect(out2Content.contains("25;catB;rec4"));
+				suite.expect(not out2Content.contains("rec3"));
+			}};
+		});
+	}};
+}

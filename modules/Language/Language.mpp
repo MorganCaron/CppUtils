@@ -15,6 +15,7 @@ export import CppUtils.Language.Xml;
 export import CppUtils.Language.Xml.Pipeline;
 export import CppUtils.Language.Xml.Tags;
 export import CppUtils.Language.Xml.Flow;
+export import CppUtils.Language.Xml.FlowRunner;
 export import CppUtils.Language.Ini;
 export import CppUtils.Language.Json;
 export import CppUtils.Language.Parameters;

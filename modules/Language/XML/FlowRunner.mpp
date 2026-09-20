@@ -1,0 +1,266 @@
+export module CppUtils.Language.Xml.FlowRunner;
+
+import std;
+import CppUtils.Type.Concept;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.FileSystem;
+import CppUtils.Thread.ThreadPool;
+import CppUtils.Logger;
+import CppUtils.Chrono.Chronometer;
+import CppUtils.Container.MultiKeyMap;
+import CppUtils.Language.Xml;
+import CppUtils.Language.Xml.Flow;
+
+export namespace CppUtils::Language::Xml
+{
+	class FlowRunner final
+	{
+	public:
+		struct Stats final
+		{
+			std::size_t processedFilesCount = 0;
+			std::chrono::steady_clock::duration elapsedDuration = std::chrono::steady_clock::duration::zero();
+		};
+
+		using FlowNode = Container::Tree::VariantNode<Type::Token, std::string>;
+		using FlowFactory = std::function<std::unique_ptr<Flow>(const FlowNode&)>;
+
+		explicit FlowRunner(Thread::ThreadPool& threadPool,
+			std::filesystem::path flowsDirectory = "data/flows"):
+			m_threadPool{threadPool},
+			m_flowsDirectory{std::move(flowsDirectory)}
+		{}
+
+		FlowRunner(const FlowRunner&) = delete;
+		FlowRunner(FlowRunner&&) = delete;
+		auto operator=(const FlowRunner&) -> FlowRunner& = delete;
+		auto operator=(FlowRunner&&) -> FlowRunner& = delete;
+
+	private:
+		template<class Object, class Mapping, String::Hasher loggerName = "Flow">
+		[[nodiscard]] auto createFlow(
+			const FlowNode& flowNode,
+			const std::function<void(TypedFlow<Object, Mapping>&)>& configure = nullptr) -> std::unique_ptr<Flow>
+		{
+			auto flow = std::make_unique<TypedFlow<Object, Mapping>>(m_threadPool);
+			if (configure)
+				configure(*flow);
+			else
+				flow->template registerStandardTags<loggerName>();
+			flow->dispatchNode(flowNode);
+			return flow;
+		}
+
+	public:
+		template<class Object, class Mapping, String::Hasher loggerName = "Flow">
+		auto registerMapping(
+			std::string_view identifier,
+			std::function<void(TypedFlow<Object, Mapping>&)> configure = nullptr) -> void
+		{
+			m_factories[std::string{identifier}] =
+				[this, configure = std::move(configure)](const FlowNode& flowNode) {
+				return createFlow<Object, Mapping, loggerName>(flowNode, configure);
+			};
+		}
+
+		using FlowContainer = Container::MultiKeyMap<std::filesystem::path, std::string, std::shared_ptr<Flow>>;
+
+	private:
+		[[nodiscard]] auto findFlowNode(const FlowNode& rootNode) const -> const FlowNode&
+		{
+			using namespace String::Literals;
+			if (rootNode.exists("Flow"_token))
+				return rootNode["Flow"_token];
+			return rootNode;
+		}
+
+		[[nodiscard]] auto extractFlowName(const FlowNode& flowNode, const std::filesystem::path& filePath) const -> std::string
+		{
+			using namespace String::Literals;
+			if (const auto flowName = Xml::extractAttribute(flowNode, "name"_token); flowName.has_value() and not std::ranges::empty(flowName.value()))
+				return std::move(flowName.value());
+			return filePath.stem().string();
+		}
+
+		[[nodiscard]] auto resolveFactory(const FlowNode& flowNode, const std::filesystem::path& filePath) const -> const FlowFactory&
+		{
+			using namespace String::Literals;
+
+			if (const auto explicitMapping = Xml::extractAttribute(flowNode, "mapping"_token))
+				if (const auto iterator = m_factories.find(std::string{explicitMapping.value()}); iterator != std::ranges::end(m_factories))
+					return iterator->second;
+
+			if (const auto iterator = m_factories.find(""); iterator != std::ranges::end(m_factories))
+				return iterator->second;
+
+			throw std::runtime_error{std::format("No flow mapping factory found for config: {}", filePath.string())};
+		}
+
+	public:
+		auto loadFlows() -> void
+		{
+			for (const auto& entry : m_flows)
+				entry.value->stopWatching();
+			m_flows.clear();
+
+			for (const auto& filePath : discoverFlowConfigs())
+				try
+				{
+					const auto rootNode = Xml::parse(FileSystem::String::read(filePath));
+					const auto& flowNode = findFlowNode(rootNode);
+					const auto flowName = extractFlowName(flowNode, filePath);
+					const auto& factory = resolveFactory(flowNode, filePath);
+					m_flows.emplace(filePath, flowName, std::shared_ptr<Flow>{factory(flowNode)});
+				}
+				catch (const std::exception& exception)
+				{
+					Logger<"Flow">::template print<"warning">(
+						"Failed to load flow from '{}': {}", filePath.string(), exception.what());
+				}
+		}
+
+		[[nodiscard]] auto flows() const -> const FlowContainer&
+		{
+			return m_flows;
+		}
+
+		[[nodiscard]] auto flow(const Type::Exact<std::filesystem::path> auto& filePath) const -> std::shared_ptr<Flow>
+		{
+			const auto iterator = m_flows.find(filePath);
+			return iterator != std::ranges::end(m_flows) ? iterator->value : nullptr;
+		}
+
+		[[nodiscard]] auto flow(std::string_view flowName) const -> std::shared_ptr<Flow>
+		{
+			const auto iterator = m_flows.template findAt<1>(flowName);
+			return iterator != std::ranges::end(m_flows) ? iterator->value : nullptr;
+		}
+
+		[[nodiscard]] auto discoverFlowConfigs() const -> std::vector<std::filesystem::path>
+		{
+			auto configs = std::vector<std::filesystem::path>{};
+			if (std::filesystem::exists(m_flowsDirectory))
+			{
+				FileSystem::forFilesWithExtension(
+					m_flowsDirectory, ".xml", [&](const auto& filePath) { configs.push_back(filePath); });
+				std::ranges::sort(configs);
+			}
+			return configs;
+		}
+
+		auto execute() -> Stats
+		{
+			if (std::ranges::empty(m_flows))
+			{
+				Logger<"Flow">::template print<"warning">(
+					"FlowRunner: 0 active flows found to execute (did you call loadFlows()?)");
+				return Stats{};
+			}
+
+			auto futures = std::vector<std::future<Flow::Report>>{};
+			futures.reserve(std::ranges::size(m_flows));
+
+			auto chronometer = Chrono::Chronometer{};
+			for (const auto& entry : m_flows)
+				futures.push_back(std::async(std::launch::async, [flow = entry.value] {
+					return flow->execute();
+				}));
+
+			auto processedFilesCount = 0uz;
+			for (auto& future : futures)
+			{
+				const auto report = future.get();
+				processedFilesCount += report.processedFilesCount;
+			}
+			chronometer.stop();
+
+			return Stats{
+				.processedFilesCount = processedFilesCount,
+				.elapsedDuration = chronometer.elapsed()};
+		}
+
+		auto startWatching() -> void
+		{
+			if (not std::filesystem::exists(m_flowsDirectory))
+			{
+				Logger<"Flow">::template print<"warning">(
+					"FlowRunner: Flows directory '{}' does not exist", m_flowsDirectory.string());
+				return;
+			}
+
+			if (std::ranges::empty(m_flows))
+				loadFlows();
+
+			for (const auto& entry : m_flows)
+				entry.value->startWatching();
+
+			m_flowsWatcher = std::make_unique<FileSystem::Watcher>();
+			m_flowsWatcher->onEvent([this](FileSystem::Event event, const std::filesystem::path& filePath) {
+				if (filePath.extension() != ".xml")
+					return;
+
+				if (event & (FileSystem::Event::Deleted | FileSystem::Event::MovedFrom))
+				{
+					if (m_flows.contains(filePath))
+					{
+						if (auto existingFlow = flow(filePath))
+							existingFlow->stopWatching();
+						m_flows.erase(filePath);
+						Logger<"Flow">::template print<"info">(
+							"Workflow '{}' removed from active flows", filePath.filename().string());
+					}
+					return;
+				}
+
+				if (event & (FileSystem::Event::Created | FileSystem::Event::MovedTo | FileSystem::Event::Modified | FileSystem::Event::CloseWrite))
+					try
+					{
+						const auto rootNode = Xml::parse(FileSystem::String::read(filePath));
+						const auto& flowNode = findFlowNode(rootNode);
+						const auto& factory = resolveFactory(flowNode, filePath);
+						auto newFlow = std::shared_ptr<Flow>{factory(flowNode)};
+
+						const auto isUpdate = m_flows.contains(filePath);
+						if (isUpdate)
+						{
+							if (auto existingFlow = flow(filePath))
+								existingFlow->stopWatching();
+							m_flows.erase(filePath);
+						}
+
+						newFlow->startWatching();
+						const auto flowName = extractFlowName(flowNode, filePath);
+						m_flows.emplace(filePath, flowName, std::move(newFlow));
+
+						if (isUpdate)
+							Logger<"Flow">::template print<"info">(
+								"Workflow '{}' reloaded and watching", filePath.filename().string());
+						else
+							Logger<"Flow">::template print<"info">(
+								"Watching new workflow '{}'", filePath.filename().string());
+					}
+					catch (const std::exception& exception)
+					{
+						Logger<"Flow">::template print<"warning">(
+							"Failed to load or reload workflow from '{}': {}", filePath.string(), exception.what());
+					}
+			});
+			m_flowsWatcher->watch(m_flowsDirectory);
+		}
+
+		auto stopWatching() -> void
+		{
+			m_flowsWatcher.reset();
+			for (const auto& entry : m_flows)
+				entry.value->stopWatching();
+		}
+
+	private:
+		Thread::ThreadPool& m_threadPool;
+		std::filesystem::path m_flowsDirectory;
+		FlowContainer m_flows;
+		std::unordered_map<std::string, FlowFactory> m_factories;
+		std::unique_ptr<FileSystem::Watcher> m_flowsWatcher;
+	};
+}

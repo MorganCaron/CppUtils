@@ -9,6 +9,7 @@ import CppUtils.FileSystem.Watcher;
 import CppUtils.FileSystem.FileStaging;
 import CppUtils.Thread.ThreadPool;
 import CppUtils.Thread.UniqueLocker;
+import CppUtils.Ranges.Drain;
 import CppUtils.Ranges.Parallel;
 import CppUtils.Language.Xml;
 import CppUtils.Language.Xml.Pipeline;
@@ -19,14 +20,29 @@ import CppUtils.Logger;
 
 export namespace CppUtils::Language::Xml
 {
-	template<class Object, class Mapping>
-	class Flow final
+	class Flow
 	{
 	public:
-		using TagHandler = std::function<void(const Container::Tree::VariantNode<Type::Token, std::string>& node, Flow<Object, Mapping>& flow)>;
-		using FormatProcessor = std::function<std::vector<Object>(const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath)>;
+		struct Report final
+		{
+			std::size_t processedFilesCount = 0;
+		};
 
-		explicit Flow(Thread::ThreadPool& threadPool): m_threadPool{std::ref(threadPool)}
+		virtual ~Flow() = default;
+
+		virtual auto execute() -> Report = 0;
+		virtual auto startWatching() -> void = 0;
+		virtual auto stopWatching() -> void = 0;
+	};
+
+	template<class Object, class Mapping>
+	class TypedFlow final: public Flow
+	{
+	public:
+		using TagHandler = std::function<void(const Container::Tree::VariantNode<Type::Token, std::string>& node, TypedFlow<Object, Mapping>& flow)>;
+		using FormatProcessor = std::function<void(const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath)>;
+
+		explicit TypedFlow(Thread::ThreadPool& threadPool): m_threadPool{std::ref(threadPool)}
 		{}
 
 		auto registerTagHandler(Type::Token name, TagHandler handler) -> void
@@ -69,17 +85,18 @@ export namespace CppUtils::Language::Xml
 			dispatchNode(operator""_xml(std::ranges::data(xmlSource), std::ranges::size(xmlSource)));
 		}
 
-		auto execute() -> std::vector<Object>
+		auto execute() -> Report override
 		{
+			auto report = Report{};
+
 			if (m_watch and m_sourceDirectory.has_value())
 			{
 				startWatching();
-				return {};
+				return report;
 			}
 
 			if (m_sourceDirectory.has_value())
 			{
-				auto processedObjects = std::vector<Object>{};
 				if (m_outputDirectory.has_value())
 					std::filesystem::create_directories(m_outputDirectory.value());
 
@@ -87,19 +104,22 @@ export namespace CppUtils::Language::Xml
 					for (const auto& entry : std::filesystem::directory_iterator(m_sourceDirectory.value()))
 						if (entry.is_regular_file() and matchesPattern(entry.path()))
 						{
-							auto fileResults = processFileWithStaging(entry.path(), computeOutputFile(entry.path()));
-							processedObjects.insert(std::ranges::cend(processedObjects), std::ranges::begin(fileResults), std::ranges::end(fileResults));
+							processFileWithStaging(entry.path(), computeOutputFile(entry.path()));
+							++report.processedFilesCount;
 						}
-				return processedObjects;
+				return report;
 			}
 
 			if (m_sourceFile.has_value())
-				return processFileWithStaging(m_sourceFile.value(), computeOutputFile(m_sourceFile.value()));
+			{
+				processFileWithStaging(m_sourceFile.value(), computeOutputFile(m_sourceFile.value()));
+				++report.processedFilesCount;
+			}
 
-			return {};
+			return report;
 		}
 
-		auto startWatching() -> void
+		auto startWatching() -> void override
 		{
 			if (not m_sourceDirectory.has_value() or m_watcher)
 				return;
@@ -115,7 +135,7 @@ export namespace CppUtils::Language::Xml
 			m_watcher->watch(m_sourceDirectory.value());
 		}
 
-		auto stopWatching() -> void
+		auto stopWatching() -> void override
 		{
 			if (not m_watcher)
 				return;
@@ -182,7 +202,7 @@ export namespace CppUtils::Language::Xml
 			return filePipeline;
 		}
 
-		auto processCsvFile(const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath) -> std::vector<Object>
+		auto processCsvFile(const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath) -> void
 		{
 			const auto effectiveChunkSize = m_chunkSize > 0 ? m_chunkSize : 100uz;
 
@@ -196,30 +216,32 @@ export namespace CppUtils::Language::Xml
 			});
 
 			if (not std::ranges::empty(outputFilePath))
-			{
 				processedObjects
 					| CppUtils::Language::CSV::toCSV<Object, Mapping>(m_outputSeparator)
 					| CppUtils::FileSystem::writeLines(outputFilePath.string());
-				return {};
-			}
-
-			return processedObjects | std::ranges::to<std::vector<Object>>();
+			else
+				processedObjects | CppUtils::Ranges::drain;
 		}
 
-		auto processFile(const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath) -> std::vector<Object>
+		auto processFile(const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath) -> void
 		{
 			const auto formatToken = Type::hash(m_sourceFormat);
 			if (const auto iterator = m_formatRegistry.find(formatToken); iterator != std::ranges::end(m_formatRegistry))
-				return iterator->second(inputFilePath, outputFilePath);
+			{
+				iterator->second(inputFilePath, outputFilePath);
+				return;
+			}
 
 			Logger<"Flow">::template print<"error">("Unsupported source format: {}", m_sourceFormat);
-			return {};
 		}
 
-		auto processFileWithStaging(const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath) -> std::vector<Object>
+		auto processFileWithStaging(const std::filesystem::path& inputFilePath, const std::filesystem::path& outputFilePath) -> void
 		{
 			if (not m_stagingDirectory.has_value())
-				return processFile(inputFilePath, outputFilePath);
+			{
+				processFile(inputFilePath, outputFilePath);
+				return;
+			}
 
 			auto stageResult = CppUtils::FileSystem::FileStaging::stage(
 				inputFilePath,
@@ -229,23 +251,21 @@ export namespace CppUtils::Language::Xml
 			if (not stageResult.has_value())
 			{
 				Logger<"Flow">::template print<"error">("Failed to stage file {}: {}", inputFilePath.string(), stageResult.error().message());
-				return {};
+				return;
 			}
 
 			auto& staging = stageResult.value();
 			try
 			{
-				auto result = processFile(staging.stagedPath(), outputFilePath);
+				processFile(staging.stagedPath(), outputFilePath);
 				if (auto completeResult = staging.complete(); not completeResult)
 					Logger<"Flow">::template print<"error">("Failed to complete staging for {}: {}", inputFilePath.string(), completeResult.error().message());
-				return result;
 			}
 			catch (const std::exception& exception)
 			{
 				Logger<"Flow">::template print<"error">("Error processing file {}: {}", inputFilePath.string(), exception.what());
 				if (auto abortResult = staging.abort(); not abortResult)
 					Logger<"Flow">::template print<"error">("Failed to abort staging for {}: {}", inputFilePath.string(), abortResult.error().message());
-				return {};
 			}
 		}
 
@@ -373,30 +393,30 @@ export namespace CppUtils::Language::Xml
 	};
 
 	template<class Object, class Mapping, String::Hasher loggerName = "CppUtils">
-	[[nodiscard]] inline auto buildFlow(const Container::Tree::VariantNode<Type::Token, std::string>& node, Thread::ThreadPool& threadPool) -> Flow<Object, Mapping>
+	[[nodiscard]] inline auto buildFlow(const Container::Tree::VariantNode<Type::Token, std::string>& node, Thread::ThreadPool& threadPool) -> TypedFlow<Object, Mapping>
 	{
-		auto flow = Flow<Object, Mapping>{threadPool};
+		auto flow = TypedFlow<Object, Mapping>{threadPool};
 		flow.template registerStandardTags<loggerName>();
 		flow.dispatchNode(node);
 		return flow;
 	}
 
 	template<class Object, class Mapping, String::Hasher loggerName = "CppUtils">
-	[[nodiscard]] inline auto buildFlow(std::string_view xmlSource, Thread::ThreadPool& threadPool) -> Flow<Object, Mapping>
+	[[nodiscard]] inline auto buildFlow(std::string_view xmlSource, Thread::ThreadPool& threadPool) -> TypedFlow<Object, Mapping>
 	{
 		using namespace CppUtils::Language::Xml::Literals;
 		return buildFlow<Object, Mapping, loggerName>(operator""_xml(std::ranges::data(xmlSource), std::ranges::size(xmlSource)), threadPool);
 	}
 
 	template<class Object, class Mapping, String::Hasher loggerName = "CppUtils">
-	inline auto executeFlow(const Container::Tree::VariantNode<Type::Token, std::string>& node, Thread::ThreadPool& threadPool) -> std::vector<Object>
+	inline auto executeFlow(const Container::Tree::VariantNode<Type::Token, std::string>& node, Thread::ThreadPool& threadPool) -> void
 	{
-		return buildFlow<Object, Mapping, loggerName>(node, threadPool).execute();
+		buildFlow<Object, Mapping, loggerName>(node, threadPool).execute();
 	}
 
 	template<class Object, class Mapping, String::Hasher loggerName = "CppUtils">
-	inline auto executeFlow(std::string_view xmlSource, Thread::ThreadPool& threadPool) -> std::vector<Object>
+	inline auto executeFlow(std::string_view xmlSource, Thread::ThreadPool& threadPool) -> void
 	{
-		return buildFlow<Object, Mapping, loggerName>(xmlSource, threadPool).execute();
+		buildFlow<Object, Mapping, loggerName>(xmlSource, threadPool).execute();
 	}
 }
