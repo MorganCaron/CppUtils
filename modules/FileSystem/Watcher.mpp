@@ -25,13 +25,6 @@ import CppUtils.System;
 import CppUtils.Thread;
 import CppUtils.Type;
 
-/* Todo:
-Windows: FindFirstChangeNotification -> https://learn.microsoft.com/fr-fr/windows/win32/api/fileapi/nf-fileapi-findfirstchangenotificationa?redirectedfrom=MSDN
-MacOS: FSEvents (privilégié à kqueue) -> https://stackoverflow.com/a/11557250
-
-exceptions -> std::expected
-*/
-
 export namespace CppUtils::FileSystem
 {
 	class Watcher final
