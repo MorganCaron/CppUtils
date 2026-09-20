@@ -6,7 +6,28 @@ The project becomes better for everyone when people like you help make it better
 
 Have any questions or concerns? Did I forget something? Feel free to submit an issue or pull request.
 
-If you decide to contribute, after downloading a copy of the repository, be sure to install the tools locally to develop and test your contribution before submitting it.
+Thanks for taking the time to contribute :)
+
+---
+
+## Development Setup
+
+### Build Prerequisites
+
+- Modern C++26 compliant toolchain with C++26 Standard Library Module support (LLVM / Clang ≥ 19)
+- [XMake](https://xmake.io/) (v2.8+)
+
+Always configure the project using LLVM and shared C++ runtime:
+```console
+xmake f --toolchain=llvm --runtimes="c++_shared"
+```
+
+To configure with unit tests enabled:
+```console
+xmake f --toolchain=llvm --runtimes="c++_shared" --enable_tests=y
+```
+
+---
 
 ## Development Workflow
 
@@ -37,8 +58,24 @@ Supported and common types:
 
 For breaking changes, append a `!` after the type/scope (e.g., `feat!: change function signature` or `feat(api)!: change function signature`).
 
+---
 
-Thanks for taking the time to contribute :)
+## Testing & Validation
+
+Before submitting a pull request, ensure that the project builds and all unit tests pass:
+
+1. Configure the build with test suite enabled:
+   ```console
+   xmake f --toolchain=llvm --runtimes="c++_shared" --enable_tests=y -y
+   ```
+2. Run the test suite:
+   ```console
+   xmake run CppUtils-UnitTests
+   ```
+3. (Optional) Run tests continuously in watch mode during development:
+   ```console
+   xmake watch -r CppUtils-UnitTests
+   ```
 
 ---
 
