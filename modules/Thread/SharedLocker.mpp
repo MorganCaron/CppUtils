@@ -65,6 +65,23 @@ export namespace CppUtils::Thread
 			m_value{std::forward<decltype(args)>(args)...}
 		{}
 
+		SharedLocker(const SharedLocker&) = delete;
+		auto operator=(const SharedLocker&) -> SharedLocker& = delete;
+
+		inline SharedLocker(SharedLocker&& other) noexcept(std::is_nothrow_move_constructible_v<T>):
+			m_value{std::move(other.uniqueAccess().value())}
+		{}
+
+		inline auto operator=(SharedLocker&& other) noexcept(std::is_nothrow_move_assignable_v<T>) -> SharedLocker&
+		{
+			if (this != std::addressof(other))
+			{
+				auto guard = std::scoped_lock{m_mutex, other.m_mutex};
+				m_value = std::move(other.m_value);
+			}
+			return *this;
+		}
+
 		[[nodiscard]] inline auto uniqueAccess() -> UniqueAccessor
 		{
 			return Accessor{m_mutex, m_value};

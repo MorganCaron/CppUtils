@@ -64,5 +64,25 @@ namespace CppUtils::UnitTest::Thread::SharedLocker
 				suite.expectEqual(std::get<1>(accessor.values), "Bar");
 			}
 		});
+
+		suite.addTest("Move constructor", [&] {
+			auto source = CppUtils::Thread::SharedLocker<std::unique_ptr<int>>{std::make_unique<int>(42)};
+			auto destination = CppUtils::Thread::SharedLocker<std::unique_ptr<int>>{std::move(source)};
+
+			suite.expect(source.uniqueAccess().value() == nullptr);
+			suite.expect(destination.sharedAccess().value() != nullptr);
+			suite.expectEqual(*destination.sharedAccess().value(), 42);
+		});
+
+		suite.addTest("Move assignment", [&] {
+			auto source = CppUtils::Thread::SharedLocker<std::unique_ptr<int>>{std::make_unique<int>(100)};
+			auto destination = CppUtils::Thread::SharedLocker<std::unique_ptr<int>>{std::make_unique<int>(200)};
+
+			destination = std::move(source);
+
+			suite.expect(source.uniqueAccess().value() == nullptr);
+			suite.expect(destination.sharedAccess().value() != nullptr);
+			suite.expectEqual(*destination.sharedAccess().value(), 100);
+		});
 	}};
 }
