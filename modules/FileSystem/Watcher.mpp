@@ -41,14 +41,15 @@ export namespace CppUtils::FileSystem
 	public:
 		using SubscribeFunction = std::function<void(Event, const std::filesystem::path&)>;
 
-#if not defined(OS_MACOS)
+#if defined(OS_MACOS)
 		inline Watcher():
-			m_threadLoop { std::bind(&Watcher::listener, this), std::bind(&Watcher::interruptFunction, this) }
+			m_dispatchQueue{dispatch_queue_create("CppUtils.FileSystem.Watcher", nullptr)}
+		{}
 #else
-		inline Watcher()
-#endif
+		inline Watcher():
+			m_threadLoop{[this] { listener(); }, [this] { interruptFunction(); }}
 		{
-#if defined(OS_LINUX)
+#	if defined(OS_LINUX)
 			m_eventPoll = epoll_create1(0);
 			{
 				m_inotify = inotify_init1(IN_NONBLOCK);
@@ -65,13 +66,90 @@ export namespace CppUtils::FileSystem
 					epoll_ctl(m_eventPoll, EPOLL_CTL_ADD, m_stopPipe.read, std::addressof(m_stopEvent)),
 					"Can't add pipe file descriptor to epoll");
 			}
-#elif defined(OS_WINDOWS)
+#	elif defined(OS_WINDOWS)
 			m_stopEvent = CreateEventW(nullptr, true, false, nullptr);
 			m_wakeEvent = CreateEventW(nullptr, true, false, nullptr);
-#elif defined(OS_MACOS)
-			m_dispatchQueue = dispatch_queue_create("CppUtils.FileSystem.Watcher", nullptr);
+#	endif
+		}
 #endif
-			start();
+
+		Watcher(const Watcher&) = delete;
+		auto operator=(const Watcher&) -> Watcher& = delete;
+
+#if defined(OS_MACOS)
+		inline Watcher(Watcher&& other) noexcept
+		{
+			const auto wasRunning = other.isRunning();
+			other.stop();
+			m_dispatchQueue = std::exchange(other.m_dispatchQueue, nullptr);
+			m_isRunning.store(other.m_isRunning.load());
+			m_subscribedFunctions = std::move(other.m_subscribedFunctions);
+			m_watchedItems = std::move(other.m_watchedItems);
+
+			if (wasRunning)
+				start();
+		}
+#else
+		inline Watcher(Watcher&& other) noexcept:
+			m_threadLoop{[this] { listener(); }, [this] { interruptFunction(); }}
+		{
+			const auto wasRunning = other.isRunning();
+			other.stop();
+#	if defined(OS_LINUX)
+			m_eventPoll = std::move(other.m_eventPoll);
+			m_inotify = std::move(other.m_inotify);
+			m_stopPipe = std::move(other.m_stopPipe);
+			m_inotifyEpollEvent = other.m_inotifyEpollEvent;
+			m_stopEvent = other.m_stopEvent;
+			m_events = other.m_events;
+#	elif defined(OS_WINDOWS)
+			m_stopEvent = std::exchange(other.m_stopEvent, nullptr);
+			m_wakeEvent = std::exchange(other.m_wakeEvent, nullptr);
+#	endif
+			m_subscribedFunctions = std::move(other.m_subscribedFunctions);
+			m_watchedItems = std::move(other.m_watchedItems);
+
+			if (wasRunning)
+				start();
+		}
+#endif
+
+		inline auto operator=(Watcher&& other) noexcept -> Watcher&
+		{
+			if (this == std::addressof(other))
+				return *this;
+
+			stop();
+			const auto wasRunning = other.isRunning();
+			other.stop();
+
+#if defined(OS_LINUX)
+			m_eventPoll = std::move(other.m_eventPoll);
+			m_inotify = std::move(other.m_inotify);
+			m_stopPipe = std::move(other.m_stopPipe);
+			m_inotifyEpollEvent = other.m_inotifyEpollEvent;
+			m_stopEvent = other.m_stopEvent;
+			m_events = other.m_events;
+#elif defined(OS_WINDOWS)
+			if (m_stopEvent != nullptr)
+				CloseHandle(m_stopEvent);
+			if (m_wakeEvent != nullptr)
+				CloseHandle(m_wakeEvent);
+			m_stopEvent = std::exchange(other.m_stopEvent, nullptr);
+			m_wakeEvent = std::exchange(other.m_wakeEvent, nullptr);
+#elif defined(OS_MACOS)
+			if (m_dispatchQueue != nullptr)
+				dispatch_release(m_dispatchQueue);
+			m_dispatchQueue = std::exchange(other.m_dispatchQueue, nullptr);
+			m_isRunning.store(other.m_isRunning.load());
+#endif
+			m_subscribedFunctions = std::move(other.m_subscribedFunctions);
+			m_watchedItems = std::move(other.m_watchedItems);
+
+			if (wasRunning)
+				start();
+
+			return *this;
 		}
 
 		~Watcher()
@@ -105,10 +183,15 @@ export namespace CppUtils::FileSystem
 
 		inline auto start() -> void
 		{
-#if defined(OS_MACOS)
-			m_isRunning.store(true);
-#else
+#if defined(OS_LINUX)
+			drainStopPipe();
 			m_threadLoop.start();
+#elif defined(OS_WINDOWS)
+			if (m_stopEvent != nullptr)
+				ResetEvent(m_stopEvent);
+			m_threadLoop.start();
+#elif defined(OS_MACOS)
+			m_isRunning.store(true);
 #endif
 		}
 
@@ -118,7 +201,20 @@ export namespace CppUtils::FileSystem
 			m_isRunning.store(false);
 #else
 			m_threadLoop.stop();
+#	if defined(OS_LINUX)
+			drainStopPipe();
+#	elif defined(OS_WINDOWS)
+			if (m_stopEvent != nullptr)
+				ResetEvent(m_stopEvent);
+#	endif
 #endif
+		}
+
+		inline auto reset() -> void
+		{
+			stop();
+			unwatchAll();
+			m_subscribedFunctions.access()->clear();
 		}
 
 #if not defined(OS_MACOS)
@@ -232,7 +328,10 @@ export namespace CppUtils::FileSystem
 				{
 					auto eventFileDescriptor = m_events[i].data.fd;
 					if (eventFileDescriptor == m_stopPipe.read)
+					{
+						drainStopPipe();
 						continue;
+					}
 					length = read(eventFileDescriptor, std::ranges::data(buffer), std::ranges::size(buffer));
 					if (length == -1 and errno == EINTR)
 						break;
@@ -275,6 +374,9 @@ export namespace CppUtils::FileSystem
 		{
 			if (not std::filesystem::exists(path))
 				return;
+
+			if (not isRunning())
+				start();
 
 			const auto normalizedPath = std::filesystem::weakly_canonical(path);
 
@@ -432,9 +534,8 @@ export namespace CppUtils::FileSystem
 			auto itemsAccessor = m_watchedItems.access();
 #if defined(OS_LINUX)
 			for (const auto& [path, watchDescriptor] : itemsAccessor.value())
-				System::throwErrno(
-					inotify_rm_watch(m_inotify, std::to_underlying(watchDescriptor)),
-					std::format("Failed to stop watching the file {}", path.string()));
+				if (inotify_rm_watch(m_inotify, std::to_underlying(watchDescriptor)) == -1 and errno != EINVAL)
+					System::throwErrno(-1, std::format("Failed to stop watching the file {}", path.string()));
 #elif defined(OS_WINDOWS)
 			for (auto& item : itemsAccessor.value())
 			{
@@ -477,6 +578,15 @@ export namespace CppUtils::FileSystem
 				SetEvent(m_stopEvent);
 #	endif
 		}
+
+#	if defined(OS_LINUX)
+		inline auto drainStopPipe() -> void
+		{
+			auto buffer = std::array<std::byte, 64>{};
+			while (read(m_stopPipe.read, std::ranges::data(buffer), std::ranges::size(buffer)) > 0)
+			{}
+		}
+#	endif
 #endif
 
 #if defined(OS_MACOS)
