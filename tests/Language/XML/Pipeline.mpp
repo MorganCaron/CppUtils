@@ -721,9 +721,9 @@ Bob;bob@example.com;30;80;4.8)"sv);
 		});
 
 		suite.addTest("<Log> with custom loggerName", [&] {
-			auto loggedMessages = std::make_shared<std::vector<std::string>>();
-			CppUtils::Logger<"CustomPipelineLogger">::subscribe<"debug">([loggedMessages](const std::string& message) {
-				loggedMessages->push_back(message);
+			auto loggedMessages = std::vector<std::string>{};
+			const auto subscriptionIdentifier = CppUtils::Logger<"CustomPipelineLogger">::subscribe<"debug">([&loggedMessages](const std::string& message) {
+				loggedMessages.push_back(message);
 			});
 
 			const auto xmlSource = R"(
@@ -744,11 +744,12 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				| std::ranges::to<std::vector<User>>();
 
 			CppUtils::Logger<"CustomPipelineLogger">::waitUntilFinished();
+			CppUtils::Logger<"CustomPipelineLogger">::unsubscribe(subscriptionIdentifier);
 
 			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
 			suite.expectEqual(outputUsers[0].name, "Alice");
-			suite.expectEqual(std::ranges::size(*loggedMessages), 1uz);
-			suite.expectEqual((*loggedMessages)[0], "Processing user");
+			suite.expectEqual(std::ranges::size(loggedMessages), 1uz);
+			suite.expectEqual(loggedMessages[0], "Processing user");
 		});
 
 		suite.addTest("Flow with ThreadPool", [&] {
@@ -779,21 +780,30 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				suite.expect(outputContent.contains("Alice"));
 				suite.expect(outputContent.contains("110"));
 
-				const auto xmlSourceInMemory = std::format(R"(
+				auto loggedMessages = std::vector<std::string>{};
+				const auto subscriptionIdentifier = CppUtils::Logger<"FlowWithoutOutputTest">::subscribe<"info">([&loggedMessages](const std::string& message) {
+					loggedMessages.push_back(message);
+				});
+
+				const auto xmlSourceWithoutOutput = std::format(R"(
 				<Flow>
 					<Input file="{}"/>
 					<Pipeline chunkSize="1">
 						<Operation column="Score" operator="+=" value="10"/>
+						<Log column="Score" message="Processed score: {{}}"/>
 					</Pipeline>
 				</Flow>
 				)",
 					inputPath.generic_string());
 
-				auto flowInMemory = CppUtils::Language::Xml::buildFlow<User, UserMapping>(xmlSourceInMemory, threadPool);
-				const auto results = flowInMemory.execute();
+				auto flowWithoutOutput = CppUtils::Language::Xml::buildFlow<User, UserMapping, "FlowWithoutOutputTest">(xmlSourceWithoutOutput, threadPool);
+				flowWithoutOutput.execute();
 
-				suite.expectEqual(std::ranges::size(results), 1uz);
-				suite.expectEqual(results[0].score, 110);
+				CppUtils::Logger<"FlowWithoutOutputTest">::waitUntilFinished();
+				CppUtils::Logger<"FlowWithoutOutputTest">::unsubscribe(subscriptionIdentifier);
+
+				suite.expectEqual(std::ranges::size(loggedMessages), 1uz);
+				suite.expect(loggedMessages[0].contains("110"));
 			}};
 		});
 

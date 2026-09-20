@@ -63,6 +63,7 @@
 
 ### ⛓️ Flow
 - [`Flow`](modules/Language/XML/Flow.mpp) - Declarative data transformation and file orchestration with staging, watching, and parallel chunking
+- [`FlowRunner`](modules/Language/XML/FlowRunner.mpp) - Orchestrator discovering, indexing, and executing XML flows in parallel
 - [`Pipeline`](modules/Language/XML/Pipeline.mpp) - Lazy C++20 range pipeline compiled from XML tags
 - [`Tags`](modules/Language/XML/Tags.mpp) - Standard pipeline tags (`<Filter>`, `<Validate>`, `<Operation>`, `<Call>`, `<When>`, `<Let>`, `<Log>`, `<Rejected>`, `<Scope>`, `<Include>`)
 
@@ -105,6 +106,7 @@
 - [`Multiton`](modules/Pattern/Multiton.mpp) - Generic Multiton implementation based on the Meyers Singleton
 
 ### 📶 Ranges
+- [`Drain`](modules/Ranges/Drain.mpp) - Consuming range adaptor draining elements from a range
 - [`Expected`](modules/Ranges/Expected.mpp) - Range adaptors for `std::expected` streams
 - [`Inspect`](modules/Ranges/Inspect.mpp) - Range element inspection for side-effects and logging
 - [`Parallel`](modules/Ranges/Parallel.mpp) - Multithreaded range pipelining
