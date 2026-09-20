@@ -6,6 +6,7 @@ import CppUtils.String;
 import CppUtils.Container.Tree;
 import CppUtils.FileSystem;
 import CppUtils.Thread.ThreadPool;
+import CppUtils.Thread.SharedLocker;
 import CppUtils.Logger;
 import CppUtils.Chrono.Chronometer;
 import CppUtils.Container.MultiKeyMap;
@@ -100,9 +101,10 @@ export namespace CppUtils::Language::Xml
 	public:
 		auto loadFlows() -> void
 		{
-			for (const auto& entry : m_flows)
+			auto flowsAccessor = m_flows.uniqueAccess();
+			for (const auto& entry : flowsAccessor.value())
 				entry.value->stopWatching();
-			m_flows.clear();
+			flowsAccessor.value().clear();
 
 			for (const auto& filePath : discoverFlowConfigs())
 				try
@@ -111,7 +113,7 @@ export namespace CppUtils::Language::Xml
 					const auto& flowNode = findFlowNode(rootNode);
 					const auto flowName = extractFlowName(flowNode, filePath);
 					const auto& factory = resolveFactory(flowNode, filePath);
-					m_flows.emplace(filePath, flowName, std::shared_ptr<Flow>{factory(flowNode)});
+					flowsAccessor.value().emplace(filePath, flowName, std::shared_ptr<Flow>{factory(flowNode)});
 				}
 				catch (const std::exception& exception)
 				{
@@ -120,21 +122,23 @@ export namespace CppUtils::Language::Xml
 				}
 		}
 
-		[[nodiscard]] auto flows() const -> const FlowContainer&
+		[[nodiscard]] auto flows() const -> decltype(auto)
 		{
-			return m_flows;
+			return m_flows.sharedAccess();
 		}
 
 		[[nodiscard]] auto flow(const Type::Exact<std::filesystem::path> auto& filePath) const -> std::shared_ptr<Flow>
 		{
-			const auto iterator = m_flows.find(filePath);
-			return iterator != std::ranges::end(m_flows) ? iterator->value : nullptr;
+			auto flowsAccessor = m_flows.sharedAccess();
+			const auto iterator = flowsAccessor.value().find(filePath);
+			return iterator != std::ranges::end(flowsAccessor.value()) ? iterator->value : nullptr;
 		}
 
 		[[nodiscard]] auto flow(std::string_view flowName) const -> std::shared_ptr<Flow>
 		{
-			const auto iterator = m_flows.template findAt<1>(flowName);
-			return iterator != std::ranges::end(m_flows) ? iterator->value : nullptr;
+			auto flowsAccessor = m_flows.sharedAccess();
+			const auto iterator = flowsAccessor.value().template findAt<1>(flowName);
+			return iterator != std::ranges::end(flowsAccessor.value()) ? iterator->value : nullptr;
 		}
 
 		[[nodiscard]] auto discoverFlowConfigs() const -> std::vector<std::filesystem::path>
@@ -151,20 +155,28 @@ export namespace CppUtils::Language::Xml
 
 		auto execute() -> Stats
 		{
-			if (std::ranges::empty(m_flows))
+			auto flowsToExecute = std::vector<std::shared_ptr<Flow>>{};
 			{
-				Logger<"Flow">::template print<"warning">(
-					"FlowRunner: 0 active flows found to execute (did you call loadFlows()?)");
-				return Stats{};
+				auto flowsAccessor = m_flows.sharedAccess();
+				if (std::ranges::empty(flowsAccessor.value()))
+				{
+					Logger<"Flow">::template print<"warning">(
+						"FlowRunner: 0 active flows found to execute (did you call loadFlows()?)");
+					return Stats{};
+				}
+
+				flowsToExecute.reserve(std::ranges::size(flowsAccessor.value()));
+				for (const auto& entry : flowsAccessor.value())
+					flowsToExecute.push_back(entry.value);
 			}
 
 			auto futures = std::vector<std::future<Flow::Report>>{};
-			futures.reserve(std::ranges::size(m_flows));
+			futures.reserve(std::ranges::size(flowsToExecute));
 
 			auto chronometer = Chrono::Chronometer{};
-			for (const auto& entry : m_flows)
-				futures.push_back(std::async(std::launch::async, [flow = entry.value] {
-					return flow->execute();
+			for (auto&& flowInstance : flowsToExecute)
+				futures.push_back(std::async(std::launch::async, [flowInstance = std::move(flowInstance)] {
+					return flowInstance->execute();
 				}));
 
 			auto processedFilesCount = 0uz;
@@ -189,11 +201,14 @@ export namespace CppUtils::Language::Xml
 				return;
 			}
 
-			if (std::ranges::empty(m_flows))
+			if (std::ranges::empty(m_flows.sharedAccess().value()))
 				loadFlows();
 
-			for (const auto& entry : m_flows)
-				entry.value->startWatching();
+			{
+				auto flowsAccessor = m_flows.sharedAccess();
+				for (const auto& entry : flowsAccessor.value())
+					entry.value->startWatching();
+			}
 
 			m_flowsWatcher.reset();
 			m_flowsWatcher.onEvent([this](FileSystem::Event event, const std::filesystem::path& filePath) {
@@ -202,11 +217,13 @@ export namespace CppUtils::Language::Xml
 
 				if (event & (FileSystem::Event::Deleted | FileSystem::Event::MovedFrom))
 				{
-					if (m_flows.contains(filePath))
+					if (auto flowsAccessor = m_flows.uniqueAccess();
+						flowsAccessor.value().contains(filePath))
 					{
-						if (auto existingFlow = flow(filePath))
-							existingFlow->stopWatching();
-						m_flows.erase(filePath);
+						const auto iterator = flowsAccessor.value().find(filePath);
+						if (iterator != std::ranges::end(flowsAccessor.value()) and iterator->value)
+							iterator->value->stopWatching();
+						flowsAccessor.value().erase(filePath);
 						Logger<"Flow">::template print<"info">(
 							"Workflow '{}' removed from active flows", filePath.filename().string());
 					}
@@ -221,17 +238,19 @@ export namespace CppUtils::Language::Xml
 						const auto& factory = resolveFactory(flowNode, filePath);
 						auto newFlow = std::shared_ptr<Flow>{factory(flowNode)};
 
-						const auto isUpdate = m_flows.contains(filePath);
+						auto flowsAccessor = m_flows.uniqueAccess();
+						const auto isUpdate = flowsAccessor.value().contains(filePath);
 						if (isUpdate)
 						{
-							if (auto existingFlow = flow(filePath))
-								existingFlow->stopWatching();
-							m_flows.erase(filePath);
+							if (const auto iterator = flowsAccessor.value().find(filePath);
+								iterator != std::ranges::end(flowsAccessor.value()) and iterator->value)
+								iterator->value->stopWatching();
+							flowsAccessor.value().erase(filePath);
 						}
 
 						newFlow->startWatching();
 						const auto flowName = extractFlowName(flowNode, filePath);
-						m_flows.emplace(filePath, flowName, std::move(newFlow));
+						flowsAccessor.value().emplace(filePath, flowName, std::move(newFlow));
 
 						if (isUpdate)
 							Logger<"Flow">::template print<"info">(
@@ -252,14 +271,15 @@ export namespace CppUtils::Language::Xml
 		auto stopWatching() -> void
 		{
 			m_flowsWatcher.reset();
-			for (const auto& entry : m_flows)
+			auto flowsAccessor = m_flows.sharedAccess();
+			for (const auto& entry : flowsAccessor.value())
 				entry.value->stopWatching();
 		}
 
 	private:
 		Thread::ThreadPool& m_threadPool;
 		std::filesystem::path m_flowsDirectory;
-		FlowContainer m_flows;
+		Thread::SharedLocker<FlowContainer> m_flows;
 		std::unordered_map<std::string, FlowFactory> m_factories;
 		FileSystem::Watcher m_flowsWatcher;
 	};
