@@ -43,6 +43,7 @@ export namespace CppUtils::Terminal
 			if (hasWidgetManager())
 			{
 				getWidgetManager().scheduler.cancelOwner(this);
+				onWidgetManagerClear();
 				m_widgetManagerRef = std::nullopt;
 			}
 		}
@@ -98,6 +99,7 @@ export namespace CppUtils::Terminal
 
 	protected:
 		virtual inline auto onWidgetManagerSet([[maybe_unused]] WidgetManager& widgetManager) noexcept -> void {}
+		virtual inline auto onWidgetManagerClear() noexcept -> void {}
 
 	private:
 		inline auto requestUpdateImpl(Thread::Scheduler::Clock::duration delay) -> void

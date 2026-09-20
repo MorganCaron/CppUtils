@@ -46,6 +46,11 @@ export namespace CppUtils::Terminal
 			m_alignItems{alignItems}
 		{}
 
+		inline ~Layout() noexcept override
+		{
+			clearWidgetManager();
+		}
+
 		template<std::derived_from<Element> T>
 		inline auto addWidget(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]], std::unique_ptr<T> widget) -> T&
 		{
@@ -61,6 +66,12 @@ export namespace CppUtils::Terminal
 		{
 			for (auto& element : m_elements)
 				element->setWidgetManager(widgetManager);
+		}
+
+		inline auto onWidgetManagerClear() noexcept -> void override
+		{
+			for (auto& element : m_elements)
+				element->clearWidgetManager();
 		}
 
 	public:

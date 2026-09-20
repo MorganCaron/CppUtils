@@ -32,9 +32,16 @@ export namespace CppUtils::Terminal
 			addWidget(std::move(widget));
 		}
 
+		inline ~Container() noexcept override
+		{
+			clearWidgetManager();
+		}
+
 		template<std::derived_from<Widget> T>
 		inline auto addWidget(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]], std::unique_ptr<T> widget) -> T&
 		{
+			if (self.m_widget)
+				self.m_widget->clearWidgetManager();
 			self.m_widget = std::move(widget);
 			if (self.hasWidgetManager())
 				self.m_widget->setWidgetManager(self.getWidgetManager());
@@ -67,6 +74,12 @@ export namespace CppUtils::Terminal
 		{
 			if (m_widget)
 				m_widget->setWidgetManager(widgetManager);
+		}
+
+		inline auto onWidgetManagerClear() noexcept -> void override
+		{
+			if (m_widget)
+				m_widget->clearWidgetManager();
 		}
 
 		inline auto onMouseEvent(const Mouse::Event& event) -> bool override
