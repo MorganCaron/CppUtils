@@ -13,9 +13,9 @@
 ![GitHub Sponsors](https://img.shields.io/github/sponsors/MorganCaron?style=for-the-badge)
 
 ### Project Health
-![CI Windows](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-windows.yml?style=for-the-badge&logo=windows&logoColor=white&label=Windows)
-![CI Linux](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-linux.yml?style=for-the-badge&logo=linux&logoColor=white&label=Linux)
-![CI MacOS](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-macos.yml?style=for-the-badge&logo=macos&logoColor=white&label=MacOS)
+![CI Windows](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-windows.yml?branch=master&style=for-the-badge&logo=windows&logoColor=white&label=Windows)
+![CI Linux](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-linux.yml?branch=master&style=for-the-badge&logo=linux&logoColor=white&label=Linux)
+![CI MacOS](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-macos.yml?branch=master&style=for-the-badge&logo=macos&logoColor=white&label=MacOS)
 
 ![Codacy grade](https://img.shields.io/codacy/grade/49d265d3b8934ec398322a0a82c71184?style=for-the-badge&logo=codacy)
 
@@ -65,7 +65,7 @@
 - [`Flow`](modules/Language/XML/Flow.mpp) - Declarative data transformation and file orchestration with staging, watching, and parallel chunking
 - [`FlowRunner`](modules/Language/XML/FlowRunner.mpp) - Orchestrator discovering, indexing, and executing XML flows in parallel
 - [`Pipeline`](modules/Language/XML/Pipeline.mpp) - Lazy C++20 range pipeline compiled from XML tags
-- [`Tags`](modules/Language/XML/Tags.mpp) - Standard pipeline tags (`<Filter>`, `<Validate>`, `<Operation>`, `<Call>`, `<When>`, `<Let>`, `<Log>`, `<Rejected>`, `<Scope>`, `<Include>`)
+- [`Tags`](modules/Language/XML/Tags.mpp) - Standard pipeline tags (`<Filter>`, `<Validate>`, `<Transform>`, `<Operation>`, `<Call>`, `<When>`, `<Let>`, `<Log>`, `<Rejected>`, `<Scope>`, `<Include>`)
 
 ### 🧠 Functional
 - [`LambdaCalculus`](modules/Functional/LambdaCalculus.mpp) - Compile-time utilities for lambda calculus manipulation
