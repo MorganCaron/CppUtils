@@ -44,6 +44,7 @@ Both commit messages and Pull Request titles must follow the [Conventional Commi
 Pull Request titles are automatically parsed by the CI to assign repository labels and categorize entries in the release changelog.
 
 Supported and common types:
+
 - `feat`: A new feature.
 - `fix`: A bug fix.
 - `docs`: Documentation updates only (e.g., README, code comments).
