@@ -113,9 +113,12 @@ try:
     with open("README.md", "r") as file_handle:
         readme_content = file_handle.read()
 
+    version_parts = "${target_version}".split(".")
+    version_wildcard = f"{version_parts[0]}.{version_parts[1]}.*"
+
     updated_readme = re.sub(
         r'add_requires\("CppUtils [^"]*"\)',
-        f'add_requires("CppUtils ${target_version}")',
+        f'add_requires("CppUtils {version_wildcard}")',
         readme_content,
         count=1
     )
