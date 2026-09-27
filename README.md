@@ -79,6 +79,9 @@
 - [`CSV Parsing`](modules/Language/CSV/Parsing.mpp) - Stream-based CSV line parser
 - [`CLikeCompiler`](modules/Language/CLikeCompiler.mpp) - Compiler for C-inspired language
 - [`GrammarParser`](modules/Language/GrammarParser.mpp) - A parser for defining and interpreting custom grammars, used for building language parsers
+- [`JSON Lexer`](modules/Language/JSON/JsonLexer.mpp) - Grammar-based JSON lexer with compile-time AST generation
+- [`JSON Mapping`](modules/Language/JSON/Mapping.mpp) - Type-safe bidirectional mapping between C++ structs and JSON with compile-time reflection
+- [`JSON Parsing`](modules/Language/JSON/Parsing.mpp) - High-performance typed JSON parser
 - [`MetaCircularVirtualMachine`](modules/Language/MetaCircularVirtualMachine.mpp) - Homoiconic meta-circular virtual machine with extensible reflexivity
 - [`MetaCircularParser`](modules/Language/MetaCircularParser.mpp) - Extension of `MetaCircularVirtualMachine` for building parsers with input stream reading capabilities
 - [`ASTParser`](modules/Language/ASTParser.mpp) - AST parser (work in progress <img src="resources/loading.gif" width="12" height="12"/>)

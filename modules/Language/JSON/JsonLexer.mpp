@@ -1,4 +1,4 @@
-export module CppUtils.Language.Json;
+export module CppUtils.Language.JSON.JsonLexer;
 
 import std;
 import CppUtils.Type;
@@ -6,7 +6,7 @@ import CppUtils.String;
 import CppUtils.Container.Tree;
 import CppUtils.Language.Lexer;
 
-export namespace CppUtils::Language::Json
+export namespace CppUtils::Language::JSON
 {
 	class JsonLexer final
 	{
@@ -51,7 +51,7 @@ export namespace CppUtils::Language::Json
 		Lexer::GrammarLexer<Type::Token, bool, float> m_grammarLexer;
 	};
 
-	[[nodiscard]] inline auto parse(std::string_view src) -> Container::Tree::VariantNode<Type::Token, bool, float>
+	[[nodiscard]] inline auto parseTree(std::string_view src) -> Container::Tree::VariantNode<Type::Token, bool, float>
 	{
 		static const auto jsonLexer = JsonLexer{};
 		return jsonLexer.parse(src);
@@ -59,9 +59,9 @@ export namespace CppUtils::Language::Json
 
 	namespace Literals
 	{
-		[[nodiscard]] inline auto operator""_json(const char* cstring, std::size_t) -> Container::Tree::VariantNode<Type::Token, bool, float>
+		[[nodiscard]] inline auto operator""_json_tree(const char* cstring, std::size_t) -> Container::Tree::VariantNode<Type::Token, bool, float>
 		{
-			return parse(cstring);
+			return parseTree(cstring);
 		}
 	}
 }

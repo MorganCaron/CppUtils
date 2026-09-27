@@ -7,10 +7,10 @@ namespace CppUtils::UnitTest::Language::Ini::IniLexer
 {
 	using namespace CppUtils::String::Literals;
 
-	auto _ = TestSuite{"Language/Ini/IniLexer", {"Language/Json/JsonLexer"}, [](TestSuite& suite) {
+	auto _ = TestSuite{"Language/Ini/IniLexer", {"Language/JSON/JsonLexer"}, [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::Language::Ini::Literals;
-		using namespace CppUtils::Language::Json::Literals;
+		using namespace CppUtils::Language::JSON::Literals;
 
 		suite.addTest("Minimalist", [&] {
 			const auto iniTree = R"(
@@ -27,7 +27,7 @@ namespace CppUtils::UnitTest::Language::Ini::IniLexer
 					}
 				}
 			}
-			)"_json;
+			)"_json_tree;
 
 			suite.expectEqual(iniTree, jsonTree);
 		});
@@ -47,7 +47,7 @@ namespace CppUtils::UnitTest::Language::Ini::IniLexer
 					}
 				}
 			}
-			)"_json;
+			)"_json_tree;
 
 			suite.expectEqual(iniTree, jsonTree);
 		});
@@ -69,7 +69,7 @@ namespace CppUtils::UnitTest::Language::Ini::IniLexer
 					}
 				}
 			}
-			)"_json;
+			)"_json_tree;
 
 			suite.expectEqual(iniTree, jsonTree);
 		});
@@ -108,7 +108,7 @@ namespace CppUtils::UnitTest::Language::Ini::IniLexer
 					}
 				}
 			}
-			)"_json;
+			)"_json_tree;
 
 			suite.expectEqual(std::ranges::size(iniTree.nodes), 3uz);
 			suite.expectEqual(iniTree.nodes.at(0), jsonTree.nodes.at(0));
