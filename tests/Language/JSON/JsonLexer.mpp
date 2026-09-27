@@ -1,20 +1,20 @@
-export module CppUtils.UnitTests.Language.Json.JsonLexer;
+export module CppUtils.UnitTests.Language.JSON.JsonLexer;
 
 import std;
 import CppUtils;
 
-namespace CppUtils::UnitTest::Language::Json::JsonLexer
+namespace CppUtils::UnitTest::Language::JSON::JsonLexer
 {
 	using namespace CppUtils::String::Literals;
 
-	auto _ = TestSuite{"Language/Json/JsonLexer", {}, [](TestSuite& suite) {
+	auto _ = TestSuite{"Language/JSON/JsonLexer", {}, [](TestSuite& suite) {
 		using namespace std::literals;
-		using namespace CppUtils::Language::Json::Literals;
+		using namespace CppUtils::Language::JSON::Literals;
 
 		suite.addTest("Empty json", [&] {
 			const auto jsonTree = R"(
 			{}
-			)"_json;
+			)"_json_tree;
 			CppUtils::Log::TreeNodeLogger::log(jsonTree);
 
 			suite.expect(std::ranges::empty(jsonTree.nodes));
@@ -25,7 +25,7 @@ namespace CppUtils::UnitTest::Language::Json::JsonLexer
 			{
 				"key": null
 			}
-			)"_json;
+			)"_json_tree;
 			CppUtils::Log::TreeNodeLogger::log(jsonTree);
 
 			suite.expectEqual(std::ranges::size(jsonTree.nodes), 1uz);
@@ -40,7 +40,7 @@ namespace CppUtils::UnitTest::Language::Json::JsonLexer
 				"bool0": true,
 				"bool1": false
 			}
-			)"_json;
+			)"_json_tree;
 			CppUtils::Log::TreeNodeLogger::log(jsonTree);
 
 			suite.expectEqual(std::ranges::size(jsonTree.nodes), 2uz);
@@ -61,7 +61,7 @@ namespace CppUtils::UnitTest::Language::Json::JsonLexer
 				"number1": -21,
 				"number2": 3.141592
 			}
-			)"_json;
+			)"_json_tree;
 			CppUtils::Log::TreeNodeLogger::log(jsonTree);
 
 			suite.expectEqual(std::ranges::size(jsonTree.nodes), 3uz);
@@ -84,7 +84,7 @@ namespace CppUtils::UnitTest::Language::Json::JsonLexer
 			{
 				"key": "hello"
 			}
-			)"_json;
+			)"_json_tree;
 			CppUtils::Log::TreeNodeLogger::log(jsonTree);
 
 			suite.expectEqual(std::ranges::size(jsonTree.nodes), 1uz);
@@ -99,7 +99,7 @@ namespace CppUtils::UnitTest::Language::Json::JsonLexer
 			{
 				"key": [1, "abc", true]
 			}
-			)"_json;
+			)"_json_tree;
 			CppUtils::Log::TreeNodeLogger::log(jsonTree);
 
 			suite.expectEqual(std::ranges::size(jsonTree.nodes), 1uz);
@@ -124,7 +124,7 @@ namespace CppUtils::UnitTest::Language::Json::JsonLexer
 					"number1": 1
 				}
 			}
-			)"_json;
+			)"_json_tree;
 			CppUtils::Log::TreeNodeLogger::log(jsonTree);
 
 			suite.expectEqual(std::ranges::size(jsonTree.nodes), 1uz);
