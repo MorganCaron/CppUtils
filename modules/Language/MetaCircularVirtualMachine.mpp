@@ -1,8 +1,9 @@
 export module CppUtils.Language.MetaCircularVirtualMachine;
 
 import std;
+import CppUtils.Container.FlatHashMap;
 import CppUtils.Container.MeshNetwork;
-import CppUtils.Container.SafeShared;
+import CppUtils.Thread.SharedPtr;
 import CppUtils.Execution.Event;
 import CppUtils.Execution.ScopeGuard;
 import CppUtils.Language.AST;
@@ -18,6 +19,8 @@ export namespace CppUtils::Language
 		struct MetaCircularVirtualMachine
 		{
 			using Cursor = String::Cursor<std::string_view>;
+
+			using Function = auto (*)(Cursor&, const ASTNode&, MetaCircularVirtualMachine&) -> std::expected<void, std::string_view>;
 
 			[[nodiscard]] inline constexpr auto exists(Type::Token instruction) const noexcept -> bool
 			{
@@ -39,8 +42,8 @@ export namespace CppUtils::Language
 				{
 					if (std::ranges::empty(instruction.nodes)) [[unlikely]]
 						return std::unexpected{R"(Missing argument in the "call" instruction)"};
-					if (auto it = functions.find(instruction.nodes.front().value); it != std::ranges::cend(functions))
-						return it->second(cursor, instruction.nodes.front(), *this);
+					if (auto iterator = functions.find(instruction.nodes.front().value); iterator != std::ranges::cend(functions))
+						return iterator->second(cursor, instruction.nodes.front(), *this);
 					else [[unlikely]]
 						return std::unexpected{"Unknown function"};
 				}
@@ -68,12 +71,13 @@ export namespace CppUtils::Language
 				return {};
 			}
 
-			[[nodiscard]] inline auto getScope() -> ASTNode&
+			[[nodiscard]] inline constexpr auto getScope(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto&
 			{
-				return scopes.back().get();
+				using ScopeType = std::conditional_t<std::is_const_v<std::remove_reference_t<decltype(self)>>, const ASTNode, ASTNode>;
+				return static_cast<ScopeType&>(self.scopes.back().get());
 			}
 
-			std::unordered_map<Type::Token, std::function<std::expected<void, std::string_view>(Cursor&, const ASTNode&, MetaCircularVirtualMachine&)>> functions;
+			Container::FlatHashMap<Type::Token, Function> functions = {};
 			ASTNode rootAst = {0uz, {ASTNode{Type::hash("main")}}};
 			std::vector<std::reference_wrapper<ASTNode>> scopes = {std::ref(rootAst)};
 			bool exit = false;
@@ -91,12 +95,42 @@ export namespace CppUtils::Language
 				std::expected<MeshNodePtr, std::string_view> value;
 			};
 
+			using FunctionPointer = auto (*)(MetaCircularVirtualMachine&, MeshNodePtr) -> std::expected<MeshNodePtr, std::string_view>;
+
+			struct Callable final
+			{
+				FunctionPointer pointer = nullptr;
+				std::optional<std::function<StepResult(MetaCircularVirtualMachine&, MeshNodePtr)>> runtimeFunction = std::nullopt;
+
+				constexpr Callable() noexcept = default;
+
+				constexpr Callable(FunctionPointer functionPointer) noexcept:
+					pointer{functionPointer}
+				{}
+
+				Callable(std::function<StepResult(MetaCircularVirtualMachine&, MeshNodePtr)> function):
+					runtimeFunction{std::move(function)}
+				{}
+
+				constexpr auto operator()(MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) const -> StepResult
+				{
+					if (pointer)
+						return StepResult{pointer(interpreter, instruction)};
+					if not consteval
+					{
+						if (runtimeFunction)
+							return runtimeFunction.value()(interpreter, instruction);
+					}
+					return StepResult{std::unexpected{"Invalid function call"}};
+				}
+			};
+
 			struct Environment final
 			{
-				Thread::SharedLocker<std::unordered_map<Type::Token, std::function<StepResult(MetaCircularVirtualMachine&, MeshNodePtr)>>> functions;
-				Thread::ThreadPool threadPool;
-				Thread::SharedLocker<std::unordered_map<std::size_t, std::shared_ptr<std::future<void>>>> threads;
-				Thread::SharedLocker<std::unordered_map<std::size_t, std::shared_ptr<Execution::Event>>> events;
+				Thread::SharedLocker<Container::FlatHashMap<Type::Token, Callable>> functions;
+				std::optional<Thread::ThreadPool> threadPool;
+				Thread::SharedLocker<Container::FlatHashMap<std::size_t, std::shared_ptr<std::future<void>>>> threads;
+				Thread::SharedLocker<Container::FlatHashMap<std::size_t, std::shared_ptr<Execution::Event>>> events;
 				std::atomic<std::size_t> nextThreadId{0};
 				std::atomic<std::size_t> nextEventId{0};
 				Thread::SharedLocker<std::string> firstErrorMessage;
@@ -104,9 +138,9 @@ export namespace CppUtils::Language
 			};
 
 			MeshNodePtr context = MeshNodePtr::makeRoot(0uz);
-			std::shared_ptr<Environment> environment;
+			Thread::SharedPtr<Environment> environment;
 
-			[[nodiscard]] static inline auto next(MeshNodePtr instruction) noexcept -> MeshNodePtr
+			[[nodiscard]] static inline constexpr auto next(MeshNodePtr instruction) noexcept -> MeshNodePtr
 			{
 				using namespace String::Literals;
 				return instruction.at("next"_token)
@@ -115,25 +149,32 @@ export namespace CppUtils::Language
 			}
 
 			template<class T = MetaCircularVirtualMachine>
-			inline auto addFunction(Type::Token token, auto&& function) -> void
+			inline constexpr auto addFunction(Type::Token token, auto&& function) -> void
 			{
 				using namespace String::Literals;
 
 				auto functions = environment->functions.uniqueAccess();
 				if (not functions->contains(token))
 				{
-					functions.value()[token] = [function = std::forward<decltype(function)>(function)](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> StepResult {
-						return StepResult{function(static_cast<T&>(interpreter), instruction)};
-					};
+					using FunctionType = std::decay_t<decltype(function)>;
+					if constexpr (std::is_convertible_v<FunctionType, FunctionPointer>)
+						functions.value()[token] = Callable{static_cast<FunctionPointer>(function)};
+					else if constexpr (requires { { +function } -> std::convertible_to<FunctionPointer>; })
+						functions.value()[token] = Callable{+function};
+					else
+						functions.value()[token] = Callable{[function = std::forward<decltype(function)>(function)](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> StepResult {
+							return StepResult{function(static_cast<T&>(interpreter), instruction)};
+						}};
 					if (not context.contains(token))
 						context[token] >> MeshNodePtr::make(token);
 				}
 			}
 
-			template<String::FixedString Name>
-			static auto arithmeticOperation(auto&& operation)
+			template<String::FixedString Name, class Operation>
+			struct ArithmeticOperation final
 			{
-				return [operation = std::forward<decltype(operation)>(operation)](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
+				static constexpr auto execute(MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view>
+				{
 					using namespace String::Literals;
 
 					static constexpr auto lhsError = Name + ": Missing lhs";
@@ -154,40 +195,44 @@ export namespace CppUtils::Language
 
 					const auto lhsValue = lhs->getValue().value();
 					const auto rhsValue = rhs->getValue().value();
-					result->setValue(operation(lhsValue, rhsValue));
+					result->setValue(Operation{}(lhsValue, rhsValue));
 
 					return next(instruction);
-				};
-			}
+				}
+			};
 
-			inline explicit MetaCircularVirtualMachine(std::shared_ptr<Environment> environment):
+			inline constexpr explicit MetaCircularVirtualMachine(Thread::SharedPtr<Environment> environment):
 				environment{std::move(environment)}
 			{}
 
-			inline MetaCircularVirtualMachine():
-				environment{std::make_shared<Environment>()}
+			inline constexpr MetaCircularVirtualMachine():
+				environment{Thread::makeShared<Environment>()}
 			{
 				using namespace std::literals;
 				using namespace String::Literals;
 
-				environment->threadPool.setOnError([environment = environment](std::exception_ptr exceptionPointer) {
-					if (environment->stopRequested.exchange(true))
-						return;
+				if not consteval
+				{
+					environment->threadPool.emplace();
+					environment->threadPool->setOnError([environment = environment](std::exception_ptr exceptionPointer) {
+						if (environment->stopRequested.exchange(true))
+							return;
 
-					try
-					{
-						if (exceptionPointer)
-							std::rethrow_exception(exceptionPointer);
-					}
-					catch (const std::exception& exception)
-					{
-						environment->firstErrorMessage.uniqueAccess().value() = exception.what();
-					}
-					catch (...)
-					{
-						environment->firstErrorMessage.uniqueAccess().value() = "Unknown background error";
-					}
-				});
+						try
+						{
+							if (exceptionPointer)
+								std::rethrow_exception(exceptionPointer);
+						}
+						catch (const std::exception& exception)
+						{
+							environment->firstErrorMessage.uniqueAccess().value() = exception.what();
+						}
+						catch (...)
+						{
+							environment->firstErrorMessage.uniqueAccess().value() = "Unknown background error";
+						}
+					});
+				}
 
 				addFunction("set"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
 					auto targetNode = instruction.at("target"_token).and_then([](auto branch) { return branch.front(); });
@@ -386,12 +431,12 @@ export namespace CppUtils::Language
 					}).transform([&instruction] { return next(instruction); });
 				});
 
-				addFunction("+"_token, arithmeticOperation<"+">(std::plus<>{}));
-				addFunction("-"_token, arithmeticOperation<"-">(std::minus<>{}));
-				addFunction("*"_token, arithmeticOperation<"*">(std::multiplies<>{}));
-				addFunction("/"_token, arithmeticOperation<"/">(std::divides<>{}));
-				addFunction("%"_token, arithmeticOperation<"%">(std::modulus<>{}));
-				addFunction("<"_token, arithmeticOperation<"<">(std::less<>{}));
+				addFunction("+"_token, ArithmeticOperation<"+", std::plus<>>::execute);
+				addFunction("-"_token, ArithmeticOperation<"-", std::minus<>>::execute);
+				addFunction("*"_token, ArithmeticOperation<"*", std::multiplies<>>::execute);
+				addFunction("/"_token, ArithmeticOperation<"/", std::divides<>>::execute);
+				addFunction("%"_token, ArithmeticOperation<"%", std::modulus<>>::execute);
+				addFunction("<"_token, ArithmeticOperation<"<", std::less<>>::execute);
 
 				addFunction("thread"_token, [](MetaCircularVirtualMachine& interpreter, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
 					auto targetInstruction = instruction.at("target"_token).and_then([](auto branch) { return branch.front(); });
@@ -421,7 +466,7 @@ export namespace CppUtils::Language
 					};
 
 					auto threadId = interpreter.environment->nextThreadId++;
-					interpreter.environment->threads.uniqueAccess().value()[threadId] = std::make_shared<std::future<void>>(interpreter.environment->threadPool.call(task));
+					interpreter.environment->threads.uniqueAccess().value()[threadId] = std::make_shared<std::future<void>>(interpreter.environment->threadPool->call(task));
 
 					auto threadIdNode = instruction.at("threadId"_token).and_then([](auto branch) { return branch.front(); });
 					if (not threadIdNode)
@@ -448,10 +493,7 @@ export namespace CppUtils::Language
 					if (future and future->valid())
 						future->wait();
 
-					{
-						auto threads = interpreter.environment->threads.uniqueAccess();
-						threads.value().erase(threadId);
-					}
+					interpreter.environment->threads.uniqueAccess().value().erase(threadId);
 
 					return next(instruction);
 				});
@@ -462,8 +504,7 @@ export namespace CppUtils::Language
 						return std::unexpected{"detach: Missing thread id"sv};
 
 					auto threadId = threadIdNode->getValue().value();
-					auto threads = interpreter.environment->threads.uniqueAccess();
-					threads.value().erase(threadId);
+					interpreter.environment->threads.uniqueAccess().value().erase(threadId);
 
 					return next(instruction);
 				});
@@ -522,33 +563,38 @@ export namespace CppUtils::Language
 
 			virtual ~MetaCircularVirtualMachine() = default;
 
-			[[nodiscard]] virtual inline auto makeExecutionContext(std::shared_ptr<Environment> environment) const -> std::unique_ptr<MetaCircularVirtualMachine>
+			[[nodiscard]] virtual inline auto makeExecutionContext(Thread::SharedPtr<Environment> environment) const -> std::unique_ptr<MetaCircularVirtualMachine>
 			{
 				return std::make_unique<MetaCircularVirtualMachine>(std::move(environment));
 			}
 
 		private:
-			[[nodiscard]] inline auto resultWithBackgroundErrors(std::expected<void, std::string_view> result) const -> std::expected<void, std::string_view>
+			[[nodiscard]] inline constexpr auto resultWithBackgroundErrors(std::expected<void, std::string_view> result) const -> std::expected<void, std::string_view>
 			{
-				if (not environment->stopRequested.load())
-					return result;
+				if not consteval
+				{
+					if (not environment->stopRequested.load())
+						return result;
 
-				if (auto firstError = environment->firstErrorMessage.sharedAccess(); not std::ranges::empty(firstError.value()))
-					return std::unexpected{std::string_view{firstError.value()}};
-
+					if (auto firstError = environment->firstErrorMessage.sharedAccess(); not std::ranges::empty(firstError.value()))
+						return std::unexpected{std::string_view{firstError.value()}};
+				}
 				return result;
 			}
 
 		public:
-			[[nodiscard]] inline auto reportError(std::string_view message) const -> std::expected<void, std::string_view>
+			[[nodiscard]] inline constexpr auto reportError(std::string_view message) const -> std::expected<void, std::string_view>
 			{
-				if (not environment->stopRequested.exchange(true))
-					environment->firstErrorMessage.uniqueAccess().value() = message;
+				if not consteval
+				{
+					if (not environment->stopRequested.exchange(true))
+						environment->firstErrorMessage.uniqueAccess().value() = message;
+				}
 
 				return resultWithBackgroundErrors(std::unexpected{message});
 			}
 
-			[[nodiscard]] inline auto get(Type::Token token) -> std::expected<MeshNodePtr, std::string_view>
+			[[nodiscard]] inline constexpr auto get(Type::Token token) -> std::expected<MeshNodePtr, std::string_view>
 			{
 				using namespace std::literals;
 				using namespace String::Literals;
@@ -562,7 +608,7 @@ export namespace CppUtils::Language
 				return std::unexpected{"Unknown node"sv};
 			}
 
-			[[nodiscard]] inline auto resolve(Type::Token token) -> std::expected<MeshNodePtr, std::string_view>
+			[[nodiscard]] inline constexpr auto resolve(Type::Token token) -> std::expected<MeshNodePtr, std::string_view>
 			{
 				using namespace std::literals;
 
@@ -586,23 +632,28 @@ export namespace CppUtils::Language
 				}
 			}
 
-			[[nodiscard]] inline auto operator()(MeshNodePtr instruction) -> std::expected<void, std::string_view>
+			[[nodiscard]] inline constexpr auto operator()(MeshNodePtr instruction) -> std::expected<void, std::string_view>
 			{
 				using namespace String::Literals;
 
-				while (instruction and not environment->stopRequested.load())
+				while (instruction)
 				{
+					if not consteval
+					{
+						if (environment->stopRequested.load())
+							break;
+					}
 					auto result = resolve(instruction.getValue().value());
 					auto definition = result ? result.value() : instruction;
 					auto definitionToken = definition.getValue().value();
 
-					if (auto function = [&]() -> std::function<StepResult(MetaCircularVirtualMachine&, MeshNodePtr)> {
+					if (auto function = [&]() -> std::optional<Callable> {
 						auto functions = environment->functions.sharedAccess();
 						if (auto functionIt = functions.value().find(definitionToken); functionIt != std::ranges::cend(functions.value()))
 							return functionIt->second;
-						return nullptr;
+						return std::nullopt;
 					}())
-						if (auto result = function(*this, instruction).value)
+						if (auto result = function.value()(*this, instruction).value)
 							instruction = result.value();
 						else
 							return reportError(result.error());
@@ -615,21 +666,21 @@ export namespace CppUtils::Language
 				return resultWithBackgroundErrors({});
 			}
 
-			[[nodiscard]] inline auto operator()(Type::Token token) -> std::expected<void, std::string_view>
+			[[nodiscard]] inline constexpr auto operator()(Type::Token token) -> std::expected<void, std::string_view>
 			{
 				using namespace std::literals;
 
 				if (auto instruction = get(token))
 					return (*this)(instruction.value());
 
-				if (auto function = [&]() -> std::function<StepResult(MetaCircularVirtualMachine&, MeshNodePtr)> {
+				if (auto function = [&]() -> std::optional<Callable> {
 					auto functions = environment->functions.sharedAccess();
 					if (auto functionIt = functions.value().find(token); functionIt != std::ranges::cend(functions.value()))
 						return functionIt->second;
-					return nullptr;
+					return std::nullopt;
 				}())
 				{
-					if (auto result = function(*this, MeshNodePtr::make(token)).value)
+					if (auto result = function.value()(*this, MeshNodePtr::make(token)).value)
 						return resultWithBackgroundErrors((*this)(result.value()));
 					else
 						return reportError(result.error());

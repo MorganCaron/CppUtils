@@ -1,6 +1,7 @@
 export module CppUtils.Language.MetaCircularParser;
 
 import std;
+import CppUtils.Thread.SharedPtr;
 import CppUtils.Language.MetaCircularVirtualMachine;
 import CppUtils.String;
 import CppUtils.Type;
@@ -12,7 +13,7 @@ export namespace CppUtils::Language
 	{
 		Source source;
 
-		inline MetaCircularParser(std::shared_ptr<Environment> environment, Source input):
+		inline MetaCircularParser(Thread::SharedPtr<Environment> environment, Source input):
 			MetaCircularVirtualMachine{std::move(environment)},
 			source{input}
 		{
@@ -25,7 +26,7 @@ export namespace CppUtils::Language
 			initialize();
 		}
 
-		[[nodiscard]] inline auto makeExecutionContext(std::shared_ptr<Environment> environment) const -> std::unique_ptr<MetaCircularVirtualMachine> override
+		[[nodiscard]] inline auto makeExecutionContext(Thread::SharedPtr<Environment> environment) const -> std::unique_ptr<MetaCircularVirtualMachine> override
 		{
 			return std::make_unique<MetaCircularParser>(std::move(environment), source);
 		}

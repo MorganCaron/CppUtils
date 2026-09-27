@@ -5,6 +5,176 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 {
+
+#if not defined(_MSC_VER)
+	static_assert([] {
+		using namespace CppUtils::String::Literals;
+		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+		auto interpreter = MetaCircularVirtualMachine{};
+		auto target = MeshNodePtr::makeRoot(0uz);
+
+		auto setInstruction = MeshNodePtr::makeRoot("set"_token);
+		setInstruction["target"_token] >> target;
+		setInstruction["value"_token] >> MeshNodePtr::make(10uz);
+
+		auto addInstruction = MeshNodePtr::makeRoot("+"_token);
+		addInstruction["lhs"_token] >> target;
+		addInstruction["rhs"_token] >> MeshNodePtr::make(32uz);
+		addInstruction["result"_token] >> target;
+
+		setInstruction["next"_token] >> addInstruction;
+
+		auto status = interpreter(setInstruction);
+		if (not status)
+			return false;
+
+		return target.getValue().value() == 42uz;
+	}());
+
+	static_assert([] {
+		using namespace CppUtils::String::Literals;
+		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+		auto interpreter = MetaCircularVirtualMachine{};
+		auto value = MeshNodePtr::makeRoot("root"_token);
+
+		auto createNode = MeshNodePtr::makeRoot("create"_token);
+		createNode["value"_token] >> MeshNodePtr::make(1uz);
+		createNode["destination"_token] >> value;
+		createNode["branch"_token] >> MeshNodePtr::make("value"_token);
+
+		const auto status = interpreter(createNode);
+		if (not status)
+			return false;
+
+		auto valueNode = value["value"_token].front();
+		if (not valueNode)
+			return false;
+
+		return valueNode->getValue().value() == 1uz;
+	}());
+
+	static_assert([] {
+		using namespace CppUtils::String::Literals;
+		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+		auto interpreter = MetaCircularVirtualMachine{};
+		auto resultNode = MeshNodePtr::make(false);
+
+		auto equalInstruction = MeshNodePtr::makeRoot("=="_token);
+		equalInstruction["lhs"_token] >> MeshNodePtr::make(42uz);
+		equalInstruction["rhs"_token] >> MeshNodePtr::make(42uz);
+		equalInstruction["result"_token] >> resultNode;
+
+		auto status = interpreter(equalInstruction);
+		if (not status)
+			return false;
+
+		return resultNode.getValue().value() == true;
+	}());
+
+	static_assert([] {
+		using namespace CppUtils::String::Literals;
+		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+		auto interpreter = MetaCircularVirtualMachine{};
+		auto value = MeshNodePtr::make(true);
+
+		auto notInstruction = MeshNodePtr::makeRoot("not"_token);
+		notInstruction["value"_token] >> value;
+
+		auto status = interpreter(notInstruction);
+		if (not status)
+			return false;
+
+		return static_cast<bool>(value.getValue().value()) == false;
+	}());
+
+	static_assert([] {
+		using namespace CppUtils::String::Literals;
+		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+		auto interpreter = MetaCircularVirtualMachine{};
+		auto value = MeshNodePtr::makeRoot(0uz);
+
+		auto mainNode = interpreter.context["main"_token] >> MeshNodePtr::make("main"_token);
+
+		auto jumpNode = mainNode["next"_token] >> MeshNodePtr::make("jump"_token);
+
+		auto create1 = jumpNode["else"_token] >> MeshNodePtr::make("create"_token);
+		create1["value"_token] >> MeshNodePtr::make(1uz);
+		create1["destination"_token] >> value;
+		create1["branch"_token] >> MeshNodePtr::make("value"_token);
+
+		auto create2 = jumpNode["next"_token] >> MeshNodePtr::make("create"_token);
+		create2["value"_token] >> MeshNodePtr::make(2uz);
+		create2["destination"_token] >> value;
+		create2["branch"_token] >> MeshNodePtr::make("value"_token);
+
+		jumpNode["condition"_token] >> MeshNodePtr::make(1uz);
+
+		const auto status = interpreter("main"_token);
+		if (not status)
+			return false;
+
+		auto valueNode = value["value"_token].front();
+		if (not valueNode)
+			return false;
+
+		return valueNode->getValue().value() == 2uz;
+	}());
+
+	static_assert([] {
+		using namespace CppUtils::String::Literals;
+		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+		auto interpreter = MetaCircularVirtualMachine{};
+
+		auto lhs = MeshNodePtr::make(2uz);
+		auto rhs = MeshNodePtr::make(3uz);
+		auto result = MeshNodePtr::make(0uz);
+
+		auto call = MeshNodePtr::makeRoot("call"_token);
+		auto inputNode = call["input"_token] >> MeshNodePtr::make("inputs"_token);
+		inputNode["lhs"_token] >> lhs;
+		inputNode["rhs"_token] >> rhs;
+		auto outputNode = call["output"_token] >> MeshNodePtr::make("outputs"_token);
+		outputNode["result"_token] >> result;
+
+		auto referenceLhs = call["function"_token] >> MeshNodePtr::make("reference"_token);
+		referenceLhs["sourcePath"_token] >> MeshNodePtr::make("input"_token);
+		referenceLhs["sourcePath"_token] >> MeshNodePtr::make("lhs"_token);
+		referenceLhs["destinationPath"_token] >> MeshNodePtr::make("lhs"_token);
+		auto addInstruction = referenceLhs["destinationBase"_token] >> MeshNodePtr::make("+"_token);
+
+		auto referenceRhs = referenceLhs["next"_token] >> MeshNodePtr::make("reference"_token);
+		referenceRhs["sourcePath"_token] >> MeshNodePtr::make("input"_token);
+		referenceRhs["sourcePath"_token] >> MeshNodePtr::make("rhs"_token);
+		referenceRhs["destinationPath"_token] >> MeshNodePtr::make("rhs"_token);
+		referenceRhs["destinationBase"_token] >> addInstruction;
+
+		auto referenceResult = referenceRhs["next"_token] >> MeshNodePtr::make("reference"_token);
+		referenceResult["sourcePath"_token] >> MeshNodePtr::make("output"_token);
+		referenceResult["sourcePath"_token] >> MeshNodePtr::make("result"_token);
+		referenceResult["destinationPath"_token] >> MeshNodePtr::make("result"_token);
+		referenceResult["destinationBase"_token] >> addInstruction;
+		referenceResult["next"_token] >> addInstruction;
+
+		const auto status = interpreter(call);
+		if (not status)
+			return false;
+
+		return result.getValue().value() == 5uz;
+	}());
+#endif
+
 	auto _ = TestSuite{
 		"Language/MetaCircularVirtualMachine",
 		{"Logger", "Container/MeshNetwork"},
@@ -14,6 +184,35 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 		using Logger = TestSuite::Logger;
 		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
 		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+		suite.addTest("Canary: MSVC STL std::optional non-trivial destructor in constant evaluation", [&] {
+#if defined(_MSC_VER)
+			suite.skip("Waiting for MSVC STL issue fix: https://github.com/microsoft/STL/issues/6467");
+#else
+			constexpr auto passed = [] {
+				auto interpreter = MetaCircularVirtualMachine{};
+				auto target = MeshNodePtr::makeRoot(0uz);
+
+				auto setInstruction = MeshNodePtr::makeRoot("set"_token);
+				setInstruction["target"_token] >> target;
+				setInstruction["value"_token] >> MeshNodePtr::make(10uz);
+
+				auto addInstruction = MeshNodePtr::makeRoot("+"_token);
+				addInstruction["lhs"_token] >> target;
+				addInstruction["rhs"_token] >> MeshNodePtr::make(32uz);
+				addInstruction["result"_token] >> target;
+
+				setInstruction["next"_token] >> addInstruction;
+
+				auto status = interpreter(setInstruction);
+				if (not status)
+					return false;
+
+				return target.getValue().value() == 42uz;
+			}();
+			suite.expect(passed);
+#endif
+		});
 
 		suite.addTest("Check if main function exists", [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
@@ -688,7 +887,7 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			threadInstruction["input"_token] >> inputNode;
 			threadInstruction["output"_token] >> outputNode;
 			threadInstruction["threadId"_token] >> threadIdNode;
-			
+
 			auto referenceLhs = threadInstruction["target"_token] >> MeshNodePtr::makeRoot("reference"_token);
 			referenceLhs["sourcePath"_token] >> MeshNodePtr::make("input"_token);
 			referenceLhs["sourcePath"_token] >> MeshNodePtr::make("lhs"_token);
