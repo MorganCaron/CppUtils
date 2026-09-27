@@ -1,0 +1,222 @@
+export module CppUtils.UnitTests.Container.FlatHashMap;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Container::FlatHashMap
+{
+	static_assert([] {
+		auto map = CppUtils::Container::FlatHashMap<int, int>{};
+		map[1] = 100;
+		map[2] = 200;
+		map[3] = 300;
+		if (std::ranges::size(map) != 3uz)
+			return false;
+		if (map.at(1) != 100)
+			return false;
+		if (not map.contains(2))
+			return false;
+		if (map.contains(4))
+			return false;
+		map.erase(2);
+		if (map.contains(2))
+			return false;
+		return std::ranges::size(map) == 2uz;
+	}());
+
+	static_assert([] {
+		auto map = CppUtils::Container::FlatHashMap<int, int>{};
+		auto [iteratorFirst, insertedFirst] = map.try_emplace(1, 10);
+		if (not insertedFirst or iteratorFirst->second != 10)
+			return false;
+
+		auto [iteratorSecond, insertedSecond] = map.try_emplace(1, 99);
+		if (insertedSecond or iteratorSecond->second != 10)
+			return false;
+
+		auto [iteratorThird, assignedFirst] = map.insert_or_assign(1, 50);
+		if (assignedFirst or iteratorThird->second != 50)
+			return false;
+
+		auto [iteratorFourth, assignedSecond] = map.insert_or_assign(2, 60);
+		if (not assignedSecond or iteratorFourth->second != 60)
+			return false;
+
+		return std::ranges::size(map) == 2uz;
+	}());
+
+	static_assert([] {
+		auto map = CppUtils::Container::FlatHashMap<int, int>{{1, 10}, {2, 20}, {3, 30}};
+		auto sum = 0;
+		for (const auto& [key, value] : map)
+			sum += key + value;
+		return sum == (1 + 10 + 2 + 20 + 3 + 30);
+	}());
+
+	static_assert([] {
+		using namespace String::Literals;
+
+		auto tokenMap = CppUtils::Container::FlatHashMap<Type::Token, int>{};
+		tokenMap["foo"_token] = 42;
+		tokenMap["bar"_token] = 84;
+		if (tokenMap["foo"_token] != 42 or tokenMap["bar"_token] != 84)
+			return false;
+		if (not tokenMap.contains("foo"_token))
+			return false;
+		tokenMap.erase("foo"_token);
+		if (tokenMap.contains("foo"_token))
+			return false;
+
+		return true;
+	}());
+
+	auto _ = TestSuite{"Container/FlatHashMap", {"UnitTest"}, [](TestSuite& suite) {
+		using namespace String::Literals;
+
+		suite.addTest("Basic insertion and lookup", [&] {
+			auto map = CppUtils::Container::FlatHashMap<std::string, int>{};
+			suite.expect(std::ranges::empty(map));
+			suite.expectEqual(std::ranges::size(map), 0uz);
+
+			map["alpha"] = 1;
+			map["beta"] = 2;
+			map["gamma"] = 3;
+
+			suite.expect(not std::ranges::empty(map));
+			suite.expectEqual(std::ranges::size(map), 3uz);
+			suite.expect(map.contains("alpha"));
+			suite.expect(map.contains("beta"));
+			suite.expect(map.contains("gamma"));
+			suite.expect(not map.contains("delta"));
+
+			suite.expectEqual(map.at("alpha"), 1);
+			suite.expectEqual(map.at("beta"), 2);
+			suite.expectEqual(map.at("gamma"), 3);
+		});
+
+		suite.addTest("Operator[] modification and insertion", [&] {
+			auto map = CppUtils::Container::FlatHashMap<int, std::string>{};
+			map[10] = "ten";
+			suite.expectEqual(map[10], "ten");
+			map[10] = "dix";
+			suite.expectEqual(map[10], "dix");
+			suite.expectEqual(std::ranges::size(map), 1uz);
+		});
+
+		suite.addTest("Erase and tombstone reuse", [&] {
+			auto map = CppUtils::Container::FlatHashMap<std::size_t, std::size_t>{};
+			for (auto index = 0uz; index < 20uz; ++index)
+				map[index] = index * 10uz;
+
+			suite.expectEqual(std::ranges::size(map), 20uz);
+
+			for (auto index = 0uz; index < 10uz; ++index)
+				suite.expectEqual(map.erase(index), 1uz);
+
+			suite.expectEqual(std::ranges::size(map), 10uz);
+
+			for (auto index = 0uz; index < 10uz; ++index)
+				suite.expect(not map.contains(index));
+
+			for (auto index = 10uz; index < 20uz; ++index)
+				suite.expect(map.contains(index));
+
+			for (auto index = 0uz; index < 10uz; ++index)
+				map[index] = index * 100uz;
+
+			suite.expectEqual(std::ranges::size(map), 20uz);
+			for (auto index = 0uz; index < 10uz; ++index)
+				suite.expectEqual(map.at(index), index * 100uz);
+		});
+
+		suite.addTest("Growth and rehash", [&] {
+			auto map = CppUtils::Container::FlatHashMap<std::size_t, std::size_t>{};
+			constexpr auto count = 1000uz;
+			for (auto index = 0uz; index < count; ++index)
+				map[index] = index * 2uz;
+
+			suite.expectEqual(std::ranges::size(map), count);
+			for (auto index = 0uz; index < count; ++index)
+				suite.expectEqual(map.at(index), index * 2uz);
+		});
+
+		suite.addTest("Range-based for iteration", [&] {
+			auto map = CppUtils::Container::FlatHashMap<int, int>{};
+			map[1] = 10;
+			map[2] = 20;
+			map[3] = 30;
+
+			auto keySum = 0;
+			auto valueSum = 0;
+			for (const auto& [key, value] : map)
+			{
+				keySum += key;
+				valueSum += value;
+			}
+			suite.expectEqual(keySum, 6);
+			suite.expectEqual(valueSum, 60);
+		});
+
+		suite.addTest("Token keys", [&] {
+			auto map = CppUtils::Container::FlatHashMap<Type::Token, std::string>{};
+			map["first"_token] = "one";
+			map["second"_token] = "two";
+			map["third"_token] = "three";
+
+			suite.expect(map.contains("first"_token));
+			suite.expect(map.contains("second"_token));
+			suite.expect(map.contains("third"_token));
+			suite.expect(not map.contains("fourth"_token));
+
+			suite.expectEqual(map["first"_token], "one");
+			suite.expectEqual(map["second"_token], "two");
+			suite.expectEqual(map["third"_token], "three");
+		});
+
+		suite.addTest("Equality operator", [&] {
+			auto map1 = CppUtils::Container::FlatHashMap<int, int>{{1, 10}, {2, 20}};
+			auto map2 = CppUtils::Container::FlatHashMap<int, int>{{2, 20}, {1, 10}};
+			auto map3 = CppUtils::Container::FlatHashMap<int, int>{{1, 10}, {2, 25}};
+
+			suite.expect(map1 == map2);
+			suite.expect(not(map1 == map3));
+		});
+
+		suite.addTest("Runtime performance benchmark vs std::unordered_map", [&] {
+			constexpr auto elementCount = 50'000uz;
+
+			auto flatMap = CppUtils::Container::FlatHashMap<std::size_t, std::size_t>{};
+			const auto startFlatInsert = std::chrono::high_resolution_clock::now();
+			for (auto index = 0uz; index < elementCount; ++index)
+				flatMap[index] = index * 2uz;
+			const auto flatInsertDuration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - startFlatInsert).count();
+
+			auto flatReadSum = 0uz;
+			const auto startFlatRead = std::chrono::high_resolution_clock::now();
+			for (auto index = 0uz; index < elementCount; ++index)
+				flatReadSum += flatMap.at(index);
+			const auto flatReadDuration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - startFlatRead).count();
+
+			auto unorderedMap = std::unordered_map<std::size_t, std::size_t>{};
+			const auto startUnorderedInsert = std::chrono::high_resolution_clock::now();
+			for (auto index = 0uz; index < elementCount; ++index)
+				unorderedMap[index] = index * 2uz;
+			const auto unorderedInsertDuration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - startUnorderedInsert).count();
+
+			auto unorderedReadSum = 0uz;
+			const auto startUnorderedRead = std::chrono::high_resolution_clock::now();
+			for (auto index = 0uz; index < elementCount; ++index)
+				unorderedReadSum += unorderedMap.at(index);
+			const auto unorderedReadDuration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - startUnorderedRead).count();
+
+			suite.expectEqual(flatReadSum, unorderedReadSum);
+			suite.expectEqual(std::ranges::size(flatMap), std::ranges::size(unorderedMap));
+
+			if (flatReadDuration > unorderedReadDuration)
+				std::println("Warning: FlatHashMap read ({} µs) was slower than std::unordered_map ({} µs)", flatReadDuration, unorderedReadDuration);
+
+			if (flatInsertDuration > unorderedInsertDuration)
+				std::println("Warning: FlatHashMap insert ({} µs) was slower than std::unordered_map ({} µs)", flatInsertDuration, unorderedInsertDuration);
+		});
+	}};
+}

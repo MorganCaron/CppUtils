@@ -1,0 +1,489 @@
+export module CppUtils.Container.FlatHashMap;
+
+import std;
+import CppUtils.Type;
+
+export namespace CppUtils::Container
+{
+	enum class SlotState : std::uint8_t
+	{
+		Empty = 0,
+		Occupied = 1,
+		Erased = 2
+	};
+
+	template<
+		class Key,
+		class Value,
+		class Hasher = Type::HashT,
+		class KeyEqual = std::equal_to<Key>>
+	class FlatHashMap final
+	{
+	public:
+		using key_type = Key;
+		using mapped_type = Value;
+		using value_type = std::pair<Key, Value>;
+		using size_type = std::size_t;
+		using difference_type = std::ptrdiff_t;
+		using hasher = Hasher;
+		using key_equal = KeyEqual;
+
+	private:
+		static inline constexpr auto MaxLoadFactorNumerator = 7uz;
+		static inline constexpr auto MaxLoadFactorDenominator = 10uz;
+		static inline constexpr auto TombstoneCleanupLoadFactorNumerator = 4uz;
+
+		struct Slot final
+		{
+			SlotState state = SlotState::Empty;
+			std::optional<std::pair<Key, Value>> storage = std::nullopt;
+		};
+
+		[[nodiscard]] static constexpr auto nextPowerOfTwo(std::size_t value) noexcept -> std::size_t
+		{
+			if (value <= 8uz)
+				return 8uz;
+			return std::bit_ceil(value);
+		}
+
+		std::vector<Slot> m_slots = {};
+		std::size_t m_size = 0;
+		std::size_t m_erasedCount = 0;
+		[[no_unique_address]] Hasher m_hasher = {};
+		[[no_unique_address]] KeyEqual m_keyEqual = {};
+
+		[[nodiscard]] constexpr auto isLoadFactorExceeded(std::size_t occupiedCount) const noexcept -> bool
+		{
+			return std::ranges::empty(m_slots) or (occupiedCount * MaxLoadFactorDenominator >= std::ranges::size(m_slots) * MaxLoadFactorNumerator);
+		}
+
+		// Complexité : O(1) moyen, O(n) pire cas au runtime
+		[[nodiscard]] constexpr auto findIndex(const auto& key) const noexcept -> std::size_t
+		{
+			if (std::ranges::empty(m_slots))
+				return 0uz;
+
+			const auto mask = std::ranges::size(m_slots) - 1;
+			auto index = Type::mixHash(static_cast<std::size_t>(m_hasher(key))) & mask;
+			const auto startIndex = index;
+
+			do
+			{
+				const auto& slot = m_slots[index];
+				if (slot.state == SlotState::Empty)
+					return std::ranges::size(m_slots);
+
+				if (slot.state == SlotState::Occupied and slot.storage.has_value())
+				{
+					if (m_keyEqual(slot.storage->first, key))
+						return index;
+				}
+
+				index = (index + 1) & mask;
+			}
+			while (index != startIndex);
+
+			return std::ranges::size(m_slots);
+		}
+
+		constexpr auto emplaceInternal(auto&& key, auto&&... valueArguments) -> std::pair<std::size_t, bool>
+		{
+			if (isLoadFactorExceeded(m_size + m_erasedCount + 1uz))
+			{
+				auto newCapacity = std::ranges::empty(m_slots) ? 8uz : std::ranges::size(m_slots) * 2uz;
+				if (not std::ranges::empty(m_slots) and m_size * MaxLoadFactorDenominator < std::ranges::size(m_slots) * TombstoneCleanupLoadFactorNumerator)
+					newCapacity = std::ranges::size(m_slots);
+				rehash(newCapacity);
+			}
+
+			const auto mask = std::ranges::size(m_slots) - 1;
+			auto index = Type::mixHash(static_cast<std::size_t>(m_hasher(key))) & mask;
+			const auto startIndex = index;
+			auto firstTombstoneIndex = std::optional<std::size_t>{};
+
+			do
+			{
+				auto& slot = m_slots[index];
+				if (slot.state == SlotState::Empty)
+				{
+					const auto targetIndex = firstTombstoneIndex.value_or(index);
+					if (firstTombstoneIndex.has_value())
+						--m_erasedCount;
+
+					auto& targetSlot = m_slots[targetIndex];
+					targetSlot.storage.emplace(
+						std::piecewise_construct,
+						std::forward_as_tuple(std::forward<decltype(key)>(key)),
+						std::forward_as_tuple(std::forward<decltype(valueArguments)>(valueArguments)...));
+					targetSlot.state = SlotState::Occupied;
+					++m_size;
+					return {targetIndex, true};
+				}
+				else if (slot.state == SlotState::Occupied and slot.storage.has_value())
+				{
+					if (m_keyEqual(slot.storage->first, key))
+						return {index, false};
+				}
+				else if (slot.state == SlotState::Erased and not firstTombstoneIndex.has_value())
+					firstTombstoneIndex = index;
+
+				index = (index + 1) & mask;
+			}
+			while (index != startIndex);
+
+			if (firstTombstoneIndex.has_value())
+			{
+				const auto targetIndex = firstTombstoneIndex.value();
+				--m_erasedCount;
+				auto& targetSlot = m_slots[targetIndex];
+				targetSlot.storage.emplace(
+					std::piecewise_construct,
+					std::forward_as_tuple(std::forward<decltype(key)>(key)),
+					std::forward_as_tuple(std::forward<decltype(valueArguments)>(valueArguments)...));
+				targetSlot.state = SlotState::Occupied;
+				++m_size;
+				return {targetIndex, true};
+			}
+
+			return {std::ranges::size(m_slots), false};
+		}
+
+	public:
+		template<bool IsConst>
+		class Iterator final
+		{
+		private:
+			using SlotsPointer = std::conditional_t<IsConst, const std::vector<Slot>*, std::vector<Slot>*>;
+			SlotsPointer m_slots = nullptr;
+			std::size_t m_index = 0;
+
+			constexpr auto advanceToOccupied() noexcept -> void
+			{
+				if (m_slots != nullptr)
+					while (m_index < std::ranges::size(*m_slots) and (*m_slots)[m_index].state != SlotState::Occupied)
+						++m_index;
+			}
+
+		public:
+			using iterator_category = std::forward_iterator_tag;
+			using value_type = std::pair<Key, Value>;
+			using difference_type = std::ptrdiff_t;
+			using reference = std::conditional_t<IsConst, const std::pair<Key, Value>&, std::pair<Key, Value>&>;
+			using pointer = std::conditional_t<IsConst, const std::pair<Key, Value>*, std::pair<Key, Value>*>;
+
+			constexpr Iterator() noexcept = default;
+
+			constexpr Iterator(SlotsPointer slots, std::size_t index) noexcept:
+				m_slots{slots},
+				m_index{index}
+			{
+				advanceToOccupied();
+			}
+
+			constexpr Iterator(const Iterator&) noexcept = default;
+			constexpr auto operator=(const Iterator&) noexcept -> Iterator& = default;
+
+			template<bool OtherConst>
+			requires (IsConst and not OtherConst)
+			constexpr Iterator(const Iterator<OtherConst>& other) noexcept:
+				m_slots{other.slotsPointer()},
+				m_index{other.currentIndex()}
+			{}
+
+			[[nodiscard]] constexpr auto slotsPointer() const noexcept -> SlotsPointer
+			{
+				return m_slots;
+			}
+
+			[[nodiscard]] constexpr auto currentIndex() const noexcept -> std::size_t
+			{
+				return m_index;
+			}
+
+			[[nodiscard]] constexpr auto operator*() const noexcept -> reference
+			{
+				return *(*m_slots)[m_index].storage;
+			}
+
+			[[nodiscard]] constexpr auto operator->() const noexcept -> pointer
+			{
+				return std::addressof(operator*());
+			}
+
+			constexpr auto operator++() noexcept -> Iterator&
+			{
+				++m_index;
+				advanceToOccupied();
+				return *this;
+			}
+
+			constexpr auto operator++(int) noexcept -> Iterator
+			{
+				auto copy = *this;
+				++(*this);
+				return copy;
+			}
+
+			template<bool OtherConst>
+			[[nodiscard]] friend constexpr auto operator==(const Iterator& left, const Iterator<OtherConst>& right) noexcept -> bool
+			{
+				return left.slotsPointer() == right.slotsPointer() and left.currentIndex() == right.currentIndex();
+			}
+		};
+
+		using iterator = Iterator<false>;
+		using const_iterator = Iterator<true>;
+
+		constexpr FlatHashMap() = default;
+
+		constexpr explicit FlatHashMap(std::size_t initialCapacity, const Hasher& hasher = Hasher{}, const KeyEqual& keyEqual = KeyEqual{}):
+			m_hasher{hasher},
+			m_keyEqual{keyEqual}
+		{
+			if (initialCapacity > 0)
+				reserve(initialCapacity);
+		}
+
+		constexpr FlatHashMap(std::initializer_list<std::pair<Key, Value>> initialValues, const Hasher& hasher = Hasher{}, const KeyEqual& keyEqual = KeyEqual{}):
+			m_hasher{hasher},
+			m_keyEqual{keyEqual}
+		{
+			reserve(std::ranges::size(initialValues));
+			for (const auto& pair : initialValues)
+				insert(pair);
+		}
+
+		template<std::input_iterator InputIterator>
+		constexpr FlatHashMap(InputIterator first, InputIterator last, const Hasher& hasher = Hasher{}, const KeyEqual& keyEqual = KeyEqual{}):
+			m_hasher{hasher},
+			m_keyEqual{keyEqual}
+		{
+			for (auto currentIterator = first; currentIterator != last; ++currentIterator)
+				insert(*currentIterator);
+		}
+
+		constexpr FlatHashMap(const FlatHashMap&) = default;
+		constexpr FlatHashMap(FlatHashMap&&) noexcept = default;
+		constexpr auto operator=(const FlatHashMap&) -> FlatHashMap& = default;
+		constexpr auto operator=(FlatHashMap&&) noexcept -> FlatHashMap& = default;
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] constexpr auto begin(this auto&& self) noexcept
+		{
+			using IteratorType = std::conditional_t<std::is_const_v<std::remove_reference_t<decltype(self)>>, const_iterator, iterator>;
+			return IteratorType{std::addressof(self.m_slots), 0};
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] constexpr auto cbegin() const noexcept -> const_iterator
+		{
+			return const_iterator{std::addressof(m_slots), 0};
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] constexpr auto end(this auto&& self) noexcept
+		{
+			using IteratorType = std::conditional_t<std::is_const_v<std::remove_reference_t<decltype(self)>>, const_iterator, iterator>;
+			return IteratorType{std::addressof(self.m_slots), std::ranges::size(self.m_slots)};
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] constexpr auto cend() const noexcept -> const_iterator
+		{
+			return const_iterator{std::addressof(m_slots), std::ranges::size(m_slots)};
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] constexpr auto size() const noexcept -> std::size_t
+		{
+			return m_size;
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] constexpr auto empty() const noexcept -> bool
+		{
+			return m_size == 0;
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] constexpr auto capacity() const noexcept -> std::size_t
+		{
+			return std::ranges::size(m_slots);
+		}
+
+		// Complexité : O(1) au runtime
+		[[nodiscard]] constexpr auto loadFactor() const noexcept -> float
+		{
+			return std::ranges::empty(m_slots) ? 0.0f : static_cast<float>(m_size) / static_cast<float>(std::ranges::size(m_slots));
+		}
+
+		// Complexité : O(n) au runtime
+		constexpr auto clear() noexcept -> void
+		{
+			for (auto& slot : m_slots)
+			{
+				slot.storage.reset();
+				slot.state = SlotState::Empty;
+			}
+			m_size = 0;
+			m_erasedCount = 0;
+		}
+
+		// Complexité : O(n) au runtime
+		constexpr auto rehash(std::size_t newCapacity) -> void
+		{
+			const auto actualCapacity = nextPowerOfTwo(std::ranges::max(newCapacity, 8uz));
+			auto oldSlots = std::exchange(m_slots, std::vector<Slot>(actualCapacity));
+			m_size = 0;
+			m_erasedCount = 0;
+
+			for (auto& oldSlot : oldSlots)
+			{
+				if (oldSlot.state == SlotState::Occupied and oldSlot.storage.has_value())
+				{
+					auto& [key, value] = *oldSlot.storage;
+					emplaceInternal(std::move(key), std::move(value));
+				}
+			}
+		}
+
+		// Complexité : O(n) au runtime
+		constexpr auto reserve(std::size_t desiredCapacity) -> void
+		{
+			constexpr auto ceilingAdjustment = MaxLoadFactorNumerator - 1uz;
+			const auto requiredSlots = nextPowerOfTwo((desiredCapacity * MaxLoadFactorDenominator + ceilingAdjustment) / MaxLoadFactorNumerator);
+			if (requiredSlots > std::ranges::size(m_slots))
+				rehash(requiredSlots);
+		}
+
+		// Complexité : O(1) moyen, O(n) pire cas au runtime
+		[[nodiscard]] constexpr auto contains(const auto& key) const noexcept -> bool
+		{
+			return findIndex(key) != std::ranges::size(m_slots);
+		}
+
+		// Complexité : O(1) moyen, O(n) pire cas au runtime
+		[[nodiscard]] constexpr auto count(const auto& key) const noexcept -> std::size_t
+		{
+			return contains(key) ? 1uz : 0uz;
+		}
+
+		// Complexité : O(1) moyen, O(n) pire cas au runtime
+		[[nodiscard]] constexpr auto find(this auto&& self, const auto& key) noexcept
+		{
+			using IteratorType = std::conditional_t<std::is_const_v<std::remove_reference_t<decltype(self)>>, const_iterator, iterator>;
+			const auto index = self.findIndex(key);
+			return IteratorType{std::addressof(self.m_slots), index};
+		}
+
+		// Complexité : O(1) moyen, O(n) pire cas au runtime
+		[[nodiscard]] constexpr auto at(this auto&& self, const auto& key) -> decltype(auto)
+		{
+			const auto index = self.findIndex(key);
+			if (index == std::ranges::size(self.m_slots))
+				throw std::out_of_range{"FlatHashMap::at: Key not found"};
+			return self.m_slots[index].storage->second;
+		}
+
+		// Complexité : O(1) amorti, O(n) pire cas au runtime
+		[[nodiscard]] constexpr auto operator[](auto&& key) -> Value&
+		requires std::default_initializable<Value>
+		{
+			auto [index, inserted] = emplaceInternal(std::forward<decltype(key)>(key));
+			return m_slots[index].storage->second;
+		}
+
+		// Complexité : O(1) amorti, O(n) pire cas au runtime
+		constexpr auto try_emplace(auto&& key, auto&&... valueArguments) -> std::pair<iterator, bool>
+		{
+			auto [index, inserted] = emplaceInternal(std::forward<decltype(key)>(key), std::forward<decltype(valueArguments)>(valueArguments)...);
+			return {iterator{std::addressof(m_slots), index}, inserted};
+		}
+
+		// Complexité : O(1) amorti, O(n) pire cas au runtime
+		constexpr auto insert(const std::pair<Key, Value>& pair) -> std::pair<iterator, bool>
+		{
+			return try_emplace(pair.first, pair.second);
+		}
+
+		// Complexité : O(1) amorti, O(n) pire cas au runtime
+		constexpr auto insert(std::pair<Key, Value>&& pair) -> std::pair<iterator, bool>
+		{
+			return try_emplace(std::move(pair.first), std::move(pair.second));
+		}
+
+		// Complexité : O(1) amorti, O(n) pire cas au runtime
+		constexpr auto insert(auto&& argumentPair) -> std::pair<iterator, bool>
+		requires std::is_constructible_v<std::pair<Key, Value>, decltype(argumentPair)>
+		{
+			return emplace(std::forward<decltype(argumentPair)>(argumentPair));
+		}
+
+		// Complexité : O(1) amorti, O(n) pire cas au runtime
+		constexpr auto emplace(auto&&... arguments) -> std::pair<iterator, bool>
+		{
+			auto pair = std::pair<Key, Value>{std::forward<decltype(arguments)>(arguments)...};
+			return try_emplace(std::move(pair.first), std::move(pair.second));
+		}
+
+		// Complexité : O(1) amorti, O(n) pire cas au runtime
+		constexpr auto insert_or_assign(auto&& key, auto&& value) -> std::pair<iterator, bool>
+		{
+			auto [foundIterator, inserted] = try_emplace(std::forward<decltype(key)>(key), std::forward<decltype(value)>(value));
+			if (not inserted)
+				foundIterator->second = std::forward<decltype(value)>(value);
+			return {foundIterator, inserted};
+		}
+
+		// Complexité : O(1) moyen, O(n) pire cas au runtime
+		constexpr auto erase(const_iterator position) -> iterator
+		{
+			const auto index = position.currentIndex();
+			if (position.slotsPointer() == std::addressof(m_slots) and index < std::ranges::size(m_slots) and m_slots[index].state == SlotState::Occupied)
+			{
+				m_slots[index].storage.reset();
+				m_slots[index].state = SlotState::Erased;
+				--m_size;
+				++m_erasedCount;
+				return iterator{std::addressof(m_slots), index + 1};
+			}
+			return end();
+		}
+
+		// Complexité : O(1) moyen, O(n) pire cas au runtime
+		constexpr auto erase(iterator position) -> iterator
+		{
+			return erase(const_iterator{position});
+		}
+
+		// Complexité : O(1) moyen, O(n) pire cas au runtime
+		constexpr auto erase(const auto& key) -> std::size_t
+		requires (not std::same_as<std::decay_t<decltype(key)>, iterator> and not std::same_as<std::decay_t<decltype(key)>, const_iterator>)
+		{
+			const auto index = findIndex(key);
+			if (index == std::ranges::size(m_slots))
+				return 0;
+
+			m_slots[index].storage.reset();
+			m_slots[index].state = SlotState::Erased;
+			--m_size;
+			++m_erasedCount;
+			return 1;
+		}
+
+		// Complexité : O(n) moyen, O(n^2) pire cas au runtime
+		[[nodiscard]] friend constexpr auto operator==(const FlatHashMap& left, const FlatHashMap& right) -> bool
+		{
+			if (std::ranges::size(left) != std::ranges::size(right))
+				return false;
+
+			for (const auto& [key, value] : left)
+			{
+				auto iterator = right.find(key);
+				if (iterator == std::ranges::end(right) or iterator->second != value)
+					return false;
+			}
+			return true;
+		}
+	};
+}
