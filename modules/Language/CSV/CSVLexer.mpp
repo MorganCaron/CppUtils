@@ -1,0 +1,153 @@
+export module CppUtils.Language.CSV.CSVLexer;
+
+import std;
+import CppUtils.Type;
+import CppUtils.String;
+import CppUtils.Container.Tree;
+import CppUtils.Language.Lexer;
+
+export namespace CppUtils::Language::CSV
+{
+	class CSVLexer final
+	{
+	public:
+		inline explicit CSVLexer(char delimiter = ';'):
+			m_delimiter{delimiter}
+		{
+			initialize();
+		}
+
+		[[nodiscard]] inline auto parse(std::string_view source) const -> Container::Tree::VariantNode<Type::Token, std::string>
+		{
+			using namespace String::Literals;
+			return m_grammarLexer.parseLanguage("main"_token, source);
+		}
+
+		[[nodiscard]] inline auto toTable(std::string_view source) const -> std::vector<std::vector<std::string>>
+		{
+			using namespace String::Literals;
+
+			const auto tree = parse(source);
+			auto table = std::vector<std::vector<std::string>>{};
+			for (const auto& recordNode : tree.nodes)
+			{
+				if (std::holds_alternative<Type::Token>(recordNode.value) and std::get<Type::Token>(recordNode.value) == "record"_token)
+				{
+					auto row = std::vector<std::string>{};
+					for (const auto& fieldNode : recordNode.nodes)
+					{
+						if (std::holds_alternative<Type::Token>(fieldNode.value) and std::get<Type::Token>(fieldNode.value) == "field"_token)
+						{
+							if (not std::ranges::empty(fieldNode.nodes))
+							{
+								const auto& valueNode = fieldNode.nodes.front();
+								if (std::holds_alternative<std::string>(valueNode.value))
+									row.push_back(std::get<std::string>(valueNode.value));
+								else
+									row.emplace_back();
+							}
+							else
+								row.emplace_back();
+						}
+					}
+					table.push_back(std::move(row));
+				}
+			}
+			return table;
+		}
+
+	private:
+		inline auto initialize() -> void
+		{
+			using namespace std::literals;
+			using namespace String::Literals;
+
+			m_grammarLexer.addParsingFunction("quotedFieldParser"_token, quotedFieldParser);
+			m_grammarLexer.addParsingFunction("unquotedFieldParser"_token, [delimiter = m_delimiter](Lexer::Context<Type::Token, std::string>& context) -> bool {
+				return unquotedFieldParser(context, delimiter);
+			});
+
+			const auto grammarSource = std::format(R"(
+			main: ~records;
+			!records: record (~nextRecord >= 0) ~endOfLine;
+			!nextRecord: endOfLine record;
+			record: field (~nextField >= 0);
+			!nextField: delimiter field;
+			!delimiter: '{}';
+			!endOfLine: ("\r\n" || '\n' || '\r');
+			field: (quotedFieldParser || unquotedFieldParser);
+			)",
+				m_delimiter);
+			m_grammarLexer.parseGrammar(grammarSource);
+		}
+
+		[[nodiscard]] static inline auto quotedFieldParser(Lexer::Context<Type::Token, std::string>& context) -> bool
+		{
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			if (String::isEndOfString(cursor) or String::getChar(cursor) != '"')
+				return false;
+			++cursor.position;
+			auto value = std::string{};
+			while (not String::isEndOfString(cursor))
+			{
+				const auto character = String::getCharAndSkip(cursor);
+				if (character == '"')
+				{
+					if (not String::isEndOfString(cursor) and String::getChar(cursor) == '"')
+					{
+						value += '"';
+						++cursor.position;
+					}
+					else
+					{
+						parentNode.get().nodes.emplace_back(std::move(value));
+						return true;
+					}
+				}
+				else
+					value += character;
+			}
+			return false;
+		}
+
+		[[nodiscard]] static inline auto unquotedFieldParser(Lexer::Context<Type::Token, std::string>& context, char delimiter) -> bool
+		{
+			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
+			if (String::isEndOfString(cursor))
+				return false;
+			auto value = std::string{};
+			for (; not String::isEndOfString(cursor); ++cursor.position)
+			{
+				const auto character = String::getChar(cursor);
+				if (character == delimiter or character == '\r' or character == '\n')
+					break;
+				value += character;
+			}
+			parentNode.get().nodes.emplace_back(std::string{String::trimString(value)});
+			return true;
+		}
+
+		char m_delimiter = ';';
+		Lexer::GrammarLexer<Type::Token, std::string> m_grammarLexer;
+	};
+
+	[[nodiscard]] inline auto parse(std::string_view src, char delimiter = ';') -> Container::Tree::VariantNode<Type::Token, std::string>
+	{
+		const auto csvLexer = CSVLexer{delimiter};
+		return csvLexer.parse(src);
+	}
+
+	[[nodiscard]] inline auto parseTable(std::string_view src, char delimiter = ';') -> std::vector<std::vector<std::string>>
+	{
+		const auto csvLexer = CSVLexer{delimiter};
+		return csvLexer.toTable(src);
+	}
+
+	namespace Literals
+	{
+		[[nodiscard]] inline auto operator""_csv_tree(const char* cString, std::size_t size) -> Container::Tree::VariantNode<Type::Token, std::string>
+		{
+			return parse(std::string_view{cString, size});
+		}
+	}
+}
