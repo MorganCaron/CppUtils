@@ -31,6 +31,7 @@
 - [`BidirectionalMap`](modules/Container/BidirectionalMap.mpp) - Two-way key-value mapping
 - [`BTree`](modules/Container/BTree.mpp) - Balanced tree for large sorted datasets with efficient range queries and low memory access
 - [`DependencyGraph`](modules/Container/DependencyGraph.mpp) - Dependency graph for managing dependencies between objects
+- [`FlatHashMap`](modules/Container/FlatHashMap.mpp) - Constexpr associative hash map with O(1) lookup and cache-friendly contiguous storage
 - [`MeshNetwork`](modules/Container/MeshNetwork.mpp) - Graph of shared objects without hierarchy
 - [`MultiKeyMap`](modules/Container/MultiKeyMap.mpp) - Associative container with multi-axis O(1) lookup and contiguous storage
 - [`Size`](modules/Container/Size.mpp) - Semantic wrapper around `std::size_t` for representing 2D (`Size2`: width/height) and 3D (`Size3`: width/height/depth) sizes

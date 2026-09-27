@@ -4,6 +4,7 @@ export import CppUtils.Container.BidirectionalMap;
 export import CppUtils.Container.BTree;
 export import CppUtils.Container.Color;
 export import CppUtils.Container.DependencyGraph;
+export import CppUtils.Container.FlatHashMap;
 export import CppUtils.Container.Interval;
 export import CppUtils.Container.MeshNetwork;
 export import CppUtils.Container.MultiKeyMap;

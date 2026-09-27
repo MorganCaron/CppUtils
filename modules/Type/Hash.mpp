@@ -62,4 +62,19 @@ export namespace CppUtils::Type
 				static_assert(std::is_void_v<T>, "Le type n'est pas hachable. Fournissez un membre .hash(), une fonction hash(T), ou assurez-vous qu'il s'agit d'un type numérique/texte.");
 		}
 	} hash{};
+
+	/*
+		Algorithme de brassage de hash 64 bits (MurmurHash3/SplitMix64)
+		https://en.wikipedia.org/wiki/MurmurHash
+		https://en.wikipedia.org/wiki/Xorshift#Initialization
+	*/
+	[[nodiscard]] constexpr auto mixHash(Hash hashValue) noexcept -> Hash
+	{
+		hashValue ^= hashValue >> 30;
+		hashValue *= 0xbf58476d1ce4e5b9ULL;
+		hashValue ^= hashValue >> 27;
+		hashValue *= 0x94d049bb133111ebULL;
+		hashValue ^= hashValue >> 31;
+		return hashValue;
+	}
 }
