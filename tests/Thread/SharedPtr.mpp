@@ -1,0 +1,153 @@
+export module CppUtils.UnitTests.Thread.SharedPtr;
+
+import CppUtils;
+
+namespace CppUtils::UnitTest::Thread::SharedPtr
+{
+	static_assert([] {
+		auto shared = CppUtils::Thread::makeShared<int>(42);
+		if (not shared or shared.use_count() != 1uz)
+			return false;
+
+		auto copy = shared;
+		if (shared.use_count() != 2uz or *copy != 42)
+			return false;
+
+		*copy = 100;
+		if (*shared != 100)
+			return false;
+
+		auto weak = CppUtils::Thread::WeakPtr{shared};
+		if (weak.expired() or weak.use_count() != 2uz)
+			return false;
+
+		auto locked = weak.lock();
+		if (not locked or locked.use_count() != 3uz or *locked != 100)
+			return false;
+
+		return true;
+	}());
+
+	auto _ = TestSuite{"Thread/SharedPtr", {"UnitTest"}, [](TestSuite& suite) {
+		suite.addTest("Empty", [&] {
+			auto sharedInt = CppUtils::Thread::SharedPtr<int>{};
+
+			suite.expect(not sharedInt);
+			suite.expectEqual(sharedInt.use_count(), 0uz);
+			suite.expect(sharedInt == nullptr);
+			suite.expect(nullptr == sharedInt);
+		});
+
+		suite.addTest("Construction and dereference", [&] {
+			auto shared = CppUtils::Thread::makeShared<std::string>("Antigravity");
+			suite.expect(static_cast<bool>(shared));
+			suite.expectEqual(shared.use_count(), 1uz);
+			suite.expectEqual(*shared, "Antigravity");
+			suite.expectEqual(shared->size(), 11uz);
+		});
+
+		suite.addTest("Copy semantics and refcount", [&] {
+			auto shared1 = CppUtils::Thread::makeShared<int>(123);
+			suite.expectEqual(shared1.use_count(), 1uz);
+
+			{
+				auto shared2 = shared1;
+				suite.expectEqual(shared1.use_count(), 2uz);
+				suite.expectEqual(shared2.use_count(), 2uz);
+				suite.expectEqual(*shared2, 123);
+
+				auto shared3 = CppUtils::Thread::SharedPtr<int>{};
+				shared3 = shared2;
+				suite.expectEqual(shared1.use_count(), 3uz);
+			}
+
+			suite.expectEqual(shared1.use_count(), 1uz);
+		});
+
+		suite.addTest("Move semantics", [&] {
+			auto shared1 = CppUtils::Thread::makeShared<int>(456);
+			suite.expectEqual(shared1.use_count(), 1uz);
+
+			auto shared2 = std::move(shared1);
+			suite.expect(not shared1);
+			suite.expectEqual(shared1.use_count(), 0uz);
+			suite.expect(static_cast<bool>(shared2));
+			suite.expectEqual(shared2.use_count(), 1uz);
+			suite.expectEqual(*shared2, 456);
+
+			auto shared3 = CppUtils::Thread::SharedPtr<int>{};
+			shared3 = std::move(shared2);
+			suite.expect(not shared2);
+			suite.expectEqual(shared3.use_count(), 1uz);
+			suite.expectEqual(*shared3, 456);
+		});
+
+		suite.addTest("Reset", [&] {
+			auto shared = CppUtils::Thread::makeShared<int>(789);
+			suite.expectEqual(shared.use_count(), 1uz);
+
+			shared.reset();
+			suite.expect(not shared);
+			suite.expectEqual(shared.use_count(), 0uz);
+			suite.expect(shared == nullptr);
+		});
+
+		suite.addTest("WeakPtr basic and lock", [&] {
+			auto shared = CppUtils::Thread::makeShared<std::string>("WeakValue");
+			auto weak = CppUtils::Thread::WeakPtr{shared};
+
+			suite.expect(not weak.expired());
+			suite.expectEqual(weak.use_count(), 1uz);
+
+			auto locked = weak.lock();
+			suite.expect(static_cast<bool>(locked));
+			suite.expectEqual(locked.use_count(), 2uz);
+			suite.expectEqual(*locked, "WeakValue");
+		});
+
+		suite.addTest("WeakPtr expiration and destruction", [&] {
+			auto weak = CppUtils::Thread::WeakPtr<std::string>{};
+			suite.expect(weak.expired());
+			suite.expectEqual(weak.use_count(), 0uz);
+
+			{
+				auto shared = CppUtils::Thread::makeShared<std::string>("Temporary");
+				weak = shared;
+				suite.expect(not weak.expired());
+				suite.expectEqual(weak.use_count(), 1uz);
+			}
+
+			suite.expect(weak.expired());
+			suite.expectEqual(weak.use_count(), 0uz);
+			auto locked = weak.lock();
+			suite.expect(not locked);
+			suite.expect(locked == nullptr);
+		});
+
+		suite.addTest("Comparison and owner equality", [&] {
+			auto shared1 = CppUtils::Thread::makeShared<int>(10);
+			auto shared2 = shared1;
+			auto shared3 = CppUtils::Thread::makeShared<int>(10);
+
+			suite.expect(shared1 == shared2);
+			suite.expect(shared1.owner_equal(shared2));
+			suite.expect(CppUtils::Thread::ownerEqual(shared1, shared2));
+			suite.expect(not(shared1 == shared3));
+			suite.expect(not shared1.owner_equal(shared3));
+			suite.expect(not CppUtils::Thread::ownerEqual(shared1, shared3));
+			suite.expect(shared1 != nullptr);
+			suite.expect(nullptr != shared1);
+
+			auto weak1 = CppUtils::Thread::WeakPtr{shared1};
+			auto weak2 = CppUtils::Thread::WeakPtr{shared2};
+			auto weak3 = CppUtils::Thread::WeakPtr{shared3};
+
+			suite.expect(weak1 == weak2);
+			suite.expect(not(weak1 == weak3));
+			suite.expect(weak1.owner_equal(weak2));
+			suite.expect(CppUtils::Thread::ownerEqual(weak1, weak2));
+			suite.expect(not weak1.owner_equal(weak3));
+			suite.expect(not CppUtils::Thread::ownerEqual(weak1, weak3));
+		});
+	}};
+}

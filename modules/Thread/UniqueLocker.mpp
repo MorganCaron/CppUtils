@@ -12,33 +12,37 @@ export namespace CppUtils::Thread
 	class Accessor final
 	{
 	public:
-		inline explicit Accessor(Mutex& mutex, T& value):
-			m_lockGuard{mutex},
+		inline explicit constexpr Accessor(Mutex& mutex, T& value):
 			m_value{std::ref(value)}
-		{}
+		{
+			if not consteval
+			{
+				m_lockGuard.emplace(mutex);
+			}
+		}
 
-		[[nodiscard]] inline auto value(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
+		[[nodiscard]] inline constexpr auto value(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return self.m_value.get();
 		}
 
-		[[nodiscard]] inline auto operator->(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto*
+		[[nodiscard]] inline constexpr auto operator->(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto*
 		{
 			return std::addressof(self.value());
 		}
 
-		[[nodiscard]] inline auto operator*(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
+		[[nodiscard]] inline constexpr auto operator*(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return self.value();
 		}
 
-		[[nodiscard]] inline auto getLockGuard(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto&
+		[[nodiscard]] inline constexpr auto getLockGuard(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto&
 		{
-			return self.m_lockGuard;
+			return self.m_lockGuard.value();
 		}
 
 	private:
-		mutable std::unique_lock<Mutex> m_lockGuard;
+		mutable std::optional<std::unique_lock<Mutex>> m_lockGuard;
 		std::reference_wrapper<T> m_value;
 	};
 
@@ -50,33 +54,37 @@ export namespace CppUtils::Thread
 	class Accessor<const T, Mutex> final
 	{
 	public:
-		inline explicit Accessor(Mutex& mutex, const T& value):
-			m_lockGuard{mutex},
+		inline explicit constexpr Accessor(Mutex& mutex, const T& value):
 			m_value{std::cref(value)}
-		{}
+		{
+			if not consteval
+			{
+				m_lockGuard.emplace(mutex);
+			}
+		}
 
-		[[nodiscard]] inline auto value(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
+		[[nodiscard]] inline constexpr auto value(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return self.m_value.get();
 		}
 
-		[[nodiscard]] inline auto operator->(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto*
+		[[nodiscard]] inline constexpr auto operator->(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto*
 		{
 			return std::addressof(self.value());
 		}
 
-		[[nodiscard]] inline auto operator*(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
+		[[nodiscard]] inline constexpr auto operator*(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return self.value();
 		}
 
-		[[nodiscard]] inline auto getLockGuard(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto&
+		[[nodiscard]] inline constexpr auto getLockGuard(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto&
 		{
-			return self.m_lockGuard;
+			return self.m_lockGuard.value();
 		}
 
 	private:
-		std::unique_lock<Mutex> m_lockGuard;
+		mutable std::optional<std::unique_lock<Mutex>> m_lockGuard;
 		std::reference_wrapper<const T> m_value;
 	};
 
@@ -149,13 +157,17 @@ export namespace CppUtils::Thread
 	template<class... Lockers>
 	struct MultipleAccessor final
 	{
-		MultipleAccessor(Lockers&... lockers):
-			m_lockGuard{lockers.m_mutex...},
+		inline constexpr MultipleAccessor(Lockers&... lockers):
 			values{std::tie(lockers.m_value...)}
-		{}
+		{
+			if not consteval
+			{
+				m_lockGuard.emplace(lockers.m_mutex...);
+			}
+		}
 
 	private:
-		std::scoped_lock<decltype(std::declval<Lockers>().m_mutex)...> m_lockGuard;
+		std::optional<std::scoped_lock<decltype(std::declval<Lockers>().m_mutex)...>> m_lockGuard;
 
 	public:
 		std::tuple<decltype(std::declval<Lockers>().m_value)&...> values;
