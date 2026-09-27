@@ -37,6 +37,7 @@ export import CppUtils.UnitTests.Language.CLikeCompiler;
 export import CppUtils.UnitTests.Language.CSV.Mapping;
 export import CppUtils.UnitTests.Language.CSV.Parsing;
 export import CppUtils.UnitTests.Language.CSV.Range;
+export import CppUtils.UnitTests.Language.CSV.CSVLexer;
 export import CppUtils.UnitTests.Language.CallStackCompiler;
 export import CppUtils.UnitTests.Language.GrammarParser;
 export import CppUtils.UnitTests.Language.JSON.Mapping;

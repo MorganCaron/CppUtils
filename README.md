@@ -75,6 +75,7 @@
 
 ### 🔣 Languages (Parsers, Compilers, VM)
 - Tools to create parsers and compilers (CSS, INI, HTML, JSON, Markdown, XML) (work in progress <img src="resources/loading.gif" width="12" height="12"/>)
+- [`CSV Lexer`](modules/Language/CSV/CSVLexer.mpp) - [RFC 4180](https://www.rfc-editor.org/rfc/rfc4180) compliant CSV lexer and table parser with grammar interpretation
 - [`CSV Mapping`](modules/Language/CSV/Mapping.mpp) - Type-safe CSV to struct mapping with support for custom conversion functions and CSV generation
 - [`CSV Parsing`](modules/Language/CSV/Parsing.mpp) - Stream-based CSV line parser
 - [`CLikeCompiler`](modules/Language/CLikeCompiler.mpp) - Compiler for C-inspired language

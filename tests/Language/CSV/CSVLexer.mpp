@@ -1,0 +1,86 @@
+export module CppUtils.UnitTests.Language.CSV.CSVLexer;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::CSV::CSVLexer
+{
+	auto _ = TestSuite{"Language/CSV/CSVLexer", {}, [](TestSuite& suite) {
+		using namespace CppUtils::String::Literals;
+		using namespace CppUtils::Language::CSV::Literals;
+
+		suite.addTest("Empty CSV", [&] {
+			const auto tree = ""_csv_tree;
+			suite.expect(std::ranges::empty(tree.nodes));
+		});
+
+		suite.addTest("Simple rows and columns", [&] {
+			const auto tree = R"(a;b
+c;d)"_csv_tree;
+
+			suite.expectEqual(std::ranges::size(tree.nodes), 2uz);
+			const auto& row0 = tree.nodes.at(0);
+			const auto& row1 = tree.nodes.at(1);
+			suite.expectEqual(std::get<Type::Token>(row0.value), "record"_token);
+			suite.expectEqual(std::get<Type::Token>(row1.value), "record"_token);
+
+			suite.expectEqual(std::ranges::size(row0.nodes), 2uz);
+			suite.expectEqual(std::ranges::size(row1.nodes), 2uz);
+
+			suite.expectEqual(std::get<std::string>(row0.nodes.at(0).nodes.at(0).value), "a");
+			suite.expectEqual(std::get<std::string>(row0.nodes.at(1).nodes.at(0).value), "b");
+			suite.expectEqual(std::get<std::string>(row1.nodes.at(0).nodes.at(0).value), "c");
+			suite.expectEqual(std::get<std::string>(row1.nodes.at(1).nodes.at(0).value), "d");
+		});
+
+		suite.addTest("Quoted field with delimiter", [&] {
+			const auto tree = R"("a;b";c)"_csv_tree;
+
+			suite.expectEqual(std::ranges::size(tree.nodes), 1uz);
+			const auto& row = tree.nodes.front();
+			suite.expectEqual(std::ranges::size(row.nodes), 2uz);
+			suite.expectEqual(std::get<std::string>(row.nodes.at(0).nodes.at(0).value), "a;b");
+			suite.expectEqual(std::get<std::string>(row.nodes.at(1).nodes.at(0).value), "c");
+		});
+
+		suite.addTest("Quoted field with escaped quote", [&] {
+			const auto tree = R"("foo""bar";baz)"_csv_tree;
+
+			suite.expectEqual(std::ranges::size(tree.nodes), 1uz);
+			const auto& row = tree.nodes.front();
+			suite.expectEqual(std::ranges::size(row.nodes), 2uz);
+			suite.expectEqual(std::get<std::string>(row.nodes.at(0).nodes.at(0).value), R"(foo"bar)");
+			suite.expectEqual(std::get<std::string>(row.nodes.at(1).nodes.at(0).value), "baz");
+		});
+
+		suite.addTest("Quoted field with multiline newline", [&] {
+			const auto tree = "\"line1\nline2\";value"_csv_tree;
+
+			suite.expectEqual(std::ranges::size(tree.nodes), 1uz);
+			const auto& row = tree.nodes.front();
+			suite.expectEqual(std::ranges::size(row.nodes), 2uz);
+			suite.expectEqual(std::get<std::string>(row.nodes.at(0).nodes.at(0).value), "line1\nline2");
+			suite.expectEqual(std::get<std::string>(row.nodes.at(1).nodes.at(0).value), "value");
+		});
+
+		suite.addTest("toTable method", [&] {
+			const auto lexer = CppUtils::Language::CSV::CSVLexer{';'};
+			const auto table = lexer.toTable(R"(header1;header2
+value1;value2)");
+
+			suite.expectEqual(std::ranges::size(table), 2uz);
+			suite.expectEqual(table[0], std::vector<std::string>{"header1", "header2"});
+			suite.expectEqual(table[1], std::vector<std::string>{"value1", "value2"});
+		});
+
+		suite.addTest("Custom delimiter comma", [&] {
+			const auto table = CppUtils::Language::CSV::parseTable(R"(name,age,"city, country"
+Alice,30,"Paris, France")",
+				',');
+
+			suite.expectEqual(std::ranges::size(table), 2uz);
+			suite.expectEqual(table[0], std::vector<std::string>{"name", "age", "city, country"});
+			suite.expectEqual(table[1], std::vector<std::string>{"Alice", "30", "Paris, France"});
+		});
+	}};
+}

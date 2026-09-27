@@ -8,6 +8,7 @@ export import CppUtils.Language.MetaCircularVirtualMachine;
 export import CppUtils.Language.MetaCircularParser;
 export import CppUtils.Language.CSV.Mapping;
 export import CppUtils.Language.CSV.Parsing;
+export import CppUtils.Language.CSV.CSVLexer;
 export import CppUtils.Language.JSON.JsonLexer;
 export import CppUtils.Language.JSON.Mapping;
 export import CppUtils.Language.JSON.Parsing;
