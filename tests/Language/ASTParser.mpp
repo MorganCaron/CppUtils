@@ -5,6 +5,34 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Language::ASTParser
 {
+	constexpr auto addStack = [](CppUtils::Language::ASTParser& interpreter) {
+		using namespace CppUtils::String::Literals;
+		using ASTNode = CppUtils::Language::ASTNode;
+
+		auto& mainNode = interpreter.rootAst["main"_token];
+		// clang-format off
+		mainNode.nodes.insert(std::ranges::begin(mainNode.nodes), {
+			ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{"stack"_token}}}}},
+			ASTNode{"call"_token, {ASTNode{"enterInLast"_token}}}
+		});
+		// clang-format on
+	};
+
+	static_assert([] {
+		using namespace std::literals;
+		using namespace CppUtils::String::Literals;
+
+		auto interpreter = CppUtils::Language::ASTParser{};
+		addStack(interpreter);
+		constexpr auto source = "parent"sv;
+		auto cursor = CppUtils::String::Cursor{source};
+		auto result = interpreter(cursor);
+		if (not result)
+			return false;
+		const auto& scopeNodes = interpreter.getScope().nodes;
+		return std::ranges::size(scopeNodes) == 1uz and scopeNodes.front().value == "parent"_token;
+	}());
+
 	auto _ = TestSuite{
 		"Language/ASTParser",
 		{"Logger", "Container/Tree", "Language/MetaCircularVirtualMachine"},
@@ -12,17 +40,6 @@ namespace CppUtils::UnitTest::Language::ASTParser
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = TestSuite::Logger;
-
-		static constexpr auto addStack = [](CppUtils::Language::ASTParser& interpreter) {
-			using ASTNode = CppUtils::Language::ASTNode;
-			auto& mainNode = interpreter.rootAst["main"_token];
-			// clang-format off
-			mainNode.nodes.insert(std::ranges::begin(mainNode.nodes), {
-				ASTNode{"call"_token, {ASTNode{"new"_token, {ASTNode{"stack"_token}}}}},
-				ASTNode{"call"_token, {ASTNode{"enterInLast"_token}}}
-			});
-			// clang-format on
-		};
 
 		suite.addTest("Empty source", [&] {
 			auto interpreter = CppUtils::Language::ASTParser{};

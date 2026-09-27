@@ -20,7 +20,7 @@ export namespace CppUtils::Container::Vector
 	}
 
 	template<class T>
-	[[nodiscard]] inline auto popBack(std::vector<T>& vector) -> T
+	[[nodiscard]] inline constexpr auto popBack(std::vector<T>& vector) -> T
 	{
 		auto value = std::move(vector.back());
 		vector.pop_back();
