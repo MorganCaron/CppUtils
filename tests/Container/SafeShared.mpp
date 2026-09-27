@@ -4,11 +4,40 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::SafeShared
 {
+	static_assert([] {
+		auto shared = CppUtils::Container::makeSafeShared<int>(42);
+		if (not shared or shared.use_count() != 1uz)
+			return false;
+
+		auto copy = shared;
+		if (shared.use_count() != 2uz)
+			return false;
+
+		{
+			auto accessor = shared->uniqueAccess();
+			accessor.value() = 100;
+		}
+
+		return copy->sharedAccess().value() == 100;
+	}());
+
+	static_assert([] {
+		auto shared = CppUtils::Container::makeSafeShared<int>(10);
+		auto weak = CppUtils::Container::SafeWeak{shared};
+		if (weak.expired() or weak.use_count() != 1uz)
+			return false;
+
+		auto locked = weak.lock();
+		return locked and locked.use_count() == 2uz;
+	}());
+
 	auto _ = TestSuite{"Container/SafeShared", {"UnitTest", "Thread/SharedLocker"}, [](TestSuite& suite) {
 		suite.addTest("Empty", [&] {
 			auto safeSharedString = CppUtils::Container::SafeShared<std::string>{};
 
 			suite.expect(not safeSharedString);
+			suite.expectEqual(safeSharedString.use_count(), 0uz);
+			suite.expect(safeSharedString == nullptr);
 		});
 
 		suite.addTest("Unique access", [&] {
@@ -55,6 +84,54 @@ namespace CppUtils::UnitTest::Container::SafeShared
 				suite.expectEqual(accessor0.value(), "Foo");
 				suite.expectEqual(accessor1.value(), "Foo");
 			}
+		});
+
+		suite.addTest("SafeWeak expiration and lock failure", [&] {
+			auto weak = CppUtils::Container::SafeWeak<std::string>{};
+			suite.expect(weak.expired());
+			suite.expectEqual(weak.use_count(), 0uz);
+
+			{
+				auto shared = CppUtils::Container::makeSafeShared<std::string>("Temporary");
+				weak = shared;
+				suite.expect(not weak.expired());
+				suite.expectEqual(weak.use_count(), 1uz);
+			}
+
+			suite.expect(weak.expired());
+			suite.expectEqual(weak.use_count(), 0uz);
+			auto locked = weak.lock();
+			suite.expect(not locked);
+			suite.expect(locked == nullptr);
+		});
+
+		suite.addTest("Move semantics and reset", [&] {
+			auto safeShared0 = CppUtils::Container::makeSafeShared<int>(42);
+			suite.expect(safeShared0);
+			suite.expectEqual(safeShared0.use_count(), 1uz);
+
+			auto safeShared1 = std::move(safeShared0);
+			suite.expect(not safeShared0);
+			suite.expect(safeShared1);
+			suite.expectEqual(safeShared1.use_count(), 1uz);
+			suite.expectEqual(safeShared1->sharedAccess().value(), 42);
+
+			safeShared1.reset();
+			suite.expect(not safeShared1);
+			suite.expectEqual(safeShared1.use_count(), 0uz);
+		});
+
+		suite.addTest("Comparison and ownership operators", [&] {
+			auto safeShared0 = CppUtils::Container::makeSafeShared<int>(10);
+			auto safeShared1 = safeShared0;
+			auto safeShared2 = CppUtils::Container::makeSafeShared<int>(10);
+
+			suite.expect(safeShared0 == safeShared1);
+			suite.expect(not(safeShared0 == safeShared2));
+			suite.expect(safeShared0.owner_equal(safeShared1));
+			suite.expect(not safeShared0.owner_equal(safeShared2));
+			suite.expect(safeShared0 != nullptr);
+			suite.expect(CppUtils::Container::SafeShared<int>{} == nullptr);
 		});
 	}};
 }

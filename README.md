@@ -34,6 +34,8 @@
 - [`FlatHashMap`](modules/Container/FlatHashMap.mpp) - Constexpr associative hash map with O(1) lookup and cache-friendly contiguous storage
 - [`MeshNetwork`](modules/Container/MeshNetwork.mpp) - Graph of shared objects without hierarchy
 - [`MultiKeyMap`](modules/Container/MultiKeyMap.mpp) - Associative container with multi-axis O(1) lookup and contiguous storage
+- [`NetworkPtr`](modules/Container/NetworkPtr.mpp) - Intrusive smart pointer representing graph-aware nodes with automatic cycle breaking
+- [`SafeShared`](modules/Container/SafeShared.mpp) - Thread-safe smart pointer with monitor-object encapsulation and compile-time (`constexpr`) evaluation support
 - [`Size`](modules/Container/Size.mpp) - Semantic wrapper around `std::size_t` for representing 2D (`Size2`: width/height) and 3D (`Size3`: width/height/depth) sizes
 - [`Stack`](modules/Container/Stack.mpp) - Type-specific stack without predefined type list (unlike [`TypedStack`](modules/Container/TypedStack.mpp))
 - [`Tree`](modules/Container/Tree.mpp) - Hierarchical node structure with parent-child links
@@ -139,6 +141,7 @@
 - [`TryAsync`](modules/Thread/TryAsync.mpp) - Launches a function asynchronously, forwards exception to caller
 - [`UniqueLocker`](modules/Thread/UniqueLocker.mpp) - RAII wrapper holding a value with exclusive access
 - [`SharedLocker`](modules/Thread/SharedLocker.mpp) - RAII wrapper holding a value with shared/exclusive access
+- [`SharedPtr`](modules/Thread/SharedPtr.mpp) - Thread-safe reference-counting smart pointer (`SharedPtr`, `WeakPtr`, `makeShared`, `ownerEqual`) with compile-time (`constexpr`) and runtime atomic support
 - [`Accessor`](modules/Thread/UniqueLocker.mpp) - RAII accessor for reading/writing an `UniqueLocker` or exclusive access to a `SharedLocker`
 - [`ReadOnlyAccessor`](modules/Thread/SharedLocker.mpp) - RAII accessor for shared (non-exclusive) reading of a `SharedLocker`, allowing parallel access
 - [`MultipleAccessor`](modules/Thread/UniqueLocker.mpp) - RAII accessor for multiple lockers, safely acquiring them to avoid deadlocks and data races

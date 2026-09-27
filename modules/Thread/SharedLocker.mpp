@@ -5,46 +5,121 @@ export import CppUtils.Thread.UniqueLocker;
 
 export namespace CppUtils::Thread
 {
+	class SharedMutex final
+	{
+	public:
+		inline constexpr SharedMutex() noexcept
+		{
+			if not consteval
+			{
+				m_mutex.emplace();
+			}
+		}
+
+		SharedMutex(const SharedMutex&) = delete;
+		auto operator=(const SharedMutex&) -> SharedMutex& = delete;
+
+		SharedMutex(SharedMutex&&) = delete;
+		auto operator=(SharedMutex&&) -> SharedMutex& = delete;
+
+		inline constexpr auto lock() -> void
+		{
+			if not consteval
+			{
+				m_mutex->lock();
+			}
+		}
+
+		inline constexpr auto try_lock() -> bool
+		{
+			if not consteval
+			{
+				return m_mutex->try_lock();
+			}
+			return true;
+		}
+
+		inline constexpr auto unlock() -> void
+		{
+			if not consteval
+			{
+				m_mutex->unlock();
+			}
+		}
+
+		inline constexpr auto lock_shared() -> void
+		{
+			if not consteval
+			{
+				m_mutex->lock_shared();
+			}
+		}
+
+		inline constexpr auto try_lock_shared() -> bool
+		{
+			if not consteval
+			{
+				return m_mutex->try_lock_shared();
+			}
+			return true;
+		}
+
+		inline constexpr auto unlock_shared() -> void
+		{
+			if not consteval
+			{
+				m_mutex->unlock_shared();
+			}
+		}
+
+	private:
+		std::optional<std::shared_mutex> m_mutex;
+	};
+
 	/*
 		Classe RAII permet des accès multiples à une valeur en lecture seule.
 		Cette classe ne contient pas la valeur, seulement une référence vers celle-ci.
 	*/
-	template<class T>
+	template<class T, class Mutex = SharedMutex>
 	class ReadOnlyAccessor final
 	{
 	public:
-		inline explicit ReadOnlyAccessor(std::shared_mutex& mutex, const T& value):
-			m_lockGuard{mutex},
+		inline explicit constexpr ReadOnlyAccessor(Mutex& mutex, const T& value):
 			m_value{std::cref(value)}
-		{}
+		{
+			if not consteval
+			{
+				m_lockGuard.emplace(mutex);
+			}
+		}
 
-		[[nodiscard]] inline auto value(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
+		[[nodiscard]] inline constexpr auto value(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return self.m_value.get();
 		}
 
-		[[nodiscard]] inline auto operator->(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> const T*
+		[[nodiscard]] inline constexpr auto operator->(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> const T*
 		{
 			return std::addressof(self.value());
 		}
 
-		[[nodiscard]] inline auto operator*(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
+		[[nodiscard]] inline constexpr auto operator*(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return self.value();
 		}
 
-		[[nodiscard]] inline auto getLockGuard(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto&
+		[[nodiscard]] inline constexpr auto getLockGuard(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto&
 		{
-			return self.m_lockGuard;
+			return self.m_lockGuard.value();
 		}
 
 	private:
-		mutable std::shared_lock<std::shared_mutex> m_lockGuard;
+		mutable std::optional<std::shared_lock<Mutex>> m_lockGuard;
 		std::reference_wrapper<const T> m_value;
 	};
 
-	template<class T>
-	ReadOnlyAccessor(std::shared_mutex&, const T&) -> ReadOnlyAccessor<T>;
+	template<class Mutex, class T>
+	ReadOnlyAccessor(Mutex&, const T&) -> ReadOnlyAccessor<T, Mutex>;
 
 	/*
 		Classe conçue pour encapsuler une ressource avec son mutex, garantissant que l'accès à la ressource passe obligatoirement par un Accessor qui verrouille le mutex (principe de "Monitor Object").
@@ -58,43 +133,52 @@ export namespace CppUtils::Thread
 	class SharedLocker final
 	{
 	public:
-		using UniqueAccessor = Accessor<T, std::shared_mutex>;
-		using SharedAccessor = ReadOnlyAccessor<T>;
+		using UniqueAccessor = Accessor<T, SharedMutex>;
+		using SharedAccessor = ReadOnlyAccessor<T, SharedMutex>;
 
-		inline explicit SharedLocker(auto&&... args):
-			m_value{std::forward<decltype(args)>(args)...}
+		inline constexpr SharedLocker() requires std::default_initializable<T> = default;
+
+		inline explicit constexpr SharedLocker(auto&& first, auto&&... rest):
+			m_value{std::forward<decltype(first)>(first), std::forward<decltype(rest)>(rest)...}
 		{}
 
 		SharedLocker(const SharedLocker&) = delete;
 		auto operator=(const SharedLocker&) -> SharedLocker& = delete;
 
-		inline SharedLocker(SharedLocker&& other) noexcept(std::is_nothrow_move_constructible_v<T>):
+		inline constexpr SharedLocker(SharedLocker&& other) noexcept(std::is_nothrow_move_constructible_v<T>):
 			m_value{std::move(other.uniqueAccess().value())}
 		{}
 
-		inline auto operator=(SharedLocker&& other) noexcept(std::is_nothrow_move_assignable_v<T>) -> SharedLocker&
+		inline constexpr auto operator=(SharedLocker&& other) noexcept(std::is_nothrow_move_assignable_v<T>) -> SharedLocker&
 		{
 			if (this != std::addressof(other))
 			{
-				auto guard = std::scoped_lock{m_mutex, other.m_mutex};
-				m_value = std::move(other.m_value);
+				if not consteval
+				{
+					auto guard = std::scoped_lock{m_mutex, other.m_mutex};
+					m_value = std::move(other.m_value);
+				}
+				else
+				{
+					m_value = std::move(other.m_value);
+				}
 			}
 			return *this;
 		}
 
-		[[nodiscard]] inline auto uniqueAccess() -> UniqueAccessor
+		[[nodiscard]] inline constexpr auto uniqueAccess() -> UniqueAccessor
 		{
 			return Accessor{m_mutex, m_value};
 		}
 
-		[[nodiscard]] inline auto sharedAccess() const -> SharedAccessor
+		[[nodiscard]] inline constexpr auto sharedAccess() const -> SharedAccessor
 		{
 			return ReadOnlyAccessor{m_mutex, m_value};
 		}
 
 	private:
-		mutable std::shared_mutex m_mutex;
-		T m_value;
+		mutable SharedMutex m_mutex;
+		T m_value{};
 
 		template<class... Lockers>
 		friend struct MultipleAccessor;

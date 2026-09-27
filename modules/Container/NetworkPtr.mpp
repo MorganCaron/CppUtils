@@ -14,23 +14,23 @@ export namespace CppUtils::Container
 		using Value = T;
 		using SharedPtr = SafeShared<NetworkPtr<T>>;
 		using WeakPtr = SafeWeak<NetworkPtr<T>>;
-		using Accessor = Thread::Accessor<NetworkPtr<T>, std::shared_mutex>;
+		using Accessor = Thread::Accessor<NetworkPtr<T>, Thread::SharedMutex>;
 
 	private:
-		explicit inline NetworkPtr(auto&&... args):
+		explicit inline constexpr NetworkPtr(auto&&... args):
 			value{std::forward<decltype(args)>(args)...}
 		{}
 
 		friend class Thread::SharedLocker<NetworkPtr<T>>;
 
 	public:
-		inline ~NetworkPtr()
+		inline constexpr ~NetworkPtr()
 		{
 			detachChildren();
 			detachParents();
 		}
 
-		[[nodiscard]] static inline auto make(auto&&... args) -> SharedPtr
+		[[nodiscard]] static inline constexpr auto make(auto&&... args) -> SharedPtr
 		{
 			auto pointer = makeSafeShared<NetworkPtr<T>>(std::forward<decltype(args)>(args)...);
 			{
@@ -40,7 +40,7 @@ export namespace CppUtils::Container
 			return pointer;
 		}
 
-		[[nodiscard]] static inline auto makeRoot(auto&&... args) -> SharedPtr
+		[[nodiscard]] static inline constexpr auto makeRoot(auto&&... args) -> SharedPtr
 		{
 			auto pointer = makeSafeShared<NetworkPtr<T>>(std::forward<decltype(args)>(args)...);
 			{
@@ -51,34 +51,34 @@ export namespace CppUtils::Container
 			return pointer;
 		}
 
-		[[nodiscard]] inline auto isRoot() const noexcept -> bool
+		[[nodiscard]] inline constexpr auto isRoot() const noexcept -> bool
 		{
 			return m_isRoot;
 		}
 
-		[[nodiscard]] inline auto isTemporary() const noexcept -> bool
+		[[nodiscard]] inline constexpr auto isTemporary() const noexcept -> bool
 		{
 			return not m_isRoot and std::ranges::empty(m_parents);
 		}
 
-		inline auto setRoot(bool isRoot) noexcept -> void
+		inline constexpr auto setRoot(bool isRoot) noexcept -> void
 		{
 			m_isRoot = isRoot;
 			if (m_isRoot)
 				m_distanceFromRoot = 0;
 		}
 
-		inline auto setWeakThis(WeakPtr pointer) noexcept -> void
+		inline constexpr auto setWeakThis(WeakPtr pointer) noexcept -> void
 		{
 			m_weakThis = std::move(pointer);
 		}
 
-		[[nodiscard]] inline auto getDistanceFromRoot() const noexcept -> std::size_t
+		[[nodiscard]] inline constexpr auto getDistanceFromRoot() const noexcept -> std::size_t
 		{
 			return m_distanceFromRoot;
 		}
 
-		inline auto attachChild(NetworkPtr& childValue) -> void
+		inline constexpr auto attachChild(NetworkPtr& childValue) -> void
 		{
 			auto childPtr = childValue.m_weakThis.lock();
 			if (not childPtr)
@@ -95,7 +95,7 @@ export namespace CppUtils::Container
 				m_children.push_back(WeakPtr{childPtr});
 		}
 
-		inline auto detachChild(NetworkPtr& childValue) -> void
+		inline constexpr auto detachChild(NetworkPtr& childValue) -> void
 		{
 			auto childPtr = childValue.m_weakThis.lock();
 			if (not childPtr)
@@ -105,7 +105,7 @@ export namespace CppUtils::Container
 				const auto children = m_children | std::views::reverse;
 				if (auto childIt = std::ranges::find_if(children, [&childPtr](const auto& child) -> bool {
 					return std::visit([&childPtr](const auto& child) -> bool {
-						return Thread::SharedPtr::ownerEqual(childPtr, child);
+						return Thread::ownerEqual(childPtr, child);
 					}, child);
 				});
 					childIt != std::ranges::end(children))
@@ -115,7 +115,7 @@ export namespace CppUtils::Container
 					m_children.erase(baseIt);
 					auto& parents = childValue.m_parents;
 					if (auto parentIt = std::ranges::find_if(parents, [&thisPtr](const auto& parentWeak) -> bool {
-						return Thread::SharedPtr::ownerEqual(parentWeak, thisPtr);
+						return Thread::ownerEqual(parentWeak, thisPtr);
 					});
 						parentIt != std::ranges::cend(parents))
 					{
@@ -127,7 +127,7 @@ export namespace CppUtils::Container
 			}
 		}
 
-		inline auto detachChildren() -> void
+		inline constexpr auto detachChildren() -> void
 		{
 			for (auto& child : m_children)
 				if (auto childPtr = std::visit([](auto&& pointer) -> SharedPtr {
@@ -144,7 +144,7 @@ export namespace CppUtils::Container
 				}
 		}
 
-		inline auto detachParent(SharedPtr& parent) -> void
+		inline constexpr auto detachParent(SharedPtr& parent) -> void
 		{
 			if (auto thisPtr = m_weakThis.lock(); thisPtr)
 			{
@@ -155,7 +155,7 @@ export namespace CppUtils::Container
 			}
 		}
 
-		inline auto detachParents() -> void
+		inline constexpr auto detachParents() -> void
 		{
 			if (auto thisPtr = m_weakThis.lock(); thisPtr)
 				for (const auto& parentWeak : m_parents)
@@ -181,7 +181,7 @@ export namespace CppUtils::Container
 			return sharedPtr->uniqueAccess();
 		}
 
-		inline auto updateDistance(const WeakPtr& lockedParentWeak = {}, std::size_t lockedParentDistance = std::numeric_limits<std::size_t>::max()) -> void
+		inline constexpr auto updateDistance(const WeakPtr& lockedParentWeak = {}, std::size_t lockedParentDistance = std::numeric_limits<std::size_t>::max()) -> void
 		{
 			const auto oldDistanceFromRoot = m_distanceFromRoot;
 
@@ -191,7 +191,7 @@ export namespace CppUtils::Container
 				for (const auto& parentWeak : m_parents)
 				{
 					auto parentDistance = std::numeric_limits<std::size_t>::max();
-					if (Thread::SharedPtr::ownerEqual(parentWeak, lockedParentWeak))
+					if (Thread::ownerEqual(parentWeak, lockedParentWeak))
 						parentDistance = lockedParentDistance;
 					else if (auto parent = parentWeak.lock())
 					{
@@ -215,7 +215,7 @@ export namespace CppUtils::Container
 				else if (const auto* weak = std::get_if<WeakPtr>(&child))
 					childWeak = *weak;
 
-				if (Thread::SharedPtr::ownerEqual(childWeak, lockedParentWeak))
+				if (Thread::ownerEqual(childWeak, lockedParentWeak))
 					continue;
 
 				if (auto accessor = getChildAccessor(child))
@@ -235,7 +235,7 @@ export namespace CppUtils::Container
 	};
 
 	template<class T>
-	inline auto operator>>(
+	inline constexpr auto operator>>(
 		SafeShared<NetworkPtr<T>>& from,
 		SafeShared<NetworkPtr<T>>& to) -> SafeShared<NetworkPtr<T>>&
 	{
@@ -247,7 +247,7 @@ export namespace CppUtils::Container
 	}
 
 	template<class T>
-	inline auto operator&(
+	inline constexpr auto operator&(
 		SafeShared<NetworkPtr<T>>& lhs,
 		SafeShared<NetworkPtr<T>>& rhs) -> SafeShared<NetworkPtr<T>>&
 	{
@@ -260,7 +260,7 @@ export namespace CppUtils::Container
 	}
 
 	template<class T>
-	inline auto operator-(
+	inline constexpr auto operator-(
 		SafeShared<NetworkPtr<T>>& from,
 		SafeShared<NetworkPtr<T>>& to) -> SafeShared<NetworkPtr<T>>&
 	{
@@ -272,7 +272,7 @@ export namespace CppUtils::Container
 	}
 
 	template<class T>
-	inline auto operator/(
+	inline constexpr auto operator/(
 		SafeShared<NetworkPtr<T>>& lhs,
 		SafeShared<NetworkPtr<T>>& rhs) -> SafeShared<NetworkPtr<T>>&
 	{

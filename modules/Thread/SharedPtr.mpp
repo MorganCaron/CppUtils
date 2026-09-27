@@ -6,15 +6,412 @@ export module CppUtils.Thread.SharedPtr;
 
 import std;
 
-export namespace CppUtils::Thread::SharedPtr
+export namespace CppUtils::Thread
 {
-	[[nodiscard]] inline auto ownerEqual(const auto& lhs, const auto& rhs) noexcept -> bool
+	template<class T>
+	class WeakPtr;
+
+	template<class T>
+	class SharedPtr final
 	{
-		// C++26: std::shared_ptr<T>::owner_equal & std::weak_ptr<T>::owner_equal
-#if defined(__cpp_lib_smart_ptr_owner_equality)
-		return lhs.owner_equal(rhs);
-#else
-		return not lhs.owner_before(rhs) and not rhs.owner_before(lhs);
+	private:
+		struct ControlBlock final
+		{
+			std::optional<T> value;
+			union {
+				std::atomic<std::size_t> atomicSharedCount;
+				std::size_t constevalSharedCount{1};
+			};
+
+			union {
+				std::atomic<std::size_t> atomicWeakCount;
+				std::size_t constevalWeakCount{1};
+			};
+
+			explicit constexpr ControlBlock(auto&&... arguments):
+				value{std::in_place, std::forward<decltype(arguments)>(arguments)...}
+			{
+				if not consteval
+				{
+					std::construct_at(std::addressof(atomicSharedCount), 1uz);
+					std::construct_at(std::addressof(atomicWeakCount), 1uz);
+				}
+			}
+
+			constexpr auto incrementShared() noexcept -> void
+			{
+				if not consteval
+				{
+					atomicSharedCount.fetch_add(1uz, std::memory_order_relaxed);
+				}
+				else
+				{
+					++constevalSharedCount;
+				}
+			}
+
+			constexpr auto decrementShared() noexcept -> bool
+			{
+				if not consteval
+				{
+					return atomicSharedCount.fetch_sub(1uz, std::memory_order_acq_rel) == 1uz;
+				}
+				else
+				{
+					return --constevalSharedCount == 0uz;
+				}
+			}
+
+			constexpr auto incrementWeak() noexcept -> void
+			{
+				if not consteval
+				{
+					atomicWeakCount.fetch_add(1uz, std::memory_order_relaxed);
+				}
+				else
+				{
+					++constevalWeakCount;
+				}
+			}
+
+			constexpr auto decrementWeak() noexcept -> bool
+			{
+				if not consteval
+				{
+					return atomicWeakCount.fetch_sub(1uz, std::memory_order_acq_rel) == 1uz;
+				}
+				else
+				{
+					return --constevalWeakCount == 0uz;
+				}
+			}
+		};
+
+		ControlBlock* m_controlBlock = nullptr;
+
+		template<class U>
+		friend class WeakPtr;
+
+		template<class U>
+		friend constexpr auto makeShared(auto&&... arguments) -> SharedPtr<U>;
+
+		explicit constexpr SharedPtr(ControlBlock* controlBlock) noexcept:
+			m_controlBlock{controlBlock}
+		{}
+
+	public:
+		constexpr SharedPtr() noexcept = default;
+
+		constexpr SharedPtr(std::nullptr_t) noexcept:
+			SharedPtr{}
+		{}
+
+		constexpr SharedPtr(const WeakPtr<T>& weak) noexcept;
+
+		constexpr ~SharedPtr()
+		{
+			reset();
+		}
+
+		constexpr SharedPtr(const SharedPtr& other) noexcept:
+			m_controlBlock{other.m_controlBlock}
+		{
+			if (m_controlBlock)
+				m_controlBlock->incrementShared();
+		}
+
+		constexpr SharedPtr(SharedPtr&& other) noexcept:
+			m_controlBlock{std::exchange(other.m_controlBlock, nullptr)}
+		{}
+
+		constexpr auto operator=(const SharedPtr& other) noexcept -> SharedPtr&
+		{
+			if (this != std::addressof(other))
+			{
+				if (other.m_controlBlock)
+					other.m_controlBlock->incrementShared();
+				reset();
+				m_controlBlock = other.m_controlBlock;
+			}
+			return *this;
+		}
+
+		constexpr auto operator=(SharedPtr&& other) noexcept -> SharedPtr&
+		{
+			if (this != std::addressof(other))
+			{
+				reset();
+				m_controlBlock = std::exchange(other.m_controlBlock, nullptr);
+			}
+			return *this;
+		}
+
+		constexpr auto operator=(std::nullptr_t) noexcept -> SharedPtr&
+		{
+			reset();
+			return *this;
+		}
+
+		constexpr auto reset() noexcept -> void
+		{
+			if (m_controlBlock)
+			{
+				auto* controlBlock = std::exchange(m_controlBlock, nullptr);
+				if (controlBlock->decrementShared())
+				{
+					controlBlock->value.reset();
+					if (controlBlock->decrementWeak())
+						delete controlBlock;
+				}
+			}
+		}
+
+		constexpr auto reset(ControlBlock* controlBlock) noexcept -> void
+		{
+			reset();
+			m_controlBlock = controlBlock;
+		}
+
+		[[nodiscard]] constexpr auto use_count() const noexcept -> std::size_t
+		{
+			if (not m_controlBlock)
+				return 0uz;
+			if not consteval
+			{
+				return m_controlBlock->atomicSharedCount.load(std::memory_order_relaxed);
+			}
+			else
+			{
+				return m_controlBlock->constevalSharedCount;
+			}
+		}
+
+		[[nodiscard]] explicit constexpr operator bool() const noexcept
+		{
+			return m_controlBlock != nullptr and m_controlBlock->value.has_value();
+		}
+
+		[[nodiscard]] constexpr auto get(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto*
+		{
+			if (not self.m_controlBlock or not self.m_controlBlock->value.has_value())
+				return static_cast<decltype(std::addressof(self.m_controlBlock->value.value()))>(nullptr);
+			return std::addressof(self.m_controlBlock->value.value());
+		}
+
+		[[nodiscard]] constexpr auto operator*(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
+		{
+			return self.m_controlBlock->value.value();
+		}
+
+		[[nodiscard]] constexpr auto operator->(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto*
+		{
+			return std::addressof(self.m_controlBlock->value.value());
+		}
+
+		[[nodiscard]] constexpr auto owner_equal(const auto& other) const noexcept -> bool
+		{
+			return m_controlBlock == other.m_controlBlock;
+		}
+
+		[[nodiscard]] constexpr auto owner_before(const auto& other) const noexcept -> bool
+		{
+			return m_controlBlock < other.m_controlBlock;
+		}
+
+		[[nodiscard]] friend constexpr auto operator==(const SharedPtr& lhs, const SharedPtr& rhs) noexcept -> bool
+		{
+			return lhs.m_controlBlock == rhs.m_controlBlock;
+		}
+
+		[[nodiscard]] friend constexpr auto operator==(const SharedPtr& shared, std::nullptr_t) noexcept -> bool
+		{
+			return shared.m_controlBlock == nullptr;
+		}
+
+		[[nodiscard]] friend constexpr auto operator<=>(const SharedPtr& lhs, const SharedPtr& rhs) noexcept = default;
+	};
+
+	template<class T>
+	class WeakPtr final
+	{
+	private:
+		using ControlBlock = typename SharedPtr<T>::ControlBlock;
+
+		ControlBlock* m_controlBlock = nullptr;
+
+		template<class U>
+		friend class SharedPtr;
+
+	public:
+		constexpr WeakPtr() noexcept = default;
+
+		constexpr WeakPtr(std::nullptr_t) noexcept:
+			WeakPtr{}
+		{}
+
+		constexpr WeakPtr(const SharedPtr<T>& shared) noexcept:
+			m_controlBlock{shared.m_controlBlock}
+		{
+			if (m_controlBlock)
+				m_controlBlock->incrementWeak();
+		}
+
+		constexpr ~WeakPtr()
+		{
+			reset();
+		}
+
+		constexpr WeakPtr(const WeakPtr& other) noexcept:
+			m_controlBlock{other.m_controlBlock}
+		{
+			if (m_controlBlock)
+				m_controlBlock->incrementWeak();
+		}
+
+		constexpr WeakPtr(WeakPtr&& other) noexcept:
+			m_controlBlock{std::exchange(other.m_controlBlock, nullptr)}
+		{}
+
+		constexpr auto operator=(const WeakPtr& other) noexcept -> WeakPtr&
+		{
+			if (this != std::addressof(other))
+			{
+				if (other.m_controlBlock)
+					other.m_controlBlock->incrementWeak();
+				reset();
+				m_controlBlock = other.m_controlBlock;
+			}
+			return *this;
+		}
+
+		constexpr auto operator=(WeakPtr&& other) noexcept -> WeakPtr&
+		{
+			if (this != std::addressof(other))
+			{
+				reset();
+				m_controlBlock = std::exchange(other.m_controlBlock, nullptr);
+			}
+			return *this;
+		}
+
+		constexpr auto operator=(const SharedPtr<T>& shared) noexcept -> WeakPtr&
+		{
+			if (shared.m_controlBlock)
+				shared.m_controlBlock->incrementWeak();
+			reset();
+			m_controlBlock = shared.m_controlBlock;
+			return *this;
+		}
+
+		constexpr auto operator=(std::nullptr_t) noexcept -> WeakPtr&
+		{
+			reset();
+			return *this;
+		}
+
+		constexpr auto reset() noexcept -> void
+		{
+			if (m_controlBlock)
+			{
+				auto* controlBlock = std::exchange(m_controlBlock, nullptr);
+				if (controlBlock->decrementWeak())
+					delete controlBlock;
+			}
+		}
+
+		[[nodiscard]] constexpr auto expired() const noexcept -> bool
+		{
+			if (not m_controlBlock)
+				return true;
+			if not consteval
+			{
+				return m_controlBlock->atomicSharedCount.load(std::memory_order_relaxed) == 0uz;
+			}
+			else
+			{
+				return m_controlBlock->constevalSharedCount == 0uz;
+			}
+		}
+
+		[[nodiscard]] constexpr auto use_count() const noexcept -> std::size_t
+		{
+			if (not m_controlBlock)
+				return 0uz;
+			if not consteval
+			{
+				return m_controlBlock->atomicSharedCount.load(std::memory_order_relaxed);
+			}
+			else
+			{
+				return m_controlBlock->constevalSharedCount;
+			}
+		}
+
+		[[nodiscard]] constexpr auto lock() const noexcept -> SharedPtr<T>
+		{
+			if (not m_controlBlock)
+				return SharedPtr<T>{};
+
+			if not consteval
+			{
+				for (auto currentCount = m_controlBlock->atomicSharedCount.load(std::memory_order_relaxed); currentCount > 0uz;)
+					if (m_controlBlock->atomicSharedCount.compare_exchange_weak(currentCount, currentCount + 1uz, std::memory_order_relaxed))
+						return SharedPtr<T>{m_controlBlock};
+				return SharedPtr<T>{};
+			}
+			else
+			{
+				if (m_controlBlock->constevalSharedCount == 0uz)
+					return SharedPtr<T>{};
+				m_controlBlock->incrementShared();
+				return SharedPtr<T>{m_controlBlock};
+			}
+		}
+
+		[[nodiscard]] constexpr auto owner_equal(const auto& other) const noexcept -> bool
+		{
+			return m_controlBlock == other.m_controlBlock;
+		}
+
+		[[nodiscard]] constexpr auto owner_before(const auto& other) const noexcept -> bool
+		{
+			return m_controlBlock < other.m_controlBlock;
+		}
+
+		[[nodiscard]] friend constexpr auto operator==(const WeakPtr& lhs, const WeakPtr& rhs) noexcept -> bool
+		{
+			return lhs.m_controlBlock == rhs.m_controlBlock;
+		}
+
+		[[nodiscard]] friend constexpr auto operator==(const WeakPtr& weak, std::nullptr_t) noexcept -> bool
+		{
+			return weak.m_controlBlock == nullptr;
+		}
+
+		[[nodiscard]] friend constexpr auto operator<=>(const WeakPtr& lhs, const WeakPtr& rhs) noexcept = default;
+	};
+
+	template<class T>
+	constexpr SharedPtr<T>::SharedPtr(const WeakPtr<T>& weak) noexcept:
+		SharedPtr{weak.lock()}
+	{}
+
+	template<class T>
+	WeakPtr(const SharedPtr<T>&) -> WeakPtr<T>;
+
+	template<class T>
+	[[nodiscard]] inline constexpr auto makeShared(auto&&... arguments) -> SharedPtr<T>
+	{
+		return SharedPtr<T>{new typename SharedPtr<T>::ControlBlock{std::forward<decltype(arguments)>(arguments)...}};
+	}
+
+	[[nodiscard]] inline constexpr auto ownerEqual(const auto& lhs, const auto& rhs) noexcept -> bool
+	{
+#if not defined(__cpp_lib_smart_ptr_owner_equality)
+		if constexpr (not requires { { lhs.owner_equal(rhs) } -> std::convertible_to<bool>; })
+			return not lhs.owner_before(rhs) and not rhs.owner_before(lhs);
+		else
 #endif
+			return lhs.owner_equal(rhs);
 	}
 }

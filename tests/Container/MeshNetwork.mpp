@@ -228,7 +228,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			root["Branch"] >> child;
 			root["Branch"] >> child;
 
-			const auto& branch = root.at("Branch").value();
+			const auto branch = root.at("Branch").value();
 			suite.expectEqual(std::ranges::size(branch), 1uz);
 		});
 
@@ -240,10 +240,10 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			fruit["Elements"] & apple["Categories"];
 			apple["Categories"] & fruit["Elements"];
 
-			const auto& elements = fruit.at("Elements").value();
+			const auto elements = fruit.at("Elements").value();
 			suite.expectEqual(std::ranges::size(elements), 1uz);
 
-			const auto& categories = apple.at("Categories").value();
+			const auto categories = apple.at("Categories").value();
 			suite.expectEqual(std::ranges::size(categories), 1uz);
 		});
 
