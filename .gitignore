@@ -4,3 +4,13 @@
 
 # IDE
 /.vscode/compile_commands.json
+
+# Documentation
+/docs/node_modules
+/docs/dist
+/docs/.astro
+/docs/doxygen_xml
+/docs/src/content/docs/**/reference/
+/docs/src/data/cppreference-symbols.json
+/docs/.starlight-icons
+

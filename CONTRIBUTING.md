@@ -27,6 +27,8 @@ To configure with unit tests enabled:
 xmake f --toolchain=llvm --runtimes="c++_shared" --enable_tests=y
 ```
 
+> For an exhaustive list of build options, sanitizers (ASan, TSan), custom LLVM SDK setup, and watch mode, see the **[Build & XMake Configuration Guide](https://morgancaron.github.io/CppUtils/en/guides/build-configuration/)**.
+
 ---
 
 ## Development Workflow
@@ -77,6 +79,24 @@ Before submitting a pull request, ensure that the project builds and all unit te
    ```console
    xmake watch -r CppUtils-UnitTests
    ```
+
+---
+
+## Documentation
+
+The documentation is powered by [Starlight](https://starlight.astro.build/) (Astro) and Doxygen.
+
+To run the local documentation server:
+```console
+cd docs
+npm run dev
+```
+
+To build the static site (HTML, assets, and Pagefind search index):
+```console
+cd docs
+npm run build
+```
 
 ---
 

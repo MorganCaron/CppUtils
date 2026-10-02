@@ -1,0 +1,6 @@
+---
+exclude_paths:
+  - "docs/scripts/**"
+  - "docs/dist/**"
+  - "docs/.astro/**"
+  - "docs/src/data/cppreference-symbols.json"

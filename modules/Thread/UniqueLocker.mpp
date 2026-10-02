@@ -4,14 +4,26 @@ import std;
 
 export namespace CppUtils::Thread
 {
-	/*
-		Classe RAII fournissant un accès unique à une valeur (en lecture et écriture).
-		Cette classe ne contient pas la valeur, seulement une référence vers celle-ci.
-	*/
+	/**
+	 * @brief RAII accessor providing exclusive read and write access to a protected value.
+	 *
+	 * Does not own the value, only holds a reference and manages the underlying lock guard.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/lockers/ (Guide de synchronisation RAII)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/lockers/ (RAII synchronization guide)
+	 *
+	 * @tparam T The type of the value being accessed.
+	 * @tparam Mutex The mutex type used for synchronization (defaults to std::mutex).
+	 */
 	template<class T, class Mutex = std::mutex>
 	class Accessor final
 	{
 	public:
+		/**
+		 * @brief Constructs an accessor by acquiring a unique lock on the provided mutex.
+		 * @param mutex Mutex to lock.
+		 * @param value Reference to the value to protect.
+		 */
 		inline explicit constexpr Accessor(Mutex& mutex, T& value):
 			m_value{std::ref(value)}
 		{
@@ -21,21 +33,42 @@ export namespace CppUtils::Thread
 			}
 		}
 
+		/// @brief Returns a reference to the protected value.
 		[[nodiscard]] inline constexpr auto value(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return self.m_value.get();
 		}
 
+		/// @brief Accesses member functions or fields of the protected value.
 		[[nodiscard]] inline constexpr auto operator->(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto*
 		{
 			return std::addressof(self.value());
 		}
 
+		/// @brief Dereferences to obtain the protected value (equivalent to calling value()).
 		[[nodiscard]] inline constexpr auto operator*(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return self.value();
 		}
 
+		/**
+		 * @brief Returns a reference to the underlying @c std::unique_lock guard.
+		 *
+		 * Provides direct access to the lock guard, allowing it to be used with
+		 * synchronization primitives requiring a @c std::unique_lock (such as @c std::condition_variable::wait).
+		 *
+		 * When used with @c std::condition_variable::wait, the wait function atomically releases the mutex while
+		 * placing the thread to sleep, and re-acquires the lock upon waking before returning once the predicate evaluates to true:
+		 * @code
+		 * auto accessor = queue.access();
+		 * condition.wait(accessor.getLockGuard(), [&] {
+		 *     return not std::ranges::empty(accessor.value());
+		 * });
+		 * auto item = accessor->pop();
+		 * @endcode
+		 *
+		 * @return Reference to the internal @c std::unique_lock<Mutex>.
+		 */
 		[[nodiscard]] inline constexpr auto getLockGuard(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto&
 		{
 			return self.m_lockGuard.value();
@@ -46,14 +79,27 @@ export namespace CppUtils::Thread
 		std::reference_wrapper<T> m_value;
 	};
 
-	/*
-		Classe RAII fournissant un accès unique à une valeur (en lecture seule).
-		Cette classe ne contient pas la valeur, seulement une référence vers celle-ci.
-	*/
+	/**
+	 * @brief RAII accessor providing exclusive read-only access to a const-qualified value.
+	 *
+	 * Holds an exclusive lock (std::unique_lock) preventing concurrent access by other threads,
+	 * but restricts operations on the protected value to const member functions and read-only inspection.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/lockers/ (Guide de synchronisation RAII)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/lockers/ (RAII synchronization guide)
+	 *
+	 * @tparam T The type of the value being accessed (const-qualified).
+	 * @tparam Mutex The mutex type used for synchronization.
+	 */
 	template<class T, class Mutex>
 	class Accessor<const T, Mutex> final
 	{
 	public:
+		/**
+		 * @brief Constructs a const accessor by acquiring a unique lock on the provided mutex.
+		 * @param mutex Mutex to lock.
+		 * @param value Const reference to the value to protect.
+		 */
 		inline explicit constexpr Accessor(Mutex& mutex, const T& value):
 			m_value{std::cref(value)}
 		{
@@ -63,21 +109,41 @@ export namespace CppUtils::Thread
 			}
 		}
 
+		/// @brief Returns a const reference to the protected value.
 		[[nodiscard]] inline constexpr auto value(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return self.m_value.get();
 		}
 
+		/// @brief Accesses const member functions or fields of the protected value.
 		[[nodiscard]] inline constexpr auto operator->(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto*
 		{
 			return std::addressof(self.value());
 		}
 
+		/// @brief Dereferences to obtain the protected const value (equivalent to calling value()).
 		[[nodiscard]] inline constexpr auto operator*(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> decltype(auto)
 		{
 			return self.value();
 		}
 
+		/**
+		 * @brief Returns a reference to the underlying @c std::unique_lock guard.
+		 *
+		 * Provides direct access to the lock guard, allowing it to be used with
+		 * synchronization primitives requiring a @c std::unique_lock (such as @c std::condition_variable::wait).
+		 *
+		 * When used with @c std::condition_variable::wait, the wait function atomically releases the mutex while
+		 * placing the thread to sleep, and re-acquires the lock upon waking before returning once the predicate evaluates to true:
+		 * @code
+		 * auto accessor = state.access();
+		 * condition.wait(accessor.getLockGuard(), [&] {
+		 *     return accessor->isReady();
+		 * });
+		 * @endcode
+		 *
+		 * @return Reference to the internal @c std::unique_lock<Mutex>.
+		 */
 		[[nodiscard]] inline constexpr auto getLockGuard(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto&
 		{
 			return self.m_lockGuard.value();
@@ -91,18 +157,25 @@ export namespace CppUtils::Thread
 	template<class Mutex, class T>
 	Accessor(Mutex&, T&) -> Accessor<T, Mutex>;
 
-	/*
-		Classe conçue pour encapsuler une ressource avec son mutex, garantissant que l'accès à la ressource passe obligatoirement par un Accessor qui verrouille le mutex (principe de "Monitor Object").
-
-		En plus de la protection RAII apportée par std::unique_lock, permettant de libérer le mutex si une exception survient dans le scope du verrou,
-		cette approche permet à un getter de retourner la valeur protégée en l'accompagnant de son verrouillage (contenus dans un Accessor), assurant ainsi que la ressource est toujours accédée de manière sécurisée.
-
-		Cela apporte une sécurité accrue en empêchant structurellement les accès non verrouillés et rend l'intention explicite sur le caractère partagé de l'objet.
-	*/
+	/**
+	 * @brief Monitor Object wrapper encapsulating a resource with a mutex.
+	 *
+	 * Ensures that all access to the underlying resource must pass through an Accessor RAII object
+	 * that holds the mutex lock, guaranteeing at compile time that access to the protected data is synchronized.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/lockers/ (Guide de synchronisation RAII)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/lockers/ (RAII synchronization guide)
+	 *
+	 * @tparam T The type of the protected resource.
+	 */
 	template<class T>
 	class UniqueLocker final
 	{
 	public:
+		/**
+		 * @brief Constructs the protected resource in place.
+		 * @param args Arguments forwarded to the resource constructor.
+		 */
 		inline explicit UniqueLocker(auto&&... args):
 			m_value{std::forward<decltype(args)>(args)...}
 		{}
@@ -110,10 +183,12 @@ export namespace CppUtils::Thread
 		UniqueLocker(const UniqueLocker&) = delete;
 		auto operator=(const UniqueLocker&) -> UniqueLocker& = delete;
 
+		/// @brief Move constructor. Acquires lock on the source locker before moving its value.
 		inline UniqueLocker(UniqueLocker&& other) noexcept(std::is_nothrow_move_constructible_v<T>):
 			m_value{std::move(other.access().value())}
 		{}
 
+		/// @brief Move assignment. Acquires scoped lock on both mutexes before moving the value.
 		inline auto operator=(UniqueLocker&& other) noexcept(std::is_nothrow_move_assignable_v<T>) -> UniqueLocker&
 		{
 			if (this != std::addressof(other))
@@ -124,16 +199,28 @@ export namespace CppUtils::Thread
 			return *this;
 		}
 
+		/**
+		 * @brief Acquires exclusive read/write access to the resource.
+		 * @return Accessor object managing the lock and providing access.
+		 */
 		[[nodiscard]] inline auto access() & -> Accessor<T, std::mutex>
 		{
 			return Accessor{m_mutex, m_value};
 		}
 
+		/**
+		 * @brief Acquires exclusive read-only access to the resource from an lvalue reference.
+		 * @return Const Accessor object managing the lock.
+		 */
 		inline auto access() const& -> Accessor<const T, std::mutex>
 		{
 			return Accessor{m_mutex, m_value};
 		}
 
+		/**
+		 * @brief Acquires exclusive read-only access to the resource from an rvalue reference.
+		 * @return Const Accessor object managing the lock.
+		 */
 		inline auto access() const&& -> Accessor<const T, std::mutex>
 		{
 			return Accessor{m_mutex, m_value};
@@ -150,13 +237,36 @@ export namespace CppUtils::Thread
 	template<class T>
 	UniqueLocker(T) -> UniqueLocker<T>;
 
-	/*
-		Structure RAII permettant d'accéder simultanément à plusieurs ressources de manière sécurisée.
-		Elle verrouille tous les mutex associés de façon à prévenir les deadlocks.
-	*/
+	/**
+	 * @brief RAII structure locking multiple lockers simultaneously without deadlocks.
+	 *
+	 * Uses std::scoped_lock internally to acquire all locks atomically in a deadlock-free manner,
+	 * regardless of the order lockers are passed across different threads.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/lockers/ (Guide de synchronisation RAII)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/lockers/ (RAII synchronization guide)
+	 *
+	 * @code
+	 * auto account0 = CppUtils::Thread::UniqueLocker<Account>{};
+	 * auto account1 = CppUtils::Thread::UniqueLocker<Account>{};
+	 *
+	 * {
+	 *     auto lockBoth = CppUtils::Thread::MultipleAccessor{account0, account1};
+	 *     auto& [firstAccount, secondAccount] = lockBoth.values;
+	 *     firstAccount.withdraw(100);
+	 *     secondAccount.deposit(100);
+	 * }
+	 * @endcode
+	 *
+	 * @tparam Lockers Variadic list of locker types to lock simultaneously.
+	 */
 	template<class... Lockers>
 	struct MultipleAccessor final
 	{
+		/**
+		 * @brief Locks all provided lockers atomically.
+		 * @param lockers Variadic references to lockers to lock.
+		 */
 		inline constexpr MultipleAccessor(Lockers&... lockers):
 			values{std::tie(lockers.m_value...)}
 		{

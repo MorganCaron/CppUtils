@@ -1,0 +1,27 @@
+---
+// Root redirection based on browser language preference
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>CppUtils Documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+    <!-- Fallback redirect if JavaScript is disabled -->
+    <meta http-equiv="refresh" content={`0;url=${base}/en/`} />
+    <script is:inline define:vars={{ base }}>
+      try {
+        const userLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
+        const targetLocale = userLang.startsWith('fr') ? 'fr' : 'en';
+        window.location.replace(`${base}/${targetLocale}/`);
+      } catch (e) {
+        window.location.replace(`${base}/en/`);
+      }
+    </script>
+  </head>
+  <body style="font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #0d1117; color: #c9d1d9;">
+    <p>Redirecting to <a href={`${base}/en/`} style="color: #0090DF;">English</a> or <a href={`${base}/fr/`} style="color: #0090DF;">Français</a>...</p>
+  </body>
+</html>

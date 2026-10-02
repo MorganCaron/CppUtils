@@ -1,0 +1,244 @@
+---
+title: Prise en main
+description: Guide d'installation pas-à-pas et premier démarrage avec CppUtils.
+sidebar:
+  order: 1
+---
+
+import { Tabs, TabItem, Steps, Card, Aside } from '@astrojs/starlight/components';
+
+Bienvenue sur **CppUtils** ! Ce guide vous accompagne pas à pas pour configurer votre environnement, intégrer la bibliothèque dans vos projets via XMake et compiler un premier exemple avec CppUtils.
+
+---
+
+## Prérequis
+
+CppUtils est développée en **C++26** et est entièrement modulaire (`import CppUtils...;`, `import std;`).
+
+- **Compilateur C++** : Un compilateur compatible C++26 avec support des modules standard (`import std;`) - **Clang / LLVM** est le compilateur recommandé et testé en intégration continue.
+- **Système de build** : [XMake](https://xmake.io/) (gestion native des modules C++20 et des packages - un grand merci à [Arthapz](https://github.com/Arthapz) qui a implémenté le support des modules dans XMake).
+
+---
+
+## Installation
+
+Vous pouvez intégrer directement CppUtils dans votre projet via le dépôt personnel XMake (`MorganCaron/xmake-repo`), ou compiler la bibliothèque depuis ses sources.
+
+<Tabs>
+	<TabItem label="Intégration via XMake (Recommandé)" icon="cloud-download">
+		<Steps>
+		1. **Ajouter le dépôt XMake à votre `xmake.lua`**
+
+			Ajoutez le dépôt XMake CppUtils à la configuration de votre projet et déclarez la dépendance :
+
+			```lua title="xmake.lua"
+			add_repositories("xmake-repo https://github.com/MorganCaron/xmake-repo.git")
+			add_requires("CppUtils 0.1.*") -- version figée recommandée (ou "CppUtils" pour la dernière version)
+			```
+
+		2. **Intégrer CppUtils à votre projet**
+
+			Configurez votre exécutable en C++26 et ajoutez la dépendance CppUtils :
+
+			```lua title="xmake.lua"
+			target("MonApplication")
+				set_kind("binary")
+				set_languages("c++26")
+				add_files("src/*.cpp")
+				add_packages("CppUtils", { public = true })
+			```
+
+		3. **Configurer et compiler**
+
+			Configurez avec la toolchain LLVM (ou MSVC sous Windows) selon vos besoins de runtime :
+
+			```console
+			# Runtime partagé (recommandé en développement : link rapide et binaires légers)
+			xmake f --toolchain=llvm --runtimes="c++_shared"
+			xmake
+
+			# Ou runtime statique (recommandé en déploiement : binaire autonome)
+			xmake f --toolchain=llvm --runtimes="c++_static"
+			xmake
+			```
+
+			- **`c++_shared`** (développement) : accélère l'édition de liens incrémentale et produit des exécutables légers en utilisant la `libc++` installée sur la machine hôte.
+			- **`c++_static`** (déploiement) : produit un binaire autonome sans dépendance vers la `libc++` de la machine cible.
+
+			<Aside type="note">
+				Sous Linux et macOS, la toolchain LLVM/Clang (version ≥ 18) est requise pour supporter la combinaison des modules C++20 avec `import std;`. Sous Windows, le compilateur natif MSVC (`cl`) est également supporté.
+			</Aside>
+
+			<Aside type="tip">
+				Vous pouvez également ouvrir le menu de configuration interactif avec `--menu` :
+				```console
+				xmake f --toolchain=llvm --runtimes="c++_shared" --menu
+				```
+			</Aside>
+		</Steps>
+	</TabItem>
+
+	<TabItem label="Compilation depuis les sources" icon="github">
+		<Steps>
+		1. **Cloner le dépôt Git**
+
+			```console
+			git clone https://github.com/MorganCaron/CppUtils.git
+			cd CppUtils
+			```
+
+		2. **Configurer le projet**
+
+			Activez la toolchain et le runtime de votre choix :
+
+			```console
+			# Runtime partagé (recommandé en développement : link rapide et binaires légers)
+			xmake f --toolchain=llvm --runtimes="c++_shared"
+
+			# Ou runtime statique (recommandé en déploiement : binaire autonome)
+			xmake f --toolchain=llvm --runtimes="c++_static"
+			```
+
+			<Aside type="note">
+				Sous Linux et macOS, la toolchain LLVM/Clang (version ≥ 18) est requise pour supporter la combinaison des modules C++20 avec `import std;`. Sous Windows, le compilateur natif MSVC (`cl`) est également supporté.
+			</Aside>
+
+			<Aside type="tip">
+				Vous pouvez également ouvrir le menu de configuration interactif avec `--menu` :
+				```console
+				xmake f --toolchain=llvm --runtimes="c++_shared" --menu
+				```
+			</Aside>
+
+		3. **Lancer la compilation**
+
+			```console
+			xmake
+			```
+
+		4. **Exécuter les tests unitaires**
+
+			Pour activer et lancer la suite de tests complète :
+
+			```console
+			xmake f --toolchain=llvm --runtimes="c++_shared" --enable_tests=y -y
+			xmake run CppUtils-UnitTests
+			```
+		</Steps>
+	</TabItem>
+</Tabs>
+
+---
+
+## Valider votre installation
+
+Pour vérifier que votre projet est correctement configuré et que CppUtils est bien importé, compilez et exécutez l'un de ces trois exemples :
+
+<Tabs>
+	<TabItem label="Conteneur : BidirectionalMap" icon="random">
+		Une table associative bidirectionnelle O(1) :
+
+		```cpp title="main.cpp" showLineNumbers
+		import CppUtils;
+
+		int main()
+		{
+			using namespace std::literals;
+
+			// Table bidirectionnelle associant codes HTTP et libellés constants
+			const auto httpCodes = CppUtils::Container::BidirectionalMap<int, std::string_view>{
+				std::pair{200, "OK"sv},
+				std::pair{404, "Not Found"sv},
+				std::pair{500, "Internal Server Error"sv}
+			};
+
+			std::println("Code 200 -> {}", httpCodes.left(200));
+			std::println("'Not Found' -> {}", httpCodes.right("Not Found"sv));
+
+			return 0;
+		}
+		```
+
+		```text title="Output"
+		Code 200 -> OK
+		'Not Found' -> 404
+		```
+	</TabItem>
+
+	<TabItem label="Parsing : JSON" icon="document">
+		Parsing de JSON :
+
+		```cpp title="main.cpp" showLineNumbers
+		import CppUtils;
+
+		int main()
+		{
+			using namespace CppUtils::Language::JSON::Literals;
+
+			// Parsing du document JSON
+			const auto document = R"({
+				"project": "CppUtils",
+				"license": "LGPL-3.0",
+				"modular": true
+			})"_json;
+
+			if (document)
+			{
+				const auto& json = document.value();
+				std::println("Project: {}", json["project"].as<std::string>());
+				std::println("License: {}", json["license"].as<std::string>());
+			}
+
+			return 0;
+		}
+		```
+
+		```text title="Output"
+		Project: CppUtils
+		License: LGPL-3.0
+		```
+	</TabItem>
+
+	<TabItem label="Concurrence : Ranges::parallel" icon="code-branch">
+		Traitement multithreadé d'une collection d'éléments :
+
+		```cpp title="main.cpp" showLineNumbers
+		import CppUtils;
+
+		int main()
+		{
+			auto threadPool = CppUtils::Thread::ThreadPool{4};
+			const auto data = std::vector<int>{10, 20, 30, 40, 50};
+
+			// Distribution concurrente des calculs sur 4 threads
+			const auto results = data
+				| CppUtils::Ranges::parallel(threadPool, [](int value) { return value * 2; })
+				| std::ranges::to<std::vector<int>>();
+
+			for (int value : results)
+			{
+				std::println("Parallel result: {}", value);
+			}
+
+			return 0;
+		}
+		```
+
+		```text title="Output"
+		Parallel result: 20
+		Parallel result: 40
+		Parallel result: 60
+		Parallel result: 80
+		Parallel result: 100
+		```
+	</TabItem>
+</Tabs>
+
+---
+
+## Prochaines étapes
+
+- Consultez le [Guide de compilation XMake](/fr/guides/build-configuration/) pour découvrir les modes de build, les tests unitaires et les sanitizers (ASan/TSan).
+- Consultez le [Guide de synchronisation RAII](/fr/guides/lockers/) pour maîtriser `SharedLocker`, `Accessor`, et l'accès multiple sécurisé `MultipleAccessor`.
+- Parcourez la [Référence d'API](/fr/reference/) pour explorer l'ensemble des modules, composants, classes et concepts.
+- Rejoignez le [serveur Discord](https://discord.gg/mxZvun4) pour échanger et poser vos questions.
