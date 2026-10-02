@@ -3,6 +3,7 @@ import starlight from '@astrojs/starlight';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import { pluginLineNumbers } from '@expressive-code/plugin-line-numbers';
+import { starlightBasePath } from 'starlight-base-path';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightScrollToTop from 'starlight-scroll-to-top';
 import starlightAnnouncement from 'starlight-announcement';
@@ -21,6 +22,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			plugins: [
+				starlightBasePath(),
 				starlightLinksValidator({
 					errorOnFallbackPages: false,
 				}),
