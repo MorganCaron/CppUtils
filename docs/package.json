@@ -1,0 +1,33 @@
+{
+	"name": "cpputils-documentation",
+	"type": "module",
+	"version": "0.0.1",
+	"scripts": {
+		"doxygen": "doxygen Doxyfile",
+		"generate": "doxygen Doxyfile && node scripts/generate-api.mjs",
+		"dev": "npm run generate && astro dev",
+		"start": "npm run generate && astro dev",
+		"build": "npm run generate && astro build",
+		"preview": "astro preview",
+		"update-symbols": "node scripts/update-cppreference-symbols.mjs --force",
+		"astro": "astro"
+	},
+	"dependencies": {
+		"@astrojs/markdown-remark": "^7.3.1",
+		"@astrojs/starlight": "^0.42.2",
+		"@expressive-code/plugin-line-numbers": "^0.44.2",
+		"@unocss/astro": "^66.10.5",
+		"astro": "^7.2.10",
+		"astro-contributors": "^0.10.0",
+		"astro-mermaid": "^2.1.0",
+		"mermaid": "^11.17.2",
+		"sharp": "^0.35.3",
+		"starlight-announcement": "^2.0.0",
+		"starlight-fullview-mode": "^0.2.6",
+		"starlight-links-validator": "^0.26.0",
+		"starlight-plugin-icons": "^1.1.6",
+		"starlight-scroll-to-top": "^2.0.0",
+		"unocss": "^66.10.5",
+		"unist-util-visit": "^5.1.0"
+	}
+}

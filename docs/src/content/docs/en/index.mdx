@@ -1,0 +1,44 @@
+---
+title: CppUtils Library
+description: "Modular C++26 building blocks for compilers and modern applications."
+template: splash
+hero:
+  tagline: "Modular C++26 building blocks for compilers and modern applications."
+  image:
+    file: ../../../assets/logo.svg
+  actions:
+    - text: Getting started
+      link: /en/guides/getting-started/
+      icon: right-arrow
+    - text: API reference
+      link: /en/reference/
+      icon: document
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import { ContributorList } from 'astro-contributors';
+
+## Discover the documentation
+
+<CardGrid stagger>
+	<a href="/en/guides/getting-started/" class="card-link">
+		<Card title="Getting started" icon="rocket">
+			Step-by-step installation with XMake and Clang, and building your first modular C++26 program.
+		</Card>
+	</a>
+	<a href="/en/guides/lockers/" class="card-link">
+		<Card title="RAII synchronization" icon="pencil">
+			Practical guide to using `UniqueLocker` and `SharedLocker` to safely protect shared resources.
+		</Card>
+	</a>
+	<a href="/en/reference/" class="card-link">
+		<Card title="C++ API reference" icon="open-book">
+			Full function signatures, method descriptions, move semantics, and RAII accessor classes.
+		</Card>
+	</a>
+</CardGrid>
+
+## Contributors
+
+<ContributorList githubRepo="MorganCaron/CppUtils" />

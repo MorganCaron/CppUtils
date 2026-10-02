@@ -1,0 +1,171 @@
+---
+title: Compilation & Configuration XMake
+description: Guide complet pour configurer et compiler CppUtils avec XMake (modes, tests, sanitizers et options de build).
+sidebar:
+  order: 2
+---
+
+import { Tabs, TabItem, Steps, Aside, Card, CardGrid } from '@astrojs/starlight/components';
+
+CppUtils utilise le système de build [XMake](https://xmake.io/) pour orchestrer la compilation de ses modules **C++26** (`.mpp`), de ses en-têtes et de sa suite de tests.
+
+Ce guide présente les commandes essentielles pour adapter la compilation à vos besoins (développement, débogage, tests unitaires, analyseurs dynamiques) ainsi que la référence détaillée de chaque option de configuration.
+
+---
+
+## Configuration par défaut
+
+Par défaut, CppUtils est configurée comme une bibliothèque purement modulaire (`moduleonly`), compilée avec un niveau d'avertissements strict (`-Wall`, `-Wextra`, `-pedantic`, `-Werror`) et des optimisations maximales (`set_optimize("fastest")`).
+
+Pour compiler la bibliothèque avec la configuration par défaut :
+
+```console
+# 1. Configurer la toolchain LLVM et le runtime partagé libc++
+xmake f --toolchain=llvm --runtimes="c++_shared"
+
+# 2. Compiler la bibliothèque
+xmake
+```
+
+<Aside type="note">
+Le flag `--runtimes="c++_shared"` est indispensable lors de l'utilisation de Clang avec les modules C++26 afin de lier la bibliothèque d'exécution standard partagée (`libc++`).
+</Aside>
+
+---
+
+## Cas d'usage courants
+
+<Tabs>
+	<TabItem label="Tests unitaires" icon="approve-check">
+		### Compiler et exécuter la suite de tests
+
+		Pour exécuter les tests unitaires de CppUtils, activez l'option `--enable_tests=y` :
+
+		```console
+		# Configuration avec tests activés
+		xmake f --toolchain=llvm --runtimes="c++_shared" --enable_tests=y -y
+
+		# Compilation et exécution des tests unitaires
+		xmake run CppUtils-UnitTests
+		```
+
+		Pour exécuter un test ou une suite spécifique avec les options du framework de test :
+		```console
+		xmake run CppUtils-UnitTests --test="BidirectionalMap"
+		```
+	</TabItem>
+
+	<TabItem label="TDD / Watch Mode" icon="rocket">
+		### Recompilation et relance automatique (Watch)
+
+		XMake intègre un observateur de fichiers qui surveille vos modifications dans les dossiers `modules/`, `src/`, `include/` et `tests/`. À chaque sauvegarde de fichier, il recompile et relance automatiquement la suite de tests :
+
+		```console
+		xmake watch -r CppUtils-UnitTests
+		```
+
+		Idéal pour un cycle de développement ultra-court en Test-Driven Development (TDD).
+	</TabItem>
+
+	<TabItem label="Sanitizers mémoire (ASan)" icon="warning">
+		### Détection des fuites mémoire et comportements indéterminés
+
+		Active simultanément **AddressSanitizer (ASan)**, **LeakSanitizer (LSan)** et **UndefinedBehaviorSanitizer (UBSan)** pour détecter les accès mémoire hors limites, les fuites de mémoire et les opérations non définies :
+
+		```console
+		# Configuration en mode debug avec sanitizers mémoire
+		xmake f -m debug --toolchain=llvm --runtimes="c++_shared" --enable_tests=y --sanitize_memory=y -y
+
+		# Exécution instrumentée
+		xmake run CppUtils-UnitTests
+		```
+	</TabItem>
+
+	<TabItem label="Sanitizer threads (TSan)" icon="random">
+		### Détection des accès concurrents (Data Races)
+
+		Active **ThreadSanitizer (TSan)** pour traquer les accès concurrents non synchronisés (*data races*) et les verrous incorrects sur les primitives multithread (`UniqueLocker`, `SharedLocker`, `ThreadPool`, etc.) :
+
+		```console
+		# Configuration en mode debug avec sanitizer de threads
+		xmake f -m debug --toolchain=llvm --runtimes="c++_shared" --enable_tests=y --sanitize_thread=y -y
+
+		# Exécution instrumentée
+		xmake run CppUtils-UnitTests
+		```
+
+		<Aside type="caution">
+		**ASan** et **TSan** sont mutuellement exclusifs sous Clang / LLVM. Vous ne devez jamais activer `--sanitize_memory=y` et `--sanitize_thread=y` lors de la même configuration.
+		</Aside>
+	</TabItem>
+
+	<TabItem label="SDK LLVM personnalisé" icon="setting">
+		### Utiliser une toolchain Clang spécifique
+
+		Si votre système possède plusieurs versions de LLVM ou si vous avez compilé LLVM depuis les sources dans un dossier spécifique (par exemple `/opt/llvm-20`), spécifiez son emplacement avec le paramètre `--sdk` :
+
+		```console
+		xmake f --toolchain=llvm --sdk=/opt/llvm-20 --runtimes="c++_shared" -y
+		xmake
+		```
+
+		XMake utilisera alors directement le compilateur `clang++`, l'archiveur `llvm-ar` et les bibliothèques d'en-tête de ce SDK.
+	</TabItem>
+</Tabs>
+
+---
+
+## Configuration interactive (Menu TUI)
+
+Si vous préférez configurer votre environnement de manière visuelle sans mémoriser la syntaxe en ligne de commande :
+
+```console
+xmake f --menu
+```
+
+Ce menu textuel interactif permet de naviguer au clavier dans les catégories du projet (**Build CppUtils**, **Sanitizer**, etc.), de cocher ou décocher les options souhaitées et de sauvegarder la configuration.
+
+---
+
+## Modes de compilation
+
+Le projet supporte l'ensemble des règles de mode natives de XMake via le flag `-m` ou `--mode` :
+
+| Mode | Flag | Optimisations | Symboles de debug | Cas d'usage |
+| :--- | :--- | :--- | :--- | :--- |
+| **Release** *(défaut)* | `-m release` | `-O3` (fastest) | Non | Production, benchmarks de performance. |
+| **Debug** | `-m debug` | `-O0` | Oui (`-g`) | Débogage interactif avec GDB / LLDB. |
+| **Release with Debug** | `-m releasedbg` | `-O3` | Oui (`-g`) | Analyse de performance avec symboles visibles. |
+| **Profile** | `-m profile` | Modérées | Oui (`-g` + profiler) | Profilage de performance via `perf` ou `gprof`. |
+| **Coverage** | `-m coverage` | Modérées | Oui (`--coverage`) | Analyse de couverture de code pour les tests. |
+| **Valgrind** | `-m valgrind` | Modérées | Oui (`-g`) | Analyse mémoire approfondie sous Valgrind. |
+
+---
+
+## Référence des options du projet
+
+Voici le tableau récapitulatif des options spécifiques déclarées dans le fichier [`xmake.lua`](https://github.com/MorganCaron/CppUtils/blob/master/xmake.lua) de CppUtils :
+
+| Option | Valeurs | Défaut | Description |
+| :--- | :--- | :--- | :--- |
+| `--enable_tests` | `y` / `n` | `n` (`false`) | Inclut le répertoire `tests/` et génère la cible binaire `CppUtils-UnitTests`. |
+| `--sanitize_memory` | `y` / `n` | `n` (`false`) | Active les politiques ASan, LSan et UBSan (`build.sanitizer.address`, etc.). |
+| `--sanitize_thread` | `y` / `n` | `n` (`false`) | Active la politique TSan (`build.sanitizer.thread`) pour la détection de conflits multithread. |
+| `--compiler_verbose` | `y` / `n` | `n` (`false`) | Transmet le flag `-v` au compilateur et à l'éditeur de liens pour inspecter les commandes exactes. |
+| `--enable_moduleonly`| `y` / `n` | `y` (`true`) | Définit la cible en `set_kind("moduleonly")` pour l'exposition directe des modules C++26. |
+| `--toolchain` | `llvm` / `clang` / `msvc` | Détecté | Spécifie la chaîne d'outils du compilateur (`msvc` sous Windows). |
+| `--runtimes` | `"c++_shared"` | Détecté | Définit la variante de la bibliothèque d'exécution C++ (partagée requise pour les modules Clang). |
+| `--sdk` | `<chemin>` | Système | Chemin absolu vers le répertoire racine de la chaîne d'outils LLVM. |
+
+---
+
+## Aide-mémoire des commandes XMake
+
+| Action | Commande |
+| :--- | :--- |
+| **Recompiler entièrement (clean build)** | `xmake -r` *(ou `xmake --rebuild`)* |
+| **Nettoyer les fichiers intermédiaires** | `xmake clean` |
+| **Nettoyer tous les caches et configurations** | `xmake clean -a` |
+| **Afficher les commandes de compilation réelles** | `xmake -vD` |
+| **Afficher la configuration actuelle** | `xmake show` |
+| **Lancer les tests en mode débogage LLDB** | `xmake run -d CppUtils-UnitTests` |

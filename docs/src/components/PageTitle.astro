@@ -1,0 +1,272 @@
+---
+import { Badge } from "@astrojs/starlight/components";
+
+const { entry } = Astro.locals.starlightRoute;
+const title = entry.data.title;
+const namespace = entry.data.namespace;
+const templateParams = entry.data.templateParams;
+const moduleImport = entry.data.moduleImport;
+const badge = entry.data.badge;
+const specializationOf = entry.data.specializationOf;
+const isFr = Astro.locals.starlightRoute.lang === "fr";
+const orWord = isFr ? "ou" : "or";
+const isReference = entry.id.includes("reference/") || Boolean(entry.data.badge);
+---
+
+<div class:list={["page-header", { "is-reference-page": isReference }]} data-page-type={isReference ? "reference" : undefined}>
+	{
+		moduleImport && (
+			<div class="page-import-bar">
+				<span
+					class="copy-import"
+					data-copy={`import ${moduleImport};`}
+					role="button"
+					tabindex="0"
+					title={
+						isFr
+							? "Cliquer pour copier l'import"
+							: "Click to copy import"
+					}
+				>
+					<code>import {moduleImport};</code>
+					<span class="copy-check" aria-hidden="true" />
+				</span>
+				<span class="import-separator">{orWord}</span>
+				<span
+					class="copy-import"
+					data-copy="import CppUtils;"
+					role="button"
+					tabindex="0"
+					title={
+						isFr
+							? "Cliquer pour copier l'import"
+							: "Click to copy import"
+					}
+				>
+					<code>import CppUtils;</code>
+					<span class="copy-check" aria-hidden="true" />
+				</span>
+			</div>
+		)
+	}
+
+	<div class="page-title-row">
+		<h1 id="_top">
+			{
+				namespace ? (
+					<span class="page-title-namespace">{namespace}</span>
+				) : null
+			}<span class="page-title-symbol">{title}</span>{
+				templateParams ? (
+					<span class="page-title-template">{templateParams}</span>
+				) : null
+			}
+		</h1>
+		{
+			badge && (
+				<Badge
+					text={badge}
+					variant="note"
+					size="small"
+					class="page-title-badge"
+				/>
+			)
+		}
+	</div>
+
+	{
+		specializationOf && (
+			<div class="page-specialization-notice">
+				<span class="specialization-label">
+					{isFr ? "Spécialisation de " : "Specialization of "}
+				</span>
+				{specializationOf.url ? (
+					<a href={specializationOf.url} class="specialization-link">
+						<code>
+							{specializationOf.name}
+							{specializationOf.templateParams && (
+								<span class="specialization-params">{specializationOf.templateParams}</span>
+							)}
+						</code>
+					</a>
+				) : (
+					<span class="specialization-link">
+						<code>
+							{specializationOf.name}
+							{specializationOf.templateParams && (
+								<span class="specialization-params">{specializationOf.templateParams}</span>
+							)}
+						</code>
+					</span>
+				)}
+			</div>
+		)
+	}
+</div>
+
+<script>
+	function setupCopyImports() {
+		document.querySelectorAll(".copy-import").forEach((el) => {
+			if (el.hasAttribute("data-bound")) return;
+			el.setAttribute("data-bound", "true");
+			el.addEventListener("click", async () => {
+				const text = el.getAttribute("data-copy");
+				if (!text) return;
+				try {
+					await navigator.clipboard.writeText(text);
+					const check = el.querySelector(".copy-check");
+					if (check) check.textContent = " ✓";
+					el.classList.add("copied");
+					setTimeout(() => {
+						el.classList.remove("copied");
+						if (check) check.textContent = "";
+					}, 1500);
+				} catch (err) {
+					console.error("Failed to copy", err);
+				}
+			});
+		});
+	}
+
+	setupCopyImports();
+	document.addEventListener("astro:page-load", setupCopyImports);
+</script>
+
+<style>
+	.page-header {
+		margin: 0.5rem 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.page-import-bar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: flex-end;
+		font-family: var(--sl-font-mono);
+		font-size: 0.72rem;
+		line-height: 1.2;
+		margin-bottom: 0.15rem;
+	}
+
+	.copy-import {
+		display: inline-flex;
+		align-items: center;
+		cursor: pointer;
+		color: var(--sl-color-gray-3);
+		padding: 0.1rem 0.25rem;
+		border-radius: 3px;
+		transition:
+			color 0.15s ease,
+			background 0.15s ease;
+		user-select: none;
+	}
+
+	.copy-import:hover {
+		color: var(--sl-color-text);
+		background: rgba(255, 255, 255, 0.05);
+	}
+
+	.copy-import code {
+		font-size: inherit;
+		color: inherit;
+		background: transparent;
+		padding: 0;
+		border: none;
+	}
+
+	.copy-check {
+		font-size: 0.72rem;
+		font-weight: 700;
+		color: var(--sl-color-accent-high);
+		margin-left: 0.2rem;
+	}
+
+	.copy-import.copied code {
+		color: var(--sl-color-accent-high);
+	}
+
+	.import-separator {
+		color: var(--sl-color-gray-4);
+		font-size: 0.85em;
+		user-select: none;
+	}
+
+	.page-title-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem 1rem;
+	}
+
+	h1 {
+		margin: 0;
+		font-size: var(--sl-text-h1);
+		line-height: var(--sl-line-height-headings);
+		font-weight: 600;
+		color: var(--sl-color-white);
+		word-break: break-word;
+	}
+
+	.page-title-namespace,
+	.page-title-template {
+		font-size: 0.6em;
+		font-weight: 400;
+		color: var(--sl-color-gray-3);
+		font-family: var(--sl-font-mono);
+	}
+
+	.page-title-symbol {
+		font-size: 0.8em;
+		font-weight: 600;
+		color: var(--sl-color-white);
+	}
+
+	.page-title-row :global(.sl-badge.page-title-badge) {
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		margin: 0;
+		align-self: center;
+	}
+
+	.page-specialization-notice {
+		font-size: 0.78rem;
+		color: var(--sl-color-gray-3);
+		margin-top: 0.2rem;
+		display: inline-flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.25rem;
+		line-height: 1.3;
+	}
+
+	.specialization-label {
+		color: var(--sl-color-gray-3);
+	}
+
+	.specialization-link {
+		color: var(--sl-color-accent-high);
+		text-decoration: none;
+	}
+
+	.specialization-link:hover {
+		text-decoration: underline;
+	}
+
+	.specialization-link code {
+		font-size: inherit;
+		color: inherit;
+		background: transparent;
+		padding: 0;
+		font-family: var(--sl-font-mono);
+	}
+
+	.specialization-params {
+		color: var(--sl-color-gray-3);
+		font-weight: 400;
+	}
+</style>

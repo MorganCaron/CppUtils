@@ -1,23 +1,41 @@
 # CppUtils
 
-<p align="center"><img src="resources/logo.svg" alt="Logo CppUtils" width="200" height="200"/></p>
+<p align="center">
+  <img src="resources/logo.svg" alt="Logo CppUtils" width="200" height="200"/>
+</p>
 
-## *C++ Utilities Library*
+<h2 align="center"><em>C++ Utilities Library</em></h2>
 
-![Github Stars](https://img.shields.io/github/stars/MorganCaron/CppUtils?style=for-the-badge)
-![Github Forks](https://img.shields.io/github/forks/MorganCaron/CppUtils?style=for-the-badge)
-![Top Language](https://img.shields.io/github/languages/top/MorganCaron/CppUtils?style=for-the-badge)
-[![Discord](https://img.shields.io/discord/268838260153909249?label=Chat&logo=Discord&style=for-the-badge)](https://discord.gg/mxZvun4)
-[![License](https://img.shields.io/github/license/MorganCaron/CppUtils?style=for-the-badge)](https://github.com/MorganCaron/CppUtils/blob/master/LICENSE)
-[![Release](https://img.shields.io/github/v/release/MorganCaron/CppUtils?style=for-the-badge&logo=github)](https://github.com/MorganCaron/CppUtils/releases)
-![GitHub Sponsors](https://img.shields.io/github/sponsors/MorganCaron?style=for-the-badge)
+<p align="center">
+  <a href="https://github.com/MorganCaron/CppUtils/releases"><img src="https://img.shields.io/github/v/release/MorganCaron/CppUtils?style=for-the-badge&logo=github" alt="Release"/></a>
+  <a href="https://morgancaron.github.io/CppUtils/"><img src="https://img.shields.io/badge/-Documentation-blue?style=for-the-badge" alt="Documentation"/></a>
+  <a href="https://discord.gg/mxZvun4"><img src="https://img.shields.io/discord/268838260153909249?label=Chat&logo=Discord&style=for-the-badge" alt="Discord"/></a>
+  <a href="https://github.com/MorganCaron/CppUtils/blob/master/LICENSE"><img src="https://img.shields.io/github/license/MorganCaron/CppUtils?style=for-the-badge" alt="License"/></a>
+  <br/>
+  <img src="https://img.shields.io/github/stars/MorganCaron/CppUtils?style=for-the-badge" alt="Github Stars"/>
+  <img src="https://img.shields.io/github/forks/MorganCaron/CppUtils?style=for-the-badge" alt="Github Forks"/>
+  <img src="https://img.shields.io/github/languages/top/MorganCaron/CppUtils?style=for-the-badge" alt="Top Language"/>
+  <img src="https://img.shields.io/github/sponsors/MorganCaron?style=for-the-badge" alt="GitHub Sponsors"/>
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/-Contribute-blue?style=for-the-badge" alt="Contribute"/></a>
+</p>
+
+<p align="center">
+  <a href="https://morgancaron.github.io/CppUtils/"><strong><font size="+2">Explore the Official Documentation</font></strong></a>
+</p>
+<p align="center">
+  <strong><a href="https://morgancaron.github.io/CppUtils/en/guides/getting-started/"><font size="+1">Getting Started</font></a></strong> &nbsp;&bull;&nbsp;
+  <strong><a href="https://morgancaron.github.io/CppUtils/en/reference/"><font size="+1">API Reference</font></a></strong> &nbsp;&bull;&nbsp;
+  <strong><a href="https://discord.gg/mxZvun4"><font size="+1">Discord Community</font></a></strong>
+</p>
 
 ### Project Health
-![CI Windows](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-windows.yml?branch=master&style=for-the-badge&logo=windows&logoColor=white&label=Windows)
-![CI Linux](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-linux.yml?branch=master&style=for-the-badge&logo=linux&logoColor=white&label=Linux)
-![CI MacOS](https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-macos.yml?branch=master&style=for-the-badge&logo=macos&logoColor=white&label=MacOS)
 
-![Codacy grade](https://img.shields.io/codacy/grade/49d265d3b8934ec398322a0a82c71184?style=for-the-badge&logo=codacy)
+<p align="center">
+  <img src="https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-windows.yml?branch=master&style=for-the-badge&logo=windows&logoColor=white&label=Windows" alt="CI Windows"/>
+  <img src="https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-linux.yml?branch=master&style=for-the-badge&logo=linux&logoColor=white&label=Linux" alt="CI Linux"/>
+  <img src="https://img.shields.io/github/actions/workflow/status/MorganCaron/CppUtils/ci-cpp-macos.yml?branch=master&style=for-the-badge&logo=macos&logoColor=white&label=MacOS" alt="CI MacOS"/>
+  <img src="https://img.shields.io/codacy/grade/49d265d3b8934ec398322a0a82c71184?style=for-the-badge&logo=codacy" alt="Codacy grade"/>
+</p>
 
 ---
 
@@ -169,18 +187,10 @@
 
 ---
 
-## Getting Started
+## Installation
 
-This library is used in my C++ projects, but you can also use it in your projects. Just follow the installation steps and consult the documentation for each feature you need.
+Add CppUtils to your `xmake.lua`:
 
-### Prerequisites
-
-- A C++26 compliant compiler with std module support
-- XMake
-
-### Installation
-
-In your XMake projects:
 ```lua
 add_repositories("xmake-repo https://github.com/MorganCaron/xmake-repo.git")
 add_requires("CppUtils 0.1.*") -- or add_requires("CppUtils") for latest
@@ -190,33 +200,12 @@ target("YourProject", function()
 end)
 ```
 
-### Configure the build via the xmake menu
-```console
-xmake f [--toolchain=llvm] --runtimes="c++_shared" [--sdk=/opt/llvm-git] --menu
-```
+> For step-by-step instructions, compiler prerequisites, and modular C++26 code examples, see the **[Getting Started Guide](https://morgancaron.github.io/CppUtils/en/guides/getting-started/)**.
 
-### Configure the build manually
-```console
-xmake f [--toolchain=llvm] --runtimes="c++_shared" [--sdk=/opt/llvm-git] [-y|--yes] [--enable_tests=y] [--sanitize_memory=y] [--sanitize_thread=y]
-```
+---
 
-### Build command
-```console
-xmake [b|build] [-vD]
-```
+## Contributing
 
-### Build & Run tests
-```console
-xmake [r|run] [-d|--debug]
-```
-
-### Watch tests
-```console
-xmake watch -r [-d|--debug]
-```
-
-### Contribute
-
-[![Contribute](https://img.shields.io/badge/-Contribute-blue?style=for-the-badge)](CONTRIBUTING.md)
+Contributions are welcome! Please refer to **[CONTRIBUTING.md](CONTRIBUTING.md)** for development guidelines, test execution, and build instructions.
 
 ---

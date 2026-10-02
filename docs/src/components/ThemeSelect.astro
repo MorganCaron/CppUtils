@@ -1,0 +1,218 @@
+---
+// Clean, concise Theme Toggle
+---
+
+<theme-toggle class="theme-toggle-wrapper">
+	<button
+		type="button"
+		class="theme-toggle-btn"
+		aria-label="Basculer le thème"
+		title="Basculer le thème"
+	>
+		<!-- Sun Icon (displayed in dark theme to switch to light) -->
+		<svg
+			class="theme-icon icon-sun"
+			xmlns="http://www.w3.org/2000/svg"
+			width="20"
+			height="20"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
+			<circle cx="12" cy="12" r="4"></circle>
+			<path
+				d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41m14.14-14.14-1.41 1.41"
+			></path>
+		</svg>
+
+		<!-- Moon Icon (displayed in light theme to switch to dark) -->
+		<svg
+			class="theme-icon icon-moon"
+			xmlns="http://www.w3.org/2000/svg"
+			width="20"
+			height="20"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			stroke-width="2"
+			stroke-linecap="round"
+			stroke-linejoin="round"
+		>
+			<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+		</svg>
+	</button>
+</theme-toggle>
+
+<script>
+	const STORAGE_KEY = "starlight-theme";
+
+	function getResolvedTheme(): "dark" | "light" {
+		const stored =
+			typeof localStorage !== "undefined"
+				? localStorage.getItem(STORAGE_KEY)
+				: null;
+		if (stored === "dark" || stored === "light") return stored;
+		return window.matchMedia("(prefers-color-scheme: light)").matches
+			? "light"
+			: "dark";
+	}
+
+	function applyTheme(theme: "dark" | "light"): void {
+		if (typeof localStorage !== "undefined") {
+			localStorage.setItem(STORAGE_KEY, theme);
+		}
+		document.documentElement.dataset.theme = theme;
+		document.documentElement.style.colorScheme = theme;
+
+		(window as any).StarlightThemeProvider?.updatePickers?.(theme);
+	}
+
+	interface ExtendedDocument extends Document {
+		startViewTransition?: (callback: () => void) => {
+			ready: Promise<void>;
+			finished: Promise<void>;
+			skipTransition: () => void;
+		};
+	}
+
+	let activeTransition: { skipTransition: () => void } | null = null;
+
+	async function performToggle(event: MouseEvent): Promise<void> {
+		const currentTheme = getResolvedTheme();
+		const nextTheme = currentTheme === "light" ? "dark" : "light";
+
+		if (activeTransition) {
+			try {
+				activeTransition.skipTransition();
+			} catch {}
+			activeTransition = null;
+		}
+
+		const isReducedMotion = window.matchMedia(
+			"(prefers-reduced-motion: reduce)",
+		).matches;
+		const extendedDocument = document as ExtendedDocument;
+
+		if (!extendedDocument.startViewTransition || isReducedMotion) {
+			applyTheme(nextTheme);
+			return;
+		}
+
+		const target = event.currentTarget as HTMLElement | null;
+		const button =
+			target?.closest("button") ||
+			document.querySelector(".theme-toggle-btn");
+		const rect = button?.getBoundingClientRect();
+		const originX = rect
+			? rect.left + rect.width / 2
+			: window.innerWidth / 2;
+		const originY = rect
+			? rect.top + rect.height / 2
+			: window.innerHeight / 2;
+		const endRadius = Math.hypot(
+			Math.max(originX, window.innerWidth - originX),
+			Math.max(originY, window.innerHeight - originY),
+		);
+
+		const transition = extendedDocument.startViewTransition(() => {
+			applyTheme(nextTheme);
+		});
+
+		activeTransition = transition;
+		transition.finished.finally(() => {
+			if (activeTransition === transition) {
+				activeTransition = null;
+			}
+		});
+
+		try {
+			await transition.ready;
+			const animation = document.documentElement.animate(
+				{
+					clipPath: [
+						`circle(0px at ${originX}px ${originY}px)`,
+						`circle(${endRadius}px at ${originX}px ${originY}px)`,
+					],
+				},
+				{
+					duration: 800,
+					easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+					pseudoElement: "::view-transition-new(root)",
+				},
+			);
+
+			transition.finished.finally(() => {
+				animation.cancel();
+			});
+		} catch {
+			// Transition was skipped or aborted
+		}
+	}
+
+	class ThemeToggleElement extends HTMLElement {
+		connectedCallback() {
+			applyTheme(getResolvedTheme());
+			const btn = this.querySelector("button");
+			btn?.addEventListener("click", performToggle);
+		}
+	}
+
+	customElements.define("theme-toggle", ThemeToggleElement);
+</script>
+
+<style>
+	.theme-toggle-wrapper {
+		display: inline-flex;
+		align-items: center;
+	}
+
+	.theme-toggle-btn {
+		width: 2.25rem;
+		height: 2.25rem;
+		border: none;
+		background: transparent;
+		box-shadow: none;
+		color: var(--sl-color-gray-3);
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0;
+		outline: none;
+		transition:
+			color 0.2s ease,
+			transform 0.2s ease;
+
+		&:hover {
+			color: var(--sl-color-accent);
+			transform: scale(1.15);
+		}
+
+		&:active {
+			transform: scale(0.92);
+		}
+	}
+
+	:global(:root[data-theme="dark"]) {
+		.icon-moon {
+			display: none;
+		}
+		.icon-sun {
+			display: block;
+			color: #facc15;
+		}
+	}
+
+	:global(:root[data-theme="light"]) {
+		.icon-sun {
+			display: none;
+		}
+		.icon-moon {
+			display: block;
+			color: var(--sl-color-accent);
+		}
+	}
+</style>

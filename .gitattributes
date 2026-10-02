@@ -1,3 +1,5 @@
 *.mpp linguist-language=C++
 *.cppm linguist-language=C++
 *.ixx linguist-language=C++
+
+docs/** linguist-documentation
