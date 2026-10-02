@@ -551,9 +551,6 @@ async function generateForLanguage(lang, compounds, namespaceCompounds = []) {
 		fullSymbol: isFr ? "Symbole complet :" : "Full symbol:",
 		apiRefTitle: isFr ? "Référence d'API CppUtils" : "CppUtils API reference",
 		apiRefDesc: isFr ? "Catalogue complet des modules et composants de CppUtils" : "Complete catalog of CppUtils modules and components",
-		apiRefIntro: isFr
-			? "Bienvenue dans la référence complète de l'API **CppUtils**.\n\nCette documentation est extraite directement du code source C++26 et organisée par espaces de noms.\n\n"
-			: "Welcome to the comprehensive **CppUtils** API reference.\n\nThis documentation is extracted directly from the C++26 source modules and organized by namespace.\n\n",
 	};
 
 	const refMap = new Map();
@@ -887,22 +884,58 @@ async function generateForLanguage(lang, compounds, namespaceCompounds = []) {
 		namespacesMap.get(namespaceKey).push({ name: title, kind: itemKind, file: fileName, subNamespace });
 	}
 
+function getBadgeInfo(kind) {
+	switch (kind?.toLowerCase()) {
+		case "class":
+			return { badgeText: "CLASS", badgeClass: "ref-badge ref-badge-class" };
+		case "struct":
+			return { badgeText: "STRUCT", badgeClass: "ref-badge ref-badge-struct" };
+		case "concept":
+			return { badgeText: "CONCEPT", badgeClass: "ref-badge ref-badge-concept" };
+		case "functions":
+			return { badgeText: "FUNCTIONS", badgeClass: "ref-badge ref-badge-functions" };
+		case "enum":
+			return { badgeText: "ENUM", badgeClass: "ref-badge ref-badge-enum" };
+		case "constants":
+			return { badgeText: "CONST", badgeClass: "ref-badge ref-badge-constants" };
+		case "types":
+			return { badgeText: "TYPE", badgeClass: "ref-badge ref-badge-types" };
+		default:
+			return { badgeText: (kind || "").toUpperCase(), badgeClass: "ref-badge" };
+	}
+}
+
 	// Create Reference Overview Index page
 	let indexMd = `---\ntitle: "${labels.apiRefTitle}"\ndescription: "${labels.apiRefDesc}"\n---\n\n`;
-	indexMd += labels.apiRefIntro;
+	indexMd += `export const base = import.meta.env.BASE_URL.replace(/\\/$/, '');\n\n`;
 
 	const sortedNamespaces = [...namespacesMap.keys()].sort();
+
+	indexMd += `<div class="reference-masonry">\n`;
 	for (const ns of sortedNamespaces) {
 		const items = namespacesMap.get(ns).sort((a, b) => a.name.localeCompare(b.name));
-		indexMd += `### \`CppUtils::${ns}\`\n\n`;
-			for (const item of items) {
-				const dirPrefix = item.subNamespace ? `${item.subNamespace.toLowerCase()}/` : "";
-				const baseSlug = item.file.replace(/\.mdx?$/, "").toLowerCase();
-				const link = `/${lang}/reference/${dirPrefix}${baseSlug}/`;
-				indexMd += `- [**\`${item.name}\`**](${link}) *(${item.kind})*\n`;
-			}
-		indexMd += `\n`;
+
+		indexMd += `  <div class="reference-category-card">\n`;
+		indexMd += `    <div class="reference-card-header">\n`;
+		indexMd += `      <h3 class="reference-card-title"><code>CppUtils::${ns}</code></h3>\n`;
+		indexMd += `    </div>\n`;
+		indexMd += `    <ul class="reference-card-list">\n`;
+		for (const item of items) {
+			const dirPrefix = item.subNamespace ? `${item.subNamespace.toLowerCase()}/` : "";
+			const baseSlug = item.file.replace(/\.mdx?$/, "").toLowerCase();
+			const link = `/${lang}/reference/${dirPrefix}${baseSlug}/`;
+			const { badgeText, badgeClass } = getBadgeInfo(item.kind);
+			indexMd += `      <li class="reference-item">\n`;
+			indexMd += `        <a href={\`\${base}${link}\`} class="reference-item-link">\n`;
+			indexMd += `          <code class="reference-item-name">{${JSON.stringify(item.name)}}</code>\n`;
+			indexMd += `          <span class="${badgeClass}">${badgeText}</span>\n`;
+			indexMd += `        </a>\n`;
+			indexMd += `      </li>\n`;
+		}
+		indexMd += `    </ul>\n`;
+		indexMd += `  </div>\n\n`;
 	}
+	indexMd += `</div>\n`;
 
 	fs.writeFileSync(path.join(outDir, "index.mdx"), indexMd, "utf-8");
 

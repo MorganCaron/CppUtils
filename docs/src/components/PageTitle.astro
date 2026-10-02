@@ -11,6 +11,12 @@ const specializationOf = entry.data.specializationOf;
 const isFr = Astro.locals.starlightRoute.lang === "fr";
 const orWord = isFr ? "ou" : "or";
 const isReference = entry.id.includes("reference/") || Boolean(entry.data.badge);
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+const specializationHref = specializationOf?.url
+	? (specializationOf.url.startsWith("http")
+		? specializationOf.url
+		: `${baseUrl}${specializationOf.url.startsWith("/") ? "" : "/"}${specializationOf.url}`)
+	: undefined;
 ---
 
 <div class:list={["page-header", { "is-reference-page": isReference }]} data-page-type={isReference ? "reference" : undefined}>
@@ -80,8 +86,8 @@ const isReference = entry.id.includes("reference/") || Boolean(entry.data.badge)
 				<span class="specialization-label">
 					{isFr ? "Spécialisation de " : "Specialization of "}
 				</span>
-				{specializationOf.url ? (
-					<a href={specializationOf.url} class="specialization-link">
+				{specializationHref ? (
+					<a href={specializationHref} class="specialization-link">
 						<code>
 							{specializationOf.name}
 							{specializationOf.templateParams && (
