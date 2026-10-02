@@ -3,6 +3,7 @@ import starlight from '@astrojs/starlight';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import { pluginLineNumbers } from '@expressive-code/plugin-line-numbers';
+import { starlightBasePath } from 'starlight-base-path';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightScrollToTop from 'starlight-scroll-to-top';
 import starlightAnnouncement from 'starlight-announcement';
@@ -21,6 +22,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			plugins: [
+				starlightBasePath(),
 				starlightLinksValidator({
 					errorOnFallbackPages: false,
 				}),
@@ -100,7 +102,7 @@ export default defineConfig({
 					tag: 'script',
 					attrs: {
 						async: true,
-						src: 'https://www.googletagmanager.com/gtag/js?id=G-WT487J4B4F',
+						src: 'https://www.googletagmanager.com/gtag/js?id=G-9EYYYD173T',
 					},
 				},
 				{
@@ -109,7 +111,7 @@ export default defineConfig({
 window.dataLayer = window.dataLayer || [];
 function gtag() { dataLayer.push(arguments); }
 gtag('js', new Date());
-gtag('config', 'G-WT487J4B4F', {
+gtag('config', 'G-9EYYYD173T', {
 	'anonymize_ip': true,
 	'allow_google_signals': false,
 	'allow_ad_personalization_signals': false

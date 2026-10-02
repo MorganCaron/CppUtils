@@ -19,20 +19,22 @@ hero:
 import { Card, CardGrid } from '@astrojs/starlight/components';
 import { ContributorList } from 'astro-contributors';
 
+export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
 ## Discover the documentation
 
 <CardGrid stagger>
-	<a href="/en/guides/getting-started/" class="card-link">
+	<a href={`${base}/en/guides/getting-started/`} class="card-link">
 		<Card title="Getting started" icon="rocket">
 			Step-by-step installation with XMake and Clang, and building your first modular C++26 program.
 		</Card>
 	</a>
-	<a href="/en/guides/lockers/" class="card-link">
+	<a href={`${base}/en/guides/lockers/`} class="card-link">
 		<Card title="RAII synchronization" icon="pencil">
 			Practical guide to using `UniqueLocker` and `SharedLocker` to safely protect shared resources.
 		</Card>
 	</a>
-	<a href="/en/reference/" class="card-link">
+	<a href={`${base}/en/reference/`} class="card-link">
 		<Card title="C++ API reference" icon="open-book">
 			Full function signatures, method descriptions, move semantics, and RAII accessor classes.
 		</Card>

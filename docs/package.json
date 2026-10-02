@@ -23,11 +23,12 @@
 		"mermaid": "^11.17.2",
 		"sharp": "^0.35.3",
 		"starlight-announcement": "^2.0.0",
+		"starlight-base-path": "^0.2.1",
 		"starlight-fullview-mode": "^0.2.6",
 		"starlight-links-validator": "^0.26.0",
 		"starlight-plugin-icons": "^1.1.6",
 		"starlight-scroll-to-top": "^2.0.0",
-		"unocss": "^66.10.5",
-		"unist-util-visit": "^5.1.0"
+		"unist-util-visit": "^5.1.0",
+		"unocss": "^66.10.5"
 	}
 }
