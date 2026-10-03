@@ -1,0 +1,304 @@
+main:has([data-page-type="reference"]) .sl-markdown-content :is(h2, .sl-heading-wrapper.level-h2) {
+	font-size: var(--sl-text-xl);
+}
+
+.member-signature {
+	position: relative;
+	margin-top: 1.5rem;
+	margin-bottom: 0.5rem;
+	overflow-x: auto;
+
+	.member-anchor {
+		position: absolute;
+		top: 0.35rem;
+		right: 0.5rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--sl-color-gray-4);
+		text-decoration: none;
+		opacity: 0;
+		transition: opacity 0.15s ease, color 0.15s ease;
+		z-index: 2;
+		padding: 0.2rem;
+		border-radius: 4px;
+		user-select: none;
+
+		&:hover {
+			color: var(--sl-color-accent-high);
+			background: rgb(255 255 255 / 8%);
+		}
+	}
+
+	&:hover .member-anchor,
+	.member-anchor:focus {
+		opacity: 1;
+	}
+
+	.expressive-code {
+		--ec-brdCol: transparent;
+		--ec-bg: transparent;
+		--code-background: transparent;
+
+		.frame {
+			background: transparent;
+			border: none;
+			box-shadow: none;
+		}
+
+		pre {
+			background: transparent;
+			padding: 0;
+			border: none;
+			white-space: pre-wrap;
+			word-break: break-word;
+		}
+
+		code {
+			font-size: 0.88rem;
+			font-weight: 500;
+			line-height: 1.45;
+		}
+
+		.copy {
+			display: none;
+		}
+	}
+}
+
+.sl-markdown-content :is(h3, .sl-heading-wrapper.level-h3) {
+	font-size: 1.15rem;
+	font-weight: 600;
+	color: var(--sl-color-gray-2);
+	margin-top: 1.5rem;
+}
+
+main:has(.reference-masonry) .sl-container {
+	max-width: 96rem;
+}
+
+.reference-container,
+.sl-markdown-content:has(.reference-masonry) {
+	container-type: inline-size;
+	width: 100%;
+}
+
+.reference-masonry {
+	column-count: 1;
+	column-gap: 1.25rem;
+}
+
+@container (min-width: 58rem) {
+	.reference-masonry {
+		column-count: 2;
+	}
+}
+
+@container (min-width: 84rem) {
+	.reference-masonry {
+		column-count: 3;
+	}
+}
+
+.reference-category-card {
+	break-inside: avoid;
+	page-break-inside: avoid;
+	-webkit-column-break-inside: avoid;
+	display: inline-block;
+	width: 100%;
+	margin-top: 0;
+	margin-bottom: 1.25rem;
+	background: rgb(15 23 42 / 50%);
+	border: 1px solid var(--sl-color-hairline-shade);
+	border-radius: 0.75rem;
+	padding: 1rem 1.15rem;
+	box-shadow: 0 4px 16px -4px rgb(0 0 0 / 25%);
+	backdrop-filter: blur(8px);
+	transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+:root[data-theme='light'] .reference-category-card {
+	background: rgb(255 255 255 / 80%);
+	border: 1px solid rgb(203 213 225 / 70%);
+	box-shadow: 0 4px 16px -4px rgb(15 23 42 / 6%);
+}
+
+.reference-category-card:hover {
+	border-color: var(--sl-color-accent);
+	box-shadow: 0 8px 24px -4px rgb(0 0 0 / 30%), 0 0 15px -3px rgb(56 189 248 / 15%);
+}
+
+:root[data-theme='light'] .reference-category-card:hover {
+	box-shadow: 0 8px 24px -4px rgb(15 23 42 / 10%), 0 0 15px -3px rgb(2 132 199 / 15%);
+}
+
+.reference-card-header {
+	display: flex;
+	align-items: center;
+	padding-bottom: 0.6rem;
+	margin-bottom: 0.65rem;
+	border-bottom: 1px solid var(--sl-color-hairline-shade);
+}
+
+.sl-markdown-content {
+	.reference-card-title {
+		margin: 0 !important;
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: var(--sl-color-white);
+		word-break: break-word;
+
+		code {
+			background: transparent;
+			padding: 0;
+			font-size: inherit;
+			color: inherit;
+		}
+	}
+
+	.reference-card-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+
+		.reference-item {
+			margin: 0;
+			padding: 0;
+		}
+
+		.reference-item-link {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.5rem;
+			padding: 0.35rem 0.5rem;
+			border-radius: 0.375rem;
+			text-decoration: none;
+			color: var(--sl-color-gray-2);
+			font-size: 0.85rem;
+			transition: all 0.15s ease-in-out;
+
+			&:hover {
+				background: rgb(56 189 248 / 12%);
+				color: var(--sl-color-white);
+				transform: translateX(2px);
+			}
+
+			:root[data-theme='light'] &:hover {
+				background: rgb(2 132 199 / 10%);
+				color: var(--sl-color-accent-high);
+			}
+		}
+
+		.reference-item-name {
+			font-family: var(--sl-font-mono);
+			font-size: 0.82rem;
+			background: transparent;
+			padding: 0;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			min-width: 0;
+		}
+	}
+}
+
+.ref-badge {
+	font-size: 0.65rem;
+	font-weight: 600;
+	letter-spacing: 0.03em;
+	padding: 0.12rem 0.38rem;
+	border-radius: 0.25rem;
+	text-transform: uppercase;
+	white-space: nowrap;
+	border: 1px solid transparent;
+	line-height: 1.1;
+	flex-shrink: 0;
+}
+
+.ref-badge-class {
+	background: rgb(14 165 233 / 15%);
+	color: #38bdf8;
+	border-color: rgb(56 189 248 / 30%);
+}
+
+.ref-badge-struct {
+	background: rgb(168 85 247 / 15%);
+	color: #c084fc;
+	border-color: rgb(192 132 252 / 30%);
+}
+
+.ref-badge-concept {
+	background: rgb(245 158 11 / 15%);
+	color: #fbbf24;
+	border-color: rgb(251 191 36 / 30%);
+}
+
+.ref-badge-functions {
+	background: rgb(34 197 94 / 15%);
+	color: #4ade80;
+	border-color: rgb(74 222 128 / 30%);
+}
+
+.ref-badge-enum {
+	background: rgb(236 72 153 / 15%);
+	color: #f472b6;
+	border-color: rgb(244 114 182 / 30%);
+}
+
+.ref-badge-constants {
+	background: rgb(99 102 241 / 15%);
+	color: #818cf8;
+	border-color: rgb(129 140 248 / 30%);
+}
+
+.ref-badge-types {
+	background: rgb(20 184 166 / 15%);
+	color: #2dd4bf;
+	border-color: rgb(45 212 191 / 30%);
+}
+
+:root[data-theme='light'] .ref-badge-class {
+	background: rgb(2 132 199 / 12%);
+	color: #0369a1;
+	border-color: rgb(2 132 199 / 25%);
+}
+
+:root[data-theme='light'] .ref-badge-struct {
+	background: rgb(147 51 234 / 12%);
+	color: #7e22ce;
+	border-color: rgb(147 51 234 / 25%);
+}
+
+:root[data-theme='light'] .ref-badge-concept {
+	background: rgb(217 119 6 / 12%);
+	color: #b45309;
+	border-color: rgb(217 119 6 / 25%);
+}
+
+:root[data-theme='light'] .ref-badge-functions {
+	background: rgb(22 163 74 / 12%);
+	color: #15803d;
+	border-color: rgb(22 163 74 / 25%);
+}
+
+:root[data-theme='light'] .ref-badge-enum {
+	background: rgb(219 39 119 / 12%);
+	color: #be185d;
+	border-color: rgb(219 39 119 / 25%);
+}
+
+:root[data-theme='light'] .ref-badge-constants {
+	background: rgb(79 70 229 / 12%);
+	color: #4338ca;
+	border-color: rgb(79 70 229 / 25%);
+}
+
+:root[data-theme='light'] .ref-badge-types {
+	background: rgb(13 148 136 / 12%);
+	color: #0f766e;
+	border-color: rgb(13 148 136 / 25%);
+}

@@ -1,0 +1,138 @@
+:root[data-theme='light'] {
+	.expressive-code:not(.member-signature *) {
+		--ec-brdCol: #cbd5e1;
+		--ec-codeBg: #fff;
+		--ec-codeFg: #1e293b;
+		--ec-gtrFg: #64748b;
+		--ec-gtrBrdCol: #e2e8f0;
+
+		.frame {
+			border: 1px solid #cbd5e1;
+			border-radius: 8px;
+			background: #fff;
+			box-shadow: 0 2px 8px rgb(15 23 42 / 6%);
+		}
+
+		.frame:not(.has-title, .is-terminal) .header {
+			display: none;
+		}
+
+		.frame.has-title:not(.is-terminal) .header,
+		.frame.is-terminal .header {
+			background: #89a5cb;
+			border-bottom: 1px solid #7796be;
+			color: #0f172a;
+		}
+
+		.frame.is-terminal .header::after {
+			border-bottom-color: #7796be;
+		}
+
+		.frame.is-terminal .header::before {
+			background-color: #334155;
+			opacity: 0.85;
+		}
+
+		.frame.has-title:not(.is-terminal) .header .title {
+			background: #fff;
+			color: #0f172a;
+			border: 1px solid #7796be;
+			border-bottom: 1px solid #fff;
+			font-weight: 600;
+		}
+
+		.copy button {
+			background: #f1f5f9;
+			border: 1px solid #cbd5e1;
+			border-radius: 6px;
+			box-shadow: 0 1px 3px rgb(15 23 42 / 8%);
+
+			&::after {
+				background-color: #334155;
+			}
+
+			&:hover {
+				background: #e2e8f0;
+				border-color: #94a3b8;
+
+				&::after {
+					background-color: #0f172a;
+				}
+			}
+		}
+
+		pre {
+			background-color: #fff;
+		}
+	}
+}
+
+body::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: -3;
+	pointer-events: none;
+	background-color: var(--sl-color-bg);
+	transition: background-color 0.3s ease;
+}
+
+:root[data-theme='light'] body::before {
+	background-color: #f1f5f9;
+}
+
+.liquid-silk-canvas {
+	position: fixed;
+	inset: 0;
+	width: 100vw;
+	height: 100vh;
+	z-index: -2;
+	pointer-events: none;
+	opacity: 0.35;
+	transition: opacity 0.5s ease;
+}
+
+:root[data-theme='light'] .liquid-silk-canvas {
+	opacity: 0.42;
+}
+
+html[data-has-hero] .liquid-silk-canvas {
+	position: fixed;
+	inset: 0;
+	width: 100vw;
+	height: 100vh;
+	z-index: -2;
+	pointer-events: none;
+	opacity: 0.40;
+	transition: opacity 0.5s ease;
+}
+
+:root[data-theme='light'] html[data-has-hero] .liquid-silk-canvas {
+	opacity: 0.52;
+}
+
+html:not([data-has-hero]) .liquid-silk-canvas {
+	position: fixed;
+	inset: 0;
+	width: 100vw;
+	height: 100vh;
+	z-index: -2;
+	pointer-events: none;
+	opacity: 0.62;
+	transition: opacity 0.5s ease;
+}
+
+:root[data-theme='light'] html:not([data-has-hero]) .liquid-silk-canvas {
+	opacity: 0.68;
+}
+
+html:not([data-has-hero]) .main-pane {
+	background-color: var(--sl-color-bg);
+	min-height: calc(100vh - var(--sl-nav-height));
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.liquid-silk-canvas {
+		display: none;
+	}
+}

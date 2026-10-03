@@ -1,0 +1,107 @@
+---
+---
+
+<script>
+	function setupTableOfContentsProgress() {
+		const tableOfContentsElements = document.querySelectorAll('starlight-toc');
+		if (tableOfContentsElements.length === 0) {
+			return;
+		}
+
+		tableOfContentsElements.forEach((tableOfContentsElement) => {
+			let progressContainer = tableOfContentsElement.querySelector('.toc-progress');
+			if (!progressContainer) {
+				const headingElement = tableOfContentsElement.querySelector('h2');
+				if (headingElement) {
+					progressContainer = document.createElement('div');
+					progressContainer.className = 'toc-progress';
+					progressContainer.setAttribute('aria-hidden', 'true');
+
+					const progressBar = document.createElement('span');
+					progressBar.className = 'toc-progress-bar';
+					progressContainer.appendChild(progressBar);
+
+					headingElement.insertAdjacentElement('afterend', progressContainer);
+				}
+			}
+		});
+
+		const updateActivePaths = () => {
+			tableOfContentsElements.forEach((tableOfContentsElement) => {
+				const activeLinkElement = tableOfContentsElement.querySelector('a[aria-current="true"]');
+				tableOfContentsElement.querySelectorAll('li.active-path').forEach((element) => {
+					element.classList.remove('active-path');
+				});
+				if (activeLinkElement) {
+					let parentElement = activeLinkElement.parentElement;
+					while (parentElement && parentElement !== tableOfContentsElement) {
+						if (parentElement.tagName === 'LI') {
+							parentElement.classList.add('active-path');
+						}
+						parentElement = parentElement.parentElement;
+					}
+				}
+			});
+		};
+
+		const updateScrollProgress = () => {
+			const scrollableDistance = document.documentElement.scrollHeight - window.innerHeight;
+			const scrollFraction = scrollableDistance > 0 ? Math.max(0, Math.min(1, window.scrollY / scrollableDistance)) : 0;
+			const progressBars = document.querySelectorAll<HTMLElement>('starlight-toc .toc-progress-bar');
+			progressBars.forEach((progressBar) => {
+				progressBar.style.transform = `scaleX(${scrollFraction})`;
+			});
+		};
+
+		let isProgressUpdateScheduled = false;
+		const handleScrollOrResize = () => {
+			if (isProgressUpdateScheduled) {
+				return;
+			}
+			isProgressUpdateScheduled = true;
+			requestAnimationFrame(() => {
+				isProgressUpdateScheduled = false;
+				updateScrollProgress();
+			});
+		};
+
+		const existingCleanupFunction = (window as unknown as { _tableOfContentsCleanup?: () => void })._tableOfContentsCleanup;
+		if (existingCleanupFunction) {
+			existingCleanupFunction();
+		}
+
+		window.addEventListener('scroll', handleScrollOrResize, { passive: true });
+		window.addEventListener('resize', handleScrollOrResize, { passive: true });
+		window.addEventListener('load', updateScrollProgress);
+
+		const mutationObservers: MutationObserver[] = [];
+		tableOfContentsElements.forEach((tableOfContentsElement) => {
+			const mutationObserver = new MutationObserver(() => {
+				updateActivePaths();
+			});
+			mutationObserver.observe(tableOfContentsElement, {
+				attributes: true,
+				subtree: true,
+				attributeFilter: ['aria-current'],
+			});
+			mutationObservers.push(mutationObserver);
+		});
+
+		(window as unknown as { _tableOfContentsCleanup?: () => void })._tableOfContentsCleanup = () => {
+			window.removeEventListener('scroll', handleScrollOrResize);
+			window.removeEventListener('resize', handleScrollOrResize);
+			window.removeEventListener('load', updateScrollProgress);
+			mutationObservers.forEach((observer) => observer.disconnect());
+		};
+
+		updateScrollProgress();
+		updateActivePaths();
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', setupTableOfContentsProgress);
+	} else {
+		setupTableOfContentsProgress();
+	}
+	document.addEventListener('astro:page-load', setupTableOfContentsProgress);
+</script>
