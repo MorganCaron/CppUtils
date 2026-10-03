@@ -911,30 +911,32 @@ function getBadgeInfo(kind) {
 
 	const sortedNamespaces = [...namespacesMap.keys()].sort();
 
-	indexMd += `<div class="reference-masonry">\n`;
+	indexMd += `<div class="reference-container">\n`;
+	indexMd += `  <div class="reference-masonry">\n`;
 	for (const ns of sortedNamespaces) {
 		const items = namespacesMap.get(ns).sort((a, b) => a.name.localeCompare(b.name));
 
-		indexMd += `  <div class="reference-category-card">\n`;
-		indexMd += `    <div class="reference-card-header">\n`;
-		indexMd += `      <h3 class="reference-card-title"><code>CppUtils::${ns}</code></h3>\n`;
-		indexMd += `    </div>\n`;
-		indexMd += `    <ul class="reference-card-list">\n`;
+		indexMd += `    <div class="reference-category-card">\n`;
+		indexMd += `      <div class="reference-card-header">\n`;
+		indexMd += `        <h3 class="reference-card-title"><code>CppUtils::${ns}</code></h3>\n`;
+		indexMd += `      </div>\n`;
+		indexMd += `      <ul class="reference-card-list">\n`;
 		for (const item of items) {
 			const dirPrefix = item.subNamespace ? `${item.subNamespace.toLowerCase()}/` : "";
 			const baseSlug = item.file.replace(/\.mdx?$/, "").toLowerCase();
 			const link = `/${lang}/reference/${dirPrefix}${baseSlug}/`;
 			const { badgeText, badgeClass } = getBadgeInfo(item.kind);
-			indexMd += `      <li class="reference-item">\n`;
-			indexMd += `        <a href={\`\${base}${link}\`} class="reference-item-link">\n`;
-			indexMd += `          <code class="reference-item-name">{${JSON.stringify(item.name)}}</code>\n`;
-			indexMd += `          <span class="${badgeClass}">${badgeText}</span>\n`;
-			indexMd += `        </a>\n`;
-			indexMd += `      </li>\n`;
+			indexMd += `        <li class="reference-item">\n`;
+			indexMd += `          <a href={\`\${base}${link}\`} class="reference-item-link">\n`;
+			indexMd += `            <code class="reference-item-name">{${JSON.stringify(item.name)}}</code>\n`;
+			indexMd += `            <span class="${badgeClass}">${badgeText}</span>\n`;
+			indexMd += `          </a>\n`;
+			indexMd += `        </li>\n`;
 		}
-		indexMd += `    </ul>\n`;
-		indexMd += `  </div>\n\n`;
+		indexMd += `      </ul>\n`;
+		indexMd += `    </div>\n\n`;
 	}
+	indexMd += `  </div>\n`;
 	indexMd += `</div>\n`;
 
 	fs.writeFileSync(path.join(outDir, "index.mdx"), indexMd, "utf-8");

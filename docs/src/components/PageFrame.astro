@@ -2,9 +2,11 @@
 import Default from "@astrojs/starlight/components/PageFrame.astro";
 import type { Props } from "@astrojs/starlight/props";
 import LiquidSilkCanvas from "./LiquidSilkCanvas.astro";
+import TableOfContentsProgress from "./TableOfContentsProgress.astro";
 ---
 
 <LiquidSilkCanvas />
+<TableOfContentsProgress />
 <Default {...Astro.props}>
 	<slot name="header" slot="header" />
 	<slot name="sidebar" slot="sidebar" />

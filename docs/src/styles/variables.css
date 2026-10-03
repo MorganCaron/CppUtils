@@ -1,0 +1,63 @@
+:root {
+	--sl-color-accent-low: #003757;
+	--sl-color-accent: #0090DF;
+	--sl-color-accent-high: #7ad1ff;
+	--sl-font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', monospace;
+	--sl-content-width: 68rem;
+}
+
+:root[data-theme='light'] {
+	color-scheme: light;
+
+	--sl-color-accent-low: #e0f2fe;
+	--sl-color-accent: #0284c7;
+	--sl-color-accent-high: #0369a1;
+	--sl-color-white: #0f172a;
+	--sl-color-gray-1: #1e293b;
+	--sl-color-gray-2: #334155;
+	--sl-color-gray-3: #64748b;
+	--sl-color-gray-4: #94a3b8;
+	--sl-color-gray-5: #cbd5e1;
+	--sl-color-gray-6: #f1f5f9;
+	--sl-color-black: #fff;
+	--sl-color-bg: #f1f5f9;
+	--sl-color-bg-nav: rgb(241 245 249 / 92%);
+	--sl-color-bg-sidebar: rgb(248 250 252 / 95%);
+	--sl-color-hairline-shade: rgb(15 23 42 / 14%);
+	--sl-color-hairline-light: rgb(15 23 42 / 8%);
+	--sl-shadow-md: 0 4px 14px rgb(15 23 42 / 8%);
+}
+
+:root[data-theme='dark'] {
+	color-scheme: dark;
+
+	--sl-color-accent-low: #0c4a6e;
+	--sl-color-accent: #38bdf8;
+	--sl-color-accent-high: #bae6fd;
+	--sl-color-bg: #080c14;
+	--sl-color-bg-nav: rgb(10 15 26 / 82%);
+	--sl-color-bg-sidebar: rgb(10 15 26 / 78%);
+	--sl-color-hairline-shade: rgb(255 255 255 / 8%);
+	--sl-color-hairline-light: rgb(255 255 255 / 4%);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+
+::view-transition-group(root),
+::view-transition-image-pair(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+	pointer-events: none;
+}
+
+::view-transition-old(root) {
+	z-index: 1;
+}
+
+::view-transition-new(root) {
+	z-index: 9999;
+}
