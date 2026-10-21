@@ -5,118 +5,118 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::BTree
 {
-	auto _ = TestSuite{"Container/BTree", {"Logger"}, [](TestSuite& suite) {
+	auto _ = testSuite("Container/BTree").dependsOn("Logger") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("Empty", [&] {
+		suite.test("Empty") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			Logger::print("{}", bTree);
-			suite.expect(std::ranges::empty(bTree));
-		});
+			expect(std::ranges::empty(bTree));
+		};
 
-		suite.addTest("1 element", [&] {
+		suite.test("1 element") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
 			Logger::print("{}", bTree);
-			suite.expect(not std::ranges::empty(bTree));
-			suite.expectEqual(std::ranges::size(bTree), 1uz);
-		});
+			expect(not std::ranges::empty(bTree));
+			expect(std::ranges::size(bTree)) == 1uz;
+		};
 
-		suite.addTest("2 elements", [&] {
+		suite.test("2 elements") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
 			bTree.add(1, 'B');
 			Logger::print("{}", bTree);
-			suite.expectEqual(std::ranges::size(bTree), 2uz);
-		});
+			expect(std::ranges::size(bTree)) == 2uz;
+		};
 
-		suite.addTest("5 elements (split self)", [&] {
+		suite.test("5 elements (split self)") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			for (auto i = 0; i < 5; ++i)
 				bTree.add(i, 'A' + static_cast<char>(i));
 			Logger::print("{}", bTree);
-			suite.expectEqual(std::ranges::size(bTree), 5uz);
-		});
+			expect(std::ranges::size(bTree)) == 5uz;
+		};
 
-		suite.addTest("8 elements (split self & split child)", [&] {
+		suite.test("8 elements (split self & split child)") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			for (auto i = 0; i < 8; ++i)
 				bTree.add(i, 'A' + static_cast<char>(i));
 			Logger::print("{}", bTree);
-			suite.expectEqual(std::ranges::size(bTree), 8uz);
-		});
+			expect(std::ranges::size(bTree)) == 8uz;
+		};
 
-		suite.addTest("10 elements", [&] {
+		suite.test("10 elements") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			for (auto i = 0; i < 10; ++i)
 				bTree.add(i, 'A' + static_cast<char>(i));
 			Logger::print("{}", bTree);
-			suite.expectEqual(std::ranges::size(bTree), 10uz);
-		});
+			expect(std::ranges::size(bTree)) == 10uz;
+		};
 
-		suite.addTest("Exists", [&] {
+		suite.test("Exists") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
 			Logger::print("{}", bTree);
-			suite.expect(bTree.exists(0));
-			suite.expect(not bTree.exists(1));
-		});
+			expect(bTree.exists(0));
+			expect(not bTree.exists(1));
+		};
 
-		suite.addTest("Key hasher", [&] {
+		suite.test("Key hasher") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<std::string, int>{};
 			bTree.add("test", 0);
 			Logger::print("{}", bTree);
-			suite.expectEqual(std::ranges::size(bTree), 1uz);
-		});
+			expect(std::ranges::size(bTree)) == 1uz;
+		};
 
-		suite.addTest("Removing element", [&] {
+		suite.test("Removing element") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
 			bTree.remove(0);
 			Logger::print("{}", bTree);
-			suite.expect(std::ranges::empty(bTree));
-		});
+			expect(std::ranges::empty(bTree));
+		};
 
-		suite.addTest("Removing nested element", [&] {
+		suite.test("Removing nested element") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			Logger::print("{}", bTree);
-			suite.expect(std::ranges::empty(bTree));
-		});
+			expect(std::ranges::empty(bTree));
+		};
 
-		suite.addTest("Clear", [&] {
+		suite.test("Clear") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
 			bTree.clear();
 			Logger::print("{}", bTree);
-			suite.expect(std::ranges::empty(bTree));
-		});
+			expect(std::ranges::empty(bTree));
+		};
 
-		suite.addTest("Search key", [&] {
+		suite.test("Search key") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
 			Logger::print("{}", bTree);
-			suite.expect(bTree.exists(0));
-			suite.expectEqual(bTree.get(0), 'A');
-		});
+			expect(bTree.exists(0));
+			expect(bTree.get(0)) == 'A';
+		};
 
-		suite.addTest("Set value", [&] {
+		suite.test("Set value") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree[0] = 'A';
 			Logger::print("{}", bTree);
-			suite.expect(not std::ranges::empty(bTree));
-			suite.expect(bTree.exists(0));
-			suite.expectEqual(bTree.get(0), 'A');
-		});
+			expect(not std::ranges::empty(bTree));
+			expect(bTree.exists(0));
+			expect(bTree.get(0)) == 'A';
+		};
 
-		suite.addTest("Edit value", [&] {
+		suite.test("Edit value") = [&] {
 			auto bTree = CppUtils::Container::BTree::Node<int, char>{};
 			bTree.add(0, 'A');
 			bTree[0] = 'B';
 			Logger::print("{}", bTree);
-			suite.expectEqual(bTree.size(), 1uz);
-			suite.expect(bTree.exists(0));
-			suite.expectEqual(bTree.get(0), 'B');
-		});
-	}};
+			expect(bTree.size()) == 1uz;
+			expect(bTree.exists(0));
+			expect(bTree.get(0)) == 'B';
+		};
+	};
 }

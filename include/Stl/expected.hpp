@@ -20,9 +20,7 @@ namespace Stl
 		constexpr unexpected(unexpected&&) = default;
 
 		template<class Err = E>
-		requires (!std::is_same_v<std::remove_cvref_t<Err>, unexpected> &&
-			!std::is_same_v<std::remove_cvref_t<Err>, std::in_place_t> &&
-			std::is_constructible_v<E, Err>)
+		requires (!std::is_same_v<std::remove_cvref_t<Err>, unexpected> && !std::is_same_v<std::remove_cvref_t<Err>, std::in_place_t> && std::is_constructible_v<E, Err>)
 		constexpr explicit unexpected(Err&& e):
 			unex{std::forward<Err>(e)}
 		{}
@@ -246,8 +244,7 @@ namespace Stl
 
 		constexpr expected& operator=(const expected&);
 		constexpr expected& operator=(expected&&) noexcept(
-			std::is_nothrow_move_constructible_v<T> and std::is_nothrow_move_assignable_v<T> &&
-			std::is_nothrow_move_constructible_v<E> and std::is_nothrow_move_assignable_v<E>);
+			std::is_nothrow_move_constructible_v<T> and std::is_nothrow_move_assignable_v<T> && std::is_nothrow_move_constructible_v<E> and std::is_nothrow_move_assignable_v<E>);
 		template<class U = T>
 		constexpr expected& operator=(U&&);
 		template<class G>
@@ -279,8 +276,7 @@ namespace Stl
 		}
 
 		constexpr void swap(expected& other) noexcept(
-			std::is_nothrow_move_constructible_v<T> and std::is_nothrow_swappable_v<T> &&
-			std::is_nothrow_move_constructible_v<E> and std::is_nothrow_swappable_v<E>)
+			std::is_nothrow_move_constructible_v<T> and std::is_nothrow_swappable_v<T> && std::is_nothrow_move_constructible_v<E> and std::is_nothrow_swappable_v<E>)
 		{
 			if (has_value() and other.has_value())
 			{

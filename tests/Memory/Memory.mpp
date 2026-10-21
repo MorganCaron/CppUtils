@@ -5,11 +5,11 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Memory
 {
-	auto _ = TestSuite{"Memory", {"UnitTest"}, [](TestSuite& suite) {
-		suite.addTest("moveRawPointer", [&] {
+	auto _ = testSuite("Memory").dependsOn("UnitTest") = [](TestSuite& suite) {
+		suite.test("moveRawPointer") = [&] {
 			auto* ptr = new int{42};
 			auto value = CppUtils::Memory::moveRawPointer(ptr);
-			suite.expectEqual(value, 42);
-		});
-	}};
+			expect(value) == 42;
+		};
+	};
 }

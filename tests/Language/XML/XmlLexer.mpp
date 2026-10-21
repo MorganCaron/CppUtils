@@ -5,34 +5,34 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Language::Xml::XmlLexer
 {
-	auto _ = TestSuite{"Language/Xml/XmlLexer", {}, [](TestSuite& suite) {
+	auto _ = testSuite("Language/Xml/XmlLexer") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using namespace CppUtils::Language::Xml::Literals;
 
-		suite.addTest("Empty tag", [&] {
+		suite.test("Empty tag") = [&] {
 			const auto xmlTree = R"(
 			<div></div>
 			)"_xml;
 			CppUtils::Log::TreeNodeLogger::log(xmlTree);
 
-			suite.expect(xmlTree.exists("div"_token));
+			expect(xmlTree.exists("div"_token));
 			const auto& divNode = xmlTree["div"_token];
-			suite.expect(std::ranges::empty(divNode.nodes));
-		});
+			expect(std::ranges::empty(divNode.nodes));
+		};
 
-		suite.addTest("Tag", [&] {
+		suite.test("Tag") = [&] {
 			const auto xmlTree = R"(
 			<h1>Title</h1>
 			)"_xml;
 			CppUtils::Log::TreeNodeLogger::log(xmlTree);
 
-			suite.expect(xmlTree.exists("h1"_token));
+			expect(xmlTree.exists("h1"_token));
 			const auto& h1 = xmlTree["h1"_token];
-			suite.expectEqual(std::get<std::string>(h1.nodes.at(0).value), "Title"s);
-		});
+			expect(std::get<std::string>(h1.nodes.at(0).value)) == "Title";
+		};
 
-		suite.addTest("Nested tags", [&] {
+		suite.test("Nested tags") = [&] {
 			const auto xmlTree = R"(
 			<ul>
 				<li>First</li>
@@ -42,46 +42,46 @@ namespace CppUtils::UnitTest::Language::Xml::XmlLexer
 			)"_xml;
 			CppUtils::Log::TreeNodeLogger::log(xmlTree);
 
-			suite.expect(xmlTree.exists("ul"_token));
+			expect(xmlTree.exists("ul"_token));
 			const auto& ul = xmlTree["ul"_token];
-			suite.expectEqual(std::ranges::size(ul.nodes), 3uz);
+			expect(std::ranges::size(ul.nodes)) == 3uz;
 			for (const auto& li : ul.nodes)
-				suite.expectEqual(std::get<CppUtils::Type::Token>(li.value), "li"_token);
-			suite.expectEqual(std::ranges::size(ul.nodes.at(0).nodes), 1uz);
-			suite.expectEqual(std::get<std::string>(ul.nodes.at(0).nodes.at(0).value), "First"s);
-			suite.expectEqual(std::get<std::string>(ul.nodes.at(1).nodes.at(0).value), "Second"s);
-			suite.expectEqual(std::get<std::string>(ul.nodes.at(2).nodes.at(0).value), "Third"s);
-		});
+				expect(std::get<CppUtils::Type::Token>(li.value)) == "li"_token;
+			expect(std::ranges::size(ul.nodes.at(0).nodes)) == 1uz;
+			expect(std::get<std::string>(ul.nodes.at(0).nodes.at(0).value)) == "First";
+			expect(std::get<std::string>(ul.nodes.at(1).nodes.at(0).value)) == "Second";
+			expect(std::get<std::string>(ul.nodes.at(2).nodes.at(0).value)) == "Third";
+		};
 
-		suite.addTest("Attributes", [&] {
+		suite.test("Attributes") = [&] {
 			const auto xmlTree = R"(
 			<h1 color="red">Title</h1>
 			)"_xml;
 			CppUtils::Log::TreeNodeLogger::log(xmlTree);
 
-			suite.expect(xmlTree.exists("h1"_token));
+			expect(xmlTree.exists("h1"_token));
 			const auto& h1 = xmlTree["h1"_token];
-			suite.expect(h1.exists("attributes"_token));
+			expect(h1.exists("attributes"_token));
 			const auto& attrs = h1["attributes"_token];
-			suite.expect(attrs.exists("color"_token));
-			suite.expectEqual(std::get<std::string>(attrs["color"_token].nodes.at(0).value), "red"s);
-			suite.expectEqual(std::get<std::string>(h1.nodes.at(1).value), "Title"s);
-		});
+			expect(attrs.exists("color"_token));
+			expect(std::get<std::string>(attrs["color"_token].nodes.at(0).value)) == "red";
+			expect(std::get<std::string>(h1.nodes.at(1).value)) == "Title";
+		};
 
-		suite.addTest("Self-closing tag", [&] {
+		suite.test("Self-closing tag") = [&] {
 			const auto xmlTree = R"(
 			<img src="avatar.png" alt="Profile"/>
 			)"_xml;
 			CppUtils::Log::TreeNodeLogger::log(xmlTree);
 
-			suite.expect(xmlTree.exists("img"_token));
+			expect(xmlTree.exists("img"_token));
 			const auto& imageNode = xmlTree["img"_token];
-			suite.expect(imageNode.exists("attributes"_token));
+			expect(imageNode.exists("attributes"_token));
 			const auto& attributesNode = imageNode["attributes"_token];
-			suite.expect(attributesNode.exists("src"_token));
-			suite.expectEqual(std::get<std::string>(attributesNode["src"_token].nodes.at(0).value), "avatar.png"s);
-			suite.expect(attributesNode.exists("alt"_token));
-			suite.expectEqual(std::get<std::string>(attributesNode["alt"_token].nodes.at(0).value), "Profile"s);
-		});
-	}};
+			expect(attributesNode.exists("src"_token));
+			expect(std::get<std::string>(attributesNode["src"_token].nodes.at(0).value)) == "avatar.png";
+			expect(attributesNode.exists("alt"_token));
+			expect(std::get<std::string>(attributesNode["alt"_token].nodes.at(0).value)) == "Profile";
+		};
+	};
 }

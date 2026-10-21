@@ -5,11 +5,11 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::ProgressBar
 {
-	auto _ = TestSuite{"Terminal/ProgressBar", {"UnitTest", "Thread/Scheduler", "Terminal/Canvas"}, [](TestSuite& suite) {
+	auto _ = testSuite("Terminal/ProgressBar").dependsOn("UnitTest", "Thread/Scheduler", "Terminal/Canvas") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace std::chrono_literals;
 
-		suite.addTest("Basic", [&] {
+		suite.test("Basic") = [&] {
 			const auto terminalWidth = CppUtils::Terminal::getTerminalSize().width();
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{terminalWidth, 1}};
 			auto& progressBar = canvas.newWidget<CppUtils::Terminal::ProgressBar>("Progress bar");
@@ -26,9 +26,9 @@ namespace CppUtils::UnitTest::Terminal::ProgressBar
 			}
 
 			canvas.wait();
-		});
+		};
 
-		suite.addTest("Multiple", [&] {
+		suite.test("Multiple") = [&] {
 			const auto terminalWidth = CppUtils::Terminal::getTerminalSize().width();
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{terminalWidth, 3}};
 			auto& layout = canvas.newWidget<CppUtils::Terminal::Layout>(CppUtils::Container::Size2{terminalWidth, 3});
@@ -51,9 +51,9 @@ namespace CppUtils::UnitTest::Terminal::ProgressBar
 			}
 
 			canvas.wait();
-		});
+		};
 
-		suite.addTest("Styles", [&] {
+		suite.test("Styles") = [&] {
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{60, 10}};
 
 			auto styles = std::vector<std::pair<std::string, CppUtils::Terminal::ProgressBarStyle>>{
@@ -81,6 +81,6 @@ namespace CppUtils::UnitTest::Terminal::ProgressBar
 				canvas.print();
 				std::this_thread::sleep_for(5ms);
 			}
-		});
-	}};
+		};
+	};
 }

@@ -5,42 +5,712 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::UnitTest
 {
-	auto _ = TestSuite{"UnitTest", [](TestSuite& suite) {
-		suite.addTest("empty test", [] {});
+	auto _ = testSuite("UnitTest") = [](TestSuite& suite) {
+		using namespace std::literals;
+		using namespace std::chrono_literals;
 
-		suite.addTest("expect", [&] {
-			suite.expect(true);
-		});
+		suite.test("empty test") = [] {};
 
-		suite.addTest("expectEqual", [&] {
-			using namespace std::literals;
+		suite.test("expect") = [&] {
+			expect(true);
+		};
 
-			suite.expectEqual(1, 1);
-			suite.expectEqual("test"sv, "test"sv);
-		});
+		suite.test("Comparison assertions with standard types") = [&] {
+			const auto leftNumber = 42;
+			const auto rightNumber = 42;
+			expect(leftNumber) == rightNumber;
 
-		suite.addTest("expectWait", [&] {
-			using namespace std::chrono_literals;
+			expect(10) > 5;
+			expect(10) >= 10;
+			expect(5) < 10;
+			expect(5) <= 5;
+			expect(1) != 2;
 
-			suite.expectWait([] {
+			expect(0.1 + 0.2) == 0.3;
+			expect(0.1 + 0.2) != 0.4;
+			expect(0.1 + 0.2) <= 0.3;
+			expect(0.1 + 0.2) >= 0.3;
+
+			expect("hello") == "hello";
+			expect("admin"s) == "admin";
+
+			expect(10ms) == 10ms;
+			expect(1s) == 1000ms;
+			expect(500us) > 100ns;
+			expect(1min) == 60s;
+			expect(1h) == 60min;
+
+			expect('A') == 'A';
+			expect('Z') > 'A';
+			expect(L'A') == L'A';
+
+			expect(std::byte{0x30}) == 0x30;
+			expect(std::byte{0x30}) == std::byte{0x30};
+
+			try
+			{
+				expect(1) == 2;
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("In expect(lhs) == rhs"));
+				expect(message.contains("with lhs:\n1"));
+				expect(message.contains("and rhs:\n2"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on ordering") = [&] {
+			try
+			{
+				expect(10) < 5;
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("In expect(lhs) < rhs"));
+				expect(message.contains("with lhs:\n10"));
+				expect(message.contains("and rhs:\n5"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on duration comparison") = [&] {
+			try
+			{
+				expect(10ms) < 5ms;
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("In expect(lhs) < rhs"));
+				expect(message.contains("with lhs:\n10ms"));
+				expect(message.contains("and rhs:\n5ms"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Expression capture with printable ranges") = [&] {
+			const auto actualHeader = std::vector<std::string>{"header1", "header2"};
+			const auto expectedHeader = std::vector<std::string>{"header1", "header2"};
+			expect(actualHeader) == expectedHeader;
+
+			const auto numbers = std::vector<int>{1, 2, 3};
+			expect(numbers) == std::vector<int>{1, 2, 3};
+
+			try
+			{
+				expect(actualHeader) == std::vector<std::string>{"other1", "other2"};
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains(R"(with lhs:
+["header1", "header2"])"));
+				expect(message.contains(R"(and rhs:
+["other1", "other2"])"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on std::ranges::size comparison") = [&] {
+			const auto users = std::vector<std::string>{"alice", "bob"};
+			expect(std::ranges::size(users)) == 2uz;
+
+			try
+			{
+				expect(std::ranges::size(users)) == 3uz;
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("In expect(lhs) == rhs"));
+				expect(message.contains("with lhs:\n2"));
+				expect(message.contains("and rhs:\n3"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on tuple comparison") = [&] {
+			const auto actualTuple = std::tuple{404, "Not Found"};
+			const auto expectedTuple = std::tuple{200, "OK"};
+
+			try
+			{
+				expect(actualTuple) == expectedTuple;
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains(R"(with lhs:
+(404, "Not Found"))"));
+				expect(message.contains(R"(and rhs:
+(200, "OK"))"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on pair comparison") = [&] {
+			const auto actualPair = std::pair{404, "Not Found"};
+			const auto expectedPair = std::pair{200, "OK"};
+
+			try
+			{
+				expect(actualPair) == expectedPair;
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains(R"(with lhs:
+(404, "Not Found"))"));
+				expect(message.contains(R"(and rhs:
+(200, "OK"))"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on filesystem path comparison") = [&] {
+			const auto actualPath = std::filesystem::path{"/var/log/syslog"};
+			const auto expectedPath = std::filesystem::path{"/var/log/app.log"};
+
+			try
+			{
+				expect(actualPath) == expectedPath;
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("with lhs:\n/var/log/syslog"));
+				expect(message.contains("and rhs:\n/var/log/app.log"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on std::byte comparison") = [&] {
+			const auto actualByte = std::byte{0x2A};
+			const auto expectedByte = std::byte{0xFF};
+
+			try
+			{
+				expect(actualByte) == expectedByte;
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("with lhs:\n0x2A"));
+				expect(message.contains("and rhs:\n0xFF"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on standalone expect boolean") = [&] {
+			try
+			{
+				expect(false);
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("In expect(condition)"));
+				expect(message.contains("with value:"));
+				expect(message.contains(Terminal::TextColor::Ansi::EscapeCode::Red));
+				expect(message.contains("false"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("not expect(condition)") = [&] {
+			not expect(false);
+
+			try
+			{
+				not expect(true);
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("In not expect(condition)"));
+				expect(message.contains("with value:"));
+				expect(message.contains(Terminal::TextColor::Ansi::EscapeCode::Red));
+				expect(message.contains("true"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on empty optional condition") = [&] {
+			const auto emptyOptional = std::optional<int>{};
+			try
+			{
+				expect(emptyOptional);
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("In expect(condition)"));
+				expect(message.contains("with value:"));
+				expect(message.contains(Terminal::TextColor::Ansi::EscapeCode::Red));
+				expect(message.contains("nullopt"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on dereferenceable optional negation") = [&] {
+			const auto populatedOptional = std::optional<std::string>{"Connexion refusée"};
+			try
+			{
+				not expect(populatedOptional);
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("In not expect(condition)"));
+				expect(message.contains("with value:"));
+				expect(message.contains(Terminal::TextColor::Ansi::EscapeCode::Red));
+				expect(message.contains("Connexion refusée"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on dereferenceable custom wrapper negation") = [&] {
+			struct CustomPayload final
+			{
+				std::string payload;
+				explicit operator bool() const noexcept { return not std::ranges::empty(payload); }
+				[[nodiscard]] auto operator*() const noexcept -> const std::string& { return payload; }
+			};
+
+			const auto customObject = CustomPayload{"Erreur applicative personnalisée"};
+			try
+			{
+				not expect(customObject);
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("In not expect(condition)"));
+				expect(message.contains("with value:"));
+				expect(message.contains(Terminal::TextColor::Ansi::EscapeCode::Red));
+				expect(message.contains("Erreur applicative personnalisée"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on null pointer condition") = [&] {
+			const auto nullPointer = std::unique_ptr<int>{};
+			try
+			{
+				expect(nullPointer);
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("In expect(condition)"));
+				expect(message.contains("with value:"));
+				expect(message.contains(Terminal::TextColor::Ansi::EscapeCode::Red));
+				expect(message.contains("nullptr"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test("Failure diagnostics on valid pointer negation") = [&] {
+			const auto validPointer = std::make_unique<int>(42);
+			try
+			{
+				not expect(validPointer);
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("In not expect(condition)"));
+				expect(message.contains("with value:"));
+				expect(message.contains(Terminal::TextColor::Ansi::EscapeCode::Red));
+				expect(message.contains("42"));
+				return;
+			}
+
+			expect(false);
+		};
+
+		suite.test<[] {
+			return 2 + 2 == 4;
+		}>("Compile-time test validation");
+
+		suite.test<[] {
+			auto fuzzer = CppUtils::Math::DeterministicRandomEngine{};
+			for (auto i = 0uz; i < 50uz; ++i)
+			{
+				const auto a = fuzzer.random(1, 100);
+				const auto b = fuzzer.random(1, 100);
+				if ((a / b) * b + (a % b) != a)
+					return false;
+			}
+			const auto floatValue = fuzzer.random<double>();
+			if (floatValue < 0.0 or floatValue > 1.0)
+				return false;
+			const auto sizeValue = fuzzer.random(10uz, 100uz);
+			if (sizeValue < 10uz or sizeValue > 100uz)
+				return false;
+			const auto boolValue = fuzzer.random<bool>();
+			static_assert(std::same_as<decltype(boolValue), const bool>);
+			return true;
+		}>("Compile-time deterministic fuzzing");
+
+		suite.test("eventually matcher") = [&] {
+			expect([] {
 				return true;
-			});
+			}) == eventually;
 
 			auto counter = 0uz;
-			suite.expectWait([&] {
+			expect([&] {
 				return ++counter >= 3uz;
-			}, 200ms, 10ms);
+			}) == eventually(200ms, 10ms);
 
-			suite.expectThrow<CppUtils::UnitTest::TestException>([&] {
-				suite.expectWait([] {
+			auto ready = false;
+			auto thread = std::jthread{[&ready] {
+				std::this_thread::sleep_for(20ms);
+				ready = true;
+			}};
+			expect([&ready] {
+				return ready;
+			}) == eventually(500ms);
+
+			expect([&] {
+				expect([] {
 					return false;
-				}, 30ms, 10ms);
-			});
-		});
+				}) == eventually(30ms, 10ms);
+			}) == throws<TestException>;
+		};
 
-		suite.addTest("Canary: LLVM #221609 std::throw_with_nested double-free", [&] {
+		suite.test("completes matcher on future") = [] {
+			auto promise = std::promise<void>{};
+			auto future = promise.get_future();
+			promise.set_value();
+
+			expect(future) == completes;
+		};
+
+		suite.test("completes.with matcher on future") = [] {
+			auto promise = std::promise<int>{};
+			auto future = promise.get_future();
+			promise.set_value(42);
+
+			expect(future) == completes.with(42);
+		};
+
+		suite.test("completes.with matcher value mismatch failure") = [] {
+			auto promise = std::promise<int>{};
+			auto future = promise.get_future();
+			promise.set_value(42);
+
+			expect([&] {
+				expect(future) == completes.with(999);
+			}) == throws<TestException>;
+		};
+
+		suite.test("completes matcher with custom timeout") = [] {
+			auto promise = std::promise<void>{};
+			auto future = promise.get_future();
+			promise.set_value();
+
+			expect(future) == completes(500ms);
+		};
+
+		suite.test("completes.with matcher with custom timeout") = [] {
+			auto promise = std::promise<int>{};
+			auto future = promise.get_future();
+			promise.set_value(100);
+
+			expect(future) == completes(500ms).with(100);
+		};
+
+		suite.test("completes matcher on future timeout failure") = [] {
+			auto unfulfilledPromise = std::promise<void>{};
+			auto unfulfilledFuture = unfulfilledPromise.get_future();
+
+			expect([&] {
+				expect(unfulfilledFuture) == completes(20ms);
+			}) == throws<TestException>;
+
+			// Workaround on Windows (MSVC ABI)
+			// https://github.com/llvm/llvm-project/issues/221609
+			// Abandoning an unfulfilled std::promise allocates an internal broken_promise exception
+			// whose destruction triggers heap corruption under Clang with MSVC ABI.
+			unfulfilledPromise.set_value();
+		};
+
+		suite.test("completes matcher on binary semaphore") = [] {
+			auto semaphore = std::binary_semaphore{0};
+			semaphore.release();
+
+			expect(semaphore) == completes;
+		};
+
+		suite.test("completes matcher on binary semaphore timeout failure") = [] {
+			auto unreleasedSemaphore = std::binary_semaphore{0};
+			expect([&] {
+				expect(unreleasedSemaphore) == completes(20ms);
+			}) == throws<TestException>;
+		};
+
+		suite.test("completes matcher on callable returning future") = [] {
+			expect([] {
+				auto promise = std::promise<void>{};
+				auto future = promise.get_future();
+				promise.set_value();
+				return future;
+			}) == completes;
+		};
+
+		suite.test("completes.with matcher on callable returning future") = [] {
+			expect([] {
+				auto promise = std::promise<int>{};
+				auto future = promise.get_future();
+				promise.set_value(42);
+				return future;
+			}) == completes.with(42);
+		};
+
+		suite.test("completes matcher on shared_future") = [] {
+			auto promise = std::promise<int>{};
+			auto sharedFuture = promise.get_future().share();
+			promise.set_value(42);
+
+			expect(sharedFuture) == completes;
+			expect(sharedFuture) == completes.with(42);
+		};
+
+		suite.test("completes matcher on counting semaphore") = [] {
+			auto countingSemaphore = std::counting_semaphore<8>{0};
+			countingSemaphore.release(2);
+
+			expect(countingSemaphore) == completes;
+		};
+
+		suite.test("crashes matcher") = [] {
 #if defined(_WIN32)
-			suite.skip("Waiting for LLVM issue #221609 fix: https://github.com/llvm/llvm-project/issues/221609");
+			skip("crashes matcher is not supported on Windows (POSIX fork/signals required)");
+#else
+			expect([] {
+				std::abort();
+			}) == crashes;
+
+			expect([] {
+				std::abort();
+			}) == crashes(CppUtils::System::Signal::Abort);
+#endif
+		};
+
+		suite.test("throws matcher with type") = [&] {
+			expect([] {
+				throw std::runtime_error{"Fatal error"};
+			}) == throws<std::runtime_error>;
+		};
+
+		suite.test("throws matcher with expected message") = [&] {
+			expect([] {
+				throw std::invalid_argument{"Division par zéro"};
+			}) == throws<std::invalid_argument>("Division par zéro");
+		};
+
+		suite.test("throws matcher with predicate") = [&] {
+			expect([] {
+				throw std::invalid_argument{"Division par zéro"};
+			}) == throws<std::invalid_argument>([](const std::invalid_argument& error) {
+				return std::string_view{error.what()}.contains("zéro");
+			});
+		};
+
+		suite.test("throws matcher with custom value equality") = [&] {
+			struct CustomError final
+			{
+				int code;
+				std::string message;
+
+				bool operator==(const CustomError& other) const = default;
+			};
+
+			expect([] {
+				throw CustomError{.code = 404, .message = "Not found"};
+			}) == throws<CustomError>(CustomError{.code = 404, .message = "Not found"});
+		};
+
+		suite.test("noThrow matcher") = [&] {
+			expect([] {
+				auto _ = 1 + 1;
+			}) == noThrow;
+		};
+
+		suite.test("throws matcher fails when no exception is thrown") = [] {
+			try
+			{
+				expect([] {}) == throws<std::runtime_error>;
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("Expected exception of type"));
+				expect(message.contains("no exception was thrown"));
+				return;
+			}
+			fail("Expected TestException was not thrown when no exception occurred");
+		};
+
+		suite.test("throws matcher fails when a different exception is thrown") = [] {
+			try
+			{
+				expect([] { throw std::logic_error{"Wrong"}; }) == throws<std::runtime_error>;
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("caught different exception"));
+				return;
+			}
+			fail("Expected TestException was not thrown when a different exception occurred");
+		};
+
+		suite.test("throws matcher fails when exception message does not match") = [] {
+			try
+			{
+				expect([] { throw std::invalid_argument{"Actual message"}; }) == throws<std::invalid_argument>("Expected message");
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("message did not contain expected text"));
+				expect(message.contains("Expected: \"Expected message\""));
+				expect(message.contains("Actual:   \"Actual message\""));
+				return;
+			}
+			fail("Expected TestException was not thrown when message did not match");
+		};
+
+		suite.test("noThrow matcher fails when an unexpected exception is thrown") = [] {
+			try
+			{
+				expect([] { throw std::runtime_error{"Surprise"}; }) == noThrow;
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("Expected no throw, but an exception was thrown"));
+				return;
+			}
+			fail("Expected TestException was not thrown when unexpected exception occurred in noThrow");
+		};
+
+		suite.test("eventually matcher fails when predicate times out") = [] {
+			try
+			{
+				expect([] { return false; }) == eventually(50ms, 10ms);
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("Timed out waiting for predicate to become true"));
+				return;
+			}
+			fail("Expected TestException was not thrown when eventually predicate timed out");
+		};
+
+		suite.test("EventWatcher with EventQueue") = [] {
+			auto queue = CppUtils::Execution::EventQueue{};
+
+			{
+				auto watcher = watch<"Message", int>(queue);
+				expect(not watcher.hasOccurred());
+
+				expect(not watcher.hasOccurred());
+				expect(watcher.count()) == 0uz;
+
+				queue.emit<"Message">(100);
+				queue.emit<"Message">(200);
+
+				expect(watcher.waitForOccurrences(2uz, 1000ms));
+				expect(watcher.hasOccurred());
+				auto occurrences = watcher.occurrences();
+				expect(occurrences->count) == 2uz;
+				expect(std::ranges::size(occurrences->payloads)) == 2uz;
+				expect(occurrences->payloads[0]) == 100;
+				expect(occurrences->payloads.back()) == 200;
+			}
+
+			{
+				auto voidWatcher = watch<"VoidMessage">(queue);
+				expect(not voidWatcher.hasOccurred());
+
+				queue.emit<"VoidMessage">();
+
+				expect(voidWatcher.waitForEvent(1000ms));
+				expect(voidWatcher.count()) == 1uz;
+				expect(voidWatcher.occurrences()->count) == 1uz;
+				expect(std::ranges::empty(voidWatcher.occurrences()->payloads));
+			}
+		};
+
+		suite.test("Parameterized test with forTypes").forTypes<int, double, std::string>() = [&]<class Type> {
+			auto instance = Type{};
+			expect(instance) == Type{};
+		};
+
+		suite.test("Parameterized test with forValues").forValues(10, 20, 30) = [&](int value) {
+			expect(value) > 0;
+		};
+
+		suite.test("Parameterized test with range forValues").forValues(std::array{100, 200}) = [&](int number) {
+			expect(number) >= 100;
+		};
+
+		suite.test("Parameterized test with map forValues").forValues(std::map<std::string, int>{{"admin", 4}, {"user", 2}}) = [&](const auto& entry) {
+			const auto& [role, permission] = entry;
+			expect(permission) > 0;
+		};
+
+		suite.fuzzTest("Deterministic fuzzing with random", 100) = [&](auto& fuzzer) {
+			const auto number = fuzzer.random(10, 50);
+			expect(number >= 10 and number <= 50);
+
+			const auto sizeValue = fuzzer.random(5uz, 25uz);
+			expect(sizeValue >= 5uz and sizeValue <= 25uz);
+
+			const auto uint32Value = fuzzer.template random<std::uint32_t>();
+			Execution::doNotOptimize(uint32Value);
+		};
+
+		suite.test("Canary: LLVM #221609 std::throw_with_nested double-free") = [] {
+#if defined(_WIN32)
+			skip("Waiting for LLVM issue #221609 fix: https://github.com/llvm/llvm-project/issues/221609");
 #else
 			using namespace std::literals;
 			auto caughtMessage = std::string{};
@@ -59,8 +729,93 @@ namespace CppUtils::UnitTest::UnitTest
 			{
 				caughtMessage = exception.what();
 			}
-			suite.expectEqual(caughtMessage, "Canary outer"s);
+			expect(caughtMessage) == "Canary outer";
 #endif
-		});
-	}};
+		};
+
+		suite.test("Suite name initialization") = [&] {
+			const auto explicitSuite = CppUtils::UnitTest::testSuite("CustomName");
+			expect(explicitSuite.name) == "CustomName";
+		};
+
+		suite.test("CLI parameters parsing") = [&] {
+			const auto arguments = std::array<std::string_view, 4>{"--filter=Math", "--fail-fast", "--report=junit:build/custom.xml", "-c"};
+			const auto settings = CppUtils::UnitTest::executeCommands(arguments);
+			expect(settings.filter) == "Math";
+			expect(settings.failFast) == true;
+			expect(settings.report) == "junit:build/custom.xml";
+			expect(settings.chrono) == true;
+
+			const auto shortArguments = std::array<std::string_view, 3>{"-f=String", "-r=out.xml", "-v=0"};
+			const auto shortSettings = CppUtils::UnitTest::executeCommands(shortArguments);
+			expect(shortSettings.filter) == "String";
+			expect(shortSettings.report) == "out.xml";
+			expect(shortSettings.verbose) == false;
+		};
+
+		suite.test("Visual colored diff on expectation failure") = [&] {
+			auto exceptionMessage = std::string{};
+			try
+			{
+				const auto expected = std::string{"hello world"};
+				const auto actual = std::string{"hello word"};
+				expect(expected) == actual;
+			}
+			catch (const TestException& exception)
+			{
+				exceptionMessage = exception.what();
+			}
+			expect(exceptionMessage.contains("Diff:")) == true;
+			expect(exceptionMessage.contains("lhs (-):")) == true;
+			expect(exceptionMessage.contains("rhs (+):")) == true;
+		};
+
+		suite.test("JUnit XML report export") = [&] {
+			using namespace std::chrono_literals;
+			FileSystem::TemporaryDirectory{[&](const auto& directory) {
+				const auto temporaryReportPath = directory / "test-report-sample.xml";
+
+				auto recordedCase = RecordedTestCase{
+					.name = "sampleTest",
+					.className = "SampleSuite",
+					.status = TestStatus::Success,
+					.message = {},
+					.duration = 5ms};
+				auto recordedSuite = RecordedTestSuite{
+					.name = "SampleSuite",
+					.testCases = {std::move(recordedCase)},
+					.duration = 5ms};
+
+				const auto suites = std::array{std::move(recordedSuite)};
+				JUnit::writeJUnitXmlReport(temporaryReportPath, suites, 5ms);
+
+				expect(std::filesystem::exists(temporaryReportPath)) == true;
+				auto file = std::ifstream{temporaryReportPath};
+				auto content = std::string{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
+				expect(content.contains(R"(<?xml version="1.0" encoding="UTF-8"?>)")) == true;
+				expect(content.contains(R"(<testsuites name="CppUtils Unit Tests")")) == true;
+				expect(content.contains(R"(<testsuite name="SampleSuite")")) == true;
+				expect(content.contains(R"(<testcase name="sampleTest" classname="SampleSuite")")) == true;
+			}};
+		};
+	};
+
+	namespace ParameterizedTypes
+	{
+		auto _ = testSuite("UnitTest/Parameterized suite with forTypes").forTypes<int, float>() = []<class Type>(TestSuite& suite) {
+			suite.test("Instantiation") = [&] {
+				auto instance = Type{};
+				expect(instance) == Type{};
+			};
+		};
+	}
+
+	namespace ParameterizedValues
+	{
+		auto _ = testSuite("UnitTest/Parameterized suite with forValues").forValues(5, 15) = [](TestSuite& suite, int value) {
+			suite.test("Value check") = [value] {
+				expect(value) > 0;
+			};
+		};
+	}
 }

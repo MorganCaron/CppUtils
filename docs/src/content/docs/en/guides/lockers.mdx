@@ -1,8 +1,8 @@
 ---
-title: RAII synchronization (Lockers)
+title: RAII Lockers
 description: Comprehensive guide to multithreaded synchronization, encapsulation, pitfalls, and best practices in CppUtils::Thread.
 sidebar:
-  order: 3
+  order: 4
 ---
 
 import { Card, CardGrid, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
@@ -207,6 +207,57 @@ auto account = CppUtils::Thread::UniqueLocker<BankAccount>{};
 	// Ability to perform further operations under the same atomic lock
 } // Scope exit: single lock release, zero broken atomicity window
 ```
+
+### Member lockers and the mutable keyword: logical vs physical constness
+
+When storing a `UniqueLocker` or `SharedLocker` as a member variable inside a class, a fundamental architectural design decision arises: should this member be declared `mutable`?
+
+The answer is **yes, in the vast majority of concurrent architectures**, due to the essential distinction between logical constness and physical (bitwise) constness:
+
+- **Logical constness**: An observation method (such as `count() const`, `snapshot() const`, or `hasOccurred() const`) promises callers that it does not alter the observable abstract state of the host object.
+- **Physical (bitwise) constness**: Acquiring a lock physically modifies an internal atomic variable or flag inside the mutex.
+
+#### Concrete use case: Synchronization and condition variables inside const methods
+
+Consider an event monitoring utility such as `EventWatcher`. Its inspection and waiting methods are naturally `const` from the caller's perspective:
+
+```cpp showLineNumbers
+class EventWatcher
+{
+	struct State
+	{
+		std::size_t count = 0;
+		std::vector<int> payloads;
+	};
+
+	// The mutable keyword allows locking and condition waits within const methods
+	mutable CppUtils::Thread::UniqueLocker<State> m_state;
+	std::condition_variable m_condition;
+
+public:
+	[[nodiscard]] auto count() const noexcept -> std::size_t
+	{
+		return m_state.access()->count;
+	}
+
+	auto waitForOccurrences(std::size_t target, std::chrono::milliseconds timeout) const -> bool
+	{
+		auto accessor = m_state.access();
+		// std::condition_variable::wait_for requires an active, modifiable std::unique_lock
+		return m_condition.wait_for(accessor.getLockGuard(), timeout, [&] {
+			return accessor->count >= target;
+		});
+	}
+};
+```
+
+Without the `mutable` specifier on `m_state`:
+1. In a `const` member function, the compiler treats `m_state` as `const UniqueLocker<State>`.
+2. Invoking `m_state.access()` calls the `const&` overload, returning an `Accessor<const State>`.
+3. Synchronization primitives that atomically release and re-acquire locks (such as `condition_variable::wait_for` requiring `accessor.getLockGuard()`) fail to compile because the underlying lock cannot be modified.
+4. Lazy initialization, memoization, or thread-safe caching under lock inside a `const` method would be impossible without breaking encapsulation.
+
+Declaring member lockers as `mutable` ensures that operational thread-safety mechanics remain strictly decoupled from the logical constness guarantees of your public APIs.
 
 ---
 

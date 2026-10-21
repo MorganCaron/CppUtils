@@ -1,0 +1,957 @@
+export module CppUtils.UnitTest.Expectation;
+
+import std;
+import CppUtils.Chrono;
+import CppUtils.Container;
+import CppUtils.String;
+import CppUtils.System;
+import CppUtils.Terminal;
+import CppUtils.Thread;
+import CppUtils.Type;
+import CppUtils.UnitTest.Assertion;
+import CppUtils.UnitTest.Runner;
+
+namespace CppUtils::UnitTest
+{
+	/// @brief Base tag for all expectation matchers.
+	export struct ExpectationMatcherTag
+	{};
+
+	/**
+	 * @brief Matcher for validating that a caught exception satisfies a predicate or value equality.
+	 * @note Instantiated via throws<ExceptionType>; not intended to be constructed directly by user code.
+	 */
+	export template<class ExceptionType, class PredicateType>
+	struct ThrowsPredicateMatcher final: ExpectationMatcherTag
+	{
+		PredicateType predicate;
+
+		constexpr explicit ThrowsPredicateMatcher(PredicateType predicateValue) noexcept:
+			predicate{std::move(predicateValue)}
+		{}
+	};
+
+	/**
+	 * @brief Matcher for validating that a callable throws an expected exception type with optional message or predicate.
+	 * @note Instantiated via throws<ExceptionType>; not intended to be constructed directly by user code.
+	 */
+	export template<class ExceptionType>
+	struct ThrowsMatcher final: ExpectationMatcherTag
+	{
+		std::string_view expectedMessage{};
+
+		constexpr ThrowsMatcher() = default;
+		constexpr explicit ThrowsMatcher(std::string_view message) noexcept:
+			expectedMessage{message}
+		{}
+
+		[[nodiscard]] constexpr auto operator()(std::string_view message) const noexcept -> ThrowsMatcher
+		{
+			return ThrowsMatcher{message};
+		}
+
+		template<class PredicateOrValue>
+		requires (not std::convertible_to<PredicateOrValue, std::string_view>)
+		[[nodiscard]] constexpr auto operator()(PredicateOrValue&& predicateOrValue) const
+		{
+			return ThrowsPredicateMatcher<ExceptionType, std::remove_cvref_t<PredicateOrValue>>{std::forward<PredicateOrValue>(predicateOrValue)};
+		}
+	};
+
+	/// @brief Matcher tag variable template for expecting an exception of type ExceptionType.
+	export template<class ExceptionType>
+	inline constexpr ThrowsMatcher<ExceptionType> throws{};
+
+	/**
+	 * @brief Matcher asserting that an action executes without throwing any exception.
+	 * @note Instantiated via the 'noThrow' matcher; not intended to be constructed directly by user code.
+	 */
+	export struct NoThrowMatcher final: ExpectationMatcherTag
+	{};
+
+	/// @brief Matcher instance asserting that an action completes without throwing any exception.
+	export inline constexpr NoThrowMatcher noThrow{};
+
+	/**
+	 * @brief Matcher asserting that executing an action terminates abnormally via a fatal signal.
+	 * @note Instantiated via the 'crashes' matcher; not intended to be constructed directly by user code.
+	 */
+	export struct CrashesMatcher final: ExpectationMatcherTag
+	{
+		std::optional<System::Signal> expectedSignal = std::nullopt;
+
+		constexpr CrashesMatcher() = default;
+		constexpr explicit CrashesMatcher(System::Signal signal) noexcept:
+			expectedSignal{signal}
+		{}
+
+		[[nodiscard]] constexpr auto operator()() const noexcept -> CrashesMatcher
+		{
+			return *this;
+		}
+
+		[[nodiscard]] constexpr auto operator()(System::Signal signal) const noexcept -> CrashesMatcher
+		{
+			return CrashesMatcher{signal};
+		}
+	};
+
+	/// @brief Matcher instance asserting that an action terminates abnormally.
+	export inline constexpr CrashesMatcher crashes{};
+
+	/**
+	 * @brief Matcher asserting that a boolean predicate evaluates to true within an allotted duration.
+	 * @note Instantiated via the 'eventually' matcher; not intended to be constructed directly by user code.
+	 */
+	export template<Chrono::Duration TimeoutDuration = std::chrono::milliseconds, Chrono::Duration StepDuration = std::chrono::milliseconds>
+	struct EventuallyMatcher final: ExpectationMatcherTag
+	{
+		TimeoutDuration timeout{std::chrono::ceil<TimeoutDuration>(std::chrono::milliseconds{1'000})};
+		StepDuration step{std::chrono::ceil<StepDuration>(std::chrono::milliseconds{20})};
+
+		constexpr EventuallyMatcher() = default;
+		constexpr explicit EventuallyMatcher(
+			TimeoutDuration timeoutDuration,
+			StepDuration stepDuration = std::chrono::ceil<StepDuration>(std::chrono::milliseconds{20})) noexcept:
+			timeout{std::move(timeoutDuration)},
+			step{std::move(stepDuration)}
+		{}
+
+		[[nodiscard]] constexpr auto operator()(Chrono::Duration auto newTimeout) const noexcept
+		{
+			return EventuallyMatcher<decltype(newTimeout), std::chrono::milliseconds>{
+				std::move(newTimeout),
+				std::chrono::milliseconds{20}};
+		}
+
+		[[nodiscard]] constexpr auto operator()(
+			Chrono::Duration auto newTimeout,
+			Chrono::Duration auto newStep) const noexcept
+		{
+			return EventuallyMatcher<decltype(newTimeout), decltype(newStep)>{
+				std::move(newTimeout),
+				std::move(newStep)};
+		}
+	};
+
+	/// @brief Matcher instance asserting that a predicate eventually becomes true.
+	export inline constexpr EventuallyMatcher<> eventually{};
+
+	export template<class ExpectedValueType, Chrono::Duration TimeoutDuration = std::chrono::milliseconds>
+	struct CompletesWithMatcher;
+
+	/**
+	 * @brief Matcher asserting that an asynchronous future or reactive primitive completes within an allotted duration.
+	 * @note Instantiated via the 'completes' matcher; not intended to be constructed directly by user code.
+	 */
+	export template<Chrono::Duration TimeoutDuration = std::chrono::milliseconds>
+	struct CompletesMatcher final: ExpectationMatcherTag
+	{
+		TimeoutDuration timeout{std::chrono::ceil<TimeoutDuration>(std::chrono::milliseconds{1'000})};
+
+		constexpr CompletesMatcher() = default;
+		constexpr explicit CompletesMatcher(TimeoutDuration timeoutDuration) noexcept:
+			timeout{std::move(timeoutDuration)}
+		{}
+
+		[[nodiscard]] constexpr auto operator()(Chrono::Duration auto newTimeout) const noexcept
+		{
+			return CompletesMatcher<decltype(newTimeout)>{std::move(newTimeout)};
+		}
+
+		[[nodiscard]] constexpr auto with(auto&& expectedValue) const
+		{
+			return CompletesWithMatcher<std::decay_t<decltype(expectedValue)>, TimeoutDuration>{
+				std::forward<decltype(expectedValue)>(expectedValue),
+				timeout};
+		}
+	};
+
+	/**
+	 * @brief Matcher asserting that an asynchronous future completes with a specific value within an allotted duration.
+	 * @note Instantiated via completes.with(...); not intended to be constructed directly by user code.
+	 */
+	export template<class ExpectedValueType, Chrono::Duration TimeoutDuration>
+	struct CompletesWithMatcher final: ExpectationMatcherTag
+	{
+		ExpectedValueType expectedValue;
+		TimeoutDuration timeout{std::chrono::ceil<TimeoutDuration>(std::chrono::milliseconds{1'000})};
+
+		constexpr CompletesWithMatcher(
+			ExpectedValueType value,
+			TimeoutDuration timeoutDuration = std::chrono::ceil<TimeoutDuration>(std::chrono::milliseconds{1'000})) noexcept:
+			expectedValue{std::move(value)},
+			timeout{std::move(timeoutDuration)}
+		{}
+
+		[[nodiscard]] constexpr auto operator()(Chrono::Duration auto newTimeout) const noexcept
+		{
+			return CompletesWithMatcher<ExpectedValueType, decltype(newTimeout)>{expectedValue, std::move(newTimeout)};
+		}
+	};
+
+	/// @brief Matcher instance asserting that a future or reactive primitive completes.
+	export inline constexpr CompletesMatcher<> completes{};
+
+	/// @brief Concept satisfied if Type is an expectation matcher (`throws`, `noThrow`, `crashes`, `eventually`, `completes`).
+	export template<class Type>
+	concept ExpectationMatcherConcept = std::derived_from<std::remove_cvref_t<Type>, ExpectationMatcherTag>;
+
+	namespace Detail
+	{
+		[[nodiscard]] inline auto inspectConditionValue(const auto& value) -> std::optional<std::string>
+		{
+			using DecayedType = std::remove_cvref_t<decltype(value)>;
+
+			if constexpr (String::ExtensivelyPrintable<DecayedType>)
+				return String::formatValue(value);
+			else
+				return std::nullopt;
+		}
+
+		[[nodiscard]] inline auto formatColoredItem(const auto& item, std::string_view ansiColor = {}) -> std::string
+		{
+			using ItemType = std::remove_cvref_t<decltype(item)>;
+			const auto reset = std::ranges::empty(ansiColor) ? "" : Terminal::Ansi::EscapeCode::Reset;
+
+			if constexpr (String::GenericText<ItemType>)
+				return std::format("\"{0}{1}{2}\"", ansiColor, item, reset);
+			else if constexpr (Type::Character<ItemType>)
+				return std::format("'{0}{1}{2}'", ansiColor, item, reset);
+			else
+				return std::format("{0}{1}{2}", ansiColor, String::formatValue(item), reset);
+		}
+
+		[[nodiscard]] inline auto formatDiff(const auto& left, const auto& right) -> std::string
+		{
+			using DecayedLeft = std::remove_cvref_t<decltype(left)>;
+			using DecayedRight = std::remove_cvref_t<decltype(right)>;
+
+			if constexpr (String::CharacterSequence<DecayedLeft> and String::CharacterSequence<DecayedRight>)
+			{
+				const auto toView = [](const auto& target) -> std::string_view {
+					if constexpr (String::Text<decltype(target), char>)
+						return std::string_view{target};
+					else
+					{
+						const auto span = std::span<const char>{target};
+						return std::string_view{std::ranges::data(span), std::ranges::size(span)};
+					}
+				};
+
+				const auto leftView = toView(left);
+				const auto rightView = toView(right);
+				const auto differences = Container::Sequence::getDifferences(leftView, rightView);
+
+				auto leftFormatted = std::string{};
+				auto rightFormatted = std::string{};
+				auto leftIndex = 0uz;
+				auto rightIndex = 0uz;
+
+				auto leftInRed = false;
+				auto rightInGreen = false;
+
+				for (const auto difference : differences)
+				{
+					switch (difference)
+					{
+					case Container::Sequence::Difference::None:
+						if (leftInRed)
+						{
+							leftFormatted += Terminal::Ansi::EscapeCode::Reset;
+							leftInRed = false;
+						}
+						if (rightInGreen)
+						{
+							rightFormatted += Terminal::Ansi::EscapeCode::Reset;
+							rightInGreen = false;
+						}
+						if (leftIndex < std::ranges::size(leftView))
+							leftFormatted += leftView[leftIndex++];
+						if (rightIndex < std::ranges::size(rightView))
+							rightFormatted += rightView[rightIndex++];
+						break;
+
+					case Container::Sequence::Difference::Removed:
+						if (not leftInRed)
+						{
+							leftFormatted += Terminal::TextColor::Ansi::EscapeCode::Red;
+							leftInRed = true;
+						}
+						if (leftIndex < std::ranges::size(leftView))
+							leftFormatted += leftView[leftIndex++];
+						break;
+
+					case Container::Sequence::Difference::Added:
+						if (not rightInGreen)
+						{
+							rightFormatted += Terminal::TextColor::Ansi::EscapeCode::Green;
+							rightInGreen = true;
+						}
+						if (rightIndex < std::ranges::size(rightView))
+							rightFormatted += rightView[rightIndex++];
+						break;
+
+					case Container::Sequence::Difference::Edited:
+						if (not leftInRed)
+						{
+							leftFormatted += Terminal::TextColor::Ansi::EscapeCode::Red;
+							leftInRed = true;
+						}
+						if (not rightInGreen)
+						{
+							rightFormatted += Terminal::TextColor::Ansi::EscapeCode::Green;
+							rightInGreen = true;
+						}
+						if (leftIndex < std::ranges::size(leftView))
+							leftFormatted += leftView[leftIndex++];
+						if (rightIndex < std::ranges::size(rightView))
+							rightFormatted += rightView[rightIndex++];
+						break;
+					}
+				}
+
+				if (leftInRed)
+					leftFormatted += Terminal::Ansi::EscapeCode::Reset;
+				if (rightInGreen)
+					rightFormatted += Terminal::Ansi::EscapeCode::Reset;
+
+				return std::format("\n\nDiff:\n  lhs (-): \"{}\"\n  rhs (+): \"{}\"", leftFormatted, rightFormatted);
+			}
+			else if constexpr (std::same_as<DecayedLeft, std::filesystem::path> and std::same_as<DecayedRight, std::filesystem::path>)
+			{
+				return formatDiff(left.string(), right.string());
+			}
+			else if constexpr ((Type::Specializes<DecayedLeft, std::pair> or Type::Specializes<DecayedLeft, std::tuple>)
+				and (Type::Specializes<DecayedRight, std::pair> or Type::Specializes<DecayedRight, std::tuple>))
+			{
+				if constexpr (std::tuple_size_v<DecayedLeft> == std::tuple_size_v<DecayedRight>)
+				{
+					auto leftFormatted = std::string{"("};
+					auto rightFormatted = std::string{"("};
+
+					[&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
+						auto isFirst = true;
+						const auto processElement = [&]<std::size_t Index>() {
+							if (not isFirst)
+							{
+								leftFormatted += ", ";
+								rightFormatted += ", ";
+							}
+							isFirst = false;
+
+							const auto& leftElement = std::get<Index>(left);
+							const auto& rightElement = std::get<Index>(right);
+
+							const auto areEqual = [&] {
+								if constexpr (requires { leftElement == rightElement; })
+									return leftElement == rightElement;
+								else
+									return true;
+							}();
+
+							leftFormatted += formatColoredItem(
+								leftElement,
+								areEqual ? "" : Terminal::TextColor::Ansi::EscapeCode::Red);
+							rightFormatted += formatColoredItem(
+								rightElement,
+								areEqual ? "" : Terminal::TextColor::Ansi::EscapeCode::Green);
+						};
+
+						(processElement.template operator()<Indices>(), ...);
+					}(std::make_index_sequence<std::tuple_size_v<DecayedLeft>>{});
+
+					leftFormatted += ")";
+					rightFormatted += ")";
+
+					return std::format("\n\nDiff:\n  lhs (-): {}\n  rhs (+): {}", leftFormatted, rightFormatted);
+				}
+				else
+				{
+					return {};
+				}
+			}
+			else if constexpr (std::ranges::input_range<DecayedLeft> and std::ranges::input_range<DecayedRight>
+				and not(String::GenericText<DecayedLeft> or String::GenericText<DecayedRight>
+					or std::same_as<DecayedLeft, std::filesystem::path> or std::same_as<DecayedRight, std::filesystem::path>))
+			{
+				using LeftElement = std::ranges::range_value_t<DecayedLeft>;
+				using RightElement = std::ranges::range_value_t<DecayedRight>;
+
+				if constexpr (String::ExtensivelyPrintable<LeftElement> and String::ExtensivelyPrintable<RightElement>)
+				{
+					auto leftVector = std::vector<LeftElement>{};
+					for (const auto& item : left)
+						leftVector.push_back(item);
+
+					auto rightVector = std::vector<RightElement>{};
+					for (const auto& item : right)
+						rightVector.push_back(item);
+
+					if constexpr (requires { Container::Sequence::getDifferences(leftVector, rightVector); })
+					{
+						const auto differences = Container::Sequence::getDifferences(leftVector, rightVector);
+
+						auto leftFormatted = std::string{"["};
+						auto rightFormatted = std::string{"["};
+						auto leftIndex = 0uz;
+						auto rightIndex = 0uz;
+						auto leftFirst = true;
+						auto rightFirst = true;
+
+						const auto appendLeft = [&](std::string_view ansiColor) {
+							if (leftIndex < std::ranges::size(leftVector))
+							{
+								if (not leftFirst)
+									leftFormatted += ", ";
+								leftFirst = false;
+								leftFormatted += formatColoredItem(leftVector[leftIndex++], ansiColor);
+							}
+						};
+
+						const auto appendRight = [&](std::string_view ansiColor) {
+							if (rightIndex < std::ranges::size(rightVector))
+							{
+								if (not rightFirst)
+									rightFormatted += ", ";
+								rightFirst = false;
+								rightFormatted += formatColoredItem(rightVector[rightIndex++], ansiColor);
+							}
+						};
+
+						for (const auto difference : differences)
+						{
+							if (difference != Container::Sequence::Difference::Added)
+								appendLeft(difference == Container::Sequence::Difference::None ? "" : Terminal::TextColor::Ansi::EscapeCode::Red);
+							if (difference != Container::Sequence::Difference::Removed)
+								appendRight(difference == Container::Sequence::Difference::None ? "" : Terminal::TextColor::Ansi::EscapeCode::Green);
+						}
+
+						leftFormatted += "]";
+						rightFormatted += "]";
+
+						return std::format("\n\nDiff:\n  lhs (-): {}\n  rhs (+): {}", leftFormatted, rightFormatted);
+					}
+					else
+					{
+						return {};
+					}
+				}
+				else
+				{
+					return {};
+				}
+			}
+			else
+			{
+				return {};
+			}
+		}
+	}
+
+	/**
+	 * @brief Proxy object representing an expectation on a value or boolean condition.
+	 *
+	 * Enables comparison assertions such as `expect(a) == b;` as well as
+	 * standalone boolean conditions such as `expect(condition);`.
+	 *
+	 * @tparam LeftType Type of the left-hand operand or condition.
+	 */
+	export template<class LeftType>
+	class ExpectationProxy final
+	{
+	public:
+		constexpr explicit ExpectationProxy(
+			LeftType&& left,
+			std::source_location location = std::source_location::current()) noexcept:
+			m_left{std::forward<LeftType>(left)},
+			m_location{location}
+		{}
+
+		ExpectationProxy(const ExpectationProxy&) = delete;
+		ExpectationProxy& operator=(const ExpectationProxy&) = delete;
+
+		constexpr ExpectationProxy(ExpectationProxy&& other) noexcept:
+			m_left{std::forward<LeftType>(other.m_left)},
+			m_location{other.m_location},
+			m_evaluated{std::exchange(other.m_evaluated, true)}
+		{}
+
+		constexpr ~ExpectationProxy() noexcept(false)
+		{
+			if (not m_evaluated and std::uncaught_exceptions() == 0)
+			{
+				if constexpr (requires { static_cast<bool>(m_left); })
+				{
+					if (not static_cast<bool>(m_left))
+						failCondition("expect(condition)");
+				}
+				else
+				{
+					throw TestException{std::format(
+						"In {}\nAt line {}, column {}\nIn expect(value): value is not boolean and was not compared to anything.",
+						m_location.file_name(),
+						m_location.line(),
+						m_location.column())};
+				}
+			}
+		}
+
+		constexpr auto operator!() -> void
+		{
+			m_evaluated = true;
+			if constexpr (requires { static_cast<bool>(m_left); })
+			{
+				if (static_cast<bool>(m_left))
+					failCondition("not expect(condition)");
+			}
+			else
+			{
+				throw TestException{std::format(
+					"In {}\nAt line {}, column {}\nIn not expect(value): value is not boolean and cannot be converted to bool.",
+					m_location.file_name(),
+					m_location.line(),
+					m_location.column())};
+			}
+		}
+
+		template<class RightType>
+		requires (not ExpectationMatcherConcept<RightType>)
+		constexpr auto operator==(const RightType& right) -> void
+		{
+			check<ComparisonOperator::Equal>(right);
+		}
+
+		template<class RightType>
+		requires (not ExpectationMatcherConcept<RightType>)
+		constexpr auto operator!=(const RightType& right) -> void
+		{
+			check<ComparisonOperator::NotEqual>(right);
+		}
+
+		template<class RightType>
+		requires (not ExpectationMatcherConcept<RightType>)
+		constexpr auto operator<(const RightType& right) -> void
+		{
+			check<ComparisonOperator::LessThan>(right);
+		}
+
+		template<class RightType>
+		requires (not ExpectationMatcherConcept<RightType>)
+		constexpr auto operator<=(const RightType& right) -> void
+		{
+			check<ComparisonOperator::LessThanOrEqual>(right);
+		}
+
+		template<class RightType>
+		requires (not ExpectationMatcherConcept<RightType>)
+		constexpr auto operator>(const RightType& right) -> void
+		{
+			check<ComparisonOperator::GreaterThan>(right);
+		}
+
+		template<class RightType>
+		requires (not ExpectationMatcherConcept<RightType>)
+		constexpr auto operator>=(const RightType& right) -> void
+		{
+			check<ComparisonOperator::GreaterThanOrEqual>(right);
+		}
+
+		template<class ExceptionType>
+		inline auto operator==(const ThrowsMatcher<ExceptionType>& matcher) -> void
+		requires requires (LeftType& left) { left(); }
+		{
+			executeAndExpectException<ExceptionType>([&](const ExceptionType& exception) {
+				if (not std::ranges::empty(matcher.expectedMessage))
+				{
+					if constexpr (requires (const ExceptionType& target) { target.what(); })
+					{
+						if (const auto actualMessage = std::string_view{exception.what()};
+							not actualMessage.contains(matcher.expectedMessage))
+						{
+							throw TestException{std::format(
+								"In {}\nAt line {}, column {}\nIn expect(action) == throws<{}>\nCaught expected exception of type {}, but message did not contain expected text.\nExpected: \"{}\"\nActual:   \"{}\"",
+								m_location.file_name(),
+								m_location.line(),
+								m_location.column(),
+								typeid(ExceptionType).name(),
+								typeid(ExceptionType).name(),
+								matcher.expectedMessage,
+								actualMessage)};
+						}
+					}
+					else if constexpr (requires { exception == matcher.expectedMessage; })
+					{
+						if (not(exception == matcher.expectedMessage))
+						{
+							throw TestException{std::format(
+								"In {}\nAt line {}, column {}\nIn expect(action) == throws<{}>\nCaught expected exception of type {}, but value did not match expected value.",
+								m_location.file_name(),
+								m_location.line(),
+								m_location.column(),
+								typeid(ExceptionType).name(),
+								typeid(ExceptionType).name())};
+						}
+					}
+				}
+			});
+		}
+
+		template<class ExceptionType, class PredicateType>
+		inline auto operator==(const ThrowsPredicateMatcher<ExceptionType, PredicateType>& matcher) -> void
+		requires requires (LeftType& left) { left(); }
+		{
+			executeAndExpectException<ExceptionType>([&](const ExceptionType& exception) {
+				if constexpr (std::is_invocable_r_v<bool, PredicateType, const ExceptionType&>)
+				{
+					if (not matcher.predicate(exception))
+					{
+						throw TestException{std::format(
+							"In {}\nAt line {}, column {}\nIn expect(action) == throws<{}>\nCaught expected exception of type {}, but it failed predicate validation.",
+							m_location.file_name(),
+							m_location.line(),
+							m_location.column(),
+							typeid(ExceptionType).name(),
+							typeid(ExceptionType).name())};
+					}
+				}
+				else if constexpr (std::is_invocable_v<PredicateType, const ExceptionType&>)
+				{
+					matcher.predicate(exception);
+				}
+				else if constexpr (requires { exception == matcher.predicate; })
+				{
+					if (not(exception == matcher.predicate))
+					{
+						throw TestException{std::format(
+							"In {}\nAt line {}, column {}\nIn expect(action) == throws<{}>\nCaught expected exception of type {}, but its value did not match expected value.",
+							m_location.file_name(),
+							m_location.line(),
+							m_location.column(),
+							typeid(ExceptionType).name(),
+							typeid(ExceptionType).name())};
+					}
+				}
+			});
+		}
+
+		inline auto operator==(const NoThrowMatcher&) -> void
+		requires requires (LeftType& left) { left(); }
+		{
+			m_evaluated = true;
+			try
+			{
+				m_left();
+			}
+			catch (const std::exception& exception)
+			{
+				throw TestException{std::format(
+					"In {}\nAt line {}, column {}\nIn expect(action) == noThrow\nExpected no throw, but an exception was thrown (type: {}): {}",
+					m_location.file_name(),
+					m_location.line(),
+					m_location.column(),
+					typeid(exception).name(),
+					exception.what())};
+			}
+			catch (...)
+			{
+				throw TestException{std::format(
+					"In {}\nAt line {}, column {}\nIn expect(action) == noThrow\nExpected no throw, but an unknown non-std exception was thrown.",
+					m_location.file_name(),
+					m_location.line(),
+					m_location.column())};
+			}
+		}
+
+		inline auto operator==([[maybe_unused]] const CrashesMatcher& matcher) -> void
+		requires requires (LeftType& left) { left(); }
+		{
+			m_evaluated = true;
+#if defined(__linux__)
+			const auto isolatedResult = System::runIsolated([&] {
+				try
+				{
+					m_left();
+				}
+				catch (...)
+				{
+					std::abort();
+				}
+			});
+
+			if (not isolatedResult and isolatedResult.error().crash.has_value())
+			{
+				const auto& crash = isolatedResult.error().crash.value();
+				const auto actualSignal = crash.signal;
+				if (matcher.expectedSignal.has_value() and actualSignal != matcher.expectedSignal.value())
+				{
+					const auto expectedSignalName = System::signalToString(matcher.expectedSignal.value());
+					const auto actualSignalName = crash.signalName();
+					auto message = std::format(
+						"In {}\nAt line {}, column {}\nIn expect(action) == crashes\nExpected death with signal {} ({}), but terminated with signal {} ({})",
+						m_location.file_name(),
+						m_location.line(),
+						m_location.column(),
+						static_cast<int>(matcher.expectedSignal.value()),
+						expectedSignalName,
+						static_cast<int>(actualSignal),
+						actualSignalName);
+					if (const auto actualSignalExplanation = crash.signalExplanation();
+						not std::ranges::empty(actualSignalExplanation))
+						message += std::format("\nCause: {}", actualSignalExplanation);
+					throw TestException{std::move(message)};
+				}
+			}
+			else
+			{
+				throw TestException{std::format(
+					"In {}\nAt line {}, column {}\nIn expect(action) == crashes\nExpected process to crash, but it exited normally",
+					m_location.file_name(),
+					m_location.line(),
+					m_location.column())};
+			}
+#else
+			throw TestSkipped{"crashes matcher is only supported on Linux with process isolation", m_location};
+#endif
+		}
+
+		template<Chrono::Duration TimeoutDuration, Chrono::Duration StepDuration>
+		inline auto operator==(const EventuallyMatcher<TimeoutDuration, StepDuration>& matcher) -> void
+		requires requires (LeftType& left) { { left() } -> std::convertible_to<bool>; }
+		{
+			m_evaluated = true;
+			if (not Thread::pollFor([&] { return static_cast<bool>(m_left()); }, matcher.timeout, matcher.step)) [[unlikely]]
+				throw TestException{std::format(
+					"In {}\nAt line {}, column {}\nIn expect(predicate) == eventually\nTimed out waiting for predicate to become true (waited for {})",
+					m_location.file_name(),
+					m_location.line(),
+					m_location.column(),
+					matcher.timeout)};
+		}
+
+		template<Chrono::Duration TimeoutDuration>
+		inline auto operator==(const CompletesMatcher<TimeoutDuration>& matcher) -> void
+		requires (requires (LeftType& left, TimeoutDuration timeout) {
+			{ left.wait_for(timeout) } -> std::same_as<std::future_status>;
+		} or requires (LeftType& left, TimeoutDuration timeout) {
+			{ left().wait_for(timeout) } -> std::same_as<std::future_status>;
+		})
+		{
+			m_evaluated = true;
+			auto&& future = resolveFuture();
+			waitForFuture(future, matcher.timeout, "completes");
+		}
+
+		template<Chrono::Duration TimeoutDuration>
+		inline auto operator==(const CompletesMatcher<TimeoutDuration>& matcher) -> void
+		requires requires (LeftType& left, TimeoutDuration timeout) {
+			{ left.try_acquire_for(timeout) } -> std::same_as<bool>;
+		}
+		{
+			m_evaluated = true;
+			if (not m_left.try_acquire_for(matcher.timeout)) [[unlikely]]
+			{
+				throw TestException{std::format(
+					"In {}\nAt line {}, column {}\nIn expect(semaphore) == completes\nTimed out waiting for semaphore to be acquired (waited for {})",
+					m_location.file_name(),
+					m_location.line(),
+					m_location.column(),
+					matcher.timeout)};
+			}
+		}
+
+		template<class ExpectedValueType, Chrono::Duration TimeoutDuration>
+		inline auto operator==(const CompletesWithMatcher<ExpectedValueType, TimeoutDuration>& matcher) -> void
+		requires (requires (LeftType& left, TimeoutDuration timeout) {
+			{ left.wait_for(timeout) } -> std::same_as<std::future_status>;
+			left.get();
+		} or requires (LeftType& left, TimeoutDuration timeout) {
+			{ left().wait_for(timeout) } -> std::same_as<std::future_status>;
+			left().get();
+		})
+		{
+			m_evaluated = true;
+			auto&& future = resolveFuture();
+			waitForFuture(future, matcher.timeout, "completes.with(...)");
+			checkFutureValue(future.get(), matcher.expectedValue);
+		}
+
+	private:
+		[[nodiscard]] constexpr auto resolveFuture() -> decltype(auto)
+		{
+			if constexpr (requires { m_left(); })
+				return m_left();
+			else
+				return (m_left);
+		}
+
+		template<class FutureType, Chrono::Duration TimeoutDuration>
+		auto waitForFuture(FutureType& future, TimeoutDuration timeout, std::string_view matcherName) const -> void
+		{
+			const auto status = future.wait_for(timeout);
+			if (status != std::future_status::ready) [[unlikely]]
+			{
+				if (status == std::future_status::timeout)
+				{
+					throw TestException{std::format(
+						"In {}\nAt line {}, column {}\nIn expect(future) == {}\nTimed out waiting for future to complete (waited for {})",
+						m_location.file_name(),
+						m_location.line(),
+						m_location.column(),
+						matcherName,
+						timeout)};
+				}
+				else
+				{
+					throw TestException{std::format(
+						"In {}\nAt line {}, column {}\nIn expect(future) == {}\nFuture execution was deferred",
+						m_location.file_name(),
+						m_location.line(),
+						m_location.column(),
+						matcherName)};
+				}
+			}
+		}
+
+		template<class ActualValueType, class ExpectedValueType>
+		auto checkFutureValue(ActualValueType&& actualValue, const ExpectedValueType& expectedValue) const -> void
+		{
+			if (not(actualValue == expectedValue)) [[unlikely]]
+			{
+				throw TestException{std::format(
+					"In {}\nAt line {}, column {}\nIn expect(future) == completes.with(...)\nFuture completed with unexpected value:\nExpected: {}\nActual:   {}",
+					m_location.file_name(),
+					m_location.line(),
+					m_location.column(),
+					Detail::formatColoredItem(expectedValue, Terminal::TextColor::Ansi::EscapeCode::Green),
+					Detail::formatColoredItem(actualValue, Terminal::TextColor::Ansi::EscapeCode::Red))};
+			}
+		}
+
+		template<class ExceptionType>
+		auto executeAndExpectException(auto&& validateException) -> void
+		{
+			m_evaluated = true;
+			try
+			{
+				m_left();
+			}
+			catch (const ExceptionType& exception)
+			{
+				validateException(exception);
+				return;
+			}
+			catch (const std::exception& exception)
+			{
+				throw TestException{std::format(
+					"In {}\nAt line {}, column {}\nIn expect(action) == throws<{}>\nExpected exception of type {}, but caught different exception (type: {}): {}",
+					m_location.file_name(),
+					m_location.line(),
+					m_location.column(),
+					typeid(ExceptionType).name(),
+					typeid(ExceptionType).name(),
+					typeid(exception).name(),
+					exception.what())};
+			}
+			catch (...)
+			{
+				throw TestException{std::format(
+					"In {}\nAt line {}, column {}\nIn expect(action) == throws<{}>\nExpected exception of type {}, but caught an unknown non-std exception.",
+					m_location.file_name(),
+					m_location.line(),
+					m_location.column(),
+					typeid(ExceptionType).name(),
+					typeid(ExceptionType).name())};
+			}
+
+			throw TestException{std::format(
+				"In {}\nAt line {}, column {}\nIn expect(action) == throws<{}>\nExpected exception of type {}, but no exception was thrown.",
+				m_location.file_name(),
+				m_location.line(),
+				m_location.column(),
+				typeid(ExceptionType).name(),
+				typeid(ExceptionType).name())};
+		}
+
+		auto failCondition(std::string_view expressionName) const -> void
+		{
+			const auto diagnosticValue = Detail::inspectConditionValue(m_left);
+			if (diagnosticValue.has_value())
+			{
+				throw TestException{std::format(
+					"In {}\nAt line {}, column {}\nIn {}\nwith value:\n{}{}{}",
+					m_location.file_name(),
+					m_location.line(),
+					m_location.column(),
+					expressionName,
+					Terminal::TextColor::Ansi::EscapeCode::Red,
+					*diagnosticValue,
+					Terminal::Ansi::EscapeCode::Reset)};
+			}
+			throw TestException{std::format(
+				"In {}\nAt line {}, column {}\nIn {}",
+				m_location.file_name(),
+				m_location.line(),
+				m_location.column(),
+				expressionName)};
+		}
+
+		template<ComparisonOperator Operator>
+		constexpr auto check(const auto& right) -> void
+		{
+			m_evaluated = true;
+			const auto passed = evaluateComparison<Operator>(m_left, right);
+			if (not passed) [[unlikely]]
+			{
+				auto diffString = std::string{};
+				if constexpr (Operator == ComparisonOperator::Equal)
+					diffString = Detail::formatDiff(m_left, right);
+
+				throw TestException{std::format(
+					"In {}\nAt line {}, column {}\nIn expect(lhs) {} rhs\nwith lhs:\n{}\nand rhs:\n{}{}",
+					m_location.file_name(),
+					m_location.line(),
+					m_location.column(),
+					getComparisonOperatorString(Operator),
+					String::formatValue(m_left),
+					String::formatValue(right),
+					diffString)};
+			}
+		}
+
+		LeftType m_left;
+		std::source_location m_location;
+		bool m_evaluated = false;
+	};
+
+	/**
+	 * @brief Asserts an expectation on a value, condition, or callable.
+	 *
+	 * Supports comparison assertions using relational operators:
+	 * ```cpp
+	 * expect(value) == expected;
+	 * expect(score) >= 100;
+	 * ```
+	 * standalone boolean conditions:
+	 * ```cpp
+	 * expect(result.has_value());
+	 * ```
+	 * and matchers:
+	 * ```cpp
+	 * expect([&] { divide(1, 0); }) == throws<std::invalid_argument>;
+	 * expect([&] { divide(1, 2); }) == noThrow;
+	 * ```
+	 *
+	 * @param operand Value to compare, boolean condition, or callable to evaluate.
+	 * @param location Source location used for failure reporting (automatically captured).
+	 * @return ExpectationProxy evaluating the expectation.
+	 */
+	export template<class OperandType>
+	constexpr auto expect(
+		OperandType&& operand,
+		std::source_location location = std::source_location::current()) noexcept
+		-> ExpectationProxy<OperandType>
+	{
+		return ExpectationProxy<OperandType>{std::forward<OperandType>(operand), location};
+	}
+}

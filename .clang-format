@@ -115,7 +115,7 @@ AlignTrailingComments:
   Kind: Never
 
 # Accolades
-RemoveBracesLLVM: true
+RemoveBracesLLVM: false
 
 # Order
 SortIncludes: CaseInsensitive

@@ -5,15 +5,15 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Chrono::Chronometer
 {
-	auto _ = TestSuite{"Chrono", {"Logger"}, [](TestSuite& suite) {
+	auto _ = testSuite("Chrono").dependsOn("Logger") = [](TestSuite& suite) {
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("Chronometer", [&] {
+		suite.test("Chronometer") = [&] {
 			auto chrono = CppUtils::Chrono::Chronometer{};
 			chrono.stop();
 			auto string = CppUtils::Chrono::durationToString(chrono.elapsed());
-			suite.expect(not std::ranges::empty(string));
+			expect(not std::ranges::empty(string));
 			Logger::print("{}", string);
-		});
-	}};
+		};
+	};
 }

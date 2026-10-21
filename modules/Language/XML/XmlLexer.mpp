@@ -52,8 +52,7 @@ export namespace CppUtils::Language::Xml
 		[[nodiscard]] static inline auto textParser(Lexer::Context<Type::Token, std::string>& context) -> bool
 		{
 			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
-			const auto string = std::string{String::trimString(String::getStringAndSkipIf(cursor, [](char character) -> bool
-			{
+			const auto string = std::string{String::trimString(String::getStringAndSkipIf(cursor, [](char character) -> bool {
 				return character != '<';
 			}))};
 			if (std::ranges::empty(string))

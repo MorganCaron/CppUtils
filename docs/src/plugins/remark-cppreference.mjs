@@ -12,9 +12,9 @@ function getCppReferenceUrl(rawSymbol) {
 	const clean = rawSymbol.trim();
 	if (Object.hasOwn(symbols, clean)) return symbols[clean];
 
-	const match = clean.match(/\b(std::[a-zA-Z0-9_:]+)/);
+	const match = clean.match(/^std::[a-zA-Z0-9_:]+/);
 	if (!match) return null;
-	const sym = match[1];
+	const sym = match[0];
 	if (Object.hasOwn(symbols, sym)) return symbols[sym];
 
 	const parts = sym.split('::');

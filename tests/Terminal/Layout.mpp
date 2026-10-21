@@ -5,10 +5,10 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::Layout
 {
-	auto _ = TestSuite{"Terminal/Layout", {"Terminal/Canvas", "Terminal/Text"}, [](TestSuite& suite) {
+	auto _ = testSuite("Terminal/Layout").dependsOn("Terminal/Canvas", "Terminal/Text") = [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
-		suite.addTest("Column", [&] {
+		suite.test("Column") = [&] {
 			const auto size = CppUtils::Container::Size2{10, 4};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -19,13 +19,13 @@ namespace CppUtils::UnitTest::Terminal::Layout
 			canvas.print();
 
 			const auto accessor = canvas.getBuffer().sharedAccess();
-			suite.expectEqual(accessor->getChar({0, 0}).character, U'L');
-			suite.expectEqual(accessor->getChar({5, 0}).character, U'1');
-			suite.expectEqual(accessor->getChar({0, 1}).character, U'L');
-			suite.expectEqual(accessor->getChar({5, 1}).character, U'2');
-		});
+			expect(accessor->getChar({0, 0}).character) == U'L';
+			expect(accessor->getChar({5, 0}).character) == U'1';
+			expect(accessor->getChar({0, 1}).character) == U'L';
+			expect(accessor->getChar({5, 1}).character) == U'2';
+		};
 
-		suite.addTest("Row JustifyCenter", [&] {
+		suite.test("Row JustifyCenter") = [&] {
 			const auto size = CppUtils::Container::Size2{20, 1};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -39,12 +39,12 @@ namespace CppUtils::UnitTest::Terminal::Layout
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({8, 0}).character, U'I');
-				suite.expectEqual(accessor->getChar({11, 0}).character, U'm');
+				expect(accessor->getChar({8, 0}).character) == U'I';
+				expect(accessor->getChar({11, 0}).character) == U'm';
 			}
-		});
+		};
 
-		suite.addTest("AbsolutePosition & ZIndex", [&] {
+		suite.test("AbsolutePosition & ZIndex") = [&] {
 			const auto size = CppUtils::Container::Size2{10, 2};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -64,7 +64,7 @@ namespace CppUtils::UnitTest::Terminal::Layout
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({0, 0}).character, U'B');
+				expect(accessor->getChar({0, 0}).character) == U'B';
 			}
 			std::this_thread::sleep_for(200ms);
 
@@ -72,12 +72,12 @@ namespace CppUtils::UnitTest::Terminal::Layout
 			canvas.print();
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({0, 0}).character, U'A');
+				expect(accessor->getChar({0, 0}).character) == U'A';
 			}
 			std::this_thread::sleep_for(200ms);
-		});
+		};
 
-		suite.addTest("Absolute right bottom positioning", [&] {
+		suite.test("Absolute right bottom positioning") = [&] {
 			const auto size = CppUtils::Container::Size2{10, 3};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -92,9 +92,9 @@ namespace CppUtils::UnitTest::Terminal::Layout
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({6, 2}).character, U'E');
-				suite.expectEqual(accessor->getChar({8, 2}).character, U'd');
+				expect(accessor->getChar({6, 2}).character) == U'E';
+				expect(accessor->getChar({8, 2}).character) == U'd';
 			}
-		});
-	}};
+		};
+	};
 }

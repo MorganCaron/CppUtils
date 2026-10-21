@@ -52,8 +52,7 @@ export namespace CppUtils::Language::Ini
 		[[nodiscard]] static inline auto identifierParser(Lexer::Context<Type::Token, bool, float>& context, char delimiter) -> bool
 		{
 			auto& [cursor, parentNode, firstChildPosition, parsingErrors] = context;
-			const auto string = std::string{String::trimString(String::getStringAndSkipIf(cursor, [delimiter](char character) -> bool
-			{
+			const auto string = std::string{String::trimString(String::getStringAndSkipIf(cursor, [delimiter](char character) -> bool {
 				return character != delimiter and character != ';' and character != '[' and character != ']' and (std::isspace(static_cast<unsigned char>(character)) or std::isgraph(static_cast<unsigned char>(character)));
 			}))};
 			if (std::ranges::empty(string))

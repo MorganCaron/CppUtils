@@ -5,10 +5,10 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Thread::ScheduledEventDispatcher
 {
-	auto _ = TestSuite{"Thread/ScheduledEventDispatcher", {"Execution/EventDispatcher", "Thread/Scheduler"}, [](TestSuite& suite) {
+	auto _ = testSuite("Thread/ScheduledEventDispatcher").dependsOn("Execution/EventDispatcher", "Thread/Scheduler") = [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
-		suite.addTest("Immediate Emit", [&] {
+		suite.test("Immediate Emit") = [&] {
 			auto dispatcher = CppUtils::Thread::ScheduledEventDispatcher{};
 			auto receivedValue = std::atomic_bool{};
 
@@ -18,10 +18,10 @@ namespace CppUtils::UnitTest::Thread::ScheduledEventDispatcher
 			dispatcher.emit<"Event">(true);
 
 			dispatcher.waitUntilFinished();
-			suite.expectEqual(receivedValue.load(), true);
-		});
+			expect(receivedValue.load());
+		};
 
-		suite.addTest("Delayed Emit", [&] {
+		suite.test("Delayed Emit") = [&] {
 			auto dispatcher = CppUtils::Thread::ScheduledEventDispatcher{};
 			auto receivedValue = std::atomic_bool{};
 			auto executionTime = std::atomic<CppUtils::Thread::ScheduledEventDispatcher::TimePoint>{};
@@ -36,15 +36,15 @@ namespace CppUtils::UnitTest::Thread::ScheduledEventDispatcher
 			dispatcher.emit<"Event">(delay, true);
 
 			if (CppUtils::Thread::ScheduledEventDispatcher::Clock::now() < startTime + delay)
-				suite.expectEqual(receivedValue.load(), false);
+				not expect(receivedValue.load());
 
 			dispatcher.waitUntilFinished();
 
-			suite.expectEqual(receivedValue.load(), true);
-			suite.expect(executionTime.load() >= startTime + delay);
-		});
+			expect(receivedValue.load());
+			expect(executionTime.load()) >= startTime + delay;
+		};
 
-		suite.addTest("Delayed Emit with Flush", [&] {
+		suite.test("Delayed Emit with Flush") = [&] {
 			auto dispatcher = CppUtils::Thread::ScheduledEventDispatcher{};
 			auto receivedValue = std::atomic_bool{};
 
@@ -53,9 +53,9 @@ namespace CppUtils::UnitTest::Thread::ScheduledEventDispatcher
 			});
 			dispatcher.emit<"Event">(30s, true);
 
-			suite.expect(not receivedValue.load());
+			expect(not receivedValue.load());
 			dispatcher.flush();
-			suite.expect(receivedValue.load());
-		});
-	}};
+			expect(receivedValue.load());
+		};
+	};
 }

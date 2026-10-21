@@ -30,8 +30,8 @@ namespace CppUtils::UnitTest::Language::CSV::Range
 		using FunctionMapping = CppUtils::Type::Mapping<>;
 	};
 
-	auto _ = TestSuite{"Language/CSV/Range", {"Language/CSV/Parsing", "Language/CSV/Mapping", "FileSystem/File", "FileSystem/Directory"}, [](TestSuite& suite) {
-		suite.addTest("Full Pipeline", [&] {
+	auto _ = testSuite("Language/CSV/Range").dependsOn("Language/CSV/Parsing", "Language/CSV/Mapping", "FileSystem/File", "FileSystem/Directory") = [](TestSuite& suite) {
+		suite.test("Full Pipeline") = [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& directory) {
 				const auto inputFilePath = directory / "input.csv";
 				const auto outputFilePath = directory / "output.csv";
@@ -59,11 +59,11 @@ Charlie;40)");
 					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
 					| std::ranges::to<std::vector<std::string>>();
 
-				suite.expectEqual(std::ranges::size(lines), 3uz);
-				suite.expectEqual(lines[0], "Alice;31");
-				suite.expectEqual(lines[1], "Bob;26");
-				suite.expectEqual(lines[2], "Charlie;41");
+				expect(std::ranges::size(lines)) == 3uz;
+				expect(lines[0]) == "Alice;31";
+				expect(lines[1]) == "Bob;26";
+				expect(lines[2]) == "Charlie;41";
 			}};
-		});
-	}};
+		};
+	};
 }

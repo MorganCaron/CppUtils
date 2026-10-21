@@ -5,15 +5,69 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Math::Random
 {
-	auto _ = TestSuite{"Random", {"UnitTest"}, [](TestSuite& suite) {
-		suite.addTest("getRandomNumberInInterval", [&] {
+	auto _ = testSuite("Random").dependsOn("UnitTest") = [](TestSuite& suite) {
+		suite.test("getRandomNumberInInterval") = [&] {
 			constexpr auto min = 1;
 			constexpr auto max = 10;
 			for (int i = 0; i < 100; ++i)
 			{
 				auto randomNumber = CppUtils::Math::getRandomNumberInInterval(min, max);
-				suite.expect(randomNumber >= min and randomNumber <= max);
+				expect(randomNumber >= min and randomNumber <= max);
 			}
-		});
-	}};
+		};
+
+		suite.test("DeterministicRandomEngine") = [&] {
+			auto engine1 = CppUtils::Math::DeterministicRandomEngine{42ULL};
+			auto engine2 = CppUtils::Math::DeterministicRandomEngine{42ULL};
+
+			expect(engine1.seed()) == 42ULL;
+			expect(engine2.seed()) == 42ULL;
+
+			for (auto _ : std::views::iota(0uz, 100uz))
+				expect(engine1.nextUint64()) == engine2.nextUint64();
+
+			const auto boolean = engine1.random<bool>();
+			Execution::doNotOptimize(boolean);
+
+			const auto integer = engine1.random(10, 20);
+			expect(integer >= 10 and integer <= 20);
+
+			const auto floating = engine1.randomFloat(0.5, 1.5);
+			expect(floating >= 0.5 and floating <= 1.5);
+
+			const auto randomGenericBool = engine1.random<bool>();
+			Execution::doNotOptimize(randomGenericBool);
+
+			const auto randomGenericInt = engine1.random<int>();
+			Execution::doNotOptimize(randomGenericInt);
+
+			const auto randomGenericDouble = engine1.random<double>();
+			expect(randomGenericDouble >= 0.0 and randomGenericDouble <= 1.0);
+
+			const auto randomDeducedRangeInt = engine1.random(10, 20);
+			expect(randomDeducedRangeInt >= 10 and randomDeducedRangeInt <= 20);
+
+			const auto randomDeducedRangeFloat = engine1.random(0.5, 1.5);
+			expect(randomDeducedRangeFloat >= 0.5 and randomDeducedRangeFloat <= 1.5);
+
+			const auto sizeWithRange = engine1.randomSize(10uz, 50uz);
+			expect(sizeWithRange >= 10uz and sizeWithRange <= 50uz);
+
+			const auto sizeWithMaximum = engine1.randomSize(100uz);
+			expect(sizeWithMaximum) <= 100uz;
+
+			const auto sizeDefault = engine1.randomSize();
+			expect(sizeDefault) <= static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max());
+
+			const auto text = engine1.randomString(8uz, 16uz);
+			expect(std::ranges::size(text) >= 8uz and std::ranges::size(text) <= 16uz);
+
+			const auto bytes = engine1.randomBytes(32uz);
+			expect(std::ranges::size(bytes)) == 32uz;
+
+			const auto items = std::vector<int>{1, 2, 3, 4, 5};
+			const auto picked = engine1.pickOne(items);
+			expect(picked >= 1 and picked <= 5);
+		};
+	};
 }

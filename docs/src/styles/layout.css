@@ -99,20 +99,33 @@ header.header {
 	width: var(--sl-sidebar-width);
 	height: calc(100vh - var(--sl-nav-height));
 	padding-top: 0;
-	padding-bottom: 1rem;
+	padding-bottom: 0;
 	background-color: transparent;
 	background-image: linear-gradient(180deg, rgb(8 12 20 / 96%) 0%, rgb(8 12 20 / 82%) 30%, rgb(8 12 20 / 25%) 65%, transparent 88%);
 	border-inline-start: 1px solid var(--sl-color-hairline-shade);
 	backdrop-filter: blur(8px);
 	transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), padding 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-	overflow: hidden auto;
-	scrollbar-width: thin;
-	scrollbar-color: var(--sl-color-hairline-shade) transparent;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
 
 	.right-sidebar-panel {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 0;
+		min-height: 0;
+		height: 100%;
 		width: var(--sl-sidebar-width);
 		padding-top: 0.75rem;
-		overflow-x: hidden;
+		overflow: hidden;
+
+		> .sl-container {
+			display: flex;
+			flex-direction: column;
+			flex: 1 1 0;
+			min-height: 0;
+			height: 100%;
+		}
 
 		nav {
 			transition: opacity 0.2s ease-in-out;
@@ -138,6 +151,7 @@ header.header {
 
 .toggle-left-side-bar-btn,
 .toggle-right-side-bar-btn {
+	flex-shrink: 0;
 	width: 2.25rem;
 	height: 2.25rem;
 	border: none;
@@ -294,16 +308,48 @@ body.right-side-bar-collapsed {
 }
 
 starlight-toc {
-	display: block;
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 0;
+	min-height: 0;
+	overflow: hidden;
 }
 
 starlight-toc nav {
 	display: flex;
 	flex-direction: column;
+	flex: 1 1 0;
+	min-height: 0;
+	overflow: hidden;
+}
+
+starlight-toc nav > ul {
+	flex: 1 1 0;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding-right: 0.25rem;
+	padding-bottom: 1.5rem;
+	scrollbar-width: thin;
+	scrollbar-color: var(--sl-color-hairline-shade) transparent;
+}
+
+starlight-toc nav > ul::-webkit-scrollbar {
+	width: 4px;
+}
+
+starlight-toc nav > ul::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+starlight-toc nav > ul::-webkit-scrollbar-thumb {
+	background: var(--sl-color-hairline-shade);
+	border-radius: 4px;
 }
 
 starlight-toc h2 {
 	display: block;
+	flex-shrink: 0;
 	font-size: 0.72rem;
 	font-weight: 700;
 	line-height: 1;
@@ -321,6 +367,7 @@ starlight-toc h2 {
 
 starlight-toc .toc-progress {
 	display: block;
+	flex-shrink: 0;
 	height: 0.1875rem;
 	margin: 0 0.5rem 0.85rem;
 	overflow: hidden;

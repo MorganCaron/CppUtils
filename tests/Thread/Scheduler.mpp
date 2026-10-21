@@ -5,16 +5,16 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Thread::Scheduler
 {
-	auto _ = TestSuite{"Thread/Scheduler", {"UnitTest"}, []([[maybe_unused]] auto& suite) {
+	auto _ = testSuite("Thread/Scheduler").dependsOn("UnitTest") = [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
-		suite.addTest("Initialize Scheduler", [&] {
+		suite.test("Initialize Scheduler") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 
 			scheduler.waitUntilFinished();
-		});
+		};
 
-		suite.addTest("Schedule and execute", [&] {
+		suite.test("Schedule and execute") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto executed = std::atomic_bool{false};
 
@@ -24,10 +24,10 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expect(executed.load());
-		});
+			expect(executed.load());
+		};
 
-		suite.addTest("Recursive scheduling", [&] {
+		suite.test("Recursive scheduling") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto counter = std::atomic_size_t{0};
 
@@ -40,10 +40,10 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expectEqual(counter.load(), 2uz);
-		});
+			expect(counter.load()) == 2uz;
+		};
 
-		suite.addTest("Cancel tasks on destruction", [&] {
+		suite.test("Cancel tasks on destruction") = [&] {
 			auto executed = std::atomic_bool{false};
 
 			{
@@ -54,10 +54,10 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 				}, 100ms);
 			}
 
-			suite.expect(not executed.load());
-		});
+			expect(not executed.load());
+		};
 
-		suite.addTest("Multiple tasks", [&] {
+		suite.test("Multiple tasks") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto counter = std::atomic_size_t{0};
 
@@ -67,10 +67,10 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expectEqual(counter.load(), 3uz);
-		});
+			expect(counter.load()) == 3uz;
+		};
 
-		suite.addTest("Cancel specific task", [&] {
+		suite.test("Cancel specific task") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto number = std::atomic_size_t{0};
 
@@ -82,25 +82,25 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expectEqual(number.load(), 5uz);
-		});
+			expect(number.load()) == 5uz;
+		};
 
-		suite.addTest("Cancel all tasks", [&] {
+		suite.test("Cancel all tasks") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto number = std::atomic_size_t{0};
 
-			scheduler.schedule([&number] { ++number; }, 0ms);
-			scheduler.schedule([&number] { number += 0b10; }, 250ms);
+			scheduler.schedule([&number] { ++number; }, 200ms);
+			scheduler.schedule([&number] { number += 0b10; }, 350ms);
 			scheduler.schedule([&number] { number += 0b100; }, 500ms);
 
 			scheduler.cancelAll();
 
 			scheduler.waitUntilFinished();
 
-			suite.expectEqual(number.load(), 0uz);
-		});
+			expect(number.load()) == 0uz;
+		};
 
-		suite.addTest("Cancel tasks by owner", [&] {
+		suite.test("Cancel tasks by owner") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto number1 = std::atomic_size_t{0};
 			auto number2 = std::atomic_size_t{0};
@@ -115,11 +115,11 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expectEqual(number1.load(), 0uz);
-			suite.expectEqual(number2.load(), 1uz);
-		});
+			expect(number1.load()) == 0uz;
+			expect(number2.load()) == 1uz;
+		};
 
-		suite.addTest("Order of execution", [&] {
+		suite.test("Order of execution") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{0s, 1uz};
 			auto executionOrder = std::vector<std::size_t>{};
 			auto mutex = std::mutex{};
@@ -135,13 +135,13 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expectEqual(std::ranges::size(executionOrder), 3uz);
-			suite.expectEqual(executionOrder[0], 2uz);
-			suite.expectEqual(executionOrder[1], 1uz);
-			suite.expectEqual(executionOrder[2], 3uz);
-		});
+			expect(std::ranges::size(executionOrder)) == 3uz;
+			expect(executionOrder[0]) == 2uz;
+			expect(executionOrder[1]) == 1uz;
+			expect(executionOrder[2]) == 3uz;
+		};
 
-		suite.addTest("Without bucketing", [&] {
+		suite.test("Without bucketing") = [&] {
 			using Clock = CppUtils::Thread::Scheduler::Clock;
 			using TimePoint = CppUtils::Thread::Scheduler::TimePoint;
 			auto scheduler = CppUtils::Thread::Scheduler{0s, 1uz};
@@ -161,15 +161,15 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expectEqual(std::ranges::size(times), 4uz);
+			expect(std::ranges::size(times)) == 4uz;
 			// Chaque tache respecte sa date
-			suite.expect(times[0] >= now + 80ms);
-			suite.expect(times[1] >= now + 300ms);
-			suite.expect(times[2] >= now + 650ms);
-			suite.expect(times[3] >= now + 1100ms);
-		});
+			expect(times[0]) >= now + 80ms;
+			expect(times[1]) >= now + 300ms;
+			expect(times[2]) >= now + 650ms;
+			expect(times[3]) >= now + 1100ms;
+		};
 
-		suite.addTest("With bucketing", [&] {
+		suite.test("With bucketing") = [&] {
 			using Clock = CppUtils::Thread::Scheduler::Clock;
 			using TimePoint = CppUtils::Thread::Scheduler::TimePoint;
 			auto scheduler = CppUtils::Thread::Scheduler{300ms, 1uz};
@@ -189,16 +189,16 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expectEqual(std::ranges::size(times), 4uz);
+			expect(std::ranges::size(times)) == 4uz;
 			// Avec bucketing (300ms): les taches 0 (100ms) et 1 (350ms) sont groupées dans le 1er bucket (< 80ms)
-			suite.expect(times[1] - times[0] < 80ms);
+			expect(times[1] - times[0]) < 80ms;
 			// La tache 2 (700ms) est dans le 2ème bucket
-			suite.expect(times[2] - times[1] >= 150ms);
+			expect(times[2] - times[1]) >= 150ms;
 			// La tache 3 (1200ms) est dans le 3ème bucket
-			suite.expect(times[3] - times[2] >= 150ms);
-		});
+			expect(times[3] - times[2]) >= 150ms;
+		};
 
-		suite.addTest("Schedule events in reverse order", [&] {
+		suite.test("Schedule events in reverse order") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{0s, 1uz};
 			auto executionOrder = std::vector<std::size_t>{};
 			auto mutex = std::mutex{};
@@ -213,27 +213,26 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expectEqual(std::ranges::size(executionOrder), 2uz);
-			suite.expectEqual(executionOrder[0], 1uz);
-			suite.expectEqual(executionOrder[1], 2uz);
-		});
+			expect(std::ranges::size(executionOrder)) == 2uz;
+			expect(executionOrder[0]) == 1uz;
+			expect(executionOrder[1]) == 2uz;
+		};
 
-		suite.addTest("Schedule earlier task after later task", [&] {
+		suite.test("Schedule earlier task after later task") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
-			auto aExecuted = std::atomic_bool{false};
+			auto taskExecutionSignal = std::binary_semaphore{0};
 			auto bExecuted = std::atomic_bool{false};
 
 			scheduler.schedule([&] { bExecuted = true; }, 500ms);
-			scheduler.schedule([&] { aExecuted = true; }, 100ms);
+			scheduler.schedule([&] { taskExecutionSignal.release(); }, 100ms);
 
-			std::this_thread::sleep_for(250ms);
+			expect(taskExecutionSignal) == completes;
 			scheduler.cancelAll();
 
-			suite.expect(aExecuted.load());
-			suite.expect(not bExecuted.load());
-		});
+			expect(not bExecuted.load());
+		};
 
-		suite.addTest("Stress test with many tasks", [&] {
+		suite.test("Stress test with many tasks") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			const auto numTasks = 10'000uz;
 			auto executedCount = std::atomic_size_t{0};
@@ -249,8 +248,8 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expectEqual(executedCount.load(), numTasks);
-		});
+			expect(executedCount.load()) == numTasks;
+		};
 
 		// Workaround on Windows (MSVC ABI)
 		// https://github.com/llvm/llvm-project/issues/221609
@@ -271,7 +270,7 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 		using TestException = std::runtime_error;
 #endif
 
-		suite.addTest("onError callback is invoked on exception", [&] {
+		suite.test("onError callback is invoked on exception") = [&] {
 			auto onErrorInvoked = std::atomic_bool{false};
 			auto scheduler = CppUtils::Thread::Scheduler{
 				0ms,
@@ -286,25 +285,25 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 
 			scheduler.waitUntilFinished();
 
-			suite.expect(onErrorInvoked.load());
-		});
+			expect(onErrorInvoked.load());
+		};
 
-		suite.addTest("getScheduledTasksCount(): Waiting tasks", [&] {
+		suite.test("getScheduledTasksCount(): Waiting tasks") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 
-			suite.expectEqual(scheduler.getScheduledTasksCount(), 0uz);
+			expect(scheduler.getScheduledTasksCount()) == 0uz;
 
 			scheduler.schedule([] {}, 10s);
-			suite.expectEqual(scheduler.getScheduledTasksCount(), 1uz);
+			expect(scheduler.getScheduledTasksCount()) == 1uz;
 
 			scheduler.schedule([] {}, 20s);
-			suite.expectEqual(scheduler.getScheduledTasksCount(), 2uz);
+			expect(scheduler.getScheduledTasksCount()) == 2uz;
 
 			scheduler.cancelAll();
-			suite.expectEqual(scheduler.getScheduledTasksCount(), 0uz);
-		});
+			expect(scheduler.getScheduledTasksCount()) == 0uz;
+		};
 
-		suite.addTest("getScheduledTasksCount(): Processing tasks", [&] {
+		suite.test("getScheduledTasksCount(): Processing tasks") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 
 			auto promise = std::promise<void>{};
@@ -318,14 +317,14 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 			}, 0s);
 
 			startedFuture.wait();
-			suite.expectEqual(scheduler.getScheduledTasksCount(), 1uz);
+			expect(scheduler.getScheduledTasksCount()) == 1uz;
 
 			promise.set_value();
 			scheduler.flush();
-			suite.expectEqual(scheduler.getScheduledTasksCount(), 0uz);
-		});
+			expect(scheduler.getScheduledTasksCount()) == 0uz;
+		};
 
-		suite.addTest("Flush tasks", [&] {
+		suite.test("Flush tasks") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto executed = std::atomic_bool{false};
 
@@ -333,12 +332,12 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 				executed = true;
 			}, 30s);
 
-			suite.expect(not executed.load());
+			expect(not executed.load());
 			scheduler.flush();
-			suite.expect(executed.load());
-		});
+			expect(executed.load());
+		};
 
-		suite.addTest("Flush tasks with chaining", [&] {
+		suite.test("Flush tasks with chaining") = [&] {
 			auto scheduler = CppUtils::Thread::Scheduler{};
 			auto counter = std::atomic_size_t{0};
 
@@ -349,9 +348,9 @@ namespace CppUtils::UnitTest::Thread::Scheduler
 				}, 30s);
 			}, 30s);
 
-			suite.expectEqual(counter.load(), 0uz);
+			expect(counter.load()) == 0uz;
 			scheduler.flush();
-			suite.expectEqual(counter.load(), 2uz);
-		});
-	}};
+			expect(counter.load()) == 2uz;
+		};
+	};
 }

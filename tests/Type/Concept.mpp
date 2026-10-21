@@ -7,28 +7,67 @@ namespace CppUtils::UnitTest::Type::Concept
 {
 	using namespace CppUtils::Type;
 
-	static_assert(not Printable<void>);
-	static_assert(Printable<bool>);
-	static_assert(Printable<char>);
-	static_assert(Printable<int>);
-	static_assert(Printable<double>);
-	static_assert(Printable<std::string>);
-	static_assert(Printable<std::string_view>);
-
-	static_assert(not IsOneOf<int>);
-	static_assert(not IsOneOf<int, bool, char, double>);
-	static_assert(IsOneOf<int, bool, char, int, double>);
-
-	static_assert(Specializes<std::vector<int>, std::vector>);
-	static_assert(not Specializes<std::vector<int>, std::map>);
-
 	constexpr auto isPathWithoutExact(const std::filesystem::path&) -> std::true_type { return {}; }
-
-	static_assert(decltype(isPathWithoutExact("flow_name"))::value);
-
 	constexpr auto isPath(const Exact<std::filesystem::path> auto&) -> std::true_type { return {}; }
 	constexpr auto isPath(std::string_view) -> std::false_type { return {}; }
 
-	static_assert(decltype(isPath(std::declval<std::filesystem::path>()))::value);
-	static_assert(not decltype(isPath("flow_name"))::value);
+	auto _ = testSuite("Type/Concept").dependsOn("UnitTest") = [](TestSuite& suite) {
+		suite.test<[] {
+			static_assert(not Printable<void>);
+			static_assert(Printable<bool>);
+			static_assert(Printable<char>);
+			static_assert(Printable<int>);
+			static_assert(Printable<double>);
+			static_assert(Printable<std::string>);
+			static_assert(Printable<std::string_view>);
+		}>("Printable");
+
+		suite.test<[] {
+			static_assert(not IsOneOf<int>);
+			static_assert(not IsOneOf<int, bool, char, double>);
+			static_assert(IsOneOf<int, bool, char, int, double>);
+		}>("IsOneOf");
+
+		suite.test<[] {
+			static_assert(Specializes<std::vector<int>, std::vector>);
+			static_assert(not Specializes<std::vector<int>, std::map>);
+		}>("Specializes");
+
+		suite.test<[] {
+			static_assert(decltype(isPathWithoutExact("flow_name"))::value);
+			static_assert(decltype(isPath(std::declval<std::filesystem::path>()))::value);
+			static_assert(not decltype(isPath("flow_name"))::value);
+		}>("Exact");
+
+		suite.test<[] {
+			static_assert(std::same_as<UnderlyingElementType<int*>, int>);
+			static_assert(std::same_as<UnderlyingElementType<const int[10][20]>, int>);
+			static_assert(std::same_as<UnderlyingElementType<std::string>, std::string>);
+		}>("UnderlyingElementType");
+
+		suite.test<[] {
+			static_assert(Character<char>);
+			static_assert(Character<wchar_t>);
+			static_assert(Character<char8_t>);
+			static_assert(Character<char16_t>);
+			static_assert(Character<char32_t>);
+			static_assert(Character<const char32_t&>);
+			static_assert(not Character<int>);
+			static_assert(not Character<bool>);
+			static_assert(not Character<std::byte>);
+		}>("Character");
+
+		suite.test<[] {
+			static_assert(ArithmeticInteger<int>);
+			static_assert(ArithmeticInteger<unsigned int>);
+			static_assert(ArithmeticInteger<std::size_t>);
+			static_assert(ArithmeticInteger<std::int64_t>);
+			static_assert(ArithmeticInteger<const std::uint8_t&>);
+			static_assert(not ArithmeticInteger<bool>);
+			static_assert(not ArithmeticInteger<char>);
+			static_assert(not ArithmeticInteger<char32_t>);
+			static_assert(not ArithmeticInteger<float>);
+			static_assert(not ArithmeticInteger<double>);
+		}>("ArithmeticInteger");
+	};
 }

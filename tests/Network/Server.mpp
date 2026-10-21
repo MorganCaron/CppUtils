@@ -6,36 +6,36 @@ import CppUtils.Network.Server;
 
 namespace CppUtils::UnitTest::Network::Server
 {
-	auto _ = TestSuite{"Network/Server", {"Logger", "Network/Socket"}, [](auto& suite) {
+	auto _ = testSuite("Network/Server").dependsOn("Logger", "Network/Socket") = [](TestSuite& suite) {
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("Server Creation", [&] {
+		suite.test("Server Creation") = [&] {
 			auto server = CppUtils::Network::Server{};
-		});
+		};
 
-		suite.addTest("Bind IP", [&] {
+		suite.test("Bind IP") = [&] {
 			auto server = CppUtils::Network::Server{};
-			suite.expect(server.setReuseAddress(true));
-			suite.expect(server.bind(8'080));
-		});
+			expect(server.setReuseAddress(true));
+			expect(server.bind(8'080));
+		};
 
-		suite.addTest("Listening", [&] {
+		suite.test("Listening") = [&] {
 			auto server = CppUtils::Network::Server{};
-			suite.expect(server.setReuseAddress(true));
-			suite.expect(server.bind(8'080));
-			suite.expect(server.listen());
+			expect(server.setReuseAddress(true));
+			expect(server.bind(8'080));
+			expect(server.listen());
 			Logger::print("Server: Waiting for connections on port 8080...");
-		});
+		};
 
-		suite.addTest("Abort connection", [&] {
+		suite.test("Abort connection") = [&] {
 			auto server = CppUtils::Network::Server{};
-			suite.expect(server.setReuseAddress(true));
-			suite.expect(server.bind(8'080));
-			suite.expect(server.listen());
-			suite.expect(server.setBlocking(false));
+			expect(server.setReuseAddress(true));
+			expect(server.bind(8'080));
+			expect(server.listen());
+			expect(server.setBlocking(false));
 			Logger::print("Server: Waiting for connections on port 8080...");
 			auto clientSocket = server.accept();
-			suite.expect(not clientSocket);
-		});
-	}};
+			expect(not clientSocket);
+		};
+	};
 }

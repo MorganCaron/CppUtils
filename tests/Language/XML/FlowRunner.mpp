@@ -45,11 +45,9 @@ namespace CppUtils::UnitTest::Language::Xml::FlowRunner
 		using FunctionMapping = CppUtils::Type::Mapping<>;
 	};
 
-	auto _ = TestSuite{"Language/Xml/FlowRunner",
-		{"Language/Xml/Pipeline"},
-		[](TestSuite& suite) {
-		suite.addTest("Discover and execute flows from directory", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& temporaryDirectory) -> void {
+	auto _ = testSuite("Language/Xml/FlowRunner").dependsOn("Language/Xml/Pipeline") = [](TestSuite& suite) {
+		suite.test("Discover and execute flows from directory") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& temporaryDirectory) -> void {
 				std::filesystem::create_directories(temporaryDirectory / "flows");
 				std::filesystem::create_directories(temporaryDirectory / "input");
 				std::filesystem::create_directories(temporaryDirectory / "output");
@@ -89,43 +87,43 @@ namespace CppUtils::UnitTest::Language::Xml::FlowRunner
 				runner.registerMapping<Record, RecordAlphaMapping>("alpha");
 				runner.registerMapping<Record, RecordBetaMapping>("beta");
 
-				suite.expectEqual(std::ranges::size(runner.flows().value()), 0uz);
+				expect(std::ranges::size(runner.flows().value())) == 0uz;
 				runner.loadFlows();
-				suite.expectEqual(std::ranges::size(runner.flows().value()), 2uz);
+				expect(std::ranges::size(runner.flows().value())) == 2uz;
 				const auto configs = runner.discoverFlowConfigs();
-				suite.expectEqual(std::ranges::size(configs), 2uz);
+				expect(std::ranges::size(configs)) == 2uz;
 
 				const auto alphaFlowByName = runner.flow("FlowAlpha");
 				const auto betaFlowByName = runner.flow("FlowBeta");
-				suite.expect(alphaFlowByName != nullptr);
-				suite.expect(betaFlowByName != nullptr);
-				suite.expect(runner.flow("NonExistent") == nullptr);
+				expect(alphaFlowByName) != nullptr;
+				expect(betaFlowByName) != nullptr;
+				expect(runner.flow("NonExistent")) == nullptr;
 
 				const auto alphaFlowByPath = runner.flow(temporaryDirectory / "flows/alpha.xml");
 				const auto betaFlowByPath = runner.flow(temporaryDirectory / "flows/beta.xml");
-				suite.expectEqual(alphaFlowByPath, alphaFlowByName);
-				suite.expectEqual(betaFlowByPath, betaFlowByName);
-				suite.expect(runner.flow(temporaryDirectory / "flows/missing.xml") == nullptr);
+				expect(alphaFlowByPath) == alphaFlowByName;
+				expect(betaFlowByPath) == betaFlowByName;
+				expect(runner.flow(temporaryDirectory / "flows/missing.xml")) == nullptr;
 
 				const auto stats = runner.execute();
 
-				suite.expectEqual(stats.processedFilesCount, 2uz);
-				suite.expect(stats.elapsedDuration >= 0ns);
-				suite.expect(std::filesystem::exists(temporaryDirectory / "output/out1.csv"));
-				suite.expect(std::filesystem::exists(temporaryDirectory / "output/out2.csv"));
+				expect(stats.processedFilesCount) == 2uz;
+				expect(stats.elapsedDuration) >= 0ns;
+				expect(std::filesystem::exists(temporaryDirectory / "output/out1.csv"));
+				expect(std::filesystem::exists(temporaryDirectory / "output/out2.csv"));
 
 				const auto out1Content = CppUtils::FileSystem::String::read(temporaryDirectory / "output/out1.csv");
-				suite.expect(out1Content.contains("rec1;catA;5"));
-				suite.expect(out1Content.contains("rec2;catB;15"));
+				expect(out1Content.contains("rec1;catA;5"));
+				expect(out1Content.contains("rec2;catB;15"));
 
 				const auto out2Content = CppUtils::FileSystem::String::read(temporaryDirectory / "output/out2.csv");
-				suite.expect(out2Content.contains("25;catB;rec4"));
-				suite.expect(not out2Content.contains("rec3"));
+				expect(out2Content.contains("25;catB;rec4"));
+				expect(not out2Content.contains("rec3"));
 			}};
-		});
+		};
 
-		suite.addTest("Concurrent flow lookups and reloading", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& temporaryDirectory) -> void {
+		suite.test("Concurrent flow lookups and reloading") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& temporaryDirectory) -> void {
 				std::filesystem::create_directories(temporaryDirectory / "flows");
 				const auto flowXml = R"(
 					<Flow name="FlowAlpha" mapping="alpha">
@@ -165,8 +163,8 @@ namespace CppUtils::UnitTest::Language::Xml::FlowRunner
 				running.store(false, std::memory_order_relaxed);
 				readerThreads.clear();
 
-				suite.expect(runner.flow("FlowAlpha") != nullptr);
+				expect(runner.flow("FlowAlpha")) != nullptr;
 			}};
-		});
-	}};
+		};
+	};
 }

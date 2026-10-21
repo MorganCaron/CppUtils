@@ -5,29 +5,29 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::Canvas
 {
-	auto _ = TestSuite{"Terminal/Canvas", {"UnitTest", "Thread/Scheduler", "String/Encoding"}, [](TestSuite& suite) {
+	auto _ = testSuite("Terminal/Canvas").dependsOn("UnitTest", "Thread/Scheduler", "String/Encoding") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace std::chrono_literals;
 
-		suite.addTest("Canvas with 0x0 size", [&] {
+		suite.test("Canvas with 0x0 size") = [&] {
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{0, 0}};
 			canvas.getWritableView().fill('.');
 			canvas.print();
-		});
+		};
 
-		suite.addTest("Canvas with 0 height", [&] {
+		suite.test("Canvas with 0 height") = [&] {
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 0}};
 			canvas.getWritableView().fill('.');
 			canvas.print();
-		});
+		};
 
-		suite.addTest("Canvas with 0 width", [&] {
+		suite.test("Canvas with 0 width") = [&] {
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{0, 10}};
 			canvas.getWritableView().fill('.');
 			canvas.print();
-		});
+		};
 
-		suite.addTest("Size", [&] {
+		suite.test("Size") = [&] {
 			{
 				auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 5}};
 				canvas.getWritableView().fill('/');
@@ -46,9 +46,9 @@ namespace CppUtils::UnitTest::Terminal::Canvas
 				canvas.print();
 				std::this_thread::sleep_for(300ms);
 			}
-		});
+		};
 
-		suite.addTest("Fill", [&] {
+		suite.test("Fill") = [&] {
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 5}};
 			const auto chars = "-\\|/"sv;
 			for (auto i = 0uz; i < 5; ++i)
@@ -58,9 +58,9 @@ namespace CppUtils::UnitTest::Terminal::Canvas
 					canvas.getWritableView().fill(c);
 					canvas.print();
 				}
-		});
+		};
 
-		suite.addTest("Spinner", [&] {
+		suite.test("Spinner") = [&] {
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{1, 1}};
 			const auto frames = std::array{
 				CppUtils::Terminal::FixedAreaBuffer<1, 1>{'-'},
@@ -73,9 +73,9 @@ namespace CppUtils::UnitTest::Terminal::Canvas
 				canvas.close();
 			}, 1s);
 			canvas.wait();
-		});
+		};
 
-		suite.addTest("Print text", [&] {
+		suite.test("Print text") = [&] {
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{10, 5}};
 			{
 				auto view = canvas.getWritableView();
@@ -84,10 +84,10 @@ namespace CppUtils::UnitTest::Terminal::Canvas
 			}
 			canvas.print();
 
-			suite.expectEqual(canvas.toString(), "..........\n.Hello Wor\nld!.......\n..........\n..........\n"sv);
-		});
+			expect(canvas.toString()) == "..........\n.Hello Wor\nld!.......\n..........\n..........\n";
+		};
 
-		suite.addTest("Print Unicode", [&] {
+		suite.test("Print Unicode") = [&] {
 			auto canvas = CppUtils::Terminal::Canvas{CppUtils::Container::Size2{15, 5}};
 			{
 				auto view = canvas.getWritableView();
@@ -100,10 +100,10 @@ namespace CppUtils::UnitTest::Terminal::Canvas
 			}
 			canvas.print();
 
-			suite.expectEqual(canvas.toString(), "😊🤖🐸🐊🏊-----\n-🤖------------\n------🐸-------\n------------🐊-\n-------------🏊\n"sv);
-		});
+			expect(canvas.toString()) == "😊🤖🐸🐊🏊-----\n-🤖------------\n------🐸-------\n------------🐊-\n-------------🏊\n";
+		};
 
-		suite.addTest("Bouncing ball", [&] {
+		suite.test("Bouncing ball") = [&] {
 			const auto terminalSize = CppUtils::Terminal::getTerminalSize();
 			auto canvasSize = terminalSize;
 			canvasSize.height() = std::ranges::min(canvasSize.width() * 1 / 3, terminalSize.height() - 2);
@@ -146,6 +146,6 @@ namespace CppUtils::UnitTest::Terminal::Canvas
 				canvas.print();
 				std::this_thread::sleep_for(5ms);
 			}
-		});
-	}};
+		};
+	};
 }

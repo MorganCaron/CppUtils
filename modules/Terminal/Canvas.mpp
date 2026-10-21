@@ -138,8 +138,6 @@ export namespace CppUtils::Terminal
 			});
 
 			flushBuffer();
-			if (needFlush)
-				std::fflush(stdout);
 
 			if (const auto endLine = startLine + viewportSize.height();
 				endLine < terminalSize.height())
@@ -149,8 +147,9 @@ export namespace CppUtils::Terminal
 				const auto terminalHeight = getTerminalSize().height();
 				setCursorPosition({0, terminalHeight > 0 ? terminalHeight - 1 : 0});
 				std::fwrite("\n", sizeof(char), 1, stdout);
-				std::fflush(stdout);
 			}
+
+			std::fflush(stdout);
 		}
 
 		inline auto print() noexcept -> void

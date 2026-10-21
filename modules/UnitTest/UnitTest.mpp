@@ -1,377 +1,63 @@
 module;
 
-#include <cstdio>
+#if not defined(_WIN32)
+#	include <signal.h>
+#endif
 
 export module CppUtils.UnitTest;
 
 import std;
-import CppUtils.Chrono.Concept;
-import CppUtils.ChronoLogger;
+import CppUtils.Chrono;
 import CppUtils.Container;
 import CppUtils.Logger;
 import CppUtils.Log.Exception;
 import CppUtils.Log.Config.UnitTests;
 import CppUtils.String;
 import CppUtils.Terminal;
-import CppUtils.Thread.Poll;
-import CppUtils.System.Main;
+import CppUtils.System;
+import CppUtils.Math.Utility;
+import CppUtils.Math.Random;
+import CppUtils.Language.Parameters;
+import CppUtils.Thread;
+import CppUtils.Type;
 
+export import CppUtils.UnitTest.Assertion;
+export import CppUtils.UnitTest.Benchmark;
+export import CppUtils.UnitTest.EventWatcher;
+export import CppUtils.UnitTest.Expectation;
+export import CppUtils.UnitTest.JUnitFormatter;
 export import CppUtils.UnitTest.LifetimeChecker;
+export import CppUtils.UnitTest.Report;
+export import CppUtils.UnitTest.Runner;
 
 namespace CppUtils::UnitTest
 {
-	export struct TestSettings final
-	{
-		bool verbose = true;
-		bool detail = true;
-		bool chrono = false;
-		bool fastAbort = false;
-	};
-
-	struct Test final
-	{
-		std::string name;
-		std::function<void(std::stop_token)> function;
-		std::chrono::seconds timeout = std::chrono::seconds{10};
-	};
-
-	// Workaround on Windows (MSVC ABI)
-	// https://github.com/llvm/llvm-project/issues/221609
-#if defined(_WIN32)
-	export class TestException: public std::exception
-	{
-	public:
-		explicit inline TestException(std::string message):
-			m_message{std::move(message)}
-		{}
-
-		[[nodiscard]] inline auto what() const noexcept -> const char* override
-		{
-			return m_message.c_str();
-		}
-
-	private:
-		std::string m_message;
-	};
-
-	class TestSkipped final: public std::exception
-	{
-	public:
-		explicit inline TestSkipped(std::string message, std::source_location location = std::source_location::current()):
-			m_message{std::format("{} (at {}:{})", message, location.file_name(), location.line())}
-		{}
-
-		[[nodiscard]] inline auto what() const noexcept -> const char* override
-		{
-			return m_message.c_str();
-		}
-
-	private:
-		std::string m_message;
-	};
-#else
-	export class TestException: public std::runtime_error
-	{
-	public:
-		inline TestException(std::string message):
-			std::runtime_error{std::move(message)}
-		{}
-	};
-
-	class TestSkipped final: public std::runtime_error
-	{
-	public:
-		explicit inline TestSkipped(std::string message, std::source_location location = std::source_location::current()):
-			std::runtime_error{std::format("{} (at {}:{})", message, location.file_name(), location.line())}
-		{}
-	};
-#endif
-
-	struct SkippedTest final
-	{
-		std::string name;
-		std::string message;
-	};
-
-	enum class TestStatus
-	{
-		Success,
-		Failure,
-		Skipped
-	};
-
-	class TestRunner final
-	{
-		using Logger = Logger<"UnitTests">;
-
-	public:
-		inline auto addTestSuite(const std::string& name, std::vector<Test> tests) -> void
-		{
-			for (auto& test : tests)
-				test.name = std::format("{}/{}", name, test.name);
-			m_testSuites.insert(name, std::move(tests));
-		}
-
-		inline auto addTestSuite(const std::string& name, std::vector<std::string> prerequisites, std::vector<Test> tests) -> void
-		{
-			addTestSuite(name, tests);
-			for (const auto& prerequisite : prerequisites)
-				m_testSuites.addDependency(name, prerequisite);
-		}
-
-		inline auto executeTest(const Test& test, const TestSettings& settings) const -> std::pair<TestStatus, std::string>
-		{
-			using namespace std::chrono_literals;
-			if (settings.verbose)
-			{
-				Logger::emit<"separator">();
-				Logger::print<"detail">("{}:", test.name);
-				Logger::waitUntilFinished(10s);
-			}
-
-			// Workaround on Windows (MSVC ABI)
-			// https://github.com/llvm/llvm-project/issues/221609
-#if defined(_WIN32)
-			struct ExecutionResult final
-			{
-				TestStatus status = TestStatus::Success;
-				std::string message;
-			};
-
-			auto chronoLogger = Log::ChronoLogger{[](std::string_view duration) {
-				Logger::print<"detail">("Test duration: {}", duration);
-			}, settings.verbose and settings.chrono};
-
-			auto promise = std::promise<ExecutionResult>{};
-			auto future = promise.get_future();
-
-			auto worker = std::jthread{[promise = std::move(promise), function = test.function, testName = test.name](std::stop_token stopToken) mutable {
-				try
-				{
-					function(stopToken);
-					promise.set_value({TestStatus::Success, ""});
-				}
-				catch (const TestSkipped& skipped)
-				{
-					promise.set_value({TestStatus::Skipped, skipped.what()});
-				}
-				catch (const TestException& exception)
-				{
-					promise.set_value({TestStatus::Failure, std::format("The following test didn't pass:\n{}\n  {}", testName, exception.what())});
-				}
-				catch (const std::exception& exception)
-				{
-					promise.set_value({TestStatus::Failure, std::format("An exception occurred during the test:\n{}\n  {}", testName, exception.what())});
-				}
-				catch (...)
-				{
-					promise.set_value({TestStatus::Failure, std::format("An unknown exception occurred during the test: {}", testName)});
-				}
-			}};
-
-			if (future.wait_for(test.timeout) == std::future_status::timeout)
-			{
-				worker.request_stop();
-				worker.detach();
-				Logger::print<"error">("The following test timed out after {}s:\n{}", test.timeout.count(), test.name);
-				return {TestStatus::Failure, ""};
-			}
-
-			const auto [status, message] = future.get();
-			if (status == TestStatus::Skipped)
-			{
-				if (settings.verbose)
-					Logger::print<"warning">("Skipped: {}", message);
-				return {TestStatus::Skipped, message};
-			}
-			if (status == TestStatus::Failure)
-			{
-				Logger::print<"error">("{}", message);
-				return {TestStatus::Failure, ""};
-			}
-#else
-			try
-			{
-				try
-				{
-					auto chronoLogger = Log::ChronoLogger{[](std::string_view duration) {
-						Logger::print<"detail">("Test duration: {}", duration);
-					}, settings.verbose and settings.chrono};
-
-					auto promise = std::promise<void>{};
-					auto future = promise.get_future();
-
-					auto worker = std::jthread{[promise = std::move(promise), function = test.function](std::stop_token stopToken) mutable {
-						try
-						{
-							function(stopToken);
-							promise.set_value();
-						}
-						catch (...)
-						{
-							promise.set_exception(std::current_exception());
-						}
-					}};
-
-					if (future.wait_for(test.timeout) == std::future_status::timeout)
-					{
-						worker.request_stop();
-						worker.detach();
-						throw TestException{std::format("Test timed out after {}s", test.timeout.count())};
-					}
-
-					future.get();
-				}
-				catch (const TestSkipped& skipped)
-				{
-					if (settings.verbose)
-						Logger::print<"warning">("Skipped: {}", skipped.what());
-					return {TestStatus::Skipped, skipped.what()};
-				}
-				catch ([[maybe_unused]] const TestException& exception)
-				{
-					std::throw_with_nested(std::runtime_error{std::format("The following test didn't pass:\n{}", test.name)});
-				}
-				catch (const std::exception& exception)
-				{
-					std::throw_with_nested(std::runtime_error{std::format("An exception occurred during the test:\n{}\n{}", test.name, exception.what())});
-				}
-			}
-			catch (const std::exception& exception)
-			{
-				logException<Logger>(exception);
-				return {TestStatus::Failure, ""};
-			}
-#endif
-			if (settings.verbose)
-				Logger::print<"success">("Passed");
-			Logger::waitUntilFinished(10s);
-			return {TestStatus::Success, ""};
-		}
-
-		inline auto executeTests(TestSettings settings) -> int
-		{
-			using namespace std::chrono_literals;
-			auto testSuiteIsSuccess = std::unordered_map<std::string, bool>{};
-
-			const auto nbTests = std::ranges::fold_left(
-				std::views::values(m_testSuites.nodes) | std::views::transform([](auto&& node) { return std::ranges::size(node.value); }),
-				0uz,
-				std::plus{});
-			Logger::print<"info">("{} tests found. Execution:", nbTests);
-
-			auto failedTestSuites = std::vector<std::string>{};
-			auto implicitlySkippedTestSuites = std::vector<std::string>{};
-			auto explicitlySkippedTests = std::vector<SkippedTest>{};
-
-			auto nbSuccess = 0uz;
-			auto nbFail = 0uz;
-			auto nbSkip = 0uz;
-
-			if (auto result = m_testSuites.forEach([&](const auto& name, const auto& tests, const auto& dependencies) -> bool {
-				if (std::ranges::empty(tests))
-				{
-					Logger::print<"warning">("No tests found in test suite {}", name);
-					testSuiteIsSuccess[name] = true;
-					return not settings.fastAbort;
-				}
-
-				for (const auto& dependency : dependencies)
-					if (not testSuiteIsSuccess[dependency])
-					{
-						Logger::print<"warning">("Skipping test suite {} due to failed prerequisites in test suite {}", name, dependency);
-						testSuiteIsSuccess[name] = false;
-						implicitlySkippedTestSuites.push_back(name);
-						nbSkip += std::ranges::size(tests);
-						return not settings.fastAbort;
-					}
-
-				auto allTestsPassed = true;
-				for (const auto& test : tests)
-				{
-					const auto [status, skipMessage] = executeTest(test, settings);
-					if (status == TestStatus::Success)
-						++nbSuccess;
-					else if (status == TestStatus::Skipped)
-					{
-						++nbSkip;
-						explicitlySkippedTests.push_back({test.name, skipMessage});
-					}
-					else
-					{
-						++nbFail;
-						allTestsPassed = false;
-						if (settings.fastAbort)
-							break;
-					}
-				}
-
-				testSuiteIsSuccess[name] = allTestsPassed;
-				if (not allTestsPassed)
-					failedTestSuites.push_back(name);
-
-				return allTestsPassed or not settings.fastAbort;
-			});
-				not result)
-				Logger::print<"error">("The tests cannot be run: {}", result.error());
-
-			Logger::emit<"separator">();
-			Logger::print<"detail">("Test results");
-			if (nbFail == 0 and nbSkip == 0)
-			{
-				Logger::print<"success">("All tests passed successfully");
-				return exitSuccess;
-			}
-			if (nbFail > 0)
-				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, "The tests failed:");
-			else
-				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, "Some tests were skipped:");
-
-			if (nbSuccess > 0)
-				Logger::print<"success">("- {} successful tests", nbSuccess);
-			if (nbSuccess == 0)
-				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, "- 0 successful tests");
-
-			if (nbFail > 0)
-			{
-				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, std::format("- {} failed tests", nbFail));
-				for (const auto& failedTestSuite : failedTestSuites)
-					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, std::format("  - {}", failedTestSuite));
-			}
-
-			if (nbSkip > 0)
-			{
-				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("- {} skipped tests", nbSkip));
-				for (const auto& skippedTest : explicitlySkippedTests)
-					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("  - {}: {}", skippedTest.name, skippedTest.message));
-				for (const auto& skippedTestSuite : implicitlySkippedTestSuites)
-					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("  - {} (due to failed prerequisites)", skippedTestSuite));
-			}
-
-			Logger::waitUntilFinished(10s);
-			return nbFail == 0 ? exitSuccess : exitFailure;
-		}
-
-	private:
-		Container::DependencyGraph<std::string, std::vector<Test>> m_testSuites;
-	};
-
-	inline /* constinit */ auto testRunner = TestRunner{};
-
+	/**
+	 * @brief Core test suite execution context providing assertion methods, builders, and test registration.
+	 *
+	 * Instances are passed to test suite definitions configured via `testSuite("SuiteName") = [](TestSuite& suite) { ... };`.
+	 * Supports regular tests, compile-time tests, parameterized tests (types, values, ranges), fuzz tests, and benchmarks.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/ (Guide des tests unitaires)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/ (Unit test guide)
+	 */
 	export struct TestSuite final
 	{
 		using Logger = Logger<"UnitTests">;
 
-		inline explicit TestSuite(const std::string& name, std::vector<std::string> prerequisites, std::function<void(TestSuite&)> function)
+	private:
+		friend struct TestSuiteBuilder;
+		friend struct TestBuilder;
+		friend struct FuzzTestBuilder;
+		template<class... Types>
+		friend struct TypedTestSuiteBuilder;
+		template<class ValuesContainer>
+		friend struct ParameterizedTestSuiteBuilder;
+
+		inline explicit TestSuite(const std::string& name, std::vector<std::string> prerequisites, auto&& function)
 		{
 			function(*this);
 			testRunner.addTestSuite(name, prerequisites, std::move(tests));
-		}
-
-		inline explicit TestSuite(std::string name, std::function<void(TestSuite&)> function)
-		{
-			function(*this);
-			testRunner.addTestSuite(name, std::move(tests));
 		}
 
 		inline auto addTest(std::string name, std::function<void(std::stop_token)> function, std::chrono::seconds timeout = std::chrono::seconds{10}) -> void
@@ -384,101 +70,738 @@ namespace CppUtils::UnitTest
 			tests.emplace_back(std::move(name), [function = std::move(function)](std::stop_token) { function(); }, timeout);
 		}
 
-		[[noreturn]] inline auto skip(std::string message, std::source_location sourceLocation = std::source_location::current()) -> void
+		static constexpr auto forEachParameterValue(const auto& container, auto&& invocable)
 		{
-			throw TestSkipped{std::move(message), sourceLocation};
-		}
-
-		inline auto skipIf(bool condition, std::string message, std::source_location sourceLocation = std::source_location::current()) -> void
-		{
-			if (condition)
-				skip(std::move(message), sourceLocation);
-		}
-
-		// Todo C++23: std::stacktrace stacktrace = std::current_stacktrace()
-		inline auto expect(const auto& condition, std::source_location sourceLocation = std::source_location::current()) -> void
-		requires requires { static_cast<bool>(condition); }
-		{
-			if (not static_cast<bool>(condition)) [[unlikely]]
-				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expect(condition)",
-					sourceLocation.file_name(),
-					sourceLocation.line(),
-					sourceLocation.column())};
-		}
-
-		template<Chrono::Duration TimeoutDuration = std::chrono::milliseconds, Chrono::Duration StepDuration = std::chrono::milliseconds>
-		inline auto expectWait(
-			auto&& predicate,
-			TimeoutDuration timeout = std::chrono::milliseconds{1'000},
-			StepDuration step = std::chrono::milliseconds{20},
-			std::source_location sourceLocation = std::source_location::current()) -> void
-		{
-			if (not Thread::pollFor(std::forward<decltype(predicate)>(predicate), timeout, step)) [[unlikely]]
-				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectWait(predicate)\nTimed out waiting for predicate to become true",
-					sourceLocation.file_name(),
-					sourceLocation.line(),
-					sourceLocation.column())};
-		}
-
-		inline auto expectEqual(const auto& lhs, const auto& rhs, std::source_location sourceLocation = std::source_location::current()) -> void
-		{
-			if (lhs != rhs) [[unlikely]]
-				throw TestException{std::format("In {}\nAt line {}, column {}\nIn expectEqual(lhs, rhs)\nwith lhs:\n{}\nand rhs:\n{}",
-					sourceLocation.file_name(),
-					sourceLocation.line(),
-					sourceLocation.column(),
-					String::formatValue(lhs),
-					String::formatValue(rhs))};
-		}
-
-		template<class ExceptionType>
-		inline auto expectThrow(auto&& function, std::source_location sourceLocation = std::source_location::current()) -> void
-		{
-			try
+			if constexpr (Type::Specializes<std::remove_cvref_t<decltype(container)>, std::tuple>)
 			{
-				function();
-				throw TestException{std::format("In {}\nAt line {}, column {}\nExpected throw of type {}, but no exception was thrown.",
-					sourceLocation.file_name(),
-					sourceLocation.line(),
-					sourceLocation.column(),
-					typeid(ExceptionType).name())};
+				std::apply([&](const auto&... values) {
+					(invocable(values), ...);
+				}, container);
 			}
-			catch (const ExceptionType&)
+			else
 			{
-				Logger::emit<"success">("Expected exception caught.");
-			}
-			catch (const std::exception& exception)
-			{
-				throw TestException{std::format("In {}\nAt line {}, column {}\nExpected throw of type {}, but caught different exception: {}",
-					sourceLocation.file_name(),
-					sourceLocation.line(),
-					sourceLocation.column(),
-					typeid(ExceptionType).name(),
-					exception.what())};
+				for (const auto& value : container)
+					invocable(value);
 			}
 		}
 
-		inline auto expectNoThrow(auto&& function, std::source_location sourceLocation = std::source_location::current()) -> void
+		static auto formatParameterName(std::string_view baseName, const auto& value, std::size_t& index) -> std::string
 		{
-			try
-			{
-				function();
-			}
-			catch (const std::exception& exception)
-			{
-				throw TestException{std::format("In {}\nAt line {}, column {}\nExpected no throw, but an exception was thrown: {}",
-					sourceLocation.file_name(),
-					sourceLocation.line(),
-					sourceLocation.column(),
-					exception.what())};
-			}
+			if constexpr (requires { std::format("{}", value); })
+				return std::format("{} [{}]", baseName, value);
+			else
+				return std::format("{} [value {}]", baseName, index++);
 		}
 
-		std::vector<Test> tests;
+	public:
+		/**
+		 * @brief Base CRTP helper providing timeout configuration for test builders.
+		 * @tparam Derived Derived builder type for method chaining.
+		 */
+		template<class Derived>
+		struct TimeoutBuilder
+		{
+			std::chrono::seconds testTimeout{10}; ///< Maximum execution timeout duration.
+
+			/**
+			 * @brief Sets the execution timeout before the test is aborted.
+			 * @param newTimeout Timeout duration.
+			 * @return Reference to this builder.
+			 */
+			inline auto timeout(std::chrono::seconds newTimeout) -> Derived&
+			{
+				testTimeout = newTimeout;
+				return static_cast<Derived&>(*this);
+			}
+		};
+
+		/**
+		 * @brief Builder for registering type-parameterized tests within a TestSuite.
+		 * @note Returned by TestBuilder::forTypes(); not intended to be instantiated directly by user code.
+		 * @tparam Types Type list to instantiate the test with.
+		 *
+		 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#itération-sur-une-liste-de-types-fortypes (Tests paramétrés par types)
+		 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#iterating-over-a-list-of-types-fortypes (Type-parameterized tests)
+		 */
+		template<class... Types>
+		struct TypedTestBuilder final: TimeoutBuilder<TypedTestBuilder<Types...>>
+		{
+			using TimeoutBuilder<TypedTestBuilder<Types...>>::testTimeout;
+
+			TestSuite& parentSuite; ///< Reference to the enclosing test suite registering the tests.
+			std::string testName; ///< Identifier of the test case.
+
+			TypedTestBuilder(std::chrono::seconds timeout, TestSuite& suite, std::string name):
+				TimeoutBuilder<TypedTestBuilder<Types...>>{timeout},
+				parentSuite{suite},
+				testName{std::move(name)}
+			{}
+
+			/**
+			 * @brief Registers the test implementation callback invoked for each type.
+			 * @param function Invocable accepting either a template type argument or `std::type_identity<Type>`.
+			 */
+			inline auto operator=(auto&& function) -> void
+			{
+				auto index = 0uz;
+				auto registerType = [&]<class Type>() {
+					auto name = std::format("{} [type {}]", testName, index++);
+					if constexpr (requires { function.template operator()<Type>(); })
+						parentSuite.addTest(std::move(name), [function] {
+							function.template operator()<Type>();
+						}, testTimeout);
+					else if constexpr (requires { function(std::type_identity<Type>{}); })
+						parentSuite.addTest(std::move(name), [function] {
+							function(std::type_identity<Type>{});
+						}, testTimeout);
+					else if constexpr (requires (std::stop_token token) { function.template operator()<Type>(token); })
+						parentSuite.addTest(std::move(name), [function](std::stop_token token) {
+							function.template operator()<Type>(token);
+						}, testTimeout);
+					else if constexpr (requires (std::stop_token token) { function(std::type_identity<Type>{}, token); })
+						parentSuite.addTest(std::move(name), [function](std::stop_token token) {
+							function(std::type_identity<Type>{}, token);
+						}, testTimeout);
+				};
+				(registerType.template operator()<Types>(), ...);
+			}
+		};
+
+		/**
+		 * @brief Builder for registering a test parameterized over values (std::tuple or input range).
+		 * @note Returned by TestBuilder::forValues(); not intended to be instantiated or manipulated directly by user code.
+		 * @tparam ValuesContainer Container holding parameter values (std::tuple or input range).
+		 *
+		 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#itération-sur-une-liste-de-valeurs-forvalues (Tests paramétrés par valeurs)
+		 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#iterating-over-a-list-of-values-forvalues (Value-parameterized tests)
+		 */
+		template<class ValuesContainer>
+		struct ParameterizedTestBuilder final: TimeoutBuilder<ParameterizedTestBuilder<ValuesContainer>>
+		{
+			using TimeoutBuilder<ParameterizedTestBuilder<ValuesContainer>>::testTimeout;
+
+			TestSuite& parentSuite; ///< Reference to the enclosing test suite registering the tests.
+			std::string testName; ///< Identifier of the test case.
+			ValuesContainer values; ///< Discrete values tuple or range of values.
+
+			ParameterizedTestBuilder(std::chrono::seconds timeout, TestSuite& suite, std::string name, ValuesContainer valuesContainer):
+				TimeoutBuilder<ParameterizedTestBuilder<ValuesContainer>>{timeout},
+				parentSuite{suite},
+				testName{std::move(name)},
+				values{std::move(valuesContainer)}
+			{}
+
+			/**
+			 * @brief Registers the test implementation callback invoked for each parameter value.
+			 * @param function Invocable accepting the parameter value.
+			 */
+			inline auto operator=(auto&& function) -> void
+			{
+				auto index = 0uz;
+				forEachParameterValue(values, [&](const auto& value) {
+					auto name = formatParameterName(testName, value, index);
+					if constexpr (requires { function(value); })
+						parentSuite.addTest(std::move(name), [function, value] {
+							function(value);
+						}, testTimeout);
+					else if constexpr (requires (std::stop_token token) { function(value, token); })
+						parentSuite.addTest(std::move(name), [function, value](std::stop_token token) {
+							function(value, token);
+						}, testTimeout);
+				});
+			}
+		};
+
+		template<class... Values>
+		using ValueTestBuilder = ParameterizedTestBuilder<std::tuple<Values...>>;
+
+		template<std::ranges::input_range Range>
+		using RangeTestBuilder = ParameterizedTestBuilder<Range>;
+
+		/**
+		 * @brief Builder for configuring and registering an individual test case.
+		 * @note Returned by TestSuite::test(std::string); not intended to be instantiated directly by user code.
+		 *
+		 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#déclarer-une-suite-de-tests (Déclarer une suite de tests)
+		 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#declaring-a-test-suite (Declaring a test suite)
+		 */
+		struct TestBuilder final: TimeoutBuilder<TestBuilder>
+		{
+			TestSuite& parentSuite; ///< Reference to the enclosing test suite registering the test.
+			std::string testName; ///< Identifier of the test case.
+
+			TestBuilder(std::chrono::seconds timeout, TestSuite& suite, std::string name):
+				TimeoutBuilder<TestBuilder>{timeout},
+				parentSuite{suite},
+				testName{std::move(name)}
+			{}
+
+			/**
+			 * @brief Converts this test into a type-parameterized test across the specified types.
+			 * @tparam Types Type parameters to instantiate the test with.
+			 * @return TypedTestBuilder instance.
+			 */
+			template<class... Types>
+			[[nodiscard]] inline auto forTypes() -> TypedTestBuilder<Types...>
+			{
+				return TypedTestBuilder<Types...>{testTimeout, parentSuite, std::move(testName)};
+			}
+
+			/**
+			 * @brief Converts this test into a value-parameterized test across discrete values or a range.
+			 * @tparam Values Value types or single range type.
+			 * @param values Values or range to iterate over.
+			 * @return ParameterizedTestBuilder instance.
+			 */
+			template<class... Values>
+			[[nodiscard]] inline auto forValues(Values&&... values)
+			{
+				if constexpr (sizeof...(Values) == 1 and (std::ranges::input_range<std::decay_t<Values>> and ...))
+					return ParameterizedTestBuilder<std::decay_t<Values>...>{
+						testTimeout, parentSuite, std::move(testName), (std::forward<Values>(values), ...)};
+				else
+					return ParameterizedTestBuilder<std::tuple<std::decay_t<Values>...>>{
+						testTimeout, parentSuite, std::move(testName), std::make_tuple(std::forward<Values>(values)...)};
+			}
+
+			/**
+			 * @brief Assigns the test body callback and registers the test into the parent suite.
+			 * @param function Invocable containing test logic (accepts optional std::stop_token).
+			 */
+			inline auto operator=(auto&& function) -> void
+			{
+				if constexpr (std::is_invocable_v<decltype(function), std::stop_token>)
+					parentSuite.addTest(std::move(testName), std::forward<decltype(function)>(function), testTimeout);
+				else
+					parentSuite.addTest(std::move(testName), [function = std::forward<decltype(function)>(function)] { function(); }, testTimeout);
+			}
+		};
+
+		/**
+		 * @brief Builder for configuring and registering a randomized fuzz test.
+		 * @note Returned by TestSuite::fuzzTest(std::string, std::size_t); not intended to be instantiated directly by user code.
+		 *
+		 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#tests-de-robustesse-et-fuzzing-fuzztest-et-fuzz (Tests de robustesse et fuzzing)
+		 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#robustness-testing-and-fuzzing-fuzztest-and-fuzz (Fuzz testing)
+		 */
+		struct FuzzTestBuilder final: TimeoutBuilder<FuzzTestBuilder>
+		{
+			TestSuite& parentSuite; ///< Reference to the enclosing test suite registering the test.
+			std::string testName; ///< Identifier of the test case.
+			std::size_t testIterations; ///< Number of randomized iterations to execute.
+			std::uint64_t testSeed{Math::DeterministicRandomEngine::defaultSeed}; ///< Deterministic pseudo-random number generator initial seed.
+
+			/**
+			 * @brief Sets the deterministic initial pseudo-random number generator seed for fuzz reproducibility.
+			 * @param newSeed Seed value.
+			 * @return Reference to this builder.
+			 */
+			inline auto seed(std::uint64_t newSeed) -> FuzzTestBuilder&
+			{
+				testSeed = newSeed;
+				return *this;
+			}
+
+			/**
+			 * @brief Registers the fuzz test callback executed for the configured iteration count.
+			 * @param function Invocable accepting a DeterministicRandomEngine&.
+			 */
+			inline auto operator=(auto&& function) -> void
+			{
+				parentSuite.addTest(std::move(testName), [iterations = testIterations, function = std::forward<decltype(function)>(function), seed = testSeed](std::stop_token stopToken) {
+					auto fuzzer = Math::DeterministicRandomEngine{seed};
+					for (auto _ : std::views::iota(0uz, iterations))
+					{
+						if (stopToken.stop_requested())
+							break;
+						function(fuzzer);
+					}
+				}, testTimeout);
+			}
+		};
+
+		/**
+		 * @brief Declares a test case with the specified name, returning a builder to configure and assign its body.
+		 * @param name Descriptive test name.
+		 * @return TestBuilder instance.
+		 */
+		[[nodiscard]] inline auto test(std::string name) -> TestBuilder
+		{
+			return TestBuilder{std::chrono::seconds{10}, *this, std::move(name)};
+		}
+
+		/**
+		 * @brief Evaluates a test predicate at compile time via static_assert and registers it as a passed test.
+		 *
+		 * The template predicate is evaluated at compile time: any assertion failure immediately breaks
+		 * the build before the test executable is even run.
+		 *
+		 * At runtime, this method registers an empty test body in the test runner so that the test appears
+		 * in reports and metrics while avoiding the process isolation fork() overhead of runtime test cases.
+		 * Prefer this overload when verifying constexpr functions, concepts, type traits, or template metaprogramming.
+		 *
+		 * @tparam Predicate Constexpr invocable returning a boolean or performing static assertions.
+		 * @param name Descriptive test name.
+		 */
+		template<auto Predicate>
+		inline auto test(std::string name) -> void
+		{
+			if constexpr (requires { { Predicate() } -> std::convertible_to<bool>; })
+			{
+				static_assert(Predicate(), "Compile-time test assertion evaluated to false");
+			}
+			else
+			{
+				constexpr auto runTest = [] {
+					Predicate();
+					return true;
+				};
+				static_assert(runTest(), "Compile-time test failed");
+			}
+			addTest(std::move(name), [] {});
+		}
+
+		/**
+		 * @brief Registers a fuzz test executed for a specified number of randomized iterations.
+		 * @param name Test identifier.
+		 * @param iterations Number of iterations to run.
+		 * @return FuzzTestBuilder for assigning the test body callback.
+		 */
+		[[nodiscard]] inline auto fuzzTest(std::string name, std::size_t iterations) -> FuzzTestBuilder
+		{
+			return FuzzTestBuilder{.parentSuite = *this, .testName = std::move(name), .testIterations = iterations};
+		}
+
+		std::vector<TestCase> tests;
 	};
 
+	/**
+	 * @brief Tag token returned by test suite registration assignments.
+	 * @note Returned upon assigning a suite callback (e.g. via TestSuiteBuilder::operator=); not intended to be instantiated, stored, or managed directly by user code.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#déclarer-une-suite-de-tests (Déclarer une suite de tests)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#declaring-a-test-suite (Declaring a test suite)
+	 */
+	export struct TestSuiteRegistration final
+	{};
+
+	/**
+	 * @brief Builder for registering an entire test suite parameterized over a list of types.
+	 * @note Returned by TestSuiteBuilder::forTypes(); not intended to be instantiated directly by user code.
+	 * @tparam Types Type parameters instantiated for each suite instance.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#paramétrage-au-niveau-dune-suite-complète (Suites de tests paramétrées)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#parameterization-on-a-complete-suite (Parameterized test suites)
+	 */
+	export template<class... Types>
+	struct TypedTestSuiteBuilder final
+	{
+		std::string name; ///< Identifier of the test suite.
+		std::vector<std::string> prerequisites; ///< Names of prerequisite test suites that must succeed before this suite runs.
+
+		/**
+		 * @brief Registers the suite callback instantiated for each specified type.
+		 * @param function Invocable accepting (TestSuite&) and optional `std::type_identity<Type>`.
+		 * @return TestSuiteRegistration token.
+		 */
+		inline auto operator=(auto&& function) -> TestSuiteRegistration
+		{
+			auto index = 0uz;
+			auto registerType = [&]<class Type>() {
+				auto suiteName = std::format("{} [type {}]", name, index++);
+				auto registeredSuite = TestSuite{std::move(suiteName), prerequisites, [function](TestSuite& suite) {
+					if constexpr (requires { function.template operator()<Type>(suite); })
+						function.template operator()<Type>(suite);
+					else if constexpr (requires { function(suite, std::type_identity<Type>{}); })
+						function(suite, std::type_identity<Type>{});
+				}};
+			};
+			(registerType.template operator()<Types>(), ...);
+			return TestSuiteRegistration{};
+		}
+	};
+
+	/**
+	 * @brief Builder for registering an entire test suite parameterized over values (std::tuple or input range).
+	 * @note Returned by TestSuiteBuilder::forValues(); not intended to be instantiated or manipulated directly by user code.
+	 * @tparam ValuesContainer Container holding parameter values (std::tuple or input range).
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#paramétrage-au-niveau-dune-suite-complète (Suites de tests paramétrées)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#parameterization-on-a-complete-suite (Parameterized test suites)
+	 */
+	export template<class ValuesContainer>
+	struct ParameterizedTestSuiteBuilder final
+	{
+		std::string name; ///< Identifier of the test suite.
+		std::vector<std::string> prerequisites; ///< Names of prerequisite test suites that must succeed before this suite runs.
+		ValuesContainer values; ///< Discrete values tuple or range of values.
+
+		/**
+		 * @brief Registers the suite callback instantiated for each parameter value.
+		 * @param function Invocable accepting (TestSuite&, const Value&).
+		 * @return TestSuiteRegistration token.
+		 */
+		inline auto operator=(auto&& function) -> TestSuiteRegistration
+		{
+			auto index = 0uz;
+			TestSuite::forEachParameterValue(values, [&](const auto& value) {
+				auto suiteName = TestSuite::formatParameterName(name, value, index);
+				auto registeredSuite = TestSuite{std::move(suiteName), prerequisites, [function, value](TestSuite& suite) {
+					function(suite, value);
+				}};
+			});
+			return TestSuiteRegistration{};
+		}
+	};
+
+	/**
+	 * @brief Builder for registering a test suite parameterized over a discrete pack of values.
+	 * @note Returned by TestSuiteBuilder::forValues(...); not intended to be instantiated or manipulated directly by user code.
+	 *
+	 * Wraps the variadic parameter pack into a `std::tuple` container passed to ParameterizedTestSuiteBuilder.
+	 *
+	 * @tparam Values Types of the individual parameter values.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#paramétrage-au-niveau-dune-suite-complète (Suites de tests paramétrées)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#parameterization-on-a-complete-suite (Parameterized test suites)
+	 */
+	export template<class... Values>
+	using ValueTestSuiteBuilder = ParameterizedTestSuiteBuilder<std::tuple<Values...>>;
+
+	/**
+	 * @brief Builder for registering a test suite parameterized over an input range.
+	 * @note Returned by TestSuiteBuilder::forValues(range); not intended to be instantiated or manipulated directly by user code.
+	 *
+	 * Evaluates each element of the provided range as an independent test suite parameter.
+	 *
+	 * @tparam Range Type satisfying std::ranges::input_range.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#paramétrage-au-niveau-dune-suite-complète (Suites de tests paramétrées)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#parameterization-on-a-complete-suite (Parameterized test suites)
+	 */
+	export template<std::ranges::input_range Range>
+	using RangeTestSuiteBuilder = ParameterizedTestSuiteBuilder<Range>;
+
+	/**
+	 * @brief Top-level builder used to declare a test suite, configure dependencies, and define its body.
+	 * @note Returned by testSuite(std::string); not intended to be instantiated directly by user code.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#déclarer-une-suite-de-tests (Déclarer une suite de tests)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#declaring-a-test-suite (Declaring a test suite)
+	 */
+	export struct TestSuiteBuilder final
+	{
+		std::string name; ///< Identifier of the test suite.
+		std::vector<std::string> prerequisites; ///< Names of prerequisite test suites that must succeed before this suite runs.
+
+		/**
+		 * @brief Adds prerequisite test suites that must succeed before executing this suite.
+		 * @param dependencies Prerequisite test suite names.
+		 * @return Reference to this builder.
+		 */
+		template<class... Dependencies>
+		requires (std::is_convertible_v<Dependencies, std::string> and ...)
+		inline auto dependsOn(Dependencies&&... dependencies) -> TestSuiteBuilder&
+		{
+			(prerequisites.emplace_back(std::forward<Dependencies>(dependencies)), ...);
+			return *this;
+		}
+
+		/**
+		 * @brief Converts this suite into a type-parameterized test suite.
+		 * @tparam Types Type parameter list.
+		 * @return TypedTestSuiteBuilder instance.
+		 */
+		template<class... Types>
+		[[nodiscard]] inline auto forTypes() -> TypedTestSuiteBuilder<Types...>
+		{
+			return TypedTestSuiteBuilder<Types...>{.name = std::move(name), .prerequisites = std::move(prerequisites)};
+		}
+
+		/**
+		 * @brief Converts this suite into a value-parameterized test suite over values or a range.
+		 * @tparam Values Value types or single range type.
+		 * @param values Values or range to parameterize the suite with.
+		 * @return ParameterizedTestSuiteBuilder instance.
+		 */
+		template<class... Values>
+		[[nodiscard]] inline auto forValues(Values&&... values)
+		{
+			if constexpr (sizeof...(Values) == 1 and (std::ranges::input_range<std::decay_t<Values>> and ...))
+				return ParameterizedTestSuiteBuilder<std::decay_t<Values>...>{
+					.name = std::move(name),
+					.prerequisites = std::move(prerequisites),
+					.values = (std::forward<Values>(values), ...)};
+			else
+				return ParameterizedTestSuiteBuilder<std::tuple<std::decay_t<Values>...>>{
+					.name = std::move(name),
+					.prerequisites = std::move(prerequisites),
+					.values = std::make_tuple(std::forward<Values>(values)...)};
+		}
+
+		/**
+		 * @brief Registers the test suite callback into the global test runner.
+		 * @param function Invocable accepting a TestSuite&.
+		 * @return TestSuiteRegistration token.
+		 */
+		inline auto operator=(auto&& function) -> TestSuiteRegistration
+		{
+			auto registeredSuite = TestSuite{std::move(name), std::move(prerequisites), std::forward<decltype(function)>(function)};
+			return TestSuiteRegistration{};
+		}
+	};
+
+	/**
+	 * @brief Declares a test suite.
+	 *
+	 * @param name Descriptive test suite identifier.
+	 * @return TestSuiteBuilder used to configure dependencies or assign suite body.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#déclarer-une-suite-de-tests (Guide des tests unitaires)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#declaring-a-test-suite (Unit test guide)
+	 */
+	export [[nodiscard]] inline auto testSuite(std::string name) -> TestSuiteBuilder
+	{
+		return TestSuiteBuilder{.name = std::move(name), .prerequisites = {}};
+	}
+
+	/**
+	 * @brief Deliberately skips the current test, reporting it as skipped in test results.
+	 * @param message Justification for skipping the test.
+	 * @param location Source location used for skip reporting (automatically captured).
+	 */
+	export [[noreturn]] inline auto skip(std::string message, std::source_location location = std::source_location::current()) -> void
+	{
+		throw TestSkipped{std::move(message), location};
+	}
+
+	/**
+	 * @brief Conditionally skips the current test if the provided condition evaluates to true.
+	 * @param condition Boolean flag determining whether to skip.
+	 * @param message Justification for skipping the test.
+	 * @param location Source location used for skip reporting (automatically captured).
+	 */
+	export inline auto skipIf(bool condition, std::string message, std::source_location location = std::source_location::current()) -> void
+	{
+		if (condition)
+			skip(std::move(message), location);
+	}
+
+	/**
+	 * @brief Explicitly fails the current test with a diagnostic message.
+	 * @param message Diagnostic description explaining why the test failed.
+	 * @param location Source location used for failure reporting (automatically captured).
+	 */
+	export [[noreturn]] inline auto fail(std::string message = "Explicit test failure", std::source_location location = std::source_location::current()) -> void
+	{
+		throw TestException{std::format(
+			"In {}\nAt line {}, column {}\n{}",
+			location.file_name(),
+			location.line(),
+			location.column(),
+			message)};
+	}
+
+	/**
+	 * @brief Creates an RAII EventWatcher to observe emitted events.
+	 * @tparam eventName Hashed string identifying the event.
+	 * @tparam Args Payload parameter types.
+	 * @param emitter Event emitter instance to subscribe to.
+	 * @return EventWatcher instance managing event subscription.
+	 */
+	export template<String::Hasher eventName = Type::Hash{}, class... Args, class Emitter>
+	[[nodiscard]] inline auto watch(Emitter& emitter)
+	{
+		return EventWatcher<eventName, Args...>{emitter};
+	}
+
+	/**
+	 * @brief Times the synchronous execution of a callable.
+	 * @param name Diagnostic identifier of the benchmark.
+	 * @param function Callable to measure.
+	 * @return BenchmarkResult containing measured duration in nanoseconds.
+	 */
+	export inline auto benchmark(std::string name, Type::Callable auto&& function) -> BenchmarkResult
+	{
+		const auto startTime = std::chrono::steady_clock::now();
+		function();
+		const auto endTime = std::chrono::steady_clock::now();
+
+		return BenchmarkResult{
+			.name = std::move(name),
+			.duration = std::chrono::duration_cast<std::chrono::nanoseconds>(endTime - startTime)};
+	}
+
+	/**
+	 * @brief Compares two benchmark results, logs their relative speedup, and returns the comparison.
+	 * @param first First benchmark result (candidate).
+	 * @param second Second benchmark result (baseline).
+	 * @return BenchmarkComparison structure with speedup and relative performance analysis.
+	 */
+	export inline auto compareBenchmarks(const BenchmarkResult& first, const BenchmarkResult& second) -> BenchmarkComparison
+	{
+		auto comparison = BenchmarkComparison{first, second};
+		if (comparison.isFirstFaster())
+			Logger<"UnitTests">::print<"detail">("Benchmark comparison: '{}' ({}) is {:.2f}x faster than '{}' ({})",
+				first.name,
+				first.durationString(),
+				comparison.speedup(),
+				second.name,
+				second.durationString());
+		else
+			Logger<"UnitTests">::print<"detail">("Benchmark comparison: '{}' ({}) is {:.2f}x slower than '{}' ({})",
+				first.name,
+				first.durationString(),
+				comparison.speedup(),
+				second.name,
+				second.durationString());
+		return comparison;
+	}
+
+	/**
+	 * @brief Emits a warning log if a candidate benchmark ran slower than a baseline benchmark.
+	 * @param candidate Benchmark result being evaluated.
+	 * @param baseline Reference benchmark result.
+	 */
+	export inline auto warnIfSlower(const BenchmarkResult& candidate, const BenchmarkResult& baseline) -> void
+	{
+		if (candidate.duration > baseline.duration)
+		{
+			const auto ratio = static_cast<double>(candidate.duration.count()) / static_cast<double>(baseline.duration.count());
+			Logger<"UnitTests">::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow,
+				std::format("Warning: '{}' ({}) was {:.2f}x slower than '{}' ({})",
+					candidate.name,
+					candidate.durationString(),
+					ratio,
+					baseline.name,
+					baseline.durationString()));
+		}
+	}
+
+	/**
+	 * @brief Executes a fuzz testing loop passing a DeterministicRandomEngine to the test body.
+	 * @param name Descriptive identifier of the fuzz test.
+	 * @param iterations Number of iterations to execute.
+	 * @param function Test callback receiving a DeterministicRandomEngine&.
+	 * @param seed Initial pseudo-random number generator seed (defaults to DeterministicRandomEngine::defaultSeed).
+	 * @param location Source location used for failure reporting (automatically captured).
+	 */
+	export inline auto fuzz(
+		std::string name,
+		std::size_t iterations,
+		Type::Callable<Math::DeterministicRandomEngine&> auto&& function,
+		std::uint64_t seed = Math::DeterministicRandomEngine::defaultSeed,
+		std::source_location location = std::source_location::current()) -> void
+	{
+		auto fuzzer = Math::DeterministicRandomEngine{seed};
+		for (auto iteration : std::views::iota(0uz, iterations))
+		{
+			try
+			{
+				function(fuzzer);
+			}
+			catch (const TestException& exception)
+			{
+				throw TestException{std::format("In {}\nAt line {}, column {}\nFuzz test '{}' failed at iteration {} with seed {:#x}:\n{}",
+					location.file_name(),
+					location.line(),
+					location.column(),
+					name,
+					iteration,
+					seed,
+					exception.what())};
+			}
+			catch (const std::exception& exception)
+			{
+				throw TestException{std::format("In {}\nAt line {}, column {}\nFuzz test '{}' threw exception at iteration {} with seed {:#x}: {}",
+					location.file_name(),
+					location.line(),
+					location.column(),
+					name,
+					iteration,
+					seed,
+					exception.what())};
+			}
+		}
+	}
+
+	/**
+	 * @brief Runs all registered test suites respecting dependency order and configuration settings.
+	 * @param settings Execution settings controlling verbose output, filtering, and abort conditions.
+	 * @return Exit code: 0 on success, non-zero if any test suite failed.
+	 */
 	export inline auto executeTests(TestSettings settings) -> int
 	{
 		return testRunner.executeTests(std::move(settings));
+	}
+
+	/**
+	 * @brief Parses command-line arguments into a TestSettings configuration object.
+	 * @param arguments Span of command-line argument tokens.
+	 * @return Parsed TestSettings configuration.
+	 */
+	export inline auto executeCommands(std::span<const std::string_view> arguments) -> TestSettings
+	{
+		auto settings = TestSettings{};
+		const auto parametersLexer = Language::Parameters::ParametersLexer{};
+		const auto parameters = parametersLexer.parseParameters(arguments);
+		for (const auto& [parameterName, parameterValue] : parameters)
+		{
+			if (parameterName == "help" or parameterName == "h")
+			{
+				Logger<"UnitTests">::print<"info">(
+					"Available parameters:\n"
+					"  -h, --help                Show this help message\n"
+					"  -m, --mode=<mode>         Execution mode [debug|test|prod]\n"
+					"  -v, --verbose[=<bool>]    Enable/disable verbose test output\n"
+					"  -d, --detail[=<bool>]     Enable/disable execution details\n"
+					"      --fail-fast           Stop on first failure\n"
+					"  -c, --chrono[=<bool>]     Display test execution times\n"
+					"  -f, --filter=<str>        Filter test suites by substring\n"
+					"  -r, --report=<path>       Export test results (e.g. junit:report.xml)\n\n"
+					"Usage: ./UnitTests --filter=Log --verbose --report=junit:report.xml");
+				settings.abort = true;
+				return settings;
+			}
+			else if (parameterName == "mode" or parameterName == "m")
+			{
+				if (parameterValue == "test")
+					settings.chrono = true;
+				else if (parameterValue == "prod")
+				{
+					settings.verbose = false;
+					settings.detail = false;
+					settings.failFast = true;
+				}
+			}
+			else if (parameterName == "verbose" or parameterName == "v")
+				settings.verbose = (std::ranges::empty(parameterValue) or parameterValue == "1" or parameterValue == "true");
+			else if (parameterName == "detail" or parameterName == "d")
+				settings.detail = (std::ranges::empty(parameterValue) or parameterValue == "1" or parameterValue == "true");
+			else if (parameterName == "fail-fast")
+				settings.failFast = (std::ranges::empty(parameterValue) or parameterValue == "1" or parameterValue == "true");
+			else if (parameterName == "chrono" or parameterName == "c")
+				settings.chrono = (std::ranges::empty(parameterValue) or parameterValue == "1" or parameterValue == "true");
+			else if (parameterName == "filter" or parameterName == "f")
+				settings.filter = parameterValue;
+			else if (parameterName == "report" or parameterName == "r")
+				settings.report = parameterValue;
+			else
+				Logger<"CppUtils">::print<"warning">("Unknown command: {}", parameterName);
+		}
+		return settings;
+	}
+
+	/**
+	 * @brief Parses standard main() arguments (argc, argv) into a TestSettings configuration object.
+	 * @param argc Argument count.
+	 * @param argv Array of argument strings.
+	 * @return Parsed TestSettings configuration.
+	 */
+	export inline auto executeCommands(int argc, const char* const argv[]) -> TestSettings
+	{
+		if (argc <= 1 or argv == nullptr)
+			return TestSettings{};
+		return executeCommands(std::vector<std::string_view>{argv + 1, argv + argc});
 	}
 }

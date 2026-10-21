@@ -14,6 +14,8 @@ export import CppUtils.System.Error;
 export import CppUtils.System.FileDescriptor;
 export import CppUtils.System.Main;
 export import CppUtils.System.Pipe;
+export import CppUtils.System.Process;
+export import CppUtils.System.Sandbox;
 export import CppUtils.System.SharedLibrary;
 export import CppUtils.System.Type;
 

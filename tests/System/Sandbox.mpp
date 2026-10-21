@@ -1,0 +1,73 @@
+export module CppUtils.UnitTests.System.Sandbox;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::System::Sandbox
+{
+	auto _ = testSuite("System/Sandbox").dependsOn("UnitTest") = []([[maybe_unused]] TestSuite& suite) {
+#if defined(__linux__)
+		using namespace std::chrono_literals;
+
+		suite.test("runIsolated normal execution") = [&] {
+			const auto result = CppUtils::System::runIsolated([] {
+				// Routine executing normally
+			});
+
+			expect(result.has_value());
+			expect(result->status == CppUtils::System::ExecutionStatus::Success);
+		};
+
+		suite.test("runIsolated exception capture") = [&] {
+			const auto result = CppUtils::System::runIsolated([] {
+				throw std::runtime_error{"Isolated custom exception"};
+			});
+
+			expect(result.has_value());
+			expect(result->status == CppUtils::System::ExecutionStatus::Failure);
+			expect(result->payload.contains("Isolated custom exception"));
+		};
+
+		suite.test("runIsolated crash capture on SIGSEGV") = [&] {
+			const auto result = CppUtils::System::runIsolated([] {
+#	if defined(__clang__)
+#		pragma clang diagnostic push
+#		pragma clang diagnostic ignored "-Wnull-dereference"
+#	endif
+				volatile int* nullPointer = nullptr;
+				*nullPointer = 42;
+#	if defined(__clang__)
+#		pragma clang diagnostic pop
+#	endif
+			});
+
+			expect(not result.has_value());
+			expect(result.error().crash.has_value());
+			expect(result.error().crash->signal) == CppUtils::System::Signal::SegmentationFault;
+			expect(result.error().crash->signalName()) == "SIGSEGV";
+		};
+
+		suite.test("runIsolated crash capture on SIGABRT") = [&] {
+			const auto result = CppUtils::System::runIsolated([] {
+				std::abort();
+			});
+
+			expect(not result.has_value());
+			expect(result.error().crash.has_value());
+			expect(result.error().crash->signal) == CppUtils::System::Signal::Abort;
+			expect(result.error().crash->signalName()) == "SIGABRT";
+		};
+
+		suite.test("runIsolated timeout handling") = [&] {
+			const auto result = CppUtils::System::runIsolated([] {
+				std::this_thread::sleep_for(1s);
+			}, 50ms);
+
+			expect(not result.has_value());
+			expect(result.error().crash.has_value());
+			expect(result.error().crash->signal) == CppUtils::System::Signal::Kill;
+			expect(result.error().crash->timedOut);
+		};
+#endif
+	};
+}

@@ -5,15 +5,12 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Language::GrammarParser
 {
-	auto _ = TestSuite{
-		"Language/GrammarParser",
-		{"Language/ASTParser"},
-		[](TestSuite& suite) {
+	auto _ = testSuite("Language/GrammarParser").dependsOn("Language/ASTParser") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("Empty source", [&] {
+		suite.test("Empty source") = [&] {
 			auto interpreter = CppUtils::Language::GrammarParser{};
 			constexpr auto source = ""sv;
 			auto cursor = CppUtils::String::Cursor{source};
@@ -22,7 +19,7 @@ namespace CppUtils::UnitTest::Language::GrammarParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result);
-		});
-	}};
+			expect(result);
+		};
+	};
 }

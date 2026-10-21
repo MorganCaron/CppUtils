@@ -4,9 +4,24 @@ import std;
 
 export namespace CppUtils::UnitTest
 {
+	/**
+	 * @brief Diagnostic utility for tracking and validating object lifecycles in unit tests.
+	 *
+	 * Monitors default construction, copy, move, and destruction events via a callback logger,
+	 * while maintaining thread-safe atomic counters for copy and move operations.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#suivi-du-cycle-de-vie-des-objets--cpputilsunittestlifetimechecker (Guide des tests unitaires)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#tracking-object-lifecycle-cpputilsunittestlifetimechecker (Unit test guide)
+	 */
 	class LifetimeChecker
 	{
 	public:
+		/**
+		 * @brief Constructs a LifetimeChecker and logs object creation.
+		 * @param callback Logging callback receiving string views of lifecycle events.
+		 * @param name Diagnostic identifier of the monitored object.
+		 * @param indentationLevel Tab indentation level for hierarchical visual logging.
+		 */
 		inline LifetimeChecker(std::function<void(std::string_view)> callback, std::string name, std::size_t indentationLevel = 0):
 			m_callback{std::move(callback)},
 			m_name{std::move(name)},
@@ -15,16 +30,25 @@ export namespace CppUtils::UnitTest
 			m_callback(std::format("{}{}()", std::string(m_indentationLevel, '\t'), m_name));
 		}
 
+		/**
+		 * @brief Returns the total number of copy constructions and copy assignments performed.
+		 * @return Cumulative copy operation count.
+		 */
 		[[nodiscard]] inline auto getCopyCount() const -> std::size_t
 		{
 			return m_copyCount;
 		}
 
+		/**
+		 * @brief Returns the total number of move constructions and move assignments performed.
+		 * @return Cumulative move operation count.
+		 */
 		[[nodiscard]] inline auto getMoveCount() const -> std::size_t
 		{
 			return m_moveCount;
 		}
 
+		/// @brief Destroys the LifetimeChecker and logs the destruction event.
 		virtual ~LifetimeChecker()
 		{
 			m_callback(std::format("{}~{}()", std::string(m_indentationLevel, '\t'), m_name));

@@ -48,11 +48,11 @@ namespace CppUtils::UnitTest::Language::JSON::Mapping
 		using FunctionMapping = Type::Mapping<>;
 	};
 
-	auto _ = TestSuite{"Language/JSON/Mapping", {"Logger", "Language/JSON/JsonLexer", "Language/JSON/Parsing"}, [](TestSuite& suite) {
+	auto _ = testSuite("Language/JSON/Mapping").dependsOn("Logger", "Language/JSON/JsonLexer", "Language/JSON/Parsing") = [](TestSuite& suite) {
 		using namespace CppUtils::Language::JSON::Literals;
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("JSON to Struct", [&] {
+		suite.test("JSON to Struct") = [&] {
 			const auto result = R"({
 				"a": "test",
 				"b": 123,
@@ -60,29 +60,29 @@ namespace CppUtils::UnitTest::Language::JSON::Mapping
 				"d": false
 			})"_json;
 
-			suite.expect(result);
+			expect(result);
 			const auto object = CppUtils::Language::JSON::toStruct<Object, ObjectMapping>(result.value());
-			suite.expectEqual(object.a, "test");
-			suite.expectEqual(object.b, 123);
-			suite.expectEqual(object.c, 45.6);
-			suite.expectEqual(object.d, false);
-		});
+			expect(object.a) == "test";
+			expect(object.b) == 123;
+			expect(object.c) == 45.6;
+			expect(object.d) == false;
+		};
 
-		suite.addTest("JSON Array to Structs", [&] {
+		suite.test("JSON Array to Structs") = [&] {
 			const auto result = R"([
 				{"a": "o1", "b": 1},
 				{"a": "o2", "b": 2}
 			])"_json;
 
-			suite.expect(result);
+			expect(result);
 			const auto& value = result.value();
 			const auto objects = CppUtils::Language::JSON::toStructs<Object, ObjectMapping>(value);
-			suite.expectEqual(std::ranges::size(objects), 2uz);
-			suite.expectEqual(objects[0].a, "o1");
-			suite.expectEqual(objects[1].a, "o2");
-		});
+			expect(std::ranges::size(objects)) == 2uz;
+			expect(objects[0].a) == "o1";
+			expect(objects[1].a) == "o2";
+		};
 
-		suite.addTest("Struct to JSON", [&] {
+		suite.test("Struct to JSON") = [&] {
 			const auto object = Object{"hello", 42, 3.14, true};
 			const auto json = CppUtils::Language::JSON::toJSON<Object, ObjectMapping>(object);
 
@@ -95,11 +95,11 @@ namespace CppUtils::UnitTest::Language::JSON::Mapping
 				"d": true
 			})"_json;
 
-			suite.expect(result);
-			suite.expectEqual(json, result.value());
-		});
+			expect(result);
+			expect(json) == result.value();
+		};
 
-		suite.addTest("Structs to JSON", [&] {
+		suite.test("Structs to JSON") = [&] {
 			const auto objects = std::vector<Object>{
 				{"o1", 1, 1.1, true},
 				{"o2", 2, 2.2, false}};
@@ -108,8 +108,8 @@ namespace CppUtils::UnitTest::Language::JSON::Mapping
 			for (const auto& objectValue : objects)
 				resultValue.as<CppUtils::Language::JSON::Array>().push_back(CppUtils::Language::JSON::toJSON<Object, ObjectMapping>(objectValue));
 
-			suite.expect(resultValue.isArray());
-			suite.expectEqual(std::ranges::size(resultValue.as<CppUtils::Language::JSON::Array>()), 2uz);
+			expect(resultValue.isArray());
+			expect(std::ranges::size(resultValue.as<CppUtils::Language::JSON::Array>())) == 2uz;
 
 			Logger::print("Produced JSON Array: {}", static_cast<std::string>(resultValue));
 
@@ -118,8 +118,8 @@ namespace CppUtils::UnitTest::Language::JSON::Mapping
 				{"a": "o2", "b": 2, "c": 2.2, "d": false}
 			])"_json;
 
-			suite.expect(result);
-			suite.expectEqual(resultValue, result.value());
-		});
-	}};
+			expect(result);
+			expect(resultValue) == result.value();
+		};
+	};
 }

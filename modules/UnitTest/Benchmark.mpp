@@ -1,0 +1,65 @@
+export module CppUtils.UnitTest.Benchmark;
+
+import std;
+import CppUtils.Chrono;
+
+export namespace CppUtils::UnitTest
+{
+	/// @brief Execution measurement result of a benchmarked test block.
+	struct BenchmarkResult final
+	{
+		std::string name; ///< Name or label identifying the benchmarked operation.
+		std::chrono::nanoseconds duration{0}; ///< Measured execution duration in nanoseconds.
+
+		/**
+		 * @brief Formats the measured duration into a human-readable string (ns, us, ms, s).
+		 * @return Formatted duration string.
+		 */
+		[[nodiscard]] auto durationString() const -> std::string
+		{
+			return Chrono::durationToString(duration);
+		}
+	};
+
+	/// @brief Comparison result between two benchmark measurements.
+	struct BenchmarkComparison final
+	{
+		BenchmarkResult first; ///< First benchmark measurement (baseline or candidate).
+		BenchmarkResult second; ///< Second benchmark measurement to compare against.
+
+		/**
+		 * @brief Computes the duration ratio of the first benchmark relative to the second.
+		 * @return Duration ratio (first / second).
+		 */
+		[[nodiscard]] constexpr auto ratio() const -> double
+		{
+			const auto firstCount = static_cast<double>(first.duration.count());
+			const auto secondCount = static_cast<double>(second.duration.count());
+			if (secondCount == 0.0)
+				return 1.0;
+			return firstCount / secondCount;
+		}
+
+		/**
+		 * @brief Checks if the first benchmark executed faster than the second benchmark.
+		 * @return True if first took less time than second.
+		 */
+		[[nodiscard]] constexpr auto isFirstFaster() const -> bool
+		{
+			return first.duration < second.duration;
+		}
+
+		/**
+		 * @brief Computes the speedup multiplier (> 1.0) of the faster benchmark over the slower one.
+		 * @return Speedup factor.
+		 */
+		[[nodiscard]] constexpr auto speedup() const -> double
+		{
+			const auto firstCount = static_cast<double>(first.duration.count());
+			const auto secondCount = static_cast<double>(second.duration.count());
+			if (firstCount == 0.0 or secondCount == 0.0)
+				return 1.0;
+			return isFirstFaster() ? (secondCount / firstCount) : (firstCount / secondCount);
+		}
+	};
+}

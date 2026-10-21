@@ -5,16 +5,16 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Thread::SharedLocker
 {
-	auto _ = TestSuite{"Thread/SharedLocker", {"UnitTest", "Thread/UniqueLocker"}, [](TestSuite& suite) {
-		suite.addTest("Unique access", [&] {
+	auto _ = testSuite("Thread/SharedLocker").dependsOn("UnitTest", "Thread/UniqueLocker") = [](TestSuite& suite) {
+		suite.test("Unique access") = [&] {
 			auto lockedString = CppUtils::Thread::SharedLocker<std::string>{"Foo"};
 			{
 				auto accessor = lockedString.uniqueAccess();
-				suite.expectEqual(accessor.value(), "Foo");
+				expect(accessor.value()) == "Foo";
 			}
-		});
+		};
 
-		suite.addTest("Unique access: Test mutex", [&] {
+		suite.test("Unique access: Test mutex") = [&] {
 			auto lockedNumber = CppUtils::Thread::SharedLocker{0uz};
 
 			auto incrementFunction = [&lockedNumber](std::size_t iterations) noexcept -> void {
@@ -32,57 +32,57 @@ namespace CppUtils::UnitTest::Thread::SharedLocker
 				auto thread1 = std::jthread{incrementFunction, iterations};
 			}
 			auto accessor = lockedNumber.uniqueAccess();
-			suite.expectEqual(accessor.value(), iterations * 2);
-		});
+			expect(accessor.value()) == iterations * 2;
+		};
 
-		suite.addTest("Shared access", [&] {
+		suite.test("Shared access") = [&] {
 			auto lockedString = CppUtils::Thread::SharedLocker<std::string>{"Foo"};
 			{
 				auto accessor0 = lockedString.sharedAccess();
 				auto accessor1 = lockedString.sharedAccess();
-				suite.expectEqual(accessor0.value(), "Foo");
-				suite.expectEqual(accessor1.value(), "Foo");
+				expect(accessor0.value()) == "Foo";
+				expect(accessor1.value()) == "Foo";
 			}
-		});
+		};
 
-		suite.addTest("MultipleAccessor", [&] {
+		suite.test("MultipleAccessor") = [&] {
 			auto lockedString1 = CppUtils::Thread::SharedLocker<std::string>{"Foo"};
 			auto lockedString2 = CppUtils::Thread::SharedLocker<std::string>{"Bar"};
 			{
 				auto accessor = CppUtils::Thread::MultipleAccessor{lockedString1, lockedString2};
-				suite.expectEqual(std::get<0>(accessor.values), "Foo");
-				suite.expectEqual(std::get<1>(accessor.values), "Bar");
+				expect(std::get<0>(accessor.values)) == "Foo";
+				expect(std::get<1>(accessor.values)) == "Bar";
 			}
-		});
+		};
 
-		suite.addTest("Mixed access", [&] {
+		suite.test("Mixed access") = [&] {
 			auto lockedString1 = CppUtils::Thread::UniqueLocker<std::string>{"Foo"};
 			auto lockedString2 = CppUtils::Thread::SharedLocker<std::string>{"Bar"};
 			{
 				auto accessor = CppUtils::Thread::MultipleAccessor{lockedString1, lockedString2};
-				suite.expectEqual(std::get<0>(accessor.values), "Foo");
-				suite.expectEqual(std::get<1>(accessor.values), "Bar");
+				expect(std::get<0>(accessor.values)) == "Foo";
+				expect(std::get<1>(accessor.values)) == "Bar";
 			}
-		});
+		};
 
-		suite.addTest("Move constructor", [&] {
+		suite.test("Move constructor") = [&] {
 			auto source = CppUtils::Thread::SharedLocker<std::unique_ptr<int>>{std::make_unique<int>(42)};
 			auto destination = CppUtils::Thread::SharedLocker<std::unique_ptr<int>>{std::move(source)};
 
-			suite.expect(source.uniqueAccess().value() == nullptr);
-			suite.expect(destination.sharedAccess().value() != nullptr);
-			suite.expectEqual(*destination.sharedAccess().value(), 42);
-		});
+			expect(source.uniqueAccess().value()) == nullptr;
+			expect(destination.sharedAccess().value()) != nullptr;
+			expect(*destination.sharedAccess().value()) == 42;
+		};
 
-		suite.addTest("Move assignment", [&] {
+		suite.test("Move assignment") = [&] {
 			auto source = CppUtils::Thread::SharedLocker<std::unique_ptr<int>>{std::make_unique<int>(100)};
 			auto destination = CppUtils::Thread::SharedLocker<std::unique_ptr<int>>{std::make_unique<int>(200)};
 
 			destination = std::move(source);
 
-			suite.expect(source.uniqueAccess().value() == nullptr);
-			suite.expect(destination.sharedAccess().value() != nullptr);
-			suite.expectEqual(*destination.sharedAccess().value(), 100);
-		});
-	}};
+			expect(source.uniqueAccess().value()) == nullptr;
+			expect(destination.sharedAccess().value()) != nullptr;
+			expect(*destination.sharedAccess().value()) == 100;
+		};
+	};
 }

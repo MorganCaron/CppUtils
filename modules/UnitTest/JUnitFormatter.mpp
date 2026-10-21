@@ -1,0 +1,147 @@
+export module CppUtils.UnitTest.JUnitFormatter;
+
+import std;
+import CppUtils.Chrono;
+import CppUtils.FileSystem;
+import CppUtils.Language.Xml.Utility;
+import CppUtils.Logger;
+import CppUtils.Log.Config.UnitTests;
+import CppUtils.UnitTest.Report;
+
+export namespace CppUtils::UnitTest::JUnit
+{
+	/**
+	 * @brief Generates a standard JUnit XML document string from structured test run data.
+	 * @param suites Span of recorded test suites.
+	 * @param runName Test run suite name attribute (defaults to "CppUtils Unit Tests").
+	 * @param totalDuration Total wall-clock duration of the test run.
+	 * @return Formatted XML document.
+	 */
+	[[nodiscard]] inline auto generateXml(
+		std::span<const RecordedTestSuite> suites,
+		std::string_view runName = "CppUtils Unit Tests",
+		std::chrono::nanoseconds totalDuration = {}) -> std::string
+	{
+		using namespace std::literals;
+
+		auto formatSeconds = [](std::chrono::nanoseconds duration) -> std::string {
+			const auto seconds = static_cast<double>(duration.count()) / 1'000'000'000.0;
+			return std::format("{:.4f}", seconds);
+		};
+
+		auto totalTests = 0uz;
+		auto totalFailures = 0uz;
+		auto totalSkipped = 0uz;
+		for (const auto& suite : suites)
+		{
+			totalTests += std::ranges::size(suite.testCases);
+			for (const auto& testCase : suite.testCases)
+			{
+				if (testCase.status == TestStatus::Failure)
+					++totalFailures;
+				else if (testCase.status == TestStatus::Skipped)
+					++totalSkipped;
+			}
+		}
+
+		auto xml = R"(<?xml version="1.0" encoding="UTF-8"?>)"s;
+		xml += std::format(
+			"\n"
+			R"(<testsuites name="{}" tests="{}" failures="{}" skipped="{}" errors="0" time="{}">)"
+			"\n",
+			Language::Xml::escapeXml(runName),
+			totalTests,
+			totalFailures,
+			totalSkipped,
+			formatSeconds(totalDuration));
+
+		for (const auto& suite : suites)
+		{
+			auto suiteFailures = 0uz;
+			auto suiteSkipped = 0uz;
+			for (const auto& testCase : suite.testCases)
+			{
+				if (testCase.status == TestStatus::Failure)
+					++suiteFailures;
+				else if (testCase.status == TestStatus::Skipped)
+					++suiteSkipped;
+			}
+
+			xml += std::format(
+				R"(  <testsuite name="{}" tests="{}" failures="{}" skipped="{}" errors="0" time="{}">)"
+				"\n",
+				Language::Xml::escapeXml(suite.name),
+				std::ranges::size(suite.testCases),
+				suiteFailures,
+				suiteSkipped,
+				formatSeconds(suite.duration));
+
+			for (const auto& testCase : suite.testCases)
+			{
+				xml += std::format(
+					R"(    <testcase name="{}" classname="{}" time="{}")",
+					Language::Xml::escapeXml(testCase.name),
+					Language::Xml::escapeXml(testCase.className),
+					formatSeconds(testCase.duration));
+
+				if (testCase.status == TestStatus::Success)
+				{
+					xml += "/>\n";
+				}
+				else if (testCase.status == TestStatus::Skipped)
+				{
+					xml += ">\n";
+					xml += std::format(
+						R"(      <skipped message="{}"/>)"
+						"\n",
+						Language::Xml::escapeXml(testCase.message));
+					xml += "    </testcase>\n";
+				}
+				else if (testCase.status == TestStatus::Failure)
+				{
+					xml += ">\n";
+					const auto firstNewline = testCase.message.find('\n');
+					const auto summaryMessage = (firstNewline != std::string::npos) ? testCase.message.substr(0, firstNewline) : testCase.message;
+					xml += std::format(
+						R"(      <failure message="{}" type="{}">{}</failure>)"
+						"\n",
+						Language::Xml::escapeXml(summaryMessage),
+						Language::Xml::escapeXml(testCase.failureType),
+						Language::Xml::escapeXml(testCase.message));
+					xml += "    </testcase>\n";
+				}
+			}
+
+			xml += "  </testsuite>\n";
+		}
+
+		xml += "</testsuites>\n";
+		return xml;
+	}
+
+	/**
+	 * @brief Serializes test execution results to a standard JUnit XML report file.
+	 * @param filePath Output file destination path.
+	 * @param suites Span of recorded test suites with their test cases and execution metrics.
+	 * @param totalDuration Total wall-clock duration of the test run.
+	 */
+	inline auto writeJUnitXmlReport(
+		const std::filesystem::path& filePath,
+		std::span<const RecordedTestSuite> suites,
+		std::chrono::nanoseconds totalDuration = {}) -> void
+	{
+		try
+		{
+			if (const auto parentPath = filePath.parent_path(); not std::ranges::empty(parentPath))
+				std::filesystem::create_directories(parentPath);
+
+			const auto xml = generateXml(suites, "CppUtils Unit Tests", totalDuration);
+			FileSystem::String::write(filePath, xml);
+			Logger<"UnitTests">::print<"detail">("JUnit XML report generated: {}", filePath.string());
+		}
+		catch (const std::exception& exception)
+		{
+			Logger<"UnitTests">::print<"error">("Failed to write JUnit XML report to {}: {}", filePath.string(), exception.what());
+		}
+	}
+}

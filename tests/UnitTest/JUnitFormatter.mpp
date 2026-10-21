@@ -1,0 +1,47 @@
+export module CppUtils.UnitTests.UnitTest.JUnitFormatter;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::UnitTest::JUnitFormatter
+{
+	auto _ = testSuite("UnitTest/JUnitFormatter") = [](TestSuite& suite) {
+		using namespace std::chrono_literals;
+
+		suite.test("JUnit::generateXml formats complete JUnit report with durations") = [&] {
+			const auto suites = std::vector<RecordedTestSuite>{
+				RecordedTestSuite{
+					.name = "Math/Calculator",
+					.testCases = {
+						RecordedTestCase{
+							.name = "Addition",
+							.className = "Math/Calculator",
+							.status = TestStatus::Success,
+							.duration = 10ms},
+						RecordedTestCase{
+							.name = "Division",
+							.className = "Math/Calculator",
+							.status = TestStatus::Failure,
+							.message = "Division by zero\nExpected not null",
+							.failureType = "TestException",
+							.duration = 5ms},
+						RecordedTestCase{
+							.name = "Multiplication",
+							.className = "Math/Calculator",
+							.status = TestStatus::Skipped,
+							.message = "Not implemented yet",
+							.duration = 0ms}},
+					.duration = 15ms}};
+
+			const auto xml = JUnit::generateXml(suites, "MyTestSuiteRun", 20ms);
+
+			expect(xml.contains(R"(<?xml version="1.0" encoding="UTF-8"?>)"));
+			expect(xml.contains(R"(<testsuites name="MyTestSuiteRun" tests="3" failures="1" skipped="1" errors="0" time="0.0200")"));
+			expect(xml.contains(R"(<testsuite name="Math/Calculator" tests="3" failures="1" skipped="1" errors="0" time="0.0150")"));
+			expect(xml.contains(R"(<testcase name="Addition" classname="Math/Calculator" time="0.0100")"));
+			expect(xml.contains(R"(<failure message="Division by zero" type="TestException">Division by zero)" "\n" R"(Expected not null</failure>)"));
+			expect(xml.contains(R"(<skipped message="Not implemented yet"/>)"));
+			expect(xml.contains(R"(</testsuite>)"));
+		};
+	};
+}

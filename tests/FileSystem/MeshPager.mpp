@@ -61,9 +61,9 @@ namespace CppUtils::Type::Binary
 
 namespace CppUtils::UnitTest::FileSystem::MeshPager
 {
-	auto _ = TestSuite{"FileSystem/MeshPager", [](TestSuite& suite) {
-		suite.addTest("Paging and RAII logic", [&suite] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
+	auto _ = testSuite("FileSystem/MeshPager") = [](TestSuite& suite) {
+		suite.test("Paging and RAII logic") = [] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& testDirectory) {
 				using MeshPager = CppUtils::FileSystem::MeshPager<std::string, SpyValue>;
 				using MeshNode = MeshPager::MeshNodePtr;
 
@@ -83,15 +83,15 @@ namespace CppUtils::UnitTest::FileSystem::MeshPager
 					return std::make_pair(pager.track(nodeC), nodeA);
 				}();
 
-				suite.expectEqual(SpyValue::activeCount, 3uz);
+				expect(SpyValue::activeCount) == 3uz;
 
 				{
 					auto focus = pager.acquireFocus(nodeA, 1);
-					suite.expectEqual(SpyValue::activeCount, 2uz);
+					expect(SpyValue::activeCount) == 2uz;
 
 					auto nodeB = nodeA["link"].front().value();
 					auto focusB = pager.acquireFocus(nodeB, 1);
-					suite.expectEqual(SpyValue::activeCount, 3uz);
+					expect(SpyValue::activeCount) == 3uz;
 
 					auto nodeC = MeshNode{};
 					for (auto neighbor : nodeB["link"])
@@ -101,16 +101,16 @@ namespace CppUtils::UnitTest::FileSystem::MeshPager
 							break;
 						}
 
-					suite.expect(nodeC);
-					suite.expectEqual(nodeC.getValue().value().value, "NodeC");
+					expect(nodeC);
+					expect(nodeC.getValue().value().value) == "NodeC";
 				}
 
-				suite.expectEqual(SpyValue::activeCount, 1uz);
+				expect(SpyValue::activeCount) == 1uz;
 			}};
-		});
+		};
 
-		suite.addTest("Automatic node deletion", [&suite] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
+		suite.test("Automatic node deletion") = [] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& testDirectory) {
 				using MeshPager = CppUtils::FileSystem::MeshPager<std::string, SpyValue>;
 				using MeshNode = MeshPager::MeshNodePtr;
 
@@ -132,13 +132,13 @@ namespace CppUtils::UnitTest::FileSystem::MeshPager
 				{
 					auto pager = MeshPager{testDirectory};
 					auto loadedB = pager.loadNode(idB);
-					suite.expect(not loadedB);
+					expect(not loadedB);
 				}
 			}};
-		});
+		};
 
-		suite.addTest("Automatic sub-graph deletion", [&suite] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
+		suite.test("Automatic sub-graph deletion") = [] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& testDirectory) {
 				using MeshPager = CppUtils::FileSystem::MeshPager<std::string, SpyValue>;
 				using MeshNode = MeshPager::MeshNodePtr;
 
@@ -166,14 +166,14 @@ namespace CppUtils::UnitTest::FileSystem::MeshPager
 					auto pager = MeshPager{testDirectory};
 					auto loadedB = pager.loadNode(idB);
 					auto loadedC = pager.loadNode(idC);
-					suite.expect(not loadedB);
-					suite.expect(not loadedC);
+					expect(not loadedB);
+					expect(not loadedC);
 				}
 			}};
-		});
+		};
 
-		suite.addTest("Automatic disk sub-graph deletion", [&suite] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
+		suite.test("Automatic disk sub-graph deletion") = [] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& testDirectory) {
 				using MeshPager = CppUtils::FileSystem::MeshPager<std::string, SpyValue>;
 				using MeshNode = MeshPager::MeshNodePtr;
 
@@ -212,14 +212,14 @@ namespace CppUtils::UnitTest::FileSystem::MeshPager
 					auto pager = MeshPager{testDirectory};
 					auto loadedB = pager.loadNode(idB);
 					auto loadedC = pager.loadNode(idC);
-					suite.expect(not loadedB);
-					suite.expect(not loadedC);
+					expect(not loadedB);
+					expect(not loadedC);
 				}
 			}};
-		});
+		};
 
-		suite.addTest("Root node persistence", [&suite] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
+		suite.test("Root node persistence") = [] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& testDirectory) {
 				using MeshPager = CppUtils::FileSystem::MeshPager<std::string, SpyValue>;
 				using MeshNode = MeshPager::MeshNodePtr;
 
@@ -245,16 +245,16 @@ namespace CppUtils::UnitTest::FileSystem::MeshPager
 					auto pager = MeshPager{testDirectory};
 					auto loadedA = pager.loadNode(idA);
 					auto loadedB = pager.loadNode(idB);
-					suite.expect(loadedA);
-					suite.expectEqual(loadedA.getValue().value().value, "NodeA");
-					suite.expect(loadedB);
-					suite.expectEqual(loadedB.getValue().value().value, "NodeB");
+					expect(loadedA);
+					expect(loadedA.getValue().value().value) == "NodeA";
+					expect(loadedB);
+					expect(loadedB.getValue().value().value) == "NodeB";
 				}
 			}};
-		});
+		};
 
-		suite.addTest("Shared child node persistence", [&suite] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& testDirectory) {
+		suite.test("Shared child node persistence") = [] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& testDirectory) {
 				using MeshPager = CppUtils::FileSystem::MeshPager<std::string, SpyValue>;
 				using MeshNode = MeshPager::MeshNodePtr;
 
@@ -281,10 +281,10 @@ namespace CppUtils::UnitTest::FileSystem::MeshPager
 				{
 					auto pager = MeshPager{testDirectory};
 					auto loadedC = pager.loadNode(idC);
-					suite.expect(loadedC);
-					suite.expectEqual(loadedC.getValue().value().value, "NodeC");
+					expect(loadedC);
+					expect(loadedC.getValue().value().value) == "NodeC";
 				}
 			}};
-		});
-	}};
+		};
+	};
 }

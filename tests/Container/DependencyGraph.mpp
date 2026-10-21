@@ -5,33 +5,33 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::DependencyGraph
 {
-	auto _ = TestSuite{"Container/DependencyGraph", {"UnitTest", "Logger"}, [](TestSuite& suite) {
+	auto _ = testSuite("Container/DependencyGraph").dependsOn("UnitTest", "Logger") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("Empty graph", [&] {
+		suite.test("Empty graph") = [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 
-			suite.expect(not graph.hasCycle());
-		});
+			expect(not graph.hasCycle());
+		};
 
-		suite.addTest("One element", [&] {
+		suite.test("One element") = [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 
-			suite.expect(graph.contains('A'));
-			suite.expectEqual(graph['A'], 1);
-		});
+			expect(graph.contains('A'));
+			expect(graph['A']) == 1;
+		};
 
-		suite.addTest("Remove element", [&] {
+		suite.test("Remove element") = [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 			graph.remove('A');
 
-			suite.expect(not graph.contains('A'));
-		});
+			expect(not graph.contains('A'));
+		};
 
-		suite.addTest("Remove element with dependencies", [&] {
+		suite.test("Remove element with dependencies") = [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 			graph.insert('B', 2);
@@ -39,21 +39,21 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 			graph.addDependency('B', 'A');
 			graph.remove('B');
 
-			suite.expect(not graph.contains('B'));
-			suite.expect(graph.contains('A'));
+			expect(not graph.contains('B'));
+			expect(graph.contains('A'));
 			const auto& aDeps = graph.getDependencies('A');
-			suite.expect(std::ranges::empty(aDeps));
-		});
+			expect(std::ranges::empty(aDeps));
+		};
 
-		suite.addTest("Change value", [&] {
+		suite.test("Change value") = [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 			graph['A'] = 2;
 
-			suite.expectEqual(graph['A'], 2);
-		});
+			expect(graph['A']) == 2;
+		};
 
-		suite.addTest("Add dependency", [&] {
+		suite.test("Add dependency") = [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 			graph.insert('B', 2);
@@ -62,14 +62,14 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 			const auto& aDeps = graph.getDependencies('A');
 			const auto& bDeps = graph.getDependencies('B');
 
-			suite.expectEqual(std::ranges::size(aDeps), 1uz);
-			suite.expectEqual(aDeps[0], 'B');
-			suite.expect(std::ranges::empty(bDeps));
+			expect(std::ranges::size(aDeps)) == 1uz;
+			expect(aDeps[0]) == 'B';
+			expect(std::ranges::empty(bDeps));
 
-			suite.expect(not graph.hasCycle());
-		});
+			expect(not graph.hasCycle());
+		};
 
-		suite.addTest("Remove dependency", [&] {
+		suite.test("Remove dependency") = [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 			graph.insert('B', 2);
@@ -79,13 +79,13 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 			const auto& aDeps = graph.getDependencies('A');
 			const auto& bDeps = graph.getDependencies('B');
 
-			suite.expect(std::ranges::empty(aDeps));
-			suite.expect(std::ranges::empty(bDeps));
+			expect(std::ranges::empty(aDeps));
+			expect(std::ranges::empty(bDeps));
 
-			suite.expect(not graph.hasCycle());
-		});
+			expect(not graph.hasCycle());
+		};
 
-		suite.addTest("Circular dependency (direct)", [&] {
+		suite.test("Circular dependency (direct)") = [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 			graph.insert('B', 2);
@@ -95,15 +95,15 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 			const auto& aDeps = graph.getDependencies('A');
 			const auto& bDeps = graph.getDependencies('B');
 
-			suite.expectEqual(std::ranges::size(aDeps), 1uz);
-			suite.expectEqual(std::ranges::size(bDeps), 1uz);
-			suite.expectEqual(aDeps[0], 'B');
-			suite.expectEqual(bDeps[0], 'A');
+			expect(std::ranges::size(aDeps)) == 1uz;
+			expect(std::ranges::size(bDeps)) == 1uz;
+			expect(aDeps[0]) == 'B';
+			expect(bDeps[0]) == 'A';
 
-			suite.expect(graph.hasCycle());
-		});
+			expect(graph.hasCycle());
+		};
 
-		suite.addTest("Circular dependency (indirect)", [&] {
+		suite.test("Circular dependency (indirect)") = [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 			graph.insert('B', 2);
@@ -119,19 +119,19 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 			const auto& cDeps = graph.getDependencies('C');
 			const auto& dDeps = graph.getDependencies('D');
 
-			suite.expectEqual(std::ranges::size(aDeps), 1uz);
-			suite.expectEqual(std::ranges::size(bDeps), 1uz);
-			suite.expectEqual(std::ranges::size(cDeps), 1uz);
-			suite.expectEqual(std::ranges::size(dDeps), 1uz);
-			suite.expectEqual(aDeps[0], 'B');
-			suite.expectEqual(bDeps[0], 'C');
-			suite.expectEqual(cDeps[0], 'D');
-			suite.expectEqual(dDeps[0], 'B');
+			expect(std::ranges::size(aDeps)) == 1uz;
+			expect(std::ranges::size(bDeps)) == 1uz;
+			expect(std::ranges::size(cDeps)) == 1uz;
+			expect(std::ranges::size(dDeps)) == 1uz;
+			expect(aDeps[0]) == 'B';
+			expect(bDeps[0]) == 'C';
+			expect(cDeps[0]) == 'D';
+			expect(dDeps[0]) == 'B';
 
-			suite.expect(graph.hasCycle());
-		});
+			expect(graph.hasCycle());
+		};
 
-		suite.addTest("ForEach (without circular dependencies)", [&] {
+		suite.test("ForEach (without circular dependencies)") = [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 			graph.insert('B', 2);
@@ -140,14 +140,14 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 			graph.addDependency('A', 'C');
 			graph.addDependency('B', 'C');
 
-			suite.expect(not graph.hasCycle());
+			expect(not graph.hasCycle());
 
-			suite.expect(graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
+			expect(graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
 				Logger::print("{}: {}", key, value);
 			}).has_value());
-		});
+		};
 
-		suite.addTest("ForEach (with circular dependencies)", [&] {
+		suite.test("ForEach (with circular dependencies)") = [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 			graph.insert('B', 2);
@@ -158,16 +158,16 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 			graph.addDependency('C', 'D');
 			graph.addDependency('D', 'B');
 
-			suite.expect(graph.hasCycle());
+			expect(graph.hasCycle());
 
 			auto result = graph.forEach([](const auto& key, const auto& value, [[maybe_unused]] const auto& dependencies) -> void {
 				Logger::print("{}: {}", key, value);
 			});
-			suite.expect(not result);
+			expect(not result);
 			Logger::print("Error: {}", result.error());
-		});
+		};
 
-		suite.addTest("ForEach (interruption)", [&] {
+		suite.test("ForEach (interruption)") = [&] {
 			auto graph = CppUtils::Container::DependencyGraph<char, int>{};
 			graph.insert('A', 1);
 			graph.insert('B', 2);
@@ -180,9 +180,9 @@ namespace CppUtils::UnitTest::Container::DependencyGraph
 				return false;
 			});
 
-			suite.expect(result);
-			suite.expect(not *result);
-			suite.expectEqual(count, 1uz);
-		});
-	}};
+			expect(result);
+			expect(not *result);
+			expect(count) == 1uz;
+		};
+	};
 }

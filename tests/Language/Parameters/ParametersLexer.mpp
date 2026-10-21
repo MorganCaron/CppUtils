@@ -11,24 +11,36 @@ namespace CppUtils::UnitTest::Language::Parameters::ParametersLexer
 		std::string parameter;
 	};
 
-	auto _ = TestSuite{"Language/Parameters/ParametersLexer", {}, [](TestSuite& suite) {
+	auto _ = testSuite("Language/Parameters/ParametersLexer") = [](TestSuite& suite) {
 		using namespace std::literals;
 
-		suite.addTest("parseParameters", [&] {
-			const char* const argv[] = {"executable", "A[aaa]", "B[", "0", "]", "C", "DDD[]", "E[e e e ]"};
+		suite.test("parseParameters") = [&] {
+			const char* const argv[] = {"executable", "--key1=value1", R"(--key2="hello world")", "--key3", "-k=shortValue", "-f"};
 			const auto parametersLexer = CppUtils::Language::Parameters::ParametersLexer{};
-			const auto parameters = parametersLexer.parseParameters(8, argv);
+			const auto parameters = parametersLexer.parseParameters(6, argv);
 
-			suite.expectEqual(std::ranges::size(parameters), 5uz);
-			suite.expectEqual(parameters.at("A"), "aaa"s);
-			suite.expectEqual(parameters.at("B"), "0"s);
-			suite.expectEqual(parameters.at("C"), ""s);
-			suite.expectEqual(parameters.at("DDD"), ""s);
-			suite.expectEqual(parameters.at("E"), "e e e"s);
-		});
+			expect(std::ranges::size(parameters)) == 5uz;
+			expect(parameters.at("key1")) == "value1";
+			expect(parameters.at("key2")) == "hello world";
+			expect(parameters.at("key3")) == "";
+			expect(parameters.at("k")) == "shortValue";
+			expect(parameters.at("f")) == "";
+		};
 
-		suite.addTest("executeCommands", [&] {
-			const char* const argv[] = {"executable", "info", "verbose", "parameter[value]"};
+		suite.test("parseParameters with CLI flags") = [&] {
+			const char* const argv[] = {"executable", "--filter=Network", "--report=junit:build/report.xml", "--fail-fast", "-v"};
+			const auto parametersLexer = CppUtils::Language::Parameters::ParametersLexer{};
+			const auto parameters = parametersLexer.parseParameters(5, argv);
+
+			expect(std::ranges::size(parameters)) == 4uz;
+			expect(parameters.at("filter")) == "Network";
+			expect(parameters.at("report")) == "junit:build/report.xml";
+			expect(parameters.at("fail-fast")) == "";
+			expect(parameters.at("v")) == "";
+		};
+
+		suite.test("executeCommands") = [&] {
+			const char* const argv[] = {"executable", "--info", "--verbose", "--parameter=value"};
 			auto settings = ProgramSettings{};
 			const auto parametersLexer = CppUtils::Language::Parameters::ParametersLexer{};
 			const auto abort = parametersLexer.executeCommands(4, argv, {{"info", []([[maybe_unused]] auto value) -> bool {
@@ -42,9 +54,9 @@ namespace CppUtils::UnitTest::Language::Parameters::ParametersLexer
 				settings.parameter = value;
 				return false;
 			}}});
-			suite.expectEqual(abort, false);
-			suite.expectEqual(settings.verbose, true);
-			suite.expectEqual(settings.parameter, "value"s);
-		});
-	}};
+			not expect(abort);
+			expect(settings.verbose);
+			expect(settings.parameter) == "value";
+		};
+	};
 }

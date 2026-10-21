@@ -12,12 +12,14 @@ import { starlightIconsPlugin, starlightIconsIntegration } from 'starlight-plugi
 import UnoCSS from 'unocss/astro';
 import mermaid from 'astro-mermaid';
 import { remarkCppReference } from './src/plugins/remark-cppreference.mjs';
+import { remarkCppUtils } from './src/plugins/remark-cpputils.mjs';
+import { remarkTerminal } from './src/plugins/remark-terminal.mjs';
 
 export default defineConfig({
 	site: 'https://morgancaron.github.io',
 	base: process.env.GITHUB_ACTIONS === 'true' ? '/CppUtils' : '/',
 	markdown: {
-		remarkPlugins: [remarkCppReference],
+		remarkPlugins: [remarkCppReference, remarkCppUtils, remarkTerminal],
 	},
 	integrations: [
 		starlight({
@@ -32,6 +34,8 @@ export default defineConfig({
 						fr: 'Retour en haut',
 					},
 					showTooltip: true,
+					borderRadius: '50',
+					svgStrokeWidth: 2,
 				}),
 				starlightAnnouncement({
 					displayMode: 'rotate',
@@ -141,18 +145,32 @@ gtag('config', 'G-9EYYYD173T', {
 							slug: 'guides/build-configuration',
 						},
 						{
-							label: 'RAII synchronization (Lockers)',
-							translations: { fr: 'Synchronisation RAII (Lockers)' },
+							label: 'Unit testing framework',
+							translations: { fr: 'Tests unitaires' },
+							slug: 'guides/unit-test',
+						},
+						{
+							label: 'RAII Lockers',
+							translations: { fr: 'Verrous RAII' },
 							slug: 'guides/lockers',
 						},
 					],
 				},
 				{
-					label: 'API reference',
+					label: 'CppUtils API reference',
 					translations: {
-						fr: 'Référence d’API',
+						fr: 'Référence d’API CppUtils',
 					},
-					items: [{ autogenerate: { directory: 'reference', collapsed: true } }],
+					items: [
+						{
+							label: 'CppUtils API reference',
+							translations: {
+								fr: 'Référence d’API CppUtils',
+							},
+							slug: 'reference',
+						},
+						{ autogenerate: { directory: 'reference', collapsed: true } },
+					],
 				},
 			],
 		}),

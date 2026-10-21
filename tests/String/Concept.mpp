@@ -1,0 +1,72 @@
+export module CppUtils.UnitTests.String.Concept;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::String::Concept
+{
+	auto _ = testSuite("String/Concept").dependsOn("UnitTest") = [](TestSuite& suite) {
+		suite.test<[] {
+			static_assert(std::same_as<CppUtils::String::CharacterType<char*>, char>);
+			static_assert(std::same_as<CppUtils::String::CharacterType<const char*>, char>);
+			static_assert(std::same_as<CppUtils::String::CharacterType<char[32]>, char>);
+			static_assert(std::same_as<CppUtils::String::CharacterType<const wchar_t[10]>, wchar_t>);
+			static_assert(std::same_as<CppUtils::String::CharacterType<char>, char>);
+			static_assert(std::same_as<CppUtils::String::CharacterType<const char32_t*>, char32_t>);
+		}>("CharacterType");
+
+		suite.test<[] {
+			static_assert(CppUtils::String::CharacterPointerOrArray<char*>);
+			static_assert(CppUtils::String::CharacterPointerOrArray<const char*>);
+			static_assert(CppUtils::String::CharacterPointerOrArray<char[10]>);
+			static_assert(CppUtils::String::CharacterPointerOrArray<const char[10]>);
+			static_assert(CppUtils::String::CharacterPointerOrArray<wchar_t*>);
+			static_assert(CppUtils::String::CharacterPointerOrArray<const char32_t*>);
+			static_assert(not CppUtils::String::CharacterPointerOrArray<int*>);
+			static_assert(not CppUtils::String::CharacterPointerOrArray<int[10]>);
+			static_assert(not CppUtils::String::CharacterPointerOrArray<std::string>);
+		}>("CharacterPointerOrArray");
+
+		suite.test<[] {
+			static_assert(CppUtils::String::CharacterSequence<std::string>);
+			static_assert(CppUtils::String::CharacterSequence<std::string_view>);
+			static_assert(CppUtils::String::CharacterSequence<const char*>);
+			static_assert(CppUtils::String::CharacterSequence<char[16]>);
+			static_assert(CppUtils::String::CharacterSequence<std::span<const char>>);
+			static_assert(CppUtils::String::CharacterSequence<std::vector<char>>);
+			static_assert(not CppUtils::String::CharacterSequence<std::vector<int>>);
+			static_assert(not CppUtils::String::CharacterSequence<int>);
+		}>("CharacterSequence");
+
+		suite.test<[] {
+			static_assert(CppUtils::String::Text<std::string, char>);
+			static_assert(CppUtils::String::Text<std::string_view, char>);
+			static_assert(CppUtils::String::Text<const char*, char>);
+			static_assert(CppUtils::String::GenericText<std::string>);
+			static_assert(CppUtils::String::GenericText<std::wstring>);
+			static_assert(not CppUtils::String::GenericText<std::vector<int>>);
+		}>("Text and GenericText");
+
+		suite.test<[] {
+			static_assert(CppUtils::String::Formattable<int>);
+			static_assert(CppUtils::String::Formattable<std::string>);
+			static_assert(CppUtils::String::DirectlyPrintable<int>);
+			static_assert(CppUtils::String::DirectlyPrintable<std::string>);
+			static_assert(CppUtils::String::DirectlyPrintable<std::byte>);
+			static_assert(CppUtils::String::DirectlyPrintable<std::filesystem::path>);
+			static_assert(not CppUtils::String::DirectlyPrintable<std::vector<std::string>>);
+			static_assert(not CppUtils::String::DirectlyPrintable<std::optional<int>>);
+			static_assert(not CppUtils::String::DirectlyPrintable<std::unique_ptr<int>>);
+			static_assert(CppUtils::String::ExtensivelyPrintable<std::vector<std::string>>);
+			static_assert(CppUtils::String::ExtensivelyPrintable<std::variant<int, std::string>>);
+			static_assert(CppUtils::String::ExtensivelyPrintable<std::pair<int, std::string>>);
+			static_assert(CppUtils::String::ExtensivelyPrintable<std::tuple<int, double, std::string>>);
+			static_assert(CppUtils::String::ExtensivelyPrintable<std::optional<int>>);
+			static_assert(CppUtils::String::ExtensivelyPrintable<std::optional<std::string>>);
+			static_assert(CppUtils::String::ExtensivelyPrintable<std::unique_ptr<int>>);
+			static_assert(CppUtils::String::ExtensivelyPrintable<std::shared_ptr<double>>);
+			static_assert(not CppUtils::String::ExtensivelyPrintable<std::vector<std::thread>>);
+			static_assert(not CppUtils::String::ExtensivelyPrintable<std::optional<std::thread>>);
+		}>("Formattable, DirectlyPrintable and ExtensivelyPrintable");
+	};
+}

@@ -1,0 +1,155 @@
+export module CppUtils.UnitTest.Assertion;
+
+import std;
+import CppUtils.Math.Utility;
+import CppUtils.String;
+import CppUtils.Type;
+
+namespace CppUtils::UnitTest
+{
+	/// @brief Relational comparison operators supported in assertion decomposition.
+	export enum class ComparisonOperator
+	{
+		Equal,
+		NotEqual,
+		LessThan,
+		LessThanOrEqual,
+		GreaterThan,
+		GreaterThanOrEqual
+	};
+
+	/// @brief Mapping between ComparisonOperator and its string representation.
+	export using ComparisonOperatorMapping = Type::Mapping<
+		Type::Pair<ComparisonOperator::Equal, String::Hasher{"=="}>,
+		Type::Pair<ComparisonOperator::NotEqual, String::Hasher{"!="}>,
+		Type::Pair<ComparisonOperator::LessThan, String::Hasher{"<"}>,
+		Type::Pair<ComparisonOperator::LessThanOrEqual, String::Hasher{"<="}>,
+		Type::Pair<ComparisonOperator::GreaterThan, String::Hasher{">"}>,
+		Type::Pair<ComparisonOperator::GreaterThanOrEqual, String::Hasher{">="}>>;
+
+	/**
+	 * @brief Converts a ComparisonOperator enumerator to its C++ operator string literal.
+	 * @param comparisonOperator Enumerator value.
+	 * @return Operator string view (e.g. `"=="`, `"<="`, `"!="`), or empty string if invalid.
+	 */
+	export [[nodiscard]] constexpr auto getComparisonOperatorString(ComparisonOperator comparisonOperator) noexcept -> std::string_view
+	{
+		using namespace std::literals;
+		return ComparisonOperatorMapping::toRhs(comparisonOperator, ""sv);
+	}
+
+	/**
+	 * @brief Parses an operator string literal into its corresponding ComparisonOperator.
+	 * @param operatorString Operator symbol string (e.g. `"=="`, `"<="`).
+	 * @return ComparisonOperator wrapped in std::optional, or std::nullopt if unknown.
+	 */
+	export [[nodiscard]] constexpr auto getComparisonOperator(std::string_view operatorString) noexcept -> std::optional<ComparisonOperator>
+	{
+		return ComparisonOperatorMapping::toLhs(operatorString);
+	}
+
+	export template<ComparisonOperator Operator>
+	constexpr auto applyOperator(const auto& left, const auto& right) -> bool
+	{
+		if constexpr (Operator == ComparisonOperator::Equal)
+			return (left == right);
+		else if constexpr (Operator == ComparisonOperator::NotEqual)
+			return (left != right);
+		else if constexpr (Operator == ComparisonOperator::LessThan)
+			return (left < right);
+		else if constexpr (Operator == ComparisonOperator::LessThanOrEqual)
+			return (left <= right);
+		else if constexpr (Operator == ComparisonOperator::GreaterThan)
+			return (left > right);
+		else if constexpr (Operator == ComparisonOperator::GreaterThanOrEqual)
+			return (left >= right);
+	}
+
+	export template<ComparisonOperator Operator>
+	constexpr auto compareFloatingPoint(const auto& left, const auto& right) -> bool
+	{
+		if constexpr (Operator == ComparisonOperator::Equal)
+			return Math::isEqual(left, right);
+		else if constexpr (Operator == ComparisonOperator::NotEqual)
+			return not Math::isEqual(left, right);
+		else if constexpr (Operator == ComparisonOperator::LessThanOrEqual)
+			return (left <= right) or Math::isEqual(left, right);
+		else if constexpr (Operator == ComparisonOperator::GreaterThanOrEqual)
+			return (left >= right) or Math::isEqual(left, right);
+		else
+			return applyOperator<Operator>(left, right);
+	}
+
+	export template<ComparisonOperator Operator>
+	constexpr auto compareIntegers(const auto& left, const auto& right) -> bool
+	{
+		if constexpr (Operator == ComparisonOperator::Equal)
+			return std::cmp_equal(left, right);
+		else if constexpr (Operator == ComparisonOperator::NotEqual)
+			return std::cmp_not_equal(left, right);
+		else if constexpr (Operator == ComparisonOperator::LessThan)
+			return std::cmp_less(left, right);
+		else if constexpr (Operator == ComparisonOperator::LessThanOrEqual)
+			return std::cmp_less_equal(left, right);
+		else if constexpr (Operator == ComparisonOperator::GreaterThan)
+			return std::cmp_greater(left, right);
+		else if constexpr (Operator == ComparisonOperator::GreaterThanOrEqual)
+			return std::cmp_greater_equal(left, right);
+	}
+
+	export template<ComparisonOperator Operator>
+	constexpr auto evaluateComparison(const auto& left, const auto& right) -> bool
+	{
+		using CleanLeftType = std::remove_cvref_t<decltype(left)>;
+		using CleanRightType = std::remove_cvref_t<decltype(right)>;
+
+		if constexpr (String::CharacterPointerOrArray<CleanLeftType> and String::CharacterPointerOrArray<CleanRightType>)
+		{
+			using LeftCharacterType = String::CharacterType<CleanLeftType>;
+			using RightCharacterType = String::CharacterType<CleanRightType>;
+			if constexpr (std::is_same_v<LeftCharacterType, RightCharacterType>)
+				return applyOperator<Operator>(std::basic_string_view<LeftCharacterType>{left}, std::basic_string_view<RightCharacterType>{right});
+			else
+				return applyOperator<Operator>(left, right);
+		}
+		else if constexpr (std::floating_point<CleanLeftType> or std::floating_point<CleanRightType>)
+		{
+			using CommonFloatingPointType = std::conditional_t<
+				std::floating_point<CleanLeftType> and std::floating_point<CleanRightType>,
+				std::common_type_t<CleanLeftType, CleanRightType>,
+				std::conditional_t<std::floating_point<CleanLeftType>, CleanLeftType, CleanRightType>>;
+			return compareFloatingPoint<Operator>(static_cast<CommonFloatingPointType>(left), static_cast<CommonFloatingPointType>(right));
+		}
+		else if constexpr (Type::ArithmeticInteger<CleanLeftType> and Type::ArithmeticInteger<CleanRightType>)
+		{
+			return compareIntegers<Operator>(left, right);
+		}
+		else if constexpr (std::ranges::input_range<CleanLeftType> and std::ranges::input_range<CleanRightType>
+			and not String::GenericText<CleanLeftType> and not String::GenericText<CleanRightType>
+			and not std::same_as<CleanLeftType, std::filesystem::path> and not std::same_as<CleanRightType, std::filesystem::path>)
+		{
+			if constexpr (Operator == ComparisonOperator::Equal)
+				return std::ranges::equal(left, right, [](const auto& leftElement, const auto& rightElement) {
+					return evaluateComparison<ComparisonOperator::Equal>(leftElement, rightElement);
+				});
+			else if constexpr (Operator == ComparisonOperator::NotEqual)
+				return not std::ranges::equal(left, right, [](const auto& leftElement, const auto& rightElement) {
+					return evaluateComparison<ComparisonOperator::Equal>(leftElement, rightElement);
+				});
+			else
+				return applyOperator<Operator>(left, right);
+		}
+		else if constexpr (std::same_as<CleanLeftType, std::byte> and std::integral<CleanRightType>)
+		{
+			return evaluateComparison<Operator>(std::to_integer<unsigned long long>(left), right);
+		}
+		else if constexpr (std::integral<CleanLeftType> and std::same_as<CleanRightType, std::byte>)
+		{
+			return evaluateComparison<Operator>(left, std::to_integer<unsigned long long>(right));
+		}
+		else
+		{
+			return applyOperator<Operator>(left, right);
+		}
+	}
+}

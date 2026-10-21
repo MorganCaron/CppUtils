@@ -1,0 +1,26 @@
+export module CppUtils.Execution.DoNotOptimize;
+
+import std;
+
+export namespace CppUtils::Execution
+{
+	/**
+	 * @brief Prevents compiler optimization (dead code elimination) for an expression or variable.
+	 *
+	 * Uses an inline assembly memory barrier on Clang/GCC to force the compiler
+	 * to retain the evaluated value in registers or memory.
+	 *
+	 * @param value Forwarding reference to the value or expression to keep alive.
+	 */
+	inline auto doNotOptimize(auto&& value) -> void
+	{
+#if defined(__clang__) || defined(__GNUC__)
+		if constexpr (std::is_const_v<std::remove_reference_t<decltype(value)>>)
+			asm volatile("" : : "r,m"(value) : "memory");
+		else
+			asm volatile("" : "+r,m"(value) : : "memory");
+#else
+		std::atomic_signal_fence(std::memory_order_seq_cst);
+#endif
+	}
+}

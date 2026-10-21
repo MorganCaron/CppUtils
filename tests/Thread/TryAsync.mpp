@@ -5,44 +5,44 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Thread::TryAsync
 {
-	auto _ = TestSuite{"Thread/TryAsync", {"Logger"}, [](TestSuite& suite) {
+	auto _ = testSuite("Thread/TryAsync").dependsOn("Logger") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("Successful async call", [&] {
+		suite.test("Successful async call") = [&] {
 			auto future = CppUtils::Thread::tryAsync([] {
 				return 42;
 			});
 			auto result = future.get();
-			suite.expect(result);
-			suite.expectEqual(result.value(), 42);
-		});
+			expect(result);
+			expect(result.value()) == 42;
+		};
 
-		suite.addTest("Async call with exception", [&] {
+		suite.test("Async call with exception") = [&] {
 			auto future = CppUtils::Thread::tryAsync([] {
 				throw std::runtime_error{"Test exception"};
 				return 0;
 			});
 			auto result = future.get();
-			suite.expect(not result);
-			suite.expectEqual(result.error().what(), "Test exception"sv);
-		});
+			expect(not result);
+			expect(result.error().what()) == "Test exception";
+		};
 
-		suite.addTest("Void async call", [&] {
+		suite.test("Void async call") = [&] {
 			auto future = CppUtils::Thread::tryAsync([] {
 				Logger::print("Void async call executed");
 			});
 			auto result = future.get();
-			suite.expect(result);
-		});
+			expect(result);
+		};
 
-		suite.addTest("Void async call with exception", [&] {
+		suite.test("Void async call with exception") = [&] {
 			auto future = CppUtils::Thread::tryAsync([] {
 				throw std::runtime_error{"Void test exception"};
 			});
 			auto result = future.get();
-			suite.expect(not result);
-			suite.expectEqual(result.error().what(), "Void test exception"sv);
-		});
-	}};
+			expect(not result);
+			expect(result.error().what()) == "Void test exception";
+		};
+	};
 }

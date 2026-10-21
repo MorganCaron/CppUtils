@@ -20,7 +20,10 @@ export namespace CppUtils::Language::Parser
 			++cursor.position;
 			switch (value)
 			{
-			case ' ': case '\n': case '\t': case '\r':
+			case ' ':
+			case '\n':
+			case '\t':
+			case '\r':
 				tokenNameBuffer.clear();
 				break;
 			case '{':

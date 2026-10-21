@@ -5,11 +5,11 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Log::LogRotate
 {
-	auto _ = TestSuite{"LogRotate", {"Logger", "FileSystem/Directory"}, [](TestSuite& suite) {
+	auto _ = testSuite("LogRotate").dependsOn("Logger", "FileSystem/Directory") = [](TestSuite& suite) {
 		using namespace std::literals;
 
-		suite.addTest("Log Rotation", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+		suite.test("Log Rotation") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 				const auto logPath = directory / "file.log";
 				CppUtils::Log::addFileSink<"TestRotate">(LogRotateOptions{
 					.filePath = logPath,
@@ -19,21 +19,21 @@ namespace CppUtils::UnitTest::Log::LogRotate
 				CppUtils::Logger<"TestRotate">::print("First message");
 				CppUtils::Logger<"TestRotate">::waitUntilFinished();
 
-				suite.expect(std::filesystem::exists(logPath));
+				expect(std::filesystem::exists(logPath));
 
 				CppUtils::Logger<"TestRotate">::print("Second message"); // Triggers rotation
 				CppUtils::Logger<"TestRotate">::waitUntilFinished();
 
 				const auto secondFilePath = directory / "file1.log";
-				suite.expect(std::filesystem::exists(secondFilePath));
-				suite.expect(std::filesystem::exists(logPath));
-				suite.expectEqual(CppUtils::FileSystem::String::read(secondFilePath), "First message"s);
-				suite.expectEqual(CppUtils::FileSystem::String::read(logPath), "Second message"s);
+				expect(std::filesystem::exists(secondFilePath));
+				expect(std::filesystem::exists(logPath));
+				expect(CppUtils::FileSystem::String::read(secondFilePath)) == "First message";
+				expect(CppUtils::FileSystem::String::read(logPath)) == "Second message";
 			}};
-		});
+		};
 
-		suite.addTest("Full Log Rotation", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) -> void {
+		suite.test("Full Log Rotation") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 				const auto logPath = directory / "file.log";
 				CppUtils::Log::addFileSink<"TestFullRotate">(LogRotateOptions{
 					.filePath = logPath,
@@ -45,29 +45,29 @@ namespace CppUtils::UnitTest::Log::LogRotate
 				CppUtils::Logger<"TestFullRotate">::print("{}", longString);
 				CppUtils::Logger<"TestFullRotate">::waitUntilFinished();
 
-				suite.expect(std::filesystem::exists(logPath));
+				expect(std::filesystem::exists(logPath));
 
 				CppUtils::Logger<"TestFullRotate">::print("{}", longString); // Triggers rotation
 				CppUtils::Logger<"TestFullRotate">::waitUntilFinished();
 
-				suite.expect(std::filesystem::exists(logPath));
-				suite.expect(std::filesystem::exists(directory / "file1.log"));
+				expect(std::filesystem::exists(logPath));
+				expect(std::filesystem::exists(directory / "file1.log"));
 
 				CppUtils::Logger<"TestFullRotate">::print("{}", longString); // Triggers rotation
 				CppUtils::Logger<"TestFullRotate">::waitUntilFinished();
 
-				suite.expect(std::filesystem::exists(logPath));
-				suite.expect(std::filesystem::exists(directory / "file1.log"));
-				suite.expect(std::filesystem::exists(directory / "file2.log"));
+				expect(std::filesystem::exists(logPath));
+				expect(std::filesystem::exists(directory / "file1.log"));
+				expect(std::filesystem::exists(directory / "file2.log"));
 
 				CppUtils::Logger<"TestFullRotate">::print("{}", longString); // Triggers rotation
 				CppUtils::Logger<"TestFullRotate">::waitUntilFinished();
 
-				suite.expect(std::filesystem::exists(logPath));
-				suite.expect(std::filesystem::exists(directory / "file1.log"));
-				suite.expect(std::filesystem::exists(directory / "file2.log"));
-				suite.expect(not std::filesystem::exists(directory / "file3.log"));
+				expect(std::filesystem::exists(logPath));
+				expect(std::filesystem::exists(directory / "file1.log"));
+				expect(std::filesystem::exists(directory / "file2.log"));
+				expect(not std::filesystem::exists(directory / "file3.log"));
 			}};
-		});
-	}};
+		};
+	};
 }

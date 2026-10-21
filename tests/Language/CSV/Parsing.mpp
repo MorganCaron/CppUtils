@@ -4,35 +4,35 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Language::CSV::Parsing
 {
-	auto _ = TestSuite{"Language/CSV/Parsing", {}, [](TestSuite& suite) {
+	auto _ = testSuite("Language/CSV/Parsing") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::Language::CSV::Literals;
 
-		suite.addTest("_csv literal", [&] {
+		suite.test("_csv literal") = [&] {
 			const auto csv = "a;b\nc;d"_csv;
 
-			suite.expectEqual(std::ranges::size(csv), 2uz);
-			suite.expectEqual(csv[0], std::vector<std::string_view>{"a", "b"});
-			suite.expectEqual(csv[1], std::vector<std::string_view>{"c", "d"});
-		});
+			expect(std::ranges::size(csv)) == 2uz;
+			expect(csv[0]) == std::vector<std::string_view>{"a", "b"};
+			expect(csv[1]) == std::vector<std::string_view>{"c", "d"};
+		};
 
-		suite.addTest("parseCSV with multiple lines and spaces", [&] {
+		suite.test("parseCSV with multiple lines and spaces") = [&] {
 			const auto csv = CppUtils::Language::CSV::parseCSV(R"(
 			header1 ; header2 
 			value1 ; value2
 		)");
 
-			suite.expectEqual(std::ranges::size(csv), 2uz);
-			suite.expectEqual(csv[0], std::vector<std::string_view>{"header1", "header2"});
-			suite.expectEqual(csv[1], std::vector<std::string_view>{"value1", "value2"});
-		});
+			expect(std::ranges::size(csv)) == 2uz;
+			expect(csv[0]) == std::vector<std::string_view>{"header1", "header2"};
+			expect(csv[1]) == std::vector<std::string_view>{"value1", "value2"};
+		};
 
-		suite.addTest("splitLine", [&] {
+		suite.test("splitLine") = [&] {
 			const auto values = CppUtils::Language::CSV::splitLine(" foo ; bar ");
 
-			suite.expectEqual(std::ranges::size(values), 2uz);
-			suite.expectEqual(values[0], "foo"sv);
-			suite.expectEqual(values[1], "bar"sv);
-		});
-	}};
+			expect(std::ranges::size(values)) == 2uz;
+			expect(values[0]) == "foo";
+			expect(values[1]) == "bar";
+		};
+	};
 }

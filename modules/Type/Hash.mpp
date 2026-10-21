@@ -1,7 +1,7 @@
 export module CppUtils.Type.Hash;
 
 import std;
-import CppUtils.String.Concept;
+import CppUtils.Type.Concept;
 
 namespace Detail
 {
@@ -35,8 +35,8 @@ export namespace CppUtils::Type
 		template<class T, std::size_t N>
 		[[nodiscard]] constexpr auto operator()(const T (&value)[N], Hash seed = HashOffset) const noexcept -> Hash
 		{
-			if constexpr (String::Char<T>)
-				return (*this)(std::basic_string_view<T>{value}, seed);
+			if constexpr (Character<T>)
+				return (*this)(std::basic_string_view<T>{+value}, seed);
 			else
 				return (*this)(std::span<const T, N>{value}, seed);
 		}

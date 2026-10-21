@@ -1,0 +1,33 @@
+export module CppUtils.Language.Xml.Utility;
+
+import std;
+
+export namespace CppUtils::Language::Xml
+{
+	/**
+	 * @brief Escapes reserved XML characters (`&`, `<`, `>`, `"`, `'`).
+	 * @param text Raw input text.
+	 * @return XML-escaped string.
+	 */
+	[[nodiscard]] inline auto escapeXml(std::string_view text) -> std::string
+	{
+		auto result = std::string{};
+		result.reserve(std::ranges::size(text));
+		for (const auto character : text)
+		{
+			switch (character)
+			{
+			case '&': result += "&amp;"; break;
+			case '<': result += "&lt;"; break;
+			case '>': result += "&gt;"; break;
+			case '"': result += "&quot;"; break;
+			case '\'': result += "&apos;"; break;
+			default:
+				if (static_cast<unsigned char>(character) >= 0x20 or character == '\t' or character == '\n' or character == '\r')
+					result += character;
+				break;
+			}
+		}
+		return result;
+	}
+}

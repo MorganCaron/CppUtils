@@ -5,17 +5,17 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Math::Endian
 {
-	auto _ = TestSuite{"Endian", {"UnitTest"}, [](TestSuite& suite) {
-		constexpr auto value = std::uint32_t{0x12'34'56'78u};
+	auto _ = testSuite("Endian").dependsOn("UnitTest") = [](TestSuite& suite) {
+		constexpr auto sourceValue = std::uint32_t{0x12'34'56'78u};
 
-		suite.addTest("toBigEndian", [&] {
+		suite.test("toBigEndian") = [&] {
 			constexpr auto expectedBig = (std::endian::native == std::endian::big) ? 0x12'34'56'78u : 0x78'56'34'12u;
-			suite.expectEqual(CppUtils::Math::toBigEndian(value), expectedBig);
-		});
+			expect(CppUtils::Math::toBigEndian(sourceValue)) == expectedBig;
+		};
 
-		suite.addTest("toLittleEndian", [&] {
+		suite.test("toLittleEndian") = [&] {
 			constexpr auto expectedLittle = (std::endian::native == std::endian::little) ? 0x12'34'56'78u : 0x78'56'34'12u;
-			suite.expectEqual(CppUtils::Math::toLittleEndian(value), expectedLittle);
-		});
-	}};
+			expect(CppUtils::Math::toLittleEndian(sourceValue)) == expectedLittle;
+		};
+	};
 }

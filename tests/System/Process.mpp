@@ -1,0 +1,29 @@
+export module CppUtils.UnitTests.System.Process;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::System::Process
+{
+	auto _ = testSuite("System/Process").dependsOn("UnitTest") = []([[maybe_unused]] TestSuite& suite) {
+#if defined(__linux__)
+		using CppUtils::System::Signal;
+
+		suite.test("signalToString symbolic decoding") = [&] {
+			expect(CppUtils::System::signalToString(Signal::SegmentationFault)) == "SIGSEGV";
+			expect(CppUtils::System::signalToString(Signal::Abort)) == "SIGABRT";
+			expect(CppUtils::System::signalToString(Signal::Kill)) == "SIGKILL";
+			expect(CppUtils::System::signalToString(Signal::Interrupt)) == "SIGINT";
+			expect(CppUtils::System::signalToString(Signal::Terminate)) == "SIGTERM";
+			expect(CppUtils::System::signalToString(Signal::FloatingPointException)) == "SIGFPE";
+			expect(CppUtils::System::signalToString(static_cast<Signal>(9999))) == "Unknown";
+		};
+
+		suite.test("signalToExplanation diagnostics") = [&] {
+			expect(CppUtils::System::signalToExplanation(Signal::SegmentationFault).contains("Segmentation fault"));
+			expect(CppUtils::System::signalToExplanation(Signal::Abort).contains("Abnormal termination"));
+			expect(CppUtils::System::signalToExplanation(Signal::FloatingPointException).contains("Arithmetic exception"));
+		};
+#endif
+	};
+}

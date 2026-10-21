@@ -5,18 +5,18 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Execution::ScopeGuard
 {
-	auto _ = TestSuite{"Execution/ScopeGuard", {"UnitTest"}, [](TestSuite& suite) {
-		suite.addTest("Basic ScopeGuard", [&] {
+	auto _ = testSuite("Execution/ScopeGuard").dependsOn("UnitTest") = [](TestSuite& suite) {
+		suite.test("Basic ScopeGuard") = [&] {
 			auto called = false;
 			{
 				auto _ = CppUtils::Execution::ScopeGuard{[&called]() {
 					called = true;
 				}};
 			}
-			suite.expect(called);
-		});
+			expect(called);
+		};
 
-		suite.addTest("ScopeGuard with Exception", [&] {
+		suite.test("ScopeGuard with Exception") = [&] {
 			auto called = false;
 			try
 			{
@@ -27,7 +27,7 @@ namespace CppUtils::UnitTest::Execution::ScopeGuard
 			}
 			catch (const std::runtime_error&)
 			{}
-			suite.expect(called);
-		});
-	}};
+			expect(called);
+		};
+	};
 }

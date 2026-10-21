@@ -6,36 +6,36 @@ import CppUtils.Network.DNS;
 
 namespace CppUtils::UnitTest::Network::DNS
 {
-	auto _ = TestSuite{"Network/DNS", {"Logger"}, [](auto& suite) {
+	auto _ = testSuite("Network/DNS").dependsOn("Logger") = [](TestSuite& suite) {
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("Resolve Localhost", [&] {
+		suite.test("Resolve Localhost") = [&] {
 			auto hostname = CppUtils::Network::DNS::getHostName();
 			Logger::print("Hostname: {}", hostname);
-			suite.expect(not std::ranges::empty(hostname));
+			expect(not std::ranges::empty(hostname));
 
 			auto ips = CppUtils::Network::DNS::resolve("localhost");
-			suite.expect(not std::ranges::empty(ips));
+			expect(not std::ranges::empty(ips));
 
 			auto foundLoopback = false;
 			for (const auto& ip : ips)
 				if (ip == "127.0.0.1" or ip == "::1")
 					foundLoopback = true;
-			suite.expect(foundLoopback);
-		});
+			expect(foundLoopback);
+		};
 
-		suite.addTest("Resolve whitehouse.gov", [&] {
+		suite.test("Resolve whitehouse.gov") = [&] {
 			auto ips = CppUtils::Network::DNS::resolve("whitehouse.gov");
-			suite.expect(not std::ranges::empty(ips));
+			expect(not std::ranges::empty(ips));
 
 			Logger::print("whitehouse.gov resolved to:");
 			for (const auto& ip : ips)
 				Logger::print("- {}", ip);
-		});
+		};
 
-		suite.addTest("Resolve one.one.one.one (Stable IP)", [&] {
+		suite.test("Resolve one.one.one.one (Stable IP)") = [&] {
 			auto ips = CppUtils::Network::DNS::resolve("one.one.one.one");
-			suite.expect(not std::ranges::empty(ips));
+			expect(not std::ranges::empty(ips));
 
 			auto foundExpected = false;
 			Logger::print("one.one.one.one resolved to:");
@@ -45,7 +45,7 @@ namespace CppUtils::UnitTest::Network::DNS
 					foundExpected = true;
 				Logger::print("- {}", ip);
 			}
-			suite.expect(foundExpected);
-		});
-	}};
+			expect(foundExpected);
+		};
+	};
 }

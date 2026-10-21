@@ -5,10 +5,10 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::Scrollable
 {
-	auto _ = TestSuite{"Terminal/Scrollable", {"Terminal/Canvas", "Terminal/Primitive"}, [](TestSuite& suite) {
+	auto _ = testSuite("Terminal/Scrollable").dependsOn("Terminal/Canvas", "Terminal/Primitive") = [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
-		suite.addTest("ScrollableCircle", [&] {
+		suite.test("ScrollableCircle").timeout(30s) = [&] {
 			constexpr auto viewSize = CppUtils::Container::Size2{50, 20};
 			constexpr auto contentSize = CppUtils::Container::Size2{100, 40};
 
@@ -41,9 +41,9 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({38, 8}).character, U'.');
-				suite.expectEqual(accessor->getChar({38, 8}).attributes.textColor, CppUtils::Terminal::TextColor::TextColorEnum::Green);
-				suite.expectEqual(accessor->getChar({49, 0}).character, U'█');
+				expect(accessor->getChar({38, 8}).character) == U'.';
+				expect(accessor->getChar({38, 8}).attributes.textColor) == CppUtils::Terminal::TextColor::TextColorEnum::Green;
+				expect(accessor->getChar({49, 0}).character) == U'█';
 			}
 
 			constexpr auto maxScrollX = contentSize.width() - viewSize.width();
@@ -54,10 +54,10 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({25, 10}).character, U'O');
-				suite.expectEqual(accessor->getChar({25, 10}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Red);
-				suite.expectEqual(accessor->getChar({25, 0}).character, U'.');
-				suite.expectEqual(accessor->getChar({25, 0}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Blue);
+				expect(accessor->getChar({25, 10}).character) == U'O';
+				expect(accessor->getChar({25, 10}).attributes.backgroundColor) == CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Red;
+				expect(accessor->getChar({25, 0}).character) == U'.';
+				expect(accessor->getChar({25, 0}).attributes.backgroundColor) == CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Blue;
 			}
 
 			scrollable.setScroll({maxScrollX, maxScrollY});
@@ -65,8 +65,8 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({0, 0}).character, U'O');
-				suite.expectEqual(accessor->getChar({0, 0}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Red);
+				expect(accessor->getChar({0, 0}).character) == U'O';
+				expect(accessor->getChar({0, 0}).attributes.backgroundColor) == CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Red;
 			}
 
 			scrollable.setScroll({0, 0});
@@ -94,9 +94,9 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 						std::this_thread::sleep_for(7ms);
 					}
 			}
-		}, 30s);
+		};
 
-		suite.addTest("MouseInteraction", [&] {
+		suite.test("MouseInteraction") = [&] {
 			constexpr auto viewSize = CppUtils::Container::Size2{50, 20};
 			constexpr auto contentSize = CppUtils::Container::Size2{100, 40};
 
@@ -105,7 +105,7 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 
 			canvas.print();
 			std::this_thread::sleep_for(100ms);
-			suite.expectEqual(scrollable.getScroll(), CppUtils::Container::Size2{0uz, 0uz});
+			expect(scrollable.getScroll()) == CppUtils::Container::Size2{0uz, 0uz};
 
 			auto clickEvent = CppUtils::Terminal::Mouse::Event{
 				.button = CppUtils::Terminal::Mouse::Button::Left,
@@ -116,7 +116,7 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 			canvas.print();
 			std::this_thread::sleep_for(100ms);
 
-			suite.expect(scrollable.getScroll().y() > 0);
+			expect(scrollable.getScroll().y()) > 0;
 
 			auto dragEvent = clickEvent;
 			dragEvent.dragging = true;
@@ -125,7 +125,7 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 			canvas.print();
 			std::this_thread::sleep_for(100ms);
 
-			suite.expect(scrollable.getScroll().y() > 10);
+			expect(scrollable.getScroll().y()) > 10;
 
 			auto scrollUpEvent = CppUtils::Terminal::Mouse::Event{
 				.button = CppUtils::Terminal::Mouse::Button::ScrollUp,
@@ -137,11 +137,11 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 			canvas.print();
 			std::this_thread::sleep_for(100ms);
 
-			suite.expect(handled);
-			suite.expect(scrollable.getScroll().y() < prevScrollY);
-		});
+			expect(handled);
+			expect(scrollable.getScroll().y()) < prevScrollY;
+		};
 
-		suite.addTest("CustomStyle", [&] {
+		suite.test("CustomStyle") = [&] {
 			constexpr auto viewSize = CppUtils::Container::Size2{50, 20};
 			constexpr auto contentSize = CppUtils::Container::Size2{100, 40};
 
@@ -158,8 +158,8 @@ namespace CppUtils::UnitTest::Terminal::Scrollable
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
 				const auto c = accessor->getChar({viewSize.width() - 1, 10}).character;
-				suite.expectEqual(c, U'X');
+				expect(c) == U'X';
 			}
-		});
-	}};
+		};
+	};
 }

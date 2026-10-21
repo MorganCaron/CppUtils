@@ -5,27 +5,27 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::Tree
 {
-	auto _ = TestSuite{"Container/Tree", {"Logger"}, [](TestSuite& suite) {
+	auto _ = testSuite("Container/Tree").dependsOn("Logger") = [](TestSuite& suite) {
 		using Logger = TestSuite::Logger;
 		using StringTreeNode = CppUtils::Container::Tree::Node<std::string>;
 
-		suite.addTest("", [&] {
+		suite.test("") = [&] {
 			auto root = StringTreeNode{"Root"};
 			// CppUtils::Container::Tree::log(root);
 			Logger::print("{}", root.value);
-			suite.expectEqual(root.value, "Root");
+			expect(root.value) == "Root";
 
 			root.nodes.emplace_back(StringTreeNode{"Branch0"});
 			root.nodes.emplace_back(StringTreeNode{"Branch1"});
 			Logger::print("{}", root.nodes[1].value);
-			suite.expectEqual(root.nodes[1].value, "Branch1");
+			expect(root.nodes[1].value) == "Branch1";
 
 			auto& branch0 = root.nodes[0];
 			branch0.nodes.emplace_back(StringTreeNode{"SubBranch0"});
 			branch0.nodes[0].nodes.emplace_back(StringTreeNode{"SubSubBranch0"});
 			branch0.nodes.emplace_back(StringTreeNode{"SubBranch1"});
 			branch0.nodes.emplace_back(StringTreeNode{"SubBranch2"});
-			suite.expectEqual(std::ranges::size(branch0.nodes), 3uz);
+			expect(std::ranges::size(branch0.nodes)) == 3uz;
 
 			root.nodes.emplace_back(StringTreeNode{"Branch2"});
 			auto& branch2 = root.nodes[2];
@@ -36,9 +36,9 @@ namespace CppUtils::UnitTest::Container::Tree
 			root.nodes.emplace_back(StringTreeNode{"Branch3"});
 
 			std::print("{}", root);
-		});
+		};
 
-		/*suite.addTest("Differences", [&] {
+		/*suite.test("Differences") = [&] {
 			[[maybe_unused]] const auto jsonTree0 = R"(
 			{
 				"removed": "value",
@@ -58,7 +58,7 @@ namespace CppUtils::UnitTest::Container::Tree
 			}
 			)"_json;
 			// const auto differences =
-			// suite.expect(jsonTree0 != jsonTree1);
-		});*/
-	}};
+			// expect(jsonTree0) != jsonTree1;
+		};*/
+	};
 }
