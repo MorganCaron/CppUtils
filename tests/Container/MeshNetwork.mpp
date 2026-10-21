@@ -5,24 +5,24 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::MeshNetwork
 {
-	auto _ = TestSuite{"Container/MeshNetwork", {"Container/NetworkPtr"}, [](TestSuite& suite) {
+	auto _ = testSuite("Container/MeshNetwork").dependsOn("Container/NetworkPtr") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using Logger = TestSuite::Logger;
 		using StringMeshNodePtr = CppUtils::Container::MeshNodePtr<std::string, std::string>;
 
-		suite.addTest("Initialization", [&] {
+		suite.test("Initialization") = [&] {
 			auto _ = StringMeshNodePtr::make("banana");
-		});
+		};
 
-		suite.addTest("Access value", [&] {
+		suite.test("Access value") = [&] {
 			auto node = StringMeshNodePtr::make("apple");
 			auto accessor = node.getValue();
 			const auto& value = accessor.value();
 			Logger::print("{}", value);
-			suite.expectEqual(value, "apple");
-		});
+			expect(value) == "apple";
+		};
 
-		suite.addTest("Copy reference", [&] {
+		suite.test("Copy reference") = [&] {
 			auto node2 = StringMeshNodePtr{};
 			{
 				auto node1 = StringMeshNodePtr::make("apple");
@@ -31,10 +31,10 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto accessor = node2.getValue();
 			const auto& value = accessor.value();
 			Logger::print("{}", value);
-			suite.expectEqual(value, "apple");
-		});
+			expect(value) == "apple";
+		};
 
-		suite.addTest("Attach child", [&] {
+		suite.test("Attach child") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			{
 				auto apple = StringMeshNodePtr::make("apple");
@@ -43,45 +43,45 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 
 			auto fruitAccessor = fruit.getValue();
 			const auto& fruitValue = fruitAccessor.value();
-			suite.expectEqual(fruitValue, "fruit");
+			expect(fruitValue) == "fruit";
 
 			auto branches = fruit.at("Elements").value();
-			suite.expectEqual(std::ranges::size(branches), 1uz);
+			expect(std::ranges::size(branches)) == 1uz;
 			{
 				auto appleAccessor = branches[0].value().getValue();
 				const auto& appleValue = appleAccessor.value();
 				Logger::print("{}", appleValue);
-				suite.expectEqual(appleValue, "apple");
+				expect(appleValue) == "apple";
 			}
-		});
+		};
 
-		suite.addTest("Operator==: Equal nodes", [&] {
+		suite.test("Operator==: Equal nodes") = [&] {
 			auto node1 = StringMeshNodePtr::make("test");
 			auto node2 = node1;
-			suite.expectEqual(node1, node2);
-		});
+			expect(node1) == node2;
+		};
 
-		suite.addTest("Operator==: Unequal nodes", [&] {
+		suite.test("Operator==: Unequal nodes") = [&] {
 			auto node1 = StringMeshNodePtr::make("test1");
 			auto node2 = StringMeshNodePtr::make("test2");
-			suite.expect(node1 != node2);
-		});
+			expect(node1) != node2;
+		};
 
-		suite.addTest("Operator==: Assigned nodes", [&] {
+		suite.test("Operator==: Assigned nodes") = [&] {
 			auto node1 = StringMeshNodePtr::make("test1");
 			auto node2 = StringMeshNodePtr::make("test2");
-			suite.expect(node1 != node2);
+			expect(node1) != node2;
 			node2 = node1;
-			suite.expectEqual(node1, node2);
-		});
+			expect(node1) == node2;
+		};
 
-		suite.addTest("Operator==: Node and null", [&] {
+		suite.test("Operator==: Node and null") = [&] {
 			auto node1 = StringMeshNodePtr::make("test");
 			auto node2 = StringMeshNodePtr{};
-			suite.expect(node1 != node2);
-		});
+			expect(node1) != node2;
+		};
 
-		suite.addTest("Detach child", [&] {
+		suite.test("Detach child") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			auto banana = StringMeshNodePtr::make("banana");
@@ -90,138 +90,138 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 
 			{
 				auto fruits = fruit.at("Elements").value();
-				suite.expectEqual(std::ranges::size(fruits), 2uz);
+				expect(std::ranges::size(fruits)) == 2uz;
 				{
 					auto appleAccessor = fruits[0].value().getValue();
 					const auto& value = appleAccessor.value();
 					Logger::print("{}", value);
-					suite.expectEqual(value, "apple");
+					expect(value) == "apple";
 				}
 				{
 					auto bananaAccessor = fruits[1].value().getValue();
 					const auto& value = bananaAccessor.value();
 					Logger::print("{}", value);
-					suite.expectEqual(value, "banana");
+					expect(value) == "banana";
 				}
 			}
 
 			{
 				fruit["Elements"] - apple;
 				auto fruits = fruit.at("Elements").value();
-				suite.expectEqual(std::ranges::size(fruits), 1uz);
+				expect(std::ranges::size(fruits)) == 1uz;
 				{
 					auto bananaAccessor = fruits[0].value().getValue();
 					const auto& bananaValue = bananaAccessor.value();
 					Logger::print("{}", bananaValue);
-					suite.expectEqual(bananaValue, "banana");
+					expect(bananaValue) == "banana";
 				}
 			}
 
 			{
 				fruit["Elements"] - banana;
 				auto fruits = fruit.at("Elements").value_or({});
-				suite.expectEqual(std::ranges::size(fruits), 0uz);
+				expect(std::ranges::size(fruits)) == 0uz;
 			}
-		});
+		};
 
-		suite.addTest("Detach children", [&] {
+		suite.test("Detach children") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			auto banana = StringMeshNodePtr::make("banana");
 			fruit["Elements"] >> apple;
 			fruit["Elements"] >> banana;
 
-			suite.expectEqual(std::ranges::size(fruit.at("Elements").value_or({})), 2uz);
+			expect(std::ranges::size(fruit.at("Elements").value_or({}))) == 2uz;
 
 			fruit["Elements"].clear();
-			suite.expectEqual(std::ranges::size(fruit.at("Elements").value_or({})), 0uz);
-		});
+			expect(std::ranges::size(fruit.at("Elements").value_or({}))) == 0uz;
+		};
 
-		suite.addTest("Detach child with multiple links", [&] {
+		suite.test("Detach child with multiple links") = [&] {
 			auto elements = StringMeshNodePtr::makeRoot("elements");
 			auto orange = StringMeshNodePtr::make("orange");
 
-			suite.expectEqual(orange.getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
+			expect(orange.getDistanceFromRoot()) == std::numeric_limits<std::size_t>::max();
 
 			elements["Color"] >> orange;
 			elements["Fruit"] >> orange;
 			{
-				suite.expectEqual(elements.count("Color"), 1uz);
-				suite.expectEqual(elements.count("Fruit"), 1uz);
-				suite.expectEqual(orange.getDistanceFromRoot(), 1uz);
+				expect(elements.count("Color")) == 1uz;
+				expect(elements.count("Fruit")) == 1uz;
+				expect(orange.getDistanceFromRoot()) == 1uz;
 			}
 
 			elements["Color"] - orange;
 			{
-				suite.expectEqual(elements.count("Color"), 0uz);
-				suite.expectEqual(elements.count("Fruit"), 1uz);
-				suite.expectEqual(std::ranges::size(elements.at("Fruit").value_or({})), 1uz);
-				suite.expectEqual(orange.getDistanceFromRoot(), 1uz);
+				expect(elements.count("Color")) == 0uz;
+				expect(elements.count("Fruit")) == 1uz;
+				expect(std::ranges::size(elements.at("Fruit").value_or({}))) == 1uz;
+				expect(orange.getDistanceFromRoot()) == 1uz;
 			}
 
 			elements["Fruit"] - orange;
 			{
-				suite.expectEqual(elements.count("Color"), 0uz);
-				suite.expectEqual(elements.count("Fruit"), 0uz);
-				suite.expectEqual(orange.getDistanceFromRoot(), std::numeric_limits<std::size_t>::max());
+				expect(elements.count("Color")) == 0uz;
+				expect(elements.count("Fruit")) == 0uz;
+				expect(orange.getDistanceFromRoot()) == std::numeric_limits<std::size_t>::max();
 			}
-		});
+		};
 
-		suite.addTest("Bidirectional link", [&] {
+		suite.test("Bidirectional link") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			fruit["Elements"] & apple["Categories"];
 
 			{
 				auto elements = fruit.at("Elements").value();
-				suite.expectEqual(std::ranges::size(elements), 1uz);
+				expect(std::ranges::size(elements)) == 1uz;
 				{
 					auto appleAccessor = elements[0].value().getValue();
 					const auto& value = appleAccessor.value();
 					Logger::print("fruit elements contains {}", value);
-					suite.expectEqual(value, "apple");
+					expect(value) == "apple";
 				}
 			}
 			{
 				auto categories = apple.at("Categories").value();
-				suite.expectEqual(std::ranges::size(categories), 1uz);
+				expect(std::ranges::size(categories)) == 1uz;
 				{
 					auto fruitAccessor = categories[0].value().getValue();
 					const auto& value = fruitAccessor.value();
 					Logger::print("apple category is {}", value);
-					suite.expectEqual(value, "fruit");
+					expect(value) == "fruit";
 				}
 			}
-		});
+		};
 
-		suite.addTest("Bidirectional link (reverse order)", [&] {
+		suite.test("Bidirectional link (reverse order)") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			apple["Categories"] & fruit["Elements"];
 
 			{
 				auto elements = fruit.at("Elements").value();
-				suite.expectEqual(std::ranges::size(elements), 1uz);
+				expect(std::ranges::size(elements)) == 1uz;
 				{
 					auto appleAccessor = elements[0].value().getValue();
 					const auto& value = appleAccessor.value();
 					Logger::print("fruit elements contains {}", value);
-					suite.expectEqual(value, "apple");
+					expect(value) == "apple";
 				}
 			}
 			{
 				auto categories = apple.at("Categories").value();
-				suite.expectEqual(std::ranges::size(categories), 1uz);
+				expect(std::ranges::size(categories)) == 1uz;
 				{
 					auto fruitAccessor = categories[0].value().getValue();
 					const auto& value = fruitAccessor.value();
 					Logger::print("apple category is {}", value);
-					suite.expectEqual(value, "fruit");
+					expect(value) == "fruit";
 				}
 			}
-		});
+		};
 
-		suite.addTest("Duplicate attachment protection (operator>>)", [&] {
+		suite.test("Duplicate attachment protection (operator>>)") = [&] {
 			auto root = StringMeshNodePtr::makeRoot("root");
 			auto child = StringMeshNodePtr::make("child");
 
@@ -229,10 +229,10 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			root["Branch"] >> child;
 
 			const auto branch = root.at("Branch").value();
-			suite.expectEqual(std::ranges::size(branch), 1uz);
-		});
+			expect(std::ranges::size(branch)) == 1uz;
+		};
 
-		suite.addTest("Duplicate attachment protection (operator&)", [&] {
+		suite.test("Duplicate attachment protection (operator&)") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 
@@ -241,13 +241,13 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			apple["Categories"] & fruit["Elements"];
 
 			const auto elements = fruit.at("Elements").value();
-			suite.expectEqual(std::ranges::size(elements), 1uz);
+			expect(std::ranges::size(elements)) == 1uz;
 
 			const auto categories = apple.at("Categories").value();
-			suite.expectEqual(std::ranges::size(categories), 1uz);
-		});
+			expect(std::ranges::size(categories)) == 1uz;
+		};
 
-		suite.addTest("Many", [&] {
+		suite.test("Many") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto banana = StringMeshNodePtr::make("banana");
 			auto orangeFruit = StringMeshNodePtr::make("orange");
@@ -270,15 +270,15 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 
 			{
 				auto fruits = fruit.at("Elements").value();
-				suite.expectEqual(std::ranges::size(fruits), 3uz);
+				expect(std::ranges::size(fruits)) == 3uz;
 				for (auto node : fruits)
 				{
-					suite.expectEqual(std::ranges::size(node.at("Categories").value_or({})), 1uz);
+					expect(std::ranges::size(node.at("Categories").value_or({}))) == 1uz;
 					auto categoryAccessor = node["Categories"][0].value().getValue();
 					const auto& categoryValue = categoryAccessor.value();
-					suite.expectEqual(categoryValue, "fruit");
+					expect(categoryValue) == "fruit";
 
-					suite.expectEqual(std::ranges::size(node.at("Colors").value_or({})), 1uz);
+					expect(std::ranges::size(node.at("Colors").value_or({}))) == 1uz;
 					auto colorAccessor = node["Colors"][0].value().getValue();
 					auto fruitAccessor = node.getValue();
 					const auto& colorValue = colorAccessor.value();
@@ -287,19 +287,19 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 					Logger::print("{} is a {} {}", fruitValue, colorValue, categoryValue);
 				}
 			}
-		});
+		};
 
-		suite.addTest("Attach (operator>>)", [&] {
+		suite.test("Attach (operator>>)") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			fruit["Elements"] >> apple;
 
 			const auto& elements = fruit.at("Elements").value_or({});
-			suite.expectEqual(std::ranges::size(elements), 1uz);
-			suite.expectEqual(elements[0].value().getValue().value(), "apple");
-		});
+			expect(std::ranges::size(elements)) == 1uz;
+			expect(elements[0].value().getValue().value()) == "apple";
+		};
 
-		suite.addTest("Chaining (operator>>)", [&] {
+		suite.test("Chaining (operator>>)") = [&] {
 			auto root = StringMeshNodePtr::makeRoot("root");
 			auto child1 = StringMeshNodePtr::make("child1");
 			auto child2 = StringMeshNodePtr::make("child2");
@@ -307,95 +307,95 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			root["Branch1"] >> child1["Branch2"] >> child2;
 
 			const auto& branch1Children = root.at("Branch1").value_or({});
-			suite.expectEqual(std::ranges::size(branch1Children), 1uz);
-			suite.expectEqual(branch1Children[0].value().getValue().value(), "child1");
+			expect(std::ranges::size(branch1Children)) == 1uz;
+			expect(branch1Children[0].value().getValue().value()) == "child1";
 
 			const auto& branch2Children = branch1Children[0].value().at("Branch2").value_or({});
-			suite.expectEqual(std::ranges::size(branch2Children), 1uz);
-			suite.expectEqual(branch2Children[0].value().getValue().value(), "child2");
-		});
+			expect(std::ranges::size(branch2Children)) == 1uz;
+			expect(branch2Children[0].value().getValue().value()) == "child2";
+		};
 
-		suite.addTest("Unlink (operator-)", [&] {
+		suite.test("Unlink (operator-)") = [&] {
 			auto root = StringMeshNodePtr::makeRoot("root");
 			auto child = StringMeshNodePtr::make("child");
 			root["Branch"] >> child;
-			suite.expectEqual(std::ranges::size(root.at("Branch").value_or({})), 1uz);
+			expect(std::ranges::size(root.at("Branch").value_or({}))) == 1uz;
 
 			root["Branch"] - child;
-			suite.expectEqual(std::ranges::size(root.at("Branch").value_or({})), 0uz);
-		});
+			expect(std::ranges::size(root.at("Branch").value_or({}))) == 0uz;
+		};
 
-		suite.addTest("Bidirectional link (operator&)", [&] {
+		suite.test("Bidirectional link (operator&)") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			fruit["Elements"] & apple["Categories"];
 
 			const auto& elements = fruit.at("Elements").value_or({});
-			suite.expectEqual(std::ranges::size(elements), 1uz);
-			suite.expectEqual(elements[0].value().getValue().value(), "apple");
+			expect(std::ranges::size(elements)) == 1uz;
+			expect(elements[0].value().getValue().value()) == "apple";
 
 			const auto& categories = apple.at("Categories").value_or({});
-			suite.expectEqual(std::ranges::size(categories), 1uz);
-			suite.expectEqual(categories[0].value().getValue().value(), "fruit");
-		});
+			expect(std::ranges::size(categories)) == 1uz;
+			expect(categories[0].value().getValue().value()) == "fruit";
+		};
 
-		suite.addTest("Bidirectional unlink (operator/)", [&] {
+		suite.test("Bidirectional unlink (operator/)") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			fruit["Elements"] & apple["Categories"];
 
-			suite.expectEqual(std::ranges::size(fruit.at("Elements").value_or({})), 1uz);
-			suite.expectEqual(std::ranges::size(apple.at("Categories").value_or({})), 1uz);
+			expect(std::ranges::size(fruit.at("Elements").value_or({}))) == 1uz;
+			expect(std::ranges::size(apple.at("Categories").value_or({}))) == 1uz;
 
 			fruit["Elements"] / apple["Categories"];
 
-			suite.expectEqual(std::ranges::size(fruit.at("Elements").value_or({})), 0uz);
-			suite.expectEqual(std::ranges::size(apple.at("Categories").value_or({})), 0uz);
-		});
+			expect(std::ranges::size(fruit.at("Elements").value_or({}))) == 0uz;
+			expect(std::ranges::size(apple.at("Categories").value_or({}))) == 0uz;
+		};
 
-		suite.addTest("Get value", [&] {
+		suite.test("Get value") = [&] {
 			auto node = StringMeshNodePtr::make("apple");
 			auto accessor = node.getValue();
-			suite.expectEqual(accessor.value(), "apple");
-		});
+			expect(accessor.value()) == "apple";
+		};
 
-		suite.addTest("Set value", [&] {
+		suite.test("Set value") = [&] {
 			auto node = StringMeshNodePtr::make("initial");
 			node.setValue("updated");
 			auto accessor = node.getValue();
-			suite.expectEqual(accessor.value(), "updated");
-		});
+			expect(accessor.value()) == "updated";
+		};
 
-		suite.addTest("Contains", [&] {
+		suite.test("Contains") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			fruit["Elements"] >> apple;
-			suite.expect(fruit.contains("Elements"));
+			expect(fruit.contains("Elements"));
 			fruit["Elements"] - apple;
-			suite.expect(not fruit.contains("Elements"));
-		});
+			expect(not fruit.contains("Elements"));
+		};
 
-		suite.addTest("Count", [&] {
+		suite.test("Count") = [&] {
 			auto root = StringMeshNodePtr::makeRoot("root");
 			auto child = StringMeshNodePtr::make("child");
-			suite.expectEqual(root.count("Branch"), 0uz);
+			expect(root.count("Branch")) == 0uz;
 			root["Branch"] >> child;
-			suite.expectEqual(root.count("Branch"), 1uz);
+			expect(root.count("Branch")) == 1uz;
 			root["Branch"] - child;
-			suite.expectEqual(root.count("Branch"), 0uz);
-		});
+			expect(root.count("Branch")) == 0uz;
+		};
 
-		suite.addTest("Branch size", [&] {
+		suite.test("Branch size") = [&] {
 			auto root = StringMeshNodePtr::makeRoot("root");
 			auto child1 = StringMeshNodePtr::make("child1");
 			auto child2 = StringMeshNodePtr::make("child2");
 			root["Branch"] >> child1;
 			root["Branch"] >> child2;
 
-			suite.expectEqual(std::ranges::size(root.at("Branch").value_or({})), 2uz);
-		});
+			expect(std::ranges::size(root.at("Branch").value_or({}))) == 2uz;
+		};
 
-		suite.addTest("Branch stays live after construction", [&] {
+		suite.test("Branch stays live after construction") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			{
 				auto apple = StringMeshNodePtr::make("apple");
@@ -404,60 +404,60 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			}
 			{
 				const auto branch = fruit["Elements"];
-				suite.expectEqual(std::ranges::size(branch), 1uz);
-				suite.expectEqual(branch.front().value().getValue().value(), "apple");
+				expect(std::ranges::size(branch)) == 1uz;
+				expect(branch.front().value().getValue().value()) == "apple";
 			}
-		});
+		};
 
-		suite.addTest("Clear branch", [&] {
+		suite.test("Clear branch") = [&] {
 			auto root = StringMeshNodePtr::makeRoot("root");
 			auto child = StringMeshNodePtr::make("child");
 			root["Branch"] >> child;
-			suite.expectEqual(std::ranges::size(root.at("Branch").value_or({})), 1uz);
+			expect(std::ranges::size(root.at("Branch").value_or({}))) == 1uz;
 
 			root["Branch"].clear();
-			suite.expect(not root.contains("Branch"));
-		});
+			expect(not root.contains("Branch"));
+		};
 
-		suite.addTest("Get node", [&] {
+		suite.test("Get node") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			fruit["Elements"] >> apple;
 
 			auto node = fruit["Elements"][0];
-			suite.expect(node.has_value());
-			suite.expectEqual(node.value().getValue().value(), "apple");
-		});
+			expect(node.has_value());
+			expect(node.value().getValue().value()) == "apple";
+		};
 
-		suite.addTest("Get node: Newly created branch", [&] {
+		suite.test("Get node: Newly created branch") = [&] {
 			auto root = StringMeshNodePtr::makeRoot("root");
 
 			auto invalidKeyExpected = root["Branch"][0];
 
-			suite.expect(not invalidKeyExpected);
-			suite.expectEqual(invalidKeyExpected.error(), "Branch index out of bounds"sv);
-		});
+			expect(not invalidKeyExpected);
+			expect(invalidKeyExpected.error()) == "Branch index out of bounds";
+		};
 
-		suite.addTest("Get node: Invalid index", [&] {
+		suite.test("Get node: Invalid index") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			fruit["Elements"] >> apple;
 
 			auto invalidIndexExpected = fruit["Elements"][1];
 
-			suite.expect(not invalidIndexExpected);
-			suite.expectEqual(invalidIndexExpected.error(), "Branch index out of bounds"sv);
-		});
+			expect(not invalidIndexExpected);
+			expect(invalidIndexExpected.error()) == "Branch index out of bounds";
+		};
 
-		suite.addTest("Get node: Invalid node", [&] {
+		suite.test("Get node: Invalid node") = [&] {
 			auto emptyNode = StringMeshNodePtr{};
 
-			suite.expectThrow<std::runtime_error>([&] {
+			expect([&] {
 				auto _ = emptyNode["Branch"];
-			});
-		});
+			}) == throws<std::runtime_error>;
+		};
 
-		suite.addTest("Get nodes", [&] {
+		suite.test("Get nodes") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			auto banana = StringMeshNodePtr::make("banana");
@@ -468,56 +468,56 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			for (const auto& node : fruit["Elements"])
 				children.push_back(node);
 
-			suite.expectEqual(std::ranges::size(children), 2uz);
-			suite.expectEqual(children[0].getValue().value(), "apple");
-			suite.expectEqual(children[1].getValue().value(), "banana");
-		});
+			expect(std::ranges::size(children)) == 2uz;
+			expect(children[0].getValue().value()) == "apple";
+			expect(children[1].getValue().value()) == "banana";
+		};
 
-		suite.addTest("Get nodes: Non-existent branch", [&] {
+		suite.test("Get nodes: Non-existent branch") = [&] {
 			auto root = StringMeshNodePtr::makeRoot("root");
 
 			auto children = std::vector<StringMeshNodePtr>{};
 			for (const auto& child : root["NonExistentBranch"])
 				children.push_back(child);
 
-			suite.expect(std::ranges::empty(children));
-		});
+			expect(std::ranges::empty(children));
+		};
 
-		suite.addTest("Get nodes: Invalid node", [&] {
+		suite.test("Get nodes: Invalid node") = [&] {
 			auto emptyNode = StringMeshNodePtr{};
 
-			suite.expectThrow<std::runtime_error>([&] {
+			expect([&] {
 				auto _ = emptyNode["Branch"];
-			});
-		});
+			}) == throws<std::runtime_error>;
+		};
 
-		suite.addTest("at()", [&] {
+		suite.test("at()") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			fruit["Elements"] >> apple;
 
 			const auto branch = fruit.at("Elements");
 
-			suite.expect(branch.has_value());
-			suite.expectEqual(std::ranges::size(branch.value()), 1uz);
-			suite.expectEqual(branch.value()[0].value().getValue().value(), "apple");
-		});
+			expect(branch.has_value());
+			expect(std::ranges::size(branch.value())) == 1uz;
+			expect(branch.value()[0].value().getValue().value()) == "apple";
+		};
 
-		suite.addTest("at(): Non-existent branch", [&] {
+		suite.test("at(): Non-existent branch") = [&] {
 			const auto root = StringMeshNodePtr::makeRoot("root");
 			auto branch = root.at("NonExistentBranch");
-			suite.expect(not branch.has_value());
-			suite.expectEqual(branch.error(), "MeshNodePtr::at(): Key not found"sv);
-		});
+			expect(not branch.has_value());
+			expect(branch.error()) == "MeshNodePtr::at(): Key not found";
+		};
 
-		suite.addTest("at(): Invalid node", [&] {
+		suite.test("at(): Invalid node") = [&] {
 			auto node = StringMeshNodePtr{};
 			auto branch = node.at("Branch");
-			suite.expect(not branch.has_value());
-			suite.expectEqual(branch.error(), "MeshNodePtr::at(): Invalid MeshNodePtr"sv);
-		});
+			expect(not branch.has_value());
+			expect(branch.error()) == "MeshNodePtr::at(): Invalid MeshNodePtr";
+		};
 
-		suite.addTest("Get first node", [&] {
+		suite.test("Get first node") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			auto banana = StringMeshNodePtr::make("banana");
@@ -525,11 +525,11 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			fruit["Elements"] >> banana;
 
 			auto node = fruit["Elements"].front();
-			suite.expect(node.has_value());
-			suite.expectEqual(node.value().getValue().value(), "apple");
-		});
+			expect(node.has_value());
+			expect(node.value().getValue().value()) == "apple";
+		};
 
-		suite.addTest("Get last node", [&] {
+		suite.test("Get last node") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
 			auto banana = StringMeshNodePtr::make("banana");
@@ -537,11 +537,11 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			fruit["Elements"] >> banana;
 
 			auto node = fruit["Elements"].back();
-			suite.expect(node.has_value());
-			suite.expectEqual(node.value().getValue().value(), "banana");
-		});
+			expect(node.has_value());
+			expect(node.value().getValue().value()) == "banana";
+		};
 
-		suite.addTest("Random access iterator", [&] {
+		suite.test("Random access iterator") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			{
 				auto apple = StringMeshNodePtr::make("apple");
@@ -555,20 +555,20 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto branch = fruit["Elements"];
 			auto it = std::ranges::begin(branch);
 
-			suite.expectEqual((*it).getValue().value(), "apple");
-			suite.expectEqual((*(it + 2)).getValue().value(), "orange");
-			suite.expectEqual((it[1]).getValue().value(), "banana");
+			expect((*it).getValue().value()) == "apple";
+			expect((*(it + 2)).getValue().value()) == "orange";
+			expect((it[1]).getValue().value()) == "banana";
 
 			it += 2;
-			suite.expectEqual((*it).getValue().value(), "orange");
+			expect((*it).getValue().value()) == "orange";
 			it -= 1;
-			suite.expectEqual((*it).getValue().value(), "banana");
+			expect((*it).getValue().value()) == "banana";
 
-			suite.expect(it < std::ranges::cend(branch));
-			suite.expectEqual(std::ranges::cend(branch) - std::ranges::cbegin(branch), 3);
-		});
+			expect(it) < std::ranges::cend(branch);
+			expect(std::ranges::cend(branch) - std::ranges::cbegin(branch)) == 3;
+		};
 
-		suite.addTest("Get branches", [&] {
+		suite.test("Get branches") = [&] {
 			auto root = StringMeshNodePtr::makeRoot("root");
 			auto child1 = StringMeshNodePtr::make("child1");
 			auto child2 = StringMeshNodePtr::make("child2");
@@ -581,18 +581,18 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			auto branchesAccessor = root.getBranches();
 			const auto& branches = branchesAccessor.value();
 
-			suite.expectEqual(std::ranges::size(branches), 2uz);
-			suite.expect(branches.contains("A"));
-			suite.expect(branches.contains("B"));
+			expect(std::ranges::size(branches)) == 2uz;
+			expect(branches.contains("A"));
+			expect(branches.contains("B"));
 
 			auto aBranches = branches.at("A")->sharedAccess();
-			suite.expectEqual(std::ranges::size(aBranches.value()), 1uz);
+			expect(std::ranges::size(aBranches.value())) == 1uz;
 
 			auto bBranches = branches.at("B")->sharedAccess();
-			suite.expectEqual(std::ranges::size(bBranches.value()), 2uz);
-		});
+			expect(std::ranges::size(bBranches.value())) == 2uz;
+		};
 
-		suite.addTest("Clear all branches", [&] {
+		suite.test("Clear all branches") = [&] {
 			auto root = StringMeshNodePtr::makeRoot("root");
 			auto childA = StringMeshNodePtr::make("childA");
 			auto childB = StringMeshNodePtr::make("childB");
@@ -600,11 +600,11 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			root["BranchA"] >> childA;
 			root["BranchB"] >> childB;
 
-			suite.expectEqual(std::ranges::size(root.getBranches().value()), 2uz);
+			expect(std::ranges::size(root.getBranches().value())) == 2uz;
 
 			root.clearBranches();
 
-			suite.expect(std::ranges::empty(root.getBranches().value()));
-		});
-	}};
+			expect(std::ranges::empty(root.getBranches().value()));
+		};
+	};
 }

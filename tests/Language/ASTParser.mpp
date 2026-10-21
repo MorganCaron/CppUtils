@@ -17,31 +17,27 @@ namespace CppUtils::UnitTest::Language::ASTParser
 		});
 		// clang-format on
 	};
-
-	static_assert([] {
-		using namespace std::literals;
-		using namespace CppUtils::String::Literals;
-
-		auto interpreter = CppUtils::Language::ASTParser{};
-		addStack(interpreter);
-		constexpr auto source = "parent"sv;
-		auto cursor = CppUtils::String::Cursor{source};
-		auto result = interpreter(cursor);
-		if (not result)
-			return false;
-		const auto& scopeNodes = interpreter.getScope().nodes;
-		return std::ranges::size(scopeNodes) == 1uz and scopeNodes.front().value == "parent"_token;
-	}());
-
-	auto _ = TestSuite{
-		"Language/ASTParser",
-		{"Logger", "Container/Tree", "Language/MetaCircularVirtualMachine"},
-		[](TestSuite& suite) {
+	auto _ = testSuite("Language/ASTParser").dependsOn("Logger", "Container/Tree", "Language/MetaCircularVirtualMachine") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("Empty source", [&] {
+		suite.test<[] {
+			using namespace std::literals;
+			using namespace CppUtils::String::Literals;
+
+			auto interpreter = CppUtils::Language::ASTParser{};
+			addStack(interpreter);
+			constexpr auto source = "token"sv;
+			auto cursor = CppUtils::String::Cursor{source};
+			auto result = interpreter(cursor);
+			if (not result)
+				return false;
+			const auto& scopeNodes = interpreter.getScope().nodes;
+			return std::ranges::size(scopeNodes) == 1uz and scopeNodes.front().value == "token"_token;
+		}>("Constexpr token parsing");
+
+		suite.test("Empty source") = [&] {
 			auto interpreter = CppUtils::Language::ASTParser{};
 			addStack(interpreter);
 			constexpr auto source = ""sv;
@@ -51,12 +47,12 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result);
+			expect(result);
 			Logger::print("{}", interpreter.getScope());
-			suite.expect(std::ranges::empty(interpreter.getScope().nodes));
-		});
+			expect(std::ranges::empty(interpreter.getScope().nodes));
+		};
 
-		suite.addTest("Whitespaces", [&] {
+		suite.test("Whitespaces") = [&] {
 			auto interpreter = CppUtils::Language::ASTParser{};
 			addStack(interpreter);
 			constexpr auto source = R"(
@@ -68,30 +64,30 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result);
+			expect(result);
 			Logger::print("{}", interpreter.getScope());
-			suite.expect(std::ranges::empty(interpreter.getScope().nodes));
-		});
+			expect(std::ranges::empty(interpreter.getScope().nodes));
+		};
 
-		suite.addTest("Parse token", [&] {
+		suite.test("Parse token") = [&] {
 			auto interpreter = CppUtils::Language::ASTParser{};
 			addStack(interpreter);
-			constexpr auto source = "parent"sv;
+			constexpr auto source = "token"sv;
 			auto cursor = CppUtils::String::Cursor{source};
 
 			auto result = interpreter(cursor);
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result);
+			expect(result);
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
-			suite.expectEqual(std::ranges::size(scopeNodes), 1uz);
-			suite.expectEqual(scopeNodes.front().value, "parent"_token);
-			suite.expectEqual(std::ranges::size(scopeNodes.front().nodes), 0uz);
-		});
+			expect(std::ranges::size(scopeNodes)) == 1uz;
+			expect(scopeNodes.front().value) == "token"_token;
+			expect(std::ranges::size(scopeNodes.front().nodes)) == 0uz;
+		};
 
-		suite.addTest("Empty node", [&] {
+		suite.test("Empty node") = [&] {
 			auto interpreter = CppUtils::Language::ASTParser{};
 			addStack(interpreter);
 			constexpr auto source = "parent{}"sv;
@@ -101,20 +97,20 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result);
+			expect(result);
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
-			suite.expectEqual(std::ranges::size(scopeNodes), 1uz);
-			suite.expectEqual(scopeNodes.front().value, "parent"_token);
-			suite.expectEqual(std::ranges::size(scopeNodes.front().nodes), 0uz);
-		});
+			expect(std::ranges::size(scopeNodes)) == 1uz;
+			expect(scopeNodes.front().value) == "parent"_token;
+			expect(std::ranges::size(scopeNodes.front().nodes)) == 0uz;
+		};
 
-		suite.addTest("Escaped char", [&] {
+		suite.test("Escaped char") = [&] {
 			// Todo
 			[[maybe_unused]] constexpr auto source = R"(Hello\ World{})"sv;
-		});
+		};
 
-		suite.addTest("Parse value", [&] {
+		suite.test("Parse value") = [&] {
 			auto interpreter = CppUtils::Language::ASTParser{};
 			addStack(interpreter);
 			constexpr auto source = R"(
@@ -126,14 +122,14 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result);
+			expect(result);
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
-			suite.expectEqual(std::ranges::size(scopeNodes), 1uz);
-			suite.expectEqual(scopeNodes.front().value, static_cast<Type::Token>('a'));
-		});
+			expect(std::ranges::size(scopeNodes)) == 1uz;
+			expect(scopeNodes.front().value) == static_cast<Type::Token>('a');
+		};
 
-		suite.addTest("Nested nodes", [&] {
+		suite.test("Nested nodes") = [&] {
 			auto interpreter = CppUtils::Language::ASTParser{};
 			addStack(interpreter);
 			constexpr auto source = R"(
@@ -148,17 +144,17 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result);
+			expect(result);
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
-			suite.expectEqual(std::ranges::size(scopeNodes), 1uz);
-			suite.expectEqual(scopeNodes.front().value, "parent"_token);
-			suite.expectEqual(std::ranges::size(scopeNodes.front().nodes), 2uz);
-			suite.expectEqual(scopeNodes.front().nodes.at(0).value, "child1"_token);
-			suite.expectEqual(scopeNodes.front().nodes.at(1).value, "child2"_token);
-		});
+			expect(std::ranges::size(scopeNodes)) == 1uz;
+			expect(scopeNodes.front().value) == "parent"_token;
+			expect(std::ranges::size(scopeNodes.front().nodes)) == 2uz;
+			expect(scopeNodes.front().nodes.at(0).value) == "child1"_token;
+			expect(scopeNodes.front().nodes.at(1).value) == "child2"_token;
+		};
 
-		suite.addTest("Run function", [&] {
+		suite.test("Run function") = [&] {
 			auto interpreter = CppUtils::Language::ASTParser{};
 			addStack(interpreter);
 			constexpr auto source = R"(
@@ -172,15 +168,15 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result);
+			expect(result);
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
-			suite.expectEqual(std::ranges::size(scopeNodes), 2uz);
-			suite.expectEqual(scopeNodes.at(0).value, "run"_token);
-			suite.expectEqual(scopeNodes.at(1).value, "createNode"_token);
-		});
+			expect(std::ranges::size(scopeNodes)) == 2uz;
+			expect(scopeNodes.at(0).value) == "run"_token;
+			expect(scopeNodes.at(1).value) == "createNode"_token;
+		};
 
-		suite.addTest("Run temporary function", [&] {
+		suite.test("Run temporary function") = [&] {
 			auto interpreter = CppUtils::Language::ASTParser{};
 			addStack(interpreter);
 			constexpr auto source = R"(
@@ -195,11 +191,11 @@ namespace CppUtils::UnitTest::Language::ASTParser
 			if (not result)
 				Logger::print<"error">("Error: {}\nPosition: {}\nChar: '{}'", result.error(), cursor.position, cursor.getCurrent());
 
-			suite.expect(result);
+			expect(result);
 			Logger::print("{}", interpreter.getScope());
 			const auto& scopeNodes = interpreter.getScope().nodes;
-			suite.expectEqual(std::ranges::size(scopeNodes), 1uz);
-			suite.expectEqual(scopeNodes.front().value, "createNode"_token);
-		});
-	}};
+			expect(std::ranges::size(scopeNodes)) == 1uz;
+			expect(scopeNodes.front().value) == "createNode"_token;
+		};
+	};
 }

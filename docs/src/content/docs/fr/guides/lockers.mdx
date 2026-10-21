@@ -1,8 +1,8 @@
 ---
-title: Synchronisation RAII (Lockers)
+title: Verrous RAII
 description: Guide complet de synchronisation multithread, encapsulation, pièges et bonnes pratiques dans CppUtils::Thread.
 sidebar:
-  order: 3
+  order: 4
 ---
 
 import { Card, CardGrid, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
@@ -207,6 +207,57 @@ auto account = CppUtils::Thread::UniqueLocker<BankAccount>{};
 	// Possibilité d'enchaîner d'autres opérations sous le même verrou
 } // Sortie de scope : libération unique du verrou, aucune rupture d'atomicité
 ```
+
+### Membres lockers et modificateur mutable : constance logique vs physique
+
+Lorsque vous intégrez un `UniqueLocker` ou un `SharedLocker` comme variable membre d'une classe, une question essentielle se pose : faut-il déclarer ce membre avec le modificateur `mutable` ?
+
+La réponse est **oui, dans la grande majorité des architectures concurrentes**, en raison de la distinction fondamentale entre constance logique et constance physique (binaire) :
+
+- **Constance logique** : Une méthode d'observation (par exemple `count() const`, `snapshot() const` ou `hasOccurred() const`) garantit à l'appelant qu'elle ne modifie pas l'état abstrait observable de l'objet hôte.
+- **Constance physique (binaire)** : L'acquisition d'un verrou sous-jacent implique pourtant une modification physique d'un registre ou d'un flag atomique dans le mutex.
+
+#### Le cas concret : Synchronisation et variables de condition dans les méthodes const
+
+Considérons une classe de surveillance d'événements telle que `EventWatcher`. Ses méthodes d'interrogation et d'attente sont naturellement `const` du point de vue de l'appelant :
+
+```cpp showLineNumbers
+class EventWatcher
+{
+	struct State
+	{
+		std::size_t count = 0;
+		std::vector<int> payloads;
+	};
+
+	// Le modificateur mutable permet d'interagir avec le verrou depuis les méthodes const
+	mutable CppUtils::Thread::UniqueLocker<State> m_state;
+	std::condition_variable m_condition;
+
+public:
+	[[nodiscard]] auto count() const noexcept -> std::size_t
+	{
+		return m_state.access()->count;
+	}
+
+	auto waitForOccurrences(std::size_t target, std::chrono::milliseconds timeout) const -> bool
+	{
+		auto accessor = m_state.access();
+		// std::condition_variable::wait_for nécessite un std::unique_lock actif et modifiable
+		return m_condition.wait_for(accessor.getLockGuard(), timeout, [&] {
+			return accessor->count >= target;
+		});
+	}
+};
+```
+
+Sans le modificateur `mutable` sur `m_state` :
+1. Dans une méthode qualifiée `const`, le compilateur considère `m_state` comme `const UniqueLocker<State>`.
+2. L'appel à `m_state.access()` sélectionne la surcharge `const&`, qui retourne un `Accessor<const State>`.
+3. L'utilisation d'une primitive nécessitant la libération et la réacquisition atomique du verrou (comme `condition_variable::wait_for` avec `accessor.getLockGuard()`) échoue à la compilation car le verrou ne peut pas être manipulé de manière mutable.
+4. Les mécanismes de mise en cache paresseuse (lazy initialization ou memoization thread-safe sous verrou) au sein d'une méthode de lecture `const` deviendraient impossibles sans rompre l'encapsulation.
+
+Déclarer les lockers membres avec `mutable` garantit ainsi que la responsabilité technique de la synchronisation thread-safe reste strictement découplée des garanties d'immuabilité logique offertes par vos méthodes `const`.
 
 ---
 

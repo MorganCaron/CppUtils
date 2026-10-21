@@ -5,11 +5,11 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Ranges::Expected
 {
-	auto _ = TestSuite{"Ranges/Expected", {}, [](TestSuite& suite) {
+	auto _ = testSuite("Ranges/Expected") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using Expected = std::expected<int, std::string>;
 
-		suite.addTest("filterValues", [&] {
+		suite.test("filterValues") = [&] {
 			const auto inputs = std::array<Expected, 5>{
 				10,
 				std::unexpected{"error 1"s},
@@ -21,13 +21,13 @@ namespace CppUtils::UnitTest::Ranges::Expected
 				| CppUtils::Ranges::filterValues()
 				| std::ranges::to<std::vector<int>>();
 
-			suite.expectEqual(std::ranges::size(values), 3uz);
-			suite.expectEqual(values[0], 10);
-			suite.expectEqual(values[1], 20);
-			suite.expectEqual(values[2], 30);
-		});
+			expect(std::ranges::size(values)) == 3uz;
+			expect(values[0]) == 10;
+			expect(values[1]) == 20;
+			expect(values[2]) == 30;
+		};
 
-		suite.addTest("filterErrors", [&] {
+		suite.test("filterErrors") = [&] {
 			const auto inputs = std::array<Expected, 5>{
 				10,
 				std::unexpected{"error 1"s},
@@ -39,12 +39,12 @@ namespace CppUtils::UnitTest::Ranges::Expected
 				| CppUtils::Ranges::filterErrors()
 				| std::ranges::to<std::vector<std::string>>();
 
-			suite.expectEqual(std::ranges::size(errors), 2uz);
-			suite.expectEqual(errors[0], "error 1"s);
-			suite.expectEqual(errors[1], "error 2"s);
-		});
+			expect(std::ranges::size(errors)) == 2uz;
+			expect(errors[0]) == "error 1"s;
+			expect(errors[1]) == "error 2"s;
+		};
 
-		suite.addTest("valueOr", [&] {
+		suite.test("valueOr") = [&] {
 			const auto inputs = std::array<Expected, 3>{
 				10,
 				std::unexpected{"error"s},
@@ -54,13 +54,13 @@ namespace CppUtils::UnitTest::Ranges::Expected
 				| CppUtils::Ranges::valueOr(-1)
 				| std::ranges::to<std::vector<int>>();
 
-			suite.expectEqual(std::ranges::size(values), 3uz);
-			suite.expectEqual(values[0], 10);
-			suite.expectEqual(values[1], -1);
-			suite.expectEqual(values[2], 30);
-		});
+			expect(std::ranges::size(values)) == 3uz;
+			expect(values[0]) == 10;
+			expect(values[1]) == -1;
+			expect(values[2]) == 30;
+		};
 
-		suite.addTest("recover", [&] {
+		suite.test("recover") = [&] {
 			const auto inputs = std::array<Expected, 3>{
 				10,
 				std::unexpected{"42"s},
@@ -72,13 +72,13 @@ namespace CppUtils::UnitTest::Ranges::Expected
 			})
 				| std::ranges::to<std::vector<int>>();
 
-			suite.expectEqual(std::ranges::size(values), 3uz);
-			suite.expectEqual(values[0], 10);
-			suite.expectEqual(values[1], 42);
-			suite.expectEqual(values[2], 30);
-		});
+			expect(std::ranges::size(values)) == 3uz;
+			expect(values[0]) == 10;
+			expect(values[1]) == 42;
+			expect(values[2]) == 30;
+		};
 
-		suite.addTest("inspectError", [&] {
+		suite.test("inspectError") = [&] {
 			const auto inputs = std::array<Expected, 3>{
 				10,
 				std::unexpected{"error"s},
@@ -87,17 +87,17 @@ namespace CppUtils::UnitTest::Ranges::Expected
 			auto capturedErrors = std::vector<std::string>{};
 
 			auto count = 0uz;
-			for (const auto& item : inputs | CppUtils::Ranges::inspectError([&](const std::string& error) {
+			for ([[maybe_unused]] const auto& item : inputs | CppUtils::Ranges::inspectError([&](const std::string& error) {
 				capturedErrors.push_back(error);
 			}))
 				++count;
 
-			suite.expectEqual(count, 3uz);
-			suite.expectEqual(std::ranges::size(capturedErrors), 1uz);
-			suite.expectEqual(capturedErrors[0], "error"s);
-		});
+			expect(count) == 3uz;
+			expect(std::ranges::size(capturedErrors)) == 1uz;
+			expect(capturedErrors[0]) == "error";
+		};
 
-		suite.addTest("routeErrors", [&] {
+		suite.test("routeErrors") = [&] {
 			const auto inputs = std::array<Expected, 5>{
 				10,
 				std::unexpected{"error 1"s},
@@ -113,14 +113,14 @@ namespace CppUtils::UnitTest::Ranges::Expected
 			})
 				| std::ranges::to<std::vector<int>>();
 
-			suite.expectEqual(std::ranges::size(values), 3uz);
-			suite.expectEqual(values[0], 10);
-			suite.expectEqual(values[1], 20);
-			suite.expectEqual(values[2], 30);
+			expect(std::ranges::size(values)) == 3uz;
+			expect(values[0]) == 10;
+			expect(values[1]) == 20;
+			expect(values[2]) == 30;
 
-			suite.expectEqual(std::ranges::size(capturedErrors), 2uz);
-			suite.expectEqual(capturedErrors[0], "error 1"s);
-			suite.expectEqual(capturedErrors[1], "error 2"s);
-		});
-	}};
+			expect(std::ranges::size(capturedErrors)) == 2uz;
+			expect(capturedErrors[0]) == "error 1";
+			expect(capturedErrors[1]) == "error 2";
+		};
+	};
 }

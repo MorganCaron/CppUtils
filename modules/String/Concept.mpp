@@ -3,12 +3,10 @@ export module CppUtils.String.Concept;
 import std;
 
 import CppUtils.Type.Concept;
+import CppUtils.Type.Specialization;
 
 export namespace CppUtils::String
 {
-	template<class T>
-	concept Char = Type::IsOneOf<T, char, wchar_t, char8_t, char16_t, char32_t>;
-
 	template<class T>
 	concept String = Type::Specializes<T, std::basic_string>;
 
@@ -24,8 +22,90 @@ export namespace CppUtils::String
 	template<GenericText T>
 	using TextCharT = typename decltype(std::basic_string_view{std::declval<T>()})::value_type;
 
+	/// @brief Concept satisfied if T is a raw pointer or array of character types.
 	template<class T>
-	concept Formattable = requires (T t) {
-		{ std::formatter<T>{} };
+	concept CharacterPointerOrArray =
+		(std::is_pointer_v<std::decay_t<T>> or std::is_array_v<std::remove_cvref_t<T>>) and Type::Character<CppUtils::Type::UnderlyingElementType<T>>;
+
+	/// @brief Resolves the decayed character element type of a pointer, array, or character type.
+	template<class T>
+	requires Type::Character<CppUtils::Type::UnderlyingElementType<T>>
+	using CharacterType = CppUtils::Type::UnderlyingElementType<T>;
+
+	/// @brief Concept satisfied by types representing contiguous character sequences (strings, string views, or spans of characters).
+	template<class T, class CharT = char>
+	concept CharacterSequence = Text<T, CharT> or requires (const T& target) {
+		{ std::span<const CharT>{target} };
 	};
+
+	template<class T>
+	concept Formattable = std::formattable<std::remove_cvref_t<T>, char>;
+
+	/// @brief Concept satisfied if T is directly formattable as text without structural decomposition.
+	template<class T>
+	concept DirectlyPrintable =
+		(std::formattable<std::remove_cvref_t<T>, char>
+			or std::same_as<std::remove_cvref_t<T>, std::byte>)
+		and (not std::ranges::input_range<std::remove_cvref_t<T>>
+			or GenericText<std::remove_cvref_t<T>>
+			or std::same_as<std::remove_cvref_t<T>, std::filesystem::path>);
+
+	template<class T>
+	inline consteval auto isExtensivelyPrintable() -> bool
+	{
+		using CleanType = std::remove_cvref_t<T>;
+
+		if constexpr (DirectlyPrintable<CleanType>)
+		{
+			return true;
+		}
+		else if constexpr (std::ranges::input_range<CleanType> and not GenericText<CleanType>)
+		{
+			if constexpr (not std::same_as<std::ranges::range_value_t<CleanType>, CleanType>)
+				return isExtensivelyPrintable<std::ranges::range_value_t<CleanType>>();
+			else
+				return false;
+		}
+		else if constexpr (requires { std::variant_size<CleanType>::value; })
+		{
+			return []<std::size_t... Indices>(std::index_sequence<Indices...>) {
+				return (isExtensivelyPrintable<std::variant_alternative_t<Indices, CleanType>>() and ...);
+			}(std::make_index_sequence<std::variant_size_v<CleanType>>{});
+		}
+		else if constexpr (requires { typename std::tuple_size<CleanType>::type; } and not std::ranges::input_range<CleanType>)
+		{
+			return []<std::size_t... Indices>(std::index_sequence<Indices...>) {
+				return (isExtensivelyPrintable<std::tuple_element_t<Indices, CleanType>>() and ...);
+			}(std::make_index_sequence<std::tuple_size_v<CleanType>>{});
+		}
+		else if constexpr (requires (const CleanType& target) { static_cast<bool>(target); *target; }
+			and not GenericText<CleanType>)
+		{
+			using DereferencedType = std::remove_cvref_t<decltype(*std::declval<CleanType>())>;
+			if constexpr (not std::same_as<DereferencedType, CleanType>)
+				return isExtensivelyPrintable<DereferencedType>();
+			else
+				return false;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	/// @brief Concept satisfied if T can be formatted directly or through recursive decomposition.
+	template<class T>
+	concept ExtensivelyPrintable = isExtensivelyPrintable<T>();
 }
+
+#if not defined(__cpp_lib_format_path)
+template<class CharT>
+struct std::formatter<std::filesystem::path, CharT>: std::formatter<std::basic_string<CharT>, CharT>
+{
+	template<class FormatContext>
+	auto format(const std::filesystem::path& path, FormatContext& context) const
+	{
+		return std::formatter<std::basic_string<CharT>, CharT>::format(path.string<CharT>(), context);
+	}
+};
+#endif

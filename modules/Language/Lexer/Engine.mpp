@@ -278,8 +278,7 @@ export namespace CppUtils::Language::Lexer
 						break;
 					++i;
 				}
-				if ((recurrenceType == RecurrenceType::MoreThan and i <= repetitions) or
-					(recurrenceType == RecurrenceType::MoreOrEqualTo and i < repetitions))
+				if ((recurrenceType == RecurrenceType::MoreThan and i <= repetitions) or (recurrenceType == RecurrenceType::MoreOrEqualTo and i < repetitions))
 				{
 					parsingErrors.push_back(ParsingError{
 						.cursorPosition = cursor.position,

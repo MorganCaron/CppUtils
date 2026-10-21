@@ -5,11 +5,11 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Log::Logger
 {
-	auto _ = TestSuite{"Logger", {"UnitTest"}, [](TestSuite& suite) {
+	auto _ = testSuite("Logger").dependsOn("UnitTest") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("In console", [&] {
+		suite.test("In console") = [&] {
 			Logger::print("Message");
 
 			Logger::print<"info">("Information message");
@@ -19,9 +19,9 @@ namespace CppUtils::UnitTest::Log::Logger
 			Logger::print<"detail">("Detail message");
 			Logger::print<"warning">("Warning message");
 			Logger::print<"error">("Error message");
-		});
+		};
 
-		suite.addTest("Subscribe and print", [&] {
+		suite.test("Subscribe and print") = [&] {
 			using TestLogger = CppUtils::Logger<"TestLogger">;
 			auto loggedMessages = std::vector<std::string>{};
 
@@ -32,14 +32,14 @@ namespace CppUtils::UnitTest::Log::Logger
 			TestLogger::print("Hello {}", "world");
 			TestLogger::waitUntilFinished();
 
-			suite.expectEqual(std::ranges::size(loggedMessages), 1uz);
+			expect(std::ranges::size(loggedMessages)) == 1uz;
 			if (not std::ranges::empty(loggedMessages))
-				suite.expectEqual(loggedMessages.front(), "Hello world");
+				expect(loggedMessages.front()) == "Hello world";
 
-			suite.expect(TestLogger::unsubscribe(subscriptionIdentifier));
-		});
+			expect(TestLogger::unsubscribe(subscriptionIdentifier));
+		};
 
-		suite.addTest("Unsubscribe", [&] {
+		suite.test("Unsubscribe") = [&] {
 			using TestLogger = CppUtils::Logger<"TestLogger">;
 			auto count = 0;
 
@@ -49,18 +49,18 @@ namespace CppUtils::UnitTest::Log::Logger
 
 			TestLogger::emit<"custom">();
 			TestLogger::waitUntilFinished();
-			suite.expectEqual(count, 1);
+			expect(count) == 1;
 
-			suite.expect(TestLogger::unsubscribe(subscriptionIdentifier));
+			expect(TestLogger::unsubscribe(subscriptionIdentifier));
 
 			TestLogger::emit<"custom">();
 			TestLogger::waitUntilFinished();
-			suite.expectEqual(count, 1);
+			expect(count) == 1;
 
-			suite.expect(not TestLogger::unsubscribe(subscriptionIdentifier));
-		});
+			expect(not TestLogger::unsubscribe(subscriptionIdentifier));
+		};
 
-		suite.addTest("Clear subscribers", [&] {
+		suite.test("Clear subscribers") = [&] {
 			using TestLogger = CppUtils::Logger<"TestLogger">;
 			auto countA = 0;
 			auto countB = 0;
@@ -71,19 +71,19 @@ namespace CppUtils::UnitTest::Log::Logger
 			TestLogger::emit<"typeA">();
 			TestLogger::emit<"typeB">();
 			TestLogger::waitUntilFinished();
-			suite.expectEqual(countA, 1);
-			suite.expectEqual(countB, 1);
+			expect(countA) == 1;
+			expect(countB) == 1;
 
 			TestLogger::clearSubscribers();
 
 			TestLogger::emit<"typeA">();
 			TestLogger::emit<"typeB">();
 			TestLogger::waitUntilFinished();
-			suite.expectEqual(countA, 1);
-			suite.expectEqual(countB, 1);
-		});
+			expect(countA) == 1;
+			expect(countB) == 1;
+		};
 
-		suite.addTest("Unsubscribe by log type", [&] {
+		suite.test("Unsubscribe by log type") = [&] {
 			using TestLogger = CppUtils::Logger<"TestLogger">;
 			auto countA = 0;
 			auto countB = 0;
@@ -94,18 +94,18 @@ namespace CppUtils::UnitTest::Log::Logger
 			TestLogger::emit<"typeA">();
 			TestLogger::emit<"typeB">();
 			TestLogger::waitUntilFinished();
-			suite.expectEqual(countA, 1);
-			suite.expectEqual(countB, 1);
+			expect(countA) == 1;
+			expect(countB) == 1;
 
-			suite.expect(TestLogger::unsubscribe<"typeA">());
+			expect(TestLogger::unsubscribe<"typeA">());
 
 			TestLogger::emit<"typeA">();
 			TestLogger::emit<"typeB">();
 			TestLogger::waitUntilFinished();
-			suite.expectEqual(countA, 1);
-			suite.expectEqual(countB, 2);
+			expect(countA) == 1;
+			expect(countB) == 2;
 
 			TestLogger::clearSubscribers();
-		});
-	}};
+		};
+	};
 }

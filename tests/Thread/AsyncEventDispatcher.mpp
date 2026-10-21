@@ -5,20 +5,20 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 {
-	auto _ = TestSuite{"Thread/AsyncEventDispatcher", {"Thread/ThreadPool", "Execution/EventDispatcher"}, [](TestSuite& suite) {
-		suite.addTest("Emit and Wait", [&] {
+	auto _ = testSuite("Thread/AsyncEventDispatcher").dependsOn("Thread/ThreadPool", "Execution/EventDispatcher") = [](TestSuite& suite) {
+		suite.test("Emit and Wait") = [&] {
 			auto dispatcher = CppUtils::Thread::AsyncEventDispatcher{};
 			auto received = std::atomic_bool{false};
 
-			dispatcher.subscribe<"Event">([&](bool value) {
-				suite.expectEqual(value, true);
+			dispatcher.subscribe<"Event">([&](bool receivedValue) {
+				expect(receivedValue);
 				received = true;
 			});
 			dispatcher.emit<"Event">(true);
 
 			dispatcher.waitUntilFinished();
-			suite.expect(received);
-		});
+			expect(received);
+		};
 
 		// Workaround on Windows (MSVC ABI)
 		// https://github.com/llvm/llvm-project/issues/221609
@@ -39,7 +39,7 @@ namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 		using TestException = std::runtime_error;
 #endif
 
-		suite.addTest("Error Handling", [&] {
+		suite.test("Error Handling") = [&] {
 			auto errorCaught = std::atomic_bool{false};
 			auto onError = [&](std::exception_ptr) {
 				errorCaught = true;
@@ -52,10 +52,10 @@ namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 			dispatcher.emit<"Event">(nullptr);
 
 			dispatcher.waitUntilFinished();
-			suite.expect(errorCaught);
-		});
+			expect(errorCaught);
+		};
 
-		suite.addTest("Stateful lambda", [&] {
+		suite.test("Stateful lambda") = [&] {
 			auto dispatcher = CppUtils::Thread::AsyncEventDispatcher{};
 			auto counter = std::make_shared<int>(0);
 			auto mutex = std::make_shared<std::mutex>();
@@ -69,10 +69,10 @@ namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 			dispatcher.emit<"Event">(20);
 
 			dispatcher.waitUntilFinished();
-			suite.expectEqual(*counter, 30);
-		});
+			expect(*counter) == 30;
+		};
 
-		suite.addTest("Passing stateful lambda as argument", [&] {
+		suite.test("Passing stateful lambda as argument") = [&] {
 			auto dispatcher = CppUtils::Thread::AsyncEventDispatcher{};
 			auto result = std::atomic_int{0};
 
@@ -86,10 +86,10 @@ namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 			}});
 
 			dispatcher.waitUntilFinished();
-			suite.expectEqual(result.load(), 42);
-		});
+			expect(result.load()) == 42;
+		};
 
-		suite.addTest("Multiple subscribe", [&] {
+		suite.test("Multiple subscribe") = [&] {
 			auto dispatcher = CppUtils::Thread::AsyncEventDispatcher{};
 			auto count = std::atomic_size_t{0};
 
@@ -102,7 +102,7 @@ namespace CppUtils::UnitTest::Thread::AsyncEventDispatcher
 			dispatcher.emit<"C">();
 
 			dispatcher.waitUntilFinished();
-			suite.expectEqual(count, 2uz);
-		});
-	}};
+			expect(count) == 2uz;
+		};
+	};
 }

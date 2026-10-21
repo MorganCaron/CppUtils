@@ -1,7 +1,7 @@
 export module CppUtils.Container.MultiKeyMap;
 
 import std;
-import CppUtils.String.Hash;
+export import CppUtils.String.Hash;
 import CppUtils.Type.Utility;
 
 export namespace CppUtils::Container

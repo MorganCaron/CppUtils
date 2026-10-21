@@ -5,14 +5,14 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Container::Pair
 {
-	auto _ = TestSuite{"Container/Pair", {"UnitTest"}, [](TestSuite& suite) {
+	auto _ = testSuite("Container/Pair").dependsOn("UnitTest") = [](TestSuite& suite) {
 		using namespace std::literals;
 
-		suite.addTest("Swap pair", [&] {
+		suite.test("Swap pair") = [&] {
 			auto pair = std::make_pair<int, const std::string>(42, "Hello World!");
 			auto newPair = CppUtils::Container::swapPair(pair);
-			suite.expectEqual(newPair.first, "Hello World!"sv);
-			suite.expectEqual(newPair.second, 42);
-		});
-	}};
+			expect(newPair.first) == "Hello World!";
+			expect(newPair.second) == 42;
+		};
+	};
 }

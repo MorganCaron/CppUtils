@@ -69,5 +69,21 @@ export namespace CppUtils::Type
 	concept NotCallable = not Callable<Function, Args...>;
 
 	template<class T>
+	concept Character = IsOneOf<std::remove_cvref_t<T>, char, wchar_t, char8_t, char16_t, char32_t>;
+
+	template<class T>
+	concept ArithmeticInteger = std::integral<std::remove_cvref_t<T>>
+		and not std::same_as<std::remove_cvref_t<T>, bool>
+		and not Character<T>;
+
+	template<class T>
 	concept Numeric = std::integral<T> or std::floating_point<T>;
+
+	/// @brief Resolves the decayed element type of a pointer, array, or scalar type.
+	template<class Type>
+	using UnderlyingElementType = std::remove_cvref_t<std::remove_all_extents_t<std::remove_pointer_t<std::decay_t<Type>>>>;
+
+	/// @brief Concept satisfied if a type is both a random-access range and a sized range.
+	template<class Range>
+	concept SizedRandomAccessRange = std::ranges::random_access_range<Range> and std::ranges::sized_range<Range>;
 }

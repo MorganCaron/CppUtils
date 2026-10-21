@@ -1,0 +1,201 @@
+export module CppUtils.UnitTest.EventWatcher;
+
+import std;
+import CppUtils.Chrono.Concept;
+import CppUtils.String.Hash;
+import CppUtils.Type.Hash;
+import CppUtils.Thread.UniqueLocker;
+
+export namespace CppUtils::UnitTest
+{
+	/**
+	 * @brief Thread-safe RAII observer for monitoring emitted events and collecting payloads.
+	 *
+	 * Subscribes to the designated event upon construction and unsubscribes automatically upon destruction.
+	 * Provides blocking synchronization utilities (waitForEvent, waitForOccurrences)
+	 * and thread-safe inspection of occurrence counts and captured payloads.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#surveillance-dévénements-cpputilsunittesteventwatcher (Guide des tests unitaires)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#event-monitoring-cpputilsunittesteventwatcher (Unit test guide)
+	 *
+	 * @tparam eventName Compile-time hashed string identifying the event.
+	 * @tparam Args Types of the event payload arguments.
+	 */
+	template<String::Hasher eventName, class... Args>
+	class EventWatcher final
+	{
+	public:
+		using Payload = std::conditional_t<
+			sizeof...(Args) == 0,
+			std::monostate,
+			std::conditional_t<
+				sizeof...(Args) == 1,
+				std::tuple_element_t<0, std::tuple<Args..., void>>,
+				std::tuple<Args...>>>;
+
+		/**
+		 * @brief Internal snapshot recording observed event occurrences and collected payloads.
+		 *
+		 * Synchronized via UniqueLocker and accessed through the occurrences() method.
+		 *
+		 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#surveillance-dévénements-cpputilsunittesteventwatcher (Guide des tests unitaires)
+		 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#event-monitoring-cpputilsunittesteventwatcher (Unit test guide)
+		 */
+		struct State final
+		{
+			std::size_t count = 0uz; ///< Total number of times the monitored event has been fired.
+			std::vector<Payload> payloads; ///< Sequential history of captured event payloads.
+		};
+
+		/**
+		 * @brief Subscribes the watcher to the specified event emitter.
+		 * @param emitter Reference to the event emitter to monitor.
+		 */
+		explicit EventWatcher(auto& emitter)
+		{
+			if constexpr (sizeof...(Args) == 0)
+			{
+				auto subscriptionIdentifier = emitter.template subscribe<eventName>([this] {
+					{
+						auto accessor = m_state.access();
+						++accessor->count;
+					}
+					m_condition.notify_all();
+				});
+				m_unsubscriber = [&emitter, subscriptionIdentifier] {
+					emitter.unsubscribe(subscriptionIdentifier);
+				};
+			}
+			else if constexpr (sizeof...(Args) == 1)
+			{
+				using FirstArg = std::tuple_element_t<0, std::tuple<Args..., void>>;
+				auto subscriptionIdentifier = emitter.template subscribe<eventName>([this](FirstArg value) {
+					{
+						auto accessor = m_state.access();
+						++accessor->count;
+						accessor->payloads.push_back(std::move(value));
+					}
+					m_condition.notify_all();
+				});
+				m_unsubscriber = [&emitter, subscriptionIdentifier] {
+					emitter.unsubscribe(subscriptionIdentifier);
+				};
+			}
+			else
+			{
+				auto subscriptionIdentifier = emitter.template subscribe<eventName>([this](Args... args) {
+					{
+						auto accessor = m_state.access();
+						++accessor->count;
+						accessor->payloads.emplace_back(std::move(args)...);
+					}
+					m_condition.notify_all();
+				});
+				m_unsubscriber = [&emitter, subscriptionIdentifier] {
+					emitter.unsubscribe(subscriptionIdentifier);
+				};
+			}
+		}
+
+		inline ~EventWatcher()
+		{
+			if (m_unsubscriber)
+				m_unsubscriber();
+		}
+
+		EventWatcher(const EventWatcher&) = delete;
+		EventWatcher& operator=(const EventWatcher&) = delete;
+
+		EventWatcher(EventWatcher&& other) noexcept:
+			m_unsubscriber{std::move(other.m_unsubscriber)},
+			m_state{std::move(other.m_state)}
+		{
+			other.m_unsubscriber = nullptr;
+		}
+
+		EventWatcher& operator=(EventWatcher&& other) noexcept
+		{
+			if (this != std::addressof(other))
+			{
+				if (m_unsubscriber)
+					m_unsubscriber();
+				m_unsubscriber = std::move(other.m_unsubscriber);
+				other.m_unsubscriber = nullptr;
+				m_state = std::move(other.m_state);
+			}
+			return *this;
+		}
+
+		/**
+		 * @brief Returns the total number of times the monitored event has been fired.
+		 * @return Event occurrence count.
+		 */
+		[[nodiscard]] inline auto count() const noexcept -> std::size_t
+		{
+			return m_state.access()->count;
+		}
+
+		/**
+		 * @brief Checks if the monitored event has occurred at least once.
+		 * @return True if count() > 0.
+		 */
+		[[nodiscard]] inline auto hasOccurred() const noexcept -> bool
+		{
+			return m_state.access()->count > 0uz;
+		}
+
+		/**
+		 * @brief Blocks until the event has been fired at least targetCount times or timeout expires.
+		 * @tparam TimeoutDuration Duration type (defaults to std::chrono::milliseconds).
+		 * @param targetCount Number of occurrences to wait for.
+		 * @param timeout Maximum duration to wait before giving up.
+		 * @return True if the target occurrence count was reached before the timeout expired.
+		 */
+		template<Chrono::Duration TimeoutDuration = std::chrono::milliseconds>
+		inline auto waitForOccurrences(std::size_t targetCount, TimeoutDuration timeout = std::chrono::milliseconds{1000}) -> bool
+		{
+			auto accessor = m_state.access();
+			return m_condition.wait_for(accessor.getLockGuard(), timeout, [&] {
+				return accessor->count >= targetCount;
+			});
+		}
+
+		/**
+		 * @brief Blocks until the event occurs at least once or timeout expires.
+		 * @tparam TimeoutDuration Duration type (defaults to std::chrono::milliseconds).
+		 * @param timeout Maximum duration to wait before giving up.
+		 * @return True if the event occurred before the timeout expired.
+		 */
+		template<Chrono::Duration TimeoutDuration = std::chrono::milliseconds>
+		inline auto waitForEvent(TimeoutDuration timeout = std::chrono::milliseconds{1000}) -> bool
+		{
+			return waitForOccurrences(1uz, timeout);
+		}
+
+		/**
+		 * @brief Acquires exclusive locked access to the recorded state and payloads.
+		 *
+		 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#surveillance-dévénements-cpputilsunittesteventwatcher (Guide des tests unitaires)
+		 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#event-monitoring-cpputilsunittesteventwatcher (Unit test guide)
+		 *
+		 * @return Unique accessor locking the internal state.
+		 */
+		[[nodiscard]] inline auto occurrences() const -> auto
+		{
+			return m_state.access();
+		}
+
+		/// @brief Resets the event occurrence count to zero and clears recorded payloads.
+		inline auto clear() -> void
+		{
+			auto accessor = m_state.access();
+			accessor->count = 0uz;
+			accessor->payloads.clear();
+		}
+
+	private:
+		std::function<void()> m_unsubscriber;
+		mutable Thread::UniqueLocker<State> m_state;
+		std::condition_variable m_condition;
+	};
+}

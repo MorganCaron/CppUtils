@@ -6,10 +6,10 @@ import CppUtils.Execution.Event;
 
 namespace CppUtils::UnitTest::Execution::Event
 {
-	auto _ = TestSuite{"Execution/Event", {}, [](auto& suite) {
+	auto _ = testSuite("Execution/Event") = [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
-		suite.addTest("Wait and Notify", [&] {
+		suite.test("Wait and Notify") = [&] {
 			auto event = CppUtils::Execution::Event{};
 			auto threadFinished = std::atomic_flag{};
 			{
@@ -21,10 +21,10 @@ namespace CppUtils::UnitTest::Execution::Event
 
 				event.wait();
 			}
-			suite.expect(threadFinished.test());
-		});
+			expect(threadFinished.test());
+		};
 
-		suite.addTest("WaitFor (Success)", [&] {
+		suite.test("WaitFor (Success)") = [&] {
 			auto event = CppUtils::Execution::Event{};
 			{
 				auto thread = std::jthread{[&] {
@@ -33,17 +33,17 @@ namespace CppUtils::UnitTest::Execution::Event
 				}};
 
 				auto result = event.waitFor(200ms);
-				suite.expect(result);
+				expect(result);
 			}
-		});
+		};
 
-		suite.addTest("WaitFor (Timeout)", [&] {
+		suite.test("WaitFor (Timeout)") = [&] {
 			auto event = CppUtils::Execution::Event{};
 			auto result = event.waitFor(10ms);
-			suite.expect(not result);
-		});
+			expect(not result);
+		};
 
-		suite.addTest("WaitUntil (Success)", [&] {
+		suite.test("WaitUntil (Success)") = [&] {
 			auto event = CppUtils::Execution::Event{};
 			{
 				auto thread = std::jthread{[&] {
@@ -52,37 +52,37 @@ namespace CppUtils::UnitTest::Execution::Event
 				}};
 
 				auto result = event.waitUntil(std::chrono::steady_clock::now() + 200ms);
-				suite.expect(result);
+				expect(result);
 			}
-		});
+		};
 
-		suite.addTest("WaitUntil (Timeout)", [&] {
+		suite.test("WaitUntil (Timeout)") = [&] {
 			auto event = CppUtils::Execution::Event{};
 			auto result = event.waitUntil(std::chrono::steady_clock::now() + 10ms);
-			suite.expect(not result);
-		});
+			expect(not result);
+		};
 
-		suite.addTest("Manual-Reset Behavior (Broadcast)", [&] {
+		suite.test("Manual-Reset Behavior (Broadcast)") = [&] {
 			auto event = CppUtils::Execution::Event{};
 
 			event.notify();
 			event.wait();
 
 			auto result = event.waitFor(10ms);
-			suite.expect(result);
-		});
+			expect(result);
+		};
 
-		suite.addTest("Reset Behavior", [&] {
+		suite.test("Reset Behavior") = [&] {
 			auto event = CppUtils::Execution::Event{};
 
 			event.notify();
 			event.reset();
 
 			auto result = event.waitFor(10ms);
-			suite.expect(not result);
-		});
+			expect(not result);
+		};
 
-		suite.addTest("Broadcast to Multiple Threads", [&] {
+		suite.test("Broadcast to Multiple Threads") = [&] {
 			auto event = CppUtils::Execution::Event{};
 			auto count = std::atomic_size_t{0};
 			{
@@ -92,7 +92,7 @@ namespace CppUtils::UnitTest::Execution::Event
 				std::this_thread::sleep_for(10ms);
 				event.notify();
 			}
-			suite.expectEqual(count.load(), 2uz);
-		});
-	}};
+			expect(count.load()) == 2uz;
+		};
+	};
 }

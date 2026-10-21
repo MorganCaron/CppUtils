@@ -1,0 +1,46 @@
+export module CppUtils.UnitTests.System.Pipe;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::System::Pipe
+{
+	auto _ = testSuite("System/Pipe").dependsOn("UnitTest") = []([[maybe_unused]] TestSuite& suite) {
+#if defined(__linux__)
+		using namespace std::chrono_literals;
+
+		suite.test("PipeChannel basic write and read") = [&] {
+			auto channel = CppUtils::System::PipeChannel{};
+			const auto message = std::string_view{"Hello IPC Channel"};
+			expect(channel.write(message)) == std::ranges::size(message);
+
+			auto buffer = std::array<char, 32>{};
+			const auto bytesRead = channel.read(std::as_writable_bytes(std::span{buffer}));
+			expect(bytesRead) == std::ranges::size(message);
+			expect(std::string_view{std::ranges::data(buffer), bytesRead}) == message;
+		};
+
+		suite.test("PipeChannel typed object serialization") = [&] {
+			auto channel = CppUtils::System::PipeChannel{};
+			const auto expectedValue = std::uint64_t{0xDEADBEEFCAFEBABEULL};
+			channel.writeObject(expectedValue);
+
+			auto actualValue = std::uint64_t{0};
+			const auto success = channel.readObject(actualValue);
+			expect(success);
+			expect(actualValue) == expectedValue;
+		};
+
+		suite.test("PipeChannel waitForData readiness") = [&] {
+			auto channel = CppUtils::System::PipeChannel{};
+			expect(not channel.waitForData(5ms));
+
+			channel.write("data");
+			expect(channel.waitForData(50ms));
+
+			channel.closeWrite();
+			expect(channel.readAll()) == "data";
+		};
+#endif
+	};
+}

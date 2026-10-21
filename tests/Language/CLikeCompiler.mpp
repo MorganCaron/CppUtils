@@ -6,16 +6,13 @@ import CppUtils;
 namespace CppUtils::UnitTest::Language::CLikeCompiler
 {
 	/*
-	auto _ = TestSuite{
-		"Language/CLikeCompiler",
-		{"Logger", "Language/ASTParser"},
-		[](auto& suite) {
+	auto _ = testSuite("Language/CLikeCompiler").dependsOn("Logger", "Language/ASTParser") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using Logger = TestSuite::Logger;
 		namespace VM = CppUtils::Language::VirtualMachine;
 		namespace Compiler = CppUtils::Language::CLike;
 
-		suite.addTest("empty main", [&] {
+		suite.test("empty main") = [&] {
 			constexpr auto source = uR"(
 				keywords: [
 					"int" = 0
@@ -30,7 +27,7 @@ namespace CppUtils::UnitTest::Language::CLikeCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 0uz);
-		});
-	}};*/
+			expect(executionResult) == 0uz;
+		};
+	};*/
 }

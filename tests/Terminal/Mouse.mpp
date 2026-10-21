@@ -5,10 +5,10 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::Mouse
 {
-	auto _ = TestSuite{"Terminal/Mouse", {"UnitTest", "Terminal/Canvas"}, [](TestSuite& suite) {
+	auto _ = testSuite("Terminal/Mouse").dependsOn("UnitTest", "Terminal/Canvas") = [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
-		suite.addTest("Tracking", [] {
+		suite.test("Tracking") = [] {
 			const auto size = CppUtils::Container::Size2{40, 20};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -70,6 +70,6 @@ namespace CppUtils::UnitTest::Terminal::Mouse
 				if (needPrint)
 					canvas.print();
 			}
-		});
-	}};
+		};
+	};
 }

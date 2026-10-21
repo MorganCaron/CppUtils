@@ -6,25 +6,22 @@ import CppUtils;
 namespace CppUtils::UnitTest::Language::LabelsCompiler
 {
 	/*
-	auto _ = TestSuite{
-		"Language/LabelsCompiler",
-		{"Logger", "Language/VirtualMachine"},
-		[](auto& suite) {
+	auto _ = testSuite("Language/LabelsCompiler").dependsOn("Logger", "Language/VirtualMachine") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using Logger = TestSuite::Logger;
 		namespace VM = CppUtils::Language::VirtualMachine;
 		namespace Compiler = CppUtils::Language::LabelsCompiler;
 
-		suite.addTest("empty source", [&] {
+		suite.test("empty source") = [&] {
 			constexpr auto source = u"("sv;
 			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 0uz);
-		});
+			expect(executionResult) == 0uz;
+		};
 
-		suite.addTest("code without labels", [&] {
+		suite.test("code without labels") = [&] {
 			constexpr auto source = uR"(
 				(0:42
 				)"sv;
@@ -32,10 +29,10 @@ namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<int, std::size_t>(output);
-			suite.expectEqual(executionResult, 42);
-		});
+			expect(executionResult) == 42;
+		};
 
-		suite.addTest("one label", [&] {
+		suite.test("one label") = [&] {
 			constexpr auto source = uR"(
 				(§(42X
 				)"sv;
@@ -43,10 +40,10 @@ namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
+			expect(executionResult) == 42uz;
+		};
 
-		suite.addTest("multiple labels", [&] {
+		suite.test("multiple labels") = [&] {
 			constexpr auto source = uR"(
 				(§
 				(§
@@ -56,10 +53,10 @@ namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
+			expect(executionResult) == 42uz;
+		};
 
-		suite.addTest("one jump", [&] {
+		suite.test("one jump") = [&] {
 			constexpr auto source = uR"(
 				(0¤ main
 
@@ -74,10 +71,10 @@ namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
+			expect(executionResult) == 42uz;
+		};
 
-		suite.addTest("multiple jumps", [&] constexpr {
+		suite.test("multiple jumps") = [&] constexpr {
 			constexpr auto source = uR"(
 				(0¤ main
 
@@ -97,10 +94,10 @@ namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
+			expect(executionResult) == 42uz;
+		};
 
-		suite.addTest("escape §", [&] {
+		suite.test("escape §") = [&] {
 			constexpr auto source = uR"(
 				(0¤
 
@@ -112,10 +109,10 @@ namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
+			expect(executionResult) == 42uz;
+		};
 
-		suite.addTest("escape ¤", [&] {
+		suite.test("escape ¤") = [&] {
 			constexpr auto source = uR"(
 				(0\¤
 
@@ -129,8 +126,8 @@ namespace CppUtils::UnitTest::Language::LabelsCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
-	}};
+			expect(executionResult) == 42uz;
+		};
+	};
 	*/
 }

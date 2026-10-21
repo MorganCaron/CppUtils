@@ -3,21 +3,27 @@ module;
 #include <CppUtils/System/OS.hpp>
 
 #if defined(OS_LINUX)
+#	include <cerrno>
 #	include <unistd.h>
 #	include <fcntl.h> // For O_* macros
+#	include <poll.h>
 #endif
 
 export module CppUtils.System.Pipe;
 
 import std;
+import CppUtils.Chrono.Concept;
 import CppUtils.System.Error;
 import CppUtils.System.FileDescriptor;
+import CppUtils.Type.Concept;
 
 export namespace CppUtils::System
 {
 #if defined(OS_LINUX)
+	/// @brief Low-level RAII pair of non-blocking pipe file descriptors.
 	struct Pipe final
 	{
+		/// @brief Constructs a non-blocking UNIX pipe pair via pipe2(O_NONBLOCK).
 		inline Pipe()
 		{
 			auto pipeFileDescriptors = std::array<int, 2>{};
@@ -28,8 +34,205 @@ export namespace CppUtils::System
 			write = pipeFileDescriptors[1];
 		}
 
-		FileDescriptor read;
-		FileDescriptor write;
+		FileDescriptor read; ///< Reading end file descriptor.
+		FileDescriptor write; ///< Writing end file descriptor.
+	};
+
+	/// @brief High-level RAII unidirectional anonymous IPC pipe channel with typed operations and timeout polling.
+	class PipeChannel final
+	{
+	public:
+		/**
+		 * @brief Constructs an IPC pipe channel with close-on-exec (O_CLOEXEC) semantics.
+		 * @param nonBlocking When true, sets O_NONBLOCK on both descriptor ends.
+		 */
+		explicit inline PipeChannel(bool nonBlocking = false)
+		{
+			auto descriptors = std::array<int, 2>{-1, -1};
+			const auto flags = O_CLOEXEC | (nonBlocking ? O_NONBLOCK : 0);
+			throwErrno(::pipe2(std::ranges::data(descriptors), flags), "Failed to create IPC pipe channel");
+			m_read = FileDescriptor{descriptors[0]};
+			m_write = FileDescriptor{descriptors[1]};
+		}
+
+		PipeChannel(const PipeChannel&) = delete;
+		PipeChannel& operator=(const PipeChannel&) = delete;
+		PipeChannel(PipeChannel&&) noexcept = default;
+		PipeChannel& operator=(PipeChannel&&) noexcept = default;
+
+		inline ~PipeChannel() = default;
+
+		/// @brief Closes the read end of the pipe channel.
+		inline auto closeRead() -> void
+		{
+			m_read.close();
+		}
+
+		/// @brief Closes the write end of the pipe channel.
+		inline auto closeWrite() -> void
+		{
+			m_write.close();
+		}
+
+		/// @brief Returns the raw file descriptor for the read end, or -1 if closed.
+		[[nodiscard]] inline auto readDescriptor() const noexcept -> int
+		{
+			return m_read.get();
+		}
+
+		/// @brief Returns the raw file descriptor for the write end, or -1 if closed.
+		[[nodiscard]] inline auto writeDescriptor() const noexcept -> int
+		{
+			return m_write.get();
+		}
+
+		/**
+		 * @brief Writes a contiguous byte span into the channel.
+		 * @param bytes Data bytes to transmit.
+		 * @return Total number of bytes written, or 0 if descriptor is closed.
+		 */
+		inline auto write(std::span<const std::byte> bytes) -> std::size_t
+		{
+			if (m_write.get() < 0 or std::ranges::empty(bytes))
+				return 0uz;
+
+			auto totalWritten = 0uz;
+			for (; totalWritten < std::ranges::size(bytes);)
+			{
+				const auto result = ::write(m_write.get(), std::ranges::data(bytes) + totalWritten, std::ranges::size(bytes) - totalWritten);
+				if (result < 0)
+				{
+					if (errno == EINTR)
+						continue;
+					throwErrno(static_cast<int>(result), "Failed to write to pipe channel");
+				}
+				totalWritten += static_cast<std::size_t>(result);
+			}
+			return totalWritten;
+		}
+
+		/**
+		 * @brief Writes a text string into the channel.
+		 * @param text Character string view to transmit.
+		 * @return Total number of bytes written.
+		 */
+		inline auto write(std::string_view text) -> std::size_t
+		{
+			return write(std::as_bytes(std::span{text}));
+		}
+
+		/**
+		 * @brief Writes a trivially copyable object directly into the channel.
+		 * @param value Object reference to serialize as raw memory bytes.
+		 */
+		inline auto writeObject(const Type::TriviallyCopyable auto& value) -> void
+		{
+			const auto bytes = std::as_bytes(std::span{std::addressof(value), 1});
+			write(bytes);
+		}
+
+		/**
+		 * @brief Reads up to buffer.size() bytes from the channel into the provided buffer.
+		 * @param buffer Writable destination byte buffer.
+		 * @return Number of bytes read (0 when the write end is closed or on end-of-stream).
+		 */
+		inline auto read(std::span<std::byte> buffer) -> std::size_t
+		{
+			if (m_read.get() < 0 or std::ranges::empty(buffer))
+				return 0uz;
+
+			while (true)
+			{
+				const auto result = ::read(m_read.get(), std::ranges::data(buffer), std::ranges::size(buffer));
+				if (result < 0)
+				{
+					if (errno == EINTR)
+						continue;
+					throwErrno(static_cast<int>(result), "Failed to read from pipe channel");
+				}
+				return static_cast<std::size_t>(result);
+			}
+		}
+
+		/**
+		 * @brief Reads a complete trivially copyable object from the channel.
+		 * @param value Destination object reference populated from raw bytes.
+		 * @return True if the complete object was read; false on premature EOF.
+		 */
+		inline auto readObject(Type::TriviallyCopyable auto& value) -> bool
+		{
+			auto buffer = std::as_writable_bytes(std::span{std::addressof(value), 1});
+			for (auto totalRead = 0uz; totalRead < std::ranges::size(buffer);)
+			{
+				const auto bytes = read(buffer.subspan(totalRead));
+				if (bytes == 0)
+					return false;
+				totalRead += bytes;
+			}
+			return true;
+		}
+
+		/**
+		 * @brief Reads all remaining bytes from the channel until end-of-file.
+		 * @return Complete string containing all received bytes.
+		 */
+		[[nodiscard]] inline auto readAll() -> std::string
+		{
+			auto result = std::string{};
+			auto buffer = std::array<char, 4096>{};
+			while (true)
+			{
+				const auto bytesRead = ::read(m_read.get(), std::ranges::data(buffer), std::ranges::size(buffer));
+				if (bytesRead < 0)
+				{
+					if (errno == EINTR)
+						continue;
+					break;
+				}
+				if (bytesRead == 0)
+					break;
+				result.append(std::ranges::data(buffer), static_cast<std::size_t>(bytesRead));
+			}
+			return result;
+		}
+
+		/**
+		 * @brief Waits for incoming data or pipe hangup until the specified timeout expires.
+		 * @param timeout Maximum duration to wait.
+		 * @return True if data is available or hangup occurred; false on timeout or error.
+		 */
+		[[nodiscard]] inline auto waitForData(Chrono::Duration auto timeout) const -> bool
+		{
+			if (m_read.get() < 0)
+				return false;
+
+			const auto deadline = std::chrono::steady_clock::now() + timeout;
+			auto pollDescriptor = pollfd{
+				.fd = m_read.get(),
+				.events = POLLIN | POLLHUP | POLLERR,
+				.revents = 0};
+
+			while (true)
+			{
+				const auto now = std::chrono::steady_clock::now();
+				if (now >= deadline)
+					return false;
+
+				const auto remainingMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now);
+				const auto timeoutMilliseconds = std::max(1L, static_cast<long>(remainingMilliseconds.count()));
+
+				const auto pollResult = ::poll(std::addressof(pollDescriptor), 1, static_cast<int>(timeoutMilliseconds));
+				if (pollResult > 0)
+					return (pollDescriptor.revents & (POLLIN | POLLHUP | POLLERR)) != 0;
+				if (pollResult < 0 and errno == EINTR)
+					continue;
+				return false;
+			}
+		}
+
+	private:
+		FileDescriptor m_read;
+		FileDescriptor m_write;
 	};
 #endif
 }

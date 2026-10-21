@@ -1,0 +1,396 @@
+module;
+
+#include <CppUtils/System/OS.hpp>
+
+#include <csignal>
+
+#if defined(OS_LINUX) or defined(OS_MACOS)
+#	include <sys/types.h>
+#	include <sys/wait.h>
+#	include <unistd.h>
+#endif
+
+export module CppUtils.System.Process;
+
+import std;
+
+#if defined(OS_LINUX) or defined(OS_MACOS)
+import CppUtils.System.Error;
+#endif
+
+export namespace CppUtils::System
+{
+#if defined(OS_LINUX) or defined(OS_MACOS)
+	using ProcessId = pid_t;
+#endif
+
+#if defined(OS_LINUX) or defined(OS_MACOS)
+	/**
+	 * @brief Strongly-typed enumeration representing process signals across POSIX and non-POSIX platforms.
+	 *
+	 * Under POSIX systems (Linux, macOS), enumerators map directly to system macros provided by `<csignal>`.
+	 *
+	 * Under non-POSIX systems (such as Windows), the C Runtime only defines ISO C signals (`SIGABRT`, `SIGFPE`,
+	 * `SIGILL`, `SIGINT`, `SIGSEGV`, `SIGTERM`). Standard POSIX values (IEEE Std 1003.1 / Linux x86-64 ABI)
+	 * are provided as fallback constants to guarantee compile-time compatibility with cross-platform test
+	 * runners, event watchers, and matchers without requiring platform-specific `#ifdef` guards at call sites.
+	 *
+	 * @see https://manpages.debian.org/signal.7 (Linux manual: signal(7))
+	 * @see https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/signal.h.html (POSIX.1-2017: signal.h)
+	 * @see https://learn.microsoft.com/en-us/cpp/c-runtime-library/signal-constants (Microsoft Learn: Signal Constants)
+	 */
+	enum class Signal : int
+	{
+		Abort = SIGABRT,
+		Alarm = SIGALRM,
+		Bus = SIGBUS,
+		Child = SIGCHLD,
+		Continue = SIGCONT,
+#	ifdef SIGEMT
+		EmulatorTrap = SIGEMT,
+#	endif
+		FloatingPointException = SIGFPE,
+		Hangup = SIGHUP,
+		IllegalInstruction = SIGILL,
+		Interrupt = SIGINT,
+		Io = SIGIO,
+		Kill = SIGKILL,
+#	ifdef SIGLOST
+		Lost = SIGLOST,
+#	endif
+		Pipe = SIGPIPE,
+		ProfilingTimer = SIGPROF,
+#	ifdef SIGPWR
+		PowerFailure = SIGPWR,
+#	endif
+		Quit = SIGQUIT,
+		SegmentationFault = SIGSEGV,
+#	ifdef SIGSTKFLT
+		StackFault = SIGSTKFLT,
+#	endif
+		Stop = SIGSTOP,
+		System = SIGSYS,
+		Terminate = SIGTERM,
+		Trap = SIGTRAP,
+		TerminalStop = SIGTSTP,
+		TerminalInput = SIGTTIN,
+		TerminalOutput = SIGTTOU,
+		Urgent = SIGURG,
+		User1 = SIGUSR1,
+		User2 = SIGUSR2,
+		VirtualAlarm = SIGVTALRM,
+		WindowChange = SIGWINCH,
+		CpuTimeLimit = SIGXCPU,
+		FileSizeLimit = SIGXFSZ
+	};
+#else
+	/*
+		Fallback Signal enumeration for non-POSIX platforms (such as Windows).
+		Follows the official IEEE Std 1003.1 (POSIX.1) standard signal table (signals 1 to 31).
+	 */
+	enum class Signal : int
+	{
+		Abort = SIGABRT_COMPAT, // POSIX standard (6); avoids collision with TerminalOutput (22) because MSVC SIGABRT is 22
+		Alarm = 14,
+		Bus = 7,
+		Child = 17,
+		Continue = 18,
+		FloatingPointException = SIGFPE,
+		Hangup = 1,
+		IllegalInstruction = SIGILL,
+		Interrupt = SIGINT,
+		Io = 29,
+		Kill = 9,
+		Pipe = 13,
+		ProfilingTimer = 27,
+		Quit = 3,
+		SegmentationFault = SIGSEGV,
+		Stop = 19,
+		System = 31,
+		Terminate = SIGTERM,
+		Trap = 5,
+		TerminalStop = 20,
+		TerminalInput = 21,
+		TerminalOutput = 22, // POSIX standard SIGTTOU (22)
+		Urgent = 23,
+		User1 = 10,
+		User2 = 12,
+		VirtualAlarm = 26,
+		WindowChange = 28,
+		CpuTimeLimit = 24,
+		FileSizeLimit = 25
+	};
+#endif
+
+	/**
+	 * @brief Returns the symbolic name of a typed Signal.
+	 *
+	 * @param signal Strongly-typed signal enumerator.
+	 * @return String view of the signal name (e.g. "SIGSEGV", "SIGKILL"), or "Unknown".
+	 *
+	 * @see https://manpages.debian.org/signal.7 (Linux manual: signal(7))
+	 * @see https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/signal.h.html (POSIX.1-2017: signal.h)
+	 */
+	[[nodiscard]] constexpr auto signalToString(Signal signal) noexcept -> std::string_view
+	{
+		switch (signal)
+		{
+		case Signal::Abort: return "SIGABRT";
+		case Signal::Alarm: return "SIGALRM";
+		case Signal::Bus: return "SIGBUS";
+		case Signal::Child: return "SIGCHLD";
+		case Signal::Continue: return "SIGCONT";
+#ifdef SIGEMT
+		case Signal::EmulatorTrap: return "SIGEMT";
+#endif
+		case Signal::FloatingPointException: return "SIGFPE";
+		case Signal::Hangup: return "SIGHUP";
+		case Signal::IllegalInstruction: return "SIGILL";
+		case Signal::Interrupt: return "SIGINT";
+		case Signal::Io: return "SIGIO";
+		case Signal::Kill: return "SIGKILL";
+#ifdef SIGLOST
+		case Signal::Lost: return "SIGLOST";
+#endif
+		case Signal::Pipe: return "SIGPIPE";
+		case Signal::ProfilingTimer: return "SIGPROF";
+#ifdef SIGPWR
+		case Signal::PowerFailure: return "SIGPWR";
+#endif
+		case Signal::Quit: return "SIGQUIT";
+		case Signal::SegmentationFault: return "SIGSEGV";
+#ifdef SIGSTKFLT
+		case Signal::StackFault: return "SIGSTKFLT";
+#endif
+		case Signal::Stop: return "SIGSTOP";
+		case Signal::System: return "SIGSYS";
+		case Signal::Terminate: return "SIGTERM";
+		case Signal::Trap: return "SIGTRAP";
+		case Signal::TerminalStop: return "SIGTSTP";
+		case Signal::TerminalInput: return "SIGTTIN";
+		case Signal::TerminalOutput: return "SIGTTOU";
+		case Signal::Urgent: return "SIGURG";
+		case Signal::User1: return "SIGUSR1";
+		case Signal::User2: return "SIGUSR2";
+		case Signal::VirtualAlarm: return "SIGVTALRM";
+		case Signal::WindowChange: return "SIGWINCH";
+		case Signal::CpuTimeLimit: return "SIGXCPU";
+		case Signal::FileSizeLimit: return "SIGXFSZ";
+		default: return "Unknown";
+		}
+	}
+
+	/**
+	 * @brief Returns a human-readable diagnostic explanation for a termination signal.
+	 * @param signal Strongly-typed signal enumerator.
+	 * @return Detailed explanation of the signal's probable cause, or empty string view if unknown.
+	 *
+	 * @see https://manpages.debian.org/signal.7 (Linux manual: signal(7))
+	 */
+	[[nodiscard]] constexpr auto signalToExplanation(Signal signal) noexcept -> std::string_view
+	{
+		switch (signal)
+		{
+		case Signal::Abort: return "Abnormal termination (failed assertion, std::abort, unhandled exception)";
+		case Signal::Alarm: return "Alarm clock (process watchdog or test timeout expired)";
+		case Signal::Bus: return "Bus error (unaligned memory access, truncated mapped file)";
+		case Signal::Child: return "Child status changed (stopped, continued, or exited)";
+		case Signal::Continue: return "Continue execution if stopped";
+#ifdef SIGEMT
+		case Signal::EmulatorTrap: return "Emulator trap (hardware emulation trap)";
+#endif
+		case Signal::FloatingPointException: return "Arithmetic exception (integer division/modulo by zero, arithmetic overflow)";
+		case Signal::Hangup: return "Hangup detected on controlling terminal or death of controlling process";
+		case Signal::IllegalInstruction: return "Illegal instruction (corrupted instruction pointer, compiler trap)";
+		case Signal::Interrupt: return "Terminal interrupt (interactive attention, Ctrl+C)";
+		case Signal::Io: return "I/O possible (asynchronous I/O event)";
+		case Signal::Kill: return "Killed (unconditional termination, OOM killer, kill -9)";
+#ifdef SIGLOST
+		case Signal::Lost: return "Resource or file lock lost";
+#endif
+		case Signal::Pipe: return "Broken pipe (attempt to write to a pipe or socket with no readers)";
+		case Signal::ProfilingTimer: return "Profiling timer expired";
+#ifdef SIGPWR
+		case Signal::PowerFailure: return "Power failure restart";
+#endif
+		case Signal::Quit: return "Terminal quit (quit request from keyboard with core dump)";
+		case Signal::SegmentationFault: return "Segmentation fault (invalid memory access, null pointer dereference)";
+#ifdef SIGSTKFLT
+		case Signal::StackFault: return "Stack fault on coprocessor";
+#endif
+		case Signal::Stop: return "Stop process execution (cannot be caught or ignored)";
+		case Signal::System: return "Bad system call (invalid syscall number or seccomp filter violation)";
+		case Signal::Terminate: return "Termination request (graceful termination signal, external kill)";
+		case Signal::Trap: return "Trace/breakpoint trap";
+		case Signal::TerminalStop: return "Terminal stop signal (interactive suspend, Ctrl+Z)";
+		case Signal::TerminalInput: return "Terminal input for background process";
+		case Signal::TerminalOutput: return "Terminal output for background process";
+		case Signal::Urgent: return "Urgent or out-of-band data on socket";
+		case Signal::User1: return "User-defined signal 1";
+		case Signal::User2: return "User-defined signal 2";
+		case Signal::VirtualAlarm: return "Virtual timer expired";
+		case Signal::WindowChange: return "Window size change";
+		case Signal::CpuTimeLimit: return "CPU time limit exceeded (resource limit exceeded)";
+		case Signal::FileSizeLimit: return "File size limit exceeded";
+		default: return "";
+		}
+	}
+
+	/**
+	 * @brief Encapsulates the execution status of a child process.
+	 *
+	 * Wraps the POSIX wait status integer and provides friendly inspection methods
+	 * for exit codes, abnormal termination signals, and detailed diagnostic causes.
+	 */
+#if defined(OS_LINUX) or defined(OS_MACOS)
+	class ProcessStatus final
+	{
+	public:
+		/**
+		 * @brief Constructs a ProcessStatus from a raw POSIX wait status integer.
+		 * @param rawStatus Integer returned by waitpid / wait.
+		 */
+		constexpr explicit ProcessStatus(int rawStatus = 0) noexcept:
+			m_status{rawStatus}
+		{}
+
+		/**
+		 * @brief Returns the raw POSIX status code.
+		 * @return Raw status integer.
+		 */
+		[[nodiscard]] constexpr auto raw() const noexcept -> int
+		{
+			return m_status;
+		}
+
+		/**
+		 * @brief Checks if the process terminated normally via exit() or returning from main().
+		 * @return True if the process exited normally.
+		 */
+		[[nodiscard]] constexpr auto isExited() const noexcept -> bool
+		{
+			return WIFEXITED(m_status);
+		}
+
+		/**
+		 * @brief Returns the exit code of the process if it terminated normally.
+		 * @return Exit status integer (0-255).
+		 */
+		[[nodiscard]] constexpr auto getExitCode() const noexcept -> int
+		{
+			return WEXITSTATUS(m_status);
+		}
+
+		/**
+		 * @brief Checks if the process was terminated by an unhandled signal.
+		 * @return True if the process was terminated by a signal.
+		 */
+		[[nodiscard]] constexpr auto isSignaled() const noexcept -> bool
+		{
+			return WIFSIGNALED(m_status);
+		}
+
+		/**
+		 * @brief Returns the signal that caused the process to terminate.
+		 * @return Strongly-typed Signal enumerator.
+		 */
+		[[nodiscard]] constexpr auto getTerminalSignal() const noexcept -> std::optional<Signal>
+		{
+			if (not isSignaled())
+				return std::nullopt;
+#	if defined(_WIN32)
+			return std::nullopt;
+#	else
+			return static_cast<Signal>(WTERMSIG(m_status));
+#	endif
+		}
+
+		/**
+		 * @brief Checks if the process generated a core dump upon abnormal termination.
+		 * @return True if a core dump was produced.
+		 */
+		[[nodiscard]] constexpr auto isCoreDumped() const noexcept -> bool
+		{
+#	if defined(WCOREDUMP)
+			return WCOREDUMP(m_status);
+#	else
+			return false;
+#	endif
+		}
+
+		/**
+		 * @brief Returns the symbolic name of the termination signal if signaled.
+		 * @return Signal name (e.g. "SIGSEGV"), or empty string view if not signaled.
+		 */
+		[[nodiscard]] constexpr auto getTerminalSignalName() const noexcept -> std::string_view
+		{
+			using namespace std::literals;
+
+			const auto signal = getTerminalSignal();
+			return signal.has_value() ? signalToString(signal.value()) : ""sv;
+		}
+
+		/**
+		 * @brief Returns a diagnostic explanation of the termination signal if signaled.
+		 * @return Signal explanation, or empty string view if not signaled or unknown.
+		 */
+		[[nodiscard]] constexpr auto getTerminalSignalExplanation() const noexcept -> std::string_view
+		{
+			using namespace std::literals;
+
+			const auto signal = getTerminalSignal();
+			return signal.has_value() ? signalToExplanation(signal.value()) : ""sv;
+		}
+
+		/**
+		 * @brief Formats a comprehensive diagnostic string describing the terminating signal.
+		 * @return Formatted string such as "SIGSEGV (11) : Segmentation fault (...)", or empty string if not signaled.
+		 */
+		[[nodiscard]] inline auto getSignalDescription() const -> std::string
+		{
+			const auto signal = getTerminalSignal();
+			if (not signal.has_value())
+				return {};
+
+			const auto signalNumber = static_cast<int>(signal.value());
+			const auto signalName = signalToString(signal.value());
+			const auto signalExplanation = signalToExplanation(signal.value());
+
+			if (std::ranges::empty(signalExplanation))
+				return std::format("{} ({})", signalName, signalNumber);
+
+			return std::format("{} ({}) : {}", signalName, signalNumber, signalExplanation);
+		}
+
+	private:
+		int m_status = 0;
+	};
+
+	/// @brief Creates a new child process via fork().
+	[[nodiscard]] inline auto fork() -> ProcessId
+	{
+		std::fflush(nullptr);
+		return ::fork();
+	}
+
+	/// @brief Sends a signal to a process using kill().
+	inline auto kill(ProcessId processIdentifier, Signal signal = Signal::Kill) -> void
+	{
+		::kill(processIdentifier, static_cast<int>(signal));
+	}
+
+	/// @brief Waits for state changes in a child process via waitpid().
+	inline auto wait(ProcessId processIdentifier, int options = 0) -> ProcessStatus
+	{
+		auto status = 0;
+		::waitpid(processIdentifier, std::addressof(status), options);
+		return static_cast<ProcessStatus>(status);
+	}
+
+	/// @brief Terminates the calling process immediately without calling atexit or global destructors.
+	[[noreturn]] inline auto quickExit(int exitCode = 0) noexcept -> void
+	{
+		::_exit(exitCode);
+	}
+#endif
+}

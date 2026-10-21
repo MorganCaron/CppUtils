@@ -1,0 +1,597 @@
+export module CppUtils.UnitTest.Runner;
+
+import std;
+import CppUtils.Chrono;
+import CppUtils.Container;
+import CppUtils.Logger;
+import CppUtils.Log.Config.UnitTests;
+import CppUtils.System;
+import CppUtils.Terminal;
+import CppUtils.UnitTest.Report;
+import CppUtils.UnitTest.JUnitFormatter;
+
+export namespace CppUtils::UnitTest
+{
+	// Workaround on Windows (MSVC ABI)
+	// https://github.com/llvm/llvm-project/issues/221609
+#if defined(_WIN32)
+	/**
+	 * @brief Exception thrown upon test assertion failure.
+	 * @note Raised internally by assertions (such as TestSuite::expect()) and caught by the test runner. Not intended to be instantiated or caught directly by users.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#écrire-des-assertions (Écrire des assertions)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#writing-assertions (Writing assertions)
+	 */
+	class TestException final: public std::exception
+	{
+	public:
+		/**
+		 * @brief Constructs a TestException with a diagnostic failure message.
+		 * @param message Diagnostic failure description.
+		 */
+		explicit inline TestException(std::string message):
+			m_message{std::move(message)}
+		{}
+
+		[[nodiscard]] inline auto what() const noexcept -> const char* final
+		{
+			return m_message.c_str();
+		}
+
+	private:
+		std::string m_message;
+	};
+
+	/**
+	 * @brief Exception thrown when a test execution is skipped via skip() or skipIf().
+	 * @note Raised internally by TestSuite::skip() and TestSuite::skipIf() to signal test skipping to the test runner. Not intended to be instantiated or caught directly by users.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#ignorer-délibérément-un-test--skip-et-skipif (Ignorer un test)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#deliberately-skipping-a-test-skip-and-skipif (Skipping a test)
+	 */
+	class TestSkipped final: public std::exception
+	{
+	public:
+		/**
+		 * @brief Constructs a TestSkipped exception with justification and location.
+		 * @param message Justification for skipping the test.
+		 * @param location Source location used for skip reporting (automatically captured).
+		 */
+		explicit inline TestSkipped(std::string message, std::source_location location = std::source_location::current()):
+			m_message{std::format("{} (at {}:{})", message, location.file_name(), location.line())}
+		{}
+
+		[[nodiscard]] inline auto what() const noexcept -> const char* final
+		{
+			return m_message.c_str();
+		}
+
+	private:
+		std::string m_message;
+	};
+#else
+	/**
+	 * @brief Exception thrown upon test assertion failure.
+	 * @note Raised internally by assertions (such as TestSuite::expect()) and caught by the test runner. Not intended to be instantiated or caught directly by users.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#écrire-des-assertions (Écrire des assertions)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#writing-assertions (Writing assertions)
+	 */
+	class TestException final: public std::runtime_error
+	{
+	public:
+		/**
+		 * @brief Constructs a TestException with a diagnostic failure message.
+		 * @param message Diagnostic failure description.
+		 */
+		explicit inline TestException(const std::string& message):
+			std::runtime_error{message}
+		{}
+	};
+
+	/**
+	 * @brief Exception thrown when a test execution is skipped via skip() or skipIf().
+	 * @note Raised internally by TestSuite::skip() and TestSuite::skipIf() to signal test skipping to the test runner. Not intended to be instantiated or caught directly by users.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#ignorer-délibérément-un-test--skip-et-skipif (Ignorer un test)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#deliberately-skipping-a-test-skip-and-skipif (Skipping a test)
+	 */
+	class TestSkipped final: public std::runtime_error
+	{
+	public:
+		/**
+		 * @brief Constructs a TestSkipped exception with justification and location.
+		 * @param message Justification for skipping the test.
+		 * @param location Source location used for skip reporting (automatically captured).
+		 */
+		explicit inline TestSkipped(const std::string& message, std::source_location location = std::source_location::current()):
+			std::runtime_error{std::format("{} (at {}:{})", message, location.file_name(), location.line())}
+		{}
+	};
+#endif
+
+	/**
+	 * @brief Configuration parameters controlling test discovery, filtering, and execution reporting.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#options-de-configuration-cpputilsunittesttestsettings (Guide des tests unitaires)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#configuration-options-cpputilsunittesttestsettings (Unit test guide)
+	 */
+	struct TestSettings final
+	{
+		bool verbose = true; ///< Enables standard test execution logging.
+		bool detail = true; ///< Enables detailed execution progress logging and formatting (separators, durations, comparisons).
+		bool chrono = false; ///< Displays execution durations for individual tests.
+		bool failFast = false; ///< Immediately stops execution upon the first failing test.
+		std::string filter = {}; ///< Substring filter for matching test suite names.
+		std::string report = {}; ///< Destination path or format:path for test report export (e.g. junit:build/report.xml).
+		bool abort = false; ///< Skips test execution (e.g. after displaying --help).
+	};
+
+	/**
+	 * @brief Internal representation of an individual executable test case within a suite.
+	 * @note Managed internally by TestSuite and TestRunner. Not intended to be instantiated directly by users.
+	 */
+	struct TestCase final
+	{
+		std::string name; ///< Descriptive name identifying this test case.
+		std::function<void(std::stop_token)> function; ///< Callable test routine invoked during execution with a cooperative stop token.
+		std::chrono::seconds timeout = std::chrono::seconds{10}; ///< Maximum allowable execution duration before the watchdog timer terminates the test.
+	};
+
+	/**
+	 * @brief Record of a test case intentionally skipped during suite registration or execution.
+	 * @note Recorded internally by TestSuite and TestRunner when tests are skipped. Not intended to be instantiated directly by users.
+	 */
+	struct SkippedTest final
+	{
+		std::string name; ///< Name of the skipped test case.
+		std::string message; ///< Explanatory reason or requirement justifying why the test was skipped.
+	};
+
+	/**
+	 * @brief Central test suite registry and execution engine.
+	 * @note Managed internally by the test framework. Not intended to be instantiated directly by users.
+	 */
+	class TestRunner final
+	{
+		using Logger = Logger<"UnitTests">;
+
+	public:
+		/**
+		 * @brief Registers a test suite with the given name and test cases.
+		 * @param name Unique name of the test suite.
+		 * @param tests Collection of test cases belonging to this suite.
+		 */
+		inline auto addTestSuite(const std::string& name, std::vector<TestCase> tests) -> void
+		{
+			m_testSuites.insert(name, std::move(tests));
+		}
+
+		/**
+		 * @brief Registers a test suite with explicit prerequisite dependencies.
+		 * @param name Unique name of the test suite.
+		 * @param prerequisites List of test suite names that must succeed before this suite runs.
+		 * @param tests Collection of test cases belonging to this suite.
+		 */
+		inline auto addTestSuite(const std::string& name, std::vector<std::string> prerequisites, std::vector<TestCase> tests) -> void
+		{
+			addTestSuite(name, tests);
+			for (const auto& prerequisite : prerequisites)
+				m_testSuites.addDependency(name, prerequisite);
+		}
+
+		/**
+		 * @brief Internal result structure containing the execution outcome and diagnostic message of a test case.
+		 * @note Managed internally by TestRunner. Not intended to be instantiated directly by users.
+		 */
+		struct TestExecutionResult final
+		{
+			TestStatus status = TestStatus::Success; ///< Execution status outcome.
+			std::string message = {}; ///< Diagnostic message or skip reason.
+			std::chrono::nanoseconds duration = {}; ///< Measured test execution duration.
+		};
+
+		/**
+		 * @brief Executes an individual test case in an isolated child process or worker thread.
+		 * @param suiteName Name of the enclosing test suite.
+		 * @param test Test case to run.
+		 * @param settings Execution settings controlling timeouts and logging verbosity.
+		 * @return Result outcome and diagnostics.
+		 */
+		inline auto executeTest(std::string_view suiteName, const TestCase& test, const TestSettings& settings) const -> TestExecutionResult
+		{
+			using namespace std::chrono_literals;
+
+			const auto fullTestName = std::format("{}/{}", suiteName, test.name);
+
+			if (settings.verbose)
+			{
+				Logger::emit<"separator">();
+				Logger::print<"detail">("{}:", fullTestName);
+			}
+			Logger::waitUntilFinished(10s);
+
+			const auto testStartTime = std::chrono::steady_clock::now();
+			auto makeResult = [&](TestStatus status, std::string message = {}) -> TestExecutionResult {
+				const auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - testStartTime);
+				if (settings.verbose and settings.chrono)
+					Logger::print<"detail">("Test duration: {}", Chrono::durationToString(duration));
+				Logger::waitUntilFinished(10s);
+				return {
+					.status = status,
+					.message = std::move(message),
+					.duration = duration};
+			};
+
+			// Workaround on Windows (MSVC ABI)
+			// https://github.com/llvm/llvm-project/issues/221609
+#if not defined(__linux__)
+			auto promise = std::promise<TestExecutionResult>{};
+			auto future = promise.get_future();
+
+			auto worker = std::jthread{[promise = std::move(promise), function = test.function, testName = fullTestName](std::stop_token stopToken) mutable {
+				try
+				{
+					function(stopToken);
+					promise.set_value({TestStatus::Success, ""});
+				}
+				catch (const TestSkipped& skipped)
+				{
+					promise.set_value({TestStatus::Skipped, skipped.what()});
+				}
+				catch (const TestException& exception)
+				{
+					promise.set_value({TestStatus::Failure, std::format("The following test didn't pass:\n{}\n  {}", testName, exception.what())});
+				}
+				catch (const std::exception& exception)
+				{
+					promise.set_value({TestStatus::Failure, std::format("An exception occurred during the test:\n{}\n  {}", testName, exception.what())});
+				}
+				catch (...)
+				{
+					promise.set_value({TestStatus::Failure, std::format("An unknown exception occurred during the test: {}", testName)});
+				}
+			}};
+
+			if (future.wait_for(test.timeout) == std::future_status::timeout)
+			{
+				worker.request_stop();
+				worker.detach();
+				const auto timeoutMessage = std::format("The following test timed out after {}s:\n{}", test.timeout.count(), fullTestName);
+				Logger::print<"error">("{}", timeoutMessage);
+				return makeResult(TestStatus::Failure, timeoutMessage);
+			}
+
+			const auto result = future.get();
+			if (result.status == TestStatus::Skipped)
+			{
+				if (settings.verbose)
+					Logger::print<"warning">("Skipped: {}", result.message);
+				return makeResult(TestStatus::Skipped, result.message);
+			}
+			if (result.status == TestStatus::Failure)
+			{
+				Logger::print<"error">("{}", result.message);
+				return makeResult(TestStatus::Failure, result.message);
+			}
+#else
+			enum class ProcessResultType : std::uint8_t
+			{
+				Success = 0,
+				Skipped = 1,
+				Failure = 2
+			};
+
+			auto channel = System::PipeChannel{};
+			const auto processIdentifier = System::fork();
+			if (processIdentifier < 0)
+			{
+				Logger::print<"error">("Failed to fork process for test: {}", fullTestName);
+				return makeResult(TestStatus::Failure, "fork() failed");
+			}
+
+			if (processIdentifier == 0)
+			{
+				channel.closeRead();
+				Logger::reset();
+
+				auto writeResult = [&](ProcessResultType resultType, std::string_view message) {
+					channel.writeObject(resultType);
+					const auto messageLength = static_cast<std::uint32_t>(std::ranges::size(message));
+					channel.writeObject(messageLength);
+					if (messageLength > 0)
+						channel.write(message);
+				};
+
+				auto resultType = ProcessResultType::Success;
+				auto resultMessage = std::string{};
+
+				try
+				{
+					test.function(std::stop_token{});
+				}
+				catch (const TestSkipped& skipped)
+				{
+					resultType = ProcessResultType::Skipped;
+					resultMessage = skipped.what();
+				}
+				catch (const TestException& exception)
+				{
+					resultType = ProcessResultType::Failure;
+					resultMessage = std::format("The following test didn't pass:\n{}\n  {}", fullTestName, exception.what());
+				}
+				catch (const std::exception& exception)
+				{
+					resultType = ProcessResultType::Failure;
+					resultMessage = std::format("An exception occurred during the test:\n{}\n  {}", fullTestName, exception.what());
+				}
+				catch (...)
+				{
+					resultType = ProcessResultType::Failure;
+					resultMessage = std::format("An unknown exception occurred during the test: {}", fullTestName);
+				}
+
+				Logger::waitUntilFinished(1s);
+				writeResult(resultType, resultMessage);
+				channel.closeWrite();
+				System::quickExit(0);
+			}
+
+			channel.closeWrite();
+
+			if (not channel.waitForData(std::chrono::duration_cast<std::chrono::milliseconds>(test.timeout)))
+			{
+				System::kill(processIdentifier, System::Signal::Kill);
+				auto _ = System::wait(processIdentifier);
+				channel.closeRead();
+				const auto timeoutMessage = std::format("The following test timed out after {}s:\n{}", test.timeout.count(), fullTestName);
+				Logger::print<"error">("{}", timeoutMessage);
+				return makeResult(TestStatus::Failure, timeoutMessage);
+			}
+
+			if (const auto processStatus = System::wait(processIdentifier);
+				processStatus.isSignaled())
+			{
+				channel.closeRead();
+				const auto signalDescription = processStatus.getSignalDescription();
+				const auto crashMessage = std::format("The following test crashed:\n{}\n  Terminated by {}", fullTestName, signalDescription);
+				Logger::print<"error">("{}", crashMessage);
+				return makeResult(TestStatus::Failure, crashMessage);
+			}
+
+			auto resultType = ProcessResultType::Failure;
+			auto messageLength = std::uint32_t{0};
+			auto message = std::string{};
+
+			if (channel.readObject(resultType) and channel.readObject(messageLength))
+			{
+				if (messageLength > 0)
+				{
+					message.resize(messageLength);
+					for (auto totalRead = 0uz; totalRead < messageLength;)
+					{
+						const auto bytesRead = channel.read(std::as_writable_bytes(std::span{std::ranges::data(message) + totalRead, messageLength - totalRead}));
+						if (bytesRead == 0)
+							break;
+						totalRead += bytesRead;
+					}
+				}
+			}
+			channel.closeRead();
+
+			if (resultType == ProcessResultType::Skipped)
+			{
+				if (settings.verbose)
+					Logger::print<"warning">("Skipped: {}", message);
+				return makeResult(TestStatus::Skipped, message);
+			}
+
+			if (resultType == ProcessResultType::Failure)
+			{
+				Logger::print<"error">("{}", message);
+				return makeResult(TestStatus::Failure, message);
+			}
+#endif
+			if (settings.verbose)
+				Logger::print<"success">("Passed");
+			return makeResult(TestStatus::Success, "");
+		}
+
+		/**
+		 * @brief Executes all registered test suites respecting dependency order and configuration settings.
+		 * @param settings Execution settings controlling verbose output, filtering, and abort conditions.
+		 * @return Exit code: 0 on success, non-zero if any test suite failed.
+		 */
+		inline auto executeTests(TestSettings settings) -> int
+		{
+			using namespace std::chrono_literals;
+
+			if (settings.abort)
+				return exitSuccess;
+
+			const auto totalExecutionStartTime = std::chrono::steady_clock::now();
+			auto testSuiteIsSuccess = std::unordered_map<std::string, bool>{};
+
+			auto activeSuites = std::unordered_set<std::string>{};
+			if (not std::ranges::empty(settings.filter))
+			{
+				for (const auto& [suiteName, node] : m_testSuites.nodes)
+					if (suiteName.contains(settings.filter))
+					{
+						activeSuites.insert(suiteName);
+						for (auto toVisit = std::vector<std::string>{std::ranges::begin(node.dependencies), std::ranges::end(node.dependencies)};
+							not std::ranges::empty(toVisit);)
+						{
+							auto current = toVisit.back();
+							toVisit.pop_back();
+							if (activeSuites.insert(current).second)
+								if (const auto it = m_testSuites.nodes.find(current); it != std::ranges::end(m_testSuites.nodes))
+									toVisit.insert(std::ranges::end(toVisit), std::ranges::begin(it->second.dependencies), std::ranges::end(it->second.dependencies));
+						}
+					}
+
+				if (std::ranges::empty(activeSuites))
+				{
+					Logger::print<"warning">("No test suites matched filter '{}'", settings.filter);
+					return exitSuccess;
+				}
+			}
+
+			const auto nbTests = std::ranges::fold_left(
+				m_testSuites.nodes | std::views::filter([&](const auto& pair) {
+				return std::ranges::empty(settings.filter) or activeSuites.contains(pair.first);
+			}) | std::views::transform([](auto&& pair) { return std::ranges::size(pair.second.value); }),
+				0uz,
+				std::plus{});
+			Logger::print<"info">("{} tests found. Execution:", nbTests);
+
+			auto failedTestSuites = std::vector<std::string>{};
+			auto implicitlySkippedTestSuites = std::vector<std::string>{};
+			auto explicitlySkippedTests = std::vector<SkippedTest>{};
+			auto recordedSuites = std::vector<RecordedTestSuite>{};
+
+			auto nbSuccess = 0uz;
+			auto nbFail = 0uz;
+			auto nbSkip = 0uz;
+
+			if (auto result = m_testSuites.forEach([&](const auto& name, const auto& tests, const auto& dependencies) -> bool {
+				if (not std::ranges::empty(settings.filter) and not activeSuites.contains(name))
+					return true;
+
+				auto currentRecordedSuite = RecordedTestSuite{.name = name, .testCases = {}, .duration = {}};
+				const auto suiteStartTime = std::chrono::steady_clock::now();
+
+				auto allTestsPassed = true;
+
+				if (std::ranges::empty(tests))
+				{
+					Logger::print<"warning">("No tests found in test suite {}", name);
+					testSuiteIsSuccess[name] = true;
+				}
+				else if (const auto failedDependency = std::ranges::find_if(dependencies, [&](const auto& dependency) { return not testSuiteIsSuccess[dependency]; });
+					failedDependency != std::ranges::end(dependencies))
+				{
+					Logger::print<"warning">("Skipping test suite {} due to failed prerequisites in test suite {}", name, *failedDependency);
+					testSuiteIsSuccess[name] = false;
+					allTestsPassed = false;
+					implicitlySkippedTestSuites.push_back(name);
+					nbSkip += std::ranges::size(tests);
+					for (const auto& test : tests)
+						currentRecordedSuite.testCases.push_back(RecordedTestCase{
+							.name = test.name,
+							.className = name,
+							.status = TestStatus::Skipped,
+							.message = std::format("Skipped due to failed prerequisite '{}'", *failedDependency),
+							.duration = 0ns});
+				}
+				else
+				{
+					for (const auto& test : tests)
+					{
+						const auto [status, message, testDuration] = executeTest(name, test, settings);
+						currentRecordedSuite.testCases.push_back(RecordedTestCase{
+							.name = test.name,
+							.className = name,
+							.status = status,
+							.message = message,
+							.duration = testDuration});
+
+						if (status == TestStatus::Success)
+							++nbSuccess;
+						else if (status == TestStatus::Skipped)
+						{
+							++nbSkip;
+							explicitlySkippedTests.push_back({std::format("{}/{}", name, test.name), message});
+						}
+						else
+						{
+							++nbFail;
+							allTestsPassed = false;
+							if (settings.failFast)
+								break;
+						}
+					}
+
+					testSuiteIsSuccess[name] = allTestsPassed;
+					if (not allTestsPassed)
+						failedTestSuites.push_back(name);
+				}
+
+				currentRecordedSuite.duration = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - suiteStartTime);
+				recordedSuites.push_back(std::move(currentRecordedSuite));
+				return allTestsPassed or not settings.failFast;
+			});
+				not result)
+				Logger::print<"error">("The tests cannot be run: {}", result.error());
+
+			const auto totalDuration = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - totalExecutionStartTime);
+			if (not std::ranges::empty(settings.report))
+				writeReport(settings.report, recordedSuites, totalDuration);
+
+			Logger::emit<"separator">();
+			Logger::print<"detail">("Test results");
+			if (nbFail == 0 and nbSkip == 0)
+			{
+				Logger::print<"success">("All tests passed successfully");
+				Logger::waitUntilFinished(10s);
+				return exitSuccess;
+			}
+			if (nbFail > 0)
+				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, "The tests failed:");
+			else
+				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, "Some tests were skipped:");
+
+			if (nbSuccess > 0)
+				Logger::print<"success">("- {} successful tests", nbSuccess);
+			if (nbSuccess == 0)
+				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, "- 0 successful tests");
+
+			if (nbFail > 0)
+			{
+				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, std::format("- {} failed tests", nbFail));
+				for (const auto& failedTestSuite : failedTestSuites)
+					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Red, std::format("  - {}", failedTestSuite));
+			}
+
+			if (nbSkip > 0)
+			{
+				Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("- {} skipped tests", nbSkip));
+				for (const auto& skippedTest : explicitlySkippedTests)
+					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("  - {}: {}", skippedTest.name, skippedTest.message));
+				for (const auto& skippedTestSuite : implicitlySkippedTestSuites)
+					Logger::emit<"color">(Terminal::TextColor::TextColorEnum::Yellow, std::format("  - {} (due to failed prerequisites)", skippedTestSuite));
+			}
+
+			Logger::waitUntilFinished(10s);
+			return nbFail == 0 ? exitSuccess : exitFailure;
+		}
+
+	private:
+		static inline auto writeReport(
+			std::string_view reportConfiguration,
+			std::span<const RecordedTestSuite> suites,
+			std::chrono::nanoseconds totalDuration) -> void
+		{
+			if (std::ranges::empty(reportConfiguration))
+				return;
+
+			auto format = std::string_view{"junit"};
+			auto path = reportConfiguration;
+			if (const auto colon = reportConfiguration.find(':'); colon != std::string_view::npos)
+			{
+				format = reportConfiguration.substr(0, colon);
+				path = reportConfiguration.substr(colon + 1);
+			}
+
+			if (format == "junit" or path.ends_with(".xml"))
+				JUnit::writeJUnitXmlReport(path, suites, totalDuration);
+			else
+				Logger::print<"warning">("Unknown report format: {}", format);
+		}
+
+		Container::DependencyGraph<std::string, std::vector<TestCase>> m_testSuites;
+	};
+
+	/// @brief Global test runner instance used for test suite registration and execution.
+	inline auto testRunner = TestRunner{};
+}

@@ -10,17 +10,17 @@ namespace CppUtils::UnitTest::Pattern
 		int value = 0;
 	};
 
-	auto _ = TestSuite{"Pattern", {"UnitTest"}, [](TestSuite& suite) {
-		suite.addTest("Singleton", [&] {
+	auto _ = testSuite("Pattern").dependsOn("UnitTest") = [](TestSuite& suite) {
+		suite.test("Singleton") = [&] {
 			auto& instance1 = CppUtils::Pattern::Singleton<TestClass>::get();
 			auto& instance2 = CppUtils::Pattern::Singleton<TestClass>::get();
 
 			instance1.value = 42;
-			suite.expectEqual(instance2.value, 42);
-			suite.expectEqual(std::addressof(instance1), std::addressof(instance2));
-		});
+			expect(instance2.value) == 42;
+			expect(std::addressof(instance1)) == std::addressof(instance2);
+		};
 
-		suite.addTest("Multiton", [&] {
+		suite.test("Multiton") = [&] {
 			constexpr auto keyA = 1;
 			constexpr auto keyB = 2;
 
@@ -31,11 +31,11 @@ namespace CppUtils::UnitTest::Pattern
 			instanceA.value = 10;
 			instanceB.value = 20;
 
-			suite.expectEqual(instanceA.value, 10);
-			suite.expectEqual(instanceB.value, 20);
-			suite.expectEqual(instanceA2.value, 10);
-			suite.expectEqual(std::addressof(instanceA), std::addressof(instanceA2));
-			suite.expect(std::addressof(instanceA) != std::addressof(instanceB));
-		});
-	}};
+			expect(instanceA.value) == 10;
+			expect(instanceB.value) == 20;
+			expect(instanceA2.value) == 10;
+			expect(std::addressof(instanceA)) == std::addressof(instanceA2);
+			expect(std::addressof(instanceA)) != std::addressof(instanceB);
+		};
+	};
 }

@@ -5,8 +5,8 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::Text
 {
-	auto _ = TestSuite{"Terminal/Text", {"Terminal/Canvas", "Terminal/Element"}, [](TestSuite& suite) {
-		suite.addTest("WordWrap", [&] {
+	auto _ = testSuite("Terminal/Text").dependsOn("Terminal/Canvas", "Terminal/Element") = [](TestSuite& suite) {
+		suite.test("WordWrap") = [&] {
 			const auto size = CppUtils::Container::Size2{10, 3};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -16,13 +16,13 @@ namespace CppUtils::UnitTest::Terminal::Text
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({0, 0}).character, U'H');
-				suite.expectEqual(accessor->getChar({0, 1}).character, U'W');
-				suite.expectEqual(accessor->getChar({0, 2}).character, U' ');
+				expect(accessor->getChar({0, 0}).character) == U'H';
+				expect(accessor->getChar({0, 1}).character) == U'W';
+				expect(accessor->getChar({0, 2}).character) == U' ';
 			}
-		});
+		};
 
-		suite.addTest("NoWordWrap", [&] {
+		suite.test("NoWordWrap") = [&] {
 			const auto size = CppUtils::Container::Size2{10, 2};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -37,14 +37,14 @@ namespace CppUtils::UnitTest::Terminal::Text
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({0, 0}).character, U'H');
-				suite.expectEqual(accessor->getChar({6, 0}).character, U'W');
-				suite.expectEqual(accessor->getChar({9, 0}).character, U'l');
-				suite.expectEqual(accessor->getChar({0, 1}).character, U' ');
+				expect(accessor->getChar({0, 0}).character) == U'H';
+				expect(accessor->getChar({6, 0}).character) == U'W';
+				expect(accessor->getChar({9, 0}).character) == U'l';
+				expect(accessor->getChar({0, 1}).character) == U' ';
 			}
-		});
+		};
 
-		suite.addTest("OverflowEllipsis", [&] {
+		suite.test("OverflowEllipsis") = [&] {
 			const auto size = CppUtils::Container::Size2{10, 2};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -54,11 +54,11 @@ namespace CppUtils::UnitTest::Terminal::Text
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({5, 1}).character, U'…');
+				expect(accessor->getChar({5, 1}).character) == U'…';
 			}
-		});
+		};
 
-		suite.addTest("OverflowClip", [&] {
+		suite.test("OverflowClip") = [&] {
 			const auto size = CppUtils::Container::Size2{10, 1};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -73,11 +73,11 @@ namespace CppUtils::UnitTest::Terminal::Text
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({9, 0}).character, U'u');
+				expect(accessor->getChar({9, 0}).character) == U'u';
 			}
-		});
+		};
 
-		suite.addTest("Alignments", [&] {
+		suite.test("Alignments") = [&] {
 			const auto size = CppUtils::Container::Size2{10, 3};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -88,9 +88,9 @@ namespace CppUtils::UnitTest::Terminal::Text
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({4, 1}).character, U'H');
-				suite.expectEqual(accessor->getChar({5, 1}).character, U'i');
+				expect(accessor->getChar({4, 1}).character) == U'H';
+				expect(accessor->getChar({5, 1}).character) == U'i';
 			}
-		});
-	}};
+		};
+	};
 }

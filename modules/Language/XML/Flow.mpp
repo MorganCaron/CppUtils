@@ -275,7 +275,7 @@ export namespace CppUtils::Language::Xml
 
 		std::optional<std::filesystem::path> m_outputFile;
 		std::optional<std::filesystem::path> m_outputDirectory;
-		std::string m_outputFormat = "csv";
+		[[maybe_unused]] std::string m_outputFormat = "csv";
 		std::string m_outputSeparator = ";";
 
 		std::optional<std::filesystem::path> m_rejectedFile;

@@ -5,51 +5,51 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::System::Error
 {
-	auto _ = TestSuite{"System/Error", {"UnitTest"}, [](TestSuite& suite) {
-		suite.addTest("throwErrno", [&] {
-			suite.expectThrow<std::runtime_error>([&] {
+	auto _ = testSuite("System/Error").dependsOn("UnitTest") = [](TestSuite& suite) {
+		suite.test("throwErrno") = [&] {
+			expect([&] {
 				CppUtils::System::throwErrno(-1, "Test error");
-			});
-			suite.expectNoThrow<>([&] {
+			}) == throws<std::runtime_error>;
+			expect([&] {
 				CppUtils::System::throwErrno(0, "Test success");
-			});
-		});
+			}) == noThrow;
+		};
 
-		suite.addTest("expectErrno", [&] {
+		suite.test("expectErrno") = [&] {
 			{
 				auto result = CppUtils::System::expectErrno(-1, "Test error");
-				suite.expect(not result);
+				expect(not result);
 			}
 			{
 				auto result = CppUtils::System::expectErrno(0, "Test success");
-				suite.expect(result);
-				suite.expectEqual(result.value(), 0);
+				expect(result);
+				expect(result.value()) == 0;
 			}
-		});
+		};
 
 #if defined(OS_WINDOWS)
-		suite.addTest("throwLastError", [&] {
-			suite.expectThrow<std::runtime_error>([&] {
+		suite.test("throwLastError") = [&] {
+			expect([&] {
 				CppUtils::System::throwLastError("Test last error");
-			});
-		});
+			}) == throws<std::runtime_error>;
+		};
 
-		suite.addTest("throwLastErrorIf", [&] {
-			suite.expectThrow<std::runtime_error>([&] {
+		suite.test("throwLastErrorIf") = [&] {
+			expect([&] {
 				CppUtils::System::throwLastErrorIf(1, "Test last error if");
-			});
-			suite.expectNoThrow<>([&] {
+			}) == throws<std::runtime_error>;
+			expect([&] {
 				CppUtils::System::throwLastErrorIf(0, "Test last error if");
-			});
-		});
+			}) == noThrow;
+		};
 
-		suite.addTest("expectNoError", [&] {
+		suite.test("expectNoError") = [&] {
 			auto result = CppUtils::System::expectNoError(0, "Test no error");
-			suite.expect(result);
-			suite.expectEqual(result.value(), 0);
+			expect(result);
+			expect(result.value()) == 0;
 			result = CppUtils::System::expectNoError(1, "Test no error");
-			suite.expect(not result);
-		});
+			expect(not result);
+		};
 #endif
-	}};
+	};
 }

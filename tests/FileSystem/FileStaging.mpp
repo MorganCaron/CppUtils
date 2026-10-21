@@ -5,9 +5,9 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::FileSystem::FileStaging
 {
-	auto _ = TestSuite{"FileSystem/FileStaging", {"FileSystem/Directory"}, [](TestSuite& suite) {
-		suite.addTest("FileStaging stage and complete with archive", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
+	auto _ = testSuite("FileSystem/FileStaging").dependsOn("FileSystem/Directory") = [](TestSuite& suite) {
+		suite.test("FileStaging stage and complete with archive") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& sandbox) -> void {
 				const auto inputDirectory = sandbox / "input";
 				const auto stagingDirectory = sandbox / "staging";
 				const auto archiveDirectory = sandbox / "archive";
@@ -23,25 +23,25 @@ namespace CppUtils::UnitTest::FileSystem::FileStaging
 					quarantineDirectory,
 					archiveDirectory);
 
-				suite.expect(stageResult.has_value());
+				expect(stageResult.has_value());
 				const auto& staging = stageResult.value();
 
-				suite.expectEqual(staging.inputPath(), inputFilePath);
-				suite.expect(not std::filesystem::exists(inputFilePath));
-				suite.expect(std::filesystem::exists(staging.stagedPath()));
+				expect(staging.inputPath()) == inputFilePath;
+				expect(not std::filesystem::exists(inputFilePath));
+				expect(std::filesystem::exists(staging.stagedPath()));
 
 				auto completeResult = staging.complete();
-				suite.expect(completeResult.has_value());
+				expect(completeResult.has_value());
 				const auto& archivedPath = completeResult.value();
 
-				suite.expect(not std::filesystem::exists(staging.stagedPath()));
-				suite.expect(std::filesystem::exists(archivedPath));
-				suite.expectEqual(archivedPath.parent_path(), archiveDirectory);
+				expect(not std::filesystem::exists(staging.stagedPath()));
+				expect(std::filesystem::exists(archivedPath));
+				expect(archivedPath.parent_path()) == archiveDirectory;
 			}};
-		});
+		};
 
-		suite.addTest("FileStaging stage and complete with deletion", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
+		suite.test("FileStaging stage and complete with deletion") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& sandbox) -> void {
 				const auto inputDirectory = sandbox / "input";
 				const auto stagingDirectory = sandbox / "staging";
 
@@ -53,20 +53,20 @@ namespace CppUtils::UnitTest::FileSystem::FileStaging
 					inputFilePath,
 					stagingDirectory);
 
-				suite.expect(stageResult.has_value());
+				expect(stageResult.has_value());
 				const auto& staging = stageResult.value();
 
-				suite.expect(std::filesystem::exists(staging.stagedPath()));
+				expect(std::filesystem::exists(staging.stagedPath()));
 
 				auto completeResult = staging.complete();
-				suite.expect(completeResult.has_value());
-				suite.expectEqual(completeResult.value().string(), "");
-				suite.expect(not std::filesystem::exists(staging.stagedPath()));
+				expect(completeResult.has_value());
+				expect(completeResult.value().string()) == "";
+				expect(not std::filesystem::exists(staging.stagedPath()));
 			}};
-		});
+		};
 
-		suite.addTest("FileStaging stage and abort with quarantine", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
+		suite.test("FileStaging stage and abort with quarantine") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& sandbox) -> void {
 				const auto inputDirectory = sandbox / "input";
 				const auto stagingDirectory = sandbox / "staging";
 				const auto archiveDirectory = sandbox / "archive";
@@ -82,21 +82,21 @@ namespace CppUtils::UnitTest::FileSystem::FileStaging
 					quarantineDirectory,
 					archiveDirectory);
 
-				suite.expect(stageResult.has_value());
+				expect(stageResult.has_value());
 				const auto& staging = stageResult.value();
 
 				auto abortResult = staging.abort();
-				suite.expect(abortResult.has_value());
+				expect(abortResult.has_value());
 				const auto& quarantinedPath = abortResult.value();
 
-				suite.expect(not std::filesystem::exists(staging.stagedPath()));
-				suite.expect(std::filesystem::exists(quarantinedPath));
-				suite.expectEqual(quarantinedPath.parent_path(), quarantineDirectory);
+				expect(not std::filesystem::exists(staging.stagedPath()));
+				expect(std::filesystem::exists(quarantinedPath));
+				expect(quarantinedPath.parent_path()) == quarantineDirectory;
 			}};
-		});
+		};
 
-		suite.addTest("FileStaging stage and abort with deletion", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
+		suite.test("FileStaging stage and abort with deletion") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& sandbox) -> void {
 				const auto inputDirectory = sandbox / "input";
 				const auto stagingDirectory = sandbox / "staging";
 
@@ -106,23 +106,22 @@ namespace CppUtils::UnitTest::FileSystem::FileStaging
 
 				auto stageResult = CppUtils::FileSystem::FileStaging::stage(
 					inputFilePath,
-					stagingDirectory
-				);
+					stagingDirectory);
 
-				suite.expect(stageResult.has_value());
+				expect(stageResult.has_value());
 				const auto& staging = stageResult.value();
 
 				auto abortResult = staging.abort();
-				suite.expect(abortResult.has_value());
-				suite.expectEqual(abortResult.value().string(), "");
+				expect(abortResult.has_value());
+				expect(abortResult.value().string()) == "";
 
-				suite.expect(not std::filesystem::exists(staging.stagedPath()));
-				suite.expect(not std::filesystem::exists(inputFilePath));
+				expect(not std::filesystem::exists(staging.stagedPath()));
+				expect(not std::filesystem::exists(inputFilePath));
 			}};
-		});
+		};
 
-		suite.addTest("FileStaging stage and retry", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
+		suite.test("FileStaging stage and retry") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& sandbox) -> void {
 				const auto inputDirectory = sandbox / "input";
 				const auto stagingDirectory = sandbox / "staging";
 
@@ -134,25 +133,25 @@ namespace CppUtils::UnitTest::FileSystem::FileStaging
 					inputFilePath,
 					stagingDirectory);
 
-				suite.expect(stageResult.has_value());
+				expect(stageResult.has_value());
 				const auto& staging = stageResult.value();
 
 				auto retryResult = staging.retry();
-				suite.expect(retryResult.has_value());
-				suite.expectEqual(retryResult.value(), inputFilePath);
+				expect(retryResult.has_value());
+				expect(retryResult.value()) == inputFilePath;
 
-				suite.expect(not std::filesystem::exists(staging.stagedPath()));
-				suite.expect(std::filesystem::exists(inputFilePath));
+				expect(not std::filesystem::exists(staging.stagedPath()));
+				expect(std::filesystem::exists(inputFilePath));
 			}};
-		});
+		};
 
-		suite.addTest("FileStaging non-existent file error", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& sandbox) -> void {
+		suite.test("FileStaging non-existent file error") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& sandbox) -> void {
 				const auto inputFilePath = sandbox / "does_not_exist.csv";
 
 				auto stageResult = CppUtils::FileSystem::FileStaging::stage(inputFilePath);
-				suite.expect(not stageResult.has_value());
+				expect(not stageResult.has_value());
 			}};
-		});
-	}};
+		};
+	};
 }

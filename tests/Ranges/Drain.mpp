@@ -5,8 +5,8 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Ranges::Drain
 {
-	auto _ = TestSuite{"Ranges/Drain", {}, [](TestSuite& suite) {
-		suite.addTest("Pipe syntax", [&] {
+	auto _ = testSuite("Ranges/Drain") = [](TestSuite& suite) {
+		suite.test("Pipe syntax") = [&] {
 			auto count = 0;
 			const auto numbers = std::vector<int>{1, 2, 3, 4, 5};
 
@@ -17,10 +17,10 @@ namespace CppUtils::UnitTest::Ranges::Drain
 			})
 				| CppUtils::Ranges::drain;
 
-			suite.expectEqual(count, 15);
-		});
+			expect(count) == 15;
+		};
 
-		suite.addTest("Direct call", [&] {
+		suite.test("Direct call") = [&] {
 			auto count = 0;
 			const auto numbers = std::vector<int>{10, 20, 30};
 
@@ -30,10 +30,10 @@ namespace CppUtils::UnitTest::Ranges::Drain
 				return value;
 			}));
 
-			suite.expectEqual(count, 60);
-		});
+			expect(count) == 60;
+		};
 
-		suite.addTest("Constexpr evaluation", [&] {
+		suite.test("Constexpr evaluation") = [&] {
 			constexpr auto sum = [] {
 				auto count = 0;
 				const auto numbers = std::array{1, 2, 3};
@@ -46,6 +46,6 @@ namespace CppUtils::UnitTest::Ranges::Drain
 				return count;
 			}();
 			static_assert(sum == 6);
-		});
-	}};
+		};
+	};
 }

@@ -33,6 +33,12 @@ export namespace CppUtils
 			return eventQueue;
 		}
 
+		static inline auto reset() -> void
+		{
+			Pattern::Multiton<Execution::EventQueue, loggerName>::reset();
+			configure(Pattern::Multiton<Execution::EventQueue, loggerName>::get());
+		}
+
 		static inline auto configure(Execution::EventQueue& eventQueue) -> void
 		{
 			configureLogger<loggerName>(eventQueue);

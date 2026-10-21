@@ -6,9 +6,9 @@ import CppUtils.Network.Http;
 
 namespace CppUtils::UnitTest::Network::Http
 {
-	auto _ = TestSuite{"Network/Http", {"Logger", "Thread/TryAsync", "Network/Server", "Network/Client", "Network/DNS", "Network/Socket"}, [](auto& suite) {
-		suite.addTest("Client/Server Exchange", [&] {
-			auto serverisReady = std::atomic_bool{false};
+	auto _ = testSuite("Network/Http").dependsOn("Logger", "Thread/TryAsync", "Network/Server", "Network/Client", "Network/DNS", "Network/Socket") = [](TestSuite& suite) {
+		suite.test("Client/Server Exchange") = [&] {
+			auto serverisReady = std::atomic<std::uint32_t>{0};
 			auto server = CppUtils::Network::Http::Server{8'080, [](const CppUtils::Network::Http::Request& request) -> CppUtils::Network::Http::Response {
 				auto response = CppUtils::Network::Http::Response{};
 				response.body = "Hello " + request.path;
@@ -16,31 +16,31 @@ namespace CppUtils::UnitTest::Network::Http
 			}};
 
 			auto serverThread = CppUtils::Thread::tryAsync([&] {
-				serverisReady.store(true, std::memory_order_release);
+				serverisReady.store(1, std::memory_order_release);
 				serverisReady.notify_all();
 
 				server.run();
 			});
 
 			auto clientThread = CppUtils::Thread::tryAsync([&] {
-				serverisReady.wait(false);
+				serverisReady.wait(0);
 				auto client = CppUtils::Network::Http::Client{};
 
 				auto connectionResult = client.connectIP("127.0.0.1", 8'080);
-				suite.expect(connectionResult);
+				expect(connectionResult);
 
 				{
 					auto response = client.get("/World");
-					suite.expect(response);
-					suite.expectEqual(response->status, 200uz);
-					suite.expectEqual(response->body, "Hello /World");
+					expect(response);
+					expect(response->status) == 200uz;
+					expect(response->body) == "Hello /World";
 				}
 
 				{
 					auto response = client.get("/Universe", {{"Connection", "close"}});
-					suite.expect(response);
-					suite.expectEqual(response->status, 200uz);
-					suite.expectEqual(response->body, "Hello /Universe");
+					expect(response);
+					expect(response->status) == 200uz;
+					expect(response->body) == "Hello /Universe";
 				}
 
 				server.stop();
@@ -50,6 +50,6 @@ namespace CppUtils::UnitTest::Network::Http
 				throw response.error();
 			if (auto response = serverThread.get(); not response)
 				throw response.error();
-		});
-	}};
+		};
+	};
 }

@@ -6,9 +6,9 @@ import CppUtils.Network.Client;
 
 namespace CppUtils::UnitTest::Network::Client
 {
-	auto _ = TestSuite{"Network/Client", {"Logger", "Network/Socket"}, [](auto& suite) {
-		suite.addTest("Client Creation", [&] {
+	auto _ = testSuite("Network/Client").dependsOn("Logger", "Network/Socket") = [](TestSuite& suite) {
+		suite.test("Client Creation") = [&] {
 			auto client = CppUtils::Network::Client{};
-		});
-	}};
+		};
+	};
 }

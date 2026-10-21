@@ -179,8 +179,13 @@
 - [`Variant`](modules/Type/Variant.mpp) - Generic print and comparison operators for `std::variant`
 
 ### 🧪 Unit Testing
-- [`LifetimeChecker`](modules/UnitTest/LifetimeChecker.mpp) - Object that prints construction, destruction, copy and move operations, while counting copies and moves for test verification
-- [`UnitTest`](modules/UnitTest/UnitTest.mpp) - Minimal test framework with assertions and filters
+- [`Benchmark`](modules/UnitTest/Benchmark.mpp) - Benchmarking utilities with execution timing statistics and performance comparisons
+- [`EventWatcher`](modules/UnitTest/EventWatcher.mpp) - Event observation and expectation verification for event-driven systems
+- [`Expectation`](modules/UnitTest/Expectation.mpp) - Fluent assertion API (`expect(a) == b`, `throws`, `noThrow`, `crashes`, `eventually`, `completes`)
+- [`JUnitFormatter`](modules/UnitTest/JUnitFormatter.mpp) - JUnit XML report generator for CI/CD test reporting
+- [`LifetimeChecker`](modules/UnitTest/LifetimeChecker.mpp) - Diagnostic probe tracking object construction, destruction, copy and move counts
+- [`Runner`](modules/UnitTest/Runner.mpp) - Test runner engine with process isolation, timeout enforcement, and dependency execution
+- [`UnitTest`](modules/UnitTest/UnitTest.mpp) - Modern macro-free unit testing framework with declarative suite builders (`testSuite`), parameterized/typed suites, and compile-time test execution
 
 ### 🧩 Miscellaneous
 - Many other functions

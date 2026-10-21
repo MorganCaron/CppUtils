@@ -87,21 +87,20 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 		using FunctionMapping = FreeFunctionMapping;
 	};
 
-	auto _ = TestSuite{"Language/Xml/Pipeline",
-		{"Language/Xml/XmlLexer",
-			"Language/CSV/Mapping",
-			"Language/CSV/Parsing",
-			"FileSystem/Directory",
-			"FileSystem/File",
-			"FileSystem/FileStaging",
-			"FileSystem/Watcher",
-			"Ranges/Parallel"},
-		[](TestSuite& suite) {
+	auto _ = testSuite("Language/Xml/Pipeline")
+				 .dependsOn("Language/Xml/XmlLexer",
+					 "Language/CSV/Mapping",
+					 "Language/CSV/Parsing",
+					 "FileSystem/Directory",
+					 "FileSystem/File",
+					 "FileSystem/FileStaging",
+					 "FileSystem/Watcher",
+					 "Ranges/Parallel") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace std::chrono_literals;
 		using namespace CppUtils::Language::Xml::Literals;
 
-		suite.addTest("Empty pipeline", [&] {
+		suite.test("Empty pipeline") = [&] {
 			const auto xmlTree = R"(
 			<Pipeline>
 			</Pipeline>
@@ -117,10 +116,10 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 				| pipeline
 				| std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(outputUsers, inputUsers);
-		});
+			expect(outputUsers) == inputUsers;
+		};
 
-		suite.addTest("Operation value", [&] {
+		suite.test("Operation value") = [&] {
 			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(R"(
 			<Pipeline>
 				<Operation column="Score" operator="+=" value="20"/>
@@ -130,11 +129,11 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 			const auto inputUsers = std::vector<User>{User{"Alice", "alice@example.com", 25, 100, 4.5f}};
 			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-			suite.expectEqual(outputUsers[0].score, 120);
-		});
+			expect(std::ranges::size(outputUsers)) == 1uz;
+			expect(outputUsers[0].score) == 120;
+		};
 
-		suite.addTest("Operation variable", [&] {
+		suite.test("Operation variable") = [&] {
 			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(R"(
 			<Pipeline>
 				<Let name="Bonus" value="35"/>
@@ -145,11 +144,11 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 			const auto inputUsers = std::vector<User>{User{"Alice", "alice@example.com", 25, 100, 4.5f}};
 			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-			suite.expectEqual(outputUsers[0].score, 135);
-		});
+			expect(std::ranges::size(outputUsers)) == 1uz;
+			expect(outputUsers[0].score) == 135;
+		};
 
-		suite.addTest("Filter value", [&] {
+		suite.test("Filter value") = [&] {
 			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(R"(
 			<Pipeline>
 				<Filter column="Age" operator=">=" value="18"/>
@@ -162,12 +161,12 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 				User{"Charlie", "charlie@example.com", 18, 80, 4.0f}};
 			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 2uz);
-			suite.expectEqual(outputUsers[0].name, "Alice");
-			suite.expectEqual(outputUsers[1].name, "Charlie");
-		});
+			expect(std::ranges::size(outputUsers)) == 2uz;
+			expect(outputUsers[0].name) == "Alice";
+			expect(outputUsers[1].name) == "Charlie";
+		};
 
-		suite.addTest("Filter variable", [&] {
+		suite.test("Filter variable") = [&] {
 			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(R"(
 			<Pipeline>
 				<Let name="MinAge" value="18"/>
@@ -180,11 +179,11 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 				User{"Bob", "bob@example.com", 15, 50, 3.0f}};
 			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-			suite.expectEqual(outputUsers[0].name, "Alice");
-		});
+			expect(std::ranges::size(outputUsers)) == 1uz;
+			expect(outputUsers[0].name) == "Alice";
+		};
 
-		suite.addTest("Filter predicate", [&] {
+		suite.test("Filter predicate") = [&] {
 			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(R"(
 			<Pipeline>
 				<Filter predicate="IsAdult"/>
@@ -196,11 +195,11 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 				User{"Bob", "bob@example.com", 15, 50, 3.0f}};
 			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-			suite.expectEqual(outputUsers[0].name, "Alice");
-		});
+			expect(std::ranges::size(outputUsers)) == 1uz;
+			expect(outputUsers[0].name) == "Alice";
+		};
 
-		suite.addTest("Call member function", [&] {
+		suite.test("Call member function") = [&] {
 			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(R"(
 			<Pipeline>
 				<Call function="ApplyBonus"/>
@@ -210,11 +209,11 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 			const auto inputUsers = std::vector<User>{User{"Alice", "alice@example.com", 25, 100, 4.5f}};
 			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-			suite.expectEqual(outputUsers[0].score, 150);
-		});
+			expect(std::ranges::size(outputUsers)) == 1uz;
+			expect(outputUsers[0].score) == 150;
+		};
 
-		suite.addTest("Call free function", [&] {
+		suite.test("Call free function") = [&] {
 			const auto pipeline = CppUtils::Language::Xml::buildPipeline<User, UserFreeFunctionMapping>(R"(
 			<Pipeline>
 				<Call function="ApplyBonus"/>
@@ -224,11 +223,11 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 			const auto inputUsers = std::vector<User>{User{"Alice", "alice@example.com", 25, 100, 4.5f}};
 			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-			suite.expectEqual(outputUsers[0].score, 150);
-		});
+			expect(std::ranges::size(outputUsers)) == 1uz;
+			expect(outputUsers[0].score) == 150;
+		};
 
-		suite.addTest("Call lambda", [&] {
+		suite.test("Call lambda") = [&] {
 			auto pipeline = CppUtils::Language::Xml::Pipeline<User>{};
 			CppUtils::Language::Xml::registerStandardPipelineTags<User, UserMapping>(pipeline);
 
@@ -246,12 +245,12 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 			const auto inputUsers = std::vector<User>{User{"Alice", "alice@example.com", 25, 100, 4.5f}};
 			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-			suite.expect(called);
-		});
+			expect(std::ranges::size(outputUsers)) == 1uz;
+			expect(called);
+		};
 
-		suite.addTest("Validate and Rejected", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+		suite.test("Validate and Rejected") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) {
 				const auto rejectedPath = directory / "rejected.csv";
 				const auto xmlSource = std::format(R"(
 				<Pipeline>
@@ -268,15 +267,15 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 					User{"Bob", "bob@example.com", 15, 50, 3.0f}};
 				const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
 
-				suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-				suite.expectEqual(outputUsers[0].name, "Alice");
+				expect(std::ranges::size(outputUsers)) == 1uz;
+				expect(outputUsers[0].name) == "Alice";
 
 				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
-				suite.expect(rejectedContent.contains("Too young"));
+				expect(rejectedContent.contains("Too young"));
 			}};
-		});
+		};
 
-		suite.addTest("Rejected handler callback", [&] {
+		suite.test("Rejected handler callback") = [&] {
 			auto pipeline = CppUtils::Language::Xml::Pipeline<User>{};
 			CppUtils::Language::Xml::registerStandardPipelineTags<User, UserMapping>(pipeline);
 
@@ -295,13 +294,13 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 			const auto inputUsers = std::vector<User>{User{"Bob", "bob@example.com", 15, 50, 3.0f}};
 			const auto outputUsers = inputUsers | pipeline | std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 0uz);
-			suite.expectEqual(std::ranges::size(rejectedErrors), 1uz);
-			suite.expectEqual(rejectedErrors[0], "Too young");
-		});
+			expect(std::ranges::size(outputUsers)) == 0uz;
+			expect(std::ranges::size(rejectedErrors)) == 1uz;
+			expect(rejectedErrors[0]) == "Too young";
+		};
 
-		suite.addTest("executeFlow", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+		suite.test("executeFlow") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) {
 				const auto inputPath = directory / "input_users.csv";
 				const auto outputPath = directory / "output_users.csv";
 				const auto rejectedPath = directory / "rejected_users.csv";
@@ -336,9 +335,9 @@ Charlie;charlie@example.com;30;80;4.8)"sv);
 					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
 					| std::ranges::to<std::vector<std::string_view>>();
 
-				suite.expectEqual(std::ranges::size(outputLines), 2uz);
-				suite.expectEqual(outputLines[0], "Alice;alice@example.com;25;115;4.5");
-				suite.expectEqual(outputLines[1], "Charlie;charlie@example.com;30;95;4.8");
+				expect(std::ranges::size(outputLines)) == 2uz;
+				expect(outputLines[0]) == "Alice;alice@example.com;25;115;4.5";
+				expect(outputLines[1]) == "Charlie;charlie@example.com;30;95;4.8";
 
 				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
 				const auto rejectedLines = rejectedContent
@@ -347,14 +346,14 @@ Charlie;charlie@example.com;30;80;4.8)"sv);
 					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
 					| std::ranges::to<std::vector<std::string_view>>();
 
-				suite.expectEqual(std::ranges::size(rejectedLines), 2uz);
-				suite.expect(rejectedContent.contains("Invalid;bad_line;NaN;0;0.0"));
-				suite.expect(rejectedContent.contains("Underage user"));
+				expect(std::ranges::size(rejectedLines)) == 2uz;
+				expect(rejectedContent.contains("Invalid;bad_line;NaN;0;0.0"));
+				expect(rejectedContent.contains("Underage user"));
 			}};
-		});
+		};
 
-		suite.addTest("executeFlow parallelChunk", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+		suite.test("executeFlow parallelChunk") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) {
 				const auto inputPath = directory / "input_users.csv";
 				const auto outputPath = directory / "output_users.csv";
 				const auto rejectedPath = directory / "rejected_users.csv";
@@ -392,20 +391,20 @@ Frank;frank@example.com;35;70;3.5)"sv);
 					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
 					| std::ranges::to<std::vector<std::string_view>>();
 
-				suite.expectEqual(std::ranges::size(outputLines), 4uz);
-				suite.expectEqual(outputLines[0], "Alice;alice@example.com;25;110;4.5");
-				suite.expectEqual(outputLines[1], "Charlie;charlie@example.com;30;90;4.8");
-				suite.expectEqual(outputLines[2], "David;david@example.com;22;100;4");
-				suite.expectEqual(outputLines[3], "Frank;frank@example.com;35;80;3.5");
+				expect(std::ranges::size(outputLines)) == 4uz;
+				expect(outputLines[0]) == "Alice;alice@example.com;25;110;4.5";
+				expect(outputLines[1]) == "Charlie;charlie@example.com;30;90;4.8";
+				expect(outputLines[2]) == "David;david@example.com;22;100;4";
+				expect(outputLines[3]) == "Frank;frank@example.com;35;80;3.5";
 
 				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
-				suite.expect(rejectedContent.contains("Invalid;bad_line;NaN;0;0.0"));
-				suite.expect(rejectedContent.contains("Underage user"));
+				expect(rejectedContent.contains("Invalid;bad_line;NaN;0;0.0"));
+				expect(rejectedContent.contains("Underage user"));
 			}};
-		});
+		};
 
-		suite.addTest("executeFlow FileStaging", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+		suite.test("executeFlow FileStaging") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) {
 				const auto inputDir = directory / "input";
 				const auto stagingDir = directory / "staging";
 				const auto archiveDir = directory / "archive";
@@ -442,22 +441,22 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				auto threadPool = CppUtils::Thread::ThreadPool{2};
 				CppUtils::Language::Xml::executeFlow<User, UserMapping>(xmlSource, threadPool);
 
-				suite.expect(not std::filesystem::exists(inputFile));
-				suite.expect(std::filesystem::exists(outputFile));
+				expect(not std::filesystem::exists(inputFile));
+				expect(std::filesystem::exists(outputFile));
 
 				const auto archiveFiles = std::ranges::count_if(
 					std::filesystem::directory_iterator{archiveDir},
 					[](const auto& entry) { return entry.is_regular_file(); });
-				suite.expectEqual(archiveFiles, 1);
+				expect(archiveFiles) == 1;
 
 				const auto outputContent = CppUtils::FileSystem::String::read(outputFile);
-				suite.expect(outputContent.contains("Alice;alice@example.com;25;105;4.5"));
-				suite.expect(outputContent.contains("Bob;bob@example.com;30;85;4.8"));
+				expect(outputContent.contains("Alice;alice@example.com;25;105;4.5"));
+				expect(outputContent.contains("Bob;bob@example.com;30;85;4.8"));
 			}};
-		});
+		};
 
-		suite.addTest("Flow Watcher", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+		suite.test("Flow Watcher") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) {
 				const auto inputDir = directory / "input";
 				const auto outputDir = directory / "output";
 
@@ -489,14 +488,14 @@ Bob;bob@example.com;30;80;4.8)"sv);
 
 				flow.stopWatching();
 
-				suite.expect(std::filesystem::exists(expectedOutputFile));
+				expect(std::filesystem::exists(expectedOutputFile));
 				const auto content = CppUtils::FileSystem::String::read(expectedOutputFile);
-				suite.expect(content.contains("Alice;alice@example.com;25;120;4.5"));
+				expect(content.contains("Alice;alice@example.com;25;120;4.5"));
 			}};
-		});
+		};
 
-		suite.addTest("_csv literal", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+		suite.test("_csv literal") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) {
 				const auto rejectedPath = directory / "rejected.csv";
 				const auto xmlSource = std::format(R"(
 				<Pipeline>
@@ -521,16 +520,16 @@ Bob;bob@example.com;30;80;4.8)"sv);
 					| pipeline
 					| std::ranges::to<std::vector<User>>();
 
-				suite.expectEqual(std::ranges::size(outputUsers), 2uz);
-				suite.expectEqual(outputUsers[0], User{"Alice", "alice@example.com", 25, 110, 4.5f});
-				suite.expectEqual(outputUsers[1], User{"Charlie", "charlie@example.com", 30, 90, 4.8f});
+				expect(std::ranges::size(outputUsers)) == 2uz;
+				expect(outputUsers[0]) == User{"Alice", "alice@example.com", 25, 110, 4.5f};
+				expect(outputUsers[1]) == User{"Charlie", "charlie@example.com", 30, 90, 4.8f};
 
 				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
-				suite.expect(rejectedContent.contains("Invalid;corrupted_age;NaN;0;0.0"));
+				expect(rejectedContent.contains("Invalid;corrupted_age;NaN;0;0.0"));
 			}};
-		});
+		};
 
-		suite.addTest("<Transform> column tag", [&] {
+		suite.test("<Transform> column tag") = [&] {
 			const auto xmlSource = R"(
 			<Pipeline>
 				<Transform column="Name" function="toUppercase"/>
@@ -547,13 +546,13 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				| pipeline
 				| std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 2uz);
-			suite.expectEqual(outputUsers[0].name, std::string{"ALICE"});
-			suite.expectEqual(outputUsers[1].name, std::string{"BOB"});
-		});
+			expect(std::ranges::size(outputUsers)) == 2uz;
+			expect(outputUsers[0].name) == std::string{"ALICE"};
+			expect(outputUsers[1].name) == std::string{"BOB"};
+		};
 
-		suite.addTest("Custom tag", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+		suite.test("Custom tag") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) {
 				const auto rejectedPath = directory / "rejected.csv";
 
 				const auto xmlSource = std::format(R"(
@@ -589,15 +588,15 @@ Bob;bob@example.com;30;80;4.8)"sv);
 					| pipeline
 					| std::ranges::to<std::vector<User>>();
 
-				suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-				suite.expectEqual(outputUsers[0], User{"Dr. Alice", "alice@example.com", 25, 100, 4.5f});
+				expect(std::ranges::size(outputUsers)) == 1uz;
+				expect(outputUsers[0]) == User{"Dr. Alice", "alice@example.com", 25, 100, 4.5f};
 
 				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
-				suite.expect(rejectedContent.contains("Invalid;corrupt@example.com;NaN;0;0.0"));
+				expect(rejectedContent.contains("Invalid;corrupt@example.com;NaN;0;0.0"));
 			}};
-		});
+		};
 
-		suite.addTest("<When> condition", [&] {
+		suite.test("<When> condition") = [&] {
 			const auto xmlSource = R"(
 			<Pipeline>
 				<When column="Age" operator=">" value="18">
@@ -618,12 +617,12 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				| pipeline
 				| std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 2uz);
-			suite.expectEqual(outputUsers[0], User{"Alice", "alice@example.com", 25, 120, 4.5f});
-			suite.expectEqual(outputUsers[1], User{"Bob", "bob@example.com", 15, 50, 3.0f});
-		});
+			expect(std::ranges::size(outputUsers)) == 2uz;
+			expect(outputUsers[0]) == User{"Alice", "alice@example.com", 25, 120, 4.5f};
+			expect(outputUsers[1]) == User{"Bob", "bob@example.com", 15, 50, 3.0f};
+		};
 
-		suite.addTest("<When> with <All> and <Any>", [&] {
+		suite.test("<When> with <All> and <Any>") = [&] {
 			const auto xmlSource = R"(
 			<Pipeline>
 				<When>
@@ -653,14 +652,14 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				| pipeline
 				| std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 4uz);
-			suite.expectEqual(outputUsers[0], User{"Alice", "alice@example.com", 25, 150, 4.5f});
-			suite.expectEqual(outputUsers[1], User{"Bob", "bob@example.com", 30, 40, 3.0f});
-			suite.expectEqual(outputUsers[2], User{"Charlie", "charlie@example.com", 20, 80, 4.0f});
-			suite.expectEqual(outputUsers[3], User{"David", "david@example.com", 15, 100, 3.5f});
-		});
+			expect(std::ranges::size(outputUsers)) == 4uz;
+			expect(outputUsers[0]) == User{"Alice", "alice@example.com", 25, 150, 4.5f};
+			expect(outputUsers[1]) == User{"Bob", "bob@example.com", 30, 40, 3.0f};
+			expect(outputUsers[2]) == User{"Charlie", "charlie@example.com", 20, 80, 4.0f};
+			expect(outputUsers[3]) == User{"David", "david@example.com", 15, 100, 3.5f};
+		};
 
-		suite.addTest("<Scope>", [&] {
+		suite.test("<Scope>") = [&] {
 			const auto xmlSource = R"(
 			<Pipeline>
 				<Scope>
@@ -681,12 +680,12 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				| pipeline
 				| std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-			suite.expectEqual(outputUsers[0], User{"Alice", "alice@example.com", 25, 130, 4.5f});
-		});
+			expect(std::ranges::size(outputUsers)) == 1uz;
+			expect(outputUsers[0]) == User{"Alice", "alice@example.com", 25, 130, 4.5f};
+		};
 
-		suite.addTest("<Include>", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+		suite.test("<Include>") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) {
 				const auto rulesPath = directory / "rules.xml";
 				CppUtils::FileSystem::String::write(rulesPath, R"(
 				<Scope>
@@ -715,13 +714,13 @@ Bob;bob@example.com;30;80;4.8)"sv);
 					| pipeline
 					| std::ranges::to<std::vector<User>>();
 
-				suite.expectEqual(std::ranges::size(outputUsers), 2uz);
-				suite.expectEqual(outputUsers[0], User{"Alice", "alice@example.com", 25, 115, 4.5f});
-				suite.expectEqual(outputUsers[1], User{"Bob", "bob@example.com", 16, 50, 3.0f});
+				expect(std::ranges::size(outputUsers)) == 2uz;
+				expect(outputUsers[0]) == User{"Alice", "alice@example.com", 25, 115, 4.5f};
+				expect(outputUsers[1]) == User{"Bob", "bob@example.com", 16, 50, 3.0f};
 			}};
-		});
+		};
 
-		suite.addTest("<Log>", [&] {
+		suite.test("<Log>") = [&] {
 			const auto xmlSource = R"(
 			<Pipeline>
 				<Log type="info" column="Name"/>
@@ -739,11 +738,11 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				| pipeline
 				| std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-			suite.expectEqual(outputUsers[0].name, "Alice");
-		});
+			expect(std::ranges::size(outputUsers)) == 1uz;
+			expect(outputUsers[0].name) == "Alice";
+		};
 
-		suite.addTest("<Log> with custom loggerName", [&] {
+		suite.test("<Log> with custom loggerName") = [&] {
 			auto loggedMessages = std::vector<std::string>{};
 			const auto subscriptionIdentifier = CppUtils::Logger<"CustomPipelineLogger">::subscribe<"debug">([&loggedMessages](const std::string& message) {
 				loggedMessages.push_back(message);
@@ -769,14 +768,14 @@ Bob;bob@example.com;30;80;4.8)"sv);
 			CppUtils::Logger<"CustomPipelineLogger">::waitUntilFinished();
 			CppUtils::Logger<"CustomPipelineLogger">::unsubscribe(subscriptionIdentifier);
 
-			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-			suite.expectEqual(outputUsers[0].name, "Alice");
-			suite.expectEqual(std::ranges::size(loggedMessages), 1uz);
-			suite.expectEqual(loggedMessages[0], "Processing user");
-		});
+			expect(std::ranges::size(outputUsers)) == 1uz;
+			expect(outputUsers[0].name) == "Alice";
+			expect(std::ranges::size(loggedMessages)) == 1uz;
+			expect(loggedMessages[0]) == "Processing user";
+		};
 
-		suite.addTest("Flow with ThreadPool", [&] {
-			CppUtils::FileSystem::TemporaryDirectory{[&suite](const auto& directory) {
+		suite.test("Flow with ThreadPool") = [&] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) {
 				const auto inputPath = directory / "input.csv";
 				const auto outputPath = directory / "output.csv";
 
@@ -798,10 +797,10 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				auto flowWithOutput = CppUtils::Language::Xml::buildFlow<User, UserMapping>(xmlSourceWithOutput, threadPool);
 				flowWithOutput.execute();
 
-				suite.expect(std::filesystem::exists(outputPath));
+				expect(std::filesystem::exists(outputPath));
 				const auto outputContent = CppUtils::FileSystem::String::read(outputPath);
-				suite.expect(outputContent.contains("Alice"));
-				suite.expect(outputContent.contains("110"));
+				expect(outputContent.contains("Alice"));
+				expect(outputContent.contains("110"));
 
 				auto loggedMessages = std::vector<std::string>{};
 				const auto subscriptionIdentifier = CppUtils::Logger<"FlowWithoutOutputTest">::subscribe<"info">([&loggedMessages](const std::string& message) {
@@ -825,24 +824,24 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				CppUtils::Logger<"FlowWithoutOutputTest">::waitUntilFinished();
 				CppUtils::Logger<"FlowWithoutOutputTest">::unsubscribe(subscriptionIdentifier);
 
-				suite.expectEqual(std::ranges::size(loggedMessages), 1uz);
-				suite.expect(loggedMessages[0].contains("110"));
+				expect(std::ranges::size(loggedMessages)) == 1uz;
+				expect(loggedMessages[0].contains("110"));
 			}};
-		});
+		};
 
-		suite.addTest("Unknown pipeline tag throws", [&] {
+		suite.test("Unknown pipeline tag throws") = [&] {
 			const auto xmlSource = R"(
 			<Pipeline>
 				<UnknownTag/>
 			</Pipeline>
 			)"sv;
 
-			suite.expectThrow<std::runtime_error>([&] {
+			expect([&] {
 				auto _ = CppUtils::Language::Xml::buildPipeline<User, UserMapping>(xmlSource);
-			});
-		});
+			}) == throws<std::runtime_error>;
+		};
 
-		suite.addTest("Unknown Flow tag throws", [&] {
+		suite.test("Unknown Flow tag throws") = [&] {
 			const auto xmlSource = R"(
 			<Flow>
 				<UnknownFlowTag foo="bar"/>
@@ -850,12 +849,12 @@ Bob;bob@example.com;30;80;4.8)"sv);
 			)"sv;
 
 			auto threadPool = CppUtils::Thread::ThreadPool{1};
-			suite.expectThrow<std::runtime_error>([&] {
+			expect([&] {
 				auto _ = CppUtils::Language::Xml::buildFlow<User, UserMapping>(xmlSource, threadPool);
-			});
-		});
+			}) == throws<std::runtime_error>;
+		};
 
-		suite.addTest("<Let> with typed and auto-detected variables", [&] {
+		suite.test("<Let> with typed and auto-detected variables") = [&] {
 			const auto xmlSource = R"(
 			<Pipeline>
 				<Let name="Bonus" type="int" value="25"/>
@@ -876,12 +875,12 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				| pipeline
 				| std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-			suite.expectEqual(outputUsers[0].score, 125);
-			suite.expectEqual(outputUsers[0].name, "Alice_Updated");
-		});
+			expect(std::ranges::size(outputUsers)) == 1uz;
+			expect(outputUsers[0].score) == 125;
+			expect(outputUsers[0].name) == "Alice_Updated";
+		};
 
-		suite.addTest("<Validate> with composite condition", [&] {
+		suite.test("<Validate> with composite condition") = [&] {
 			const auto xmlSource = R"(
 			<Pipeline>
 				<Validate error="Invalid adult user">
@@ -906,8 +905,8 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				| pipeline
 				| std::ranges::to<std::vector<User>>();
 
-			suite.expectEqual(std::ranges::size(outputUsers), 1uz);
-			suite.expectEqual(outputUsers[0].name, "Alice");
-		});
-	}};
+			expect(std::ranges::size(outputUsers)) == 1uz;
+			expect(outputUsers[0].name) == "Alice";
+		};
+	};
 }

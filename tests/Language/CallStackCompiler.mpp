@@ -6,25 +6,22 @@ import CppUtils;
 namespace CppUtils::UnitTest::Language::CallStackCompiler
 {
 	/*
-	auto _ = TestSuite{
-		"Language/CallStackCompiler",
-		{"Logger", "Language/LabelsCompiler"},
-		[](auto& suite) {
+	auto _ = testSuite("Language/CallStackCompiler").dependsOn("Logger", "Language/LabelsCompiler") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using Logger = TestSuite::Logger;
 		namespace VM = CppUtils::Language::VirtualMachine;
 		namespace Compiler = CppUtils::Language::CallStackCompiler;
 
-		suite.addTest("empty source", [&] {
+		suite.test("empty source") = [&] {
 			constexpr auto source = u"§{X}"sv;
 			auto output = Compiler::compile(source);
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 0uz);
-		});
+			expect(executionResult) == 0uz;
+		};
 
-		suite.addTest("one function", [&] {
+		suite.test("one function") = [&] {
 			constexpr auto source = uR"(
 				(21X
 
@@ -38,10 +35,10 @@ namespace CppUtils::UnitTest::Language::CallStackCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
+			expect(executionResult) == 42uz;
+		};
 
-		suite.addTest("comment", [&] {
+		suite.test("comment") = [&] {
 			constexpr auto source = uR"(
 					main §{
 						4
@@ -53,10 +50,10 @@ namespace CppUtils::UnitTest::Language::CallStackCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
+			expect(executionResult) == 42uz;
+		};
 
-		suite.addTest("call function", [&] { // constexpr { (not supported on MSVC)
+		suite.test("call function") = [&] { // constexpr { (not supported on MSVC)
 			constexpr auto source = uR"(
 				(21X
 
@@ -81,8 +78,8 @@ namespace CppUtils::UnitTest::Language::CallStackCompiler
 			Logger::print("Output:\n{}\n", CppUtils::String::toAscii(output));
 
 			auto executionResult = VM::execute<std::size_t>(output);
-			suite.expectEqual(executionResult, 42uz);
-		});
-	}};
+			expect(executionResult) == 42uz;
+		};
+	};
 	*/
 }

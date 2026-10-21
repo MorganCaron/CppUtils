@@ -5,95 +5,94 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Execution::EventDispatcher
 {
-	auto _ = TestSuite{
-		"Execution/EventDispatcher", {"Logger"}, [](TestSuite& suite) {
+	auto _ = testSuite("Execution/EventDispatcher").dependsOn("Logger") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("Empty", [&] {
+		suite.test("Empty") = [&] {
 			auto _ = CppUtils::Execution::EventDispatcher{};
-		});
+		};
 
-		suite.addTest("Subscribe", [&] {
+		suite.test("Subscribe") = [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 
-			eventDispatcher.subscribe<>([&suite](const std::string& message) -> void {
+			eventDispatcher.subscribe<>([](const std::string& message) -> void {
 				Logger::print("{}", message);
-				suite.expect(false);
+				expect(false);
 			});
-		});
+		};
 
-		suite.addTest("Subscribe with name", [&] {
+		suite.test("Subscribe with name") = [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 
-			eventDispatcher.subscribe<"Ping">([&suite](const std::string& message) -> void {
+			eventDispatcher.subscribe<"Ping">([](const std::string& message) -> void {
 				Logger::print("{}", message);
-				suite.expect(false);
+				expect(false);
 			});
-		});
+		};
 
-		suite.addTest("Emit without subscribers", [&] {
+		suite.test("Emit without subscribers") = [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 			eventDispatcher.emit<>("ping"s);
 			eventDispatcher.emit<"Ping">("ping"s);
-		});
+		};
 
-		suite.addTest("Send/Receive", [&] {
+		suite.test("Send/Receive") = [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 			auto expectPingReceived = std::atomic_bool{false};
 
-			eventDispatcher.subscribe<>([&expectPingReceived, &suite](const std::string& message) -> void {
+			eventDispatcher.subscribe<>([&expectPingReceived](const std::string& message) -> void {
 				Logger::print("{}", message);
 				expectPingReceived = true;
-				suite.expectEqual(message, "ping"sv);
+				expect(message) == "ping";
 			});
 			eventDispatcher.emit<>("ping"s);
 
-			suite.expect(expectPingReceived);
-		});
+			expect(expectPingReceived);
+		};
 
-		suite.addTest("Send/Receive with name", [&] {
+		suite.test("Send/Receive with name") = [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 			auto expectPingReceived = std::atomic_bool{false};
 
-			eventDispatcher.subscribe<"Ping">([&expectPingReceived, &suite](const std::string& message) -> void {
+			eventDispatcher.subscribe<"Ping">([&expectPingReceived](const std::string& message) -> void {
 				Logger::print("{}", message);
 				expectPingReceived = true;
-				suite.expectEqual(message, "ping"sv);
+				expect(message) == "ping";
 			});
-			eventDispatcher.subscribe<"Other">([&suite](const std::string& message) -> void {
+			eventDispatcher.subscribe<"Other">([](const std::string& message) -> void {
 				Logger::print("{}", message);
-				suite.expect(false);
+				expect(false);
 			});
 			eventDispatcher.emit<"Ping">("ping"s);
 
-			suite.expect(expectPingReceived);
-		});
+			expect(expectPingReceived);
+		};
 
-		suite.addTest("Cascade calls", [&] {
+		suite.test("Cascade calls") = [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 			auto expectPingReceived = std::atomic_bool{false};
 			auto expectPongReceived = std::atomic_bool{false};
 
-			eventDispatcher.subscribe<"Ping">([&expectPingReceived, &suite, &eventDispatcher](const std::string& message) -> void {
+			eventDispatcher.subscribe<"Ping">([&expectPingReceived, &eventDispatcher](const std::string& message) -> void {
 				Logger::print("{}", message);
 				expectPingReceived = true;
-				suite.expectEqual(message, "ping"sv);
+				expect(message) == "ping";
 				eventDispatcher.emit<"Pong">("pong"s);
 			});
-			eventDispatcher.subscribe<"Pong">([&expectPongReceived, &suite](const std::string& message) -> void {
+			eventDispatcher.subscribe<"Pong">([&expectPongReceived](const std::string& message) -> void {
 				Logger::print("{}", message);
 				expectPongReceived = true;
-				suite.expectEqual(message, "pong"sv);
+				expect(message) == "pong";
 			});
 			eventDispatcher.emit<"Ping">("ping"s);
 
-			suite.expect(expectPingReceived);
-			suite.expect(expectPongReceived);
-		});
+			expect(expectPingReceived);
+			expect(expectPongReceived);
+		};
 
-		suite.addTest("Multiple subscribers", [&] {
+		suite.test("Multiple subscribers") = [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 			auto expect1 = std::atomic_bool{false};
 			auto expect2 = std::atomic_bool{false};
@@ -106,24 +105,24 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 			});
 			eventDispatcher.emit<"Event">();
 
-			suite.expect(expect1);
-			suite.expect(expect2);
-		});
+			expect(expect1);
+			expect(expect2);
+		};
 
-		suite.addTest("Mutable Lambda", [&] {
+		suite.test("Mutable Lambda") = [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 
-			eventDispatcher.subscribe<"Count">([count = 0, &suite](int expected) mutable {
+			eventDispatcher.subscribe<"Count">([count = 0](int expected) mutable {
 				++count;
-				suite.expectEqual(count, expected);
+				expect(count) == expected;
 			});
 
 			eventDispatcher.emit<"Count">(1);
 			eventDispatcher.emit<"Count">(2);
 			eventDispatcher.emit<"Count">(3);
-		});
+		};
 
-		suite.addTest("Multiple subscribe", [&] {
+		suite.test("Multiple subscribe") = [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 			auto count = std::atomic_size_t{0};
 
@@ -136,10 +135,10 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 			eventDispatcher.emit<"C">();
 			eventDispatcher.emit<"D">();
 
-			suite.expectEqual(count, 3uz);
-		});
+			expect(count) == 3uz;
+		};
 
-		suite.addTest("Unsubscribe", [&] {
+		suite.test("Unsubscribe") = [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 			auto count = 0uz;
 
@@ -148,15 +147,15 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 			});
 
 			eventDispatcher.emit<"Event">();
-			suite.expectEqual(count, 1uz);
+			expect(count) == 1uz;
 
-			suite.expect(eventDispatcher.unsubscribe(subscriptionIdentifier));
+			expect(eventDispatcher.unsubscribe(subscriptionIdentifier));
 
 			eventDispatcher.emit<"Event">();
-			suite.expectEqual(count, 1uz);
-		});
+			expect(count) == 1uz;
+		};
 
-		suite.addTest("Clear subscribers", [&] {
+		suite.test("Clear subscribers") = [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 			auto count = 0uz;
 
@@ -165,16 +164,16 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 
 			eventDispatcher.emit<"A">();
 			eventDispatcher.emit<"B">();
-			suite.expectEqual(count, 2uz);
+			expect(count) == 2uz;
 
 			eventDispatcher.clearSubscribers();
 
 			eventDispatcher.emit<"A">();
 			eventDispatcher.emit<"B">();
-			suite.expectEqual(count, 2uz);
-		});
+			expect(count) == 2uz;
+		};
 
-		suite.addTest("Unsubscribe by event hash", [&] {
+		suite.test("Unsubscribe by event hash") = [&] {
 			auto eventDispatcher = CppUtils::Execution::EventDispatcher{};
 			auto count = 0uz;
 
@@ -183,20 +182,20 @@ namespace CppUtils::UnitTest::Execution::EventDispatcher
 
 			eventDispatcher.emit<"Event">();
 			eventDispatcher.emit<"Other">();
-			suite.expectEqual(count, 2uz);
+			expect(count) == 2uz;
 
-			suite.expect(eventDispatcher.unsubscribe<"Event">());
+			expect(eventDispatcher.unsubscribe<"Event">());
 
 			eventDispatcher.emit<"Event">();
 			eventDispatcher.emit<"Other">();
-			suite.expectEqual(count, 3uz);
+			expect(count) == 3uz;
 
-			suite.expect(not eventDispatcher.unsubscribe<"Event">());
+			expect(not eventDispatcher.unsubscribe<"Event">());
 
-			suite.expect(eventDispatcher.unsubscribe("Other"_hash));
+			expect(eventDispatcher.unsubscribe("Other"_hash));
 
 			eventDispatcher.emit<"Other">();
-			suite.expectEqual(count, 3uz);
-		});
-	}};
+			expect(count) == 3uz;
+		};
+	};
 }

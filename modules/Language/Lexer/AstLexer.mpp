@@ -29,10 +29,8 @@ export namespace CppUtils::Language::Lexer
 		std::vector<Container::ASTNode<Element>>& memory) -> bool
 	{
 		for (const auto& node : lexeme.nodes)
-		{
 			if (not parseLexeme(cursor, parentNode, ast, node, grammar, memory))
 				return false;
-		}
 		return true;
 	}
 
@@ -164,10 +162,8 @@ export namespace CppUtils::Language::Lexer
 		case "or"_token:
 		{
 			for (const auto& node : lexeme.nodes)
-			{
 				if (parseLexeme(cursor, parentNode, ast, node, grammar, memory))
 					return true;
-			}
 			return false;
 		}
 		case "hash"_token:
@@ -298,7 +294,10 @@ export namespace CppUtils::Language::Lexer
 		const auto success = parseDeclaration(cursor, parentRef, ast, mainLexeme, grammar, memory);
 		if (not success or not String::isEndOfString(cursor))
 			throw std::logic_error{std::format("Parsing failed: success={}, pos={}/{}, remaining: \"{}\"",
-				success, cursor.position, cursor.source.size(), cursor.source.substr(cursor.position))};
+				success,
+				cursor.position,
+				cursor.source.size(),
+				cursor.source.substr(cursor.position))};
 		return ast;
 	}
 }

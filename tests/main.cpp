@@ -1,17 +1,15 @@
 import std;
 import CppUtils;
-import CppUtils.UnitTests;
 
-auto start([[maybe_unused]] std::span<const std::string_view> arguments) -> int
+auto start(std::span<const std::string_view> arguments) -> int
 {
 	try
 	{
-		/*
-		auto& settings = CppUtils::UnitTest::executeCommands(argc, argv);
+		if (not std::ranges::empty(arguments))
+			arguments = arguments.subspan(1);
+		auto settings = CppUtils::UnitTest::executeCommands(arguments);
 		if (settings.abort)
 			return CppUtils::exitSuccess;
-		*/
-		auto settings = CppUtils::UnitTest::TestSettings{.fastAbort = false};
 		return CppUtils::UnitTest::executeTests(std::move(settings));
 	}
 	catch (const std::exception& exception)

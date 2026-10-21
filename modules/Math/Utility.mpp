@@ -27,6 +27,34 @@ export namespace CppUtils::Math
 	static_assert(absolute(0u) == 0u);
 	static_assert(absolute(1u) == 1u);
 
+	/**
+	 * @brief Performs robust, magnitude-adaptive floating-point equality comparison.
+	 *
+	 * Direct comparison of floating-point numbers with `operator==` is notoriously unreliable
+	 * due to IEEE 754 binary representation errors and rounding artifacts. For instance, the expression
+	 * `(0.1 + 0.2) == 0.3` evaluates to `false` because in base-2 floating point, `0.1 + 0.2` results
+	 * in `0.30000000000000004440892098500626...`.
+	 *
+	 * Furthermore, naive approaches like `std::abs(a - b) < fixed_epsilon` fail for two major reasons:
+	 * 1. For large numbers, a fixed epsilon is far too tight (the gap between representable numbers
+	 *    exceeds the epsilon), causing false negatives.
+	 * 2. Near zero (subnormal numbers), relative scaling collapses, causing underflow issues.
+	 *
+	 * `isEqual` solves both problems by implementing an adaptive tolerance algorithm:
+	 * `|lhs - rhs| <= std::max(minimumEpsilon, epsilon * std::max(|lhs|, |rhs|))`
+	 *
+	 * - **Adaptive scaling**: Scales tolerance proportionally to the operands' magnitude (`epsilon * max`),
+	 *   maintaining accurate relative precision across small and arbitrarily large numbers.
+	 * - **Zero-proximity fallback**: Protects comparisons near zero by falling back to `minimumEpsilon`
+	 *   (`std::numeric_limits<Float>::min()` by default).
+	 *
+	 * @tparam Float A floating-point type satisfying `std::floating_point`.
+	 * @param lhs Left-hand operand to compare.
+	 * @param rhs Right-hand operand to compare.
+	 * @param epsilon Relative tolerance factor (defaults to machine epsilon `std::numeric_limits<Float>::epsilon()`).
+	 * @param minimumEpsilon Absolute tolerance floor for values close to zero (defaults to `std::numeric_limits<Float>::min()`).
+	 * @return `true` if the difference between operands falls within the adaptive tolerance, `false` otherwise.
+	 */
 	template<std::floating_point Float>
 	[[nodiscard]] inline constexpr auto isEqual(
 		Float lhs,

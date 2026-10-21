@@ -5,108 +5,147 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::String::Utility
 {
-	auto _ = TestSuite{"String/Utility", {"Logger"}, [](TestSuite& suite) {
+	auto _ = testSuite("String/Utility").dependsOn("Logger") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("trimString", [&] {
+		suite.test("trimString") = [&] {
 			auto string = "\n \t Hello World!\n \t ";
 			auto leftTrimString = CppUtils::String::leftTrimString(string);
 			auto rightTrimString = CppUtils::String::rightTrimString(string);
 			auto trimString = CppUtils::String::trimString(string);
 
 			Logger::print(R"("{}")", leftTrimString);
-			suite.expectEqual(leftTrimString, "Hello World!\n \t ");
+			expect(leftTrimString) == "Hello World!\n \t ";
 
 			Logger::print(R"("{}")", rightTrimString);
-			suite.expectEqual(rightTrimString, "\n \t Hello World!");
+			expect(rightTrimString) == "\n \t Hello World!";
 
 			Logger::print(R"("{}")", trimString);
-			suite.expectEqual(trimString, "Hello World!");
-		});
+			expect(trimString) == "Hello World!";
+		};
 
-		suite.addTest("getPrintableChar", [&] {
+		suite.test("getPrintableChar") = [&] {
 			auto output = ""s;
 			for (char c = 0; c >= 0; ++c)
 				output += CppUtils::String::getPrintableChar(c) + ' ';
 			Logger::print("{}", output);
-		});
+		};
 
-		suite.addTest("getNumberLength", [&] {
-			suite.expectEqual(CppUtils::String::getNumberLength(0), 1uz);
-			suite.expectEqual(CppUtils::String::getNumberLength(1), 1uz);
-			suite.expectEqual(CppUtils::String::getNumberLength(2), 1uz);
-			suite.expectEqual(CppUtils::String::getNumberLength(10), 2uz);
+		suite.test("getNumberLength") = [&] {
+			expect(CppUtils::String::getNumberLength(0)) == 1uz;
+			expect(CppUtils::String::getNumberLength(1)) == 1uz;
+			expect(CppUtils::String::getNumberLength(2)) == 1uz;
+			expect(CppUtils::String::getNumberLength(10)) == 2uz;
 
-			suite.expectEqual(CppUtils::String::getNumberLength(-1), 2uz);
-			suite.expectEqual(CppUtils::String::getNumberLength(-2), 2uz);
-			suite.expectEqual(CppUtils::String::getNumberLength(-10), 3uz);
+			expect(CppUtils::String::getNumberLength(-1)) == 2uz;
+			expect(CppUtils::String::getNumberLength(-2)) == 2uz;
+			expect(CppUtils::String::getNumberLength(-10)) == 3uz;
 
-			suite.expectEqual(CppUtils::String::getNumberLength(0, 2), 1uz);
-			suite.expectEqual(CppUtils::String::getNumberLength(1, 2), 1uz);
-			suite.expectEqual(CppUtils::String::getNumberLength(2, 2), 2uz);
-			suite.expectEqual(CppUtils::String::getNumberLength(10, 2), 4uz);
-		});
+			expect(CppUtils::String::getNumberLength(0, 2)) == 1uz;
+			expect(CppUtils::String::getNumberLength(1, 2)) == 1uz;
+			expect(CppUtils::String::getNumberLength(2, 2)) == 2uz;
+			expect(CppUtils::String::getNumberLength(10, 2)) == 4uz;
+		};
 
-		suite.addTest("toString", [&] {
-			suite.expectEqual(CppUtils::String::toString<2>(0), "0"sv);
-			suite.expectEqual(CppUtils::String::toString<2>(1), "1"sv);
-			suite.expectEqual(CppUtils::String::toString<2>(2), "10"sv);
-			suite.expectEqual(CppUtils::String::toString<2>(10), "1010"sv);
+		suite.test("toString") = [&] {
+			expect(CppUtils::String::toString<2>(0)) == "0";
+			expect(CppUtils::String::toString<2>(1)) == "1";
+			expect(CppUtils::String::toString<2>(2)) == "10";
+			expect(CppUtils::String::toString<2>(10)) == "1010";
 
-			suite.expectEqual(CppUtils::String::toString(0), "0"sv);
-			suite.expectEqual(CppUtils::String::toString(1), "1"sv);
-			suite.expectEqual(CppUtils::String::toString(-1), "-1"sv);
+			expect(CppUtils::String::toString(0)) == "0";
+			expect(CppUtils::String::toString(1)) == "1";
+			expect(CppUtils::String::toString(-1)) == "-1";
 
-			suite.expectEqual(CppUtils::String::toString(42), "42"sv);
-			suite.expectEqual(CppUtils::String::toString(42u), "42"sv);
-			suite.expectEqual(CppUtils::String::toString(42uz), "42"sv);
-			suite.expectEqual(CppUtils::String::toString(42ll), "42"sv);
+			expect(CppUtils::String::toString(42)) == "42";
+			expect(CppUtils::String::toString(42u)) == "42";
+			expect(CppUtils::String::toString(42uz)) == "42";
+			expect(CppUtils::String::toString(42ll)) == "42";
 
-			suite.expectEqual(CppUtils::String::toString(-42), "-42"sv);
-			suite.expectEqual(CppUtils::String::toString(-42ll), "-42"sv);
+			expect(CppUtils::String::toString(-42)) == "-42";
+			expect(CppUtils::String::toString(-42ll)) == "-42";
 
-			suite.expectEqual(CppUtils::String::toString(123'456), "123456"sv);
-			suite.expectEqual(CppUtils::String::toString(-123'456), "-123456"sv);
-		});
+			expect(CppUtils::String::toString(123'456)) == "123456";
+			expect(CppUtils::String::toString(-123'456)) == "-123456";
+		};
 
-		suite.addTest("split", [&] {
+		suite.test("split") = [&] {
 			auto splitString = CppUtils::String::split("Hello World!", " ");
-			suite.expectEqual(std::ranges::size(splitString), 2uz);
-			suite.expectEqual(splitString[0], "Hello"sv);
-			suite.expectEqual(splitString[1], "World!"sv);
-		});
+			expect(std::ranges::size(splitString)) == 2uz;
+			expect(splitString[0]) == "Hello";
+			expect(splitString[1]) == "World!";
+		};
 
-		suite.addTest("toHexString", [&] {
+		suite.test("toHexString") = [&] {
 			const auto data = std::array{std::byte{0x00}, std::byte{0x0f}, std::byte{0x10}, std::byte{0xff}};
-			suite.expectEqual(CppUtils::String::toHexString(data), "000f10ff");
-			suite.expectEqual(CppUtils::String::toHexString("Hello"), "48656c6c6f");
-		});
+			expect(CppUtils::String::toHexString(data)) == "000f10ff";
+			expect(CppUtils::String::toHexString("Hello")) == "48656c6c6f";
+		};
 
-		suite.addTest("fromHexString", [&] {
+		suite.test("fromHexString") = [&] {
 			const auto decoded = CppUtils::String::fromHexString("000f10ff");
 			const auto expectedData = std::array{std::byte{0x00}, std::byte{0x0f}, std::byte{0x10}, std::byte{0xff}};
-			suite.expect(std::ranges::equal(decoded, expectedData));
-		});
+			expect(std::ranges::equal(decoded, expectedData));
+		};
 
-		suite.addTest("toLowercase", [&] {
-			suite.expectEqual(CppUtils::String::toLowercase('A'), 'a');
-			suite.expectEqual(CppUtils::String::toLowercase("HELLO"), "hello");
+		suite.test("toLowercase") = [&] {
+			expect(CppUtils::String::toLowercase('A')) == 'a';
+			expect(CppUtils::String::toLowercase("HELLO")) == "hello";
 			const auto original = std::string{"HELLO"};
-			suite.expectEqual(CppUtils::String::toLowercase(original), "hello");
-			suite.expectEqual(CppUtils::String::toLowercase(std::string{"HELLO"}), "hello");
-			suite.expectEqual(CppUtils::String::toLowercase("HELLO"sv), "hello");
-			suite.expectEqual(CppUtils::String::toLowercase(L"HELLO"sv), L"hello");
-		});
+			expect(CppUtils::String::toLowercase(original)) == "hello";
+			expect(CppUtils::String::toLowercase(std::string{"HELLO"})) == "hello";
+			expect(CppUtils::String::toLowercase("HELLO"sv)) == "hello";
+			expect(CppUtils::String::toLowercase(L"HELLO"sv)) == L"hello";
+		};
 
-		suite.addTest("toUppercase", [&] {
-			suite.expectEqual(CppUtils::String::toUppercase('a'), 'A');
-			suite.expectEqual(CppUtils::String::toUppercase("hello"), "HELLO");
+		suite.test("toUppercase") = [&] {
+			expect(CppUtils::String::toUppercase('a')) == 'A';
+			expect(CppUtils::String::toUppercase("hello")) == "HELLO";
 			const auto original = std::string{"hello"};
-			suite.expectEqual(CppUtils::String::toUppercase(original), "HELLO");
-			suite.expectEqual(CppUtils::String::toUppercase(std::string{"hello"}), "HELLO");
-			suite.expectEqual(CppUtils::String::toUppercase("hello"sv), "HELLO");
-			suite.expectEqual(CppUtils::String::toUppercase(L"hello"sv), L"HELLO");
-		});
-	}};
+			expect(CppUtils::String::toUppercase(original)) == "HELLO";
+			expect(CppUtils::String::toUppercase(std::string{"hello"})) == "HELLO";
+			expect(CppUtils::String::toUppercase("hello"sv)) == "HELLO";
+			expect(CppUtils::String::toUppercase(L"hello"sv)) == L"HELLO";
+		};
+
+		suite.test("formatValue") = [&] {
+			expect(CppUtils::String::formatValue(42)) == "42";
+			expect(CppUtils::String::formatValue("hello")) == "hello";
+			expect(CppUtils::String::formatValue(std::byte{0x2A})) == "0x2A";
+
+			const auto vector = std::vector<int>{1, 2, 3};
+			expect(CppUtils::String::formatValue(vector)) == "[1, 2, 3]";
+
+			const auto stringVector = std::vector<std::string>{"foo", "bar"};
+			expect(CppUtils::String::formatValue(stringVector)) == R"(["foo", "bar"])";
+
+			const auto pair = std::pair{1, "test"};
+			expect(CppUtils::String::formatValue(pair)) == R"((1, "test"))";
+
+			const auto tuple = std::tuple{1, 2.5, "item"};
+			expect(CppUtils::String::formatValue(tuple)) == R"((1, 2.5, "item"))";
+
+			const auto variant = std::variant<int, std::string>{"active"};
+			expect(CppUtils::String::formatValue(variant)) == "active";
+
+			const auto path = std::filesystem::path{"/usr/local/bin"};
+			expect(CppUtils::String::formatValue(path)) == "/usr/local/bin";
+
+			const auto emptyOptional = std::optional<int>{};
+			expect(CppUtils::String::formatValue(emptyOptional)) == "nullopt";
+
+			const auto populatedOptional = std::optional<std::string>{"hello"};
+			expect(CppUtils::String::formatValue(populatedOptional)) == "hello";
+
+			const auto nullUniquePtr = std::unique_ptr<int>{};
+			expect(CppUtils::String::formatValue(nullUniquePtr)) == "nullptr";
+
+			const auto populatedUniquePtr = std::make_unique<int>(42);
+			expect(CppUtils::String::formatValue(populatedUniquePtr)) == "42";
+
+			const auto vectorOfOptionals = std::vector<std::optional<int>>{1, std::nullopt, 3};
+			expect(CppUtils::String::formatValue(vectorOfOptionals)) == "[1, nullopt, 3]";
+		};
+	};
 }

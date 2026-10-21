@@ -1,0 +1,15 @@
+export module CppUtils.UnitTests.Language.Xml.Utility;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Language::Xml::Utility
+{
+	auto _ = testSuite("Language/Xml/Utility") = [](TestSuite& suite) {
+		suite.test("escapeXml handles reserved characters") = [&] {
+			expect(CppUtils::Language::Xml::escapeXml("<hello> & \"world\" 'test'")) == "&lt;hello&gt; &amp; &quot;world&quot; &apos;test&apos;";
+			expect(CppUtils::Language::Xml::escapeXml("clean string")) == "clean string";
+			expect(CppUtils::Language::Xml::escapeXml("")) == "";
+		};
+	};
+}

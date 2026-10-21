@@ -5,10 +5,10 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Type::Tuple
 {
-	auto _ = TestSuite{"Type/Tuple", {"Logger"}, [](TestSuite& suite) {
+	auto _ = testSuite("Type/Tuple").dependsOn("Logger") = [](TestSuite& suite) {
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("visitAt", [&] {
+		suite.test("visitAt") = [&] {
 			auto called = std::atomic_bool{false};
 			auto function = [&called](auto&& value) {
 				Logger::print<"detail">("{}", value);
@@ -18,7 +18,7 @@ namespace CppUtils::UnitTest::Type::Tuple
 			auto tuple = std::make_tuple(1, "Hello World!");
 			auto _ = CppUtils::Type::Tuple::visitAt(tuple, 1, function);
 
-			suite.expect(called);
-		});
-	}};
+			expect(called);
+		};
+	};
 }

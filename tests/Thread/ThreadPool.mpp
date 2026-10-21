@@ -5,24 +5,24 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Thread::ThreadPool
 {
-	auto _ = TestSuite{"Thread/ThreadPool", {"UnitTest"}, [](TestSuite& suite) {
+	auto _ = testSuite("Thread/ThreadPool").dependsOn("UnitTest") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace std::chrono_literals;
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("0 task / 1 thread", [&] {
+		suite.test("0 task / 1 thread") = [&] {
 			auto _ = CppUtils::Thread::ThreadPool{1};
-		});
+		};
 
-		suite.addTest("0 task / 2 threads", [&] {
+		suite.test("0 task / 2 threads") = [&] {
 			auto _ = CppUtils::Thread::ThreadPool{2};
-		});
+		};
 
-		suite.addTest("0 task / N threads", [&] {
+		suite.test("0 task / N threads") = [&] {
 			auto _ = CppUtils::Thread::ThreadPool{};
-		});
+		};
 
-		suite.addTest("1 task with future.wait()", [&] {
+		suite.test("1 task with future.wait()") = [&] {
 			auto called = std::atomic_bool{false};
 			{
 				auto threadPool = CppUtils::Thread::ThreadPool{};
@@ -31,10 +31,10 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 				});
 				future.wait();
 			}
-			suite.expect(called);
-		});
+			expect(called);
+		};
 
-		suite.addTest("waitUntilFinished", [&] {
+		suite.test("waitUntilFinished") = [&] {
 			auto called = std::atomic_bool{false};
 			{
 				auto threadPool = CppUtils::Thread::ThreadPool{};
@@ -43,12 +43,12 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 				});
 				threadPool.waitUntilFinished();
 			}
-			suite.expect(called);
-		});
+			expect(called);
+		};
 
-		suite.addTest("Canary: LLVM #221609 std::runtime_error double-free", [&] {
+		suite.test("Canary: LLVM #221609 std::runtime_error double-free") = [] {
 #if defined(_WIN32)
-			suite.skip("Waiting for LLVM issue #221609 fix: https://github.com/llvm/llvm-project/issues/221609");
+			skip("Waiting for LLVM issue #221609 fix: https://github.com/llvm/llvm-project/issues/221609");
 #else
 			auto exceptionPointer = std::exception_ptr{};
 			try
@@ -66,10 +66,10 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 			}
 			catch (const std::exception& exception)
 			{
-				suite.expectEqual(exception.what(), "Canary"sv);
+				expect(exception.what()) == "Canary";
 			}
 #endif
-		});
+		};
 
 		// Workaround on Windows (MSVC ABI)
 		// https://github.com/llvm/llvm-project/issues/221609
@@ -90,7 +90,7 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 		using TestException = std::runtime_error;
 #endif
 
-		suite.addTest("Error handling with future", [&] {
+		suite.test("Error handling with future") = [&] {
 			auto threadPool = CppUtils::Thread::ThreadPool{};
 			auto future = threadPool.call([] {
 				throw TestException{"Test error"}; // throw std::runtime_error{"Test error"};
@@ -105,15 +105,15 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 			{
 				called = true;
 				Logger::print<"error">("ThreadPool: Unhandled exception: {}", exception.what());
-				suite.expectEqual(exception.what(), "Test error"sv);
+				expect(exception.what()) == "Test error";
 			}
-			suite.expect(called);
-		});
+			expect(called);
+		};
 
-		suite.addTest("Error handling without future", [&] {
+		suite.test("Error handling without future") = [&] {
 			auto threadPool = CppUtils::Thread::ThreadPool{};
 			auto called = std::atomic_bool{false};
-			threadPool.setOnError([&suite, &called](std::exception_ptr exceptionPointer) {
+			threadPool.setOnError([&called](std::exception_ptr exceptionPointer) {
 				called = true;
 				try
 				{
@@ -122,7 +122,7 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 				catch (const std::exception& exception)
 				{
 					Logger::print<"error">("ThreadPool: Unhandled exception: {}", exception.what());
-					suite.expectEqual(exception.what(), "Test error"sv);
+					expect(exception.what()) == "Test error";
 				}
 				catch (...)
 				{
@@ -133,18 +133,18 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 				throw TestException{"Test error"};
 			});
 			threadPool.waitUntilFinished();
-			suite.expect(called);
-		});
+			expect(called);
+		};
 
-		suite.addTest("Task with return value", [&] {
+		suite.test("Task with return value") = [&] {
 			auto threadPool = CppUtils::Thread::ThreadPool{};
 			auto future = threadPool.call([] {
 				return 42;
 			});
-			suite.expectEqual(future.get(), 42);
-		});
+			expect(future.get()) == 42;
+		};
 
-		suite.addTest("Stress test", [&] {
+		suite.test("Stress test") = [&] {
 			auto threadPool = CppUtils::Thread::ThreadPool{};
 			auto counter = std::atomic_size_t{0};
 			const auto numTasks = 10'000uz;
@@ -159,7 +159,7 @@ namespace CppUtils::UnitTest::Thread::ThreadPool
 				});
 
 			threadPool.waitUntilFinished();
-			suite.expectEqual(counter.load(), numTasks);
-		});
-	}};
+			expect(counter.load()) == numTasks;
+		};
+	};
 }

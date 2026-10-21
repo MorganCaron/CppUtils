@@ -5,25 +5,25 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Thread::ThreadLoop
 {
-	auto _ = TestSuite{"Thread/ThreadLoop", {"UnitTest"}, [](TestSuite& suite) {
+	auto _ = testSuite("Thread/ThreadLoop").dependsOn("UnitTest") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace std::chrono_literals;
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("isRunning", [&] {
+		suite.test("isRunning") = [&] {
 			auto threadLoop = CppUtils::Thread::ThreadLoop{[] {
 				std::this_thread::sleep_for(10ms);
 			}};
-			suite.expect(not threadLoop.isRunning());
+			expect(not threadLoop.isRunning());
 			threadLoop.start();
-			suite.expect(threadLoop.isRunning());
+			expect(threadLoop.isRunning());
 			threadLoop.stop();
-			suite.expect(not threadLoop.isRunning());
+			expect(not threadLoop.isRunning());
 			threadLoop.start();
-			suite.expect(threadLoop.isRunning());
-		});
+			expect(threadLoop.isRunning());
+		};
 
-		suite.addTest("Loop", [&] {
+		suite.test("Loop") = [&] {
 			auto lockedNumber = CppUtils::Thread::UniqueLocker{0uz};
 			{
 				auto threadLoop = CppUtils::Thread::ThreadLoop{[&lockedNumber] {
@@ -33,14 +33,14 @@ namespace CppUtils::UnitTest::Thread::ThreadLoop
 						++nb;
 				}};
 				threadLoop.start();
-				suite.expectWait([&lockedNumber] {
+				expect([&lockedNumber] {
 					return lockedNumber.access().value() >= 5uz;
-				}, 500ms, 5ms);
+				}) == eventually(500ms, 5ms);
 			}
 			auto accessor = lockedNumber.access();
 			auto nb = accessor.value();
-			suite.expectEqual(nb, 5uz);
-		});
+			expect(nb) == 5uz;
+		};
 
 		// Workaround on Windows (MSVC ABI)
 		// https://github.com/llvm/llvm-project/issues/221609
@@ -61,7 +61,7 @@ namespace CppUtils::UnitTest::Thread::ThreadLoop
 		using TestException = std::runtime_error;
 #endif
 
-		suite.addTest("onError callback", [&] {
+		suite.test("onError callback") = [&] {
 			auto caughtMessage = CppUtils::Thread::UniqueLocker{""s};
 			auto count = 0uz;
 
@@ -85,11 +85,11 @@ namespace CppUtils::UnitTest::Thread::ThreadLoop
 			threadLoop.start();
 			std::this_thread::sleep_for(50ms);
 
-			suite.expect(threadLoop.isRunning());
+			expect(threadLoop.isRunning());
 			threadLoop.stop();
-			suite.expect(not threadLoop.isRunning());
+			expect(not threadLoop.isRunning());
 
-			suite.expectEqual(caughtMessage.access().value(), "Exception");
-		});
-	}};
+			expect(caughtMessage.access().value()) == "Exception";
+		};
+	};
 }

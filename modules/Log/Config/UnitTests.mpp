@@ -46,8 +46,10 @@ export namespace CppUtils
 		});
 
 		eventQueue.subscribe<"detail">([](const std::string& message) {
-			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Blue};
-			std::println("{}", message);
+			{
+				auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Blue};
+				std::println("{}", message);
+			}
 			std::fflush(stdout);
 		});
 
@@ -58,8 +60,15 @@ export namespace CppUtils
 		});
 
 		eventQueue.subscribe<"error">([](const std::string& message) {
-			auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
-			std::println("{:^{}}\n{} ✕", "🛇 ERROR 🛇", Terminal::getTerminalSize().width(), message);
+			{
+				auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
+				std::println("{:^{}}", "🛇 ERROR 🛇", Terminal::getTerminalSize().width());
+			}
+			std::println("{}", message);
+			{
+				auto _ = Terminal::TextModifier{stdout, Terminal::TextColor::TextColorEnum::Red};
+				std::println("Failed ✕");
+			}
 			std::fflush(stdout);
 		});
 

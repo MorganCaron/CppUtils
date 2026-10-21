@@ -129,19 +129,31 @@ export namespace CppUtils::Container
 
 		inline constexpr auto detachChildren() -> void
 		{
-			for (auto& child : m_children)
-				if (auto childPtr = std::visit([](auto&& pointer) -> SharedPtr {
+			for (auto children = std::move(m_children); auto& child : children)
+			{
+				const auto needsDistanceUpdate = std::holds_alternative<SharedPtr>(child);
+				if (auto childPointer = std::visit([](auto&& pointer) -> SharedPtr {
 					if constexpr (std::is_same_v<std::decay_t<decltype(pointer)>, SharedPtr>)
 						return pointer;
 					else
 						return pointer.lock();
 				}, child))
 				{
-					if (not childPtr)
+					if (not childPointer)
 						continue;
-					auto accessor = childPtr->uniqueAccess();
-					detachChild(accessor.value());
+					auto accessor = childPointer->uniqueAccess();
+					auto& parents = accessor->m_parents;
+					if (auto parentIterator = std::ranges::find_if(parents, [this](const auto& parentWeak) -> bool {
+						return Thread::ownerEqual(parentWeak, m_weakThis);
+					});
+						parentIterator != std::ranges::cend(parents))
+					{
+						parents.erase(parentIterator);
+						if (needsDistanceUpdate)
+							accessor->updateDistance(m_weakThis, m_distanceFromRoot);
+					}
 				}
+			}
 		}
 
 		inline constexpr auto detachParent(SharedPtr& parent) -> void
@@ -157,15 +169,23 @@ export namespace CppUtils::Container
 
 		inline constexpr auto detachParents() -> void
 		{
-			if (auto thisPtr = m_weakThis.lock(); thisPtr)
-				for (const auto& parentWeak : m_parents)
-					if (auto parent = parentWeak.lock())
+			for (auto parents = std::move(m_parents); const auto& parentWeak : parents)
+			{
+				if (auto parent = parentWeak.lock())
+				{
+					auto accessor = parent->uniqueAccess();
+					auto& children = accessor->m_children;
+					if (auto childIterator = std::ranges::find_if(children, [this](const auto& child) -> bool {
+						return std::visit([this](const auto& childPointer) -> bool {
+							return Thread::ownerEqual(m_weakThis, childPointer);
+						}, child);
+					});
+						childIterator != std::ranges::end(children))
 					{
-						auto accessor = Thread::MultipleAccessor{*parent, *thisPtr};
-						auto& parentRef = std::get<0>(accessor.values);
-						auto& childRef = std::get<1>(accessor.values);
-						parentRef.detachChild(childRef);
+						children.erase(childIterator);
 					}
+				}
+			}
 		}
 
 	private:
@@ -209,17 +229,15 @@ export namespace CppUtils::Container
 
 			for (auto& child : m_children)
 			{
-				auto childWeak = WeakPtr{};
-				if (const auto* shared = std::get_if<SharedPtr>(&child))
-					childWeak = *shared;
-				else if (const auto* weak = std::get_if<WeakPtr>(&child))
-					childWeak = *weak;
-
-				if (Thread::ownerEqual(childWeak, lockedParentWeak))
+				const auto* shared = std::get_if<SharedPtr>(&child);
+				if (not shared)
 					continue;
 
-				if (auto accessor = getChildAccessor(child))
-					(*accessor)->updateDistance(m_weakThis, m_distanceFromRoot);
+				if (Thread::ownerEqual(*shared, lockedParentWeak))
+					continue;
+
+				auto accessor = (*shared)->uniqueAccess();
+				accessor->updateDistance(m_weakThis, m_distanceFromRoot);
 			}
 		}
 

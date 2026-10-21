@@ -15,6 +15,11 @@ jobs:
   build:
     name: Ubuntu (${{ matrix.compiler.name }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -71,4 +76,10 @@ jobs:
 
     - name: Run tests
       run: |
-        xmake run
+        xmake run CppUtils-UnitTests --report=junit:build/test-results.xml
+
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: "**/test-results.xml"

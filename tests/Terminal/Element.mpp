@@ -5,10 +5,10 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::Element
 {
-	auto _ = TestSuite{"Terminal/Element", {"Terminal/Canvas"}, [](TestSuite& suite) {
+	auto _ = testSuite("Terminal/Element").dependsOn("Terminal/Canvas") = [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
-		suite.addTest("Borders", [&] {
+		suite.test("Borders") = [&] {
 			const auto size = CppUtils::Container::Size2{10, 3};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -19,16 +19,16 @@ namespace CppUtils::UnitTest::Terminal::Element
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({0, 0}).character, U'┌');
-				suite.expectEqual(accessor->getChar({9, 0}).character, U'┐');
-				suite.expectEqual(accessor->getChar({0, 2}).character, U'└');
-				suite.expectEqual(accessor->getChar({9, 2}).character, U'┘');
-				suite.expectEqual(accessor->getChar({1, 0}).character, U'─');
-				suite.expectEqual(accessor->getChar({0, 1}).character, U'│');
+				expect(accessor->getChar({0, 0}).character) == U'┌';
+				expect(accessor->getChar({9, 0}).character) == U'┐';
+				expect(accessor->getChar({0, 2}).character) == U'└';
+				expect(accessor->getChar({9, 2}).character) == U'┘';
+				expect(accessor->getChar({1, 0}).character) == U'─';
+				expect(accessor->getChar({0, 1}).character) == U'│';
 			}
-		});
+		};
 
-		suite.addTest("Padding", [&] {
+		suite.test("Padding") = [&] {
 			struct ChildWidget final: public CppUtils::Terminal::Element
 			{
 				explicit inline ChildWidget(const CppUtils::Container::Size2<>& size):
@@ -55,9 +55,9 @@ namespace CppUtils::UnitTest::Terminal::Element
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({0, 0}).character, U'┌');
-				suite.expectEqual(accessor->getChar({2, 2}).character, U'A');
+				expect(accessor->getChar({0, 0}).character) == U'┌';
+				expect(accessor->getChar({2, 2}).character) == U'A';
 			}
-		});
-	}};
+		};
+	};
 }

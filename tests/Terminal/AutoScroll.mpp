@@ -5,10 +5,10 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::AutoScroll
 {
-	auto _ = TestSuite{"Terminal/AutoScroll", {"Terminal/Canvas", "Terminal/Text"}, [](TestSuite& suite) {
+	auto _ = testSuite("Terminal/AutoScroll").dependsOn("Terminal/Canvas", "Terminal/Text") = [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
-		suite.addTest("Basic AutoScroll", [&] {
+		suite.test("Basic AutoScroll") = [&] {
 			const auto size = CppUtils::Container::Size2{10, 1};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -18,7 +18,7 @@ namespace CppUtils::UnitTest::Terminal::AutoScroll
 			canvas.print();
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({0, 0}).character, U'H');
+				expect(accessor->getChar({0, 0}).character) == U'H';
 			}
 			std::this_thread::sleep_for(200ms);
 
@@ -26,12 +26,12 @@ namespace CppUtils::UnitTest::Terminal::AutoScroll
 			canvas.print();
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({0, 0}).character, U'W');
+				expect(accessor->getChar({0, 0}).character) == U'W';
 			}
 			std::this_thread::sleep_for(200ms);
-		});
+		};
 
-		suite.addTest("AutoScroll on Hover", [&] {
+		suite.test("AutoScroll on Hover") = [&] {
 			const auto canvasSize = CppUtils::Container::Size2{20, 5};
 			auto canvas = CppUtils::Terminal::Canvas{canvasSize};
 
@@ -43,23 +43,23 @@ namespace CppUtils::UnitTest::Terminal::AutoScroll
 								   .setScrollOnHover(true);
 			canvas.print();
 
-			suite.expectEqual(autoScroll.isScrollOnHover(), true);
-			suite.expectEqual(autoScroll.isAutoScrolling(), false);
+			expect(autoScroll.isScrollOnHover());
+			not expect(autoScroll.isAutoScrolling());
 
 			const auto canvasOrigin = canvas.getAbsolutePosition();
 			auto hoverEvent = CppUtils::Terminal::Mouse::Event{};
 			hoverEvent.absolutePosition = canvasOrigin + CppUtils::Container::Size2{2uz, 0uz};
 			canvas.onMouseEvent(hoverEvent);
 
-			suite.expectEqual(autoScroll.isAutoScrolling(), true);
-			suite.expect(CppUtils::Thread::pollFor([&] { return autoScroll.getScrollOffset() > 0uz; }, 2s, 10ms));
+			expect(autoScroll.isAutoScrolling());
+			expect(CppUtils::Thread::pollFor([&] { return autoScroll.getScrollOffset() > 0uz; }, 2s, 10ms));
 
 			auto leaveEvent = CppUtils::Terminal::Mouse::Event{};
 			leaveEvent.absolutePosition = canvasOrigin + CppUtils::Container::Size2{15uz, 0uz};
 			canvas.onMouseEvent(leaveEvent);
 
-			suite.expectEqual(autoScroll.isAutoScrolling(), false);
-			suite.expectEqual(autoScroll.getScrollOffset(), 0uz);
-		});
-	}};
+			not expect(autoScroll.isAutoScrolling());
+			expect(autoScroll.getScrollOffset()) == 0uz;
+		};
+	};
 }

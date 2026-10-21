@@ -1,0 +1,33 @@
+export module CppUtils.UnitTest.Report;
+
+import std;
+
+export namespace CppUtils::UnitTest
+{
+	/// @brief Outcome status of an individual test case execution.
+	enum class TestStatus
+	{
+		Success, ///< Test executed successfully without errors or unmet expectations.
+		Failure, ///< Test failed due to an unmet assertion or unhandled exception.
+		Skipped ///< Test was explicitly skipped or bypassed.
+	};
+
+	/// @brief Recorded execution summary of an individual test case for reporting purposes.
+	struct RecordedTestCase final
+	{
+		std::string name = {}; ///< Name of the test case.
+		std::string className = {}; ///< Test suite or category name.
+		TestStatus status = TestStatus::Success; ///< Execution outcome.
+		std::string message = {}; ///< Failure diagnostic or skip explanation.
+		std::string failureType = "TestException"; ///< Failure exception type.
+		std::chrono::nanoseconds duration = {}; ///< Measured execution duration.
+	};
+
+	/// @brief Recorded execution summary of an entire test suite for reporting purposes.
+	struct RecordedTestSuite final
+	{
+		std::string name = {}; ///< Test suite identifier.
+		std::vector<RecordedTestCase> testCases = {}; ///< Recorded test cases within this suite.
+		std::chrono::nanoseconds duration = {}; ///< Total suite execution duration.
+	};
+}

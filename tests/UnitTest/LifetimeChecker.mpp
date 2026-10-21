@@ -5,75 +5,75 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::LifetimeCheckerTest
 {
-	auto _ = TestSuite{"UnitTest/LifetimeChecker", [](TestSuite& suite) {
+	auto _ = testSuite("UnitTest/LifetimeChecker") = [](TestSuite& suite) {
 		using Logger = TestSuite::Logger;
 
-		suite.addTest("No Copy No Move", [&] {
+		suite.test("No Copy No Move") = [&] {
 			auto object = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "LifetimeChecker"};
-			suite.expectEqual(object.getCopyCount(), 0uz);
-			suite.expectEqual(object.getMoveCount(), 0uz);
-		});
+			expect(object.getCopyCount()) == 0uz;
+			expect(object.getMoveCount()) == 0uz;
+		};
 
-		suite.addTest("Copy Construction", [&] {
+		suite.test("Copy Construction") = [&] {
 			auto object = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "LifetimeChecker"};
 			auto copied = object;
-			suite.expectEqual(copied.getCopyCount(), 1uz);
-			suite.expectEqual(copied.getMoveCount(), 0uz);
-		});
+			expect(copied.getCopyCount()) == 1uz;
+			expect(copied.getMoveCount()) == 0uz;
+		};
 
-		suite.addTest("Move Construction", [&] {
+		suite.test("Move Construction") = [&] {
 			auto object = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "LifetimeChecker"};
 			auto moved = std::move(object);
-			suite.expectEqual(moved.getCopyCount(), 0uz);
-			suite.expectEqual(moved.getMoveCount(), 1uz);
-		});
+			expect(moved.getCopyCount()) == 0uz;
+			expect(moved.getMoveCount()) == 1uz;
+		};
 
-		suite.addTest("Copy Assignment", [&] {
+		suite.test("Copy Assignment") = [&] {
 			auto object = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "LifetimeChecker"};
 			auto target = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "Target"};
 			target = object;
-			suite.expectEqual(target.getCopyCount(), 1uz);
-			suite.expectEqual(target.getMoveCount(), 0uz);
-		});
+			expect(target.getCopyCount()) == 1uz;
+			expect(target.getMoveCount()) == 0uz;
+		};
 
-		suite.addTest("Move Assignment", [&] {
+		suite.test("Move Assignment") = [&] {
 			auto object = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "LifetimeChecker"};
 			auto target = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "Target"};
 			target = std::move(object);
-			suite.expectEqual(target.getCopyCount(), 0uz);
-			suite.expectEqual(target.getMoveCount(), 1uz);
-		});
+			expect(target.getCopyCount()) == 0uz;
+			expect(target.getMoveCount()) == 1uz;
+		};
 
-		suite.addTest("Two Copies", [&] {
+		suite.test("Two Copies") = [&] {
 			auto object = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "LifetimeChecker"};
 			auto copy1 = object;
 			auto copy2 = copy1;
-			suite.expectEqual(copy2.getCopyCount(), 2uz);
-			suite.expectEqual(copy2.getMoveCount(), 0uz);
-		});
+			expect(copy2.getCopyCount()) == 2uz;
+			expect(copy2.getMoveCount()) == 0uz;
+		};
 
-		suite.addTest("Two Moves", [&] {
+		suite.test("Two Moves") = [&] {
 			auto object = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "LifetimeChecker"};
 			auto moved1 = std::move(object);
 			auto moved2 = std::move(moved1);
-			suite.expectEqual(moved2.getCopyCount(), 0uz);
-			suite.expectEqual(moved2.getMoveCount(), 2uz);
-		});
+			expect(moved2.getCopyCount()) == 0uz;
+			expect(moved2.getMoveCount()) == 2uz;
+		};
 
-		suite.addTest("Copy then Move", [&] {
+		suite.test("Copy then Move") = [&] {
 			auto object = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "LifetimeChecker"};
 			auto copy = object;
 			auto moved = std::move(copy);
-			suite.expectEqual(moved.getCopyCount(), 1uz);
-			suite.expectEqual(moved.getMoveCount(), 1uz);
-		});
+			expect(moved.getCopyCount()) == 1uz;
+			expect(moved.getMoveCount()) == 1uz;
+		};
 
-		suite.addTest("Move then Copy", [&] {
+		suite.test("Move then Copy") = [&] {
 			auto object = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "LifetimeChecker"};
 			auto moved = std::move(object);
 			auto copy = moved;
-			suite.expectEqual(copy.getCopyCount(), 1uz);
-			suite.expectEqual(copy.getMoveCount(), 1uz);
-		});
-	}};
+			expect(copy.getCopyCount()) == 1uz;
+			expect(copy.getMoveCount()) == 1uz;
+		};
+	};
 }

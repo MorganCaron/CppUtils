@@ -1,0 +1,176 @@
+module;
+
+#include <CppUtils/System/OS.hpp>
+
+#if defined(OS_LINUX)
+#	include <csignal>
+#endif
+
+export module CppUtils.System.Sandbox;
+
+import std;
+
+#if defined(OS_LINUX)
+import CppUtils.System.Pipe;
+import CppUtils.System.Process;
+#endif
+
+export namespace CppUtils::System
+{
+#if defined(OS_LINUX)
+	/// @brief Execution outcome status recorded inside an isolated process.
+	enum class ExecutionStatus : std::uint8_t
+	{
+		Success = 0,
+		Failure = 1
+	};
+
+	/// @brief Crash diagnostic details when a child process terminates abnormally.
+	struct ProcessCrashDetails final
+	{
+		Signal signal;
+		std::string diagnostic = {};
+		bool coreDumped = false;
+		bool timedOut = false;
+
+		[[nodiscard]] constexpr auto signalName() const noexcept -> std::string_view
+		{
+			return signalToString(signal);
+		}
+
+		[[nodiscard]] constexpr auto signalExplanation() const noexcept -> std::string_view
+		{
+			return signalToExplanation(signal);
+		}
+	};
+
+	/// @brief Result payload and execution metrics returned from an isolated process run.
+	struct IsolatedExecutionResult final
+	{
+		ExecutionStatus status = ExecutionStatus::Success;
+		std::string payload = {};
+		std::chrono::nanoseconds duration = {};
+	};
+
+	/// @brief Failure details when an isolated child process execution encounters an error, timeout, or crash.
+	struct IsolatedExecutionFailure final
+	{
+		std::string reason = {};
+		std::optional<ProcessCrashDetails> crash = std::nullopt;
+	};
+
+	/**
+	 * @brief Executes a callable in an isolated child process, supervising execution and handling completion, timeout, and crash signals.
+	 * @param function Routine to execute in the child process.
+	 * @param timeout Maximum allowable execution duration (0ms for unlimited).
+	 * @param onBeforeExecution Optional hook invoked inside the child process immediately after fork.
+	 * @return Successful execution result or failure details.
+	 */
+	inline auto runIsolated(
+		std::invocable auto&& function,
+		std::chrono::milliseconds timeout = std::chrono::milliseconds{0},
+		std::function<void()> onBeforeExecution = {})
+		-> std::expected<IsolatedExecutionResult, IsolatedExecutionFailure>
+	{
+		using namespace std::chrono_literals;
+
+		const auto startTime = std::chrono::steady_clock::now();
+		auto channel = PipeChannel{};
+
+		const auto childProcessId = fork();
+		if (childProcessId < 0)
+			return std::unexpected(IsolatedExecutionFailure{.reason = "fork() failed"});
+
+		if (childProcessId == 0)
+		{
+			channel.closeRead();
+			if (onBeforeExecution)
+				onBeforeExecution();
+
+			try
+			{
+				function();
+				channel.writeObject(ExecutionStatus::Success);
+				const auto messageLength = std::uint32_t{0};
+				channel.writeObject(messageLength);
+			}
+			catch (const std::exception& exception)
+			{
+				channel.writeObject(ExecutionStatus::Failure);
+				const auto message = std::string_view{exception.what()};
+				const auto length = static_cast<std::uint32_t>(std::ranges::size(message));
+				channel.writeObject(length);
+				if (length > 0)
+					channel.write(message);
+			}
+			catch (...)
+			{
+				channel.writeObject(ExecutionStatus::Failure);
+				const auto message = std::string_view{"Unknown exception occurred"};
+				const auto length = static_cast<std::uint32_t>(std::ranges::size(message));
+				channel.writeObject(length);
+				channel.write(message);
+			}
+
+			channel.closeWrite();
+			quickExit(0);
+		}
+
+		channel.closeWrite();
+
+		if (timeout > 0ms)
+			if (const auto hasData = channel.waitForData(timeout); not hasData)
+			{
+				kill(childProcessId, Signal::Kill);
+				auto _ = wait(childProcessId);
+				channel.closeRead();
+				return std::unexpected(IsolatedExecutionFailure{
+					.reason = std::format("Process execution timed out after {}ms", timeout.count()),
+					.crash = ProcessCrashDetails{
+						.signal = Signal::Kill,
+						.diagnostic = std::format("Terminated by {} after timeout", signalToString(Signal::Kill)),
+						.coreDumped = false,
+						.timedOut = true}});
+			}
+
+		const auto processStatus = wait(childProcessId);
+		const auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - startTime);
+
+		if (processStatus.isSignaled())
+		{
+			channel.closeRead();
+			const auto signal = processStatus.getTerminalSignal().value();
+			return std::unexpected(IsolatedExecutionFailure{
+				.reason = std::format("Process terminated by signal {}", signalToString(signal)),
+				.crash = ProcessCrashDetails{
+					.signal = signal,
+					.diagnostic = processStatus.getSignalDescription(),
+					.coreDumped = processStatus.isCoreDumped(),
+					.timedOut = false}});
+		}
+
+		auto status = ExecutionStatus::Failure;
+		auto messageLength = std::uint32_t{0};
+		auto payload = std::string{};
+
+		if (channel.readObject(status) and channel.readObject(messageLength) and messageLength > 0)
+		{
+			payload.resize(messageLength);
+			for (auto totalRead = 0uz; totalRead < messageLength;)
+			{
+				const auto bytes = channel.read(std::as_writable_bytes(std::span{std::ranges::data(payload) + totalRead, messageLength - totalRead}));
+				if (bytes == 0)
+					break;
+				totalRead += bytes;
+			}
+		}
+
+		channel.closeRead();
+
+		return IsolatedExecutionResult{
+			.status = status,
+			.payload = std::move(payload),
+			.duration = duration};
+	}
+#endif
+}

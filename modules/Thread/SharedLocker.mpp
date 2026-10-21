@@ -172,7 +172,9 @@ export namespace CppUtils::Thread
 		using UniqueAccessor = Accessor<T, SharedMutex>;
 		using SharedAccessor = ReadOnlyAccessor<T, SharedMutex>;
 
-		inline constexpr SharedLocker() requires std::default_initializable<T> = default;
+		inline constexpr SharedLocker()
+		requires std::default_initializable<T>
+		= default;
 
 		/**
 		 * @brief Constructs the protected resource in place.

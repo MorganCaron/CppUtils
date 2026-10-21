@@ -10,7 +10,9 @@
 /docs/dist
 /docs/.astro
 /docs/doxygen_xml
+/docs/html
+/docs/latex
 /docs/src/content/docs/**/reference/
 /docs/src/data/cppreference-symbols.json
+/docs/src/data/cpputils-symbols.json
 /docs/.starlight-icons
-

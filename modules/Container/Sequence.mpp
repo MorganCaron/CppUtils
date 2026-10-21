@@ -1,6 +1,7 @@
 export module CppUtils.Container.Sequence;
 
 import std;
+import CppUtils.Type.Concept;
 
 export namespace CppUtils::Container::Sequence
 {
@@ -12,52 +13,99 @@ export namespace CppUtils::Container::Sequence
 		Edited
 	};
 
-	template<class T>
-	[[nodiscard]] inline auto getDifferences(std::span<const T> list0, std::span<const T> list1) -> std::vector<Difference>
+	/**
+	 * @brief Computes element-wise differences between two random-access ranges.
+	 *
+	 * Supports any random-access sized ranges (e.g. std::string, std::string_view, std::vector, std::span),
+	 * optional custom element comparator, and projections for both ranges.
+	 *
+	 * @note Implements the classic dynamic programming Longest Common Subsequence (LCS) algorithm
+	 *       with O(N * M) time and space complexity.
+	 *
+	 * @see https://en.wikipedia.org/wiki/Longest_common_subsequence (Longest common subsequence)
+	 *
+	 * @tparam Range0 Type of the first range (must satisfy Type::SizedRandomAccessRange).
+	 * @tparam Range1 Type of the second range (must satisfy Type::SizedRandomAccessRange).
+	 * @tparam Comparator Binary predicate comparing elements.
+	 * @tparam FirstProjection Projection applied to elements of the first range.
+	 * @tparam SecondProjection Projection applied to elements of the second range.
+	 * @param list0 First range to compare.
+	 * @param list1 Second range to compare.
+	 * @param comparator Custom comparison predicate (defaults to std::ranges::equal_to).
+	 * @param firstProjection Projection callable for list0 (defaults to std::identity).
+	 * @param secondProjection Projection callable for list1 (defaults to std::identity).
+	 * @return Vector of Difference values detailing added, removed, or identical elements.
+	 */
+	template<
+		Type::SizedRandomAccessRange Range0,
+		Type::SizedRandomAccessRange Range1,
+		class Comparator = std::ranges::equal_to,
+		class FirstProjection = std::identity,
+		class SecondProjection = std::identity>
+	requires std::indirectly_comparable<
+		std::ranges::iterator_t<Range0>,
+		std::ranges::iterator_t<Range1>,
+		Comparator,
+		FirstProjection,
+		SecondProjection>
+	[[nodiscard]] constexpr auto getDifferences(
+		const Range0& list0,
+		const Range1& list1,
+		Comparator comparator = {},
+		FirstProjection firstProjection = {},
+		SecondProjection secondProjection = {}) -> std::vector<Difference>
 	{
-		auto differences = std::vector<Difference>{};
-		differences.reserve(std::ranges::max(std::ranges::size(list0), std::ranges::size(list1)));
-		auto i = 0uz, j = 0uz, diffLength = 0uz;
-		while (i < std::ranges::size(list0) and j < std::ranges::size(list1))
+		const auto firstSize = static_cast<std::size_t>(std::ranges::size(list0));
+		const auto secondSize = static_cast<std::size_t>(std::ranges::size(list1));
+		const auto firstBegin = std::ranges::begin(list0);
+		const auto secondBegin = std::ranges::begin(list1);
+
+		auto commonSubsequenceMatrix = std::vector<std::size_t>((firstSize + 1uz) * (secondSize + 1uz), 0uz);
+		const auto matrixCell = [&](std::size_t firstCoordinate, std::size_t secondCoordinate) -> std::size_t& {
+			return commonSubsequenceMatrix[firstCoordinate * (secondSize + 1uz) + secondCoordinate];
+		};
+
+		for (auto firstCoordinate = 1uz; firstCoordinate <= firstSize; ++firstCoordinate)
 		{
-			const auto& lhs = list0[i];
-			const auto& rhs = list1[j];
-			if (lhs == rhs)
+			for (auto secondCoordinate = 1uz; secondCoordinate <= secondSize; ++secondCoordinate)
 			{
-				if (diffLength > 0)
-				{
-					for (auto k = 0uz; k < diffLength; ++k)
-						differences.emplace_back(Difference::Removed);
-					for (; diffLength; --diffLength)
-						differences.emplace_back(Difference::Added);
-				}
-				differences.emplace_back(Difference::None);
+				const auto firstOffset = static_cast<std::ptrdiff_t>(firstCoordinate - 1uz);
+				const auto secondOffset = static_cast<std::ptrdiff_t>(secondCoordinate - 1uz);
+				if (std::invoke(comparator, std::invoke(firstProjection, firstBegin[firstOffset]), std::invoke(secondProjection, secondBegin[secondOffset])))
+					matrixCell(firstCoordinate, secondCoordinate) = matrixCell(firstCoordinate - 1uz, secondCoordinate - 1uz) + 1uz;
+				else
+					matrixCell(firstCoordinate, secondCoordinate) = std::max(matrixCell(firstCoordinate - 1uz, secondCoordinate), matrixCell(firstCoordinate, secondCoordinate - 1uz));
 			}
-			else if (diffLength > 0 and list0[i - diffLength] == rhs)
-			{
-				i -= diffLength;
-				for (; diffLength; --diffLength)
-					differences.emplace_back(Difference::Added);
-				differences.emplace_back(Difference::None);
-			}
-			else if (diffLength > 0 and lhs == list1[j - diffLength])
-			{
-				j -= diffLength;
-				for (; diffLength; --diffLength)
-					differences.emplace_back(Difference::Removed);
-				differences.emplace_back(Difference::None);
-			}
-			else
-				++diffLength;
-			++i;
-			++j;
 		}
-		auto offsetList0 = std::ranges::size(list0) - i;
-		while (offsetList0--)
-			differences.emplace_back(Difference::Removed);
-		auto offsetList1 = std::ranges::size(list1) - j;
-		while (offsetList1--)
-			differences.emplace_back(Difference::Added);
+
+		auto differences = std::vector<Difference>{};
+		differences.reserve(firstSize + secondSize);
+
+		auto firstCoordinate = firstSize;
+		auto secondCoordinate = secondSize;
+		while (firstCoordinate > 0uz or secondCoordinate > 0uz)
+		{
+			const auto firstOffset = static_cast<std::ptrdiff_t>(firstCoordinate - 1uz);
+			const auto secondOffset = static_cast<std::ptrdiff_t>(secondCoordinate - 1uz);
+			if (firstCoordinate > 0uz and secondCoordinate > 0uz and std::invoke(comparator, std::invoke(firstProjection, firstBegin[firstOffset]), std::invoke(secondProjection, secondBegin[secondOffset])))
+			{
+				differences.emplace_back(Difference::None);
+				--firstCoordinate;
+				--secondCoordinate;
+			}
+			else if (secondCoordinate > 0uz and (firstCoordinate == 0uz or matrixCell(firstCoordinate, secondCoordinate - 1uz) >= matrixCell(firstCoordinate - 1uz, secondCoordinate)))
+			{
+				differences.emplace_back(Difference::Added);
+				--secondCoordinate;
+			}
+			else if (firstCoordinate > 0uz and (secondCoordinate == 0uz or matrixCell(firstCoordinate, secondCoordinate - 1uz) < matrixCell(firstCoordinate - 1uz, secondCoordinate)))
+			{
+				differences.emplace_back(Difference::Removed);
+				--firstCoordinate;
+			}
+		}
+
+		std::ranges::reverse(differences);
 		return differences;
 	}
 }

@@ -6,188 +6,185 @@ import CppUtils;
 namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 {
 
-#if not defined(_MSC_VER)
-	static_assert([] {
-		using namespace CppUtils::String::Literals;
-		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
-		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
-
-		auto interpreter = MetaCircularVirtualMachine{};
-		auto target = MeshNodePtr::makeRoot(0uz);
-
-		auto setInstruction = MeshNodePtr::makeRoot("set"_token);
-		setInstruction["target"_token] >> target;
-		setInstruction["value"_token] >> MeshNodePtr::make(10uz);
-
-		auto addInstruction = MeshNodePtr::makeRoot("+"_token);
-		addInstruction["lhs"_token] >> target;
-		addInstruction["rhs"_token] >> MeshNodePtr::make(32uz);
-		addInstruction["result"_token] >> target;
-
-		setInstruction["next"_token] >> addInstruction;
-
-		auto status = interpreter(setInstruction);
-		if (not status)
-			return false;
-
-		return target.getValue().value() == 42uz;
-	}());
-
-	static_assert([] {
-		using namespace CppUtils::String::Literals;
-		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
-		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
-
-		auto interpreter = MetaCircularVirtualMachine{};
-		auto value = MeshNodePtr::makeRoot("root"_token);
-
-		auto createNode = MeshNodePtr::makeRoot("create"_token);
-		createNode["value"_token] >> MeshNodePtr::make(1uz);
-		createNode["destination"_token] >> value;
-		createNode["branch"_token] >> MeshNodePtr::make("value"_token);
-
-		const auto status = interpreter(createNode);
-		if (not status)
-			return false;
-
-		auto valueNode = value["value"_token].front();
-		if (not valueNode)
-			return false;
-
-		return valueNode->getValue().value() == 1uz;
-	}());
-
-	static_assert([] {
-		using namespace CppUtils::String::Literals;
-		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
-		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
-
-		auto interpreter = MetaCircularVirtualMachine{};
-		auto resultNode = MeshNodePtr::make(false);
-
-		auto equalInstruction = MeshNodePtr::makeRoot("=="_token);
-		equalInstruction["lhs"_token] >> MeshNodePtr::make(42uz);
-		equalInstruction["rhs"_token] >> MeshNodePtr::make(42uz);
-		equalInstruction["result"_token] >> resultNode;
-
-		auto status = interpreter(equalInstruction);
-		if (not status)
-			return false;
-
-		return resultNode.getValue().value() == true;
-	}());
-
-	static_assert([] {
-		using namespace CppUtils::String::Literals;
-		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
-		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
-
-		auto interpreter = MetaCircularVirtualMachine{};
-		auto value = MeshNodePtr::make(true);
-
-		auto notInstruction = MeshNodePtr::makeRoot("not"_token);
-		notInstruction["value"_token] >> value;
-
-		auto status = interpreter(notInstruction);
-		if (not status)
-			return false;
-
-		return static_cast<bool>(value.getValue().value()) == false;
-	}());
-
-	static_assert([] {
-		using namespace CppUtils::String::Literals;
-		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
-		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
-
-		auto interpreter = MetaCircularVirtualMachine{};
-		auto value = MeshNodePtr::makeRoot(0uz);
-
-		auto mainNode = interpreter.context["main"_token] >> MeshNodePtr::make("main"_token);
-
-		auto jumpNode = mainNode["next"_token] >> MeshNodePtr::make("jump"_token);
-
-		auto create1 = jumpNode["else"_token] >> MeshNodePtr::make("create"_token);
-		create1["value"_token] >> MeshNodePtr::make(1uz);
-		create1["destination"_token] >> value;
-		create1["branch"_token] >> MeshNodePtr::make("value"_token);
-
-		auto create2 = jumpNode["next"_token] >> MeshNodePtr::make("create"_token);
-		create2["value"_token] >> MeshNodePtr::make(2uz);
-		create2["destination"_token] >> value;
-		create2["branch"_token] >> MeshNodePtr::make("value"_token);
-
-		jumpNode["condition"_token] >> MeshNodePtr::make(1uz);
-
-		const auto status = interpreter("main"_token);
-		if (not status)
-			return false;
-
-		auto valueNode = value["value"_token].front();
-		if (not valueNode)
-			return false;
-
-		return valueNode->getValue().value() == 2uz;
-	}());
-
-	static_assert([] {
-		using namespace CppUtils::String::Literals;
-		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
-		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
-
-		auto interpreter = MetaCircularVirtualMachine{};
-
-		auto lhs = MeshNodePtr::make(2uz);
-		auto rhs = MeshNodePtr::make(3uz);
-		auto result = MeshNodePtr::make(0uz);
-
-		auto call = MeshNodePtr::makeRoot("call"_token);
-		auto inputNode = call["input"_token] >> MeshNodePtr::make("inputs"_token);
-		inputNode["lhs"_token] >> lhs;
-		inputNode["rhs"_token] >> rhs;
-		auto outputNode = call["output"_token] >> MeshNodePtr::make("outputs"_token);
-		outputNode["result"_token] >> result;
-
-		auto referenceLhs = call["function"_token] >> MeshNodePtr::make("reference"_token);
-		referenceLhs["sourcePath"_token] >> MeshNodePtr::make("input"_token);
-		referenceLhs["sourcePath"_token] >> MeshNodePtr::make("lhs"_token);
-		referenceLhs["destinationPath"_token] >> MeshNodePtr::make("lhs"_token);
-		auto addInstruction = referenceLhs["destinationBase"_token] >> MeshNodePtr::make("+"_token);
-
-		auto referenceRhs = referenceLhs["next"_token] >> MeshNodePtr::make("reference"_token);
-		referenceRhs["sourcePath"_token] >> MeshNodePtr::make("input"_token);
-		referenceRhs["sourcePath"_token] >> MeshNodePtr::make("rhs"_token);
-		referenceRhs["destinationPath"_token] >> MeshNodePtr::make("rhs"_token);
-		referenceRhs["destinationBase"_token] >> addInstruction;
-
-		auto referenceResult = referenceRhs["next"_token] >> MeshNodePtr::make("reference"_token);
-		referenceResult["sourcePath"_token] >> MeshNodePtr::make("output"_token);
-		referenceResult["sourcePath"_token] >> MeshNodePtr::make("result"_token);
-		referenceResult["destinationPath"_token] >> MeshNodePtr::make("result"_token);
-		referenceResult["destinationBase"_token] >> addInstruction;
-		referenceResult["next"_token] >> addInstruction;
-
-		const auto status = interpreter(call);
-		if (not status)
-			return false;
-
-		return result.getValue().value() == 5uz;
-	}());
-#endif
-
-	auto _ = TestSuite{
-		"Language/MetaCircularVirtualMachine",
-		{"Logger", "Container/MeshNetwork"},
-		[](TestSuite& suite) {
+	auto _ = testSuite("Language/MetaCircularVirtualMachine").dependsOn("Logger", "Container/MeshNetwork") = [](TestSuite& suite) {
 		using namespace std::literals;
 		using namespace CppUtils::String::Literals;
 		using Logger = TestSuite::Logger;
 		using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
 		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
 
-		suite.addTest("Canary: MSVC STL std::optional non-trivial destructor in constant evaluation", [&] {
+#if not defined(_MSC_VER)
+		suite.test<[] {
+			using namespace CppUtils::String::Literals;
+			using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+			using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+			auto interpreter = MetaCircularVirtualMachine{};
+			auto target = MeshNodePtr::makeRoot(0uz);
+
+			auto setInstruction = MeshNodePtr::makeRoot("set"_token);
+			setInstruction["target"_token] >> target;
+			setInstruction["value"_token] >> MeshNodePtr::make(10uz);
+
+			auto addInstruction = MeshNodePtr::makeRoot("+"_token);
+			addInstruction["lhs"_token] >> target;
+			addInstruction["rhs"_token] >> MeshNodePtr::make(32uz);
+			addInstruction["result"_token] >> target;
+
+			setInstruction["next"_token] >> addInstruction;
+
+			auto status = interpreter(setInstruction);
+			if (not status)
+				return false;
+
+			return target.getValue().value() == 42uz;
+		}>("Constexpr set and add instructions");
+
+		suite.test<[] {
+			using namespace CppUtils::String::Literals;
+			using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+			using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+			auto interpreter = MetaCircularVirtualMachine{};
+			auto value = MeshNodePtr::makeRoot("root"_token);
+
+			auto createNode = MeshNodePtr::makeRoot("create"_token);
+			createNode["value"_token] >> MeshNodePtr::make(1uz);
+			createNode["destination"_token] >> value;
+			createNode["branch"_token] >> MeshNodePtr::make("value"_token);
+
+			const auto status = interpreter(createNode);
+			if (not status)
+				return false;
+
+			auto valueNode = value["value"_token].front();
+			if (not valueNode)
+				return false;
+
+			return valueNode->getValue().value() == 1uz;
+		}>("Constexpr create node instruction");
+
+		suite.test<[] {
+			using namespace CppUtils::String::Literals;
+			using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+			using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+			auto interpreter = MetaCircularVirtualMachine{};
+			auto resultNode = MeshNodePtr::make(false);
+
+			auto equalInstruction = MeshNodePtr::makeRoot("=="_token);
+			equalInstruction["lhs"_token] >> MeshNodePtr::make(42uz);
+			equalInstruction["rhs"_token] >> MeshNodePtr::make(42uz);
+			equalInstruction["result"_token] >> resultNode;
+
+			auto status = interpreter(equalInstruction);
+			if (not status)
+				return false;
+
+			return resultNode.getValue().value() == true;
+		}>("Constexpr equal comparison instruction");
+
+		suite.test<[] {
+			using namespace CppUtils::String::Literals;
+			using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+			using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+			auto interpreter = MetaCircularVirtualMachine{};
+			auto value = MeshNodePtr::make(true);
+
+			auto notInstruction = MeshNodePtr::makeRoot("not"_token);
+			notInstruction["value"_token] >> value;
+
+			auto status = interpreter(notInstruction);
+			if (not status)
+				return false;
+
+			return static_cast<bool>(value.getValue().value()) == false;
+		}>("Constexpr not instruction");
+
+		suite.test<[] {
+			using namespace CppUtils::String::Literals;
+			using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+			using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+			auto interpreter = MetaCircularVirtualMachine{};
+			auto value = MeshNodePtr::makeRoot(0uz);
+
+			auto mainNode = interpreter.context["main"_token] >> MeshNodePtr::make("main"_token);
+
+			auto jumpNode = mainNode["next"_token] >> MeshNodePtr::make("jump"_token);
+
+			auto create1 = jumpNode["else"_token] >> MeshNodePtr::make("create"_token);
+			create1["value"_token] >> MeshNodePtr::make(1uz);
+			create1["destination"_token] >> value;
+			create1["branch"_token] >> MeshNodePtr::make("value"_token);
+
+			auto create2 = jumpNode["next"_token] >> MeshNodePtr::make("create"_token);
+			create2["value"_token] >> MeshNodePtr::make(2uz);
+			create2["destination"_token] >> value;
+			create2["branch"_token] >> MeshNodePtr::make("value"_token);
+
+			jumpNode["condition"_token] >> MeshNodePtr::make(1uz);
+
+			const auto status = interpreter("main"_token);
+			if (not status)
+				return false;
+
+			auto valueNode = value["value"_token].front();
+			if (not valueNode)
+				return false;
+
+			return valueNode->getValue().value() == 2uz;
+		}>("Constexpr jump instruction");
+
+		suite.test<[] {
+			using namespace CppUtils::String::Literals;
+			using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
+			using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
+
+			auto interpreter = MetaCircularVirtualMachine{};
+
+			auto lhs = MeshNodePtr::make(2uz);
+			auto rhs = MeshNodePtr::make(3uz);
+			auto result = MeshNodePtr::make(0uz);
+
+			auto call = MeshNodePtr::makeRoot("call"_token);
+			auto inputNode = call["input"_token] >> MeshNodePtr::make("inputs"_token);
+			inputNode["lhs"_token] >> lhs;
+			inputNode["rhs"_token] >> rhs;
+			auto outputNode = call["output"_token] >> MeshNodePtr::make("outputs"_token);
+			outputNode["result"_token] >> result;
+
+			auto referenceLhs = call["function"_token] >> MeshNodePtr::make("reference"_token);
+			referenceLhs["sourcePath"_token] >> MeshNodePtr::make("input"_token);
+			referenceLhs["sourcePath"_token] >> MeshNodePtr::make("lhs"_token);
+			referenceLhs["destinationPath"_token] >> MeshNodePtr::make("lhs"_token);
+			auto addInstruction = referenceLhs["destinationBase"_token] >> MeshNodePtr::make("+"_token);
+
+			auto referenceRhs = referenceLhs["next"_token] >> MeshNodePtr::make("reference"_token);
+			referenceRhs["sourcePath"_token] >> MeshNodePtr::make("input"_token);
+			referenceRhs["sourcePath"_token] >> MeshNodePtr::make("rhs"_token);
+			referenceRhs["destinationPath"_token] >> MeshNodePtr::make("rhs"_token);
+			referenceRhs["destinationBase"_token] >> addInstruction;
+
+			auto referenceResult = referenceRhs["next"_token] >> MeshNodePtr::make("reference"_token);
+			referenceResult["sourcePath"_token] >> MeshNodePtr::make("output"_token);
+			referenceResult["sourcePath"_token] >> MeshNodePtr::make("result"_token);
+			referenceResult["destinationPath"_token] >> MeshNodePtr::make("result"_token);
+			referenceResult["destinationBase"_token] >> addInstruction;
+			referenceResult["next"_token] >> addInstruction;
+
+			const auto status = interpreter(call);
+			if (not status)
+				return false;
+
+			return result.getValue().value() == 5uz;
+		}>("Constexpr call and references instruction");
+#endif
+
+		suite.test("Canary: MSVC STL std::optional non-trivial destructor in constant evaluation") = [] {
 #if defined(_MSC_VER)
-			suite.skip("Waiting for MSVC STL issue fix: https://github.com/microsoft/STL/issues/6467");
+			skip("Waiting for MSVC STL issue fix: https://github.com/microsoft/STL/issues/6467");
 #else
 			constexpr auto passed = [] {
 				auto interpreter = MetaCircularVirtualMachine{};
@@ -210,18 +207,18 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 
 				return target.getValue().value() == 42uz;
 			}();
-			suite.expect(passed);
+			expect(passed);
 #endif
-		});
+		};
 
-		suite.addTest("Check if main function exists", [&] {
+		suite.test("Check if main function exists") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
-			suite.expect(not interpreter.get("main"_token));
+			expect(not interpreter.get("main"_token));
 			interpreter.context["main"_token] >> MeshNodePtr::make("main"_token);
-			suite.expect(interpreter.get("main"_token));
-		});
+			expect(interpreter.get("main"_token));
+		};
 
-		suite.addTest("Create node", [&] {
+		suite.test("Create node") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto value = MeshNodePtr::makeRoot("root"_token);
 
@@ -234,13 +231,13 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
+			expect(status);
 			auto valueNode = value["value"_token].front();
-			suite.expect(valueNode);
-			suite.expectEqual(valueNode->getValue().value(), 1uz);
-		});
+			expect(valueNode);
+			expect(valueNode->getValue().value()) == 1uz;
+		};
 
-		suite.addTest("Internal function call", [&] {
+		suite.test("Internal function call") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto value = MeshNodePtr::makeRoot(0uz);
 
@@ -254,13 +251,13 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
+			expect(status);
 			auto valueNode = value["value"_token].front();
-			suite.expect(valueNode);
-			suite.expectEqual(valueNode->getValue().value(), 1uz);
-		});
+			expect(valueNode);
+			expect(valueNode->getValue().value()) == 1uz;
+		};
 
-		suite.addTest("External function call", [&] {
+		suite.test("External function call") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto called = false;
 
@@ -273,11 +270,11 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
-			suite.expect(called);
-		});
+			expect(status);
+			expect(called);
+		};
 
-		suite.addTest("resolve: vertical resolution", [&] {
+		suite.test("resolve: vertical resolution") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 
 			interpreter.context["x"_token] >> MeshNodePtr::make(10uz);
@@ -292,15 +289,15 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			childInterpreter.environment = interpreter.environment;
 
 			auto yNode = childInterpreter.resolve("y"_token);
-			suite.expect(yNode);
-			suite.expectEqual(yNode->getValue().value(), 20uz);
+			expect(yNode);
+			expect(yNode->getValue().value()) == 20uz;
 
 			auto xNode = childInterpreter.resolve("x"_token);
-			suite.expect(xNode);
-			suite.expectEqual(xNode->getValue().value(), 10uz);
-		});
+			expect(xNode);
+			expect(xNode->getValue().value()) == 10uz;
+		};
 
-		suite.addTest("resolve: horizontal resolution", [&] {
+		suite.test("resolve: horizontal resolution") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 
 			interpreter.context["a"_token] >> MeshNodePtr::make("b"_token);
@@ -308,12 +305,12 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			auto nodeC = interpreter.context["c"_token] >> MeshNodePtr::make(42uz);
 
 			auto result = interpreter.resolve("a"_token);
-			suite.expect(result);
-			suite.expectEqual(result->getValue().value(), 42uz);
-			suite.expect(result.value() == nodeC);
-		});
+			expect(result);
+			expect(result->getValue().value()) == 42uz;
+			expect(result.value()) == nodeC;
+		};
 
-		suite.addTest("resolve: mixed vertical and horizontal resolution", [&] {
+		suite.test("resolve: mixed vertical and horizontal resolution") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 
 			auto nodeY = interpreter.context["y"_token] >> MeshNodePtr::make(123uz);
@@ -327,12 +324,12 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			childInterpreter.environment = interpreter.environment;
 
 			auto result = childInterpreter.resolve("x"_token);
-			suite.expect(result);
-			suite.expectEqual(result->getValue().value(), 123uz);
-			suite.expect(result.value() == nodeY);
-		});
+			expect(result);
+			expect(result->getValue().value()) == 123uz;
+			expect(result.value()) == nodeY;
+		};
 
-		suite.addTest("Link", [&] {
+		suite.test("Link") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto target = MeshNodePtr::makeRoot("Target"_token);
 			auto child = MeshNodePtr::makeRoot("Child"_token);
@@ -346,18 +343,18 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
-			suite.expect(target.contains("Branch"_token));
-			suite.expectEqual(std::ranges::size(target.at("Branch"_token).value()), 1uz);
-			suite.expectEqual(target.at("Branch"_token)->front()->getValue().value(), "Child"_token);
-		});
+			expect(status);
+			expect(target.contains("Branch"_token));
+			expect(std::ranges::size(target.at("Branch"_token).value())) == 1uz;
+			expect(target.at("Branch"_token)->front()->getValue().value()) == "Child"_token;
+		};
 
-		suite.addTest("Unlink", [&] {
+		suite.test("Unlink") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto target = MeshNodePtr::makeRoot("Target"_token);
 			auto child = MeshNodePtr::makeRoot("Child"_token);
 			target["Branch"_token] >> child;
-			suite.expect(target.contains("Branch"_token));
+			expect(target.contains("Branch"_token));
 
 			// unlink branch
 			{
@@ -369,14 +366,14 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				if (not status)
 					Logger::print<"error">("Error: {}", status.error());
 
-				suite.expect(status);
-				suite.expect(not target.contains("Branch"_token));
+				expect(status);
+				expect(not target.contains("Branch"_token));
 			}
 
 			// unlink single node
 			{
 				target["Branch"_token] >> child;
-				suite.expect(target.contains("Branch"_token));
+				expect(target.contains("Branch"_token));
 
 				auto unlinkNode = MeshNodePtr::makeRoot("unlink"_token);
 				unlinkNode["source"_token] >> target;
@@ -387,12 +384,12 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				if (not status)
 					Logger::print<"error">("Error: {}", status.error());
 
-				suite.expect(status);
-				suite.expect(not target.contains("Branch"_token));
+				expect(status);
+				expect(not target.contains("Branch"_token));
 			}
-		});
+		};
 
-		suite.addTest("Equality (==)", [&] {
+		suite.test("Equality (==)") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto rhs = MeshNodePtr::make(42uz);
 			auto resultNode = MeshNodePtr::make(false);
@@ -407,8 +404,8 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				if (not status)
 					Logger::print<"error">("Error: {}", status.error());
 
-				suite.expect(status);
-				suite.expectEqual(resultNode.getValue().value(), true);
+				expect(status);
+				expect(resultNode.getValue().value());
 			}
 			rhs.setValue(43uz);
 			{
@@ -416,12 +413,12 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				if (not status)
 					Logger::print<"error">("Error: {}", status.error());
 
-				suite.expect(status);
-				suite.expectEqual(resultNode.getValue().value(), false);
+				expect(status);
+				expect(resultNode.getValue().value()) == false;
 			}
-		});
+		};
 
-		suite.addTest("Inversion (not)", [&] {
+		suite.test("Inversion (not)") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto value = MeshNodePtr::make(true);
 
@@ -433,8 +430,8 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				if (not status)
 					Logger::print<"error">("Error: {}", status.error());
 
-				suite.expect(status);
-				suite.expectEqual(static_cast<bool>(value.getValue().value()), false);
+				expect(status);
+				expect(static_cast<bool>(value.getValue().value())) == false;
 			}
 
 			{
@@ -442,12 +439,12 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				if (not status)
 					Logger::print<"error">("Error: {}", status.error());
 
-				suite.expect(status);
-				suite.expectEqual(static_cast<bool>(value.getValue().value()), true);
+				expect(status);
+				expect(static_cast<bool>(value.getValue().value()));
 			}
-		});
+		};
 
-		suite.addTest("Jump", [&] {
+		suite.test("Jump") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto value = MeshNodePtr::makeRoot(0uz);
 
@@ -471,13 +468,13 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
+			expect(status);
 			auto valueNode = value["value"_token].front();
-			suite.expect(valueNode);
-			suite.expectEqual(valueNode->getValue().value(), 2uz);
-		});
+			expect(valueNode);
+			expect(valueNode->getValue().value()) == 2uz;
+		};
 
-		suite.addTest("Return", [&] {
+		suite.test("Return") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto value = MeshNodePtr::makeRoot(0uz);
 
@@ -499,13 +496,13 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
+			expect(status);
 			auto valueNode = value["value"_token].front();
-			suite.expect(valueNode);
-			suite.expectEqual(valueNode->getValue().value(), 1uz);
-		});
+			expect(valueNode);
+			expect(valueNode->getValue().value()) == 1uz;
+		};
 
-		suite.addTest("Addition (+)", [&] {
+		suite.test("Addition (+)") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto result = MeshNodePtr::make(0uz);
 
@@ -518,11 +515,11 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
-			suite.expectEqual(result.getValue().value(), 15uz);
-		});
+			expect(status);
+			expect(result.getValue().value()) == 15uz;
+		};
 
-		suite.addTest("Subtraction (-)", [&] {
+		suite.test("Subtraction (-)") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto result = MeshNodePtr::make(0uz);
 
@@ -535,11 +532,11 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
-			suite.expectEqual(result.getValue().value(), 7uz);
-		});
+			expect(status);
+			expect(result.getValue().value()) == 7uz;
+		};
 
-		suite.addTest("Multiplication (*)", [&] {
+		suite.test("Multiplication (*)") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto result = MeshNodePtr::make(0uz);
 
@@ -552,11 +549,11 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
-			suite.expectEqual(result.getValue().value(), 20uz);
-		});
+			expect(status);
+			expect(result.getValue().value()) == 20uz;
+		};
 
-		suite.addTest("Division (/)", [&] {
+		suite.test("Division (/)") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto result = MeshNodePtr::make(0uz);
 
@@ -569,11 +566,11 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
-			suite.expectEqual(result.getValue().value(), 5uz);
-		});
+			expect(status);
+			expect(result.getValue().value()) == 5uz;
+		};
 
-		suite.addTest("Modulus (%)", [&] {
+		suite.test("Modulus (%)") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto result = MeshNodePtr::make(0uz);
 
@@ -586,11 +583,11 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
-			suite.expectEqual(result.getValue().value(), 2uz);
-		});
+			expect(status);
+			expect(result.getValue().value()) == 2uz;
+		};
 
-		suite.addTest("Less than (<)", [&] {
+		suite.test("Less than (<)") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto result = MeshNodePtr::make(false);
 
@@ -604,8 +601,8 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				if (not status)
 					Logger::print<"error">("Error: {}", status.error());
 
-				suite.expect(status);
-				suite.expectEqual(result.getValue().value(), true);
+				expect(status);
+				expect(result.getValue().value());
 			}
 
 			{
@@ -618,12 +615,12 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				if (not status)
 					Logger::print<"error">("Error: {}", status.error());
 
-				suite.expect(status);
-				suite.expectEqual(result.getValue().value(), false);
+				expect(status);
+				expect(result.getValue().value()) == false;
 			}
-		});
+		};
 
-		suite.addTest("reference: link two nodes", [&] {
+		suite.test("reference: link two nodes") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 
 			auto sourceNode = MeshNodePtr::makeRoot("source"_token);
@@ -637,14 +634,14 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			const auto status = interpreter(instruction);
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
-			suite.expect(status);
+			expect(status);
 
 			auto resolved = interpreter.get("myReference"_token);
-			suite.expect(resolved);
-			suite.expectEqual(resolved->getValue().value(), 123uz);
-		});
+			expect(resolved);
+			expect(resolved->getValue().value()) == 123uz;
+		};
 
-		suite.addTest("reference: deep destination with auto-vivification", [&] {
+		suite.test("reference: deep destination with auto-vivification") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 
 			auto sourceNode = MeshNodePtr::makeRoot("source"_token);
@@ -660,18 +657,18 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			const auto status = interpreter(instruction);
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
-			suite.expect(status);
+			expect(status);
 
 			auto path = interpreter.context["path"_token].front();
-			suite.expect(path);
+			expect(path);
 			auto to = path.value()["to"_token].front();
-			suite.expect(to);
+			expect(to);
 			auto valueNode = to.value()["value"_token].front();
-			suite.expect(valueNode);
-			suite.expectEqual(valueNode->getValue().value(), 42uz);
-		});
+			expect(valueNode);
+			expect(valueNode->getValue().value()) == 42uz;
+		};
 
-		suite.addTest("reference: deep source and deep destination", [&] {
+		suite.test("reference: deep source and deep destination") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 
 			auto sourceRoot = MeshNodePtr::makeRoot("sourceRoot"_token);
@@ -693,16 +690,16 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			const auto status = interpreter(instruction);
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
-			suite.expect(status);
+			expect(status);
 
 			auto destination1 = interpreter.get("destination1"_token);
-			suite.expect(destination1);
+			expect(destination1);
 			auto destination2 = destination1.value()["destination2"_token].front();
-			suite.expect(destination2);
-			suite.expectEqual(destination2->getValue().value(), 123uz);
-		});
+			expect(destination2);
+			expect(destination2->getValue().value()) == 123uz;
+		};
 
-		suite.addTest("set: update node value", [&] {
+		suite.test("set: update node value") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto targetNode = MeshNodePtr::makeRoot(0uz);
 
@@ -713,12 +710,12 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			const auto status = interpreter(instruction);
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
-			suite.expect(status);
+			expect(status);
 
-			suite.expectEqual(targetNode.getValue().value(), 1uz);
-		});
+			expect(targetNode.getValue().value()) == 1uz;
+		};
 
-		suite.addTest("size: get branch size", [&] {
+		suite.test("size: get branch size") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto root = MeshNodePtr::makeRoot("root"_token);
 			root["list"_token] >> MeshNodePtr::make(1uz);
@@ -735,12 +732,12 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			const auto status = interpreter(instruction);
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
-			suite.expect(status);
+			expect(status);
 
-			suite.expectEqual(resultNode.getValue().value(), 3uz);
-		});
+			expect(resultNode.getValue().value()) == 3uz;
+		};
 
-		suite.addTest("call: no arguments", [&] {
+		suite.test("call: no arguments") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto value = MeshNodePtr::makeRoot("root"_token);
 
@@ -756,13 +753,13 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
+			expect(status);
 			auto valueNode = value["value"_token].front();
-			suite.expect(valueNode);
-			suite.expectEqual(valueNode->getValue().value(), 42uz);
-		});
+			expect(valueNode);
+			expect(valueNode->getValue().value()) == 42uz;
+		};
 
-		suite.addTest("call: input and output", [&] {
+		suite.test("call: input and output") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 
 			auto lhs = MeshNodePtr::make(2uz);
@@ -799,11 +796,11 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
-			suite.expectEqual(result.getValue().value(), 5uz);
-		});
+			expect(status);
+			expect(result.getValue().value()) == 5uz;
+		};
 
-		suite.addTest("Multithreading - thread and join", [&] {
+		suite.test("Multithreading - thread and join") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto value = MeshNodePtr::makeRoot("root"_token);
 
@@ -825,13 +822,13 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
+			expect(status);
 			auto valueNode = value["value"_token].front();
-			suite.expect(valueNode);
-			suite.expectEqual(valueNode->getValue().value(), 42uz);
-		});
+			expect(valueNode);
+			expect(valueNode->getValue().value()) == 42uz;
+		};
 
-		suite.addTest("Multithreading - event, wait, notify", [&] {
+		suite.test("Multithreading - event, wait, notify") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto value = MeshNodePtr::makeRoot("root"_token);
 			auto eventIdNode = MeshNodePtr::make(0uz);
@@ -862,13 +859,13 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
+			expect(status);
 			auto valueNode = value["value"_token].front();
-			suite.expect(valueNode);
-			suite.expectEqual(valueNode->getValue().value(), 42uz);
-		});
+			expect(valueNode);
+			expect(valueNode->getValue().value()) == 42uz;
+		};
 
-		suite.addTest("thread: input and output", [&] {
+		suite.test("thread: input and output") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 
 			auto lhs = MeshNodePtr::make(2uz);
@@ -915,8 +912,8 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			if (not status)
 				Logger::print<"error">("Error: {}", status.error());
 
-			suite.expect(status);
-			suite.expectEqual(result.getValue().value(), 5uz);
-		});
-	}};
+			expect(status);
+			expect(result.getValue().value()) == 5uz;
+		};
+	};
 }

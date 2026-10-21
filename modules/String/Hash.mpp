@@ -3,11 +3,12 @@ export module CppUtils.String.Hash;
 import std;
 
 import CppUtils.String.Concept;
+import CppUtils.Type.Concept;
 export import CppUtils.Type.Hash;
 
 export namespace CppUtils::String
 {
-	template<Char CharT = char, std::size_t N = 1>
+	template<Type::Character CharT = char, std::size_t N = 1>
 	struct Hasher final
 	{
 		inline constexpr Hasher(Type::Hash hash):

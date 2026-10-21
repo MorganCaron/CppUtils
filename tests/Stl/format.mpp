@@ -9,13 +9,13 @@ import CppUtils;
 namespace CppUtils::UnitTest::Stl::Format
 {
 	/*
-	auto _ = TestSuite{"Stl/Format", [](TestSuite& suite) {
+	auto _ = testSuite("Stl/Format") = [](TestSuite& suite) {
 		using namespace std::literals;
 
-		suite.addTest("empty string", [&] {
+		suite.test("empty string") = [&] {
 			constexpr auto result = ::Stl::format("");
-			suite.expectEqual(result, ""sv);
-		});
-	}};
+			expect(result) == "";
+		};
+	};
 	*/
 }

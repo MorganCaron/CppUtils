@@ -5,10 +5,10 @@ import CppUtils;
 
 namespace CppUtils::UnitTest::Terminal::Button
 {
-	auto _ = TestSuite{"Terminal/Button", {"Terminal/Canvas", "Terminal/Text", "Terminal/Element"}, [](TestSuite& suite) {
+	auto _ = testSuite("Terminal/Button").dependsOn("Terminal/Canvas", "Terminal/Text", "Terminal/Element") = [](TestSuite& suite) {
 		using namespace std::chrono_literals;
 
-		suite.addTest("Click", [&] {
+		suite.test("Click") = [&] {
 			const auto size = CppUtils::Container::Size2{10, 3};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -20,7 +20,7 @@ namespace CppUtils::UnitTest::Terminal::Button
 
 			canvas.print();
 			std::this_thread::sleep_for(200ms);
-			suite.expectEqual(clicked, false);
+			not expect(clicked);
 
 			auto hoverEvent = CppUtils::Terminal::Mouse::Event{
 				.button = CppUtils::Terminal::Mouse::Button::None,
@@ -33,7 +33,7 @@ namespace CppUtils::UnitTest::Terminal::Button
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({5, 1}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Cyan);
+				expect(accessor->getChar({5, 1}).attributes.backgroundColor) == CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Cyan;
 			}
 
 			auto pressEvent = hoverEvent;
@@ -45,9 +45,9 @@ namespace CppUtils::UnitTest::Terminal::Button
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({5, 1}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Black);
+				expect(accessor->getChar({5, 1}).attributes.backgroundColor) == CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Black;
 			}
-			suite.expectEqual(clicked, false);
+			not expect(clicked);
 
 			auto releaseEvent = pressEvent;
 			releaseEvent.pressed = false;
@@ -55,14 +55,14 @@ namespace CppUtils::UnitTest::Terminal::Button
 			canvas.print();
 			std::this_thread::sleep_for(200ms);
 
-			suite.expectEqual(clicked, true);
+			expect(clicked);
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({5, 1}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Cyan);
+				expect(accessor->getChar({5, 1}).attributes.backgroundColor) == CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Cyan;
 			}
-		});
+		};
 
-		suite.addTest("CustomStyle", [&] {
+		suite.test("CustomStyle") = [&] {
 			const auto size = CppUtils::Container::Size2{20, 3};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -77,11 +77,11 @@ namespace CppUtils::UnitTest::Terminal::Button
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({0, 0}).attributes.backgroundColor, CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Red);
+				expect(accessor->getChar({0, 0}).attributes.backgroundColor) == CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Red;
 			}
-		});
+		};
 
-		suite.addTest("CustomBorders", [&] {
+		suite.test("CustomBorders") = [&] {
 			const auto size = CppUtils::Container::Size2{20, 3};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -97,16 +97,16 @@ namespace CppUtils::UnitTest::Terminal::Button
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({0, 0}).character, U'┌');
-				suite.expectEqual(accessor->getChar({19, 0}).character, U'┐');
-				suite.expectEqual(accessor->getChar({0, 2}).character, U'└');
-				suite.expectEqual(accessor->getChar({19, 2}).character, U'┘');
-				suite.expectEqual(accessor->getChar({1, 0}).character, U'─');
-				suite.expectEqual(accessor->getChar({0, 1}).character, U'│');
+				expect(accessor->getChar({0, 0}).character) == U'┌';
+				expect(accessor->getChar({19, 0}).character) == U'┐';
+				expect(accessor->getChar({0, 2}).character) == U'└';
+				expect(accessor->getChar({19, 2}).character) == U'┘';
+				expect(accessor->getChar({1, 0}).character) == U'─';
+				expect(accessor->getChar({0, 1}).character) == U'│';
 			}
-		});
+		};
 
-		suite.addTest("TextAlignment", [&] {
+		suite.test("TextAlignment") = [&] {
 			const auto size = CppUtils::Container::Size2{20, 1};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -119,7 +119,7 @@ namespace CppUtils::UnitTest::Terminal::Button
 			std::this_thread::sleep_for(200ms);
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({0, 0}).character, U'C');
+				expect(accessor->getChar({0, 0}).character) == U'C';
 			}
 
 			textRef.setHorizontalAlignment(CppUtils::Terminal::Alignment::Center);
@@ -127,7 +127,7 @@ namespace CppUtils::UnitTest::Terminal::Button
 			std::this_thread::sleep_for(200ms);
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({7, 0}).character, U'C');
+				expect(accessor->getChar({7, 0}).character) == U'C';
 			}
 
 			textRef.setHorizontalAlignment(CppUtils::Terminal::Alignment::End);
@@ -135,11 +135,11 @@ namespace CppUtils::UnitTest::Terminal::Button
 			std::this_thread::sleep_for(200ms);
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({15, 0}).character, U'C');
+				expect(accessor->getChar({15, 0}).character) == U'C';
 			}
-		});
+		};
 
-		suite.addTest("TextOverflow", [&] {
+		suite.test("TextOverflow") = [&] {
 			const auto size = CppUtils::Container::Size2{20, 1};
 			auto canvas = CppUtils::Terminal::Canvas{size};
 
@@ -151,8 +151,8 @@ namespace CppUtils::UnitTest::Terminal::Button
 
 			{
 				const auto accessor = canvas.getBuffer().sharedAccess();
-				suite.expectEqual(accessor->getChar({17, 0}).character, U'…');
+				expect(accessor->getChar({17, 0}).character) == U'…';
 			}
-		});
-	}};
+		};
+	};
 }

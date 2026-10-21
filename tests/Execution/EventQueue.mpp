@@ -6,8 +6,8 @@ import CppUtils.UnitTest;
 
 namespace CppUtils::UnitTest::Execution::EventQueue
 {
-	auto _ = TestSuite{"Execution/EventQueue", {"Execution/EventDispatcher", "Thread/UniqueLocker", "Thread/ThreadLoop", "Execution/ScopeGuard", "UnitTest"}, [](TestSuite& suite) {
-		suite.addTest("Local EventQueue emission", [&] {
+	auto _ = testSuite("Execution/EventQueue").dependsOn("Execution/EventDispatcher", "Thread/UniqueLocker", "Thread/ThreadLoop", "Execution/ScopeGuard", "UnitTest") = [](TestSuite& suite) {
+		suite.test("Local EventQueue emission") = [&] {
 			auto queue = CppUtils::Execution::EventQueue{};
 			auto received = false;
 			auto valueReceived = 0;
@@ -20,11 +20,11 @@ namespace CppUtils::UnitTest::Execution::EventQueue
 			queue.emit<"test">(42);
 			queue.waitUntilFinished();
 
-			suite.expect(received);
-			suite.expectEqual(valueReceived, 42);
-		});
+			expect(received);
+			expect(valueReceived) == 42;
+		};
 
-		suite.addTest("Multiple subscribe", [&] {
+		suite.test("Multiple subscribe") = [&] {
 			auto queue = CppUtils::Execution::EventQueue{};
 			auto count = 0uz;
 
@@ -37,10 +37,10 @@ namespace CppUtils::UnitTest::Execution::EventQueue
 			queue.emit<"C">();
 
 			queue.waitUntilFinished();
-			suite.expectEqual(count, 2uz);
-		});
+			expect(count) == 2uz;
+		};
 
-		suite.addTest("Unsubscribe", [&] {
+		suite.test("Unsubscribe") = [&] {
 			auto queue = CppUtils::Execution::EventQueue{};
 			auto count = 0;
 
@@ -50,16 +50,16 @@ namespace CppUtils::UnitTest::Execution::EventQueue
 
 			queue.emit<"Event">();
 			queue.waitUntilFinished();
-			suite.expectEqual(count, 1);
+			expect(count) == 1;
 
-			suite.expect(queue.unsubscribe(subscriptionIdentifier));
+			expect(queue.unsubscribe(subscriptionIdentifier));
 
 			queue.emit<"Event">();
 			queue.waitUntilFinished();
-			suite.expectEqual(count, 1);
-		});
+			expect(count) == 1;
+		};
 
-		suite.addTest("Clear subscribers", [&] {
+		suite.test("Clear subscribers") = [&] {
 			auto queue = CppUtils::Execution::EventQueue{};
 			auto count = 0;
 
@@ -69,17 +69,17 @@ namespace CppUtils::UnitTest::Execution::EventQueue
 			queue.emit<"A">();
 			queue.emit<"B">();
 			queue.waitUntilFinished();
-			suite.expectEqual(count, 2);
+			expect(count) == 2;
 
 			queue.clearSubscribers();
 
 			queue.emit<"A">();
 			queue.emit<"B">();
 			queue.waitUntilFinished();
-			suite.expectEqual(count, 2);
-		});
+			expect(count) == 2;
+		};
 
-		suite.addTest("Unsubscribe by event hash", [&] {
+		suite.test("Unsubscribe by event hash") = [&] {
 			auto queue = CppUtils::Execution::EventQueue{};
 			auto count = 0;
 
@@ -89,14 +89,14 @@ namespace CppUtils::UnitTest::Execution::EventQueue
 			queue.emit<"Event">();
 			queue.emit<"Other">();
 			queue.waitUntilFinished();
-			suite.expectEqual(count, 2);
+			expect(count) == 2;
 
-			suite.expect(queue.unsubscribe<"Event">());
+			expect(queue.unsubscribe<"Event">());
 
 			queue.emit<"Event">();
 			queue.emit<"Other">();
 			queue.waitUntilFinished();
-			suite.expectEqual(count, 3);
-		});
-	}};
+			expect(count) == 3;
+		};
+	};
 }

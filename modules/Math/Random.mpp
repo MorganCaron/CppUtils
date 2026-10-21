@@ -1,6 +1,7 @@
 export module CppUtils.Math.Random;
 
 import std;
+import CppUtils.Type.Hash;
 
 export namespace CppUtils::Math
 {
@@ -15,4 +16,223 @@ export namespace CppUtils::Math
 		auto randomNumber = distribution(engine);
 		return randomNumber;
 	}
+
+	/**
+	 * @brief Deterministic, constexpr-compatible pseudo-random number generator (SplitMix64).
+	 *
+	 * Provides reproducible pseudo-random generation suitable for unit tests, fuzz testing,
+	 * and property-based verification. Generates identical sequences across platforms for a given seed.
+	 *
+	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#générateurs-pseudo-aléatoires-disponibles (Guide des tests unitaires)
+	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#available-pseudo-random-generators (Unit test guide)
+	 */
+	class DeterministicRandomEngine final
+	{
+	public:
+		/// @brief Default 64-bit seed used for deterministic pseudo-random initialization.
+		static constexpr auto defaultSeed = 0x123456789ABCDEF0ULL;
+
+		/**
+		 * @brief Constructs a deterministic random engine with a given 64-bit seed.
+		 * @param seed Initial seed (defaults to defaultSeed).
+		 */
+		explicit constexpr DeterministicRandomEngine(std::uint64_t seed = defaultSeed) noexcept:
+			m_initialSeed{seed},
+			m_state{seed != 0 ? seed : 0x853C49E6748FEA9BULL}
+		{}
+
+		/**
+		 * @brief Returns the initial seed configured for this engine.
+		 * @return 64-bit unsigned integer seed.
+		 */
+		[[nodiscard]] constexpr auto seed() const noexcept -> std::uint64_t
+		{
+			return m_initialSeed;
+		}
+
+		/*
+			Générateur pseudo-aléatoire SplitMix64 :
+			https://en.wikipedia.org/wiki/Xorshift#Initialization
+			https://en.wikipedia.org/wiki/Weyl_sequence
+			La constante 0x9E3779B97F4A7C15ULL est l'incrément de Weyl basé sur le ratio d'or:
+			floor(2^64 / phi) = floor(2^64 * (sqrt(5) - 1) / 2) = 11400714819323198485 = 0x9e3779b97f4a7c15.
+			Cette valeur impaire est première avec 2^64 et assure une période maximale de 2^64 avec
+			une équidistribution optimale. Le ratio d'or offre les meilleures propriétés de dispersion
+			et d'évitement des résonances harmoniques parmi tous les réels irrationnels (théorème des trois distances de Weyl).
+		*/
+		/**
+		 * @brief Advances the generator state and produces the next raw 64-bit pseudo-random integer.
+		 * @return Next pseudo-random std::uint64_t.
+		 */
+		constexpr auto nextUint64() noexcept -> std::uint64_t
+		{
+			m_state += 0x9E3779B97F4A7C15ULL;
+			return Type::mixHash(m_state);
+		}
+
+		/**
+		 * @brief Generates a pseudo-random value within the specified range [minimum, maximum].
+		 *
+		 * Deduce the type automatically from parameters or specify it explicitly.
+		 * Supports integral types, floating-point types, and booleans.
+		 *
+		 * @tparam Type Arithmetic or boolean type.
+		 * @param minimum Lower bound (inclusive).
+		 * @param maximum Upper bound (inclusive).
+		 * @return Random value within [minimum, maximum].
+		 */
+		template<class Type>
+		constexpr auto random(Type minimum, Type maximum) noexcept -> Type
+		{
+			if (minimum >= maximum)
+				return minimum;
+			if constexpr (std::same_as<Type, bool>)
+			{
+				return (nextUint64() & 1ULL) != 0;
+			}
+			else if constexpr (std::integral<Type>)
+			{
+				using Unsigned = std::make_unsigned_t<Type>;
+				const auto difference = static_cast<Unsigned>(maximum) - static_cast<Unsigned>(minimum);
+				if constexpr (sizeof(Type) == sizeof(std::uint64_t))
+				{
+					if (difference == std::numeric_limits<Unsigned>::max())
+						return static_cast<Type>(nextUint64());
+				}
+				const auto range = static_cast<std::uint64_t>(difference) + 1ULL;
+				return static_cast<Type>(minimum + static_cast<Type>(nextUint64() % range));
+			}
+			else if constexpr (std::floating_point<Type>)
+			{
+				constexpr auto factor = 1.0 / static_cast<double>(std::numeric_limits<std::uint64_t>::max());
+				const auto normalized = static_cast<double>(nextUint64()) * factor;
+				return static_cast<Type>(minimum + normalized * (maximum - minimum));
+			}
+		}
+
+		/**
+		 * @brief Generates a pseudo-random value of the requested type covering its standard range.
+		 *
+		 * For integral types, covers [`std::numeric_limits<Type>::min()`, `std::numeric_limits<Type>::max()`].
+		 * For floating-point types, covers [0.0, 1.0].
+		 * For bool, returns true or false with a balanced 50% distribution.
+		 *
+		 * @tparam Type Target arithmetic or boolean type.
+		 * @return Random value of type Type.
+		 */
+		template<class Type>
+		constexpr auto random() noexcept -> Type
+		{
+			if constexpr (std::same_as<Type, bool>)
+				return (nextUint64() & 1ULL) != 0;
+			else if constexpr (std::integral<Type>)
+				return random<Type>(std::numeric_limits<Type>::min(), std::numeric_limits<Type>::max());
+			else if constexpr (std::floating_point<Type>)
+				return random<Type>(static_cast<Type>(0.0), static_cast<Type>(1.0));
+		}
+
+		/**
+		 * @brief Generates a floating-point number in [minimum, maximum] (defaults: 0.0 to 1.0).
+		 * @tparam Float Floating-point type.
+		 * @param minimum Lower bound (inclusive).
+		 * @param maximum Upper bound (inclusive).
+		 * @return Random floating-point value.
+		 */
+		template<std::floating_point Float>
+		constexpr auto randomFloat(Float minimum = static_cast<Float>(0.0), Float maximum = static_cast<Float>(1.0)) noexcept -> Float
+		{
+			return random<Float>(minimum, maximum);
+		}
+
+		/**
+		 * @brief Generates a pseudo-random size within the specified bounds.
+		 * @param minimum Lower bound (inclusive).
+		 * @param maximum Upper bound (inclusive).
+		 * @return Random std::size_t in [minimum, maximum].
+		 */
+		constexpr auto randomSize(std::size_t minimum, std::size_t maximum) noexcept -> std::size_t
+		{
+			return random<std::size_t>(minimum, maximum);
+		}
+
+		/**
+		 * @brief Generates a pseudo-random size between 0 and maximum (inclusive).
+		 * @param maximum Upper bound (inclusive).
+		 * @return Random std::size_t in [0, maximum].
+		 */
+		constexpr auto randomSize(std::size_t maximum) noexcept -> std::size_t
+		{
+			return random<std::size_t>(0uz, maximum);
+		}
+
+		/**
+		 * @brief Generates a pseudo-random size bounded by PTRDIFF_MAX.
+		 *
+		 * The generated size is bounded within [0, `std::numeric_limits<std::ptrdiff_t>::max()`]
+		 * (PTRDIFF_MAX) instead of SIZE_MAX, ensuring that the size never exceeds the maximum
+		 * legal contiguous object size in C++, thereby preserving the validity of pointer arithmetic
+		 * ([expr.add#5]) during memory allocation and container stress testing.
+		 *
+		 * @see https://morgancaron.github.io/articles/cpp/size#limitation-de-la-plage-de-valeurs (Limitation de la plage de valeurs et borne PTRDIFF_MAX)
+		 *
+		 * @return Random std::size_t in [0, PTRDIFF_MAX].
+		 */
+		constexpr auto randomSize() noexcept -> std::size_t
+		{
+			return random<std::size_t>(0uz, static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max()));
+		}
+
+		/**
+		 * @brief Generates a pseudo-random string of variable length composed of characters from the given alphabet.
+		 * @param minimumLength Minimum number of characters.
+		 * @param maximumLength Maximum number of characters.
+		 * @param alphabet View of available characters to sample from.
+		 * @return Randomly generated std::string.
+		 */
+		constexpr auto randomString(
+			std::size_t minimumLength = 0uz,
+			std::size_t maximumLength = 32uz,
+			std::string_view alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_ -") -> std::string
+		{
+			const auto length = random<std::size_t>(minimumLength, maximumLength);
+			auto result = std::string{};
+			result.reserve(length);
+			for (auto _ : std::views::iota(0uz, length))
+			{
+				const auto characterIndex = random<std::size_t>(0uz, std::ranges::size(alphabet) - 1uz);
+				result += alphabet[characterIndex];
+			}
+			return result;
+		}
+
+		/**
+		 * @brief Allocates and fills a vector of bytes with pseudo-random data.
+		 * @param count Number of bytes to generate.
+		 * @return Vector of random bytes.
+		 */
+		constexpr auto randomBytes(std::size_t count) -> std::vector<std::byte>
+		{
+			auto result = std::vector<std::byte>(count);
+			for (auto& byte : result)
+				byte = static_cast<std::byte>(nextUint64() & 0xFF);
+			return result;
+		}
+
+		/**
+		 * @brief Picks a pseudo-random element by const reference from a random access range.
+		 * @tparam Range Range satisfying std::ranges::random_access_range.
+		 * @param collection Collection to pick an element from.
+		 * @return Const reference to the randomly selected element.
+		 */
+		template<std::ranges::random_access_range Range>
+		constexpr auto pickOne(const Range& collection) -> const auto&
+		{
+			const auto index = random<std::size_t>(0uz, std::ranges::size(collection) - 1uz);
+			return collection[index];
+		}
+
+	private:
+		std::uint64_t m_initialSeed;
+		std::uint64_t m_state;
+	};
 }

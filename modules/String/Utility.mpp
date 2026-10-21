@@ -3,6 +3,7 @@ export module CppUtils.String.Utility;
 import std;
 
 import CppUtils.Math;
+import CppUtils.Type.Concept;
 import CppUtils.Type.Specialization;
 import CppUtils.String.Concept;
 
@@ -97,28 +98,28 @@ export namespace CppUtils::String
 		return rightTrimString(leftTrimString(stringView));
 	}
 
-	[[nodiscard]] inline auto getPrintableChar(Char auto c) -> std::string
+	[[nodiscard]] inline auto getPrintableChar(Type::Character auto c) -> std::string
 	{
 		using namespace std::literals;
 		return std::isprint(c) ? ("'"s + c + '\'') : std::to_string(c);
 	}
 
-	[[nodiscard]] inline constexpr auto isUppercase(Char auto c) noexcept -> bool
+	[[nodiscard]] inline constexpr auto isUppercase(Type::Character auto c) noexcept -> bool
 	{
 		return (c >= 'A' and c <= 'Z');
 	}
 
-	[[nodiscard]] inline constexpr auto isLowercase(Char auto c) noexcept -> bool
+	[[nodiscard]] inline constexpr auto isLowercase(Type::Character auto c) noexcept -> bool
 	{
 		return (c >= 'a' and c <= 'z');
 	}
 
-	[[nodiscard]] inline constexpr auto toLowercase(Char auto c) noexcept -> decltype(c)
+	[[nodiscard]] inline constexpr auto toLowercase(Type::Character auto c) noexcept -> decltype(c)
 	{
 		return static_cast<decltype(c)>(isUppercase(c) ? c + ('a' - 'A') : c);
 	}
 
-	[[nodiscard]] inline constexpr auto toUppercase(Char auto c) noexcept -> decltype(c)
+	[[nodiscard]] inline constexpr auto toUppercase(Type::Character auto c) noexcept -> decltype(c)
 	{
 		return static_cast<decltype(c)>(isLowercase(c) ? c - ('a' - 'A') : c);
 	}
@@ -145,17 +146,109 @@ export namespace CppUtils::String
 
 	[[nodiscard]] inline auto formatValue(const auto& value) -> std::string
 	{
-		using DecayedT = std::remove_cvref_t<decltype(value)>;
-		if constexpr (Type::Specializes<DecayedT, std::variant>)
-			return std::visit([](const auto& value) -> std::string {
-				return formatValue(value);
-			}, value);
-		else if constexpr (std::formattable<DecayedT, char>)
-			return std::format("{}", value);
-		else if constexpr (requires { value.string(); })
-			return value.string();
+		using namespace std::literals;
+		using DecayedType = std::remove_cvref_t<decltype(value)>;
+
+		const auto formatSubElement = [](const auto& element) -> std::string {
+			using ElementType = std::remove_cvref_t<decltype(element)>;
+			if constexpr (GenericText<ElementType>)
+				return std::format("\"{}\"", element);
+			else if constexpr (Type::Character<ElementType>)
+				return std::format("'{}'", element);
+			else
+				return formatValue(element);
+		};
+
+		if constexpr (requires { std::variant_size<DecayedType>::value; })
+		{
+			if constexpr (ExtensivelyPrintable<DecayedType>)
+			{
+				return std::visit([](const auto& alternative) -> std::string {
+					return formatValue(alternative);
+				}, value);
+			}
+			else
+			{
+				return "<non printable>";
+			}
+		}
+		else if constexpr (requires { typename std::tuple_size<DecayedType>::type; } and not std::ranges::input_range<DecayedType>)
+		{
+			if constexpr (ExtensivelyPrintable<DecayedType>)
+			{
+				auto formattedString = "("s;
+				auto isFirst = true;
+				std::apply([&](const auto&... elements) {
+					const auto formatElement = [&](const auto& element) {
+						if (not isFirst)
+							formattedString += ", ";
+						isFirst = false;
+						formattedString += formatSubElement(element);
+					};
+					(formatElement(elements), ...);
+				}, value);
+				formattedString += ")";
+				return formattedString;
+			}
+			else
+			{
+				return "<non printable>";
+			}
+		}
+		else if constexpr (DirectlyPrintable<DecayedType>)
+		{
+			if constexpr (std::same_as<DecayedType, std::byte>)
+				return std::format("0x{:02X}", std::to_integer<unsigned int>(value));
+			else
+				return std::format("{}", value);
+		}
+		else if constexpr (requires { static_cast<bool>(value); *value; } and not GenericText<DecayedType>)
+		{
+			using DereferencedType = std::remove_cvref_t<decltype(*value)>;
+			if constexpr (ExtensivelyPrintable<DereferencedType>)
+			{
+				if (not static_cast<bool>(value))
+				{
+					if constexpr (std::is_pointer_v<DecayedType> or std::same_as<DecayedType, std::nullptr_t> or requires { value.get(); })
+						return "nullptr";
+					else if constexpr (requires { value.error(); })
+						return std::format("<error: {}>", formatValue(value.error()));
+					else
+						return "nullopt";
+				}
+				return formatValue(*value);
+			}
+			else
+			{
+				return "<non printable>";
+			}
+		}
+		else if constexpr (std::ranges::input_range<DecayedType> and not GenericText<DecayedType>)
+		{
+			if constexpr (not std::same_as<std::ranges::range_value_t<DecayedType>, DecayedType>
+				and ExtensivelyPrintable<std::ranges::range_value_t<DecayedType>>)
+			{
+				auto formattedString = std::string{"["};
+				auto isFirst = true;
+				for (const auto& element : value)
+				{
+					if (not isFirst)
+						formattedString += ", ";
+					isFirst = false;
+					formattedString += formatSubElement(element);
+				}
+				formattedString += "]";
+				return formattedString;
+			}
+			else
+			{
+				return "<non printable>";
+			}
+		}
 		else
+		{
 			return "<non printable>";
+		}
 	}
 
 	[[nodiscard]] inline constexpr auto toAscii(const GenericText auto& string) -> std::string
