@@ -1341,6 +1341,7 @@ async function main() {
 	await generateForLanguage("fr", targetCompounds, namespaceCompounds);
 
 	const symbolsOutPath = path.join(docsRoot, "src", "data", "cpputils-symbols.json");
+	fs.mkdirSync(path.dirname(symbolsOutPath), { recursive: true });
 	fs.writeFileSync(symbolsOutPath, JSON.stringify(cpputilsSymbols, null, 2), "utf-8");
 	console.log(`[generate-api] Saved ${Object.keys(cpputilsSymbols).length} CppUtils symbols to ${symbolsOutPath}`);
 }
