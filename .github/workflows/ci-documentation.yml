@@ -1,0 +1,57 @@
+name: "CI: Documentation"
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "docs/**"
+      - "modules/**"
+      - "include/**"
+      - ".github/workflows/ci-documentation.yml"
+      - ".github/workflows/documentation.yml"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "docs/**"
+      - "modules/**"
+      - "include/**"
+      - ".github/workflows/ci-documentation.yml"
+      - ".github/workflows/documentation.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: "Build Documentation"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install -y doxygen
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd docs
+          npm ci
+
+      - name: Build documentation site
+        run: |
+          cd docs
+          npm run build
