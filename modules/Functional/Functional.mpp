@@ -1,3 +1,4 @@
 export module CppUtils.Functional;
 
 export import CppUtils.Functional.LambdaCalculus;
+export import CppUtils.Functional.Placeholders;

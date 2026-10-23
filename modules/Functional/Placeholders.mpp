@@ -1,0 +1,140 @@
+export module CppUtils.Functional.Placeholders;
+
+import std;
+
+export namespace CppUtils::Functional::Placeholders
+{
+	namespace Detail
+	{
+		template<class T>
+		inline constexpr bool isExpression = false;
+
+		template<class T>
+		concept ExpressionType = isExpression<std::remove_cvref_t<T>>;
+
+		template<std::size_t Index>
+		struct Arg final
+		{
+			template<class... Types>
+			requires (Index < sizeof...(Types))
+			static constexpr auto operator()(Types&&... arguments) noexcept -> decltype(auto)
+			{
+				return std::get<Index>(std::forward_as_tuple(std::forward<Types>(arguments)...));
+			}
+		};
+
+		template<std::size_t Index>
+		inline constexpr bool isExpression<Arg<Index>> = true;
+
+		struct Args final
+		{
+			constexpr auto operator+() const noexcept
+			{
+				return []<class... Types>(Types&&... arguments) static noexcept(noexcept((std::forward<Types>(arguments) + ...)))
+						   -> decltype((std::forward<Types>(arguments) + ...)) {
+					return (std::forward<Types>(arguments) + ...);
+				};
+			}
+		};
+
+		constexpr auto evaluate(auto&& expression, auto&&... arguments) -> decltype(auto)
+		{
+			if constexpr (ExpressionType<decltype(expression)>)
+				return std::forward<decltype(expression)>(expression)(std::forward<decltype(arguments)>(arguments)...);
+			else
+				return std::forward<decltype(expression)>(expression);
+		}
+
+		template<class Callee, class... Args>
+		struct CallOperation final
+		{
+			Callee callee;
+			std::tuple<Args...> args;
+
+			template<class... Types>
+			constexpr auto operator()(Types&&... runtimeArgs) const -> decltype(auto)
+			{
+				auto evalArg = [&]<class Arg>(Arg&& arg) -> decltype(auto) {
+					return evaluate(std::forward<Arg>(arg), runtimeArgs...);
+				};
+
+				return std::apply([&](auto&&... unpackedArgs) -> decltype(auto) {
+					return evaluate(callee, runtimeArgs...)(
+						evalArg(unpackedArgs)...);
+				}, args);
+			}
+		};
+
+		template<class Callee, class... Args>
+		inline constexpr bool isExpression<CallOperation<Callee, Args...>> = true;
+
+		template<class Operation, class Left, class Right>
+		struct BinaryOperation final
+		{
+			Left left;
+			Right right;
+
+			template<class... Types>
+			constexpr auto operator()(Types&&... arguments) const
+				noexcept(noexcept(Operation{}(
+					evaluate(left, std::forward<Types>(arguments)...),
+					evaluate(right, std::forward<Types>(arguments)...))))
+					-> decltype(Operation{}(
+						evaluate(left, std::forward<Types>(arguments)...),
+						evaluate(right, std::forward<Types>(arguments)...)))
+			{
+				return Operation{}(
+					evaluate(left, std::forward<Types>(arguments)...),
+					evaluate(right, std::forward<Types>(arguments)...));
+			}
+		};
+
+		template<class Operation, class Left, class Right>
+		inline constexpr bool isExpression<BinaryOperation<Operation, Left, Right>> = true;
+
+		template<class Left, class Right>
+		requires (ExpressionType<Left> or ExpressionType<Right>)
+		constexpr auto operator*(Left&& left, Right&& right)
+		{
+			return BinaryOperation<std::multiplies<>, std::remove_cvref_t<Left>, std::remove_cvref_t<Right>>{
+				std::forward<Left>(left), std::forward<Right>(right)};
+		}
+
+		template<class Left, class Right>
+		requires (ExpressionType<Left> or ExpressionType<Right>)
+		constexpr auto operator+(Left&& left, Right&& right)
+		{
+			return BinaryOperation<std::plus<>, std::remove_cvref_t<Left>, std::remove_cvref_t<Right>>{
+				std::forward<Left>(left), std::forward<Right>(right)};
+		}
+
+		template<class Left, class Right>
+		requires (ExpressionType<Left> or ExpressionType<Right>)
+		constexpr auto operator%(Left&& left, Right&& right)
+		{
+			return BinaryOperation<std::modulus<>, std::remove_cvref_t<Left>, std::remove_cvref_t<Right>>{
+				std::forward<Left>(left), std::forward<Right>(right)};
+		}
+
+		template<class Left, class Right>
+		requires (ExpressionType<Left> or ExpressionType<Right>)
+		constexpr auto operator==(Left&& left, Right&& right)
+		{
+			return BinaryOperation<std::equal_to<>, std::remove_cvref_t<Left>, std::remove_cvref_t<Right>>{
+				std::forward<Left>(left), std::forward<Right>(right)};
+		}
+	}
+
+	inline constexpr Detail::Arg<0> _0;
+	inline constexpr Detail::Arg<1> _1;
+	inline constexpr Detail::Arg<2> _2;
+	inline constexpr Detail::Arg<3> _3;
+	inline constexpr Detail::Arg<4> _4;
+	inline constexpr Detail::Arg<5> _5;
+	inline constexpr Detail::Arg<6> _6;
+	inline constexpr Detail::Arg<7> _7;
+	inline constexpr Detail::Arg<8> _8;
+	inline constexpr Detail::Arg<9> _9;
+
+	inline constexpr Detail::Args _args;
+}
