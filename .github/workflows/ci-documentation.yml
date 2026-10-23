@@ -1,15 +1,6 @@
 name: "CI: Documentation"
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - "docs/**"
-      - "modules/**"
-      - "include/**"
-      - ".github/workflows/ci-documentation.yml"
-      - ".github/workflows/documentation.yml"
   pull_request:
     branches:
       - master
@@ -18,7 +9,7 @@ on:
       - "modules/**"
       - "include/**"
       - ".github/workflows/ci-documentation.yml"
-      - ".github/workflows/documentation.yml"
+      - ".github/workflows/cd-documentation.yml"
   workflow_dispatch:
 
 concurrency:
