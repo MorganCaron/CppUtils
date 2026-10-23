@@ -1,0 +1,73 @@
+export module CppUtils.UnitTests.Functional.Placeholders;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Functional::Placeholders
+{
+	template<class Left, class Right>
+	concept Addable = requires (Left left, Right right) { left + right; };
+
+	auto _ = testSuite("Functional/Placeholders") = [](TestSuite& suite) {
+		using namespace CppUtils::Functional::Placeholders;
+
+		suite.test("Power of 2 with _0 * _0") = [&] {
+			constexpr auto powerOfTwo = _0 * _0;
+			expect(powerOfTwo(2)) == 4;
+			expect(powerOfTwo(5)) == 25;
+		};
+
+		suite.test("Multiplication with _0 * _1") = [&] {
+			constexpr auto multiplication = _0 * _1;
+			expect(multiplication(2, 3)) == 6;
+			expect(multiplication(7, 8)) == 56;
+		};
+
+		// https://fr.wikipedia.org/wiki/Multiplieur-accumulateur
+		suite.test("Fused multiply-add with _0 * _1 + _2") = [&] {
+			constexpr auto fusedMultiplyAdd = _0 * _1 + _2;
+			expect(fusedMultiplyAdd(1, 2, 3)) == 5;
+			expect(fusedMultiplyAdd(4, 5, 6)) == 26;
+		};
+
+		suite.test("Variadic sum with +_args") = [&] {
+			constexpr auto sum = +_args;
+			expect(sum(1, 2, 3)) == 6;
+			expect(sum(10, 20, 30, 40)) == 100;
+		};
+
+		suite.test("Range filtering with _0 % 2 == 0") = [&] {
+			const auto values = std::views::iota(0, 10)
+				| std::views::filter(_0 % 2 == 0)
+				| std::ranges::to<std::vector>();
+
+			expect(values) == std::vector{0, 2, 4, 6, 8};
+		};
+
+		suite.test("Higher-order index selection up to _9") = [&] {
+			constexpr auto selectNinth = _8;
+			expect(selectNinth(10, 20, 30, 40, 50, 60, 70, 80, 90)) == 90;
+
+			constexpr auto selectTenth = _9;
+			expect(selectTenth(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) == 10;
+		};
+
+		suite.test("Combination with literals") = [&] {
+			constexpr auto computation = (_0 + 10) * _1;
+			expect(computation(5, 2)) == 30;
+		};
+
+		suite.test("Literal on the left side") = [&] {
+			constexpr auto computation = 10 + _0;
+			expect(computation(5)) == 15;
+		};
+
+		suite.test<[] {
+			using CppUtils::Functional::Placeholders::Detail::Args;
+			return not Addable<Args, Args>
+				and Addable<decltype(_0), int>
+				and Addable<int, decltype(_0)>
+				and Addable<decltype(_0), decltype(_1)>;
+		}>("Operators ignore unrelated types");
+	};
+}
