@@ -6,6 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const outputPath = path.resolve(__dirname, '../src/data/cppreference-symbols.json');
 
 export async function updateCppReferenceSymbols(options = { maxAgeDays: 7, timeoutMs: 5000, force: false }) {
+	fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 	const exists = fs.existsSync(outputPath);
 	if (exists && !options.force) {
 		const stats = fs.statSync(outputPath);
