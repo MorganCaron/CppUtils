@@ -19,7 +19,7 @@ namespace CppUtils::UnitTest
 
 	/**
 	 * @brief Matcher for validating that a caught exception satisfies a predicate or value equality.
-	 * @note Instantiated via throws<ExceptionType>; not intended to be constructed directly by user code.
+	 * @note Instantiated via `throws<ExceptionType>`; not intended to be constructed directly by user code.
 	 */
 	export template<class ExceptionType, class PredicateType>
 	struct ThrowsPredicateMatcher final: ExpectationMatcherTag
@@ -33,7 +33,7 @@ namespace CppUtils::UnitTest
 
 	/**
 	 * @brief Matcher for validating that a callable throws an expected exception type with optional message or predicate.
-	 * @note Instantiated via throws<ExceptionType>; not intended to be constructed directly by user code.
+	 * @note Instantiated via `throws<ExceptionType>`; not intended to be constructed directly by user code.
 	 */
 	export template<class ExceptionType>
 	struct ThrowsMatcher final: ExpectationMatcherTag
