@@ -59,18 +59,18 @@ CppUtils is built upon uncompromising core principles:
 	- **Hermetic isolation & faster builds**: each module is compiled only once, drastically reducing build times compared to redundant preprocessor (`#include`) headers.
 </Card>
 
-<Card title="Unopinionated integration & design by contract" icon="heart">
+<Card title="Non-invasive integration & design by contract" icon="heart">
 	Zero architectural lock-in or contagion: CppUtils never attempts to dictate its types or colonize your codebase.
-	- **Non-invasive design & zero contagion**: unlike invasive frameworks such as **Qt** that mandate proprietary meta-compilers (`moc`), closed types (`QString`, `QByteArray`), and heavy inheritance trees, CppUtils remains strictly non-invasive and introduces zero viral dependencies: the goal is never to make you dependent to lock you into an ecosystem, actively refusing any form of vendor lock-in.
-	- **Design by contract**: APIs are constrained through standard concepts (`std::ranges::input_range`, `std::formattable`, `std::invocable`, etc.) rather than bound to rigid, imposed types: your containers propagate without defensive copying or conversion overhead (explore [design by contract with `auto` and concepts on my blog](https://morgancaron.github.io/articles/cpp/auto#abbreviated-function-template-depuis-c20)).
-	- **Isolated adoption**: pick a single standalone component (`MultiKeyMap`, `UniqueLocker`) in complete autonomy without being forced to import the rest of the library.
+	- **Non-invasive design & zero contagion**: unlike invasive frameworks such as **Qt** that mandate proprietary meta-compilers (`moc`), closed types (`QString`, `QByteArray`), and heavy inheritance hierarchies, CppUtils remains strictly non-invasive and introduces zero viral dependencies: the goal is never to lock you into a proprietary ecosystem (*vendor lock-in*).
+	- **Design by contract**: APIs are constrained through standard concepts (`std::ranges::input_range`, `std::formattable`, `std::invocable`, etc.) rather than bound to rigid, imposed types: your containers propagate without unnecessary copying or conversion overhead (explore [design by contract with `auto` and concepts on my blog](https://morgancaron.github.io/articles/cpp/auto#abbreviated-function-template-depuis-c20)).
+	- **Targeted adoption**: pick a single standalone component (`MultiKeyMap`, `UniqueLocker`) in complete autonomy without having to import the rest of the library.
 </Card>
 
-<Card title="C++26 cutting edge, zero legacy debt" icon="rocket">
+<Card title="Cutting-edge C++26 & zero technical debt" icon="rocket">
 	Continuously targets the latest language standard (**C++26**) to immediately deliver state-of-the-art capabilities: native modules, monadic operations, advanced concepts, enhanced safety, and reflection.
 	- **Zero legacy compromise**: no artificial preservation of obsolete patterns or technical debt accumulation.
-	- **Pragmatic transition**: targeted feature-test macros (`__cpp_lib_*`) ease compilation on recent compilers with partial C++26 standard library rollouts, without carrying obsolete legacy baggage.
-	- **Future-proof architecture**: continuous refactorings to keep the codebase clean, robust, and modern.
+	- **Pragmatic transition**: targeted feature-test macros (`__cpp_lib_*`) ease compilation on recent compilers with partial C++26 standard library support, without burdening the codebase with backward-compatibility layers.
+	- **Future-proof architecture**: continuous refactoring to keep the codebase clean, robust, and modern.
 </Card>
 
 <Card title="Performance & modern best practices" icon="seti:cpp">

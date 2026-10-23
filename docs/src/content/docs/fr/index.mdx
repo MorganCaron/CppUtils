@@ -23,7 +23,7 @@ export const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 ## Découvrir la documentation
 
-CppUtils se compose de plusieurs grandes bibliothèques modulaires (tests unitaires, réseau, topologie de graphes) accompagnées de nombreux utilitaires spécialisés. Les modules C++20 permettent d'importer aisément l'ensemble en une seule directive (`import CppUtils;`) sans surcharger le binaire final, seuls les composants effectivement utilisés étant intégrés lors de la compilation.
+CppUtils se compose de plusieurs grandes bibliothèques modulaires (tests unitaires, réseau, topologie de graphes) accompagnées de nombreux utilitaires spécialisés. Les modules C++20 permettent d'importer aisément l'ensemble en une seule directive (`import CppUtils;`) sans alourdir le binaire final, seuls les composants effectivement utilisés étant intégrés lors de la compilation.
 
 <CardGrid stagger>
 	<a href={`${base}/fr/guides/getting-started/`} class="card-link">
@@ -56,24 +56,24 @@ CppUtils repose sur des principes directeurs sans concession :
 	Réunit l'essentiel (conteneurs, concurrence, réseau, parsing, tests, crypto, etc.) pour éliminer la prolifération de dépendances externes. Grâce aux **modules C++**, cette richesse favorise une réutilisabilité maximale sans aucun surcoût :
 	- **À la carte ou globale** : importez un sous-domaine ciblé (`import CppUtils.Container;`) ou tout le catalogue (`import CppUtils;`).
 	- **Zéro empreinte superflue** : seuls les composants effectivement appelés sont incorporés au binaire final.
-	- **Isolation hermétique & compilation accélérée** : chaque module n'est compilé qu'une seule fois, allégeant massivement les temps de build face aux en-têtes préprocesseur (`#include`).
+	- **Isolation hermétique & compilation accélérée** : chaque module n'est compilé qu'une seule fois, allégeant massivement les temps de compilation par rapport aux en-têtes préprocesseur (`#include`).
 </Card>
 
-<Card title="Intégration libre & programmation par contrat" icon="heart">
-	Aucun carcan ni contamination architecturale : CppUtils ne cherche jamais à imposer ses types ni à coloniser votre codebase.
-	- **Conception non invasive & zéro contagion** : contrairement à des frameworks invasifs comme **Qt** qui imposent partout leur méta-compilateur propriétaire (`moc`), leurs types fermés (`QString`, `QByteArray`) et de lourdes hiérarchies d'héritage, CppUtils reste strictement non invasif et ne propage aucune adhérence virale : l'objectif n'est jamais de vous rendre dépendant pour vous retenir dans un écosystème, refusant toute forme de captivité technique (*vendor lock-in*).
+<Card title="Intégration non invasive & programmation par contrat" icon="heart">
+	Aucun verrouillage ni contamination architecturale : CppUtils ne cherche jamais à imposer ses types ni à coloniser votre codebase.
+	- **Conception non invasive & zéro contagion** : contrairement à des frameworks invasifs comme **Qt** qui imposent partout leur méta-compilateur propriétaire (`moc`), leurs types fermés (`QString`, `QByteArray`) et de lourdes hiérarchies d'héritage, CppUtils reste strictement non invasif et ne propage aucune adhérence virale : l'objectif n'est jamais de vous rendre captif d'un écosystème propriétaire (*vendor lock-in*).
 	- **Programmation par contrat** : les interfaces s'expriment via des concepts standards (`std::ranges::input_range`, `std::formattable`, `std::invocable`, etc.) plutôt que des types figés et imposés : vos conteneurs se propagent sans copie ni conversion superflue (en savoir plus sur la [programmation par contrat avec `auto` et les concepts sur mon blog](https://morgancaron.github.io/articles/cpp/auto#abbreviated-function-template-depuis-c20)).
-	- **Adoption isolée** : intégrez un composant unique (`MultiKeyMap`, `UniqueLocker`) en toute indépendance, sans devoir importer le reste du catalogue.
+	- **Adoption ciblée** : intégrez un composant unique (`MultiKeyMap`, `UniqueLocker`) en toute indépendance, sans devoir importer le reste du catalogue.
 </Card>
 
-<Card title="Pointe de C++26 & zéro dette legacy" icon="rocket">
+<Card title="À la pointe du C++26 & zéro dette technique" icon="rocket">
 	Alignement assumé sur le dernier standard (**C++26**) pour délivrer immédiatement l'état de l'art : modules natifs, typage monadique, concepts avancés, sécurité accrue et réflexivité.
-	- **Zéro compromis legacy** : aucun maintien artificiel de pratiques obsolètes ni accumulation de dette technique.
-	- **Transition pragmatique** : des gardes de fonctionnalités ciblées (`__cpp_lib_*`) facilitent la compilation sur les compilateurs récents au support C++26 encore partiel, sans alourdir le code de compatibilité rétrograde.
+	- **Zéro compromis sur l'obsolescence** : aucun maintien artificiel de pratiques dépassées ni accumulation de dette technique.
+	- **Transition pragmatique** : des gardes de fonctionnalités ciblées (`__cpp_lib_*`) facilitent la compilation sur les compilateurs récents au support C++26 encore partiel, sans alourdir le code de couches de compatibilité rétrograde.
 	- **Architecture pérenne** : refactorisations continues pour préserver une base de code moderne, saine et prête pour l'avenir.
 </Card>
 
-<Card title="Performance & bonnes pratiques" icon="seti:cpp">
+<Card title="Performance & bonnes pratiques modernes" icon="seti:cpp">
 	La performance maximale sans jamais sacrifier la clarté ni la sécurité :
 	- **Lisibilité & simplicité** : interfaces épurées, transparentes et auto-documentées, sans complexité accidentelle ni magie obscure.
 	- **Performance sans compromis** : abstractions à coût nul (*zero-cost*), agencement mémoire adapté au cache et évaluation maximale à la compilation (`constexpr`, `consteval`).
