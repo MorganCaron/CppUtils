@@ -80,40 +80,79 @@ export namespace CppUtils::Language
 
 			auto lowLevelTokenParser = context["scope"_token] >> MeshNodePtr::make("lowLevelTokenParser"_token);
 
-			auto workingVariablesBranch = lowLevelTokenParser["workingVariables"_token];
-			auto hashOffset = workingVariablesBranch >> MeshNodePtr::make(CppUtils::Type::HashOffset);
-			auto currentCharacter = workingVariablesBranch >> MeshNodePtr::make(0uz);
-			auto currentPosition = workingVariablesBranch >> MeshNodePtr::make(0uz);
-			auto inputLength = workingVariablesBranch >> MeshNodePtr::make(0uz);
-			auto result = workingVariablesBranch >> MeshNodePtr::make(0uz);
-			auto one = workingVariablesBranch >> MeshNodePtr::make(1uz);
-			auto space = workingVariablesBranch >> MeshNodePtr::make(static_cast<std::size_t>(' '));
-			auto tab = workingVariablesBranch >> MeshNodePtr::make(static_cast<std::size_t>('\t'));
-			auto newline = workingVariablesBranch >> MeshNodePtr::make(static_cast<std::size_t>('\n'));
-			auto verticalTab = workingVariablesBranch >> MeshNodePtr::make(static_cast<std::size_t>('\v'));
-			auto formFeed = workingVariablesBranch >> MeshNodePtr::make(static_cast<std::size_t>('\f'));
-			auto carriageReturn = workingVariablesBranch >> MeshNodePtr::make(static_cast<std::size_t>('\r'));
+			auto constants = lowLevelTokenParser["constants"_token] >> MeshNodePtr::make("constants"_token);
+			auto hashOffset = constants["hashOffset"_token] >> MeshNodePtr::make(CppUtils::Type::HashOffset);
+			auto zero = constants["zero"_token] >> MeshNodePtr::make(0uz);
+			auto one = constants["one"_token] >> MeshNodePtr::make(1uz);
+			auto spacePlusOne = constants["spacePlusOne"_token] >> MeshNodePtr::make(static_cast<std::size_t>(' ') + 1uz); // 33uz : tout char ASCII <= 32 (' ', '\t', '\n', '\r', '\v', '\f') est un whitespace
 
-			auto parseToken = lowLevelTokenParser["parseToken"_token] >> MeshNodePtr::make("jump"_token);
+			auto variables = lowLevelTokenParser["variables"_token] >> MeshNodePtr::make("variables"_token);
+			auto currentCharacter = variables["currentCharacter"_token] >> MeshNodePtr::make(0uz);
+			auto currentPosition = variables["currentPosition"_token] >> MeshNodePtr::make(0uz);
+			auto inputLength = variables["inputLength"_token] >> MeshNodePtr::make(std::ranges::size(source));
+			auto conditionResult = variables["conditionResult"_token] >> MeshNodePtr::make(0uz);
+			auto currentHash = variables["currentHash"_token] >> MeshNodePtr::make(CppUtils::Type::HashOffset);
+
+			auto skipWhitespaces = lowLevelTokenParser["skipWhitespaces"_token] >> MeshNodePtr::make("<"_token);
 			{
-				auto currentHash = parseToken["result"_token] >> hashOffset;
+				skipWhitespaces["lhs"_token] >> currentPosition;
+				skipWhitespaces["rhs"_token] >> inputLength;
+				skipWhitespaces["result"_token] >> conditionResult;
 
-				auto getInputLength = parseToken["next"_token] >> MeshNodePtr::make("length"_token);
-				getInputLength["length"_token] >> inputLength;
+				auto branchBounds = skipWhitespaces["next"_token] >> MeshNodePtr::make("jump"_token);
+				branchBounds["condition"_token] >> conditionResult;
 
-				auto isPositionLessThanInputSize = getInputLength["next"_token] >> MeshNodePtr::make("<"_token);
+				auto readChar = branchBounds["next"_token] >> MeshNodePtr::make("read"_token);
+				readChar["position"_token] >> currentPosition;
+				readChar["char"_token] >> currentCharacter;
+
+				auto isWhitespace = readChar["next"_token] >> MeshNodePtr::make("<"_token);
+				isWhitespace["lhs"_token] >> currentCharacter;
+				isWhitespace["rhs"_token] >> spacePlusOne;
+				isWhitespace["result"_token] >> conditionResult;
+
+				auto branchWhitespace = isWhitespace["next"_token] >> MeshNodePtr::make("jump"_token);
+				branchWhitespace["condition"_token] >> conditionResult;
+
+				auto advanceCursor = branchWhitespace["next"_token] >> MeshNodePtr::make("+"_token);
+				advanceCursor["lhs"_token] >> currentPosition;
+				advanceCursor["rhs"_token] >> one;
+				advanceCursor["result"_token] >> currentPosition;
+				advanceCursor["next"_token] >> skipWhitespaces;
+			}
+
+			auto parseToken = lowLevelTokenParser["parseToken"_token] >> MeshNodePtr::make("set"_token);
+			{
+				parseToken["result"_token] >> currentHash;
+
+				parseToken["target"_token] >> currentHash;
+				parseToken["value"_token] >> hashOffset;
+
+				auto callSkip = parseToken["next"_token] >> MeshNodePtr::make("call"_token);
+				callSkip["function"_token] >> skipWhitespaces;
+
+				auto isPositionLessThanInputSize = callSkip["next"_token] >> MeshNodePtr::make("<"_token);
 				isPositionLessThanInputSize["lhs"_token] >> currentPosition;
 				isPositionLessThanInputSize["rhs"_token] >> inputLength;
-				isPositionLessThanInputSize["result"_token] >> result;
+				isPositionLessThanInputSize["result"_token] >> conditionResult;
 
 				auto conditionForReadingCharacter = isPositionLessThanInputSize["next"_token] >> MeshNodePtr::make("jump"_token);
-				conditionForReadingCharacter["condition"_token] >> result;
+				conditionForReadingCharacter["condition"_token] >> conditionResult;
 
 				auto readCurrentCharacter = conditionForReadingCharacter["next"_token] >> MeshNodePtr::make("read"_token);
 				readCurrentCharacter["position"_token] >> currentPosition;
 				readCurrentCharacter["char"_token] >> currentCharacter;
 
-				auto hashCharacter = readCurrentCharacter["next"_token] >> MeshNodePtr::make("hash"_token);
+				auto isWhitespace = readCurrentCharacter["next"_token] >> MeshNodePtr::make("<"_token);
+				isWhitespace["lhs"_token] >> currentCharacter;
+				isWhitespace["rhs"_token] >> spacePlusOne;
+				isWhitespace["result"_token] >> conditionResult;
+
+				auto stopIfWhitespace = isWhitespace["next"_token] >> MeshNodePtr::make("jump"_token);
+				stopIfWhitespace["condition"_token] >> conditionResult;
+				stopIfWhitespace["next"_token] >> MeshNodePtr::make("return"_token);
+
+				auto hashCharacter = stopIfWhitespace["else"_token] >> MeshNodePtr::make("hash"_token);
 				hashCharacter["char"_token] >> currentCharacter;
 				hashCharacter["accumulator"_token] >> currentHash;
 				hashCharacter["hash"_token] >> currentHash;
@@ -124,9 +163,6 @@ export namespace CppUtils::Language
 				incrementPosition["result"_token] >> currentPosition;
 				incrementPosition["next"_token] >> isPositionLessThanInputSize;
 			}
-
-			auto skipWhitespaces = lowLevelTokenParser["skipWhitespaces"_token] >> MeshNodePtr::make("jump"_token);
-			{}
 		}
 	};
 }
