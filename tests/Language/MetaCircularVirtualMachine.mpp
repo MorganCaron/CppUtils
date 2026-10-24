@@ -418,6 +418,42 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 			}
 		};
 
+		suite.test("Identity (===)") = [&] {
+			auto interpreter = MetaCircularVirtualMachine{};
+			auto lhs = MeshNodePtr::make(42uz);
+			auto sameNode = lhs;
+			auto equivalentNode = MeshNodePtr::make(42uz);
+			auto resultNode = MeshNodePtr::make(false);
+
+			auto identityInstruction = MeshNodePtr::makeRoot("==="_token);
+			identityInstruction["lhs"_token] >> lhs;
+			identityInstruction["rhs"_token] >> sameNode;
+			identityInstruction["result"_token] >> resultNode;
+
+			{
+				auto status = interpreter(identityInstruction);
+				if (not status)
+					Logger::print<"error">("Error: {}", status.error());
+
+				expect(status);
+				expect(resultNode.getValue().value()) == true;
+			}
+
+			auto distinctInstruction = MeshNodePtr::makeRoot("==="_token);
+			distinctInstruction["lhs"_token] >> lhs;
+			distinctInstruction["rhs"_token] >> equivalentNode;
+			distinctInstruction["result"_token] >> resultNode;
+
+			{
+				auto status = interpreter(distinctInstruction);
+				if (not status)
+					Logger::print<"error">("Error: {}", status.error());
+
+				expect(status);
+				expect(resultNode.getValue().value()) == false;
+			}
+		};
+
 		suite.test("Inversion (not)") = [&] {
 			auto interpreter = MetaCircularVirtualMachine{};
 			auto value = MeshNodePtr::make(true);

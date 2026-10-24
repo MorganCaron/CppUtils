@@ -423,6 +423,17 @@ export namespace CppUtils::Language
 					}).transform([&instruction] { return next(instruction); });
 				});
 
+				addFunction("==="_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
+					return instruction.at("lhs"_token).and_then([](auto branch) { return branch.front(); }).and_then([&](MeshNodePtr lhs) {
+						return instruction.at("rhs"_token).and_then([](auto branch) { return branch.front(); }).and_then([&, lhs](MeshNodePtr rhs) {
+							return instruction.at("result"_token).and_then([](auto branch) { return branch.front(); }).and_then([&, lhs, rhs](MeshNodePtr result) -> std::expected<void, std::string_view> {
+								result.setValue(lhs == rhs);
+								return {};
+							});
+						});
+					}).transform([&instruction] { return next(instruction); });
+				});
+
 				addFunction("not"_token, [](MetaCircularVirtualMachine&, MeshNodePtr instruction) -> std::expected<MeshNodePtr, std::string_view> {
 					return instruction.at("value"_token).and_then([](auto branch) { return branch.front(); }).and_then([&](MeshNodePtr value) -> std::expected<void, std::string_view> {
 						const auto result = not static_cast<bool>(value.getValue().value());
