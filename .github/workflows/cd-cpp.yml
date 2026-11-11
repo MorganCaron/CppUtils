@@ -1,43 +1,114 @@
 name: "CD: Release"
 
+# The Git tag is the single source of truth for the version.
+# Run this workflow manually (Actions -> "CD: Release" -> Run workflow) to publish a version.
+# No commit is created: the tag is created by this workflow on the current head of master.
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (Semantic Versioning, e.g. 0.2.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "release"
+  cancel-in-progress: false
 
 jobs:
+  check:
+    name: "Check release parameters"
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - name: Ensure the workflow runs from master
+        if: github.ref != 'refs/heads/master'
+        run: |
+          echo "::error::Releases can only be published from the master branch (current: ${GITHUB_REF})."
+          exit 1
+
+      - name: Validate version and tag availability
+        id: meta
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${INPUT_VERSION#v}"
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::'${VERSION}' is not a valid Semantic Version (expected X.Y.Z)."
+            exit 1
+          fi
+          TAG="v${VERSION}"
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" > /dev/null 2>&1; then
+            echo "::error::Tag ${TAG} already exists."
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
   ci-linux:
     name: "CI Linux"
+    needs: check
+    # Called workflows cannot request more permissions than their caller grants.
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
     uses: ./.github/workflows/ci-cpp-linux.yml
 
   ci-macos:
     name: "CI MacOS"
+    needs: check
+    # Called workflows cannot request more permissions than their caller grants.
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
     uses: ./.github/workflows/ci-cpp-macos.yml
 
   ci-windows:
     name: "CI Windows"
+    needs: check
+    # Called workflows cannot request more permissions than their caller grants.
+    permissions:
+      contents: read
+      issues: read
+      checks: write
+      pull-requests: write
     uses: ./.github/workflows/ci-cpp-windows.yml
 
   release:
-    name: "Create GitHub Release"
-    needs: [ci-linux, ci-macos, ci-windows]
+    name: "Create tag and GitHub Release"
+    needs: [check, ci-linux, ci-macos, ci-windows]
     runs-on: ubuntu-latest
+    # Requires the manual approval configured on the "release" environment.
+    environment: release
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create Release
+      - name: Create tag and release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.check.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           generate_release_notes: true
           draft: false
           prerelease: false
 
   update-xmake-repo:
     name: "Update xmake-repo"
-    needs: release
+    needs: [check, release]
     runs-on: ubuntu-latest
+    environment: release
     steps:
       - name: Check XMAKE_REPO_TOKEN availability
         id: token-check
@@ -49,20 +120,11 @@ jobs:
             echo "available=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Extract version and tag
-        if: steps.token-check.outputs.available == 'true'
-        id: meta
-        run: |
-          TAG="${GITHUB_REF#refs/tags/}"
-          VERSION="${TAG#v}"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-
       - name: Download release tarball and compute SHA-256
         if: steps.token-check.outputs.available == 'true'
         id: checksum
         run: |
-          TARBALL_URL="https://github.com/${{ github.repository }}/archive/refs/tags/${{ steps.meta.outputs.tag }}.tar.gz"
+          TARBALL_URL="https://github.com/${{ github.repository }}/archive/refs/tags/${{ needs.check.outputs.tag }}.tar.gz"
           echo "Downloading archive from ${TARBALL_URL}..."
           curl -f -sSL "${TARBALL_URL}" -o "archive.tar.gz"
           SHA256=$(sha256sum "archive.tar.gz" | awk '{print $1}')
@@ -88,7 +150,7 @@ jobs:
           import re
 
           pkg_file = "xmake-repo/packages/c/cpputils/xmake.lua"
-          tag = "${{ steps.meta.outputs.tag }}"
+          tag = "${{ needs.check.outputs.tag }}"
           sha256 = "${{ steps.checksum.outputs.sha256 }}"
 
           with open(pkg_file, "r") as file_handle:
@@ -123,7 +185,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit in xmake-repo."
           else
-            git commit -m "add CppUtils ${{ steps.meta.outputs.tag }}"
+            git commit -m "add CppUtils ${{ needs.check.outputs.tag }}"
             git push origin master
           fi
 

@@ -7,7 +7,7 @@
 <h2 align="center"><em>C++ Utilities Library</em></h2>
 
 <p align="center">
-  <a href="https://github.com/MorganCaron/CppUtils/releases"><img src="https://img.shields.io/github/v/release/MorganCaron/CppUtils?style=for-the-badge&logo=github" alt="Release"/></a>
+  <a href="https://github.com/MorganCaron/CppUtils/releases"><img src="https://img.shields.io/github/v/release/MorganCaron/CppUtils?style=for-the-badge&logo=github&label=latest%20release" alt="Release"/></a>
   <a href="https://morgancaron.github.io/CppUtils/"><img src="https://img.shields.io/badge/-Documentation-blue?style=for-the-badge" alt="Documentation"/></a>
   <a href="https://discord.gg/mxZvun4"><img src="https://img.shields.io/discord/268838260153909249?label=Chat&logo=Discord&style=for-the-badge" alt="Discord"/></a>
   <a href="https://github.com/MorganCaron/CppUtils/blob/master/LICENSE"><img src="https://img.shields.io/github/license/MorganCaron/CppUtils?style=for-the-badge" alt="License"/></a>
@@ -194,11 +194,13 @@
 
 ## Installation
 
-Add CppUtils to your `xmake.lua`:
+[![Latest release](https://img.shields.io/github/v/release/MorganCaron/CppUtils?style=for-the-badge&logo=github&label=latest%20release)](https://github.com/MorganCaron/CppUtils/releases/latest)
+
+Add CppUtils to your `xmake.lua`, replacing `<version>` with the version you want:
 
 ```lua
 add_repositories("xmake-repo https://github.com/MorganCaron/xmake-repo.git")
-add_requires("CppUtils 0.1.*") -- or add_requires("CppUtils") for latest
+add_requires("CppUtils <version>")
 
 target("YourProject", function()
 	add_packages("CppUtils", {public = true})
