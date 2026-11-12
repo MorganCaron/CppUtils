@@ -4,6 +4,57 @@ import std;
 
 export namespace CppUtils::Thread
 {
+	class UniqueMutex final
+	{
+	public:
+		inline constexpr UniqueMutex() noexcept
+		{
+			if not consteval
+			{
+				m_mutex.emplace();
+			}
+		}
+
+		UniqueMutex(const UniqueMutex&) = delete;
+		auto operator=(const UniqueMutex&) -> UniqueMutex& = delete;
+
+		UniqueMutex(UniqueMutex&&) = delete;
+		auto operator=(UniqueMutex&&) -> UniqueMutex& = delete;
+
+		inline constexpr auto lock() -> void
+		{
+			if not consteval
+			{
+				m_mutex->lock();
+			}
+		}
+
+		inline constexpr auto try_lock() -> bool
+		{
+			if not consteval
+			{
+				return m_mutex->try_lock();
+			}
+			return true;
+		}
+
+		inline constexpr auto unlock() -> void
+		{
+			if not consteval
+			{
+				m_mutex->unlock();
+			}
+		}
+
+		[[nodiscard]] inline auto getNativeMutex(this auto&& self [[clang::lifetimebound, msvc::lifetimebound]]) noexcept -> auto&
+		{
+			return self.m_mutex.value();
+		}
+
+	private:
+		std::optional<std::mutex> m_mutex;
+	};
+
 	/**
 	 * @brief RAII accessor providing exclusive read and write access to a protected value.
 	 *
@@ -13,11 +64,14 @@ export namespace CppUtils::Thread
 	 * @see https://morgancaron.github.io/CppUtils/en/guides/lockers/ (RAII synchronization guide)
 	 *
 	 * @tparam T The type of the value being accessed.
-	 * @tparam Mutex The mutex type used for synchronization (defaults to std::mutex).
+	 * @tparam Mutex The mutex type used for synchronization (defaults to UniqueMutex).
 	 */
-	template<class T, class Mutex = std::mutex>
+	template<class T, class Mutex = UniqueMutex>
 	class Accessor final
 	{
+	private:
+		using LockMutex = std::conditional_t<std::is_same_v<Mutex, UniqueMutex>, std::mutex, Mutex>;
+
 	public:
 		/**
 		 * @brief Constructs an accessor by acquiring a unique lock on the provided mutex.
@@ -29,7 +83,14 @@ export namespace CppUtils::Thread
 		{
 			if not consteval
 			{
-				m_lockGuard.emplace(mutex);
+				if constexpr (std::is_same_v<Mutex, UniqueMutex>)
+				{
+					m_lockGuard.emplace(mutex.getNativeMutex());
+				}
+				else
+				{
+					m_lockGuard.emplace(mutex);
+				}
 			}
 		}
 
@@ -75,7 +136,7 @@ export namespace CppUtils::Thread
 		}
 
 	private:
-		mutable std::optional<std::unique_lock<Mutex>> m_lockGuard;
+		mutable std::optional<std::unique_lock<LockMutex>> m_lockGuard;
 		std::reference_wrapper<T> m_value;
 	};
 
@@ -94,6 +155,9 @@ export namespace CppUtils::Thread
 	template<class T, class Mutex>
 	class Accessor<const T, Mutex> final
 	{
+	private:
+		using LockMutex = std::conditional_t<std::is_same_v<Mutex, UniqueMutex>, std::mutex, Mutex>;
+
 	public:
 		/**
 		 * @brief Constructs a const accessor by acquiring a unique lock on the provided mutex.
@@ -105,7 +169,14 @@ export namespace CppUtils::Thread
 		{
 			if not consteval
 			{
-				m_lockGuard.emplace(mutex);
+				if constexpr (std::is_same_v<Mutex, UniqueMutex>)
+				{
+					m_lockGuard.emplace(mutex.getNativeMutex());
+				}
+				else
+				{
+					m_lockGuard.emplace(mutex);
+				}
 			}
 		}
 
@@ -150,7 +221,7 @@ export namespace CppUtils::Thread
 		}
 
 	private:
-		mutable std::optional<std::unique_lock<Mutex>> m_lockGuard;
+		mutable std::optional<std::unique_lock<LockMutex>> m_lockGuard;
 		std::reference_wrapper<const T> m_value;
 	};
 
@@ -176,7 +247,7 @@ export namespace CppUtils::Thread
 		 * @brief Constructs the protected resource in place.
 		 * @param args Arguments forwarded to the resource constructor.
 		 */
-		inline explicit UniqueLocker(auto&&... args):
+		inline explicit constexpr UniqueLocker(auto&&... args):
 			m_value{std::forward<decltype(args)>(args)...}
 		{}
 
@@ -184,17 +255,24 @@ export namespace CppUtils::Thread
 		auto operator=(const UniqueLocker&) -> UniqueLocker& = delete;
 
 		/// @brief Move constructor. Acquires lock on the source locker before moving its value.
-		inline UniqueLocker(UniqueLocker&& other) noexcept(std::is_nothrow_move_constructible_v<T>):
+		inline constexpr UniqueLocker(UniqueLocker&& other) noexcept(std::is_nothrow_move_constructible_v<T>):
 			m_value{std::move(other.access().value())}
 		{}
 
 		/// @brief Move assignment. Acquires scoped lock on both mutexes before moving the value.
-		inline auto operator=(UniqueLocker&& other) noexcept(std::is_nothrow_move_assignable_v<T>) -> UniqueLocker&
+		inline constexpr auto operator=(UniqueLocker&& other) noexcept(std::is_nothrow_move_assignable_v<T>) -> UniqueLocker&
 		{
 			if (this != std::addressof(other))
 			{
-				auto guard = std::scoped_lock{m_mutex, other.m_mutex};
-				m_value = std::move(other.m_value);
+				if not consteval
+				{
+					auto guard = std::scoped_lock{m_mutex, other.m_mutex};
+					m_value = std::move(other.m_value);
+				}
+				else
+				{
+					m_value = std::move(other.m_value);
+				}
 			}
 			return *this;
 		}
@@ -203,7 +281,7 @@ export namespace CppUtils::Thread
 		 * @brief Acquires exclusive read/write access to the resource.
 		 * @return Accessor object managing the lock and providing access.
 		 */
-		[[nodiscard]] inline auto access() & -> Accessor<T, std::mutex>
+		[[nodiscard]] inline constexpr auto access() & -> Accessor<T, UniqueMutex>
 		{
 			return Accessor{m_mutex, m_value};
 		}
@@ -212,7 +290,7 @@ export namespace CppUtils::Thread
 		 * @brief Acquires exclusive read-only access to the resource from an lvalue reference.
 		 * @return Const Accessor object managing the lock.
 		 */
-		inline auto access() const& -> Accessor<const T, std::mutex>
+		inline constexpr auto access() const& -> Accessor<const T, UniqueMutex>
 		{
 			return Accessor{m_mutex, m_value};
 		}
@@ -221,14 +299,14 @@ export namespace CppUtils::Thread
 		 * @brief Acquires exclusive read-only access to the resource from an rvalue reference.
 		 * @return Const Accessor object managing the lock.
 		 */
-		inline auto access() const&& -> Accessor<const T, std::mutex>
+		inline constexpr auto access() const&& -> Accessor<const T, UniqueMutex>
 		{
 			return Accessor{m_mutex, m_value};
 		}
 
 	private:
-		mutable std::mutex m_mutex;
-		T m_value;
+		mutable UniqueMutex m_mutex;
+		T m_value{};
 
 		template<class... Lockers>
 		friend struct MultipleAccessor;

@@ -1,0 +1,108 @@
+export module CppUtils.UnitTests.Thread.Atomic;
+
+import std;
+import CppUtils;
+
+namespace CppUtils::UnitTest::Thread::Atomic
+{
+	auto _ = testSuite("Thread/Atomic") = [](TestSuite& suite) {
+		using AtomicSize = CppUtils::Thread::Atomic<std::size_t>;
+		static_assert(sizeof(AtomicSize) == sizeof(std::atomic<std::size_t>));
+		static_assert(alignof(AtomicSize) == alignof(std::atomic<std::size_t>));
+
+		suite.test("Runtime Atomic basic operations") = [&] {
+			auto counter = AtomicSize{0uz};
+			expect(counter.load()) == 0uz;
+
+			expect(counter++) == 0uz;
+			expect(counter.load()) == 1uz;
+
+			expect(++counter) == 2uz;
+			expect(counter.load()) == 2uz;
+
+			expect(counter--) == 2uz;
+			expect(counter.load()) == 1uz;
+
+			expect(--counter) == 0uz;
+			expect(counter.load()) == 0uz;
+
+			counter += 10uz;
+			expect(counter.load()) == 10uz;
+
+			counter -= 3uz;
+			expect(counter.load()) == 7uz;
+
+			expect(counter.exchange(42uz)) == 7uz;
+			expect(counter.load()) == 42uz;
+
+			auto expected = 42uz;
+			expect(counter.compare_exchange_strong(expected, 100uz));
+			expect(counter.load()) == 100uz;
+
+			expected = 50uz;
+			expect(not counter.compare_exchange_strong(expected, 200uz));
+			expect(expected) == 100uz;
+			expect(counter.load()) == 100uz;
+
+			expected = 100uz;
+			while (not counter.compare_exchange_weak(expected, 105uz)) {}
+			expect(counter.load()) == 105uz;
+
+			expected = 105uz;
+			while (not counter.compare_exchange_weak(expected, 100uz, std::memory_order_release, std::memory_order_relaxed)) {}
+			expect(counter.load()) == 100uz;
+
+			expect(counter.is_lock_free());
+			expect(AtomicSize::is_always_lock_free);
+		};
+
+		suite.test("Runtime Atomic concurrent increments") = [&] {
+			auto counter = AtomicSize{0uz};
+			constexpr auto workerCount = 4uz;
+			constexpr auto incrementsPerWorker = 1000uz;
+
+			{
+				auto threads = std::vector<std::jthread>{};
+				for (auto i = 0uz; i < workerCount; ++i)
+				{
+					threads.emplace_back([&] {
+						for (auto j = 0uz; j < incrementsPerWorker; ++j)
+							counter++;
+					});
+				}
+			}
+
+			constexpr auto expectedTotal = workerCount * incrementsPerWorker;
+			expect(counter.load()) == expectedTotal;
+		};
+
+		suite.test("Constexpr Atomic evaluation")
+			.constexprTest<[] {
+			auto counter = AtomicSize{0uz};
+			if (counter.load() != 0uz)
+				return false;
+
+			if (counter++ != 0uz)
+				return false;
+
+			if (++counter != 2uz)
+				return false;
+
+			if (counter.fetch_add(5uz) != 2uz)
+				return false;
+
+			if (counter.load() != 7uz)
+				return false;
+
+			counter.store(10uz);
+			if (counter.load() != 10uz)
+				return false;
+
+			auto expected = 10uz;
+			if (not counter.compare_exchange_strong(expected, 99uz))
+				return false;
+
+			return counter.load() == 99uz;
+		}>();
+	};
+}

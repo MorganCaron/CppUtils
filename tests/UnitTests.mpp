@@ -97,6 +97,7 @@ export import CppUtils.UnitTests.Terminal.Text;
 export import CppUtils.UnitTests.Terminal.Title;
 export import CppUtils.UnitTests.Terminal.Utility;
 export import CppUtils.UnitTests.Thread.AsyncEventDispatcher;
+export import CppUtils.UnitTests.Thread.Atomic;
 export import CppUtils.UnitTests.Thread.Poll;
 export import CppUtils.UnitTests.Thread.ScheduledEventDispatcher;
 export import CppUtils.UnitTests.Thread.Scheduler;

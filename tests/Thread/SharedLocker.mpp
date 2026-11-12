@@ -84,5 +84,15 @@ namespace CppUtils::UnitTest::Thread::SharedLocker
 			expect(destination.sharedAccess().value()) != nullptr;
 			expect(*destination.sharedAccess().value()) == 100;
 		};
+
+		suite.test("Constexpr SharedLocker")
+			.constexprTest<[] {
+			auto locker = CppUtils::Thread::SharedLocker<int>{42};
+			if (locker.sharedAccess().value() != 42)
+				return false;
+
+			locker.uniqueAccess().value() = 100;
+			return locker.sharedAccess().value() == 100;
+		}>();
 	};
 }

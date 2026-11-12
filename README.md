@@ -155,6 +155,7 @@
 - [`WidgetManager`](modules/Terminal/WidgetManager.mpp) - Central hub for widget events and update scheduling
 
 ### 🚦 Multithreading & Synchronization
+- [`Atomic`](modules/Thread/Atomic.mpp) - Constexpr-capable zero-overhead atomic wrapper
 - [`Scheduler`](modules/Thread/Scheduler.mpp) - Simple scheduler to run delayed functions on separate thread
 - [`ScheduledEventDispatcher`](modules/Thread/ScheduledEventDispatcher.mpp) - Dispatches events asynchronously with timed (delay/when) execution
 - [`AsyncEventDispatcher`](modules/Thread/AsyncEventDispatcher.mpp) - Event dispatcher that uses a ThreadPool for immediate asynchronous event execution

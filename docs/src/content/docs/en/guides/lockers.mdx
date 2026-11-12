@@ -348,7 +348,7 @@ Choosing between [`UniqueLocker`](/en/reference/thread/uniquelocker/) and [`Shar
 
 | Characteristic | [`UniqueLocker<T>`](/en/reference/thread/uniquelocker/) | [`SharedLocker<T>`](/en/reference/thread/sharedlocker/) |
 | :--- | :--- | :--- |
-| **Underlying Mutex** | `std::mutex` | `std::shared_mutex` |
+| **Underlying Mutex** | `std::mutex` ([`UniqueMutex`](/en/reference/thread/uniquemutex/)) | `std::shared_mutex` ([`SharedMutex`](/en/reference/thread/sharedmutex/)) |
 | **Exclusive access (write)** | `locker.access()` ([`Accessor`](/en/reference/thread/accessor/)) | `locker.uniqueAccess()` ([`Accessor`](/en/reference/thread/accessor/)) |
 | **Shared access (read)** | No (always exclusive) | `locker.sharedAccess()` ([`ReadOnlyAccessor`](/en/reference/thread/readonlyaccessor/)) |
 | **Acquisition overhead** | Zero-cost abstraction | Higher (atomic reader counters) |
@@ -475,6 +475,49 @@ int main()
 	}};
 }
 ```
+
+## Compile-Time Evaluation Support (`constexpr` / `consteval`)
+
+In standard C++, synchronization primitives (`std::mutex`, `std::shared_mutex`) cannot be locked during constant evaluation, often forcing developers to duplicate their data structures.
+
+[`UniqueLocker`](/en/reference/thread/uniquelocker/) and [`SharedLocker`](/en/reference/thread/sharedlocker/) adapt automatically to their execution context:
+- **At runtime**: standard mutex acquisition and release with zero overhead compared to manual locking (zero-cost abstraction).
+- **At compile time (`constexpr` / `consteval`)**: locking operations are automatically short-circuited, keeping the protected payload directly usable.
+
+This enables protected data structures to be instantiated, manipulated, and evaluated directly within `constexpr` or `consteval` contexts, without any code duplication.
+
+```cpp
+// A thread-safe class designed for runtime synchronization...
+class ThreadSafeCounter
+{
+	CppUtils::Thread::UniqueLocker<int> m_counter{0};
+
+public:
+	constexpr auto increment() -> void
+	{
+		++m_counter.access().value();
+	}
+
+	[[nodiscard]] constexpr auto value() const -> int
+	{
+		return m_counter.access().value();
+	}
+};
+
+// ...can be reused directly in compile-time computations without any modifications
+constexpr auto initialCount = [] {
+	auto counter = ThreadSafeCounter{};
+	counter.increment();
+	counter.increment();
+	return counter.value();
+}();
+
+static_assert(initialCount == 2);
+```
+
+<Aside type="note" title="Unified atomic scalar: Atomic<T>">
+For lock-free synchronization of scalar or trivially copyable types without mutexes, [`CppUtils::Thread::Atomic<T>`](/en/reference/thread/atomic/) follows this exact same zero-overhead philosophy: it delegates directly to `std::atomic<T>` at runtime and behaves as a plain scalar `T` in `constexpr`/`consteval` contexts.
+</Aside>
 
 ---
 
