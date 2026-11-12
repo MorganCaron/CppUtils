@@ -199,6 +199,20 @@ namespace CppUtils::UnitTest
 
 	namespace Detail
 	{
+#if defined(__GNUC__) or defined(__clang__)
+		[[gnu::error("Tautological assertion in expect(...): comparing an unsigned value >= 0 is always true and validates nothing")]]
+		inline auto reportTautologicalComparisonGTE() -> void
+		{
+			throw TestException{"Tautological assertion in expect(...): comparing an unsigned value >= 0 is always true and validates nothing."};
+		}
+
+		[[gnu::error("Contradictory assertion in expect(...): comparing an unsigned value < 0 is always false and validates nothing")]]
+		inline auto reportTautologicalComparisonLT() -> void
+		{
+			throw TestException{"Contradictory assertion in expect(...): comparing an unsigned value < 0 is always false and validates nothing."};
+		}
+#endif
+
 		[[nodiscard]] inline auto inspectConditionValue(const auto& value) -> std::optional<std::string>
 		{
 			using DecayedType = std::remove_cvref_t<decltype(value)>;
@@ -533,6 +547,24 @@ namespace CppUtils::UnitTest
 		requires (not ExpectationMatcherConcept<RightType>)
 		constexpr auto operator<(const RightType& right) -> void
 		{
+#if defined(__GNUC__) or defined(__clang__)
+			if constexpr (std::unsigned_integral<std::remove_cvref_t<LeftType>> and std::integral<RightType>)
+			{
+				if (__builtin_constant_p(right))
+				{
+					if constexpr (std::is_signed_v<RightType>)
+					{
+						if (right <= 0)
+							Detail::reportTautologicalComparisonLT();
+					}
+					else
+					{
+						if (right == 0)
+							Detail::reportTautologicalComparisonLT();
+					}
+				}
+			}
+#endif
 			check<ComparisonOperator::LessThan>(right);
 		}
 
@@ -554,6 +586,24 @@ namespace CppUtils::UnitTest
 		requires (not ExpectationMatcherConcept<RightType>)
 		constexpr auto operator>=(const RightType& right) -> void
 		{
+#if defined(__GNUC__) or defined(__clang__)
+			if constexpr (std::unsigned_integral<std::remove_cvref_t<LeftType>> and std::integral<RightType>)
+			{
+				if (__builtin_constant_p(right))
+				{
+					if constexpr (std::is_signed_v<RightType>)
+					{
+						if (right <= 0)
+							Detail::reportTautologicalComparisonGTE();
+					}
+					else
+					{
+						if (right == 0)
+							Detail::reportTautologicalComparisonGTE();
+					}
+				}
+			}
+#endif
 			check<ComparisonOperator::GreaterThanOrEqual>(right);
 		}
 
@@ -899,6 +949,36 @@ namespace CppUtils::UnitTest
 		template<ComparisonOperator Operator>
 		constexpr auto check(const auto& right) -> void
 		{
+			using CleanLeft = std::remove_cvref_t<LeftType>;
+			using CleanRight = std::remove_cvref_t<decltype(right)>;
+
+			if constexpr (std::unsigned_integral<CleanLeft> and std::integral<CleanRight>)
+			{
+				if constexpr (Operator == ComparisonOperator::LessThan)
+				{
+					if constexpr (std::is_signed_v<CleanRight>)
+					{
+						if (right <= 0)
+							throw TestException{std::format(
+								"In {}\nAt line {}, column {}\nContradictory assertion in expect(lhs) < rhs:\n"
+								"lhs is an unsigned integer and rhs is <= 0. This assertion is always false and validates nothing.",
+								m_location.file_name(),
+								m_location.line(),
+								m_location.column())};
+					}
+					else
+					{
+						if (right == 0)
+							throw TestException{std::format(
+								"In {}\nAt line {}, column {}\nContradictory assertion in expect(lhs) < rhs:\n"
+								"lhs is an unsigned integer and rhs is 0. This assertion is always false and validates nothing.",
+								m_location.file_name(),
+								m_location.line(),
+								m_location.column())};
+					}
+				}
+			}
+
 			m_evaluated = true;
 			const auto passed = evaluateComparison<Operator>(m_left, right);
 			if (not passed) [[unlikely]]

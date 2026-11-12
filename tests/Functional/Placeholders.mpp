@@ -62,12 +62,12 @@ namespace CppUtils::UnitTest::Functional::Placeholders
 			expect(computation(5)) == 15;
 		};
 
-		suite.test<[] {
+		suite.test("Operators ignore unrelated types").constexprTest<[] {
 			using CppUtils::Functional::Placeholders::Detail::Args;
 			return not Addable<Args, Args>
 				and Addable<decltype(_0), int>
 				and Addable<int, decltype(_0)>
 				and Addable<decltype(_0), decltype(_1)>;
-		}>("Operators ignore unrelated types");
+		}>();
 	};
 }

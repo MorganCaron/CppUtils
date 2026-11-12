@@ -33,6 +33,28 @@ export import CppUtils.UnitTest.Runner;
 namespace CppUtils::UnitTest
 {
 	/**
+	 * @brief Deliberately skips the current test, reporting it as skipped in test results.
+	 * @param message Justification for skipping the test.
+	 * @param location Source location used for skip reporting (automatically captured).
+	 */
+	export [[noreturn]] inline auto skip(std::string message, std::source_location location = std::source_location::current()) -> void
+	{
+		throw TestSkipped{std::move(message), location};
+	}
+
+	/**
+	 * @brief Conditionally skips the current test if the provided condition evaluates to true.
+	 * @param condition Boolean flag determining whether to skip.
+	 * @param message Justification for skipping the test.
+	 * @param location Source location used for skip reporting (automatically captured).
+	 */
+	export inline auto skipIf(bool condition, std::string message, std::source_location location = std::source_location::current()) -> void
+	{
+		if (condition)
+			skip(std::move(message), location);
+	}
+
+	/**
 	 * @brief Core test suite execution context providing assertion methods, builders, and test registration.
 	 *
 	 * Instances are passed to test suite definitions configured via `testSuite("SuiteName") = [](TestSuite& suite) { ... };`.
@@ -45,10 +67,10 @@ namespace CppUtils::UnitTest
 	{
 		using Logger = Logger<"UnitTests">;
 
+		TestSuite() = default;
+
 	private:
 		friend struct TestSuiteBuilder;
-		friend struct TestBuilder;
-		friend struct FuzzTestBuilder;
 		template<class... Types>
 		friend struct TypedTestSuiteBuilder;
 		template<class ValuesContainer>
@@ -68,6 +90,22 @@ namespace CppUtils::UnitTest
 		inline auto addTest(std::string name, std::function<void()> function, std::chrono::seconds timeout = std::chrono::seconds{10}) -> void
 		{
 			tests.emplace_back(std::move(name), [function = std::move(function)](std::stop_token) { function(); }, timeout);
+		}
+
+		inline auto addSkippedTest(std::string name, std::string message, std::chrono::seconds timeout = std::chrono::seconds{10}) -> void
+		{
+			addTest(std::move(name), [message = std::move(message)] {
+				UnitTest::skip(message);
+			}, timeout);
+		}
+
+		template<class... Values>
+		static constexpr auto makeValuesContainer(Values&&... values)
+		{
+			if constexpr (sizeof...(Values) == 1 and (std::ranges::input_range<std::decay_t<Values>> and ...))
+				return (std::forward<Values>(values), ...);
+			else
+				return std::make_tuple(std::forward<Values>(values)...);
 		}
 
 		static constexpr auto forEachParameterValue(const auto& container, auto&& invocable)
@@ -95,13 +133,24 @@ namespace CppUtils::UnitTest
 
 	public:
 		/**
-		 * @brief Base CRTP helper providing timeout configuration for test builders.
+		 * @brief Base CRTP helper providing common configuration (timeout, skip) for test builders.
 		 * @tparam Derived Derived builder type for method chaining.
+		 * @tparam IsSkipped Indicates whether the test execution is bypassed.
 		 */
-		template<class Derived>
-		struct TimeoutBuilder
+		template<class Derived, bool IsSkipped>
+		struct TestBuilderBase
 		{
+			TestSuite& parentSuite; ///< Reference to the enclosing test suite registering the test.
+			std::string testName; ///< Identifier of the test case.
 			std::chrono::seconds testTimeout{10}; ///< Maximum execution timeout duration.
+			std::string skipMessage{}; ///< Explanatory reason if skipped.
+
+			TestBuilderBase(TestSuite& suite, std::string name, std::chrono::seconds timeout = std::chrono::seconds{10}, std::string skipReason = {}):
+				parentSuite{suite},
+				testName{std::move(name)},
+				testTimeout{timeout},
+				skipMessage{std::move(skipReason)}
+			{}
 
 			/**
 			 * @brief Sets the execution timeout before the test is aborted.
@@ -113,6 +162,56 @@ namespace CppUtils::UnitTest
 				testTimeout = newTimeout;
 				return static_cast<Derived&>(*this);
 			}
+
+			/**
+			 * @brief Deliberately marks this test case to be skipped.
+			 * @param message Justification for skipping.
+			 * @return Rebound builder with skipping enabled.
+			 */
+			[[nodiscard]] inline auto skip(std::string message)
+			{
+				return skipIf<true>(std::move(message));
+			}
+
+			/**
+			 * @brief Conditionally marks this test case to be skipped.
+			 * @tparam Condition Compile-time condition flag.
+			 * @param message Justification for skipping.
+			 * @return Rebound builder configured with the specified condition.
+			 */
+			template<bool Condition>
+			[[nodiscard]] inline auto skipIf(std::string message)
+			{
+				return static_cast<Derived*>(this)->template rebind<Condition>(std::move(message));
+			}
+
+			/**
+			 * @brief Adds a test callback into the parent suite, taking skip status into account.
+			 * @param name Test identifier.
+			 * @param function Invocable test body.
+			 * @param timeout Execution timeout duration.
+			 */
+			template<class Function>
+			requires Type::Callable<Function> or Type::Callable<Function, std::stop_token>
+			inline auto addTest(std::string name, Function&& function, std::chrono::seconds timeout) -> void
+			{
+				if constexpr (IsSkipped)
+					parentSuite.addSkippedTest(std::move(name), skipMessage, timeout);
+				else
+					parentSuite.addTest(std::move(name), std::forward<Function>(function), timeout);
+			}
+
+			/**
+			 * @brief Adds a compile-time test into the parent suite, taking skip status into account.
+			 * @param name Test identifier.
+			 */
+			inline auto addCompileTimeTest(std::string name) -> void
+			{
+				if constexpr (IsSkipped)
+					parentSuite.addSkippedTest(std::move(name), skipMessage, std::chrono::seconds{0});
+				else
+					parentSuite.addTest(std::move(name), [] {});
+			}
 		};
 
 		/**
@@ -123,19 +222,17 @@ namespace CppUtils::UnitTest
 		 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#itération-sur-une-liste-de-types-fortypes (Tests paramétrés par types)
 		 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#iterating-over-a-list-of-types-fortypes (Type-parameterized tests)
 		 */
-		template<class... Types>
-		struct TypedTestBuilder final: TimeoutBuilder<TypedTestBuilder<Types...>>
+		template<bool IsSkipped = false, class... Types>
+		struct TypedTestBuilder final: TestBuilderBase<TypedTestBuilder<IsSkipped, Types...>, IsSkipped>
 		{
-			using TimeoutBuilder<TypedTestBuilder<Types...>>::testTimeout;
+			using Base = TestBuilderBase<TypedTestBuilder<IsSkipped, Types...>, IsSkipped>;
+			using Base::Base;
 
-			TestSuite& parentSuite; ///< Reference to the enclosing test suite registering the tests.
-			std::string testName; ///< Identifier of the test case.
-
-			TypedTestBuilder(std::chrono::seconds timeout, TestSuite& suite, std::string name):
-				TimeoutBuilder<TypedTestBuilder<Types...>>{timeout},
-				parentSuite{suite},
-				testName{std::move(name)}
-			{}
+			template<bool Condition>
+			[[nodiscard]] inline auto rebind(std::string message) -> TypedTestBuilder<Condition, Types...>
+			{
+				return TypedTestBuilder<Condition, Types...>{this->parentSuite, std::move(this->testName), this->testTimeout, std::move(message)};
+			}
 
 			/**
 			 * @brief Registers the test implementation callback invoked for each type.
@@ -145,51 +242,81 @@ namespace CppUtils::UnitTest
 			{
 				auto index = 0uz;
 				auto registerType = [&]<class Type>() {
-					auto name = std::format("{} [type {}]", testName, index++);
-					if constexpr (requires { function.template operator()<Type>(); })
-						parentSuite.addTest(std::move(name), [function] {
+					this->addTest(std::format("{} [type {}]", this->testName, index++), [function](std::stop_token token) {
+						if constexpr (requires { function.template operator()<Type>(); })
 							function.template operator()<Type>();
-						}, testTimeout);
-					else if constexpr (requires { function(std::type_identity<Type>{}); })
-						parentSuite.addTest(std::move(name), [function] {
+						else if constexpr (requires { function(std::type_identity<Type>{}); })
 							function(std::type_identity<Type>{});
-						}, testTimeout);
-					else if constexpr (requires (std::stop_token token) { function.template operator()<Type>(token); })
-						parentSuite.addTest(std::move(name), [function](std::stop_token token) {
+						else if constexpr (requires { function.template operator()<Type>(token); })
 							function.template operator()<Type>(token);
-						}, testTimeout);
-					else if constexpr (requires (std::stop_token token) { function(std::type_identity<Type>{}, token); })
-						parentSuite.addTest(std::move(name), [function](std::stop_token token) {
+						else if constexpr (requires { function(std::type_identity<Type>{}, token); })
 							function(std::type_identity<Type>{}, token);
-						}, testTimeout);
+					}, this->testTimeout);
 				};
 				(registerType.template operator()<Types>(), ...);
+			}
+
+			/**
+			 * @brief Evaluates compile-time test predicates for each type via static assertions.
+			 * @tparam Predicate Constexpr invocable parameterized by type.
+			 */
+			template<auto Predicate>
+			inline auto constexprTest() -> void
+			{
+				if constexpr (not IsSkipped)
+				{
+					auto evaluateType = []<class Type> {
+						if constexpr (requires { Predicate.template operator()<Type>(); })
+						{
+							if constexpr (not std::is_void_v<decltype(Predicate.template operator()<Type>())>)
+								static_assert(Predicate.template operator()<Type>(), "Compile-time type test assertion evaluated to false");
+							else
+								static_assert((Predicate.template operator()<Type>(), true), "Compile-time type test failed");
+						}
+						else
+						{
+							if constexpr (not std::is_void_v<decltype(Predicate(std::type_identity<Type>{}))>)
+								static_assert(Predicate(std::type_identity<Type>{}), "Compile-time type test assertion evaluated to false");
+							else
+								static_assert((Predicate(std::type_identity<Type>{}), true), "Compile-time type test failed");
+						}
+					};
+					(evaluateType.template operator()<Types>(), ...);
+				}
+
+				auto index = 0uz;
+				([&]<class Type>() {
+					this->addCompileTimeTest(std::format("{} [type {}]", this->testName, index++));
+				}.template operator()<Types>(), ...);
 			}
 		};
 
 		/**
 		 * @brief Builder for registering a test parameterized over values (std::tuple or input range).
 		 * @note Returned by TestBuilder::forValues(); not intended to be instantiated or manipulated directly by user code.
+		 * @tparam IsSkipped Indicates whether the test execution is bypassed.
 		 * @tparam ValuesContainer Container holding parameter values (std::tuple or input range).
 		 *
 		 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#itération-sur-une-liste-de-valeurs-forvalues (Tests paramétrés par valeurs)
 		 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#iterating-over-a-list-of-values-forvalues (Value-parameterized tests)
 		 */
-		template<class ValuesContainer>
-		struct ParameterizedTestBuilder final: TimeoutBuilder<ParameterizedTestBuilder<ValuesContainer>>
+		template<bool IsSkipped = false, class ValuesContainer = std::tuple<>>
+		struct ParameterizedTestBuilder final: TestBuilderBase<ParameterizedTestBuilder<IsSkipped, ValuesContainer>, IsSkipped>
 		{
-			using TimeoutBuilder<ParameterizedTestBuilder<ValuesContainer>>::testTimeout;
+			using Base = TestBuilderBase<ParameterizedTestBuilder<IsSkipped, ValuesContainer>, IsSkipped>;
 
-			TestSuite& parentSuite; ///< Reference to the enclosing test suite registering the tests.
-			std::string testName; ///< Identifier of the test case.
 			ValuesContainer values; ///< Discrete values tuple or range of values.
 
-			ParameterizedTestBuilder(std::chrono::seconds timeout, TestSuite& suite, std::string name, ValuesContainer valuesContainer):
-				TimeoutBuilder<ParameterizedTestBuilder<ValuesContainer>>{timeout},
-				parentSuite{suite},
-				testName{std::move(name)},
+			ParameterizedTestBuilder(TestSuite& suite, std::string name, ValuesContainer valuesContainer, std::chrono::seconds timeout = std::chrono::seconds{10}, std::string skipReason = {}):
+				Base{suite, std::move(name), timeout, std::move(skipReason)},
 				values{std::move(valuesContainer)}
 			{}
+
+			template<bool Condition>
+			[[nodiscard]] inline auto rebind(std::string message) -> ParameterizedTestBuilder<Condition, ValuesContainer>
+			{
+				return ParameterizedTestBuilder<Condition, ValuesContainer>{this->parentSuite, std::move(this->testName), std::move(values), this->testTimeout, std::move(message)};
+			}
 
 			/**
 			 * @brief Registers the test implementation callback invoked for each parameter value.
@@ -198,43 +325,89 @@ namespace CppUtils::UnitTest
 			inline auto operator=(auto&& function) -> void
 			{
 				auto index = 0uz;
-				forEachParameterValue(values, [&](const auto& value) {
-					auto name = formatParameterName(testName, value, index);
-					if constexpr (requires { function(value); })
-						parentSuite.addTest(std::move(name), [function, value] {
+				TestSuite::forEachParameterValue(values, [&](const auto& value) {
+					this->addTest(TestSuite::formatParameterName(this->testName, value, index), [function, value](std::stop_token token) {
+						if constexpr (requires { function(value); })
 							function(value);
-						}, testTimeout);
-					else if constexpr (requires (std::stop_token token) { function(value, token); })
-						parentSuite.addTest(std::move(name), [function, value](std::stop_token token) {
+						else if constexpr (requires { function(value, token); })
 							function(value, token);
-						}, testTimeout);
+					}, this->testTimeout);
 				});
 			}
 		};
 
-		template<class... Values>
-		using ValueTestBuilder = ParameterizedTestBuilder<std::tuple<Values...>>;
+		/**
+		 * @brief Builder for registering compile-time tests parameterized over non-type template values.
+		 * @tparam IsSkipped Indicates whether the test execution is bypassed.
+		 * @tparam Values Non-type template values list.
+		 */
+		template<bool IsSkipped = false, auto... Values>
+		struct ConstexprValuesTestBuilder final: TestBuilderBase<ConstexprValuesTestBuilder<IsSkipped, Values...>, IsSkipped>
+		{
+			using Base = TestBuilderBase<ConstexprValuesTestBuilder<IsSkipped, Values...>, IsSkipped>;
+			using Base::Base;
 
-		template<std::ranges::input_range Range>
-		using RangeTestBuilder = ParameterizedTestBuilder<Range>;
+			template<bool Condition>
+			[[nodiscard]] inline auto rebind(std::string message) -> ConstexprValuesTestBuilder<Condition, Values...>
+			{
+				return ConstexprValuesTestBuilder<Condition, Values...>{this->parentSuite, std::move(this->testName), this->testTimeout, std::move(message)};
+			}
+
+			/**
+			 * @brief Evaluates compile-time test predicates for each non-type value via static assertions.
+			 * @tparam Predicate Constexpr invocable accepting non-type template parameter or function argument.
+			 */
+			template<auto Predicate>
+			inline auto constexprTest() -> void
+			{
+				if constexpr (not IsSkipped)
+				{
+					auto evaluateValue = []<auto Value> {
+						if constexpr (requires { Predicate.template operator()<Value>(); })
+						{
+							if constexpr (not std::is_void_v<decltype(Predicate.template operator()<Value>())>)
+								static_assert(Predicate.template operator()<Value>(), "Compile-time value test assertion evaluated to false");
+							else
+								static_assert((Predicate.template operator()<Value>(), true), "Compile-time value test failed");
+						}
+						else
+						{
+							if constexpr (not std::is_void_v<decltype(Predicate(Value))>)
+								static_assert(Predicate(Value), "Compile-time value test assertion evaluated to false");
+							else
+								static_assert((Predicate(Value), true), "Compile-time value test failed");
+						}
+					};
+					(evaluateValue.template operator()<Values>(), ...);
+				}
+
+				auto index = 0uz;
+				auto registerValue = [&]<auto Value>() {
+					this->addCompileTimeTest(TestSuite::formatParameterName(this->testName, Value, index));
+				};
+				(registerValue.template operator()<Values>(), ...);
+			}
+		};
 
 		/**
 		 * @brief Builder for configuring and registering an individual test case.
 		 * @note Returned by TestSuite::test(std::string); not intended to be instantiated directly by user code.
+		 * @tparam IsSkipped Indicates whether the test execution is bypassed.
 		 *
 		 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#déclarer-une-suite-de-tests (Déclarer une suite de tests)
 		 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#declaring-a-test-suite (Declaring a test suite)
 		 */
-		struct TestBuilder final: TimeoutBuilder<TestBuilder>
+		template<bool IsSkipped = false>
+		struct TestBuilder final: TestBuilderBase<TestBuilder<IsSkipped>, IsSkipped>
 		{
-			TestSuite& parentSuite; ///< Reference to the enclosing test suite registering the test.
-			std::string testName; ///< Identifier of the test case.
+			using Base = TestBuilderBase<TestBuilder<IsSkipped>, IsSkipped>;
+			using Base::Base;
 
-			TestBuilder(std::chrono::seconds timeout, TestSuite& suite, std::string name):
-				TimeoutBuilder<TestBuilder>{timeout},
-				parentSuite{suite},
-				testName{std::move(name)}
-			{}
+			template<bool Condition>
+			[[nodiscard]] inline auto rebind(std::string message) -> TestBuilder<Condition>
+			{
+				return TestBuilder<Condition>{this->parentSuite, std::move(this->testName), this->testTimeout, std::move(message)};
+			}
 
 			/**
 			 * @brief Converts this test into a type-parameterized test across the specified types.
@@ -242,9 +415,20 @@ namespace CppUtils::UnitTest
 			 * @return TypedTestBuilder instance.
 			 */
 			template<class... Types>
-			[[nodiscard]] inline auto forTypes() -> TypedTestBuilder<Types...>
+			[[nodiscard]] inline auto forTypes() -> TypedTestBuilder<IsSkipped, Types...>
 			{
-				return TypedTestBuilder<Types...>{testTimeout, parentSuite, std::move(testName)};
+				return TypedTestBuilder<IsSkipped, Types...>{this->parentSuite, std::move(this->testName), this->testTimeout, this->skipMessage};
+			}
+
+			/**
+			 * @brief Converts this test into a compile-time value-parameterized test across non-type template values.
+			 * @tparam Values Non-type values to instantiate the compile-time test with.
+			 * @return ConstexprValuesTestBuilder instance.
+			 */
+			template<auto... Values>
+			[[nodiscard]] inline auto forValues() -> ConstexprValuesTestBuilder<IsSkipped, Values...>
+			{
+				return ConstexprValuesTestBuilder<IsSkipped, Values...>{this->parentSuite, std::move(this->testName), this->testTimeout, this->skipMessage};
 			}
 
 			/**
@@ -256,12 +440,26 @@ namespace CppUtils::UnitTest
 			template<class... Values>
 			[[nodiscard]] inline auto forValues(Values&&... values)
 			{
-				if constexpr (sizeof...(Values) == 1 and (std::ranges::input_range<std::decay_t<Values>> and ...))
-					return ParameterizedTestBuilder<std::decay_t<Values>...>{
-						testTimeout, parentSuite, std::move(testName), (std::forward<Values>(values), ...)};
-				else
-					return ParameterizedTestBuilder<std::tuple<std::decay_t<Values>...>>{
-						testTimeout, parentSuite, std::move(testName), std::make_tuple(std::forward<Values>(values)...)};
+				auto container = TestSuite::makeValuesContainer(std::forward<Values>(values)...);
+				return ParameterizedTestBuilder<IsSkipped, decltype(container)>{
+					this->parentSuite, std::move(this->testName), std::move(container), this->testTimeout, this->skipMessage};
+			}
+
+			/**
+			 * @brief Evaluates a test predicate at compile time via static_assert and registers it as a test.
+			 * @tparam Predicate Constexpr invocable returning a boolean or performing static assertions.
+			 */
+			template<auto Predicate>
+			inline auto constexprTest() -> void
+			{
+				if constexpr (not IsSkipped)
+				{
+					if constexpr (not std::is_void_v<decltype(Predicate())>)
+						static_assert(Predicate(), "Compile-time test assertion evaluated to false");
+					else
+						static_assert((Predicate(), true), "Compile-time test failed");
+				}
+				this->addCompileTimeTest(std::move(this->testName));
 			}
 
 			/**
@@ -270,26 +468,37 @@ namespace CppUtils::UnitTest
 			 */
 			inline auto operator=(auto&& function) -> void
 			{
-				if constexpr (std::is_invocable_v<decltype(function), std::stop_token>)
-					parentSuite.addTest(std::move(testName), std::forward<decltype(function)>(function), testTimeout);
-				else
-					parentSuite.addTest(std::move(testName), [function = std::forward<decltype(function)>(function)] { function(); }, testTimeout);
+				this->addTest(std::move(this->testName), std::forward<decltype(function)>(function), this->testTimeout);
 			}
 		};
 
 		/**
 		 * @brief Builder for configuring and registering a randomized fuzz test.
 		 * @note Returned by TestSuite::fuzzTest(std::string, std::size_t); not intended to be instantiated directly by user code.
+		 * @tparam IsSkipped Indicates whether the test execution is bypassed.
 		 *
 		 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#tests-de-robustesse-et-fuzzing-fuzztest-et-fuzz (Tests de robustesse et fuzzing)
 		 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#robustness-testing-and-fuzzing-fuzztest-and-fuzz (Fuzz testing)
 		 */
-		struct FuzzTestBuilder final: TimeoutBuilder<FuzzTestBuilder>
+		template<bool IsSkipped = false>
+		struct FuzzTestBuilder final: TestBuilderBase<FuzzTestBuilder<IsSkipped>, IsSkipped>
 		{
-			TestSuite& parentSuite; ///< Reference to the enclosing test suite registering the test.
-			std::string testName; ///< Identifier of the test case.
+			using Base = TestBuilderBase<FuzzTestBuilder<IsSkipped>, IsSkipped>;
+
 			std::size_t testIterations; ///< Number of randomized iterations to execute.
 			std::uint64_t testSeed{Math::DeterministicRandomEngine::defaultSeed}; ///< Deterministic pseudo-random number generator initial seed.
+
+			FuzzTestBuilder(TestSuite& suite, std::string name, std::size_t iterations, std::uint64_t seed = Math::DeterministicRandomEngine::defaultSeed, std::chrono::seconds timeout = std::chrono::seconds{10}, std::string skipReason = {}):
+				Base{suite, std::move(name), timeout, std::move(skipReason)},
+				testIterations{iterations},
+				testSeed{seed}
+			{}
+
+			template<bool Condition>
+			[[nodiscard]] inline auto rebind(std::string message) -> FuzzTestBuilder<Condition>
+			{
+				return FuzzTestBuilder<Condition>{this->parentSuite, std::move(this->testName), testIterations, testSeed, this->testTimeout, std::move(message)};
+			}
 
 			/**
 			 * @brief Sets the deterministic initial pseudo-random number generator seed for fuzz reproducibility.
@@ -308,7 +517,7 @@ namespace CppUtils::UnitTest
 			 */
 			inline auto operator=(auto&& function) -> void
 			{
-				parentSuite.addTest(std::move(testName), [iterations = testIterations, function = std::forward<decltype(function)>(function), seed = testSeed](std::stop_token stopToken) {
+				this->addTest(std::move(this->testName), [iterations = testIterations, function = std::forward<decltype(function)>(function), seed = testSeed](std::stop_token stopToken) {
 					auto fuzzer = Math::DeterministicRandomEngine{seed};
 					for (auto _ : std::views::iota(0uz, iterations))
 					{
@@ -316,7 +525,7 @@ namespace CppUtils::UnitTest
 							break;
 						function(fuzzer);
 					}
-				}, testTimeout);
+				}, this->testTimeout);
 			}
 		};
 
@@ -325,40 +534,9 @@ namespace CppUtils::UnitTest
 		 * @param name Descriptive test name.
 		 * @return TestBuilder instance.
 		 */
-		[[nodiscard]] inline auto test(std::string name) -> TestBuilder
+		[[nodiscard]] inline auto test(std::string name) -> TestBuilder<false>
 		{
-			return TestBuilder{std::chrono::seconds{10}, *this, std::move(name)};
-		}
-
-		/**
-		 * @brief Evaluates a test predicate at compile time via static_assert and registers it as a passed test.
-		 *
-		 * The template predicate is evaluated at compile time: any assertion failure immediately breaks
-		 * the build before the test executable is even run.
-		 *
-		 * At runtime, this method registers an empty test body in the test runner so that the test appears
-		 * in reports and metrics while avoiding the process isolation fork() overhead of runtime test cases.
-		 * Prefer this overload when verifying constexpr functions, concepts, type traits, or template metaprogramming.
-		 *
-		 * @tparam Predicate Constexpr invocable returning a boolean or performing static assertions.
-		 * @param name Descriptive test name.
-		 */
-		template<auto Predicate>
-		inline auto test(std::string name) -> void
-		{
-			if constexpr (requires { { Predicate() } -> std::convertible_to<bool>; })
-			{
-				static_assert(Predicate(), "Compile-time test assertion evaluated to false");
-			}
-			else
-			{
-				constexpr auto runTest = [] {
-					Predicate();
-					return true;
-				};
-				static_assert(runTest(), "Compile-time test failed");
-			}
-			addTest(std::move(name), [] {});
+			return TestBuilder<false>{*this, std::move(name)};
 		}
 
 		/**
@@ -367,9 +545,18 @@ namespace CppUtils::UnitTest
 		 * @param iterations Number of iterations to run.
 		 * @return FuzzTestBuilder for assigning the test body callback.
 		 */
-		[[nodiscard]] inline auto fuzzTest(std::string name, std::size_t iterations) -> FuzzTestBuilder
+		[[nodiscard]] inline auto fuzzTest(std::string name, std::size_t iterations) -> FuzzTestBuilder<false>
 		{
-			return FuzzTestBuilder{.parentSuite = *this, .testName = std::move(name), .testIterations = iterations};
+			return FuzzTestBuilder<false>{*this, std::move(name), iterations};
+		}
+
+		/**
+		 * @brief Returns the collection of registered test cases in this suite.
+		 * @return Read-only reference to the list of test cases.
+		 */
+		[[nodiscard]] inline auto testCases() const noexcept -> const std::vector<TestCase>&
+		{
+			return tests;
 		}
 
 		std::vector<TestCase> tests;
@@ -566,28 +753,6 @@ namespace CppUtils::UnitTest
 	}
 
 	/**
-	 * @brief Deliberately skips the current test, reporting it as skipped in test results.
-	 * @param message Justification for skipping the test.
-	 * @param location Source location used for skip reporting (automatically captured).
-	 */
-	export [[noreturn]] inline auto skip(std::string message, std::source_location location = std::source_location::current()) -> void
-	{
-		throw TestSkipped{std::move(message), location};
-	}
-
-	/**
-	 * @brief Conditionally skips the current test if the provided condition evaluates to true.
-	 * @param condition Boolean flag determining whether to skip.
-	 * @param message Justification for skipping the test.
-	 * @param location Source location used for skip reporting (automatically captured).
-	 */
-	export inline auto skipIf(bool condition, std::string message, std::source_location location = std::source_location::current()) -> void
-	{
-		if (condition)
-			skip(std::move(message), location);
-	}
-
-	/**
 	 * @brief Explicitly fails the current test with a diagnostic message.
 	 * @param message Diagnostic description explaining why the test failed.
 	 * @param location Source location used for failure reporting (automatically captured).
@@ -745,6 +910,10 @@ namespace CppUtils::UnitTest
 		auto settings = TestSettings{};
 		const auto parametersLexer = Language::Parameters::ParametersLexer{};
 		const auto parameters = parametersLexer.parseParameters(arguments);
+		auto parseBooleanOption = [](std::string_view value) -> bool {
+			return std::ranges::empty(value) or value == "1" or value == "true";
+		};
+
 		for (const auto& [parameterName, parameterValue] : parameters)
 		{
 			if (parameterName == "help" or parameterName == "h")
@@ -775,13 +944,13 @@ namespace CppUtils::UnitTest
 				}
 			}
 			else if (parameterName == "verbose" or parameterName == "v")
-				settings.verbose = (std::ranges::empty(parameterValue) or parameterValue == "1" or parameterValue == "true");
+				settings.verbose = parseBooleanOption(parameterValue);
 			else if (parameterName == "detail" or parameterName == "d")
-				settings.detail = (std::ranges::empty(parameterValue) or parameterValue == "1" or parameterValue == "true");
+				settings.detail = parseBooleanOption(parameterValue);
 			else if (parameterName == "fail-fast")
-				settings.failFast = (std::ranges::empty(parameterValue) or parameterValue == "1" or parameterValue == "true");
+				settings.failFast = parseBooleanOption(parameterValue);
 			else if (parameterName == "chrono" or parameterName == "c")
-				settings.chrono = (std::ranges::empty(parameterValue) or parameterValue == "1" or parameterValue == "true");
+				settings.chrono = parseBooleanOption(parameterValue);
 			else if (parameterName == "filter" or parameterName == "f")
 				settings.filter = parameterValue;
 			else if (parameterName == "report" or parameterName == "r")

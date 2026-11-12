@@ -1,5 +1,5 @@
 ---
-title: Writing Unit Tests (UnitTest)
+title: Writing Unit Tests
 description: Practical guide to designing, structuring, and executing reliable unit tests with CppUtils::UnitTest without external dependencies.
 sidebar:
   order: 3
@@ -48,7 +48,13 @@ The [`CppUtils::UnitTest`](/en/reference/unittest/functions/) module reimagines 
 		Periodic condition polling ([`eventually`](#eventually-matcher-waiting-for-an-asynchronous-condition)) or waiting on an asynchronous operation ([`completes`](#completes-matcher-reactive-synchronization-without-polling)).
 	</Card>
 	<Card title="Compile-Time Constexpr Tests" icon="setting">
-		Validate your `constexpr` contracts and computations directly during compilation ([`suite.test<Predicate>`](#compile-time-tests-suitetestpredicate)). Instant build-time error detection with zero runtime execution overhead.
+		Validate your `constexpr` contracts and computations directly during compilation ([`constexprTest`](#compile-time-tests-constexprtest)). Instant build-time error detection with zero runtime execution overhead.
+	</Card>
+	<Card title="Tautology and Contradiction Prevention" icon="approve-check">
+		Strict rejection of tautological assertions (`>= 0`) and contradictions (`< 0`) on unsigned integers. Immediate compile-time error for constant literals, and runtime interception for contradictions ([`TestException`](#tautological-and-contradictory-assertion-prevention)).
+	</Card>
+	<Card title="Object Lifetime Tracking" icon="list-format">
+		Instrument your types via [`LifetimeChecker`](#tracking-object-lifecycle-cpputilsunittestlifetimechecker) to strictly audit and verify constructor calls, copy/move semantics, and destructions.
 	</Card>
 	<Card title="Universal CI/CD Reports" icon="document">
 		Standard JUnit XML report generation ([`--report`](#junit-xml-report-export-and-cicd-integration)). Native integration in GitLab CI and GitHub Actions to automatically publish metrics and failure annotations in pull requests.
@@ -868,6 +874,41 @@ ut::expect(-1) > 1u; // False in standard C++ due to unsigned promotion; correct
 
 Comparing against text literals evaluates character content via `std::string_view`, eliminating pointer address comparison bugs.
 
+### Tautological and Contradictory Assertion Prevention
+
+An insidious pitfall in unit test suites involves writing assertions that are structurally always true (**tautologies**) or structurally impossible to satisfy (**contradictions**), especially when performing inequality comparisons on unsigned integer types (`std::size_t`, `uint32_t`, etc.):
+
+- `ut::expect(bufferId) >= 0;` or `ut::expect(size) >= 0uz;`: since an unsigned integer is non-negative by definition, this check is a **tautology** that unconditionally passes and validates no actual application logic.
+- `ut::expect(count) < 0;` or `ut::expect(count) < 0uz;`: since an unsigned integer can never be strictly negative, this check is a structural **contradiction**.
+
+Such assertions create a dangerous **illusion of test coverage**. To guarantee the integrity of your test suites, `CppUtils::UnitTest` incorporates dual-layer enforcement:
+
+#### Compile-Time Rejection (Literals and Constants)
+
+When an unsigned integer is compared against a compile-time constant (such as a numeric literal `0`, `0uz`, or a negative value) in a tautological (`>= 0`) or contradictory (`< 0`) assertion, the compiler immediately halts compilation with an explicit diagnostic error message:
+
+```cpp
+const std::size_t count = std::ranges::size(buffer);
+
+ut::expect(count) >= 0uz; // Compile-time error: tautology (unsigned >= 0)
+```
+
+#### Runtime Interception (Dynamic Values)
+
+When a strictly less-than `<` comparison evaluates an unsigned integer against a dynamic boundary that is zero or negative, the framework intercepts this impossible contradiction and throws a `TestException`:
+
+```cpp
+const std::size_t count = getCount();
+const int limit = getLimit(); // Dynamic calculation returning e.g. 0 or -1
+
+// Throws TestException: an unsigned integer can never be < 0 or < negative
+ut::expect(count) < limit;
+```
+
+<Aside type="note">
+Conversely, comparisons of form `ut::expect(count) >= limit` where `limit` is calculated dynamically are not rejected when it evaluates to zero. This avoids false positives on legitimate runtime boundaries. Only comparisons of unsigned integers against compile-time constants are prohibited for `>= 0`.
+</Aside>
+
 ### Matchers: `throws`, `noThrow`, `crashes`, `eventually`, `completes`
 
 Rather than calling verbose and scattered assertion functions or macros ([`ASSERT_THROW`](https://google.github.io/googletest/reference/assertions.html#EXPECT_THROW), [`ASSERT_NO_THROW`](https://google.github.io/googletest/reference/assertions.html#EXPECT_NO_THROW), [`ASSERT_DEATH`](https://google.github.io/googletest/reference/assertions.html#death-assertions), etc.), `CppUtils::UnitTest` unifies checks using the standard `==` operator on `expect(action)`:
@@ -1094,26 +1135,81 @@ skip("Feature under active refactoring (issue #142)");
 skipIf(not isNetworkAvailable(), "Remote network access required");
 ```
 
----
+### Explicit Test Failure: `fail`
 
-## Compile-Time Tests (`suite.test<Predicate>`)
+When you want to unconditionally fail a test with a descriptive diagnostic message, use the `[[noreturn]]` annotated `fail` function.
 
-To validate `constexpr` algorithms, template metaprogramming, concepts, or static constants, the test framework provides a direct compile-time overload for `suite.test`:
+It is particularly recommended inside `try / catch` blocks (to verify that an expected exception was thrown) or inside unreachable code branches, avoiding the anti-pattern of [static contradictions](#tautological-and-contradictory-assertion-prevention) like `expect(false)`:
 
 ```cpp
-suite.test<[] {
+try
+{
+	executeRiskyOperation();
+	fail("Operation was expected to throw std::runtime_error");
+}
+catch (const std::runtime_error& exception)
+{
+	expect(std::string_view{exception.what()}.contains("Access denied"));
+}
+```
+
+The function automatically captures the exact file name, line, and column via `std::source_location::current()` and terminates the test case immediately.
+
+---
+
+## Compile-Time Tests (`constexprTest`)
+
+To validate `constexpr` algorithms, template metaprogramming, or constants, a test can be evaluated directly during compilation:
+
+```cpp
+suite.test("Factorial computation").constexprTest<[] {
 	constexpr auto value = factorial(5);
 	return value == 120;
-}>("Factorial computation");
+}>();
+```
+
+The predicate supplied as a template parameter is evaluated at compile time: if the condition is not met, compilation fails immediately.
+
+### Conditional Skipping (`skipIf` and `skip`)
+
+If a `constexpr` test is not supported on a specific target platform, it can be disabled cleanly without preprocessor `#if` directives:
+
+```cpp
+suite.test("Constexpr 128-bit integer arithmetic")
+	.skipIf<not hasNativeInt128>("Platform lacks native 128-bit integer support")
+	.constexprTest<[] {
+		constexpr auto result = computeLargeInt();
+		return result > 0;
+	}>();
+```
+
+- **At compile time**: If the condition is true, the test is not evaluated, preventing compilation errors on incompatible platforms.
+- **At runtime**: The test appears as skipped (`[SKIPPED]`) along with its reason.
+
+### Parameterized Compile-Time Tests (`forTypes` and `forValues`)
+
+Compile-time tests can also be parameterized to verify multiple types or values with a single declaration:
+
+```cpp
+// Compile-time validation across multiple types
+suite.test("Numeric identity")
+	.forTypes<int, long, double>()
+	.constexprTest<[]<class Type> {
+		constexpr auto zero = Type{};
+		return zero == 0;
+	}>();
+
+// Compile-time validation across constant values
+suite.test("Powers of two")
+	.forValues<1, 2, 4, 8, 16>()
+	.constexprTest<[](auto value) {
+		return std::has_single_bit(static_cast<unsigned int>(value));
+	}>();
 ```
 
 This mechanism combines the rigor of `static_assert` with full test runner integration:
-- **Immediate static feedback without rerunning tests**: If the predicate fails, compilation halts immediately with a `static_assert` error before any binary execution. You know the test passes as soon as compilation succeeds, without needing to launch the test suite.
-- **Runner reporting and metrics**: The compile-time test is accounted for in the suite summary and prints its status (`Passed ✓`).
-
-<Aside type="tip">
-Systematically prefer `suite.test<Predicate>` whenever a test case is entirely `constexpr` (validating concepts, `type_traits`, or static calculations) to benefit from instant compile-time error detection while accelerating overall test suite execution.
-</Aside>
+- **Immediate static feedback without rerunning tests**: If the predicate fails, compilation halts immediately with a `static_assert` error before any binary execution.
+- **Runner reporting and metrics**: The compile-time test is accounted for in the suite summary and prints its status (`Passed ✓` or `Skipped`).
 
 ---
 
@@ -1440,7 +1536,7 @@ auto main(int argc, char** argv) -> int
 | `detail` | `bool` | `true` | Prints execution dividers and full suite namespaces during progress. |
 | `chrono` | `bool` | `false` | Measures and logs the precise execution time of each test via `CppUtils::Log::ChronoLogger`. |
 | `failFast` | `bool` | `false` | Immediately aborts test execution upon the first encountered failure. |
-| `filter` | `std::string` | `""` | Filters test suites to execute by substring while automatically resolving their prerequisites. |
+| `filter` | `std::string` | `""` | Filters test suites and individual tests to execute by substring (`Suite`, `Suite/Test`, or `Test`) while automatically resolving their prerequisites. |
 | `report` | `std::string` | `""` | Exports test results to a report file (format `junit:path.xml` or `path.xml`). |
 
 #### Command-Line Syntax
@@ -1466,7 +1562,7 @@ The [`executeCommands()`](/en/reference/unittest/functions/#executeCommands) fun
 | `--detail[=<bool>]` | `-d[=<bool>]` | `true` | Enables or disables detailed progress output (test names, individual durations, benchmark metrics, separators). |
 | `--fail-fast` | | `false` | Aborts test run immediately upon the first failure. |
 | `--chrono[=<bool>]` | `-c[=<bool>]` | `false` | Displays individual test execution durations. |
-| `--filter=<string>` | `-f=<string>` | `""` | Runs only test suites whose name contains this substring (and automatically resolves their dependencies). |
+| `--filter=<string>` | `-f=<string>` | `""` | Runs only test suites or tests whose name (or full path `Suite/Test`) contains this substring (and automatically resolves their dependencies). |
 | `--report=<path>` | `-r=<path>` | `""` | Exports results in JUnit XML format (e.g., `-r=report.xml` or explicitly `--report=junit:report.xml`). |
 
 ### JUnit XML Report Export and CI/CD Integration

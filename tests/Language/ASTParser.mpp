@@ -22,7 +22,7 @@ namespace CppUtils::UnitTest::Language::ASTParser
 		using namespace CppUtils::String::Literals;
 		using Logger = TestSuite::Logger;
 
-		suite.test<[] {
+		suite.test("Constexpr token parsing").constexprTest<[] {
 			using namespace std::literals;
 			using namespace CppUtils::String::Literals;
 
@@ -35,7 +35,7 @@ namespace CppUtils::UnitTest::Language::ASTParser
 				return false;
 			const auto& scopeNodes = interpreter.getScope().nodes;
 			return std::ranges::size(scopeNodes) == 1uz and scopeNodes.front().value == "token"_token;
-		}>("Constexpr token parsing");
+		}>();
 
 		suite.test("Empty source") = [&] {
 			auto interpreter = CppUtils::Language::ASTParser{};

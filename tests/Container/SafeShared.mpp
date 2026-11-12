@@ -5,7 +5,7 @@ import CppUtils;
 namespace CppUtils::UnitTest::Container::SafeShared
 {
 	auto _ = testSuite("Container/SafeShared").dependsOn("UnitTest", "Thread/SharedLocker") = [](TestSuite& suite) {
-		suite.test<[] {
+		suite.test("Constexpr unique access").constexprTest<[] {
 			auto shared = CppUtils::Container::makeSafeShared<int>(42);
 			if (not shared or shared.use_count() != 1uz)
 				return false;
@@ -20,9 +20,9 @@ namespace CppUtils::UnitTest::Container::SafeShared
 			}
 
 			return copy->sharedAccess().value() == 100;
-		}>("Constexpr unique access");
+		}>();
 
-		suite.test<[] {
+		suite.test("Constexpr SafeWeak lock").constexprTest<[] {
 			auto shared = CppUtils::Container::makeSafeShared<int>(10);
 			auto weak = CppUtils::Container::SafeWeak{shared};
 			if (weak.expired() or weak.use_count() != 1uz)
@@ -30,7 +30,7 @@ namespace CppUtils::UnitTest::Container::SafeShared
 
 			auto locked = weak.lock();
 			return locked and locked.use_count() == 2uz;
-		}>("Constexpr SafeWeak lock");
+		}>();
 
 		suite.test("Empty") = [&] {
 			auto safeSharedString = CppUtils::Container::SafeShared<std::string>{};

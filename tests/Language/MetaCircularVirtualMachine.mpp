@@ -14,7 +14,7 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 		using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
 
 #if not defined(_MSC_VER)
-		suite.test<[] {
+		suite.test("Constexpr set and add instructions").constexprTest<[] {
 			using namespace CppUtils::String::Literals;
 			using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
 			using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
@@ -38,9 +38,9 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				return false;
 
 			return target.getValue().value() == 42uz;
-		}>("Constexpr set and add instructions");
+		}>();
 
-		suite.test<[] {
+		suite.test("Constexpr create node instruction").constexprTest<[] {
 			using namespace CppUtils::String::Literals;
 			using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
 			using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
@@ -62,9 +62,9 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				return false;
 
 			return valueNode->getValue().value() == 1uz;
-		}>("Constexpr create node instruction");
+		}>();
 
-		suite.test<[] {
+		suite.test("Constexpr equal comparison instruction").constexprTest<[] {
 			using namespace CppUtils::String::Literals;
 			using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
 			using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
@@ -82,9 +82,9 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				return false;
 
 			return resultNode.getValue().value() == true;
-		}>("Constexpr equal comparison instruction");
+		}>();
 
-		suite.test<[] {
+		suite.test("Constexpr not instruction").constexprTest<[] {
 			using namespace CppUtils::String::Literals;
 			using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
 			using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
@@ -100,9 +100,9 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				return false;
 
 			return static_cast<bool>(value.getValue().value()) == false;
-		}>("Constexpr not instruction");
+		}>();
 
-		suite.test<[] {
+		suite.test("Constexpr jump instruction").constexprTest<[] {
 			using namespace CppUtils::String::Literals;
 			using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
 			using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
@@ -135,9 +135,9 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				return false;
 
 			return valueNode->getValue().value() == 2uz;
-		}>("Constexpr jump instruction");
+		}>();
 
-		suite.test<[] {
+		suite.test("Constexpr call and references instruction").constexprTest<[] {
 			using namespace CppUtils::String::Literals;
 			using MetaCircularVirtualMachine = CppUtils::Language::MetaCircularVirtualMachine;
 			using MeshNodePtr = MetaCircularVirtualMachine::MeshNodePtr;
@@ -179,7 +179,7 @@ namespace CppUtils::UnitTest::Language::MetaCircularVirtualMachine
 				return false;
 
 			return result.getValue().value() == 5uz;
-		}>("Constexpr call and references instruction");
+		}>();
 #endif
 
 		suite.test("Canary: MSVC STL std::optional non-trivial destructor in constant evaluation") = [] {
