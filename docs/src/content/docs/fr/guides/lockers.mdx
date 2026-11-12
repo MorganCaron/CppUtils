@@ -348,7 +348,7 @@ Le choix entre [`UniqueLocker`](/fr/reference/thread/uniquelocker/) et [`SharedL
 
 | Caractéristique | [`UniqueLocker<T>`](/fr/reference/thread/uniquelocker/) | [`SharedLocker<T>`](/fr/reference/thread/sharedlocker/) |
 | :--- | :--- | :--- |
-| **Mutex sous-jacent** | `std::mutex` | `std::shared_mutex` |
+| **Mutex sous-jacent** | `std::mutex` ([`UniqueMutex`](/fr/reference/thread/uniquemutex/)) | `std::shared_mutex` ([`SharedMutex`](/fr/reference/thread/sharedmutex/)) |
 | **Accès exclusif (écriture)** | `locker.access()` ([`Accessor`](/fr/reference/thread/accessor/)) | `locker.uniqueAccess()` ([`Accessor`](/fr/reference/thread/accessor/)) |
 | **Accès partagé (lecture)** | Non (toujours exclusif) | `locker.sharedAccess()` ([`ReadOnlyAccessor`](/fr/reference/thread/readonlyaccessor/)) |
 | **Surcoût d'acquisition** | Zero-cost abstraction | Plus élevé (compteurs atomiques de lecteurs) |
@@ -475,6 +475,49 @@ int main()
 	}};
 }
 ```
+
+## Support de l'évaluation à la compilation (`constexpr` / `consteval`)
+
+En C++ standard, les primitives de synchronisation (`std::mutex`, `std::shared_mutex`) ne peuvent pas être verrouillées pendant l'évaluation constante, ce qui impose souvent de dupliquer les structures de données.
+
+[`UniqueLocker`](/fr/reference/thread/uniquelocker/) et [`SharedLocker`](/fr/reference/thread/sharedlocker/) s'adaptent automatiquement à leur contexte d'exécution :
+- **Au runtime** : acquisition et libération réelles des verrous sans aucun surcoût par rapport à un verrouillage manuel (zero-cost abstraction).
+- **À la compilation (`constexpr` / `consteval`)** : les opérations de verrouillage sont automatiquement court-circuitées, rendant la structure protégée immédiatement utilisable.
+
+Cela permet d'instancier, de manipuler et d'évaluer des structures de données protégées directement dans des contextes `constexpr` ou `consteval`, sans aucune duplication de code.
+
+```cpp
+// Une classe thread-safe conçue pour le runtime...
+class ThreadSafeCounter
+{
+	CppUtils::Thread::UniqueLocker<int> m_counter{0};
+
+public:
+	constexpr auto increment() -> void
+	{
+		++m_counter.access().value();
+	}
+
+	[[nodiscard]] constexpr auto value() const -> int
+	{
+		return m_counter.access().value();
+	}
+};
+
+// ...peut être réutilisée directement dans un calcul constexpr sans aucune modification
+constexpr auto initialCount = [] {
+	auto counter = ThreadSafeCounter{};
+	counter.increment();
+	counter.increment();
+	return counter.value();
+}();
+
+static_assert(initialCount == 2);
+```
+
+<Aside type="note" title="Type atomique unifié : Atomic<T>">
+Pour la synchronisation de variables scalaires ou trivialement copiables sans mutex, [`CppUtils::Thread::Atomic<T>`](/fr/reference/thread/atomic/) applique exactement la même philosophie zero-overhead : il délègue à `std::atomic<T>` au runtime et se comporte comme un scalaire ordinaire `T` en contexte `constexpr`/`consteval`.
+</Aside>
 
 ---
 

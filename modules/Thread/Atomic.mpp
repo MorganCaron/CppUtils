@@ -1,0 +1,332 @@
+export module CppUtils.Thread.Atomic;
+
+import std;
+import CppUtils.Type.Concept;
+
+export namespace CppUtils::Thread
+{
+	/**
+	 * @brief Constexpr-capable zero-overhead atomic wrapper.
+	 *
+	 * Provides standard atomic semantics in runtime execution while remaining fully
+	 * functional in compile-time (constexpr / consteval) contexts.
+	 *
+	 * In runtime contexts, delegates directly to @c std::atomic<T> without extra overhead.
+	 * In consteval contexts, maintains the state as a plain scalar @c T.
+	 *
+	 * @tparam T The trivially copyable underlying value type.
+	 */
+	template<Type::TriviallyCopyable T>
+	class Atomic final
+	{
+	public:
+		using ValueType = T;
+
+		static constexpr bool is_always_lock_free = std::atomic<T>::is_always_lock_free;
+
+		inline constexpr explicit Atomic(T desired = T{}) noexcept:
+			m_value{desired}
+		{
+			if not consteval
+			{
+				std::construct_at(std::addressof(m_atomic), desired);
+			}
+		}
+
+		Atomic(const Atomic&) = delete;
+		auto operator=(const Atomic&) -> Atomic& = delete;
+
+		[[nodiscard]] inline constexpr auto is_lock_free() const noexcept -> bool
+		{
+			if not consteval
+			{
+				return m_atomic.is_lock_free();
+			}
+			return true;
+		}
+
+		[[nodiscard]] inline constexpr auto load([[maybe_unused]] std::memory_order order = std::memory_order_seq_cst) const noexcept -> T
+		{
+			if not consteval
+			{
+				return m_atomic.load(order);
+			}
+			return m_value;
+		}
+
+		inline constexpr auto store(T desired, [[maybe_unused]] std::memory_order order = std::memory_order_seq_cst) noexcept -> void
+		{
+			if not consteval
+			{
+				m_atomic.store(desired, order);
+			}
+			else
+			{
+				m_value = desired;
+			}
+		}
+
+		inline constexpr auto operator=(T desired) noexcept -> T
+		{
+			store(desired);
+			return desired;
+		}
+
+		[[nodiscard]] inline constexpr operator T() const noexcept
+		{
+			return load();
+		}
+
+		[[nodiscard]] inline constexpr auto exchange(T desired, [[maybe_unused]] std::memory_order order = std::memory_order_seq_cst) noexcept -> T
+		{
+			if not consteval
+			{
+				return m_atomic.exchange(desired, order);
+			}
+			const auto previous = m_value;
+			m_value = desired;
+			return previous;
+		}
+
+		[[nodiscard]] inline constexpr auto compare_exchange_strong(
+			T& expected,
+			T desired,
+			[[maybe_unused]] std::memory_order successOrder,
+			[[maybe_unused]] std::memory_order failureOrder) noexcept -> bool
+		{
+			if not consteval
+			{
+				return m_atomic.compare_exchange_strong(expected, desired, successOrder, failureOrder);
+			}
+			return compareExchange(expected, desired);
+		}
+
+		[[nodiscard]] inline constexpr auto compare_exchange_strong(
+			T& expected,
+			T desired,
+			[[maybe_unused]] std::memory_order order = std::memory_order_seq_cst) noexcept -> bool
+		{
+			if not consteval
+			{
+				return m_atomic.compare_exchange_strong(expected, desired, order);
+			}
+			return compareExchange(expected, desired);
+		}
+
+		[[nodiscard]] inline constexpr auto compare_exchange_weak(
+			T& expected,
+			T desired,
+			[[maybe_unused]] std::memory_order successOrder,
+			[[maybe_unused]] std::memory_order failureOrder) noexcept -> bool
+		{
+			if not consteval
+			{
+				return m_atomic.compare_exchange_weak(expected, desired, successOrder, failureOrder);
+			}
+			return compareExchange(expected, desired);
+		}
+
+		[[nodiscard]] inline constexpr auto compare_exchange_weak(
+			T& expected,
+			T desired,
+			[[maybe_unused]] std::memory_order order = std::memory_order_seq_cst) noexcept -> bool
+		{
+			if not consteval
+			{
+				return m_atomic.compare_exchange_weak(expected, desired, order);
+			}
+			return compareExchange(expected, desired);
+		}
+
+		inline constexpr auto wait([[maybe_unused]] T old, [[maybe_unused]] std::memory_order order = std::memory_order_seq_cst) const noexcept -> void
+		{
+			if not consteval
+			{
+				m_atomic.wait(old, order);
+			}
+		}
+
+		inline constexpr auto notify_one() noexcept -> void
+		{
+			if not consteval
+			{
+				m_atomic.notify_one();
+			}
+		}
+
+		inline constexpr auto notify_all() noexcept -> void
+		{
+			if not consteval
+			{
+				m_atomic.notify_all();
+			}
+		}
+
+		inline constexpr auto fetch_add(T argument, [[maybe_unused]] std::memory_order order = std::memory_order_seq_cst) noexcept -> T
+		requires std::integral<T> or std::floating_point<T> or std::is_pointer_v<T>
+		{
+			if not consteval
+			{
+				return m_atomic.fetch_add(argument, order);
+			}
+			const auto previous = m_value;
+			m_value += argument;
+			return previous;
+		}
+
+		inline constexpr auto fetch_sub(T argument, [[maybe_unused]] std::memory_order order = std::memory_order_seq_cst) noexcept -> T
+		requires std::integral<T> or std::floating_point<T> or std::is_pointer_v<T>
+		{
+			if not consteval
+			{
+				return m_atomic.fetch_sub(argument, order);
+			}
+			const auto previous = m_value;
+			m_value -= argument;
+			return previous;
+		}
+
+		inline constexpr auto fetch_and(T argument, [[maybe_unused]] std::memory_order order = std::memory_order_seq_cst) noexcept -> T
+		requires std::integral<T>
+		{
+			if not consteval
+			{
+				return m_atomic.fetch_and(argument, order);
+			}
+			const auto previous = m_value;
+			m_value &= argument;
+			return previous;
+		}
+
+		inline constexpr auto fetch_or(T argument, [[maybe_unused]] std::memory_order order = std::memory_order_seq_cst) noexcept -> T
+		requires std::integral<T>
+		{
+			if not consteval
+			{
+				return m_atomic.fetch_or(argument, order);
+			}
+			const auto previous = m_value;
+			m_value |= argument;
+			return previous;
+		}
+
+		inline constexpr auto fetch_xor(T argument, [[maybe_unused]] std::memory_order order = std::memory_order_seq_cst) noexcept -> T
+		requires std::integral<T>
+		{
+			if not consteval
+			{
+				return m_atomic.fetch_xor(argument, order);
+			}
+			const auto previous = m_value;
+			m_value ^= argument;
+			return previous;
+		}
+
+		inline constexpr auto operator++() noexcept -> T
+		requires std::integral<T> or std::is_pointer_v<T>
+		{
+			if not consteval
+			{
+				return ++m_atomic;
+			}
+			return ++m_value;
+		}
+
+		inline constexpr auto operator++(int) noexcept -> T
+		requires std::integral<T> or std::is_pointer_v<T>
+		{
+			if not consteval
+			{
+				return m_atomic++;
+			}
+			return m_value++;
+		}
+
+		inline constexpr auto operator--() noexcept -> T
+		requires std::integral<T> or std::is_pointer_v<T>
+		{
+			if not consteval
+			{
+				return --m_atomic;
+			}
+			return --m_value;
+		}
+
+		inline constexpr auto operator--(int) noexcept -> T
+		requires std::integral<T> or std::is_pointer_v<T>
+		{
+			if not consteval
+			{
+				return m_atomic--;
+			}
+			return m_value--;
+		}
+
+		inline constexpr auto operator+=(T argument) noexcept -> T
+		requires std::integral<T> or std::floating_point<T> or std::is_pointer_v<T>
+		{
+			if not consteval
+			{
+				return m_atomic += argument;
+			}
+			return m_value += argument;
+		}
+
+		inline constexpr auto operator-=(T argument) noexcept -> T
+		requires std::integral<T> or std::floating_point<T> or std::is_pointer_v<T>
+		{
+			if not consteval
+			{
+				return m_atomic -= argument;
+			}
+			return m_value -= argument;
+		}
+
+		inline constexpr auto operator&=(T argument) noexcept -> T
+		requires std::integral<T>
+		{
+			if not consteval
+			{
+				return m_atomic &= argument;
+			}
+			return m_value &= argument;
+		}
+
+		inline constexpr auto operator|=(T argument) noexcept -> T
+		requires std::integral<T>
+		{
+			if not consteval
+			{
+				return m_atomic |= argument;
+			}
+			return m_value |= argument;
+		}
+
+		inline constexpr auto operator^=(T argument) noexcept -> T
+		requires std::integral<T>
+		{
+			if not consteval
+			{
+				return m_atomic ^= argument;
+			}
+			return m_value ^= argument;
+		}
+
+	private:
+		[[nodiscard]] inline constexpr auto compareExchange(T& expected, T desired) noexcept -> bool
+		{
+			if (m_value == expected)
+			{
+				m_value = desired;
+				return true;
+			}
+			expected = m_value;
+			return false;
+		}
+
+		union {
+			std::atomic<T> m_atomic;
+			T m_value;
+		};
+	};
+}

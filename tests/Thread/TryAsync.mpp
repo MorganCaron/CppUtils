@@ -24,7 +24,7 @@ namespace CppUtils::UnitTest::Thread::TryAsync
 				return 0;
 			});
 			auto result = future.get();
-			expect(not result);
+			not expect(result);
 			expect(result.error().what()) == "Test exception";
 		};
 
@@ -41,7 +41,7 @@ namespace CppUtils::UnitTest::Thread::TryAsync
 				throw std::runtime_error{"Void test exception"};
 			});
 			auto result = future.get();
-			expect(not result);
+			not expect(result);
 			expect(result.error().what()) == "Void test exception";
 		};
 	};

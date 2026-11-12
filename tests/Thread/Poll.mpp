@@ -33,7 +33,7 @@ namespace CppUtils::UnitTest::Thread::Poll
 				++counter;
 				return false;
 			}, 50ms, 10ms);
-			expect(not result);
+			not expect(result);
 			expect(counter) >= 1uz;
 		};
 

@@ -82,5 +82,15 @@ namespace CppUtils::UnitTest::Thread::UniqueLocker
 			expect(destination.access().value()) != nullptr;
 			expect(*destination.access().value()) == 100;
 		};
+
+		suite.test("Constexpr UniqueLocker")
+			.constexprTest<[] {
+			auto locker = CppUtils::Thread::UniqueLocker<int>{42};
+			if (locker.access().value() != 42)
+				return false;
+
+			locker.access().value() = 100;
+			return locker.access().value() == 100;
+		}>();
 	};
 }

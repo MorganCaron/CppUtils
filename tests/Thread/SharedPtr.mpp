@@ -5,7 +5,8 @@ import CppUtils;
 namespace CppUtils::UnitTest::Thread::SharedPtr
 {
 	auto _ = testSuite("Thread/SharedPtr").dependsOn("UnitTest") = [](TestSuite& suite) {
-		suite.test("Constexpr SharedPtr and WeakPtr").constexprTest<[] {
+		suite.test("Constexpr SharedPtr and WeakPtr")
+			.constexprTest<[] {
 			auto shared = CppUtils::Thread::makeShared<int>(42);
 			if (not shared or shared.use_count() != 1uz)
 				return false;
