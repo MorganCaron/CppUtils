@@ -48,7 +48,13 @@ Le module [`CppUtils::UnitTest`](/fr/reference/unittest/functions/) repense int�
 		Vérification périodique d'une condition ([`eventually`](#matcher-eventually--attente-dune-condition-asynchrone)) ou attente d'une opération asynchrone ([`completes`](#matcher-completes--synchronisation-réactive-sans-polling)).
 	</Card>
 	<Card title="Tests constexpr à la compilation" icon="setting">
-		Validez vos contrats et calculs `constexpr` dès la compilation ([`suite.test<Predicate>`](#tests-à-la-compilation-suitetestpredicate)). Détection d'erreurs instantanée au build sans aucun surcoût d'exécution au runtime.
+		Validez vos contrats et calculs `constexpr` dès la compilation ([`constexprTest`](#tests-à-la-compilation-constexprtest)). Détection d'erreurs instantanée au build sans aucun surcoût d'exécution au runtime.
+	</Card>
+	<Card title="Prévention des tautologies et contradictions" icon="approve-check">
+		Interdiction stricte des assertions tautologiques (`>= 0`) ou contradictoires (`< 0`) sur entiers non signés. Rejet immédiat dès la compilation pour les littéraux constants, et détection au runtime des contradictions ([`TestException`](#prévention-des-assertions-tautologiques-et-contradictoires)).
+	</Card>
+	<Card title="Suivi du cycle de vie des objets" icon="list-format">
+		Instrumentez vos types via [`LifetimeChecker`](#suivi-du-cycle-de-vie-des-objets--cpputilsunittestlifetimechecker) pour tracer et vérifier rigoureusement les constructions, copies, déplacements et destructions de vos conteneurs.
 	</Card>
 	<Card title="Rapports universels CI/CD" icon="document">
 		Génération de rapports standardisés JUnit XML ([`--report`](#export-de-rapports-junit-xml-et-intégration-cicd)). Intégration dans GitLab CI et GitHub Actions pour publier automatiquement les résultats et annotations dans vos pull requests.
@@ -868,6 +874,41 @@ ut::expect(-1) > 1u; // Faux en C++ standard à cause de la conversion non sign�
 
 La comparaison avec un littéral textuel compare le contenu des chaînes via `std::string_view`, éliminant le risque classique de comparer par inadvertance les adresses mémoire des pointeurs `const char*`.
 
+### Prévention des assertions tautologiques et contradictoires
+
+Une erreur insidieuse et fréquente dans les suites de tests unitaires consiste à formuler des assertions structurellement toujours vraies (**tautologies**) ou toujours fausses (**contradictions**), en particulier lors de comparaisons d'inégalité sur des entiers non signés (`std::size_t`, `uint32_t`, etc.) :
+
+- `ut::expect(id) >= 0;` ou `ut::expect(size) >= 0uz;` : un entier non signé étant par définition supérieur ou égal à zéro, cette vérification est une **tautologie** qui réussit inconditionnellement et n'éprouve aucun comportement applicatif.
+- `ut::expect(count) < 0;` ou `ut::expect(count) < 0uz;` : un entier non signé ne pouvant jamais être strictement négatif, cette condition est une **contradiction** structurelle.
+
+De telles expressions créent une **illusion de couverture** trompeuse dans vos rapports de tests. Pour préserver l'intégrité de vos suites de validation, `CppUtils::UnitTest` intègre un double mécanisme de blocage :
+
+#### Rejet statique à la compilation (littéraux et constantes)
+
+Lorsqu'un entier non signé est comparé à une constante connue à la compilation (telle qu'un littéral numérique `0`, `0uz` ou une valeur négative) dans une assertion tautologique (`>= 0`) ou contradictoire (`< 0`), le compilateur bloque immédiatement la compilation avec un message d'erreur explicite :
+
+```cpp
+const std::size_t count = std::ranges::size(buffer);
+
+ut::expect(count) >= 0uz; // Erreur de compilation : tautologie (unsigned >= 0)
+```
+
+#### Interception dynamique au runtime (valeurs calculées)
+
+Lorsqu'une comparaison strictement inférieure `<` oppose un entier non signé à une borne dynamique nulle ou négative, le framework intercepte cette contradiction impossible et lève une `TestException` :
+
+```cpp
+const std::size_t count = getCount();
+const int limit = getLimit(); // Calcul dynamique qui renvoie par exemple 0 ou -1
+
+// Lève TestException : un entier non signé ne peut jamais être < 0 ou < négatif
+ut::expect(count) < limit;
+```
+
+<Aside type="note">
+À l'inverse, les comparaisons de type `ut::expect(count) >= limit` où `limit` est calculé dynamiquement ne sont pas rejetées lorsqu'il vaut zéro. Cela évite les faux positifs sur des bornes d'exécution valides. Seules les comparaisons d'entiers non signés `>= 0` avec des constantes connues à la compilation sont rejetées.
+</Aside>
+
 ### Matchers : `throws`, `noThrow`, `crashes`, `eventually`, `completes`
 
 Plutôt que d'invoquer des fonctions d'assertion verbeuses et dispersées ([`ASSERT_THROW`](https://google.github.io/googletest/reference/assertions.html#EXPECT_THROW), [`ASSERT_NO_THROW`](https://google.github.io/googletest/reference/assertions.html#EXPECT_NO_THROW), [`ASSERT_DEATH`](https://google.github.io/googletest/reference/assertions.html#death-assertions), etc.), `CppUtils::UnitTest` unifie les vérifications via l'opérateur `==` appliqué à `expect(action)` :
@@ -1094,26 +1135,81 @@ skip("Fonctionnalité en cours de refactorisation (ticket #142)");
 skipIf(not isNetworkAvailable(), "Connexion réseau distante requise");
 ```
 
----
+### Échec explicite d'un test : `fail`
 
-## Tests à la compilation (`suite.test<Predicate>`)
+Lorsque vous souhaitez faire échouer immédiatement et inconditionnellement un test avec un diagnostic explicite, utilisez la fonction `fail` annotée `[[noreturn]]`. 
 
-Pour valider vos algorithmes `constexpr`, métaprogrammation par templates, concepts ou constantes statiques, le framework de test fournit une surcharge directe de `suite.test` évaluée à la compilation :
+Elle est particulièrement recommandée dans les blocs `try / catch` (pour valider qu'une exception attendue a bien été levée) ou dans les branches de code inaccessibles, évitant ainsi l'anti-pattern des [contradictions statiques](#prévention-des-assertions-tautologiques-et-contradictoires) comme `expect(false)` :
 
 ```cpp
-suite.test<[] {
+try
+{
+	executeRiskyOperation();
+	fail("L'opération aurait dû lever une exception std::runtime_error");
+}
+catch (const std::runtime_error& exception)
+{
+	expect(std::string_view{exception.what()}.contains("Access denied"));
+}
+```
+
+La fonction enregistre automatiquement la source exacte du fichier, la ligne et la colonne via `std::source_location::current()` et interrompt le cas de test immédiatement.
+
+---
+
+## Tests à la compilation (`constexprTest`)
+
+Pour valider des algorithmes `constexpr`, de la métaprogrammation par templates ou des constantes, un test peut être exécuté directement à la compilation :
+
+```cpp
+suite.test("Factorial computation").constexprTest<[] {
 	constexpr auto value = factorial(5);
 	return value == 120;
-}>("Factorial computation");
+}>();
+```
+
+Le prédicat passé en paramètre template est validé à la compilation : si la condition n'est pas vérifiée, la compilation échoue immédiatement.
+
+### Ignorer sous condition (`skipIf` et `skip`)
+
+Si un test `constexpr` n'est pas supporté sur une plateforme cible, il peut être désactivé sans macro préprocesseur `#if` :
+
+```cpp
+suite.test("Constexpr 128-bit integer arithmetic")
+	.skipIf<not hasNativeInt128>("Platform lacks native 128-bit integer support")
+	.constexprTest<[] {
+		constexpr auto result = computeLargeInt();
+		return result > 0;
+	}>();
+```
+
+- **À la compilation** : si la condition est vraie, le test n'est pas évalué, évitant toute erreur de compilation sur la plateforme incompatible.
+- **Au runtime** : le test apparaît comme ignoré (`[SKIPPED]`) avec son motif d'exclusion.
+
+### Paramétrage par types (`forTypes`) et valeurs (`forValues`)
+
+Les tests à la compilation peuvent également être paramétrés pour vérifier plusieurs types ou valeurs avec une seule déclaration :
+
+```cpp
+// Validation compile-time pour plusieurs types
+suite.test("Numeric identity")
+	.forTypes<int, long, double>()
+	.constexprTest<[]<class Type> {
+		constexpr auto zero = Type{};
+		return zero == 0;
+	}>();
+
+// Validation compile-time pour des valeurs constantes
+suite.test("Powers of two")
+	.forValues<1, 2, 4, 8, 16>()
+	.constexprTest<[](auto value) {
+		return std::has_single_bit(static_cast<unsigned int>(value));
+	}>();
 ```
 
 Ce mécanisme combine la rigueur d'un `static_assert` avec l'intégration complète au banc de tests :
-- **Feedback statique immédiat sans réexécution** : Si le prédicat échoue, la compilation échoue immédiatement avec une erreur `static_assert`, bloquant le binaire avant toute exécution. Vous savez que le test passe dès que le projet compile, même sans avoir à relancer la suite de tests.
-- **Intégration au rapport et statistiques** : Le test compile-time est comptabilisé dans le bilan de la suite et affiche son statut (`Passed ✓`).
-
-<Aside type="tip">
-Privilégiez systématiquement `suite.test<Predicate>` dès qu'un test est intégralement `constexpr` (validation de concepts, `type_traits`, calculs statiques) pour bénéficier d'une détection d'erreur instantanée à la compilation tout en allégeant le temps d'exécution global de la suite de tests.
-</Aside>
+- **Feedback statique immédiat sans réexécution** : Si le prédicat échoue, la compilation échoue immédiatement avec une erreur `static_assert`, bloquant le binaire avant toute exécution.
+- **Intégration au rapport et statistiques** : Le test compile-time est comptabilisé dans le bilan de la suite et affiche son statut (`Passed ✓` ou `Skipped`).
 
 ---
 
@@ -1440,7 +1536,7 @@ auto main(int argc, char** argv) -> int
 | `detail` | `bool` | `true` | Affiche les détails d'exécution (séparateurs, noms complets de suites) lors du déroulement. |
 | `chrono` | `bool` | `false` | Mesure et affiche la durée précise de chaque test via `CppUtils::Log::ChronoLogger`. |
 | `failFast` | `bool` | `false` | Interrompt immédiatement l'exécution des tests dès le premier échec rencontré. |
-| `filter` | `std::string` | `""` | Filtre les suites de tests à exécuter par sous-chaîne tout en résolvant automatiquement leurs prérequis. |
+| `filter` | `std::string` | `""` | Filtre les suites et les tests unitaires à exécuter par sous-chaîne (`Suite`, `Suite/Test` ou `Test`) tout en résolvant automatiquement leurs prérequis. |
 | `report` | `std::string` | `""` | Exporte les résultats d'exécution dans un fichier de rapport (format `junit:chemin.xml` ou `chemin.xml`). |
 
 #### Syntaxe en ligne de commande
@@ -1466,7 +1562,7 @@ La fonction [`executeCommands()`](/fr/reference/unittest/functions/#executeComma
 | `--detail[=<bool>]` | `-d[=<bool>]` | `true` | Active ou désactive l'affichage détaillé de l'avancement (noms des tests, durées, métriques de benchmarks, séparateurs). |
 | `--fail-fast` | | `false` | Interrompt l'exécution dès la première erreur. |
 | `--chrono[=<bool>]` | `-c[=<bool>]` | `false` | Affiche le temps d'exécution de chaque test. |
-| `--filter=<chaine>` | `-f=<chaine>` | `""` | Ne lance que les suites de tests dont le nom contient cette sous-chaîne (et résout automatiquement leurs dépendances). |
+| `--filter=<chaine>` | `-f=<chaine>` | `""` | Ne lance que les suites ou tests dont le nom (ou chemin `Suite/Test`) contient cette sous-chaîne (et résout automatiquement leurs dépendances). |
 | `--report=<chemin>` | `-r=<chemin>` | `""` | Exporte le rapport d'exécution au format JUnit XML (ex. `-r=report.xml` ou explicitement `--report=junit:report.xml`). |
 
 ### Export de rapports JUnit XML et intégration CI/CD

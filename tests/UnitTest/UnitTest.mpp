@@ -80,6 +80,79 @@ namespace CppUtils::UnitTest::UnitTest
 			expect(false);
 		};
 
+		suite.test("Dynamic comparison allowed on unsigned >= dynamic zero") = [&] {
+			const auto value = 42uz;
+			const auto getZero = []() -> std::size_t {
+				auto zero = 0uz;
+				Execution::doNotOptimize(zero);
+				return zero;
+			};
+
+			expect(value) >= getZero();
+		};
+
+		suite.test("Contradiction rejection on unsigned < dynamic signed zero") = [&] {
+			const auto value = 42uz;
+			const auto getSignedZero = []() -> int {
+				auto zero = 0;
+				Execution::doNotOptimize(zero);
+				return zero;
+			};
+
+			try
+			{
+				expect(value) < getSignedZero();
+				fail("Expected TestException was not thrown on dynamic contradiction unsigned < 0");
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("Contradictory assertion in expect(lhs) < rhs"));
+				expect(message.contains("rhs is <= 0"));
+			}
+		};
+
+		suite.test("Contradiction rejection on unsigned < dynamic unsigned zero") = [&] {
+			const auto value = 42uz;
+			const auto getUnsignedZero = []() -> std::size_t {
+				auto zero = 0uz;
+				Execution::doNotOptimize(zero);
+				return zero;
+			};
+
+			try
+			{
+				expect(value) < getUnsignedZero();
+				fail("Expected TestException was not thrown on dynamic contradiction unsigned < 0uz");
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("Contradictory assertion in expect(lhs) < rhs"));
+				expect(message.contains("rhs is 0"));
+			}
+		};
+
+		suite.test("Contradiction rejection on unsigned < dynamic negative value") = [&] {
+			const auto value = 42uz;
+			const auto getNegative = []() -> int {
+				auto negative = -5;
+				Execution::doNotOptimize(negative);
+				return negative;
+			};
+			try
+			{
+				expect(value) < getNegative();
+				fail("Expected TestException was not thrown on dynamic contradiction unsigned < negative");
+			}
+			catch (const TestException& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("Contradictory assertion in expect(lhs) < rhs"));
+				expect(message.contains("rhs is <= 0"));
+			}
+		};
+
 		suite.test("Failure diagnostics on duration comparison") = [&] {
 			try
 			{
@@ -362,11 +435,13 @@ namespace CppUtils::UnitTest::UnitTest
 			expect(false);
 		};
 
-		suite.test<[] {
+		suite.test("Compile-time test validation")
+			.constexprTest<[] {
 			return 2 + 2 == 4;
-		}>("Compile-time test validation");
+		}>();
 
-		suite.test<[] {
+		suite.test("Compile-time deterministic fuzzing")
+			.constexprTest<[] {
 			auto fuzzer = CppUtils::Math::DeterministicRandomEngine{};
 			for (auto i = 0uz; i < 50uz; ++i)
 			{
@@ -384,7 +459,7 @@ namespace CppUtils::UnitTest::UnitTest
 			const auto boolValue = fuzzer.random<bool>();
 			static_assert(std::same_as<decltype(boolValue), const bool>);
 			return true;
-		}>("Compile-time deterministic fuzzing");
+		}>();
 
 		suite.test("eventually matcher") = [&] {
 			expect([] {
@@ -797,6 +872,125 @@ namespace CppUtils::UnitTest::UnitTest
 				expect(content.contains(R"(<testsuite name="SampleSuite")")) == true;
 				expect(content.contains(R"(<testcase name="sampleTest" classname="SampleSuite")")) == true;
 			}};
+		};
+
+		suite.test("constexprTest")
+			.constexprTest<[] {
+			constexpr auto value = 2 + 2;
+			return value == 4;
+		}>();
+
+		suite.test("constexprTest skipIf<true>") = [] {
+			auto testSuite = TestSuite{};
+			testSuite.test("Skipped constexpr test")
+				.skipIf<true>("Testing compile-time skipIf")
+				.constexprTest<[] {
+				return false;
+			}>();
+
+			expect(std::ranges::size(testSuite.testCases())) == 1uz;
+
+			try
+			{
+				testSuite.testCases().front().function(std::stop_token{});
+			}
+			catch (const TestSkipped& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("Testing compile-time skipIf"));
+				return;
+			}
+			expect(false);
+		};
+
+		suite.test("constexprTest forTypes")
+			.forTypes<int, long, double>()
+			.constexprTest<[]<class Type> {
+			constexpr auto typeSize = sizeof(Type);
+			return typeSize > 0;
+		}>();
+
+		suite.test("constexprTest forValues")
+			.forValues<10, 20, 30>()
+			.constexprTest<[](auto value) {
+			return value >= 10;
+		}>();
+
+		suite.test("skip throws TestSkipped") = [&] {
+			try
+			{
+				skip("Reason for skipping");
+			}
+			catch (const TestSkipped& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("Reason for skipping"));
+				return;
+			}
+			expect(false);
+		};
+
+		suite.test("skipIf condition execution") = [&] {
+			skipIf(false, "Should not skip");
+
+			try
+			{
+				skipIf(true, "Reason for skipping");
+			}
+			catch (const TestSkipped& exception)
+			{
+				const auto message = std::string_view{exception.what()};
+				expect(message.contains("Reason for skipping"));
+				return;
+			}
+			expect(false);
+		};
+
+		suite.test("Parameterized runtime test skipIf<false>") = [&] {
+			auto testSuite = TestSuite{};
+			auto executionCount = 0uz;
+
+			testSuite.test("Parameterized")
+				.skipIf<false>("Should not skip")
+				.forValues(1, 2) = [&](int value) {
+				++executionCount;
+				expect(value) > 0;
+			};
+
+			expect(std::ranges::size(testSuite.testCases())) == 2uz;
+			for (const auto& testCase : testSuite.testCases())
+			{
+				try
+				{
+					testCase.function(std::stop_token{});
+				}
+				catch (const TestSkipped&)
+				{
+					expect(false);
+				}
+			}
+			expect(executionCount) == 2uz;
+		};
+
+		suite.test("Fuzz test skipIf<false>") = [&] {
+			auto testSuite = TestSuite{};
+			auto executionCount = 0uz;
+
+			testSuite.fuzzTest("Fuzz", 10)
+				.skipIf<false>("Should not skip") = [&](auto&) {
+				++executionCount;
+			};
+
+			expect(std::ranges::size(testSuite.testCases())) == 1uz;
+			try
+			{
+				testSuite.testCases().front().function(std::stop_token{});
+			}
+			catch (const TestSkipped&)
+			{
+				expect(false);
+			}
+			expect(executionCount) == 10uz;
 		};
 	};
 

@@ -122,7 +122,7 @@ export namespace CppUtils::UnitTest
 		bool detail = true; ///< Enables detailed execution progress logging and formatting (separators, durations, comparisons).
 		bool chrono = false; ///< Displays execution durations for individual tests.
 		bool failFast = false; ///< Immediately stops execution upon the first failing test.
-		std::string filter = {}; ///< Substring filter for matching test suite names.
+		std::string filter = {}; ///< Substring filter for matching test suite or test names (e.g. Suite, Suite/Test, or Test).
 		std::string report = {}; ///< Destination path or format:path for test report export (e.g. junit:build/report.xml).
 		bool abort = false; ///< Skips test execution (e.g. after displaying --help).
 	};
@@ -412,37 +412,51 @@ export namespace CppUtils::UnitTest
 			const auto totalExecutionStartTime = std::chrono::steady_clock::now();
 			auto testSuiteIsSuccess = std::unordered_map<std::string, bool>{};
 
+			auto matchedTestsBySuite = std::unordered_map<std::string, std::vector<const TestCase*>>{};
 			auto activeSuites = std::unordered_set<std::string>{};
 			if (not std::ranges::empty(settings.filter))
 			{
 				for (const auto& [suiteName, node] : m_testSuites.nodes)
-					if (suiteName.contains(settings.filter))
+					for (const auto& test : node.value)
+						if (std::format("{}/{}", suiteName, test.name).contains(settings.filter))
+							matchedTestsBySuite[suiteName].push_back(std::addressof(test));
+
+				for (const auto& [suiteName, _] : matchedTestsBySuite)
+				{
+					activeSuites.insert(suiteName);
+					if (const auto it = m_testSuites.nodes.find(suiteName); it != std::ranges::end(m_testSuites.nodes))
 					{
-						activeSuites.insert(suiteName);
-						for (auto toVisit = std::vector<std::string>{std::ranges::begin(node.dependencies), std::ranges::end(node.dependencies)};
+						for (auto toVisit = std::vector<std::string>{std::ranges::begin(it->second.dependencies), std::ranges::end(it->second.dependencies)};
 							not std::ranges::empty(toVisit);)
 						{
 							auto current = toVisit.back();
 							toVisit.pop_back();
 							if (activeSuites.insert(current).second)
-								if (const auto it = m_testSuites.nodes.find(current); it != std::ranges::end(m_testSuites.nodes))
-									toVisit.insert(std::ranges::end(toVisit), std::ranges::begin(it->second.dependencies), std::ranges::end(it->second.dependencies));
+								if (const auto dependencyIterator = m_testSuites.nodes.find(current); dependencyIterator != std::ranges::end(m_testSuites.nodes))
+									toVisit.insert(std::ranges::end(toVisit), std::ranges::begin(dependencyIterator->second.dependencies), std::ranges::end(dependencyIterator->second.dependencies));
 						}
 					}
+				}
 
 				if (std::ranges::empty(activeSuites))
 				{
-					Logger::print<"warning">("No test suites matched filter '{}'", settings.filter);
+					Logger::print<"warning">("No test suites or tests matched filter '{}'", settings.filter);
 					return exitSuccess;
 				}
 			}
 
-			const auto nbTests = std::ranges::fold_left(
-				m_testSuites.nodes | std::views::filter([&](const auto& pair) {
-				return std::ranges::empty(settings.filter) or activeSuites.contains(pair.first);
-			}) | std::views::transform([](auto&& pair) { return std::ranges::size(pair.second.value); }),
-				0uz,
-				std::plus{});
+			auto nbTests = 0uz;
+			if (std::ranges::empty(settings.filter))
+				for (const auto& [_, node] : m_testSuites.nodes)
+					nbTests += std::ranges::size(node.value);
+			else
+				for (const auto& suiteName : activeSuites)
+				{
+					if (const auto iterator = matchedTestsBySuite.find(suiteName); iterator != std::ranges::end(matchedTestsBySuite))
+						nbTests += std::ranges::size(iterator->second);
+					else
+						nbTests += std::ranges::size(m_testSuites.nodes.at(suiteName).value);
+				}
 			Logger::print<"info">("{} tests found. Execution:", nbTests);
 
 			auto failedTestSuites = std::vector<std::string>{};
@@ -463,6 +477,9 @@ export namespace CppUtils::UnitTest
 
 				auto allTestsPassed = true;
 
+				const auto matchedTestsIterator = matchedTestsBySuite.find(name);
+				const auto hasMatchedTests = not std::ranges::empty(settings.filter) and matchedTestsIterator != std::ranges::end(matchedTestsBySuite);
+
 				if (std::ranges::empty(tests))
 				{
 					Logger::print<"warning">("No tests found in test suite {}", name);
@@ -475,19 +492,27 @@ export namespace CppUtils::UnitTest
 					testSuiteIsSuccess[name] = false;
 					allTestsPassed = false;
 					implicitlySkippedTestSuites.push_back(name);
-					nbSkip += std::ranges::size(tests);
-					for (const auto& test : tests)
+
+					auto recordSkipped = [&](const TestCase& test) {
+						++nbSkip;
 						currentRecordedSuite.testCases.push_back(RecordedTestCase{
 							.name = test.name,
 							.className = name,
 							.status = TestStatus::Skipped,
 							.message = std::format("Skipped due to failed prerequisite '{}'", *failedDependency),
 							.duration = 0ns});
+					};
+
+					if (hasMatchedTests)
+						for (const auto* testPointer : matchedTestsIterator->second)
+							recordSkipped(*testPointer);
+					else
+						for (const auto& test : tests)
+							recordSkipped(test);
 				}
 				else
 				{
-					for (const auto& test : tests)
-					{
+					auto runTest = [&](const TestCase& test) -> bool {
 						const auto [status, message, testDuration] = executeTest(name, test, settings);
 						currentRecordedSuite.testCases.push_back(RecordedTestCase{
 							.name = test.name,
@@ -508,9 +533,21 @@ export namespace CppUtils::UnitTest
 							++nbFail;
 							allTestsPassed = false;
 							if (settings.failFast)
-								break;
+								return false;
 						}
+						return true;
+					};
+
+					if (hasMatchedTests)
+					{
+						for (const auto* testPointer : matchedTestsIterator->second)
+							if (not runTest(*testPointer))
+								break;
 					}
+					else
+						for (const auto& test : tests)
+							if (not runTest(test))
+								break;
 
 					testSuiteIsSuccess[name] = allTestsPassed;
 					if (not allTestsPassed)

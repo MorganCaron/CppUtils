@@ -8,7 +8,7 @@ namespace CppUtils::UnitTest::Container::FlatHashMap
 	auto _ = testSuite("Container/FlatHashMap").dependsOn("UnitTest") = [](TestSuite& suite) {
 		using namespace String::Literals;
 
-		suite.test<[] {
+		suite.test("Constexpr operator[] and erase").constexprTest<[] {
 			auto map = CppUtils::Container::FlatHashMap<int, int>{};
 			map[1] = 100;
 			map[2] = 200;
@@ -25,9 +25,9 @@ namespace CppUtils::UnitTest::Container::FlatHashMap
 			if (map.contains(2))
 				return false;
 			return std::ranges::size(map) == 2uz;
-		}>("Constexpr operator[] and erase");
+		}>();
 
-		suite.test<[] {
+		suite.test("Constexpr emplace and assign").constexprTest<[] {
 			auto map = CppUtils::Container::FlatHashMap<int, int>{};
 			auto [iteratorFirst, insertedFirst] = map.try_emplace(1, 10);
 			if (not insertedFirst or iteratorFirst->second != 10)
@@ -46,17 +46,17 @@ namespace CppUtils::UnitTest::Container::FlatHashMap
 				return false;
 
 			return std::ranges::size(map) == 2uz;
-		}>("Constexpr emplace and assign");
+		}>();
 
-		suite.test<[] {
+		suite.test("Constexpr initializer list and iteration").constexprTest<[] {
 			auto map = CppUtils::Container::FlatHashMap<int, int>{{1, 10}, {2, 20}, {3, 30}};
 			auto sum = 0;
 			for (const auto& [key, value] : map)
 				sum += key + value;
 			return sum == (1 + 10 + 2 + 20 + 3 + 30);
-		}>("Constexpr initializer list and iteration");
+		}>();
 
-		suite.test<[] {
+		suite.test("Constexpr token keys").constexprTest<[] {
 			using namespace String::Literals;
 
 			auto tokenMap = CppUtils::Container::FlatHashMap<Type::Token, int>{};
@@ -71,7 +71,7 @@ namespace CppUtils::UnitTest::Container::FlatHashMap
 				return false;
 
 			return true;
-		}>("Constexpr token keys");
+		}>();
 
 		suite.test("Basic insertion and lookup") = [&] {
 			auto map = CppUtils::Container::FlatHashMap<std::string, int>{};

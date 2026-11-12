@@ -12,7 +12,7 @@ namespace CppUtils::UnitTest::Type::Concept
 	constexpr auto isPath(std::string_view) -> std::false_type { return {}; }
 
 	auto _ = testSuite("Type/Concept").dependsOn("UnitTest") = [](TestSuite& suite) {
-		suite.test<[] {
+		suite.test("Printable").constexprTest<[] {
 			static_assert(not Printable<void>);
 			static_assert(Printable<bool>);
 			static_assert(Printable<char>);
@@ -20,32 +20,32 @@ namespace CppUtils::UnitTest::Type::Concept
 			static_assert(Printable<double>);
 			static_assert(Printable<std::string>);
 			static_assert(Printable<std::string_view>);
-		}>("Printable");
+		}>();
 
-		suite.test<[] {
+		suite.test("IsOneOf").constexprTest<[] {
 			static_assert(not IsOneOf<int>);
 			static_assert(not IsOneOf<int, bool, char, double>);
 			static_assert(IsOneOf<int, bool, char, int, double>);
-		}>("IsOneOf");
+		}>();
 
-		suite.test<[] {
+		suite.test("Specializes").constexprTest<[] {
 			static_assert(Specializes<std::vector<int>, std::vector>);
 			static_assert(not Specializes<std::vector<int>, std::map>);
-		}>("Specializes");
+		}>();
 
-		suite.test<[] {
+		suite.test("Exact").constexprTest<[] {
 			static_assert(decltype(isPathWithoutExact("flow_name"))::value);
 			static_assert(decltype(isPath(std::declval<std::filesystem::path>()))::value);
 			static_assert(not decltype(isPath("flow_name"))::value);
-		}>("Exact");
+		}>();
 
-		suite.test<[] {
+		suite.test("UnderlyingElementType").constexprTest<[] {
 			static_assert(std::same_as<UnderlyingElementType<int*>, int>);
 			static_assert(std::same_as<UnderlyingElementType<const int[10][20]>, int>);
 			static_assert(std::same_as<UnderlyingElementType<std::string>, std::string>);
-		}>("UnderlyingElementType");
+		}>();
 
-		suite.test<[] {
+		suite.test("Character").constexprTest<[] {
 			static_assert(Character<char>);
 			static_assert(Character<wchar_t>);
 			static_assert(Character<char8_t>);
@@ -55,9 +55,9 @@ namespace CppUtils::UnitTest::Type::Concept
 			static_assert(not Character<int>);
 			static_assert(not Character<bool>);
 			static_assert(not Character<std::byte>);
-		}>("Character");
+		}>();
 
-		suite.test<[] {
+		suite.test("ArithmeticInteger").constexprTest<[] {
 			static_assert(ArithmeticInteger<int>);
 			static_assert(ArithmeticInteger<unsigned int>);
 			static_assert(ArithmeticInteger<std::size_t>);
@@ -68,6 +68,6 @@ namespace CppUtils::UnitTest::Type::Concept
 			static_assert(not ArithmeticInteger<char32_t>);
 			static_assert(not ArithmeticInteger<float>);
 			static_assert(not ArithmeticInteger<double>);
-		}>("ArithmeticInteger");
+		}>();
 	};
 }
