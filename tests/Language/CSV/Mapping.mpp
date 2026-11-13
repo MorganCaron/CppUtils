@@ -157,14 +157,14 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 		suite.test("load CSV File") = [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) {
 				const auto filePath = directory / "test.csv";
-				CppUtils::FileSystem::String::write(filePath, R"(
+				expect(CppUtils::FileSystem::String::write(filePath, R"(
 					a;b;c;d;e
 					foo;bar;42;-1;3.14
-				)"sv);
+				)"sv));
 
 				const auto objects = CppUtils::Language::CSV::loadFile<FileObject, FileMapping>(filePath, 1uz);
-
-				expect(objects) == std::vector<FileObject>{{"foo", "bar", 42, -1, 3.14f}};
+				expect(objects.has_value());
+				expect(objects.value()) == std::vector<FileObject>{{"foo", "bar", 42, -1, 3.14f}};
 			}};
 		};
 
@@ -264,10 +264,10 @@ namespace CppUtils::UnitTest::Language::CSV::Mapping
 				const auto outputFilePath = directory / "output.csv";
 				const auto rejectedFilePath = directory / "rejected.csv";
 
-				CppUtils::FileSystem::String::write(inputFilePath, R"(foo;bar;42;-1;3.14
+				expect(CppUtils::FileSystem::String::write(inputFilePath, R"(foo;bar;42;-1;3.14
 bad;line;not_num;0;0.0
 hello;world;100;-200;1.5
-missing_cols)");
+missing_cols)"));
 
 				CppUtils::FileSystem::readLines(inputFilePath)
 					| CppUtils::Language::CSV::parseLines(";")
@@ -277,7 +277,8 @@ missing_cols)");
 					| CppUtils::FileSystem::writeLines(outputFilePath);
 
 				const auto cleanContent = CppUtils::FileSystem::String::read(outputFilePath);
-				auto cleanLines = cleanContent
+				expect(cleanContent.has_value());
+				auto cleanLines = cleanContent.value()
 					| std::views::split('\n')
 					| std::views::transform([](auto&& range) { return std::string_view{range}; })
 					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
@@ -288,7 +289,8 @@ missing_cols)");
 				expect(cleanLines[1]) == "hello;world;100;-200;1.5";
 
 				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedFilePath);
-				auto rejectedLines = rejectedContent
+				expect(rejectedContent.has_value());
+				auto rejectedLines = rejectedContent.value()
 					| std::views::split('\n')
 					| std::views::transform([](auto&& range) { return std::string_view{range}; })
 					| std::views::filter([](auto line) { return not std::ranges::empty(line); })
@@ -305,9 +307,9 @@ missing_cols)");
 				const auto inputFilePath = directory / "input.csv";
 				const auto outputFilePath = directory / "output.csv";
 
-				CppUtils::FileSystem::String::write(inputFilePath, R"(foo;bar;42;-1;3.14
+				expect(CppUtils::FileSystem::String::write(inputFilePath, R"(foo;bar;42;-1;3.14
 corrupted_line
-hello;world;100;-200;1.5)");
+hello;world;100;-200;1.5)"));
 
 				CppUtils::FileSystem::readLines(inputFilePath)
 					| CppUtils::Language::CSV::parseLines(";")
@@ -318,7 +320,7 @@ hello;world;100;-200;1.5)");
 					| CppUtils::Language::CSV::toCSV<FileObject, FileMapping>(";")
 					| CppUtils::FileSystem::writeLines(outputFilePath);
 
-				const auto cleanContent = CppUtils::FileSystem::String::read(outputFilePath);
+				const auto cleanContent = CppUtils::FileSystem::String::read(outputFilePath).value();
 				auto cleanLines = cleanContent
 					| std::views::split('\n')
 					| std::views::transform([](auto&& range) { return std::string_view{range}; })

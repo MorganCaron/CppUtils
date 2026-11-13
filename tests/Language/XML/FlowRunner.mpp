@@ -76,11 +76,11 @@ namespace CppUtils::UnitTest::Language::Xml::FlowRunner
 					temporaryDirectory.generic_string(),
 					temporaryDirectory.generic_string());
 
-				CppUtils::FileSystem::String::write(temporaryDirectory / "flows/alpha.xml", flow1Xml);
-				CppUtils::FileSystem::String::write(temporaryDirectory / "flows/beta.xml", flow2Xml);
+				expect(CppUtils::FileSystem::String::write(temporaryDirectory / "flows/alpha.xml", flow1Xml));
+				expect(CppUtils::FileSystem::String::write(temporaryDirectory / "flows/beta.xml", flow2Xml));
 
-				CppUtils::FileSystem::String::write(temporaryDirectory / "input/data1.csv", "rec1;catA;5\nrec2;catB;15\n");
-				CppUtils::FileSystem::String::write(temporaryDirectory / "input/data2.csv", "5;catA;rec3\n25;catB;rec4\n");
+				expect(CppUtils::FileSystem::String::write(temporaryDirectory / "input/data1.csv", "rec1;catA;5\nrec2;catB;15\n"));
+				expect(CppUtils::FileSystem::String::write(temporaryDirectory / "input/data2.csv", "5;catA;rec3\n25;catB;rec4\n"));
 
 				auto threadPool = CppUtils::Thread::ThreadPool{2};
 				auto runner = CppUtils::Language::Xml::FlowRunner{threadPool, temporaryDirectory / "flows"};
@@ -113,12 +113,14 @@ namespace CppUtils::UnitTest::Language::Xml::FlowRunner
 				expect(std::filesystem::exists(temporaryDirectory / "output/out2.csv"));
 
 				const auto out1Content = CppUtils::FileSystem::String::read(temporaryDirectory / "output/out1.csv");
-				expect(out1Content.contains("rec1;catA;5"));
-				expect(out1Content.contains("rec2;catB;15"));
+				expect(out1Content.has_value());
+				expect(out1Content.value().contains("rec1;catA;5"));
+				expect(out1Content.value().contains("rec2;catB;15"));
 
 				const auto out2Content = CppUtils::FileSystem::String::read(temporaryDirectory / "output/out2.csv");
-				expect(out2Content.contains("25;catB;rec4"));
-				expect(not out2Content.contains("rec3"));
+				expect(out2Content.has_value());
+				expect(out2Content.value().contains("25;catB;rec4"));
+				expect(not out2Content.value().contains("rec3"));
 			}};
 		};
 
@@ -130,7 +132,7 @@ namespace CppUtils::UnitTest::Language::Xml::FlowRunner
 						<Pipeline />
 					</Flow>
 				)";
-				CppUtils::FileSystem::String::write(temporaryDirectory / "flows/alpha.xml", flowXml);
+				expect(CppUtils::FileSystem::String::write(temporaryDirectory / "flows/alpha.xml", flowXml));
 
 				auto threadPool = CppUtils::Thread::ThreadPool{2};
 				auto runner = CppUtils::Language::Xml::FlowRunner{threadPool, temporaryDirectory / "flows"};

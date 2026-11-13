@@ -666,7 +666,10 @@ namespace CppUtils::Language::Xml::Detail
 			throw std::runtime_error{"Include file not found: " + path.string()};
 
 		const auto content = CppUtils::FileSystem::String::read(path);
-		const auto subTree = operator""_xml(std::ranges::data(content), std::ranges::size(content));
+		if (not content)
+			throw std::runtime_error{std::format("Failed to read include file '{}': {}", path.string(), content.error().message)};
+
+		const auto subTree = operator""_xml(std::ranges::data(content.value()), std::ranges::size(content.value()));
 		pipeline.dispatchNode(subTree);
 	}
 

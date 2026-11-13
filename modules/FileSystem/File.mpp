@@ -11,6 +11,7 @@ export namespace CppUtils::FileSystem
 		{
 			OpenFailed,
 			ReadFailed,
+			WriteFailed,
 			CallbackError
 		} type;
 		std::string_view message;
@@ -97,45 +98,74 @@ export namespace CppUtils::FileSystem
 			return FileSystem::readByBlocks<std::span<const std::byte>>(filePath, std::forward<decltype(function)>(function), blockSize);
 		}
 
-		template<Type::TriviallyCopyable T>
-		inline auto write(const std::filesystem::path& filePath, const T& buffer) -> void
+		inline auto write(const std::filesystem::path& filePath, const Type::TriviallyCopyable auto& buffer, bool isAppend = false) -> std::expected<void, Error>
 		{
-			auto file = std::ofstream{filePath, std::ios::binary};
-			if (not file.is_open())
-				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
+			const auto openMode = isAppend ? (std::ios::binary | std::ios::app) : (std::ios::binary | std::ios::trunc);
+			auto file = std::ofstream{filePath, openMode};
+			if (not file.is_open()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::OpenFailed, "Failed to open file"}};
 			file.write(reinterpret_cast<const char*>(std::addressof(buffer)), sizeof(buffer));
+			if (file.bad()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::WriteFailed, "Hardware write error"}};
+			return {};
+		}
+
+		inline auto append(const std::filesystem::path& filePath, const Type::TriviallyCopyable auto& buffer) -> std::expected<void, Error>
+		{
+			return write(filePath, buffer, true);
 		}
 
 		template<Type::TriviallyCopyable T>
-		[[nodiscard]] inline auto read(const std::filesystem::path& filePath) -> T
+		[[nodiscard]] inline auto read(const std::filesystem::path& filePath) -> std::expected<T, Error>
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
-			if (not file.is_open())
-				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
+			if (not file.is_open()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::OpenFailed, "Failed to open file"}};
 			auto buffer = T{};
 			file.read(reinterpret_cast<char*>(std::addressof(buffer)), sizeof(buffer));
+			if (file.bad()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::ReadFailed, "Hardware read error"}};
 			return buffer;
 		}
 
 		template<Type::TriviallyCopyable T>
-		inline auto writeVector(const std::filesystem::path& filePath, const std::vector<T>& vector) -> void
+		inline auto writeVector(const std::filesystem::path& filePath, const std::vector<T>& vector, bool isAppend = false) -> std::expected<void, Error>
 		{
-			auto file = std::ofstream{filePath, std::ios::binary};
-			if (not file.is_open())
-				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
+			const auto openMode = isAppend ? (std::ios::binary | std::ios::app) : (std::ios::binary | std::ios::trunc);
+			auto file = std::ofstream{filePath, openMode};
+			if (not file.is_open()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::OpenFailed, "Failed to open file"}};
 			file.write(reinterpret_cast<const char*>(std::ranges::data(vector)), static_cast<std::streamsize>(std::ranges::size(vector) * sizeof(T)));
+			if (file.bad()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::WriteFailed, "Hardware write error"}};
+			return {};
 		}
 
 		template<Type::TriviallyCopyable T>
-		[[nodiscard]] inline auto readVector(const std::filesystem::path& filePath) -> std::vector<T>
+		inline auto appendVector(const std::filesystem::path& filePath, const std::vector<T>& vector) -> std::expected<void, Error>
+		{
+			return writeVector(filePath, vector, true);
+		}
+
+		template<Type::TriviallyCopyable T>
+		[[nodiscard]] inline auto readVector(const std::filesystem::path& filePath) -> std::expected<std::vector<T>, Error>
 		{
 			auto file = std::ifstream{filePath, std::ios::binary};
-			if (not file.is_open())
-				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
-			const auto nbElements = std::filesystem::file_size(filePath) / sizeof(T);
+			if (not file.is_open()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::OpenFailed, "Failed to open file"}};
+			auto errorCode = std::error_code{};
+			const auto fileSize = std::filesystem::file_size(filePath, errorCode);
+			if (errorCode) [[unlikely]]
+				return std::unexpected{Error{Error::Type::ReadFailed, "Failed to get file size"}};
+			const auto elementCount = fileSize / sizeof(T);
 			auto vector = std::vector<T>{};
-			vector.resize(nbElements);
-			file.read(reinterpret_cast<char*>(std::ranges::data(vector)), static_cast<std::streamsize>(nbElements * sizeof(T)));
+			vector.resize(elementCount);
+			if (elementCount > 0uz)
+			{
+				file.read(reinterpret_cast<char*>(std::ranges::data(vector)), static_cast<std::streamsize>(elementCount * sizeof(T)));
+				if (file.bad()) [[unlikely]]
+					return std::unexpected{Error{Error::Type::ReadFailed, "Hardware read error"}};
+			}
 			return vector;
 		}
 	}
@@ -147,28 +177,32 @@ export namespace CppUtils::FileSystem
 			return FileSystem::readByBlocks<std::string_view>(filePath, std::forward<decltype(function)>(function), blockSize);
 		}
 
-		inline auto write(const std::filesystem::path& filePath, std::string_view content) -> void
+		inline auto write(const std::filesystem::path& filePath, std::string_view content, bool isAppend = false) -> std::expected<void, Error>
 		{
-			auto file = std::ofstream{filePath};
-			if (not file.is_open())
-				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
+			const auto openMode = isAppend ? (std::ios::out | std::ios::app) : (std::ios::out | std::ios::trunc);
+			auto file = std::ofstream{filePath, openMode};
+			if (not file.is_open()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::OpenFailed, "Failed to open file"}};
 			file << content;
+			if (file.bad()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::WriteFailed, "Hardware write error"}};
+			return {};
 		}
 
-		inline auto append(const std::filesystem::path& filePath, std::string_view content) -> void
+		inline auto append(const std::filesystem::path& filePath, std::string_view content) -> std::expected<void, Error>
 		{
-			auto file = std::ofstream{filePath, std::ios::app};
-			if (not file.is_open())
-				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
-			file << content;
+			return write(filePath, content, true);
 		}
 
-		[[nodiscard]] inline auto read(const std::filesystem::path& filePath) -> std::string
+		[[nodiscard]] inline auto read(const std::filesystem::path& filePath) -> std::expected<std::string, Error>
 		{
 			auto file = std::ifstream{filePath};
-			if (not file.is_open())
-				throw std::runtime_error{"Failed to open " + filePath.string() + " file"};
-			return std::string{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
+			if (not file.is_open()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::OpenFailed, "Failed to open file"}};
+			auto content = std::string{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
+			if (file.bad()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::ReadFailed, "Hardware read error"}};
+			return content;
 		}
 	}
 }

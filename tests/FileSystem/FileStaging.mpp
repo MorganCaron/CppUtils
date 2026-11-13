@@ -15,7 +15,7 @@ namespace CppUtils::UnitTest::FileSystem::FileStaging
 
 				std::filesystem::create_directories(inputDirectory);
 				const auto inputFilePath = inputDirectory / "orders.csv";
-				CppUtils::FileSystem::String::write(inputFilePath, "id;amount\n1;100\n2;200\n");
+				expect(CppUtils::FileSystem::String::write(inputFilePath, "id;amount\n1;100\n2;200\n"));
 
 				auto stageResult = CppUtils::FileSystem::FileStaging::stage(
 					inputFilePath,
@@ -47,7 +47,7 @@ namespace CppUtils::UnitTest::FileSystem::FileStaging
 
 				std::filesystem::create_directories(inputDirectory);
 				const auto inputFilePath = inputDirectory / "temp_data.csv";
-				CppUtils::FileSystem::String::write(inputFilePath, "temporary content\n");
+				expect(CppUtils::FileSystem::String::write(inputFilePath, "temporary content\n"));
 
 				auto stageResult = CppUtils::FileSystem::FileStaging::stage(
 					inputFilePath,
@@ -74,7 +74,7 @@ namespace CppUtils::UnitTest::FileSystem::FileStaging
 
 				std::filesystem::create_directories(inputDirectory);
 				const auto inputFilePath = inputDirectory / "corrupted.csv";
-				CppUtils::FileSystem::String::write(inputFilePath, "corrupted content\n");
+				expect(CppUtils::FileSystem::String::write(inputFilePath, "corrupted content\n"));
 
 				auto stageResult = CppUtils::FileSystem::FileStaging::stage(
 					inputFilePath,
@@ -102,7 +102,7 @@ namespace CppUtils::UnitTest::FileSystem::FileStaging
 
 				std::filesystem::create_directories(inputDirectory);
 				const auto inputFilePath = inputDirectory / "corrupted.csv";
-				CppUtils::FileSystem::String::write(inputFilePath, "corrupted content\n");
+				expect(CppUtils::FileSystem::String::write(inputFilePath, "corrupted content\n"));
 
 				auto stageResult = CppUtils::FileSystem::FileStaging::stage(
 					inputFilePath,
@@ -127,7 +127,7 @@ namespace CppUtils::UnitTest::FileSystem::FileStaging
 
 				std::filesystem::create_directories(inputDirectory);
 				const auto inputFilePath = inputDirectory / "retry_me.csv";
-				CppUtils::FileSystem::String::write(inputFilePath, "retry content\n");
+				expect(CppUtils::FileSystem::String::write(inputFilePath, "retry content\n"));
 
 				auto stageResult = CppUtils::FileSystem::FileStaging::stage(
 					inputFilePath,

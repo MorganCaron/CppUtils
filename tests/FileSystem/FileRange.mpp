@@ -11,7 +11,7 @@ namespace CppUtils::UnitTest::FileSystem::FileRange
 		suite.test("readLines") = [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& directory) {
 				const auto filePath = directory / "lines.txt";
-				CppUtils::FileSystem::String::write(filePath, "Line 1\nLine 2\nLine 3");
+				expect(CppUtils::FileSystem::String::write(filePath, "Line 1\nLine 2\nLine 3"));
 
 				auto lines = std::vector<std::string>{};
 				for (const auto& line : CppUtils::FileSystem::readLines(filePath))
@@ -27,7 +27,7 @@ namespace CppUtils::UnitTest::FileSystem::FileRange
 		suite.test("readLines with CRLF") = [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& directory) {
 				const auto filePath = directory / "crlf.txt";
-				CppUtils::FileSystem::String::write(filePath, "Line 1\r\nLine 2\r\nLine 3\r\n");
+				expect(CppUtils::FileSystem::String::write(filePath, "Line 1\r\nLine 2\r\nLine 3\r\n"));
 
 				auto lines = std::vector<std::string>{};
 				for (const auto& line : CppUtils::FileSystem::readLines(filePath))
@@ -43,7 +43,7 @@ namespace CppUtils::UnitTest::FileSystem::FileRange
 		suite.test("readLines empty file") = [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[&](const auto& directory) {
 				const auto filePath = directory / "empty.txt";
-				CppUtils::FileSystem::String::write(filePath, "");
+				expect(CppUtils::FileSystem::String::write(filePath, ""));
 
 				const auto reader = CppUtils::FileSystem::readLines(filePath);
 				expect(std::ranges::cbegin(reader)) == std::ranges::cend(reader);
@@ -55,7 +55,7 @@ namespace CppUtils::UnitTest::FileSystem::FileRange
 				const auto sourceFilePath = directory / "source.txt";
 				const auto destinationFilePath = directory / "destination.txt";
 
-				CppUtils::FileSystem::String::write(sourceFilePath, "Line 1\nLine 2\nLine 3");
+				expect(CppUtils::FileSystem::String::write(sourceFilePath, "Line 1\nLine 2\nLine 3"));
 
 				CppUtils::FileSystem::readLines(sourceFilePath)
 					| std::views::transform([](std::string_view line) {
@@ -63,7 +63,7 @@ namespace CppUtils::UnitTest::FileSystem::FileRange
 				})
 					| CppUtils::FileSystem::writeLines(destinationFilePath);
 
-				const auto fileContent = CppUtils::FileSystem::String::read(destinationFilePath);
+				const auto fileContent = CppUtils::FileSystem::String::read(destinationFilePath).value();
 				expect(fileContent) == "[Line 1]\n[Line 2]\n[Line 3]\n";
 			}};
 		};

@@ -176,5 +176,21 @@ namespace CppUtils::UnitTest::FileSystem::IndexedStorage
 				expect(std::ranges::empty(loadedVector.value()));
 			}};
 		};
+
+		suite.test("flush succeeds and persists changes") = [] {
+			CppUtils::FileSystem::TemporaryDirectory{[](const auto& testDirectory) {
+				{
+					auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory};
+					storage.store<int>(42, 1337);
+					auto flushResult = storage.flush();
+					expect(flushResult.has_value());
+				}
+
+				auto storage = CppUtils::FileSystem::IndexedStorage{testDirectory};
+				auto loaded = storage.load<int>(42);
+				expect(loaded.has_value());
+				expect(loaded.value()) == 1337;
+			}};
+		};
 	};
 }

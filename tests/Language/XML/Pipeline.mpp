@@ -270,7 +270,7 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 				expect(std::ranges::size(outputUsers)) == 1uz;
 				expect(outputUsers[0].name) == "Alice";
 
-				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
+				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath).value();
 				expect(rejectedContent.contains("Too young"));
 			}};
 		};
@@ -305,10 +305,10 @@ namespace CppUtils::UnitTest::Language::Xml::Pipeline
 				const auto outputPath = directory / "output_users.csv";
 				const auto rejectedPath = directory / "rejected_users.csv";
 
-				CppUtils::FileSystem::String::write(inputPath, R"(Alice;alice@example.com;25;100;4.5
+				expect(CppUtils::FileSystem::String::write(inputPath, R"(Alice;alice@example.com;25;100;4.5
 Invalid;bad_line;NaN;0;0.0
 Bob;bob@example.com;15;50;3.0
-Charlie;charlie@example.com;30;80;4.8)"sv);
+Charlie;charlie@example.com;30;80;4.8)"sv));
 
 				const auto xmlSource = std::format(R"(
 				<Flow>
@@ -328,7 +328,7 @@ Charlie;charlie@example.com;30;80;4.8)"sv);
 				auto threadPool = CppUtils::Thread::ThreadPool{2};
 				CppUtils::Language::Xml::executeFlow<User, UserMapping>(xmlSource, threadPool);
 
-				const auto outputContent = CppUtils::FileSystem::String::read(outputPath);
+				const auto outputContent = CppUtils::FileSystem::String::read(outputPath).value();
 				const auto outputLines = outputContent
 					| std::views::split('\n')
 					| std::views::transform([](auto&& range) { return std::string_view{range}; })
@@ -339,7 +339,7 @@ Charlie;charlie@example.com;30;80;4.8)"sv);
 				expect(outputLines[0]) == "Alice;alice@example.com;25;115;4.5";
 				expect(outputLines[1]) == "Charlie;charlie@example.com;30;95;4.8";
 
-				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
+				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath).value();
 				const auto rejectedLines = rejectedContent
 					| std::views::split('\n')
 					| std::views::transform([](auto&& range) { return std::string_view{range}; })
@@ -358,13 +358,13 @@ Charlie;charlie@example.com;30;80;4.8)"sv);
 				const auto outputPath = directory / "output_users.csv";
 				const auto rejectedPath = directory / "rejected_users.csv";
 
-				CppUtils::FileSystem::String::write(inputPath, R"(Alice;alice@example.com;25;100;4.5
+				expect(CppUtils::FileSystem::String::write(inputPath, R"(Alice;alice@example.com;25;100;4.5
 Invalid;bad_line;NaN;0;0.0
 Bob;bob@example.com;15;50;3.0
 Charlie;charlie@example.com;30;80;4.8
 David;david@example.com;22;90;4.0
 Emma;emma@example.com;17;40;2.5
-Frank;frank@example.com;35;70;3.5)"sv);
+Frank;frank@example.com;35;70;3.5)"sv));
 
 				const auto xmlSource = std::format(R"(
 				<Flow>
@@ -384,7 +384,7 @@ Frank;frank@example.com;35;70;3.5)"sv);
 				auto threadPool = CppUtils::Thread::ThreadPool{4};
 				CppUtils::Language::Xml::executeFlow<User, UserMapping>(xmlSource, threadPool);
 
-				const auto outputContent = CppUtils::FileSystem::String::read(outputPath);
+				const auto outputContent = CppUtils::FileSystem::String::read(outputPath).value();
 				const auto outputLines = outputContent
 					| std::views::split('\n')
 					| std::views::transform([](auto&& range) { return std::string_view{range}; })
@@ -397,7 +397,7 @@ Frank;frank@example.com;35;70;3.5)"sv);
 				expect(outputLines[2]) == "David;david@example.com;22;100;4";
 				expect(outputLines[3]) == "Frank;frank@example.com;35;80;3.5";
 
-				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
+				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath).value();
 				expect(rejectedContent.contains("Invalid;bad_line;NaN;0;0.0"));
 				expect(rejectedContent.contains("Underage user"));
 			}};
@@ -420,8 +420,8 @@ Frank;frank@example.com;35;70;3.5)"sv);
 				const auto inputFile = inputDir / "input_users.csv";
 				const auto outputFile = outputDir / "output_users.csv";
 
-				CppUtils::FileSystem::String::write(inputFile, R"(Alice;alice@example.com;25;100;4.5
-Bob;bob@example.com;30;80;4.8)"sv);
+				expect(CppUtils::FileSystem::String::write(inputFile, R"(Alice;alice@example.com;25;100;4.5
+Bob;bob@example.com;30;80;4.8)"sv));
 
 				const auto xmlSource = std::format(R"(
 				<Flow>
@@ -449,7 +449,7 @@ Bob;bob@example.com;30;80;4.8)"sv);
 					[](const auto& entry) { return entry.is_regular_file(); });
 				expect(archiveFiles) == 1;
 
-				const auto outputContent = CppUtils::FileSystem::String::read(outputFile);
+				const auto outputContent = CppUtils::FileSystem::String::read(outputFile).value();
 				expect(outputContent.contains("Alice;alice@example.com;25;105;4.5"));
 				expect(outputContent.contains("Bob;bob@example.com;30;85;4.8"));
 			}};
@@ -480,7 +480,7 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				flow.startWatching();
 
 				const auto incomingFile = inputDir / "incoming.csv";
-				CppUtils::FileSystem::String::write(incomingFile, "Alice;alice@example.com;25;100;4.5\n");
+				expect(CppUtils::FileSystem::String::write(incomingFile, "Alice;alice@example.com;25;100;4.5\n"));
 
 				const auto expectedOutputFile = outputDir / "incoming.csv";
 				for (auto iteration = 0uz; iteration < 50uz and not std::filesystem::exists(expectedOutputFile); ++iteration)
@@ -489,7 +489,7 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				flow.stopWatching();
 
 				expect(std::filesystem::exists(expectedOutputFile));
-				const auto content = CppUtils::FileSystem::String::read(expectedOutputFile);
+				const auto content = CppUtils::FileSystem::String::read(expectedOutputFile).value();
 				expect(content.contains("Alice;alice@example.com;25;120;4.5"));
 			}};
 		};
@@ -524,7 +524,7 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				expect(outputUsers[0]) == User{"Alice", "alice@example.com", 25, 110, 4.5f};
 				expect(outputUsers[1]) == User{"Charlie", "charlie@example.com", 30, 90, 4.8f};
 
-				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
+				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath).value();
 				expect(rejectedContent.contains("Invalid;corrupted_age;NaN;0;0.0"));
 			}};
 		};
@@ -591,7 +591,7 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				expect(std::ranges::size(outputUsers)) == 1uz;
 				expect(outputUsers[0]) == User{"Dr. Alice", "alice@example.com", 25, 100, 4.5f};
 
-				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath);
+				const auto rejectedContent = CppUtils::FileSystem::String::read(rejectedPath).value();
 				expect(rejectedContent.contains("Invalid;corrupt@example.com;NaN;0;0.0"));
 			}};
 		};
@@ -687,13 +687,13 @@ Bob;bob@example.com;30;80;4.8)"sv);
 		suite.test("<Include>") = [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) {
 				const auto rulesPath = directory / "rules.xml";
-				CppUtils::FileSystem::String::write(rulesPath, R"(
+				expect(CppUtils::FileSystem::String::write(rulesPath, R"(
 				<Scope>
 					<When column="Age" operator=">" value="18">
 						<Operation column="Score" operator="+=" value="15"/>
 					</When>
 				</Scope>
-				)");
+				)"));
 
 				const auto xmlSource = std::format(R"(
 				<Pipeline>
@@ -779,7 +779,7 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				const auto inputPath = directory / "input.csv";
 				const auto outputPath = directory / "output.csv";
 
-				CppUtils::FileSystem::String::write(inputPath, "Alice;alice@example.com;25;100;4.5\n");
+				expect(CppUtils::FileSystem::String::write(inputPath, "Alice;alice@example.com;25;100;4.5\n"));
 
 				const auto xmlSourceWithOutput = std::format(R"(
 				<Flow>
@@ -798,7 +798,7 @@ Bob;bob@example.com;30;80;4.8)"sv);
 				flowWithOutput.execute();
 
 				expect(std::filesystem::exists(outputPath));
-				const auto outputContent = CppUtils::FileSystem::String::read(outputPath);
+				const auto outputContent = CppUtils::FileSystem::String::read(outputPath).value();
 				expect(outputContent.contains("Alice"));
 				expect(outputContent.contains("110"));
 
