@@ -36,11 +36,11 @@ namespace CppUtils::UnitTest::Language::CSV::Range
 				const auto inputFilePath = directory / "input.csv";
 				const auto outputFilePath = directory / "output.csv";
 
-				CppUtils::FileSystem::String::write(inputFilePath, R"(Alice;30
+				expect(CppUtils::FileSystem::String::write(inputFilePath, R"(Alice;30
 Bob; 25 
 
   
-Charlie;40)");
+Charlie;40)"));
 
 				CppUtils::FileSystem::readLines(inputFilePath)
 					| CppUtils::Language::CSV::parseLines(";")
@@ -53,7 +53,8 @@ Charlie;40)");
 					| CppUtils::FileSystem::writeLines(outputFilePath);
 
 				const auto fileContent = CppUtils::FileSystem::String::read(outputFilePath);
-				auto lines = fileContent
+				expect(fileContent.has_value());
+				auto lines = fileContent.value()
 					| std::views::split('\n')
 					| std::views::transform([](auto&& range) { return std::string_view{range}; })
 					| std::views::filter([](auto line) { return not std::ranges::empty(line); })

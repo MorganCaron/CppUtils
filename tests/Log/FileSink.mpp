@@ -17,7 +17,7 @@ namespace CppUtils::UnitTest::Log::FileSink
 				CppUtils::Logger<"FileLogger">::waitUntilFinished();
 
 				expect(std::filesystem::exists(logPath));
-				expect(CppUtils::FileSystem::String::read(logPath)) == "Message";
+				expect(CppUtils::FileSystem::String::read(logPath).value()) == "Message";
 			}};
 		};
 	};

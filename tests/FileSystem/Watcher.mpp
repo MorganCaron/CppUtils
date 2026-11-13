@@ -30,7 +30,7 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 		suite.test("No event") = [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 				auto filePath = directory / "test.tmp";
-				CppUtils::FileSystem::String::write(filePath, "Hello World!");
+				expect(CppUtils::FileSystem::String::write(filePath, "Hello World!"));
 				std::this_thread::sleep_for(100ms);
 
 				auto watcher = CppUtils::FileSystem::Watcher{};
@@ -83,7 +83,7 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 					expectCloseFile = true;
 				});
 
-				CppUtils::FileSystem::String::write(directory / "test.tmp", "Hello World!");
+				expect(CppUtils::FileSystem::String::write(directory / "test.tmp", "Hello World!"));
 				expect([&] { return expectCreateFile and expectCloseFile; }) == eventually;
 			}};
 		};
@@ -92,7 +92,7 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 				auto expectModifyFile = std::atomic_bool{false};
 				auto filePath = directory / "test.tmp";
-				CppUtils::FileSystem::String::write(filePath, "Foo");
+				expect(CppUtils::FileSystem::String::write(filePath, "Foo"));
 				std::this_thread::sleep_for(100ms);
 
 				auto watcher = CppUtils::FileSystem::Watcher{};
@@ -111,7 +111,7 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 					expectModifyFile = true;
 				});
 
-				CppUtils::FileSystem::String::write(filePath, "Bar");
+				expect(CppUtils::FileSystem::String::write(filePath, "Bar"));
 				expect([&] { return expectModifyFile.load(); }) == eventually;
 			}};
 		};
@@ -120,7 +120,7 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 				auto expectModifyFile = std::atomic_bool{false};
 				auto filePath = directory / "test.tmp";
-				CppUtils::FileSystem::String::write(filePath, "Foo");
+				expect(CppUtils::FileSystem::String::write(filePath, "Foo"));
 				std::this_thread::sleep_for(100ms);
 
 				auto watcher = CppUtils::FileSystem::Watcher{};
@@ -139,7 +139,7 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 					expectModifyFile = true;
 				});
 
-				CppUtils::FileSystem::String::write(filePath, "Bar");
+				expect(CppUtils::FileSystem::String::write(filePath, "Bar"));
 				expect([&] { return expectModifyFile.load(); }) == eventually;
 			}};
 		};
@@ -148,7 +148,7 @@ namespace CppUtils::UnitTest::FileSystem::Watcher
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 				auto expectDeleteFile = std::atomic_bool{false};
 				auto filePath = directory / "test.tmp";
-				CppUtils::FileSystem::String::write(filePath, "Hello World!");
+				expect(CppUtils::FileSystem::String::write(filePath, "Hello World!"));
 				std::this_thread::sleep_for(100ms);
 
 				auto watcher = CppUtils::FileSystem::Watcher{};

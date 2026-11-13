@@ -42,10 +42,12 @@ export namespace CppUtils::Language::CSV
 		std::size_t dropNFirstLines = 0,
 		std::string_view columnSeparator = ";",
 		std::string_view lineSeparator = "\n",
-		std::vector<Object>&& elements = {})
+		std::vector<Object>&& elements = {}) -> std::expected<std::vector<Object>, FileSystem::Error>
 	{
 		auto fileContent = FileSystem::String::read(filePath);
-		return toStructs<Object, Mapping>(parseCSV(fileContent, columnSeparator, lineSeparator), dropNFirstLines, std::move(elements));
+		if (not fileContent)
+			return std::unexpected{fileContent.error()};
+		return toStructs<Object, Mapping>(parseCSV(fileContent.value(), columnSeparator, lineSeparator), dropNFirstLines, std::move(elements));
 	}
 
 	namespace Literals

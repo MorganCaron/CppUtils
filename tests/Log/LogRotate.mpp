@@ -27,8 +27,8 @@ namespace CppUtils::UnitTest::Log::LogRotate
 				const auto secondFilePath = directory / "file1.log";
 				expect(std::filesystem::exists(secondFilePath));
 				expect(std::filesystem::exists(logPath));
-				expect(CppUtils::FileSystem::String::read(secondFilePath)) == "First message";
-				expect(CppUtils::FileSystem::String::read(logPath)) == "Second message";
+				expect(CppUtils::FileSystem::String::read(secondFilePath).value()) == "First message";
+				expect(CppUtils::FileSystem::String::read(logPath).value()) == "Second message";
 			}};
 		};
 

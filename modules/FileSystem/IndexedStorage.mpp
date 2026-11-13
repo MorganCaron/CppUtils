@@ -129,7 +129,7 @@ export namespace CppUtils::FileSystem
 
 		~IndexedStorage()
 		{
-			flush();
+			auto _ = flush();
 		}
 
 		IndexedStorage(const IndexedStorage&) = delete;
@@ -234,12 +234,16 @@ export namespace CppUtils::FileSystem
 			return m_index.sharedAccess();
 		}
 
-		auto flush() -> void
+		[[nodiscard]] auto flush() -> std::expected<void, Error>
 		{
 			auto lock = std::unique_lock{m_mutex};
 			if (m_currentChunkStream.is_open())
+			{
 				m_currentChunkStream.flush();
-			saveIndex();
+				if (m_currentChunkStream.bad())
+					return std::unexpected{Error{Error::Type::WriteFailed, "Failed to flush chunk stream"}};
+			}
+			return saveIndex();
 		}
 
 	private:
@@ -340,10 +344,10 @@ export namespace CppUtils::FileSystem
 				return;
 
 			auto bytes = FileSystem::Binary::readVector<std::byte>(indexPath);
-			if (std::ranges::empty(bytes))
+			if (not bytes or std::ranges::empty(bytes.value()))
 				return;
 
-			auto view = std::span<const std::byte>{bytes};
+			auto view = std::span<const std::byte>{bytes.value()};
 
 			auto index = Type::deserialize<IndexMap>(view);
 			if (not index)
@@ -369,7 +373,7 @@ export namespace CppUtils::FileSystem
 					m_currentChunkId = block.chunkId;
 		}
 
-		auto saveIndex() const -> void
+		[[nodiscard]] auto saveIndex() const -> std::expected<void, Error>
 		{
 			auto indexPath = m_directory / "index.bin";
 			auto bytes = std::vector<std::byte>{};
@@ -382,7 +386,7 @@ export namespace CppUtils::FileSystem
 				freeList.push_back(block);
 			Type::serialize(freeList, bytes);
 
-			FileSystem::Binary::writeVector(indexPath, bytes);
+			return FileSystem::Binary::writeVector(indexPath, bytes);
 		}
 	};
 }

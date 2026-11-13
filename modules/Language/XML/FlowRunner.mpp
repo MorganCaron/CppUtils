@@ -107,9 +107,18 @@ export namespace CppUtils::Language::Xml
 			flowsAccessor.value().clear();
 
 			for (const auto& filePath : discoverFlowConfigs())
+			{
+				const auto content = FileSystem::String::read(filePath);
+				if (not content)
+				{
+					Logger<"Flow">::template print<"warning">(
+						"Failed to load flow from '{}': {}", filePath.string(), content.error().message);
+					continue;
+				}
+
 				try
 				{
-					const auto rootNode = Xml::parse(FileSystem::String::read(filePath));
+					const auto rootNode = Xml::parse(content.value());
 					const auto& flowNode = findFlowNode(rootNode);
 					const auto flowName = extractFlowName(flowNode, filePath);
 					const auto& factory = resolveFactory(flowNode, filePath);
@@ -120,6 +129,7 @@ export namespace CppUtils::Language::Xml
 					Logger<"Flow">::template print<"warning">(
 						"Failed to load flow from '{}': {}", filePath.string(), exception.what());
 				}
+			}
 		}
 
 		[[nodiscard]] auto flows() const -> decltype(auto)
@@ -231,9 +241,18 @@ export namespace CppUtils::Language::Xml
 				}
 
 				if (event & (FileSystem::Event::Created | FileSystem::Event::MovedTo | FileSystem::Event::Modified | FileSystem::Event::CloseWrite))
+				{
+					const auto content = FileSystem::String::read(filePath);
+					if (not content)
+					{
+						Logger<"Flow">::template print<"warning">(
+							"Failed to read flow file '{}': {}", filePath.string(), content.error().message);
+						return;
+					}
+
 					try
 					{
-						const auto rootNode = Xml::parse(FileSystem::String::read(filePath));
+						const auto rootNode = Xml::parse(content.value());
 						const auto& flowNode = findFlowNode(rootNode);
 						const auto& factory = resolveFactory(flowNode, filePath);
 						auto newFlow = std::shared_ptr<Flow>{factory(flowNode)};
@@ -264,6 +283,7 @@ export namespace CppUtils::Language::Xml
 						Logger<"Flow">::template print<"warning">(
 							"Failed to load or reload workflow from '{}': {}", filePath.string(), exception.what());
 					}
+				}
 			});
 			m_flowsWatcher.watch(m_flowsDirectory);
 		}

@@ -16,7 +16,7 @@ export namespace CppUtils::Log
 		inline auto operator()(const std::string& message) -> void
 		{
 			logRotate(m_options);
-			FileSystem::String::append(m_options.filePath, message);
+			auto _ = FileSystem::String::append(m_options.filePath, message);
 		}
 
 	private:

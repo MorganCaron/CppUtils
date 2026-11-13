@@ -225,7 +225,10 @@ export namespace CppUtils::Language::JSON
 		}(), "loadFile cannot be used with types containing std::string_view members in their mapping. The temporary JSON Value used during parsing will be destroyed, leaving dangling string_views. Use parseJSON manually and keep the Value alive, or use std::string in your struct.");
 
 		auto fileContent = FileSystem::String::read(filePath);
-		return parseJSON(fileContent).and_then([](Value&& value) -> std::expected<T, Error> {
+		if (not fileContent)
+			return std::unexpected{Error{std::string{fileContent.error().message}, 0}};
+
+		return parseJSON(fileContent.value()).and_then([](Value&& value) -> std::expected<T, Error> {
 			if constexpr (Type::Specializes<T, std::vector>)
 			{
 				using ItemType = typename T::value_type;

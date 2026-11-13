@@ -11,8 +11,8 @@ namespace CppUtils::UnitTest::FileSystem::File
 
 		suite.test("forFiles") = [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
-				CppUtils::FileSystem::String::write(directory / "file.txt", "test");
-				CppUtils::FileSystem::String::write(directory / "file.log", "test");
+				expect(CppUtils::FileSystem::String::write(directory / "file.txt", "test"));
+				expect(CppUtils::FileSystem::String::write(directory / "file.log", "test"));
 				auto filesCounter = 0u;
 				CppUtils::FileSystem::forFiles(directory, [&filesCounter](const auto& filePath) -> void {
 					Logger::print("{}", filePath.string());
@@ -24,8 +24,8 @@ namespace CppUtils::UnitTest::FileSystem::File
 
 		suite.test("forFilesWithExtension") = [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
-				CppUtils::FileSystem::String::write(directory / "file.txt", "test");
-				CppUtils::FileSystem::String::write(directory / "file.log", "test");
+				expect(CppUtils::FileSystem::String::write(directory / "file.txt", "test"));
+				expect(CppUtils::FileSystem::String::write(directory / "file.log", "test"));
 				auto filesCounter = 0u;
 				CppUtils::FileSystem::forFilesWithExtension(directory, ".log", [&filesCounter](const auto& filePath) -> void {
 					Logger::print("{}", filePath.string());
@@ -39,7 +39,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 				const auto filePath = directory / "test.tmp";
 				auto originalData = std::vector<std::byte>{std::byte{0xDE}, std::byte{0xAD}, std::byte{0xBE}, std::byte{0xEF}};
-				CppUtils::FileSystem::Binary::writeVector(filePath, originalData);
+				expect(CppUtils::FileSystem::Binary::writeVector(filePath, originalData));
 
 				auto resultData = std::vector<std::byte>{};
 				auto nbBlocks = 0u;
@@ -59,7 +59,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 				const auto filePath = directory / "test.tmp";
 				constexpr auto originalString = "Hello World!"sv;
-				CppUtils::FileSystem::String::write(filePath, originalString);
+				expect(CppUtils::FileSystem::String::write(filePath, originalString));
 
 				auto resultString = ""s;
 				auto nbBlocks = 0u;
@@ -85,7 +85,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 		suite.test("readByBlocks (callback error propagation)") = [&] {
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 				const auto filePath = directory / "test.tmp";
-				CppUtils::FileSystem::String::write(filePath, "Some content");
+				expect(CppUtils::FileSystem::String::write(filePath, "Some content"));
 
 				const auto result = CppUtils::FileSystem::Binary::readByBlocks(filePath, [](auto) -> std::expected<void, std::string_view> {
 					return std::unexpected{"Error from callback"};
@@ -101,7 +101,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 				const auto filePath = directory / "test.tmp";
 				constexpr auto originalString = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."sv;
-				CppUtils::FileSystem::String::write(filePath, originalString);
+				expect(CppUtils::FileSystem::String::write(filePath, originalString));
 
 				auto finalHash = CppUtils::Type::HashOffset;
 				const auto result = CppUtils::FileSystem::Binary::readByBlocks(filePath, [&finalHash](auto block) {
@@ -125,10 +125,11 @@ namespace CppUtils::UnitTest::FileSystem::File
 				CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 					auto filePath = directory / "test.tmp";
 					auto originalValue = 12'345;
-					CppUtils::FileSystem::Binary::write(filePath, originalValue);
+					expect(CppUtils::FileSystem::Binary::write(filePath, originalValue));
 					auto fileContent = CppUtils::FileSystem::Binary::read<decltype(originalValue)>(filePath);
-					Logger::print("{}", fileContent);
-					expect(fileContent) == originalValue;
+					expect(fileContent);
+					Logger::print("{}", fileContent.value());
+					expect(fileContent.value()) == originalValue;
 				}};
 			};
 
@@ -138,11 +139,26 @@ namespace CppUtils::UnitTest::FileSystem::File
 					auto originalVector = std::vector<int>{};
 					originalVector.resize(10);
 					std::iota(originalVector.begin(), originalVector.end(), 1);
-					CppUtils::FileSystem::Binary::writeVector(filePath, originalVector);
+					expect(CppUtils::FileSystem::Binary::writeVector(filePath, originalVector));
 					auto vector = CppUtils::FileSystem::Binary::readVector<int>(filePath);
-					for (auto nb : vector)
+					expect(vector);
+					for (auto nb : vector.value())
 						Logger::print("{}", nb);
-					expect(vector) == originalVector;
+					expect(vector.value()) == originalVector;
+				}};
+			};
+
+			suite.test("AppendVector") = [&] {
+				CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
+					auto filePath = directory / "test.tmp";
+					auto initialVector = std::vector<int>{1, 2, 3};
+					auto appendedVector = std::vector<int>{4, 5, 6};
+					expect(CppUtils::FileSystem::Binary::writeVector(filePath, initialVector));
+					expect(CppUtils::FileSystem::Binary::appendVector(filePath, appendedVector));
+					auto vector = CppUtils::FileSystem::Binary::readVector<int>(filePath);
+					expect(vector);
+					auto expectedVector = std::vector<int>{1, 2, 3, 4, 5, 6};
+					expect(vector.value()) == expectedVector;
 				}};
 			};
 		};
@@ -157,10 +173,11 @@ namespace CppUtils::UnitTest::FileSystem::File
 				CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 					auto filePath = directory / "test.tmp";
 					auto originalString = "Hello World!";
-					CppUtils::FileSystem::String::write(filePath, originalString);
+					expect(CppUtils::FileSystem::String::write(filePath, originalString));
 					auto fileContent = CppUtils::FileSystem::String::read(filePath);
-					Logger::print("{}", fileContent);
-					expect(fileContent) == originalString;
+					expect(fileContent.has_value());
+					Logger::print("{}", fileContent.value());
+					expect(fileContent.value()) == originalString;
 				}};
 			};
 
@@ -169,11 +186,12 @@ namespace CppUtils::UnitTest::FileSystem::File
 					auto filePath = directory / "test.tmp";
 					auto firstString = "Hello ";
 					auto secondString = "World!";
-					CppUtils::FileSystem::String::append(filePath, firstString);
-					CppUtils::FileSystem::String::append(filePath, secondString);
+					expect(CppUtils::FileSystem::String::append(filePath, firstString));
+					expect(CppUtils::FileSystem::String::append(filePath, secondString));
 					auto fileContent = CppUtils::FileSystem::String::read(filePath);
-					Logger::print("{}", fileContent);
-					expect(fileContent) == std::string{firstString} + secondString;
+					expect(fileContent.has_value());
+					Logger::print("{}", fileContent.value());
+					expect(fileContent.value()) == std::string{firstString} + secondString;
 				}};
 			};
 		};

@@ -136,7 +136,7 @@ export namespace CppUtils::UnitTest::JUnit
 				std::filesystem::create_directories(parentPath);
 
 			const auto xml = generateXml(suites, "CppUtils Unit Tests", totalDuration);
-			FileSystem::String::write(filePath, xml);
+			auto _ = FileSystem::String::write(filePath, xml);
 			Logger<"UnitTests">::print<"detail">("JUnit XML report generated: {}", filePath.string());
 		}
 		catch (const std::exception& exception)
