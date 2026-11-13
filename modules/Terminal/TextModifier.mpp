@@ -15,14 +15,29 @@ export namespace CppUtils::Terminal
 {
 	using namespace std::literals;
 
-	namespace Ansi::EscapeCode
+	namespace Ansi
 	{
-		[[maybe_unused]] inline constexpr auto Reset = "\x1B[0m"sv; // \x1B[39m\x1B[49m
-		[[maybe_unused]] inline constexpr auto EraseCurrentLine = "\x1B[2K\r"sv;
-		[[maybe_unused]] inline constexpr auto MoveCursorUp = "\x1B[1A"sv;
-		[[maybe_unused]] inline constexpr auto GetCursorPosition = "\x1B[6n"sv;
-		[[maybe_unused]] inline constexpr auto SetCursorPosition = "\x1B[{};{}H"sv;
-		[[maybe_unused]] inline constexpr auto SetTitle = "\x1B]0;{}\a"sv;
+		namespace EscapeCode
+		{
+			[[maybe_unused]] inline constexpr auto Reset = "\x1B[0m"sv; // \x1B[39m\x1B[49m
+			[[maybe_unused]] inline constexpr auto ClearScreen = "\x1B[2J\x1B[H"sv;
+			[[maybe_unused]] inline constexpr auto EraseCurrentLine = "\x1B[2K\r"sv;
+			[[maybe_unused]] inline constexpr auto MoveCursorUp = "\x1B[1A"sv;
+			[[maybe_unused]] inline constexpr auto GetCursorPosition = "\x1B[6n"sv;
+			[[maybe_unused]] inline constexpr auto SetCursorPosition = "\x1B[{};{}H"sv;
+			[[maybe_unused]] inline constexpr auto SetTitle = "\x1B]0;{}\a"sv;
+		}
+
+		/**
+		 * @brief Formats an ANSI Select Graphic Rendition (SGR) escape sequence: `\x1B[<code\>m`.
+		 * @see https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters
+		 * @param code The SGR parameter code (e.g. 0 for reset, 1 for bold, 31 for red, "38;2;r;g;b" for truecolor).
+		 * @return The formatted ANSI escape string.
+		 */
+		[[nodiscard]] inline auto formatSGR(const std::formattable<char> auto& code) -> std::string
+		{
+			return std::format("\x1B[{}m", code);
+		}
 	}
 
 	class TextModifier final
@@ -47,6 +62,7 @@ export namespace CppUtils::Terminal
 			std::print(m_file, "{}{}", text, background);
 			if (textStyle)
 				std::print(m_file, "{}", TextStyle::getTextStyleCode(*textStyle));
+			std::fflush(m_file);
 #endif
 		}
 
@@ -61,6 +77,7 @@ export namespace CppUtils::Terminal
 			SetConsoleTextAttribute(getTerminalHandle(m_file), m_attributes);
 #elif defined(OS_LINUX) or defined(OS_MACOS)
 			std::print(m_file, "{}", Ansi::EscapeCode::Reset);
+			std::fflush(m_file);
 #endif
 		}
 

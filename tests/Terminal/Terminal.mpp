@@ -17,11 +17,15 @@ namespace CppUtils::UnitTest::Terminal
 				[](
 					std::string_view text,
 					CppUtils::Terminal::BackgroundColor::BackgroundColorEnum backgroundColor) -> void {
-				auto _ = CppUtils::Terminal::TextModifier{
-					stdout,
-					CppUtils::Terminal::TextColor::TextColorEnum::Default,
-					backgroundColor};
-				std::puts(std::ranges::data(text));
+				{
+					auto _ = CppUtils::Terminal::TextModifier{
+						stdout,
+						CppUtils::Terminal::TextColor::TextColorEnum::Default,
+						backgroundColor};
+					std::print(stdout, "{}", text);
+				}
+				std::println(stdout);
+				std::fflush(stdout);
 			};
 
 			applyBackgroundColor("Default", CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Default);
@@ -40,8 +44,12 @@ namespace CppUtils::UnitTest::Terminal
 				[](
 					std::string_view text,
 					CppUtils::Terminal::TextColor::TextColorEnum textColor) -> void {
-				auto _ = CppUtils::Terminal::TextModifier{stdout, textColor};
-				std::puts(std::ranges::data(text));
+				{
+					auto _ = CppUtils::Terminal::TextModifier{stdout, textColor};
+					std::print(stdout, "{}", text);
+				}
+				std::println(stdout);
+				std::fflush(stdout);
 			};
 
 			applyTextColor("Default", CppUtils::Terminal::TextColor::TextColorEnum::Default);
@@ -60,12 +68,16 @@ namespace CppUtils::UnitTest::Terminal
 				[](
 					std::string_view text,
 					CppUtils::Terminal::TextStyle::TextStyleEnum textStyle) -> void {
-				auto _ = CppUtils::Terminal::TextModifier{
-					stdout,
-					CppUtils::Terminal::TextColor::TextColorEnum::Default,
-					CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Default,
-					textStyle};
-				std::puts(std::ranges::data(text));
+				{
+					auto _ = CppUtils::Terminal::TextModifier{
+						stdout,
+						CppUtils::Terminal::TextColor::TextColorEnum::Default,
+						CppUtils::Terminal::BackgroundColor::BackgroundColorEnum::Default,
+						textStyle};
+					std::print(stdout, "{}", text);
+				}
+				std::println(stdout);
+				std::fflush(stdout);
 			};
 
 			applyTextStyle("Bolder", CppUtils::Terminal::TextStyle::TextStyleEnum::Bolder);
@@ -84,6 +96,13 @@ namespace CppUtils::UnitTest::Terminal
 			std::println("Hello");
 			CppUtils::Terminal::TextModifier::moveCursorUp(stdout);
 			std::println("Hello World!");
+		};
+
+		suite.test("formatSGR escape sequence formatting") = [&] {
+			using namespace std::string_view_literals;
+			expect(CppUtils::Terminal::Ansi::formatSGR(0)) == "\x1B[0m"sv;
+			expect(CppUtils::Terminal::Ansi::formatSGR(31)) == "\x1B[31m"sv;
+			expect(CppUtils::Terminal::Ansi::formatSGR("38;2;255;128;0"sv)) == "\x1B[38;2;255;128;0m"sv;
 		};
 	};
 }

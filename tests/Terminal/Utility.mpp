@@ -33,6 +33,8 @@ namespace CppUtils::UnitTest::Terminal::Utility
 	}
 
 	auto _ = testSuite("Terminal/Utility").dependsOn("UnitTest") = [](TestSuite& suite) {
+		using namespace std::literals;
+
 		suite.test("getState and setState") = [&] {
 			const auto state = CppUtils::Terminal::getState();
 			if (state)
@@ -74,6 +76,54 @@ namespace CppUtils::UnitTest::Terminal::Utility
 		suite.test("hasFlag function") = [&] {
 			using CppUtils::Terminal::Flag;
 			expect(CppUtils::Terminal::hasFlag(Flag::Raw)) == CppUtils::Terminal::isRawMode();
+		};
+
+		suite.test("readLine handles LF, CRLF, and CR endings") = [&] {
+			auto stream = std::stringstream{"Hello\nWorld\r\nCR-Only\rFinal"};
+
+			auto readNextLineAsString = [&]() -> std::string {
+				auto line = CppUtils::Terminal::readLine(stream);
+				expect(line.has_value());
+				return std::string{reinterpret_cast<const char*>(std::ranges::data(line.value())), std::ranges::size(line.value())};
+			};
+
+			expect(readNextLineAsString()) == "Hello"sv;
+			expect(readNextLineAsString()) == "World"sv;
+			expect(readNextLineAsString()) == "CR-Only"sv;
+			expect(readNextLineAsString()) == "Final"sv;
+
+			auto lineEmpty = CppUtils::Terminal::readLine(stream);
+			expect(not lineEmpty.has_value());
+		};
+
+		suite.test("readLine reuses rvalue buffer") = [&] {
+			auto stream = std::stringstream{"First\nSecond"};
+			auto reusableBuffer = std::vector<std::byte>{};
+			reusableBuffer.reserve(64);
+
+			auto readNextLineAsString = [&]() -> std::string {
+				auto line = CppUtils::Terminal::readLine(stream, std::move(reusableBuffer));
+				expect(line.has_value());
+				reusableBuffer = std::move(line.value());
+				auto result = std::string{reinterpret_cast<const char*>(std::ranges::data(reusableBuffer)), std::ranges::size(reusableBuffer)};
+				reusableBuffer.clear();
+				return result;
+			};
+
+			expect(readNextLineAsString()) == "First"sv;
+			expect(readNextLineAsString()) == "Second"sv;
+			expect(reusableBuffer.capacity()) >= 64uz;
+
+			auto lineEmpty = CppUtils::Terminal::readLine(stream, std::move(reusableBuffer));
+			expect(not lineEmpty.has_value());
+		};
+
+		suite.test("readLine with char byte type") = [&] {
+			auto stream = std::stringstream{"TestLine"};
+			auto line = CppUtils::Terminal::readLine<char>(stream);
+			expect(line.has_value());
+			auto string = std::string{std::ranges::data(line.value()), std::ranges::size(line.value())};
+			expect(string) == "TestLine"sv;
 		};
 	};
 }
