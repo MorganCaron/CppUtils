@@ -69,6 +69,9 @@ export namespace CppUtils::Type
 	concept NotCallable = not Callable<Function, Args...>;
 
 	template<class T>
+	concept Byte = IsOneOf<std::remove_cvref_t<T>, std::byte, char, unsigned char, signed char, std::uint8_t, std::int8_t>;
+
+	template<class T>
 	concept Character = IsOneOf<std::remove_cvref_t<T>, char, wchar_t, char8_t, char16_t, char32_t>;
 
 	template<class T>

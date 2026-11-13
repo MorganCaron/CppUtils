@@ -13,6 +13,7 @@ export module CppUtils.Terminal.Utility;
 import std;
 import CppUtils.System.Type;
 import CppUtils.System.Error;
+import CppUtils.Type;
 export import CppUtils.Terminal.Handle;
 
 export namespace CppUtils::Terminal
@@ -187,5 +188,52 @@ export namespace CppUtils::Terminal
 
 		SetConsoleMode(outputHandle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 #endif
+	}
+
+	/**
+	 * @brief Reads a line from an input stream into an existing byte vector.
+	 * @details Handles LF (`\n`), CRLF (`\r\n`), and standalone CR (`\r`) line endings.
+	 * @tparam ByteType Element type of the vector, must satisfy Type::Byte.
+	 * @param inputStream The input stream to read from.
+	 * @param destination The byte vector where extracted bytes are appended.
+	 * @return True if any characters or line endings were extracted; false on end-of-file without data.
+	 */
+	template<Type::Byte ByteType = std::byte>
+	inline auto readLine(std::istream& inputStream, std::vector<ByteType>& destination) -> bool
+	{
+		char character = '\0';
+		bool hasExtractedCharacter = false;
+		while (inputStream.get(character))
+		{
+			hasExtractedCharacter = true;
+			if (character == '\n')
+				break;
+			if (character == '\r')
+			{
+				if (inputStream.peek() == '\n')
+					inputStream.get();
+				break;
+			}
+			destination.push_back(static_cast<ByteType>(static_cast<unsigned char>(character)));
+		}
+		return hasExtractedCharacter or not inputStream.eof();
+	}
+
+	/**
+	 * @brief Reads a line from an input stream into an optional byte vector.
+	 * @details Accepts an optional rvalue vector destination allowing callers to reuse preallocated capacity across calls.
+	 * @tparam ByteType Element type of the vector, must satisfy Type::Byte.
+	 * @param inputStream The input stream to read from.
+	 * @param destination The byte vector to move and populate, defaults to an empty vector.
+	 * @return An optional containing the line bytes, or std::nullopt if the stream reached end-of-file.
+	 */
+	template<Type::Byte ByteType = std::byte>
+	[[nodiscard]] inline auto readLine(
+		std::istream& inputStream,
+		std::vector<ByteType>&& destination = {}) -> std::optional<std::vector<ByteType>>
+	{
+		if (readLine(inputStream, destination))
+			return std::move(destination);
+		return std::nullopt;
 	}
 }
