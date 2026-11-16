@@ -93,10 +93,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Create tag and release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.check.outputs.tag }}
           target_commitish: ${{ github.sha }}
@@ -137,7 +137,7 @@ jobs:
 
       - name: Checkout xmake-repo
         if: steps.token-check.outputs.available == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: "MorganCaron/xmake-repo"
           token: ${{ secrets.XMAKE_REPO_TOKEN }}
