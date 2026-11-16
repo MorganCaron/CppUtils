@@ -184,7 +184,7 @@
 - [`EventWatcher`](modules/UnitTest/EventWatcher.mpp) - Event observation and expectation verification for event-driven systems
 - [`Expectation`](modules/UnitTest/Expectation.mpp) - Fluent assertion API (`expect(a) == b`, `throws`, `noThrow`, `crashes`, `eventually`, `completes`)
 - [`JUnitFormatter`](modules/UnitTest/JUnitFormatter.mpp) - JUnit XML report generator for CI/CD test reporting
-- [`LifetimeChecker`](modules/UnitTest/LifetimeChecker.mpp) - Diagnostic probe tracking object construction, destruction, copy and move counts
+- [`LifetimeChecker`](modules/UnitTest/LifetimeChecker.mpp) - Diagnostic probe tracking object construction, destruction, copy, move and active instance counts
 - [`Runner`](modules/UnitTest/Runner.mpp) - Test runner engine with process isolation, timeout enforcement, and dependency execution
 - [`UnitTest`](modules/UnitTest/UnitTest.mpp) - Modern macro-free unit testing framework with declarative suite builders (`testSuite`), parameterized/typed suites, and compile-time test execution
 

@@ -75,5 +75,25 @@ namespace CppUtils::UnitTest::LifetimeCheckerTest
 			expect(copy.getCopyCount()) == 1uz;
 			expect(copy.getMoveCount()) == 1uz;
 		};
+
+		suite.test("Instance Count") = [&] {
+			auto object = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "LifetimeChecker"};
+			auto unrelated = LifetimeChecker{[](std::string_view message) { Logger::print<"info">("{}", message); }, "Unrelated"};
+			expect(object.getInstanceCount()) == 1uz;
+			expect(unrelated.getInstanceCount()) == 1uz;
+
+			{
+				auto copy = object;
+				expect(object.getInstanceCount()) == 2uz;
+
+				auto moved = std::move(copy);
+				expect(object.getInstanceCount()) == 2uz;
+				expect(copy.getInstanceCount()) == 0uz;
+
+				unrelated = object;
+				expect(object.getInstanceCount()) == 3uz;
+			}
+			expect(object.getInstanceCount()) == 2uz;
+		};
 	};
 }
