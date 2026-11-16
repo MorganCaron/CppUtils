@@ -295,5 +295,44 @@ namespace CppUtils::UnitTest::Container::NetworkPtr
 			auto node2Accessor = node2->sharedAccess();
 			expect(node2Accessor->getDistanceFromRoot()) == std::numeric_limits<std::size_t>::max();
 		};
+
+		suite.test("Diamond distance propagation without deadlock") = [&] {
+			auto root = NetworkPtr::makeRoot(logger, "Root");
+			auto nodeA = NetworkPtr::make(logger, "NodeA", 1uz);
+			auto nodeB = NetworkPtr::make(logger, "NodeB", 2uz);
+			auto nodeC = NetworkPtr::make(logger, "NodeC", 3uz);
+
+			root >> nodeA;
+			root >> nodeB;
+			nodeA >> nodeC;
+
+			// Fermeture du diamant : propagation de updateDistance sans deadlock
+			nodeB >> nodeC;
+			expect(nodeC->sharedAccess()->getDistanceFromRoot()) == 2uz;
+
+			// Détachement d'une branche : recalcul de distance sans deadlock via le chemin restant
+			nodeA - nodeC;
+			expect(nodeC->sharedAccess()->getDistanceFromRoot()) == 2uz;
+
+			// Détachement de la seconde branche : nodeC devient orphelin sans deadlock
+			nodeB - nodeC;
+			expect(nodeC->sharedAccess()->getDistanceFromRoot()) == std::numeric_limits<std::size_t>::max();
+		};
+
+		suite.test("Cycle of length 3 distance propagation termination on root detachment") = [&] {
+			auto root = NetworkPtr::makeRoot(logger, "Root");
+			auto nodeA = NetworkPtr::make(logger, "NodeA", 1uz);
+			auto nodeB = NetworkPtr::make(logger, "NodeB", 2uz);
+			auto nodeC = NetworkPtr::make(logger, "NodeC", 3uz);
+
+			root >> nodeA;
+			nodeA >> nodeB;
+			nodeB >> nodeC;
+			nodeC >> nodeA;
+
+			// Détachement de la racine du cycle fermé :
+			// Vérifie que la propagation de updateDistance ne tourne pas en boucle infinie dans le cycle
+			root - nodeA;
+		};
 	};
 }

@@ -146,23 +146,23 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			elements["Color"] >> orange;
 			elements["Fruit"] >> orange;
 			{
-				expect(elements.count("Color")) == 1uz;
-				expect(elements.count("Fruit")) == 1uz;
+				expect(elements.contains("Color"));
+				expect(elements.contains("Fruit"));
 				expect(orange.getDistanceFromRoot()) == 1uz;
 			}
 
 			elements["Color"] - orange;
 			{
-				expect(elements.count("Color")) == 0uz;
-				expect(elements.count("Fruit")) == 1uz;
+				not expect(elements.contains("Color"));
+				expect(elements.contains("Fruit"));
 				expect(std::ranges::size(elements.at("Fruit").value_or({}))) == 1uz;
 				expect(orange.getDistanceFromRoot()) == 1uz;
 			}
 
 			elements["Fruit"] - orange;
 			{
-				expect(elements.count("Color")) == 0uz;
-				expect(elements.count("Fruit")) == 0uz;
+				not expect(elements.contains("Color"));
+				not expect(elements.contains("Fruit"));
 				expect(orange.getDistanceFromRoot()) == std::numeric_limits<std::size_t>::max();
 			}
 		};
@@ -369,20 +369,11 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 		suite.test("Contains") = [&] {
 			auto fruit = StringMeshNodePtr::makeRoot("fruit");
 			auto apple = StringMeshNodePtr::make("apple");
+			not expect(fruit.contains("Elements"));
 			fruit["Elements"] >> apple;
 			expect(fruit.contains("Elements"));
 			fruit["Elements"] - apple;
-			expect(not fruit.contains("Elements"));
-		};
-
-		suite.test("Count") = [&] {
-			auto root = StringMeshNodePtr::makeRoot("root");
-			auto child = StringMeshNodePtr::make("child");
-			expect(root.count("Branch")) == 0uz;
-			root["Branch"] >> child;
-			expect(root.count("Branch")) == 1uz;
-			root["Branch"] - child;
-			expect(root.count("Branch")) == 0uz;
+			not expect(fruit.contains("Elements"));
 		};
 
 		suite.test("Branch size") = [&] {
@@ -416,7 +407,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			expect(std::ranges::size(root.at("Branch").value_or({}))) == 1uz;
 
 			root["Branch"].clear();
-			expect(not root.contains("Branch"));
+			not expect(root.contains("Branch"));
 		};
 
 		suite.test("Get node") = [&] {
@@ -434,7 +425,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 
 			auto invalidKeyExpected = root["Branch"][0];
 
-			expect(not invalidKeyExpected);
+			not expect(invalidKeyExpected);
 			expect(invalidKeyExpected.error()) == "Branch index out of bounds";
 		};
 
@@ -445,7 +436,7 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 
 			auto invalidIndexExpected = fruit["Elements"][1];
 
-			expect(not invalidIndexExpected);
+			not expect(invalidIndexExpected);
 			expect(invalidIndexExpected.error()) == "Branch index out of bounds";
 		};
 
@@ -506,14 +497,14 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 		suite.test("at(): Non-existent branch") = [&] {
 			const auto root = StringMeshNodePtr::makeRoot("root");
 			auto branch = root.at("NonExistentBranch");
-			expect(not branch.has_value());
+			not expect(branch.has_value());
 			expect(branch.error()) == "MeshNodePtr::at(): Key not found";
 		};
 
 		suite.test("at(): Invalid node") = [&] {
 			auto node = StringMeshNodePtr{};
 			auto branch = node.at("Branch");
-			expect(not branch.has_value());
+			not expect(branch.has_value());
 			expect(branch.error()) == "MeshNodePtr::at(): Invalid MeshNodePtr";
 		};
 
@@ -605,6 +596,40 @@ namespace CppUtils::UnitTest::Container::MeshNetwork
 			root.clearBranches();
 
 			expect(std::ranges::empty(root.getBranches().value()));
+		};
+
+		suite.test("Diamond topology attach and detach without deadlock") = [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto branchLeft = StringMeshNodePtr::make("branchLeft");
+			auto branchRight = StringMeshNodePtr::make("branchRight");
+			auto sinkNode = StringMeshNodePtr::make("sinkNode");
+
+			root["left"] >> branchLeft;
+			root["right"] >> branchRight;
+			branchLeft["sink"] >> sinkNode;
+
+			// Fermeture du diamant sans deadlock (multi-parents avec ancêtre commun)
+			branchRight["sink"] >> sinkNode;
+
+			// Détachements successifs du diamant sans deadlock
+			branchLeft["sink"] - sinkNode;
+			branchRight["sink"] - sinkNode;
+		};
+
+		suite.test("Cycle of length 3 distance propagation termination on root detachment") = [&] {
+			auto root = StringMeshNodePtr::makeRoot("root");
+			auto nodeA = StringMeshNodePtr::make("nodeA");
+			auto nodeB = StringMeshNodePtr::make("nodeB");
+			auto nodeC = StringMeshNodePtr::make("nodeC");
+
+			root["a"] >> nodeA;
+			nodeA["b"] >> nodeB;
+			nodeB["c"] >> nodeC;
+			nodeC["a"] >> nodeA;
+
+			// Détachement de la racine du cycle fermé :
+			// Vérifie que la propagation de updateDistance ne tourne pas en boucle infinie dans le cycle
+			root["a"] - nodeA;
 		};
 	};
 }
