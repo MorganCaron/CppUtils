@@ -7,8 +7,8 @@ export namespace CppUtils::UnitTest
 	/**
 	 * @brief Diagnostic utility for tracking and validating object lifecycles in unit tests.
 	 *
-	 * Monitors default construction, copy, move, and destruction events via a callback logger,
-	 * while maintaining thread-safe atomic counters for copy and move operations.
+	 * Monitors construction, copy, move, and destruction events via a callback logger,
+	 * while tracking copy, move, and shared active instance counts.
 	 *
 	 * @see https://morgancaron.github.io/CppUtils/fr/guides/unit-test/#suivi-du-cycle-de-vie-des-objets--cpputilsunittestlifetimechecker (Guide des tests unitaires)
 	 * @see https://morgancaron.github.io/CppUtils/en/guides/unit-test/#tracking-object-lifecycle-cpputilsunittestlifetimechecker (Unit test guide)
@@ -25,7 +25,8 @@ export namespace CppUtils::UnitTest
 		inline LifetimeChecker(std::function<void(std::string_view)> callback, std::string name, std::size_t indentationLevel = 0):
 			m_callback{std::move(callback)},
 			m_name{std::move(name)},
-			m_indentationLevel{indentationLevel}
+			m_indentationLevel{indentationLevel},
+			m_instanceCount{std::make_shared<std::monostate>()}
 		{
 			m_callback(std::format("{}{}()", std::string(m_indentationLevel, '\t'), m_name));
 		}
@@ -48,6 +49,15 @@ export namespace CppUtils::UnitTest
 			return m_moveCount;
 		}
 
+		/**
+		 * @brief Returns the current number of active instances sharing this tracked object.
+		 * @return Active instance count (0 if moved-from).
+		 */
+		[[nodiscard]] inline auto getInstanceCount() const noexcept -> std::size_t
+		{
+			return static_cast<std::size_t>(m_instanceCount.use_count());
+		}
+
 		/// @brief Destroys the LifetimeChecker and logs the destruction event.
 		virtual ~LifetimeChecker()
 		{
@@ -59,7 +69,8 @@ export namespace CppUtils::UnitTest
 			m_name{other.m_name},
 			m_indentationLevel{other.m_indentationLevel},
 			m_copyCount{other.m_copyCount.load() + 1},
-			m_moveCount{other.m_moveCount.load()}
+			m_moveCount{other.m_moveCount.load()},
+			m_instanceCount{other.m_instanceCount}
 		{
 			m_callback(std::format("{}{}(const {}&)", std::string(m_indentationLevel, '\t'), m_name, m_name));
 		}
@@ -69,7 +80,8 @@ export namespace CppUtils::UnitTest
 			m_name{std::move(other.m_name)},
 			m_indentationLevel{other.m_indentationLevel},
 			m_copyCount{other.m_copyCount.load()},
-			m_moveCount{other.m_moveCount.load() + 1}
+			m_moveCount{other.m_moveCount.load() + 1},
+			m_instanceCount{std::move(other.m_instanceCount)}
 		{
 			other.m_name = "[invalid object]";
 			m_callback(std::format("{}{}({}&&)", std::string(m_indentationLevel, '\t'), m_name, m_name));
@@ -82,12 +94,16 @@ export namespace CppUtils::UnitTest
 			m_indentationLevel = rhs.m_indentationLevel;
 			m_copyCount.store(rhs.m_copyCount.load() + 1);
 			m_moveCount.store(rhs.m_moveCount.load());
+			m_instanceCount = rhs.m_instanceCount;
 			m_callback(std::format("{}{}::operator=(const {}&)", std::string(m_indentationLevel, '\t'), m_name, m_name));
 			return *this;
 		}
 
 		inline auto operator=(LifetimeChecker&& rhs) noexcept -> LifetimeChecker&
 		{
+			if (this == std::addressof(rhs))
+				return *this;
+			m_instanceCount = std::move(rhs.m_instanceCount);
 			m_callback = rhs.m_callback;
 			m_name = std::move(rhs.m_name);
 			m_indentationLevel = rhs.m_indentationLevel;
@@ -104,5 +120,6 @@ export namespace CppUtils::UnitTest
 		std::size_t m_indentationLevel;
 		std::atomic_size_t m_copyCount = 0;
 		std::atomic_size_t m_moveCount = 0;
+		std::shared_ptr<std::monostate> m_instanceCount;
 	};
 }
