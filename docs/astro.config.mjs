@@ -154,6 +154,11 @@ gtag('config', 'G-9EYYYD173T', {
 							translations: { fr: 'Verrous RAII' },
 							slug: 'guides/lockers',
 						},
+						{
+							label: 'Mesh network of nodes',
+							translations: { fr: 'Maillage de nœuds' },
+							slug: 'guides/mesh-network',
+						},
 					],
 				},
 				{

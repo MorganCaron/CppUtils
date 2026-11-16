@@ -7,6 +7,10 @@ import CppUtils.Thread.SharedPtr;
 
 export namespace CppUtils::Container
 {
+	/**
+	 * @brief Graph node wrapper managing cyclic references deterministically via root-distance tracking.
+	 * @tparam T Payload type stored inside the node.
+	 */
 	template<class T>
 	class NetworkPtr final
 	{
@@ -24,12 +28,17 @@ export namespace CppUtils::Container
 		friend class Thread::SharedLocker<NetworkPtr<T>>;
 
 	public:
+		/// @brief Detaches all children and parents upon destruction.
 		inline constexpr ~NetworkPtr()
 		{
 			detachChildren();
 			detachParents();
 		}
 
+		/**
+		 * @brief Allocates a non-root node wrapped in a `SafeShared`.
+		 * @param args Arguments forwarded to construct `T`.
+		 */
 		[[nodiscard]] static inline constexpr auto make(auto&&... args) -> SharedPtr
 		{
 			auto pointer = makeSafeShared<NetworkPtr<T>>(std::forward<decltype(args)>(args)...);
@@ -40,6 +49,10 @@ export namespace CppUtils::Container
 			return pointer;
 		}
 
+		/**
+		 * @brief Allocates a root node wrapped in a `SafeShared`.
+		 * @param args Arguments forwarded to construct `T`.
+		 */
 		[[nodiscard]] static inline constexpr auto makeRoot(auto&&... args) -> SharedPtr
 		{
 			auto pointer = makeSafeShared<NetworkPtr<T>>(std::forward<decltype(args)>(args)...);
@@ -51,16 +64,19 @@ export namespace CppUtils::Container
 			return pointer;
 		}
 
+		/// @brief Returns `true` if this node is marked as a root.
 		[[nodiscard]] inline constexpr auto isRoot() const noexcept -> bool
 		{
 			return m_isRoot;
 		}
 
+		/// @brief Returns `true` if this node is neither a root nor attached to any parent.
 		[[nodiscard]] inline constexpr auto isTemporary() const noexcept -> bool
 		{
 			return not m_isRoot and std::ranges::empty(m_parents);
 		}
 
+		/// @brief Marks or unmarks this node as a root.
 		inline constexpr auto setRoot(bool isRoot) noexcept -> void
 		{
 			m_isRoot = isRoot;
@@ -68,16 +84,22 @@ export namespace CppUtils::Container
 				m_distanceFromRoot = 0;
 		}
 
+		/// @brief Stores the weak self-reference used when registering parent/child links.
 		inline constexpr auto setWeakThis(WeakPtr pointer) noexcept -> void
 		{
 			m_weakThis = std::move(pointer);
 		}
 
+		/// @brief Returns the shortest hop distance from any root node (or `max()` if unreachable).
 		[[nodiscard]] inline constexpr auto getDistanceFromRoot() const noexcept -> std::size_t
 		{
 			return m_distanceFromRoot;
 		}
 
+		/**
+		 * @brief Attaches `childValue` as a child of this node, promoting or demoting the link strength based on root distance.
+		 * @throws std::logic_error if the child handle is expired or this parent has no root path.
+		 */
 		inline constexpr auto attachChild(NetworkPtr& childValue) -> void
 		{
 			auto childPtr = childValue.m_weakThis.lock();
@@ -95,6 +117,10 @@ export namespace CppUtils::Container
 				m_children.push_back(WeakPtr{childPtr});
 		}
 
+		/**
+		 * @brief Detaches `childValue` from this node and updates root distances across affected descendants.
+		 * @param childValue Child node to unlink from this parent.
+		 */
 		inline constexpr auto detachChild(NetworkPtr& childValue) -> void
 		{
 			auto childPtr = childValue.m_weakThis.lock();
@@ -127,6 +153,7 @@ export namespace CppUtils::Container
 			}
 		}
 
+		/// @brief Detaches all children from this node and updates root distances across affected descendants.
 		inline constexpr auto detachChildren() -> void
 		{
 			for (auto children = std::move(m_children); auto& child : children)
@@ -156,6 +183,10 @@ export namespace CppUtils::Container
 			}
 		}
 
+		/**
+		 * @brief Detaches this node from `parent`.
+		 * @param parent Parent node handle to unlink from.
+		 */
 		inline constexpr auto detachParent(SharedPtr& parent) -> void
 		{
 			if (auto thisPtr = m_weakThis.lock(); thisPtr)
@@ -167,6 +198,7 @@ export namespace CppUtils::Container
 			}
 		}
 
+		/// @brief Removes all back-references to this node from its registered parents.
 		inline constexpr auto detachParents() -> void
 		{
 			for (auto parents = std::move(m_parents); const auto& parentWeak : parents)
@@ -201,7 +233,24 @@ export namespace CppUtils::Container
 			return sharedPtr->uniqueAccess();
 		}
 
-		inline constexpr auto updateDistance(const WeakPtr& lockedParentWeak = {}, std::size_t lockedParentDistance = std::numeric_limits<std::size_t>::max()) -> void
+		struct LockedAncestorFrame final
+		{
+			const WeakPtr* node = nullptr;
+			const LockedAncestorFrame* parentFrame = nullptr;
+
+			[[nodiscard]] inline constexpr auto contains(const auto& target) const noexcept -> bool
+			{
+				for (const auto* current = this; current != nullptr; current = current->parentFrame)
+					if (current->node and Thread::ownerEqual(*current->node, target))
+						return true;
+				return false;
+			}
+		};
+
+		inline constexpr auto updateDistance(
+			const WeakPtr& lockedParentWeak = {},
+			std::size_t lockedParentDistance = std::numeric_limits<std::size_t>::max(),
+			const LockedAncestorFrame* lockedAncestors = nullptr) -> void
 		{
 			const auto oldDistanceFromRoot = m_distanceFromRoot;
 
@@ -213,6 +262,8 @@ export namespace CppUtils::Container
 					auto parentDistance = std::numeric_limits<std::size_t>::max();
 					if (Thread::ownerEqual(parentWeak, lockedParentWeak))
 						parentDistance = lockedParentDistance;
+					else if (lockedAncestors and lockedAncestors->contains(parentWeak))
+						continue;
 					else if (auto parent = parentWeak.lock())
 					{
 						auto accessor = parent->sharedAccess();
@@ -227,17 +278,21 @@ export namespace CppUtils::Container
 			if (m_distanceFromRoot == oldDistanceFromRoot)
 				return;
 
+			const auto thisFrame = LockedAncestorFrame{std::addressof(m_weakThis), lockedAncestors};
+			const auto parentFrame = LockedAncestorFrame{lockedParentWeak.lock() ? std::addressof(lockedParentWeak) : nullptr, std::addressof(thisFrame)};
+			const auto* nextAncestors = parentFrame.node ? std::addressof(parentFrame) : std::addressof(thisFrame);
+
 			for (auto& child : m_children)
 			{
 				const auto* shared = std::get_if<SharedPtr>(&child);
 				if (not shared)
 					continue;
 
-				if (Thread::ownerEqual(*shared, lockedParentWeak))
+				if (nextAncestors->contains(*shared))
 					continue;
 
 				auto accessor = (*shared)->uniqueAccess();
-				accessor->updateDistance(m_weakThis, m_distanceFromRoot);
+				accessor->updateDistance(m_weakThis, m_distanceFromRoot, nextAncestors);
 			}
 		}
 
@@ -252,6 +307,7 @@ export namespace CppUtils::Container
 		std::vector<WeakPtr> m_parents;
 	};
 
+	/// @brief Creates a directed link from `from` to `to` and returns `to` for chaining.
 	template<class T>
 	inline constexpr auto operator>>(
 		SafeShared<NetworkPtr<T>>& from,
@@ -264,6 +320,7 @@ export namespace CppUtils::Container
 		return to;
 	}
 
+	/// @brief Creates a bidirectional link between `lhs` and `rhs` and returns `rhs`.
 	template<class T>
 	inline constexpr auto operator&(
 		SafeShared<NetworkPtr<T>>& lhs,
@@ -277,6 +334,7 @@ export namespace CppUtils::Container
 		return rhs;
 	}
 
+	/// @brief Detaches the directed link from `from` to `to` and returns `to`.
 	template<class T>
 	inline constexpr auto operator-(
 		SafeShared<NetworkPtr<T>>& from,
@@ -289,6 +347,7 @@ export namespace CppUtils::Container
 		return to;
 	}
 
+	/// @brief Detaches the bidirectional link between `lhs` and `rhs` and returns `rhs`.
 	template<class T>
 	inline constexpr auto operator/(
 		SafeShared<NetworkPtr<T>>& lhs,
