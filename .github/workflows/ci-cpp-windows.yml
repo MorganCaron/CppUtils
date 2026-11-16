@@ -31,7 +31,7 @@ jobs:
           xmake-toolchain: "--toolchain=llvm --sdk=\"$env:LLVM_PATH\""
         }
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - uses: xmake-io/github-action-setup-xmake@v1
       with:
         xmake-version: branch@master

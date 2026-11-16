@@ -30,7 +30,7 @@ jobs:
           cxx: "clang++"
         }
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - uses: tecolicom/actions-use-homebrew-tools@v1
       with:
