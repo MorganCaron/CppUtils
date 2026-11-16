@@ -76,7 +76,7 @@ Un pointeur de noeud s'instancie en spécifiant le type de clé des branches (ic
 
 Les exemples de ce guide utilisent le littéral `""_token` (issu de `using namespace CppUtils::String::Literals;`).
 
-```cpp
+```cpp showLineNumbers
 // Définition du type de noeud manipulé (clés Token, valeurs std::string)
 using NodePtr = CppUtils::Container::MeshNodePtr<CppUtils::Type::Token, std::string>;
 
@@ -108,7 +108,7 @@ graph LR
 	`MeshNetwork` s'appuie sur des **noeuds racines** (`makeRoot`) comme points d'ancrage : une racine maintient en vie tout ce qui reste joignable depuis elle, tandis qu'un noeud ordinaire (`make`) n'est maintenu en vie que s'il est rattaché à au moins une racine (ce qui permet de libérer automatiquement les cycles détachés).
 
 	Pour attacher un noeud enfant à un parent (`parent["branche"_token] >> child`), **le parent doit donc déjà être relié à une racine**. Assemblez toujours votre graphe **de haut en bas** :
-	```cpp
+	```cpp showLineNumbers
 	auto root = NodePtr::makeRoot("Root");
 	// 'child' est rattaché à 'root' avant d'attacher 'grandChild'
 	auto child = root["next"_token] >> NodePtr::make("Child");
@@ -124,7 +124,7 @@ graph LR
 	```
 
 	Si vous souhaitez assembler le graphe dans un autre ordre, vous pouvez créer des racines temporaires avec `makeRoot(...)`, puis les déclasser en noeuds classiques après rattachement via `node->uniqueAccess()->setRoot(false)` :
-	```cpp
+	```cpp showLineNumbers
 	// Construction de bas en haut (sous-arbre d'abord, puis rattachement à la racine)
 	auto tempChild = NodePtr::makeRoot("Child");
 	tempChild["next"_token] >> NodePtr::make("GrandChild");
@@ -145,7 +145,7 @@ L'opérateur `>>` relie un noeud enfant à une branche du parent. Il supporte de
 - `branch >> node` attache `node` à `branch` et retourne `node` ;
 - `parent["a"_token] >> child["b"_token]` attache `child` à `parent["a"_token]` et retourne la branche `child["b"_token]`, ce qui permet d'enchaîner plusieurs niveaux en une seule expression :
 
-```cpp
+```cpp showLineNumbers
 // Attachement des noeuds sous des branches nommées
 root["branch"_token] >> nodeA;
 nodeA["sub"_token] >> nodeB;
@@ -182,7 +182,7 @@ root["branch"_token] - nodeA;
 
 Tant que vous conservez un `MeshNodePtr` local sur le noeud détaché (`nodeA`), il reste valide en mémoire avec ses enfants (`nodeB`) et peut être rattaché. En revanche, un noeud ou un groupe de noeuds (y compris cyclique) qui n'est plus rattaché à aucune racine et n'a plus de variable locale est libéré immédiatement en RAII :
 
-```cpp
+```cpp showLineNumbers
 // 1. nodeA reste valide via la variable locale et garde son enfant nodeB
 root["branch"_token] >> nodeA;
 
@@ -231,7 +231,7 @@ root.clearBranches();
 
 L'opérateur `&` crée deux liaisons réciproques en une seule instruction. Chaque crochet désigne la branche **sortante** du noeud qui le précède, et l'attachement démarre automatiquement depuis le noeud déjà relié à une racine :
 
-```cpp
+```cpp showLineNumbers
 // Au moins l'un des noeuds doit être une racine ou déjà rattaché à une racine
 auto nodeA = NodePtr::makeRoot("Node A");
 auto nodeB = NodePtr::make("Node B");
@@ -252,7 +252,7 @@ graph LR
 
 Fonctionnellement, `&` équivaut à enchaîner deux `>>` en une seule instruction :
 
-```cpp
+```cpp showLineNumbers
 // Équivalent fonctionnel en unidirectionnel
 nodeA["toB"_token] >> nodeB;
 nodeB["toA"_token] >> nodeA;
@@ -269,7 +269,7 @@ nodeA["toB"_token] / nodeB["toA"_token];
 
 Fonctionnellement, `/` équivaut à enchaîner deux `-` en une seule instruction :
 
-```cpp
+```cpp showLineNumbers
 nodeA["toB"_token] - nodeB;
 nodeB["toA"_token] - nodeA;
 ```
@@ -278,7 +278,7 @@ nodeB["toA"_token] - nodeA;
 
 Chaque noeud encapsule sa valeur dans un conteneur thread-safe :
 
-```cpp
+```cpp showLineNumbers
 // Acquisition d'un accesseur en lecture partagée sur la valeur
 if (auto valueAccessor = nodeA.getValue())
 {
@@ -300,7 +300,7 @@ Il est essentiel de distinguer deux types de comparaison :
 1. **Identité d'instance (`nodeA == nodeB`)** : Retourne un `bool` indiquant si les deux pointeurs font référence au **même noeud physique en mémoire**, peu importe sa valeur.
 2. **Équivalence de données (`nodeA.getValue().value() == nodeB.getValue().value()`)** : Compare la charge utile des noeuds.
 
-```cpp
+```cpp showLineNumbers
 auto node1 = NodePtr::makeRoot("Value");
 auto node2 = NodePtr::makeRoot("Value");
 auto alias1 = node1;
@@ -326,7 +326,7 @@ Il existe deux manières d'accéder à une branche d'un noeud, selon que vous so
 <Aside type="caution" title="Cas d'un MeshNodePtr nul (construit par défaut)">
 	Un `MeshNodePtr` instancié sans `make` ni `makeRoot` est **nul** (`not emptyNode`) :
 
-	```cpp
+	```cpp showLineNumbers
 	auto emptyNode = NodePtr{}; // Handle nul (invalide)
 	assert(not emptyNode);
 
@@ -339,7 +339,7 @@ Sur une branche, l'accès indexé `branch[i]` (ainsi que `front()` et `back()`) 
 
 Vérification d'existence préalable (clé de branche et présence d'un noeud) :
 
-```cpp
+```cpp showLineNumbers
 if (root.contains("branch"_token))
 {
 	auto branch = root["branch"_token];
@@ -350,7 +350,7 @@ if (root.contains("branch"_token))
 
 Accès sécurisé sans risque d'exception (recommandé en lecture) :
 
-```cpp
+```cpp showLineNumbers
 if (auto branch = root.at("branch"_token))
 {
 	if (auto firstNode = branch->front())
@@ -362,7 +362,7 @@ if (auto branch = root.at("branch"_token))
 
 Compter les liens d'une branche sans la créer si elle est absente :
 
-```cpp
+```cpp showLineNumbers
 const auto linkCount = root.at("branch"_token).transform([](const auto& branch) {
 	return std::ranges::size(branch);
 }).value_or(0uz);
@@ -378,7 +378,7 @@ Une branche se parcourt comme n'importe quelle collection C++ standard :
 
 Vous pouvez parcourir directement les enfants avec une simple boucle `for` :
 
-```cpp
+```cpp showLineNumbers
 for (const auto& child : root["branch"_token])
 {
 	if (child)
@@ -390,7 +390,7 @@ for (const auto& child : root["branch"_token])
 
 Les branches étant compatibles avec les algorithmes de `std::ranges`, vous pouvez vérifier une condition sur leurs éléments en une seule expression :
 
-```cpp
+```cpp showLineNumbers
 const auto hasNodeA = std::ranges::any_of(root["branch"_token], [](const auto& node) {
 	return node and node.getValue().value() == "Node A";
 });
@@ -398,7 +398,7 @@ const auto hasNodeA = std::ranges::any_of(root["branch"_token], [](const auto& n
 
 Elles se composent également avec les vues de `std::views`, par exemple pour filtrer les noeuds valides puis inverser l'ordre de parcours :
 
-```cpp
+```cpp showLineNumbers
 for (const auto& validChild : root["branch"_token]
 	| std::views::filter([](const auto& node) { return static_cast<bool>(node); })
 	| std::views::reverse)
@@ -409,7 +409,7 @@ for (const auto& validChild : root["branch"_token]
 
 Enfin, grâce au support de `std::random_access_iterator`, vous pouvez manipuler les itérateurs directement (comme calculer un index par soustraction) :
 
-```cpp
+```cpp showLineNumbers
 auto branch = root["branch"_token];
 if (auto it = std::ranges::find_if(branch, [](const auto& node) {
 		return node and node.getValue().value() == "Node A";
@@ -425,7 +425,7 @@ Lorsque les clés de branches ne sont pas connues à l'avance, utilisez `getBran
 
 Dans la boucle ci-dessous, `links` est de type [`SafeShared<std::vector<Link>>`](/fr/reference/container/functions/#safeshared) (un pointeur partagé thread-safe vers le vecteur de liens de la branche), dont la méthode `.sharedAccess()` fournit un accès en lecture seule :
 
-```cpp
+```cpp showLineNumbers
 for (const auto& [branchKey, links] : node.getBranches().value())
 {
 	std::println("Branche '{}' : {} lien(s)", branchKey, links->sharedAccess()->size());
@@ -464,13 +464,13 @@ En pratique, un thread peut ainsi modifier la valeur d'un noeud (ou une de ses b
 <Aside type="caution" title="Piège courant : conserver un proxy Branch ou getValue()">
 	`node["branche"]` retourne un proxy `Branch` qui conserve un verrou RAII exclusif (`Accessor`) sur la branche jusqu'à sa destruction, et `node.getValue()` retourne un `ReadOnlyAccessor<Value>` qui maintient un verrou partagé. Garder ces objets en vie tout en rappelant une opération sur le même noeud dans le même bloc provoque un auto-deadlock :
 
-	```cpp
+	```cpp showLineNumbers
 	// ❌ Risque d'auto-deadlock avec un proxy Branch
 	auto branch = root["branch"_token]; // Prend un verrou exclusif sur "branch"
 	root["branch"_token] >> nodeA; // Tente de reprendre le verrou déjà détenu par 'branch'
 	```
 
-	```cpp
+	```cpp showLineNumbers
 	// ❌ Risque d'auto-deadlock avec un accesseur de valeur
 	auto valueAccessor = nodeA.getValue(); // Prend un verrou partagé sur la valeur
 	nodeA.setValue("Nouvelle valeur"); // Bloque tant que 'valueAccessor' est en vie
@@ -478,7 +478,7 @@ En pratique, un thread peut ainsi modifier la valeur d'un noeud (ou une de ses b
 
 	Pour éviter tout blocage, limitez la portée des proxys et accesseurs avec des expressions inline ou des blocs dédiés :
 
-	```cpp
+	```cpp showLineNumbers
 	// ✅ Bonne pratique : portée courte
 	root["branch"_token] >> nodeA; // Expression inline : le proxy temporaire est détruit et le verrou libéré immédiatement
 	{
@@ -503,7 +503,7 @@ Lorsque votre graphe doit persister entre deux exécutions d'un programme, ou lo
 
 Enregistrer un noeud avec `track()` ne l'écrit toutefois pas immédiatement sur disque : tant qu'il reste dans le cache du pager, il demeure en RAM. La sauvegarde sur disque ne se déclenche que lorsqu'un noeud sort d'une fenêtre de focus et est déchargé de la RAM, ou lorsque le `MeshPager` est détruit :
 
-```cpp
+```cpp showLineNumbers
 using namespace CppUtils::Type::Literals;
 using MeshPager = CppUtils::FileSystem::MeshPager<CppUtils::Type::Token, std::string>;
 using PagedNode = MeshPager::MeshNodePtr; // Équivalent à CppUtils::Container::MeshNodePtr<CppUtils::Type::Token, std::string, MeshPager::Policy>
@@ -530,6 +530,14 @@ pager.track(nodeE);
 ### Maintenir des noeuds en mémoire vive avec `acquireFocus`
 
 Plutôt que de garder tout le graphe en RAM, `pager.acquireFocus(noeud, rayon)` crée une fenêtre RAII (`ScopedFocus`) qui maintient en mémoire les noeuds à distance `<= rayon` et décharge automatiquement les autres sur disque :
+
+```cpp showLineNumbers
+{
+	auto focus = pager.acquireFocus(root, 1uz);
+	// 'root' et son voisin direct 'nodeA' restent en RAM.
+	// 'nodeB', 'nodeC', 'nodeD' et 'nodeE' (à distance >= 2) sont déchargés sur disque tout en conservant leurs liens persistants.
+} // À la destruction de 'focus' (puis de 'pager'), les noeuds restants sont déchargés sur disque.
+```
 
 <svg viewBox="0 0 600 250" width="100%" style="max-width: 600px; height: auto; display: block; margin: 1.5rem auto;" role="img" aria-label="Zone de focus circulaire de rayon 1 centrée sur root, avec noeuds et liens persistants sur disque">
 	<defs>
@@ -574,14 +582,6 @@ Plutôt que de garder tout le graphe en RAM, `pager.acquireFocus(noeud, rayon)` 
 	<text x="347" y="201" text-anchor="middle" fill="currentColor" font-size="9.5">ID = 6 (distance 5)</text>
 </svg>
 
-```cpp
-{
-	auto focus = pager.acquireFocus(root, 1uz);
-	// 'root' et son voisin direct 'nodeA' restent en RAM.
-	// 'nodeB', 'nodeC', 'nodeD' et 'nodeE' (à distance >= 2) sont déchargés sur disque tout en conservant leurs liens persistants.
-} // À la destruction de 'focus' (puis de 'pager'), les noeuds restants sont déchargés sur disque.
-```
-
 Si `noeud` n'est pas encore suivi par le pager, `acquireFocus()` appelle automatiquement `track(noeud)` avant d'activer la fenêtre.
 
 ### Cumuler plusieurs focus
@@ -589,6 +589,13 @@ Si `noeud` n'est pas encore suivi par le pager, `acquireFocus()` appelle automat
 Plusieurs `ScopedFocus` peuvent coexister en même temps, qu'ils se chevauchent (fenêtre glissante lors d'un parcours) ou qu'ils soient **totalement disjoints** pour garder plusieurs zones distinctes en RAM. L'union de leurs rayons détermine l'ensemble des noeuds maintenus en RAM, tandis que les autres restent sur disque.
 
 #### Zones de focus qui se chevauchent (fenêtre glissante)
+
+```cpp showLineNumbers
+{
+	auto focusA = pager.acquireFocus(nodeA, 1uz);
+	auto focusB = pager.acquireFocus(nodeB, 1uz);
+}
+```
 
 <svg viewBox="0 0 640 270" width="100%" style="max-width: 640px; height: auto; display: block; margin: 1.5rem auto;" role="img" aria-label="Deux zones de focus circulaires qui se chevauchent, de rayon 1, centrées sur nodeA et nodeB, avec nodeD et nodeE persistants sur disque">
 	<defs>
@@ -630,14 +637,14 @@ Plusieurs `ScopedFocus` peuvent coexister en même temps, qu'ils se chevauchent 
 	<text x="515" y="205" text-anchor="middle" fill="currentColor" font-size="9.5">ID = 6 (distance 3)</text>
 </svg>
 
-```cpp
+#### Zones de focus disjointes (sans se toucher)
+
+```cpp showLineNumbers
 {
 	auto focusA = pager.acquireFocus(nodeA, 1uz);
-	auto focusB = pager.acquireFocus(nodeB, 1uz);
+	auto focusD = pager.acquireFocus(nodeD, 1uz);
 }
 ```
-
-#### Zones de focus disjointes (sans se toucher)
 
 <svg viewBox="0 0 680 265" width="100%" style="max-width: 680px; height: auto; display: block; margin: 1.5rem auto;" role="img" aria-label="Deux zones de focus circulaires disjointes de rayon 1 centrées sur nodeA et nodeD, avec nodeC persistant sur disque entre les deux">
 	<defs>
@@ -679,18 +686,11 @@ Plusieurs `ScopedFocus` peuvent coexister en même temps, qu'ils se chevauchent 
 	<text x="633" y="150" text-anchor="middle" fill="currentColor" font-size="9.5">ID = 6</text>
 </svg>
 
-```cpp
-{
-	auto focusA = pager.acquireFocus(nodeA, 1uz);
-	auto focusD = pager.acquireFocus(nodeD, 1uz);
-}
-```
-
 ### Contrôle manuel des focus (`addFocus`, `removeFocus`)
 
 Si vous avez besoin d'un contrôle manuel sans garde RAII (par exemple pour attacher un focus à un événement plutôt qu'à un bloc), utilisez `addFocus(nodeId, distance)` et `removeFocus(nodeId, distance)` :
 
-```cpp
+```cpp showLineNumbers
 // Gérer la durée de vie d'un focus manuellement (sans scope RAII)
 const auto idA = nodeA.getId();
 pager.addFocus(idA, 1uz);
@@ -702,7 +702,7 @@ pager.removeFocus(idA, 1uz);
 
 Si vous souhaitez contrôler manuellement la présence des noeuds en RAM **sans utiliser de [focus](#maintenir-des-noeuds-en-mémoire-vive-avec-acquirefocus)**, `MeshPager` fournit deux fonctions complémentaires : `loadNode(nodeId)` pour charger un noeud depuis le disque vers la RAM, et `unloadNode(nodeId)` pour le sérialiser sur disque et libérer immédiatement la RAM :
 
-```cpp
+```cpp showLineNumbers
 auto root = pager.loadNode(rootId); // Charge root depuis le disque
 pager.unloadNode(rootId); // Sauvegarde root sur disque et le libère de la RAM
 ```
@@ -713,7 +713,7 @@ pager.unloadNode(rootId); // Sauvegarde root sur disque et le libère de la RAM
 	Un noeud non racine chargé directement via `loadNode()` n'est rattaché à aucune racine en RAM. Si un focus est acquis ou relâché ailleurs (par exemple via `acquireFocus()`) alors que ce noeud est toujours en RAM hors focus, il sera considéré comme orphelin et **supprimé du disque** (`removeNode()`) au lieu d'être simplement déchargé. Pensez donc à le décharger avec `unloadNode()` ou à le couvrir par un focus.
 </Aside>
 
-```cpp
+```cpp showLineNumbers
 auto root = pager.loadNode(rootId);
 auto nodeA = root["next"_token].front().value(); // Charge nodeA à la volée
 ```
@@ -738,7 +738,7 @@ Deux mécanismes permettent de supprimer des noeuds du disque, selon votre besoi
 - **Nettoyage automatique (noeuds non racines)** : lorsque vous détachez un noeud ou un sous-graphe de toute racine, il est automatiquement supprimé du disque dès qu'un focus est mis à jour (par exemple à la sortie d'un `ScopedFocus`). Un simple appel à `unloadNode()` ne déclenche **pas** cette suppression : il se contente d'écrire le noeud sur disque et de le retirer de la RAM.
 - **Suppression explicite (`removeNode(nodeId)`)** : indispensable pour supprimer un **noeud racine** (jamais supprimé automatiquement, même sans parent) ou pour supprimer **immédiatement** un noeud précis de la RAM, de l'index des liens et du disque (notamment sans utiliser de focus, ou sans attendre la fin d'un `ScopedFocus`).
 
-```cpp
+```cpp showLineNumbers
 {
 	auto focus = pager.acquireFocus(root, 1uz);
 	root["next"_token] - nodeA;
@@ -763,7 +763,7 @@ Les types suivants sont pris en charge nativement, sans code supplémentaire :
 
 Pour étendre la sérialisation binaire à vos propres types utilisateur (par exemple une structure contenant des `std::string` ou d'autres membres non triviaux), spécialisez [`CppUtils::Type::Binary::Serializer`](/fr/reference/type/binary/serializer/) :
 
-```cpp
+```cpp showLineNumbers
 struct UserAccount
 {
 	std::string name;

@@ -76,7 +76,7 @@ Declare a node pointer by specifying the branch key type (here `CppUtils::Type::
 
 The examples in this guide use the `""_token` user-defined literal (from `using namespace CppUtils::String::Literals;`).
 
-```cpp
+```cpp showLineNumbers
 // Define the node type to manipulate (Token keys, std::string values)
 using NodePtr = CppUtils::Container::MeshNodePtr<CppUtils::Type::Token, std::string>;
 
@@ -108,7 +108,7 @@ graph LR
 	`MeshNetwork` relies on **root nodes** (`makeRoot`) as lifetime anchors: a root keeps everything reachable from it alive, whereas a regular node (`make`) stays alive only while attached to at least one root (which is what allows detached cycles to be freed automatically).
 
 	To attach a child node to a parent (`parent["branch"_token] >> child`), **the parent must therefore already be connected to a root**. Always assemble your graph **top-down**:
-	```cpp
+	```cpp showLineNumbers
 	auto root = NodePtr::makeRoot("Root");
 	// 'child' is attached to 'root' before attaching 'grandChild'
 	auto child = root["next"_token] >> NodePtr::make("Child");
@@ -124,7 +124,7 @@ graph LR
 	```
 
 	If you need to assemble the graph in another order, you can create temporary roots with `makeRoot(...)`, then demote them to regular nodes once attached via `node->uniqueAccess()->setRoot(false)`:
-	```cpp
+	```cpp showLineNumbers
 	// Bottom-up assembly (child subtree first, then attach to root)
 	auto tempChild = NodePtr::makeRoot("Child");
 	tempChild["next"_token] >> NodePtr::make("GrandChild");
@@ -145,7 +145,7 @@ The `>>` operator links a child node to a parent branch. It supports two forms:
 - `branch >> node` attaches `node` to `branch` and returns `node`;
 - `parent["a"_token] >> child["b"_token]` attaches `child` to `parent["a"_token]` and returns the `child["b"_token]` branch, allowing multi-level chaining in a single expression:
 
-```cpp
+```cpp showLineNumbers
 // Attach 'nodeA' onto root's "branch" branch
 root["branch"_token] >> nodeA;
 
@@ -184,7 +184,7 @@ root["branch"_token] - nodeA;
 
 As long as you hold a local `MeshNodePtr` handle to the detached node (`nodeA`), it remains valid in memory along with its children (`nodeB`) and can be re-attached. Conversely, any detached node or group of nodes (including cyclic ones) with no remaining root path and no local handle is immediately reclaimed in RAII:
 
-```cpp
+```cpp showLineNumbers
 // 1. nodeA stays valid via its local handle and keeps its child nodeB
 root["branch"_token] >> nodeA;
 
@@ -233,7 +233,7 @@ root.clearBranches();
 
 The `&` operator creates both reciprocal links in a single statement. Each bracket refers to the **outgoing** branch of its respective node, and attachment automatically starts from whichever node is already connected to a root:
 
-```cpp
+```cpp showLineNumbers
 // At least one node must be a root or already attached to a root
 auto nodeA = NodePtr::makeRoot("Node A");
 auto nodeB = NodePtr::make("Node B");
@@ -254,7 +254,7 @@ graph LR
 
 Functionally, `&` is equivalent to chaining two `>>` links in a single statement:
 
-```cpp
+```cpp showLineNumbers
 // Functional unidirectional equivalent
 nodeA["toB"_token] >> nodeB;
 nodeB["toA"_token] >> nodeA;
@@ -271,7 +271,7 @@ nodeA["toB"_token] / nodeB["toA"_token];
 
 Functionally, `/` is equivalent to chaining two `-` operations in a single statement:
 
-```cpp
+```cpp showLineNumbers
 nodeA["toB"_token] - nodeB;
 nodeB["toA"_token] - nodeA;
 ```
@@ -280,7 +280,7 @@ nodeB["toA"_token] - nodeA;
 
 Each node protects its payload with a thread-safe container:
 
-```cpp
+```cpp showLineNumbers
 // Acquire a shared read-only accessor to the payload value
 if (auto valueAccessor = nodeA.getValue())
 {
@@ -302,7 +302,7 @@ Always distinguish between two forms of node comparison:
 1. **Node Identity (`nodeA == nodeB`)**: Returns a `bool` indicating whether two pointers reference the **exact same memory allocation**, regardless of value.
 2. **Value Equality (`nodeA.getValue().value() == nodeB.getValue().value()`)**: Compares the payload contents.
 
-```cpp
+```cpp showLineNumbers
 auto node1 = NodePtr::makeRoot("Value");
 auto node2 = NodePtr::makeRoot("Value");
 auto alias1 = node1;
@@ -328,7 +328,7 @@ There are two ways to access a node's branch, depending on whether you want to c
 <Aside type="caution" title="Null MeshNodePtr (Default-Constructed)">
 	A `MeshNodePtr` instantiated without `make` or `makeRoot` is **null** (`not emptyNode`):
 
-	```cpp
+	```cpp showLineNumbers
 	auto emptyNode = NodePtr{}; // Null (invalid) handle
 	assert(not emptyNode);
 
@@ -341,7 +341,7 @@ On a branch, indexed access `branch[i]` (as well as `front()` and `back()`) also
 
 Check branch presence and node membership beforehand:
 
-```cpp
+```cpp showLineNumbers
 if (root.contains("branch"_token))
 {
 	auto branch = root["branch"_token];
@@ -352,7 +352,7 @@ if (root.contains("branch"_token))
 
 Exception-safe access (recommended for read-only inspection):
 
-```cpp
+```cpp showLineNumbers
 if (auto branch = root.at("branch"_token))
 {
 	if (auto firstNode = branch->front())
@@ -364,7 +364,7 @@ if (auto branch = root.at("branch"_token))
 
 Count the links of a branch without creating it if absent:
 
-```cpp
+```cpp showLineNumbers
 const auto linkCount = root.at("branch"_token).transform([](const auto& branch) {
 	return std::ranges::size(branch);
 }).value_or(0uz);
@@ -380,7 +380,7 @@ A branch can be traversed like any standard C++ collection:
 
 Start by iterating directly over attached children with a range-`for` loop:
 
-```cpp
+```cpp showLineNumbers
 for (const auto& child : root["branch"_token])
 {
 	if (child)
@@ -392,7 +392,7 @@ for (const auto& child : root["branch"_token])
 
 Because branches work with `std::ranges` algorithms, you can test conditions over their elements in a single expression:
 
-```cpp
+```cpp showLineNumbers
 const auto hasNodeA = std::ranges::any_of(root["branch"_token], [](const auto& node) {
 	return node and node.getValue().value() == "Node A";
 });
@@ -400,7 +400,7 @@ const auto hasNodeA = std::ranges::any_of(root["branch"_token], [](const auto& n
 
 They also compose cleanly with `std::views`, for instance to filter valid nodes and reverse traversal order:
 
-```cpp
+```cpp showLineNumbers
 for (const auto& validChild : root["branch"_token]
 	| std::views::filter([](const auto& node) { return static_cast<bool>(node); })
 	| std::views::reverse)
@@ -411,7 +411,7 @@ for (const auto& validChild : root["branch"_token]
 
 Finally, thanks to `std::random_access_iterator` support, you can work with iterators directly (such as computing an index by subtraction):
 
-```cpp
+```cpp showLineNumbers
 auto branch = root["branch"_token];
 if (auto it = std::ranges::find_if(branch, [](const auto& node) {
 		return node and node.getValue().value() == "Node A";
@@ -427,7 +427,7 @@ When branch keys are not known upfront, use `getBranches()` to iterate over all 
 
 In the loop below, `links` has type [`SafeShared<std::vector<Link>>`](/en/reference/container/functions/#safeshared) (a thread-safe shared pointer to the branch's link vector), and `.sharedAccess()` acquires read-only access to it:
 
-```cpp
+```cpp showLineNumbers
 for (const auto& [branchKey, links] : node.getBranches().value())
 {
 	std::println("Branch '{}': {} link(s)", branchKey, links->sharedAccess()->size());
@@ -466,13 +466,13 @@ In practice, one thread can modify a node's payload (or one of its branches) whi
 <Aside type="caution" title="Common Pitfall: Holding onto a Branch Proxy or getValue()">
 	`node["branch"]` returns a `Branch` proxy that holds an exclusive RAII lock (`Accessor`) on the branch until it is destroyed, and `node.getValue()` returns a `ReadOnlyAccessor<Value>` holding a shared lock. Keeping those objects alive while performing another operation on the same node in the same scope causes a self-deadlock:
 
-	```cpp
+	```cpp showLineNumbers
 	// ❌ Self-deadlock risk with a Branch proxy
 	auto branch = root["branch"_token]; // Acquires an exclusive lock on "branch"
 	root["branch"_token] >> nodeA; // Attempts to re-acquire the lock held by 'branch'
 	```
 
-	```cpp
+	```cpp showLineNumbers
 	// ❌ Self-deadlock risk with a value accessor
 	auto valueAccessor = nodeA.getValue(); // Acquires a shared lock on the payload
 	nodeA.setValue("New value"); // Blocks while 'valueAccessor' is still alive
@@ -480,7 +480,7 @@ In practice, one thread can modify a node's payload (or one of its branches) whi
 
 	To prevent this, keep proxy and accessor scopes short with inline expressions or dedicated blocks:
 
-	```cpp
+	```cpp showLineNumbers
 	// ✅ Good practice: short scopes
 	root["branch"_token] >> nodeA; // Inline expression: temporary proxy is destroyed and lock released immediately
 	{
@@ -505,7 +505,7 @@ When your graph needs to persist between program executions or exceeds the machi
 
 Calling `track()` does not immediately write the node to disk, though: while it stays in the pager's cache, it remains in RAM. Persistence to disk only triggers when a node falls outside a focus window and is unloaded from RAM, or when the `MeshPager` is destroyed:
 
-```cpp
+```cpp showLineNumbers
 using namespace CppUtils::Type::Literals;
 using MeshPager = CppUtils::FileSystem::MeshPager<CppUtils::Type::Token, std::string>;
 using PagedNode = MeshPager::MeshNodePtr; // Equivalent to CppUtils::Container::MeshNodePtr<CppUtils::Type::Token, std::string, MeshPager::Policy>
@@ -532,6 +532,14 @@ pager.track(nodeE);
 ### Maintain Nodes in RAM with `acquireFocus`
 
 Instead of keeping the entire graph in RAM, `pager.acquireFocus(node, radius)` returns an RAII window (`ScopedFocus`) that keeps nodes within `radius` hops resident in memory and automatically evicts the rest to disk:
+
+```cpp showLineNumbers
+{
+	auto focus = pager.acquireFocus(root, 1uz);
+	// 'root' and its direct neighbor 'nodeA' stay in RAM.
+	// 'nodeB', 'nodeC', 'nodeD', and 'nodeE' (at distance >= 2) are evicted to disk while preserving their persistent links.
+} // When 'focus' (and later 'pager') is destroyed, remaining nodes are flushed to disk.
+```
 
 <svg viewBox="0 0 600 250" width="100%" style="max-width: 600px; height: auto; display: block; margin: 1.5rem auto;" role="img" aria-label="Circular radius-1 focus zone centered on root, with nodes and persistent links on disk">
 	<defs>
@@ -576,14 +584,6 @@ Instead of keeping the entire graph in RAM, `pager.acquireFocus(node, radius)` r
 	<text x="347" y="201" text-anchor="middle" fill="currentColor" font-size="9.5">ID = 6 (distance 5)</text>
 </svg>
 
-```cpp
-{
-	auto focus = pager.acquireFocus(root, 1uz);
-	// 'root' and its direct neighbor 'nodeA' stay in RAM.
-	// 'nodeB', 'nodeC', 'nodeD', and 'nodeE' (at distance >= 2) are evicted to disk while preserving their persistent links.
-} // When 'focus' (and later 'pager') is destroyed, remaining nodes are flushed to disk.
-```
-
 If `node` is not yet tracked by the pager, `acquireFocus()` automatically calls `track(node)` before activating the window.
 
 ### Combine Multiple Focuses
@@ -591,6 +591,13 @@ If `node` is not yet tracked by the pager, `acquireFocus()` automatically calls 
 Multiple `ScopedFocus` guards can be active at the same time, whether they overlap (like a sliding window across a traversal) or remain **completely disjoint** to keep separate regions resident in RAM. The union of their radii determines which nodes stay in RAM, while the rest remain on disk.
 
 #### Overlapping Focus Zones (Sliding Window)
+
+```cpp showLineNumbers
+{
+	auto focusA = pager.acquireFocus(nodeA, 1uz);
+	auto focusB = pager.acquireFocus(nodeB, 1uz);
+}
+```
 
 <svg viewBox="0 0 640 270" width="100%" style="max-width: 640px; height: auto; display: block; margin: 1.5rem auto;" role="img" aria-label="Two overlapping circular radius-1 focus zones centered on nodeA and nodeB, with nodeD and nodeE persisted on disk">
 	<defs>
@@ -632,14 +639,14 @@ Multiple `ScopedFocus` guards can be active at the same time, whether they overl
 	<text x="515" y="205" text-anchor="middle" fill="currentColor" font-size="9.5">ID = 6 (distance 3)</text>
 </svg>
 
-```cpp
+#### Disjoint Focus Zones (Non-Touching)
+
+```cpp showLineNumbers
 {
 	auto focusA = pager.acquireFocus(nodeA, 1uz);
-	auto focusB = pager.acquireFocus(nodeB, 1uz);
+	auto focusD = pager.acquireFocus(nodeD, 1uz);
 }
 ```
-
-#### Disjoint Focus Zones (Non-Touching)
 
 <svg viewBox="0 0 680 265" width="100%" style="max-width: 680px; height: auto; display: block; margin: 1.5rem auto;" role="img" aria-label="Two disjoint circular radius-1 focus zones centered on nodeA and nodeD, with nodeC persisted on disk in between">
 	<defs>
@@ -681,18 +688,11 @@ Multiple `ScopedFocus` guards can be active at the same time, whether they overl
 	<text x="633" y="150" text-anchor="middle" fill="currentColor" font-size="9.5">ID = 6</text>
 </svg>
 
-```cpp
-{
-	auto focusA = pager.acquireFocus(nodeA, 1uz);
-	auto focusD = pager.acquireFocus(nodeD, 1uz);
-}
-```
-
 ### Manual Focus Control (`addFocus`, `removeFocus`)
 
 If you need non-RAII control (such as tying a focus to an event rather than a lexical scope), use `addFocus(nodeId, distance)` and `removeFocus(nodeId, distance)`:
 
-```cpp
+```cpp showLineNumbers
 // Manage a focus lifetime manually (without an RAII scope)
 const auto idA = nodeA.getId();
 pager.addFocus(idA, 1uz);
@@ -704,7 +704,7 @@ pager.removeFocus(idA, 1uz);
 
 If you want to control node residency in RAM manually **without using [focus windows](#maintain-nodes-in-ram-with-acquirefocus)**, `MeshPager` provides two complementary methods: `loadNode(nodeId)` to load a node from disk into RAM, and `unloadNode(nodeId)` to serialize it to disk and free RAM immediately:
 
-```cpp
+```cpp showLineNumbers
 auto root = pager.loadNode(rootId); // Loads root from disk
 pager.unloadNode(rootId); // Flushes root to disk and removes it from RAM
 ```
@@ -715,7 +715,7 @@ pager.unloadNode(rootId); // Flushes root to disk and removes it from RAM
 	A non-root node loaded directly via `loadNode()` is not attached to any root in RAM. If a focus is acquired or released elsewhere (for example via `acquireFocus()`) while that node is still in RAM outside any focus, it will be treated as an orphan and **permanently deleted from disk** (`removeNode()`) instead of merely unloaded. Make sure to unload it with `unloadNode()` or cover it with a focus.
 </Aside>
 
-```cpp
+```cpp showLineNumbers
 auto root = pager.loadNode(rootId);
 auto nodeA = root["next"_token].front().value(); // Loads nodeA on demand
 ```
@@ -740,7 +740,7 @@ Two mechanisms handle deleting nodes from disk, depending on your use case:
 - **Automatic cleanup (non-root nodes)**: when a node or subgraph is detached from every root, it is automatically deleted from disk as soon as a focus is updated (for example when a `ScopedFocus` goes out of scope). A plain `unloadNode()` call does **not** trigger this cleanup: it simply flushes the node to disk and evicts it from RAM.
 - **Explicit deletion (`removeNode(nodeId)`)**: required to delete a **root node** (never deleted automatically, even with no parent) or to **immediately** remove a specific node from RAM, link tables, and disk storage (especially when not using focus windows, or without waiting for a `ScopedFocus` to expire).
 
-```cpp
+```cpp showLineNumbers
 {
 	auto focus = pager.acquireFocus(root, 1uz);
 	root["next"_token] - nodeA;
@@ -765,7 +765,7 @@ The following types are supported out of the box, with no extra boilerplate:
 
 To extend binary serialization support to your own custom types (for instance a struct containing `std::string` or other non-trivial members), specialize [`CppUtils::Type::Binary::Serializer`](/en/reference/type/binary/serializer/):
 
-```cpp
+```cpp showLineNumbers
 struct UserAccount
 {
 	std::string name;
