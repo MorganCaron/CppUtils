@@ -39,7 +39,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 			CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
 				const auto filePath = directory / "test.tmp";
 				auto originalData = std::vector<std::byte>{std::byte{0xDE}, std::byte{0xAD}, std::byte{0xBE}, std::byte{0xEF}};
-				expect(CppUtils::FileSystem::Binary::writeVector(filePath, originalData));
+				expect(CppUtils::FileSystem::Binary::write(filePath, originalData));
 
 				auto resultData = std::vector<std::byte>{};
 				auto nbBlocks = 0u;
@@ -139,7 +139,7 @@ namespace CppUtils::UnitTest::FileSystem::File
 					auto originalVector = std::vector<int>{};
 					originalVector.resize(10);
 					std::iota(originalVector.begin(), originalVector.end(), 1);
-					expect(CppUtils::FileSystem::Binary::writeVector(filePath, originalVector));
+					expect(CppUtils::FileSystem::Binary::write(filePath, originalVector));
 					auto vector = CppUtils::FileSystem::Binary::readVector<int>(filePath);
 					expect(vector);
 					for (auto nb : vector.value())
@@ -153,12 +153,49 @@ namespace CppUtils::UnitTest::FileSystem::File
 					auto filePath = directory / "test.tmp";
 					auto initialVector = std::vector<int>{1, 2, 3};
 					auto appendedVector = std::vector<int>{4, 5, 6};
-					expect(CppUtils::FileSystem::Binary::writeVector(filePath, initialVector));
-					expect(CppUtils::FileSystem::Binary::appendVector(filePath, appendedVector));
+					expect(CppUtils::FileSystem::Binary::write(filePath, initialVector));
+					expect(CppUtils::FileSystem::Binary::append(filePath, appendedVector));
 					auto vector = CppUtils::FileSystem::Binary::readVector<int>(filePath);
 					expect(vector);
 					auto expectedVector = std::vector<int>{1, 2, 3, 4, 5, 6};
 					expect(vector.value()) == expectedVector;
+				}};
+			};
+
+			suite.test("WriteAppendSpan") = [&] {
+				CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
+					auto filePath = directory / "test.tmp";
+					const auto initial = std::array{10, 20, 30};
+					const auto appended = std::array{40, 50};
+					expect(CppUtils::FileSystem::Binary::write(filePath, std::span<const int>{initial}));
+					expect(CppUtils::FileSystem::Binary::append(filePath, std::span<const int>{appended}));
+					auto vector = CppUtils::FileSystem::Binary::readVector<int>(filePath);
+					expect(vector);
+					expect(vector.value()) == std::vector<int>{10, 20, 30, 40, 50};
+				}};
+			};
+
+			suite.test("ReadWriteRange") = [&] {
+				CppUtils::FileSystem::TemporaryDirectory{[](const auto& directory) -> void {
+					auto filePath = directory / "test.tmp";
+					const auto initial = std::vector<std::byte>{
+						std::byte{'A'}, std::byte{'B'}, std::byte{'C'}, std::byte{'D'}, std::byte{'E'}};
+					expect(CppUtils::FileSystem::Binary::writeRange(filePath, 0uz, initial));
+
+					const auto patch = std::vector<std::byte>{std::byte{'X'}, std::byte{'Y'}};
+					expect(CppUtils::FileSystem::Binary::writeRange(filePath, 1uz, patch));
+
+					const auto middle = CppUtils::FileSystem::Binary::readRange(filePath, 1uz, 3uz);
+					expect(middle);
+					expect(middle.value()) == std::vector<std::byte>{std::byte{'X'}, std::byte{'Y'}, std::byte{'D'}};
+
+					const auto outOfBounds = CppUtils::FileSystem::Binary::readRange(filePath, 10uz, 2uz);
+					expect(outOfBounds);
+					expect(std::ranges::empty(outOfBounds.value()));
+
+					const auto zeroLength = CppUtils::FileSystem::Binary::readRange(filePath, 0uz, 0uz);
+					expect(zeroLength);
+					expect(std::ranges::empty(zeroLength.value()));
 				}};
 			};
 		};

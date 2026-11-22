@@ -386,7 +386,7 @@ export namespace CppUtils::FileSystem
 				freeList.push_back(block);
 			Type::serialize(freeList, bytes);
 
-			return FileSystem::Binary::writeVector(indexPath, bytes);
+			return FileSystem::Binary::write(indexPath, bytes);
 		}
 	};
 }

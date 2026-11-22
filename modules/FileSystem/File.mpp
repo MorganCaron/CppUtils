@@ -5,8 +5,10 @@ import CppUtils.Type;
 
 export namespace CppUtils::FileSystem
 {
+	/// @brief Describes a file system operation error.
 	struct Error
 	{
+		/// @brief Category of the file system failure.
 		enum class Type
 		{
 			OpenFailed,
@@ -17,6 +19,12 @@ export namespace CppUtils::FileSystem
 		std::string_view message;
 	};
 
+	/**
+	 * @brief Iterates over all regular files in @p directoryPath and invokes @p function on each path.
+	 * @param directoryPath Root directory to inspect; returns immediately if missing or not a directory.
+	 * @param function Callback invoked with each `std::filesystem::path`.
+	 * @param recursively If `true`, traverses subdirectories recursively.
+	 */
 	inline auto forFiles(
 		const std::filesystem::path& directoryPath,
 		auto&& function,
@@ -36,6 +44,13 @@ export namespace CppUtils::FileSystem
 					function(path);
 	}
 
+	/**
+	 * @brief Iterates over files in @p directoryPath matching extension @p ext.
+	 * @param directoryPath Root directory to inspect.
+	 * @param ext Target file extension including the leading dot (e.g. `".txt"`).
+	 * @param function Callback invoked with each matching `std::filesystem::path`.
+	 * @param recursively If `true`, traverses subdirectories recursively.
+	 */
 	inline auto forFilesWithExtension(
 		const std::filesystem::path& directoryPath,
 		std::string_view ext,
@@ -48,6 +63,14 @@ export namespace CppUtils::FileSystem
 		}, recursively);
 	}
 
+	/**
+	 * @brief Streams a file in fixed-size chunks without loading the entire file into memory.
+	 * @tparam T Block view type passed to @p function (`std::span<const std::byte>` or `std::string_view`).
+	 * @param filePath Path to the file to read.
+	 * @param function Callback invoked for each chunk; may return `std::expected` to abort early.
+	 * @param blockSize Maximum chunk size in bytes (default: 4096).
+	 * @return Empty `std::expected` on success, or an `Error` on open, read, or callback failure.
+	 */
 	template<class T = std::span<const std::byte>>
 	inline auto readByBlocks(
 		const std::filesystem::path& filePath,
@@ -93,28 +116,75 @@ export namespace CppUtils::FileSystem
 
 	namespace Binary
 	{
+		/**
+		 * @brief Reads a binary file sequentially in fixed-size `std::span<const std::byte>` blocks.
+		 * @param filePath Path to the file to read.
+		 * @param function Callback invoked for each byte block.
+		 * @param blockSize Size of each read chunk in bytes (default: 4096).
+		 * @return Empty `std::expected` on success, or an `Error` on failure.
+		 */
 		[[nodiscard]] inline auto readByBlocks(const std::filesystem::path& filePath, auto&& function, std::size_t blockSize = 4'096)
 		{
 			return FileSystem::readByBlocks<std::span<const std::byte>>(filePath, std::forward<decltype(function)>(function), blockSize);
 		}
 
-		inline auto write(const std::filesystem::path& filePath, const Type::TriviallyCopyable auto& buffer, bool isAppend = false) -> std::expected<void, Error>
+		/**
+		 * @brief Writes a contiguous range of trivially copyable elements in binary mode to @p filePath.
+		 * @tparam Range Contiguous range whose elements are trivially copyable (`std::vector`, `std::span`, `std::array`, etc.).
+		 * @param filePath Destination file path.
+		 * @param range Elements to write as raw bytes.
+		 * @param isAppend If `true`, appends to the end of the file; otherwise truncates it.
+		 * @return Empty `std::expected` on success, or an `Error` on failure.
+		 */
+		template<std::ranges::contiguous_range Range>
+		requires Type::TriviallyCopyable<std::ranges::range_value_t<Range>>
+		inline auto write(const std::filesystem::path& filePath, const Range& range, bool isAppend = false) -> std::expected<void, Error>
 		{
 			const auto openMode = isAppend ? (std::ios::binary | std::ios::app) : (std::ios::binary | std::ios::trunc);
 			auto file = std::ofstream{filePath, openMode};
 			if (not file.is_open()) [[unlikely]]
 				return std::unexpected{Error{Error::Type::OpenFailed, "Failed to open file"}};
-			file.write(reinterpret_cast<const char*>(std::addressof(buffer)), sizeof(buffer));
+			file.write(
+				reinterpret_cast<const char*>(std::ranges::data(range)),
+				static_cast<std::streamsize>(std::ranges::size(range) * sizeof(std::ranges::range_value_t<Range>)));
 			if (file.bad()) [[unlikely]]
 				return std::unexpected{Error{Error::Type::WriteFailed, "Hardware write error"}};
 			return {};
 		}
 
-		inline auto append(const std::filesystem::path& filePath, const Type::TriviallyCopyable auto& buffer) -> std::expected<void, Error>
+		/**
+		 * @brief Writes a trivially copyable object in binary mode to @p filePath.
+		 * @tparam T Trivially copyable, non-range type to serialize.
+		 * @param filePath Destination file path.
+		 * @param buffer Source object to serialize as raw bytes.
+		 * @param isAppend If `true`, appends to the end of the file; otherwise truncates it.
+		 * @return Empty `std::expected` on success, or an `Error` on failure.
+		 */
+		template<Type::TriviallyCopyable T>
+		requires (not std::ranges::contiguous_range<T>)
+		inline auto write(const std::filesystem::path& filePath, const T& buffer, bool isAppend = false) -> std::expected<void, Error>
 		{
-			return write(filePath, buffer, true);
+			return write(filePath, std::span{std::addressof(buffer), 1uz}, isAppend);
 		}
 
+		/**
+		 * @brief Appends a trivially copyable object or contiguous range in binary mode to the end of @p filePath.
+		 * @param filePath Destination file path.
+		 * @param data Source object or contiguous range to append as raw bytes.
+		 * @return Empty `std::expected` on success, or an `Error` on failure.
+		 */
+		inline auto append(const std::filesystem::path& filePath, const auto& data) -> std::expected<void, Error>
+		requires requires { write(filePath, data, true); }
+		{
+			return write(filePath, data, true);
+		}
+
+		/**
+		 * @brief Reads a trivially copyable object in binary mode from @p filePath.
+		 * @tparam T Trivially copyable target type to deserialize.
+		 * @param filePath Source file path.
+		 * @return Deserialized object on success, or an `Error` on open or read failure.
+		 */
 		template<Type::TriviallyCopyable T>
 		[[nodiscard]] inline auto read(const std::filesystem::path& filePath) -> std::expected<T, Error>
 		{
@@ -128,25 +198,12 @@ export namespace CppUtils::FileSystem
 			return buffer;
 		}
 
-		template<Type::TriviallyCopyable T>
-		inline auto writeVector(const std::filesystem::path& filePath, const std::vector<T>& vector, bool isAppend = false) -> std::expected<void, Error>
-		{
-			const auto openMode = isAppend ? (std::ios::binary | std::ios::app) : (std::ios::binary | std::ios::trunc);
-			auto file = std::ofstream{filePath, openMode};
-			if (not file.is_open()) [[unlikely]]
-				return std::unexpected{Error{Error::Type::OpenFailed, "Failed to open file"}};
-			file.write(reinterpret_cast<const char*>(std::ranges::data(vector)), static_cast<std::streamsize>(std::ranges::size(vector) * sizeof(T)));
-			if (file.bad()) [[unlikely]]
-				return std::unexpected{Error{Error::Type::WriteFailed, "Hardware write error"}};
-			return {};
-		}
-
-		template<Type::TriviallyCopyable T>
-		inline auto appendVector(const std::filesystem::path& filePath, const std::vector<T>& vector) -> std::expected<void, Error>
-		{
-			return writeVector(filePath, vector, true);
-		}
-
+		/**
+		 * @brief Reads an entire binary file into a `std::vector<T>` sized from the file size on disk.
+		 * @tparam T Trivially copyable element type.
+		 * @param filePath Source file path.
+		 * @return Vector of elements on success, or an `Error` on open, size, or read failure.
+		 */
 		template<Type::TriviallyCopyable T>
 		[[nodiscard]] inline auto readVector(const std::filesystem::path& filePath) -> std::expected<std::vector<T>, Error>
 		{
@@ -168,15 +225,85 @@ export namespace CppUtils::FileSystem
 			}
 			return vector;
 		}
+
+		/**
+		 * @brief Reads up to @p length bytes from @p filePath starting at @p offset without loading the entire file.
+		 * @param filePath Source file path.
+		 * @param offset Byte offset from the beginning of the file.
+		 * @param length Maximum number of bytes to read.
+		 * @return Vector of bytes read, or an Error if opening, sizing, or reading fails.
+		 */
+		[[nodiscard]] inline auto readRange(const std::filesystem::path& filePath, std::size_t offset, std::size_t length) -> std::expected<std::vector<std::byte>, Error>
+		{
+			auto file = std::ifstream{filePath, std::ios::binary};
+			if (not file.is_open()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::OpenFailed, "Failed to open file"}};
+			auto errorCode = std::error_code{};
+			const auto fileSize = std::filesystem::file_size(filePath, errorCode);
+			if (errorCode) [[unlikely]]
+				return std::unexpected{Error{Error::Type::ReadFailed, "Failed to get file size"}};
+			if (offset >= fileSize or length == 0uz)
+				return std::vector<std::byte>{};
+			const auto readableLength = std::ranges::min(length, fileSize - offset);
+			file.seekg(static_cast<std::streamoff>(offset), std::ios::beg);
+			if (file.fail()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::ReadFailed, "Failed to seek in file"}};
+			auto buffer = std::vector<std::byte>(readableLength);
+			file.read(reinterpret_cast<char*>(std::ranges::data(buffer)), static_cast<std::streamsize>(readableLength));
+			if (file.bad()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::ReadFailed, "Hardware read error"}};
+			buffer.resize(static_cast<std::size_t>(file.gcount()));
+			return buffer;
+		}
+
+		/**
+		 * @brief Writes @p data at @p offset in @p filePath without rewriting the rest of the file.
+		 * @details Preserves existing bytes outside `[offset, offset + data.size())`. Creates the file if it does not exist.
+		 * @param filePath Destination file path.
+		 * @param offset Byte offset from the beginning of the file.
+		 * @param data Bytes to write at @p offset.
+		 * @return Empty expected on success, or an Error if opening, seeking, or writing fails.
+		 */
+		inline auto writeRange(const std::filesystem::path& filePath, std::size_t offset, std::span<const std::byte> data) -> std::expected<void, Error>
+		{
+			auto errorCode = std::error_code{};
+			const auto fileExists = std::filesystem::exists(filePath, errorCode);
+			auto file = fileExists ? std::fstream{filePath, std::ios::binary | std::ios::in | std::ios::out} : std::fstream{filePath, std::ios::binary | std::ios::out};
+			if (not file.is_open()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::OpenFailed, "Failed to open file"}};
+			file.seekp(static_cast<std::streamoff>(offset), std::ios::beg);
+			if (file.fail()) [[unlikely]]
+				return std::unexpected{Error{Error::Type::WriteFailed, "Failed to seek in file"}};
+			if (not std::ranges::empty(data))
+			{
+				file.write(reinterpret_cast<const char*>(std::ranges::data(data)), static_cast<std::streamsize>(std::ranges::size(data)));
+				if (file.bad() or file.fail()) [[unlikely]]
+					return std::unexpected{Error{Error::Type::WriteFailed, "Hardware write error"}};
+			}
+			return {};
+		}
 	}
 
 	namespace String
 	{
+		/**
+		 * @brief Reads a text file sequentially in fixed-size `std::string_view` blocks.
+		 * @param filePath Path to the file to read.
+		 * @param function Callback invoked for each block.
+		 * @param blockSize Size of each read chunk in bytes (default: 4096).
+		 */
 		[[nodiscard]] inline auto readByBlocks(const std::filesystem::path& filePath, auto&& function, std::size_t blockSize = 4'096)
 		{
 			return FileSystem::readByBlocks<std::string_view>(filePath, std::forward<decltype(function)>(function), blockSize);
 		}
 
+		/**
+		 * @brief Writes text content to a file.
+		 * @param filePath Destination file path.
+		 * @param content Text content to write.
+		 * @param isAppend If `true`, appends to the end of the file; otherwise truncates it.
+		 * @return Empty `std::expected` on success, or an `Error` on failure.
+		 */
 		inline auto write(const std::filesystem::path& filePath, std::string_view content, bool isAppend = false) -> std::expected<void, Error>
 		{
 			const auto openMode = isAppend ? (std::ios::out | std::ios::app) : (std::ios::out | std::ios::trunc);
@@ -189,11 +316,22 @@ export namespace CppUtils::FileSystem
 			return {};
 		}
 
+		/**
+		 * @brief Appends text content to the end of a file.
+		 * @param filePath Destination file path.
+		 * @param content Text content to append.
+		 * @return Empty `std::expected` on success, or an `Error` on failure.
+		 */
 		inline auto append(const std::filesystem::path& filePath, std::string_view content) -> std::expected<void, Error>
 		{
 			return write(filePath, content, true);
 		}
 
+		/**
+		 * @brief Reads the entire contents of a text file into a `std::string`.
+		 * @param filePath Source file path.
+		 * @return File contents on success, or an `Error` on failure.
+		 */
 		[[nodiscard]] inline auto read(const std::filesystem::path& filePath) -> std::expected<std::string, Error>
 		{
 			auto file = std::ifstream{filePath};
