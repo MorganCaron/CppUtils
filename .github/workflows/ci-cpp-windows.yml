@@ -34,7 +34,8 @@ jobs:
     - uses: actions/checkout@v7
     - uses: xmake-io/github-action-setup-xmake@v1
       with:
-        xmake-version: branch@master
+        # Workaround for https://github.com/xmake-io/xmake/issues/7917 (restore branch@master once fixed)
+        xmake-version: latest
 
     - name: Install LLVM
       uses: KyleMayes/install-llvm-action@master
